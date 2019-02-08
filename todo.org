@@ -1,0 +1,27 @@
+* Minor bits
+
+- remove Coq-specific bits from lsp_* [maybe make the modules a functor]
+- better handling of protocol IO / different kind of requests
+
+* Document-related
+
+- Prefix-based incremental checking
+- Lazy checking? What can we use for the UI?
+- Classification is a pain and fragile, what should the replacement be?
+
+* Control thread:
+
+- before master sends a task, it should check if the previous one was
+  cancelled, otherwise it should signal then send a new task.
+
+  No point on sending a task if the worker is not ready.
+
+- master / worker
+
+- define protocol as DSL, serialize with ppx
+
+- use Jane Street Async stuff to interact with processes? Does it work
+  on Win?
+  https://ocaml.janestreet.com/ocaml-core/latest/doc/async/index.html
+
+- what about Lwt? Does it work on Win?

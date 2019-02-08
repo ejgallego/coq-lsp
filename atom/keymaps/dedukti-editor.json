@@ -1,0 +1,6 @@
+{
+  "atom-text-editor": {
+    "alt-down": "dedukti-editor:next",
+    "alt-up": "dedukti-editor:last"
+  }
+}

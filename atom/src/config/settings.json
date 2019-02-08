@@ -1,0 +1,18 @@
+{
+  "lspServerPath": {
+    "type": "string",
+    "default": "coq-lsp"
+  },
+  "lspServerArgs": {
+    "type": "array",
+    "default": []
+  },
+  "style":{
+    "type": "string",
+    "default": "bar_mode",
+    "enum": [
+      {"value": "bar_mode", "description": "Bar mode. Colors are displayed next to the line"},
+      {"value": "coloredline_mode", "description": "Colored line mode. Colors are displayed directly in line"}
+    ]
+  }
+}

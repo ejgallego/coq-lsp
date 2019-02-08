@@ -1,0 +1,7 @@
+language: objective-c
+
+script: 'curl -s https://raw.githubusercontent.com/atom/ci/master/build-package.sh | sh'
+
+notifications:
+  email:
+- e@x80.org
