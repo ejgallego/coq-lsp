@@ -14,6 +14,12 @@ needed otherwise eglot will choke.
  3. Install the server (`nix-env -if .`).
  4. Run VS-Code and visit a `.v` file.
 
+In case you are developing the server/controller, you can, instead of 3-4 above:
+
+ 3. Build the controller (in an appropriate environment, e.g., `nix-shell`)
+    using `make`
+ 4. Launch VS-Code through `dune`: `dune exec code`
+
 ## Design
 
 The worker protocol is designed to be as stateless as possible.
