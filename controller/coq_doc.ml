@@ -18,11 +18,12 @@
 
 module LSP = Lsp_base
 
-type ast = Vernacexpr.vernac_expr CAst.t
+type ast = Vernacexpr.vernac_control CAst.t
 
 type node =
   { ast  : ast
   ; exec : bool
+  ; goal : Pp.t option
   }
 
 (* Private. A doc is a list of nodes for now. The first element in
@@ -96,12 +97,17 @@ let rec discard_to_dot ps =
     | CLexer.Error.E _ -> discard_to_dot ps
     | e when CErrors.noncritical e -> ()
 
+let pr_goal (st : Vernacstate.t) : Pp.t option =
+  Option.map (fun pstate ->
+      let proof = Lemmas.(pf_fold Proof_global.give_me_the_proof) pstate in
+      Printer.pr_open_subgoals ~proof) st.Vernacstate.proof
+
 type process_action = | EOF | Skip | Process of Vernacexpr.vernac_control CAst.t
 
 (* XXX: Imperative problem *)
 let process_and_parse doc =
   let doc_handle = Pcoq.Parsable.make Stream.(of_string doc.contents) in
-  let rec stm st diags =
+  let rec stm doc st diags =
     Lsp_io.log_error "coq" "parsing sentence";
     (* Parsing *)
     let action, diags =
@@ -119,9 +125,9 @@ let process_and_parse doc =
     match action with
     (* End of file *)
     | EOF ->
-      st, diags
+      doc, st, diags
     | Skip ->
-      stm st diags
+      stm doc st diags
     (* We interpret the command now *)
     | Process ast ->
       match interp_command ~st ast with
@@ -129,21 +135,25 @@ let process_and_parse doc =
         (* let ok_diag = node.pos, 4, "OK", !Proofs.theorem in *)
         let ok_diag = ast.CAst.loc, 4, Pp.(str "OK"), None in
         let diags = ok_diag :: diags in
-        stm st diags
+        let node = { ast; exec = true; goal = pr_goal st } in
+        let doc = { doc with nodes = node :: doc.nodes } in
+        stm doc st diags
       | Error (loc, msg) ->
         let loc = Option.append loc ast.CAst.loc in
         let diags = (loc, 1, msg, None) :: diags in
-        stm st diags
+        let node = { ast; exec = false; goal = None } in
+        let doc = { doc with nodes = node :: doc.nodes } in
+        stm doc st diags
   in
-  stm doc.root []
+  stm doc doc.root []
 
 let check ~doc =
   let uri, version = doc.uri, doc.version in
 
   (* Start library *)
-  let st, diag = process_and_parse doc in
-  st, LSP.mk_diagnostics ~uri ~version @@ List.fold_left (fun acc (pos,lvl,msg,goal) ->
+  let doc, st, diags = process_and_parse doc in
+  doc, st, LSP.mk_diagnostics ~uri ~version @@ List.fold_left (fun acc (pos,lvl,msg,goal) ->
       match pos with
       | None     -> acc
       | Some pos -> (pos,lvl,msg,goal) :: acc
-    ) [] diag
+    ) [] diags

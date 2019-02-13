@@ -16,11 +16,12 @@
 (* Status: Experimental                                                 *)
 (************************************************************************)
 
-type ast = Vernacexpr.vernac_expr CAst.t
+type ast = Vernacexpr.vernac_control CAst.t
 
 type node =
   { ast  : ast
   ; exec : bool
+  ; goal : Pp.t option
   }
 
 type t =
@@ -39,4 +40,4 @@ val create
 
 val check
   :  doc:t
-  -> Vernacstate.t * Yojson.Basic.t
+  -> t * Vernacstate.t * Yojson.Basic.t

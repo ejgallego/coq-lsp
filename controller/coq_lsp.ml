@@ -54,7 +54,7 @@ let do_initialize ofmt ~id _params =
        `Assoc [
           "textDocumentSync", `Int 1
         ; "documentSymbolProvider", `Bool true
-        ; "hoverProvider", `Bool false
+        ; "hoverProvider", `Bool true
         ; "codeActionProvider", `Bool false
         ]]) in
   LIO.send_json ofmt msg
@@ -64,12 +64,12 @@ let do_shutdown ofmt ~id =
   LIO.send_json ofmt msg
 
 let doc_table : (string, _) Hashtbl.t = Hashtbl.create 39
-let completed_table : (string, Vernacstate.t) Hashtbl.t = Hashtbl.create 39
+let completed_table : (string, Coq_doc.t * Vernacstate.t) Hashtbl.t = Hashtbl.create 39
 
 (* Notification handling; reply is optional / asynchronous *)
 let do_check_text ofmt ~doc =
-  let final_st, diags = Coq_doc.check ~doc in
-  Hashtbl.replace completed_table doc.uri final_st;
+  let doc, final_st, diags = Coq_doc.check ~doc in
+  Hashtbl.replace completed_table doc.uri (doc,final_st);
   LIO.send_json ofmt @@ diags
 
 let do_change ofmt ~doc change =
@@ -157,9 +157,28 @@ let get_docTextPosition params =
   let line, character = int_field "line" pos, int_field "character" pos in
   file, line, character
 
+(* XXX refactor *)
+let in_range ?loc (line, pos) =
+  match loc with
+  | None -> false
+  | Some loc ->
+    let Loc.{line_nb=line1; line_nb_last=line2; bol_pos; bol_pos_last; bp; ep; _} = loc in
+    let col1 = bp - bol_pos in
+    let col2 = ep - bol_pos_last in
+    line1 - 1 <= line && line <= line2 -1 &&
+    col1 <= pos && pos <= col2
+
+let get_goals ~doc ~line ~pos =
+  let node =
+    List.find (fun { Coq_doc.ast = CAst.{ loc ; _ } ; _} ->
+        in_range ?loc (line,pos)) doc.Coq_doc.nodes in
+  Option.cata Pp.string_of_ppcmds "No goals" node.Coq_doc.goal
+
 let do_hover ofmt ~id params =
-  let _ = get_docTextPosition params in
-  let result = `Assoc [ "contents", `String "hover XXX"] in
+  let uri, line, pos = get_docTextPosition params in
+  let doc, _ = Hashtbl.find completed_table uri in
+  let goals = get_goals ~doc ~line ~pos in
+  let result = `Assoc [ "contents", `String goals] in
   let msg = LSP.mk_reply ~id ~result in
   LIO.send_json ofmt msg
 
