@@ -1,0 +1,38 @@
+{
+    "name": "vsc-galinas",
+    "version": "0.0.0",
+    "publisher": "Fondation Inria",
+    "engines": {
+        "vscode": "1.31.0"
+    },
+    "activationEvents": [
+        "onLanguage:coq"
+    ],
+    "main": "./src/client",
+    "contributes": {
+        "languages": [
+            {
+                "id": "coq",
+                "aliases": [
+                    "Coq",
+                    "coq",
+                    "Gallina",
+                    "gallina"
+                ],
+                "extensions": [
+                    ".v"
+                ],
+                "configuration": "./coq.configuration.json"
+            }
+        ],
+        "commands": [
+            {
+                "command": "vsc-galinas.restart",
+                "title": "Start or restart the Coq language server"
+            }
+        ]
+    },
+    "dependencies": {
+        "vscode-languageclient": "^4.1.4"
+    }
+}
