@@ -3,7 +3,7 @@
     "version": "0.0.0",
     "publisher": "Fondation Inria",
     "engines": {
-        "vscode": "1.31.0"
+        "vscode": "^1.30.0"
     },
     "activationEvents": [
         "onLanguage:coq"
