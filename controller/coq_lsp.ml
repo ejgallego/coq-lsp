@@ -20,17 +20,6 @@ module F = Format
 module J = Yojson.Basic
 module U = Yojson.Basic.Util
 
-(* OCaml 4.04 compat *)
-module Hashtbl = struct
-  include Hashtbl
-  let find_opt n d = try Some Hashtbl.(find n d) with | Not_found -> None
-end
-
-module List = struct
-  include List
-  let assoc_opt n d = try Some List.(assoc n d) with | Not_found -> None
-end
-
 let    int_field name dict = U.to_int    List.(assoc name dict)
 let   dict_field name dict = U.to_assoc  List.(assoc name dict)
 let   list_field name dict = U.to_list   List.(assoc name dict)
@@ -276,17 +265,20 @@ let in_range ?loc (line, pos) =
 
 let get_goals ~doc ~line ~pos =
   let node =
-    List.find (fun { Coq_doc.ast = CAst.{ loc ; _ } ; _} ->
-        in_range ?loc (line,pos)) doc.Coq_doc.nodes in
-  Option.cata Pp.string_of_ppcmds "No goals" node.Coq_doc.goal
+    List.find_opt (fun { Coq_doc.ast = CAst.{ loc ; _ } ; _} ->
+        in_range ?loc (line,pos)) doc.Coq_doc.nodes
+  in
+  Option.map (fun node ->
+      Option.cata Pp.string_of_ppcmds "No goals" node.Coq_doc.goal) node
 
 let do_hover ofmt ~id params =
   let uri, line, pos = get_docTextPosition params in
   let doc, _ = Hashtbl.find completed_table uri in
-  let goals = get_goals ~doc ~line ~pos in
-  let result = `Assoc [ "contents", `String goals] in
-  let msg = LSP.mk_reply ~id ~result in
-  LIO.send_json ofmt msg
+  (get_goals ~doc ~line ~pos) |>
+  Option.iter (fun goals ->
+    let result = `Assoc [ "contents", `String goals] in
+    let msg = LSP.mk_reply ~id ~result in
+    LIO.send_json ofmt msg)
 
 (* XXX: We could split requests and notifications but with the OCaml
    theading model there is not a lot of difference yet; something to
