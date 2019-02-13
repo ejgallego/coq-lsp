@@ -10,7 +10,7 @@ needed otherwise eglot will choke.
 ### VS-Code
 
  1. Symlink the `vsc-galinas` directory into `~/.vscode/extensions/`.
- 2. Run `npm install` in that repository.
+ 2. Run `npm install` in the `./vsc-galinas` directory.
  3. Install the server (`nix-env -if .`).
  4. Run VS-Code and visit a `.v` file.
 
