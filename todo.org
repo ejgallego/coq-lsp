@@ -3,9 +3,9 @@
 - in order to implement lazy proof checking properly we need to refine
   the type of vernac interp. We absolutely need 3 types or commands:
 
-  - parsing only: GeneralState.t -> ParsingState.t
-  - tactics: GeneralState.t -> ParsingState.t
-  - general commands: GeneralState.t -> ParsingState.t
+  - parsing only: GeneralState.t -> ParsingState.t -> ParsingState.t
+  - tactics: GeneralState.t -> Proofstate.t -> Proofstate.t
+  - general commands: GeneralState.t -> GeneralState.t
 
   this will be hard to do upstream, but it is quite important.
 
