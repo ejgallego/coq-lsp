@@ -71,7 +71,7 @@ let coq_protect f x =
   Error (loc, msg)
 
 let parse_stm ~st ps =
-  let mode = Some Vernacentries.(get_default_proof_mode ()) in
+  let mode = Option.map Vernacentries.(fun _ -> get_default_proof_mode ()) st.Vernacstate.proof in
   coq_protect Vernacstate.(Parser.parse st.parsing Pvernac.(main_entry mode)) ps
 
 let interp_command ~st stm =
