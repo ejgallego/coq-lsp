@@ -1,3 +1,33 @@
+* Coq / Platform
+
+- in order to implement lazy proof checking properly we need to refine
+  the type of vernac interp. We absolutely need 3 types or commands:
+
+  - parsing only: GeneralState.t -> ParsingState.t
+  - tactics: GeneralState.t -> ParsingState.t
+  - general commands: GeneralState.t -> ParsingState.t
+
+  this will be hard to do upstream, but it is quite important.
+
+* Rough plan:
+
+- overlays for PRs [pr-wise I'm done with regards to lsp, just waiting
+  for merges]
+
+- initialization code / libraries, etc... [port from SerAPI, likely
+  will make it a library]
+
+- task manager: design / POC done , just need to do 2, then this. The
+  protocol is really simple however there are some tricks needed. The
+  protocol only sends text for now, one process per document + a
+  control thread, using Lwt. Main todo here is that we need to account
+  for several processes per document. For example, completion will
+  need it's own process. So I dunno how much to complicate the
+  design. Coq is a bit special in that processing may take a looong
+  time.
+
+- things to do together: first thing will be incremental checking !
+
 * Minor bits
 
 - remove Coq-specific bits from lsp_* [maybe make the modules a functor]
