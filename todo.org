@@ -55,3 +55,17 @@
   https://ocaml.janestreet.com/ocaml-core/latest/doc/async/index.html
 
 - what about Lwt? Does it work on Win?
+* Per-dev todo list:
+** Maxime
+   - get rid of Derive
+   - Shepherd vernac PR
+   - design of typed vernac interpretation?
+
+** Vincent
+   - have a look to editors?
+   - [after unlock] incremental checking / document model
+
+** Emilio
+   - finish PRs [mostly done, in need of tweaks]
+   - finish the architecture, release lock
+   - write mail to Leo
