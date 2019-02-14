@@ -102,7 +102,17 @@ let pr_goal (st : Vernacstate.t) : Pp.t option =
       let proof = Lemmas.(pf_fold Proof_global.give_me_the_proof) pstate in
       Printer.pr_open_subgoals ~proof) st.Vernacstate.proof
 
-type process_action = | EOF | Skip | Process of Vernacexpr.vernac_control CAst.t
+(* Simple heuristic for Qed. *)
+let state_recovery_heuristic st CAst.{ v ; _} =
+  match Vernacprop.under_control v with
+  | Vernacexpr.VernacEndProof _ ->
+    Vernacstate.{ st with proof = Option.cata Lemmas.discard_current None st.proof }
+  | _ -> st
+
+type process_action =
+ | EOF
+ | Skip
+ | Process of Vernacexpr.vernac_control CAst.t
 
 (* XXX: Imperative problem *)
 let process_and_parse doc =
@@ -141,8 +151,9 @@ let process_and_parse doc =
       | Error (loc, msg) ->
         let loc = Option.append loc ast.CAst.loc in
         let diags = (loc, 1, msg, None) :: diags in
-        let node = { ast; exec = false; goal = None } in
+        let node = { ast; exec = false; goal = pr_goal st } in
         let doc = { doc with nodes = node :: doc.nodes } in
+        let st = state_recovery_heuristic st ast in
         stm doc st diags
   in
   stm doc doc.root []

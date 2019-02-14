@@ -26,8 +26,14 @@ Lemma level1 : True.
 exact: level2.
 Qed.
 
-Lemma broken : False.
+Lemma admit (T : Type) : T. Admitted.
+
+Lemma broken1 : False.
 Proof. Qed.
+
+Lemma broken2 : False.
+Proof. apply: admit. Qed.
 
 Lemma eq0 : 0 = 0.
 Proof. omega. Qed.
+

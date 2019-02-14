@@ -3,6 +3,11 @@
 - Critical: remove ?proof argument to vernac_interp [this would allow
   to hide a lot of internals of Lemmas]
 
+- Critical: admitted doesn't seem to drop the proof. That's very bad!
+
+  [the more I look to the implementation of admitted the more puzzled
+   I am]
+
 - Remove derive, API for multiple proof terms.
 
 - Improve typeclass hook onto pretyper
