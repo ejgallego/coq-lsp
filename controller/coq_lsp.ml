@@ -129,10 +129,20 @@ let kind_of_type _tm = 13
 
 let match_coq_def f { Coq_doc.ast = CAst.{ v ; _ } ; _ } =
   let open Vernacexpr in
-  match Vernacprop.under_control v with
-  | VernacStartTheoremProof (_, [(CAst.{loc = Some loc; v=id},_),_]) ->
-    Some (f loc id)
-  | _ -> None
+  let ndecls =
+    (* TODO: (co)fixpoint, instance, assumption *)
+    match Vernacprop.under_control v with
+    | VernacDefinition (_, (CAst.{ loc = Some loc; v=name },_), _) ->
+      Nameops.Name.fold_left (fun _ id -> [loc,id]) [] name
+    | VernacStartTheoremProof (_, ndecls) ->
+      let f_id = function
+        | ((CAst.{ loc = None; _ },_),_) -> None
+        | ((CAst.{ loc = Some loc; v },_),_) -> Some (loc, v)
+      in
+      CList.map_filter f_id ndecls
+    | _ -> []
+  in
+  CList.map (fun (loc,id) -> f loc id) ndecls
 (*
   | VernacLoad (_, _) -> (??)
   | VernacSyntaxExtension (_, _) -> (??)
@@ -144,7 +154,6 @@ let match_coq_def f { Coq_doc.ast = CAst.{ v ; _ } ; _ } =
   | VernacNotation (_, _, _) -> (??)
   | VernacNotationAddFormat (_, _, _) -> (??)
   | VernacDeclareCustomEntry _ -> (??)
-  | VernacDefinition (_, _, _) -> (??)
   | VernacEndProof _ -> (??)
   | VernacExactProof _ -> (??)
   | VernacAssumption (_, _, _) -> (??)
@@ -228,7 +237,7 @@ let match_coq_def f { Coq_doc.ast = CAst.{ v ; _ } ; _ } =
 
 let grab_definitions f nodes =
   List.fold_left
-    (fun acc s -> Option.cata (fun x -> x :: acc) acc (match_coq_def f s))
+    (fun acc s -> match_coq_def f s @ acc)
     [] nodes
 
 let do_symbols ofmt ~id params =
