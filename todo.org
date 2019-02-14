@@ -74,6 +74,10 @@
    - design of typed vernac interpretation?
    - remove ?proof argument to vernac_interp [this would allow
      to hide a lot of internals of Lemmas]?
+
+     [tree started by Emilio, needs some discussion on the semantics
+      of save_proof]
+
 ** Vincent
    - have a look to editors?
    - [after unlock] incremental checking / document model
