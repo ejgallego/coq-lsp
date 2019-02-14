@@ -28,8 +28,13 @@ Qed.
 
 Lemma admit (T : Type) : T. Admitted.
 
+(* Admitted leaks here XXX *)
+Definition hola := 3.
+
 Lemma broken1 : False.
 Proof. Qed.
+
+Definition adios := 3.
 
 Lemma broken2 : False.
 Proof. apply: admit. Qed.

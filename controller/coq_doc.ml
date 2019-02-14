@@ -105,6 +105,7 @@ let pr_goal (st : Vernacstate.t) : Pp.t option =
 (* Simple heuristic for Qed. *)
 let state_recovery_heuristic st CAst.{ v ; _} =
   match Vernacprop.under_control v with
+  (* Drop the top proof state if we reach a faulty Qed. *)
   | Vernacexpr.VernacEndProof _ ->
     Vernacstate.{ st with proof = Option.cata Lemmas.discard_current None st.proof }
   | _ -> st
