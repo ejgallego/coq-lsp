@@ -1,5 +1,12 @@
 * Coq / Platform
 
+- Critical: remove ?proof argument to vernac_interp [this would allow
+  to hide a lot of internals of Lemmas]
+
+- Remove derive, API for multiple proof terms.
+
+- Improve typeclass hook onto pretyper
+
 - in order to implement lazy proof checking properly we need to refine
   the type of vernac interp. We absolutely need 3 types or commands:
 
@@ -65,7 +72,8 @@
    - get rid of Derive
    - Shepherd vernac PR
    - design of typed vernac interpretation?
-
+   - remove ?proof argument to vernac_interp [this would allow
+     to hide a lot of internals of Lemmas]?
 ** Vincent
    - have a look to editors?
    - [after unlock] incremental checking / document model
