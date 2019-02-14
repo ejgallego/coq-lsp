@@ -44,6 +44,7 @@ let do_initialize ofmt ~id _params =
           "textDocumentSync", `Int 1
         ; "documentSymbolProvider", `Bool true
         ; "hoverProvider", `Bool true
+        ; "completionProvider", `Assoc []
         ; "codeActionProvider", `Bool false
         ]]) in
   LIO.send_json ofmt msg
@@ -126,11 +127,11 @@ let kind_of_type _tm = 13
     12                         (* Function *)
 *)
 
-let match_coq_def file { Coq_doc.ast = CAst.{ v ; _ } ; _ } =
+let match_coq_def f { Coq_doc.ast = CAst.{ v ; _ } ; _ } =
   let open Vernacexpr in
   match Vernacprop.under_control v with
   | VernacStartTheoremProof (_, [(CAst.{loc = Some loc; v=id},_),_]) ->
-    Some (mk_syminfo file (Names.Id.to_string id, "", 12, loc))
+    Some (f loc id)
   | _ -> None
 (*
   | VernacLoad (_, _) -> (??)
@@ -225,12 +226,15 @@ let match_coq_def file { Coq_doc.ast = CAst.{ v ; _ } ; _ } =
   | VernacExtend (_, _) -> (??))
 *)
 
+let grab_definitions f nodes =
+  List.fold_left
+    (fun acc s -> Option.cata (fun x -> x :: acc) acc (match_coq_def f s))
+    [] nodes
+
 let do_symbols ofmt ~id params =
   let file, _, (doc,_) = grab_doc params in
-  let slist = List.fold_left
-      (fun acc s -> Option.cata (fun x -> x :: acc) acc (match_coq_def file s))
-          [] doc.Coq_doc.nodes
-  in
+  let f loc id = mk_syminfo file (Names.Id.to_string id, "", 12, loc) in
+  let slist = grab_definitions f doc.Coq_doc.nodes in
   let msg = LSP.mk_reply ~id ~result:(`List slist) in
   LIO.send_json ofmt msg
 
@@ -280,6 +284,16 @@ let do_hover ofmt ~id params =
     let msg = LSP.mk_reply ~id ~result in
     LIO.send_json ofmt msg)
 
+let do_completion ofmt ~id params =
+  let uri, _line, _pos = get_docTextPosition params in
+  let doc, _ = Hashtbl.find completed_table uri in
+  let f _loc id = `Assoc [ "label", `String Names.Id.(to_string id) ] in
+  let clist = grab_definitions f doc.Coq_doc.nodes in
+  let result = `List clist in
+  let msg = LSP.mk_reply ~id ~result in
+  LIO.send_json ofmt msg
+  (* LIO.log_error "do_completion" (string_of_int line ^"-"^ string_of_int pos) *)
+
 (* XXX: We could split requests and notifications but with the OCaml
    theading model there is not a lot of difference yet; something to
    think for the future. *)
@@ -294,6 +308,9 @@ let dispatch_message ofmt dict =
     do_shutdown ofmt ~id
 
   (* Symbols in the document *)
+  | "textDocument/completion" ->
+    do_completion ofmt ~id params
+
   | "textDocument/documentSymbol" ->
     do_symbols ofmt ~id params
 
