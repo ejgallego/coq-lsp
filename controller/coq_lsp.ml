@@ -264,8 +264,9 @@ let in_range ?loc (line, pos) =
     let Loc.{line_nb=line1; line_nb_last=line2; bol_pos; bol_pos_last; bp; ep; _} = loc in
     let col1 = bp - bol_pos in
     let col2 = ep - bol_pos_last in
-    line1 - 1 <= line && line <= line2 -1 &&
-    col1 <= pos && pos <= col2
+    line1 - 1 < line && line < line2 -1 ||
+    (line1 - 1 = line && col1 <= pos) ||
+    (line2 - 1 = line && pos <= col2)
 
 let get_goals ~doc ~line ~pos =
   let node =
