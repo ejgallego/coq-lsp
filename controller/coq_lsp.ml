@@ -33,8 +33,8 @@ let option_default x d = match x with | None -> d | Some x -> x
 let oint_field  name dict = option_cata U.to_int List.(assoc_opt name dict) 0
 let odict_field name dict = option_default U.(to_option to_assoc (option_default List.(assoc_opt name dict) `Null)) []
 
-module LIO = Lsp_io
-module LSP = Lsp_base
+module LIO = Lsp.Io
+module LSP = Lsp.Base
 
 (* Request Handling: The client expects a reply *)
 let do_initialize ofmt ~id _params =
@@ -109,7 +109,7 @@ let mk_syminfo file (name, _path, kind, pos) : J.t =
     "kind", `Int kind;            (* function *)
     "location", `Assoc [
                     "uri", `String file
-                  ; "range", LSP.mk_range pos
+                  ; "range", LSP.mk_range Lsp_util.(to_range pos)
                   ]
   ]
 

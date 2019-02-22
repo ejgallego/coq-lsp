@@ -58,21 +58,28 @@ let json_of_thm thm =
 *)
 
 (* XXX: ejgallego , does Coq also start lines at 0? *)
-let mk_range (p : Loc.t) : J.t =
-  let Loc.{line_nb=line1; line_nb_last=line2; bol_pos; bol_pos_last; bp; ep; _} = p in
-  let col1 = bp - bol_pos in
-  let col2 = ep - bol_pos_last in
-  `Assoc ["start", `Assoc ["line", `Int (line1 - 1); "character", `Int col1];
-          "end",   `Assoc ["line", `Int (line2 - 1); "character", `Int col2]]
+type point =
+  { line : int
+  ; character: int
+  }
+
+type range =
+  { start: point
+  ; _end : point
+  }
+
+let mk_range { start ; _end } : J.t =
+  `Assoc ["start", `Assoc ["line", `Int start.line ; "character", `Int start.character];
+          "end",   `Assoc ["line", `Int _end.line  ; "character", `Int _end.character]]
 
 (* let mk_diagnostic ((p : Pos.pos), (lvl : int), (msg : string), (thm : Proofs.theorem option)) : J.json = *)
-let mk_diagnostic ((p : Loc.t), (lvl : int), (msg : Pp.t), (_thm : unit option)) : J.t =
+let mk_diagnostic ((r : range), (lvl : int), (msg : string), (_thm : unit option)) : J.t =
   (* let goal = json_of_thm thm in *)
-  let range = mk_range p in
+  let range = mk_range r in
   `Assoc ((* mk_extra ["goal_info", goal] @ *)
           ["range", range;
            "severity", `Int lvl;
-           "message",  `String Pp.(string_of_ppcmds msg);
+           "message",  `String msg;
           ])
 
 let mk_diagnostics ~uri ~version ld : J.t =

@@ -16,7 +16,8 @@
 (* Status: Experimental                                                 *)
 (************************************************************************)
 
-module LSP = Lsp_base
+open Lsp_util
+module LSP = Lsp.Base
 
 type ast = Vernacexpr.vernac_control CAst.t
 
@@ -119,7 +120,7 @@ type process_action =
 let process_and_parse doc =
   let doc_handle = Pcoq.Parsable.make Stream.(of_string doc.contents) in
   let rec stm doc st diags =
-    Lsp_io.log_error "coq" "parsing sentence";
+    Lsp.Io.log_error "coq" "parsing sentence";
     (* Parsing *)
     let action, diags =
       match parse_stm ~st doc_handle with
@@ -128,7 +129,7 @@ let process_and_parse doc =
       | Ok (Some ast) ->
         Process ast, diags
       | Error(loc, msg) ->
-        let diags = (loc, 1, msg, None) :: diags in
+        let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
         discard_to_dot doc_handle;
         Skip, diags
     in
@@ -144,14 +145,14 @@ let process_and_parse doc =
       match interp_command ~st ast with
       | Ok st ->
         (* let ok_diag = node.pos, 4, "OK", !Proofs.theorem in *)
-        let ok_diag = ast.CAst.loc, 4, Pp.(str "OK"), None in
+        let ok_diag = to_orange ast.CAst.loc, 4, "OK", None in
         let diags = ok_diag :: diags in
         let node = { ast; exec = true; goal = pr_goal st } in
         let doc = { doc with nodes = node :: doc.nodes } in
         stm doc st diags
       | Error (loc, msg) ->
         let loc = Option.append loc ast.CAst.loc in
-        let diags = (loc, 1, msg, None) :: diags in
+        let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
         let node = { ast; exec = false; goal = pr_goal st } in
         let doc = { doc with nodes = node :: doc.nodes } in
         let st = state_recovery_heuristic st ast in
