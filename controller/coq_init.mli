@@ -9,36 +9,28 @@
 (************************************************************************)
 
 (************************************************************************)
-(* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Coq Language Server Protocol / SerAPI                                *)
+(* Copyright 2016-2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+ *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
-(* Status: Experimental                                                 *)
-(************************************************************************)
 
-type ast = Vernacexpr.vernac_control CAst.t
+(**************************************************************************)
+(* Low-level, internal Coq initialization                                 *)
+(**************************************************************************)
 
-type node =
-  { ast  : ast
-  ; exec : bool
-  ; goal : Pp.t option
+type coq_opts =
+  { fb_handler : Feedback.feedback -> unit
+  (** callback to handle async feedback *)
+  ; ml_load : (string -> unit) option
+  (** callback to load cma/cmo files *)
+  ; debug : bool
+  (** Enable Coq Debug mode *)
   }
 
-type t =
-  { uri : string
-  ; version: int
-  ; contents : string
-  ; root : Vernacstate.t
-  ; nodes : node list
-  }
-
-val create
-  :  state:(Vernacstate.t * Mltop.coq_path list)
-  -> uri:string
-  -> version:int
-  -> contents:string
-  -> t
-
-val check
-  :  doc:t
-  -> t * Vernacstate.t * Yojson.Basic.t
+val coq_init : coq_opts -> Vernacstate.t
+val doc_init
+  :  root_state:Vernacstate.t
+  -> load_path:Mltop.coq_path list
+  -> libname:Names.DirPath.t
+  -> require_libs:(string * string option * bool option) list
+  -> Vernacstate.t

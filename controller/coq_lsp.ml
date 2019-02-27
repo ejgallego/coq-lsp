@@ -68,13 +68,13 @@ let do_change ofmt ~doc change =
   let doc = { doc with contents = string_field "text" change; } in
   do_check_text ofmt ~doc
 
-let do_open ofmt params =
+let do_open ofmt ~state params =
   let document = dict_field "textDocument" params in
   let uri, version, contents =
     string_field "uri" document,
     int_field "version" document,
     string_field "text" document in
-  let doc = Coq_doc.create ~uri ~contents ~version in
+  let doc = Coq_doc.create ~state ~uri ~contents ~version in
   begin match Hashtbl.find_opt doc_table uri with
     | None -> ()
     | Some _ -> LIO.log_error "do_open" ("file " ^ uri ^ " not properly closed by client")
@@ -108,9 +108,9 @@ let mk_syminfo file (name, _path, kind, pos) : J.t =
     "name", `String name;
     "kind", `Int kind;            (* function *)
     "location", `Assoc [
-                    "uri", `String file
-                  ; "range", LSP.mk_range Lsp_util.(to_range pos)
-                  ]
+      "uri", `String file
+    ; "range", LSP.mk_range Lsp_util.(to_range pos)
+    ]
   ]
 
 let kind_of_type _tm = 13
@@ -307,7 +307,7 @@ let do_completion ofmt ~id params =
 (* XXX: We could split requests and notifications but with the OCaml
    theading model there is not a lot of difference yet; something to
    think for the future. *)
-let dispatch_message ofmt dict =
+let dispatch_message ofmt ~state dict =
   let id     = oint_field "id" dict in
   let params = odict_field "params" dict in
   match string_field "method" dict with
@@ -329,7 +329,7 @@ let dispatch_message ofmt dict =
 
   (* Notifications *)
   | "textDocument/didOpen" ->
-    do_open ofmt params
+    do_open ofmt ~state params
   | "textDocument/didChange" ->
     do_change ofmt params
   | "textDocument/didClose" ->
@@ -344,17 +344,18 @@ let dispatch_message ofmt dict =
   | msg ->
     LIO.log_error "no_handler" msg
 
-let process_input ofmt (com : J.t) =
-  try dispatch_message ofmt (U.to_assoc com)
+let process_input ofmt ~state (com : J.t) =
+  try dispatch_message ofmt ~state (U.to_assoc com)
   with
   | U.Type_error (msg, obj) ->
     LIO.log_object msg obj
   | exn ->
     let bt = Printexc.get_backtrace () in
-    LIO.log_error "[BT]" bt;
-    LIO.log_error "process_input" (Printexc.to_string exn)
+    LIO.log_error "process_input" (Printexc.to_string exn);
+    LIO.log_error "process_input" Pp.(string_of_ppcmds CErrors.(iprint (push exn)));
+    LIO.log_error "BT" bt
 
-let lsp_main log_file std =
+let lsp_main log_file std load_path =
 
   Printexc.record_backtrace true;
   LSP.std_protocol := std;
@@ -373,29 +374,33 @@ let lsp_main log_file std =
    * Console.err_fmt := lp_fmt; *)
   (* Console.verbose := 4; *)
 
-  Coq_init.coq_init
-    Coq_init.{ fb_handler = (fun _ -> Format.fprintf lp_fmt "%s@\n%!" "fb received")
-             ; ml_load = None
-             ; debug = false
-             };
+  let state =
+    Coq_init.coq_init
+      Coq_init.{ fb_handler = (fun _ -> Format.fprintf lp_fmt "%s@\n%!" "fb received")
+               ; ml_load = None
+               ; debug = false
+               },
+    load_path in
 
-  let rec loop () =
+  let rec loop state =
     let com = LIO.read_request stdin in
     LIO.log_object "read" com;
-    process_input oc com;
+    process_input oc ~state com;
     F.pp_print_flush lp_fmt (); flush lp_oc;
-    loop ()
+    loop state
   in
-  try loop ()
+  try loop state
   with exn ->
     let bt = Printexc.get_backtrace () in
-    LIO.log_error "[fatal error]" Printexc.(to_string exn);
-    LIO.log_error "[BT]" bt;
+    LIO.log_error "fatal error" Printexc.(to_string exn);
+    LIO.log_error "fatal_error" Pp.(string_of_ppcmds CErrors.(iprint (push exn)));
+    LIO.log_error "BT" bt;
     F.pp_print_flush !LIO.debug_fmt ();
     flush_all ();
     close_out debug_oc;
     close_out lp_oc
 
+(* Arguments handling *)
 open Cmdliner
 
 (* let bt =
@@ -410,6 +415,60 @@ let std =
   let doc = "Restrict to standard LSP protocol" in
   Arg.(value & flag & info ["std"] ~doc)
 
+let coq_lp_conv ~implicit (unix_path,lp) = Mltop.{
+    path_spec = VoPath {
+        coq_path  = Libnames.dirpath_of_string lp;
+        unix_path;
+        has_ml    = AddRecML;
+        implicit;
+      };
+    recursive = true;
+  }
+
+let coqlib =
+  let doc = "Load Coq.Init.Prelude from $(docv); plugins/ and theories/ should live there." in
+  Arg.(value & opt string Coq_config.coqlib & info ["coqlib"] ~docv:"COQPATH" ~doc)
+
+let rload_path : Mltop.coq_path list Term.t =
+  let doc = "Bind a logical loadpath LP to a directory DIR and implicitly open its namespace." in
+  Term.(const List.(map (coq_lp_conv ~implicit:true)) $
+        Arg.(value & opt_all (pair dir string) [] & info ["R"; "rec-load-path"] ~docv:"DIR,LP"~doc))
+
+let load_path : Mltop.coq_path list Term.t =
+  let doc = "Bind a logical loadpath LP to a directory DIR" in
+  Term.(const List.(map (coq_lp_conv ~implicit:false)) $
+        Arg.(value & opt_all (pair dir string) [] & info ["Q"; "load-path"] ~docv:"DIR,LP" ~doc))
+
+let coq_include_conv unix_path = Mltop.{
+    path_spec = MlPath unix_path;
+    recursive = false;
+  }
+
+let ml_include_path : Mltop.coq_path list Term.t =
+  let doc = "Include DIR in default loadpath, for locating ML files" in
+  Term.(const List.(map coq_include_conv) $
+        Arg.(value & opt_all dir [] & info ["I"; "ml-include-path"] ~docv:"DIR" ~doc))
+
+let coq_loadpath_default ~implicit coq_path =
+  let open Mltop in
+  let mk_path prefix = coq_path ^ "/" ^ prefix in
+  let mk_lp ~ml ~root ~dir ~implicit =
+    { recursive = true;
+      path_spec = VoPath {
+          unix_path = mk_path dir;
+          coq_path  = root;
+          has_ml    = ml;
+          implicit;
+        };
+    } in
+  (* in 8.8 we can use Libnames.default_* *)
+  let coq_root     = Names.DirPath.make [Libnames.coq_root] in
+  let default_root = Libnames.default_root_prefix in
+  [mk_lp ~ml:AddRecML ~root:coq_root     ~implicit       ~dir:"plugins";
+   mk_lp ~ml:AddNoML  ~root:coq_root     ~implicit       ~dir:"theories";
+   mk_lp ~ml:AddRecML ~root:default_root ~implicit:false ~dir:"user-contrib";
+  ]
+
 let lsp_cmd =
   let doc = "LP LSP Toplevel" in
   let man = [
@@ -419,7 +478,12 @@ let lsp_cmd =
     `P "See the documentation on the project's webpage for more information"
   ]
   in
-  Term.(const lsp_main $ log_file $ std),
+  let coq_loadpath = Term.(pure (coq_loadpath_default ~implicit:true) $ coqlib) in
+  let load_path = Term.(List.(
+      pure append $ rload_path $
+      (pure append $ load_path $
+       (pure append $ ml_include_path $ coq_loadpath)))) in
+  Term.(const lsp_main $ log_file $ std $ load_path),
   Term.info "lp-lsp" ~version:"0.0" ~doc ~man
 
 let main () =

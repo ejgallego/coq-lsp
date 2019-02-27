@@ -1,9 +1,5 @@
 (* This example showcases some features of the early server *)
-Add Rec ML Path "../_build/install/default/lib/coq/plugins/".
-Add Rec LoadPath "../_build/install/default/lib/coq/theories/" as Coq.
-Add Rec LoadPath "../_build/install/default/lib/coq/plugins/" as Coq.
 
-From Coq Require Import Prelude.
 From Coq Require Import ssreflect ssrbool.
 From Coq Require Import Omega.
 
@@ -31,6 +27,44 @@ Lemma admit (T : Type) : T. Admitted.
 (* Admitted leaks here XXX *)
 Definition hola := 3.
 
+Inductive event : Type :=
+  | R of nat
+  | S of nat. 
+
+Record pair := {
+  fst : nat;
+  snd : nat;
+}.
+
+Inductive pair' := Pair of nat & nat.
+
+Definition fst' (x : pair') := match x with
+ | Pair x _ => x
+end.
+
+Definition snd' (x : pair') := match x with
+ | Pair _ y => y
+end.
+
+(* Church enconding *)
+
+Definition pair'' (A B : Type) :=
+ forall C, A -> B -> (A -> B -> C).
+
+Variables (x y : Type).
+
+Lemma foo : x = x.
+Proof. by []. Qed.
+
+
+Record network := {
+  time : Type;
+  address : Type;
+  payload : Type;
+  send : time -> address -> time -> bool;
+
+}.
+
 Lemma broken1 : False.
 Proof. Qed.
 
@@ -41,4 +75,3 @@ Proof. apply: admit. Qed.
 
 Lemma eq0 : 0 = 0.
 Proof. omega. Qed.
-

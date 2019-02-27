@@ -44,17 +44,16 @@ type t =
 
 type 'a result = Ok of 'a | Error of Loc.t option * Pp.t
 
-let create ~uri ~version ~contents =
+let mk_doc root_state load_path =
+  let libname = Names.(DirPath.make [Id.of_string "foo"]) in
+  let require_libs = ["Coq.Init.Prelude", None, Some false] in
+  Coq_init.doc_init ~root_state ~load_path ~libname ~require_libs
+
+let create ~state ~uri ~version ~contents =
   { uri
   ; contents
   ; version
-  ; root = begin
-      let root_state = Option.(get !Coq_init.root_state) in
-      Vernacstate.unfreeze_interp_state root_state;
-      let dp = Names.(DirPath.make [Id.of_string "foo"]) in
-      Declaremods.start_library dp;
-      Vernacstate.freeze_interp_state ~marshallable:false
-    end
+  ; root = mk_doc (fst state) (snd state)
   ; nodes = []
   }
 
