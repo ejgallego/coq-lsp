@@ -44,7 +44,8 @@ type t =
 
 type 'a result = Ok of 'a | Error of Loc.t option * Pp.t
 
-let mk_doc root_state load_path =
+let mk_doc state =
+  let root_state, load_path, _ = state in
   let libname = Names.(DirPath.make [Id.of_string "foo"]) in
   let require_libs = ["Coq.Init.Prelude", None, Some false] in
   Coq_init.doc_init ~root_state ~load_path ~libname ~require_libs
@@ -53,7 +54,7 @@ let create ~state ~uri ~version ~contents =
   { uri
   ; contents
   ; version
-  ; root = mk_doc (fst state) (snd state)
+  ; root = mk_doc state
   ; nodes = []
   }
 
@@ -116,7 +117,7 @@ type process_action =
  | Process of Vernacexpr.vernac_control CAst.t
 
 (* XXX: Imperative problem *)
-let process_and_parse doc =
+let process_and_parse ~coq_queue doc =
   let doc_handle = Pcoq.Parsable.make Stream.(of_string doc.contents) in
   let rec stm doc st diags =
     Lsp.Io.log_error "coq" "parsing sentence";
@@ -144,8 +145,19 @@ let process_and_parse doc =
       match interp_command ~st ast with
       | Ok st ->
         (* let ok_diag = node.pos, 4, "OK", !Proofs.theorem in *)
-        let ok_diag = to_orange ast.CAst.loc, 4, "OK", None in
+        let ok_diag = to_orange ast.CAst.loc, 3, "OK", None in
         let diags = ok_diag :: diags in
+
+        (* this handling of the queue is wrong XXX *)
+        let qlength = Queue.length coq_queue in
+        let diags = if qlength > 0 then
+            let fb_msg = Format.asprintf "feedbacks: %d" Queue.(length coq_queue) in
+            Queue.clear coq_queue;
+            let queue_diag = to_orange ast.CAst.loc, 4, fb_msg, None in
+            queue_diag :: diags
+          else
+            diags
+        in
         let node = { ast; exec = true; goal = pr_goal st } in
         let doc = { doc with nodes = node :: doc.nodes } in
         stm doc st diags
@@ -159,11 +171,11 @@ let process_and_parse doc =
   in
   stm doc doc.root []
 
-let check ~doc =
+let check ~doc ~coq_queue =
   let uri, version = doc.uri, doc.version in
 
   (* Start library *)
-  let doc, st, diags = process_and_parse doc in
+  let doc, st, diags = (process_and_parse ~coq_queue) doc in
   doc, st, LSP.mk_diagnostics ~uri ~version @@ List.fold_left (fun acc (pos,lvl,msg,goal) ->
       match pos with
       | None     -> acc

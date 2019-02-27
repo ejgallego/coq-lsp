@@ -33,7 +33,7 @@ type t =
   }
 
 val create
-  :  state:(Vernacstate.t * Mltop.coq_path list)
+  :  state:(Vernacstate.t * Mltop.coq_path list * _)
   -> uri:string
   -> version:int
   -> contents:string
@@ -41,4 +41,5 @@ val create
 
 val check
   :  doc:t
+  -> coq_queue:string Queue.t
   -> t * Vernacstate.t * Yojson.Basic.t

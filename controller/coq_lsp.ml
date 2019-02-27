@@ -57,8 +57,9 @@ let doc_table : (string, _) Hashtbl.t = Hashtbl.create 39
 let completed_table : (string, Coq_doc.t * Vernacstate.t) Hashtbl.t = Hashtbl.create 39
 
 (* Notification handling; reply is optional / asynchronous *)
-let do_check_text ofmt ~doc =
-  let doc, final_st, diags = Coq_doc.check ~doc in
+let do_check_text ofmt ~state ~doc =
+  let _, _, coq_queue = state in
+  let doc, final_st, diags = Coq_doc.check ~doc ~coq_queue in
   Hashtbl.replace completed_table doc.uri (doc,final_st);
   LIO.send_json ofmt @@ diags
 
@@ -80,9 +81,9 @@ let do_open ofmt ~state params =
     | Some _ -> LIO.log_error "do_open" ("file " ^ uri ^ " not properly closed by client")
   end;
   Hashtbl.add doc_table uri doc;
-  do_check_text ofmt ~doc
+  do_check_text ofmt ~state ~doc
 
-let do_change ofmt params =
+let do_change ofmt ~state params =
   let document = dict_field "textDocument" params in
   let uri, version  =
     string_field "uri" document,
@@ -90,7 +91,7 @@ let do_change ofmt params =
   let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
   let doc = Hashtbl.find doc_table uri in
   let doc = { doc with Coq_doc.version; } in
-  List.iter (do_change ofmt ~doc) changes
+  List.iter (do_change ofmt ~state ~doc) changes
 
 let do_close _ofmt params =
   let document = dict_field "textDocument" params in
@@ -331,7 +332,7 @@ let dispatch_message ofmt ~state dict =
   | "textDocument/didOpen" ->
     do_open ofmt ~state params
   | "textDocument/didChange" ->
-    do_change ofmt params
+    do_change ofmt ~state params
   | "textDocument/didClose" ->
     do_close ofmt params
   | "exit" ->
@@ -374,13 +375,24 @@ let lsp_main log_file std load_path =
    * Console.err_fmt := lp_fmt; *)
   (* Console.verbose := 4; *)
 
+  let fb_handler, fb_queue =
+    let q = Queue.create () in
+    (fun Feedback.{ contents; _ } ->
+       Format.fprintf lp_fmt "%s@\n%!" "fb received";
+       match contents with
+       | Message(_lvl,_loc,msg)-> Queue.push Pp.(string_of_ppcmds msg) q
+       | _ -> ()
+    ), q
+  in
   let state =
     Coq_init.coq_init
-      Coq_init.{ fb_handler = (fun _ -> Format.fprintf lp_fmt "%s@\n%!" "fb received")
+      Coq_init.{ fb_handler
                ; ml_load = None
                ; debug = false
                },
-    load_path in
+    load_path,
+    fb_queue
+  in
 
   let rec loop state =
     let com = LIO.read_request stdin in
