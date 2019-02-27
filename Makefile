@@ -8,8 +8,10 @@ build: coq_boot
 build-all: coq_boot
 	dune build @all
 
-coq_boot:
+coq/config/coq_config.ml:
 	cd coq && ocaml ./configure.ml -no-ask -prefix $(shell pwd)/_build/install/default/ -native-compiler no
+
+coq_boot: coq/config/coq_config.ml
 	dune build $(DUNEOPT) @vodeps
 	cd coq && dune exec tools/coq_dune.exe $(COQ_BUILD_CONTEXT)/.vfiles.d
 
