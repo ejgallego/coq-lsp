@@ -4,4 +4,3 @@ Proof. now induction n. Qed.
 
 Lemma muln0 n : n * 0 = 0.
 Proof. now induction n. Qed.
-

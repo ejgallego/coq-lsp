@@ -11,10 +11,10 @@ Lemma addn0 n : n + O = n.
 Proof. by elim: n. Qed.
 
 Lemma addnC n m : n + m = m + n.
-Proof. by elim n => //= ? ->. Qed.
+Proof. by elim: n => //= ? ->. Qed.
 
 Lemma addnA n m l : n + m + l = m + (n + l).
-Proof. by elim n => //= ? ->. Qed.
+Proof. by elim: n => //= ? ->. Qed.
 
 Lemma level1 : True.
   Lemma level2 : True.
@@ -56,13 +56,11 @@ Variables (x y : Type).
 Lemma foo : x = x.
 Proof. by []. Qed.
 
-
 Record network := {
   time : Type;
   address : Type;
   payload : Type;
   send : time -> address -> time -> bool;
-
 }.
 
 Lemma broken1 : False.
