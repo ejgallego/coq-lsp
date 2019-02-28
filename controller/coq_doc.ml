@@ -153,7 +153,7 @@ let process_and_parse ~coq_queue doc =
         let diags = if qlength > 0 then
             let fb_msg = Format.asprintf "feedbacks: %d" Queue.(length coq_queue) in
             Queue.clear coq_queue;
-            let queue_diag = to_orange ast.CAst.loc, 4, fb_msg, None in
+            let queue_diag = to_orange ast.CAst.loc, 3, fb_msg, None in
             queue_diag :: diags
           else
             diags
