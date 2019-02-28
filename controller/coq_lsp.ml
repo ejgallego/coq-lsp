@@ -248,17 +248,6 @@ let do_symbols ofmt ~id params =
   let msg = LSP.mk_reply ~id ~result:(`List slist) in
   LIO.send_json ofmt msg
 
-(*
-  let sym = Pure.get_symbols final_st in
-  let sym = Extra.StrMap.fold (fun _ (s,p) l ->
-      let open Terms in
-      (* LIO.log_error "sym" (s.sym_name ^ " | " ^ Format.asprintf "%a" pp_term !(s.sym_type)); *)
-      option_cata (fun p -> mk_syminfo file
-                      (s.sym_name, s.sym_path, kind_of_type s, p) :: l) p l) sym [] in
-  let msg = LSP.mk_reply ~id ~result:(`List sym) in
-  LIO.send_json ofmt msg
-*)
-
 let get_docTextPosition params =
   let document = dict_field "textDocument" params in
   let file = string_field "uri" document in
@@ -481,22 +470,21 @@ let coq_loadpath_default ~implicit coq_path =
    mk_lp ~ml:AddRecML ~root:default_root ~implicit:false ~dir:"user-contrib";
   ]
 
+let term_append l = Term.(List.(fold_right (fun t l -> pure append $ t $ l) l (pure [])))
+
 let lsp_cmd =
-  let doc = "LP LSP Toplevel" in
+  let doc = "Coq LSP Server" in
   let man = [
     `S "DESCRIPTION";
-    `P "Experimental LP Toplevel with LSP support";
+    `P "Experimental Coq LSP server";
     `S "USAGE";
     `P "See the documentation on the project's webpage for more information"
   ]
   in
   let coq_loadpath = Term.(pure (coq_loadpath_default ~implicit:true) $ coqlib) in
-  let load_path = Term.(List.(
-      pure append $ rload_path $
-      (pure append $ load_path $
-       (pure append $ ml_include_path $ coq_loadpath)))) in
+  let load_path = term_append [coq_loadpath; rload_path; load_path; ml_include_path] in
   Term.(const lsp_main $ log_file $ std $ load_path),
-  Term.info "lp-lsp" ~version:"0.0" ~doc ~man
+  Term.info "coq-lsp" ~version:"0.01" ~doc ~man
 
 let main () =
   match Term.eval lsp_cmd with
