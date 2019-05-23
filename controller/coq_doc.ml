@@ -19,7 +19,7 @@
 open Lsp_util
 module LSP = Lsp.Base
 
-type ast = Vernacexpr.vernac_control CAst.t
+type ast = Vernacexpr.vernac_control
 
 type node =
   { ast  : ast
@@ -72,7 +72,7 @@ let coq_protect f x =
   Error (loc, msg)
 
 let parse_stm ~st ps =
-  let mode = Option.map Vernacentries.(fun _ -> get_default_proof_mode ()) st.Vernacstate.proof in
+  let mode = Option.map Vernacentries.(fun _ -> get_default_proof_mode ()) st.Vernacstate.lemmas in
   coq_protect Vernacstate.(Parser.parse st.parsing Pvernac.(main_entry mode)) ps
 
 let interp_command ~st stm =
@@ -99,22 +99,22 @@ let rec discard_to_dot ps =
     | e when CErrors.noncritical e -> ()
 
 let pr_goal (st : Vernacstate.t) : Pp.t option =
-  Option.map (fun pstate ->
-      let proof = Lemmas.(pf_fold Proof_global.give_me_the_proof) pstate in
-      Printer.pr_open_subgoals ~proof) st.Vernacstate.proof
+  Option.map (Lemmas.Stack.with_top_pstate ~f:(fun pstate ->
+      let proof = Proof_global.get_proof pstate in
+      Printer.pr_open_subgoals ~proof)) st.Vernacstate.lemmas
 
 (* Simple heuristic for Qed. *)
-let state_recovery_heuristic st CAst.{ v ; _} =
+let state_recovery_heuristic st v =
   match Vernacprop.under_control v with
   (* Drop the top proof state if we reach a faulty Qed. *)
   | Vernacexpr.VernacEndProof _ ->
-    Vernacstate.{ st with proof = Option.cata Lemmas.discard_current None st.proof }
+    Vernacstate.{ st with lemmas = Option.cata (fun s -> snd @@ Lemmas.Stack.pop s) None st.lemmas }
   | _ -> st
 
 type process_action =
  | EOF
  | Skip
- | Process of Vernacexpr.vernac_control CAst.t
+ | Process of Vernacexpr.vernac_control
 
 (* XXX: Imperative problem *)
 let process_and_parse ~coq_queue doc =

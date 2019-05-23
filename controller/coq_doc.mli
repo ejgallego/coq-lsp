@@ -16,7 +16,7 @@
 (* Status: Experimental                                                 *)
 (************************************************************************)
 
-type ast = Vernacexpr.vernac_control CAst.t
+type ast = Vernacexpr.vernac_control
 
 type node =
   { ast  : ast

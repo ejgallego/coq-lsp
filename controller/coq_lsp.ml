@@ -128,7 +128,7 @@ let kind_of_type _tm = 13
     12                         (* Function *)
 *)
 
-let match_coq_def f { Coq_doc.ast = CAst.{ v ; _ } ; _ } =
+let match_coq_def f { Coq_doc.ast = v ; _ } =
   let open Vernacexpr in
   let ndecls =
     (* TODO: (co)fixpoint, instance, assumption *)
