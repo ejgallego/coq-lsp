@@ -30,7 +30,8 @@ type coq_opts =
 val coq_init : coq_opts -> Vernacstate.t
 val doc_init
   :  root_state:Vernacstate.t
-  -> load_path:Mltop.coq_path list
+  -> vo_load_path:Loadpath.vo_path list
+  -> ml_include_path:string list
   -> libname:Names.DirPath.t
   -> require_libs:(string * string option * bool option) list
   -> Vernacstate.t

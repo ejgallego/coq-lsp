@@ -33,7 +33,7 @@ type t =
   }
 
 val create
-  :  state:(Vernacstate.t * Mltop.coq_path list * _)
+  :  state:(Vernacstate.t * Loadpath.vo_path list * string list * _)
   -> uri:string
   -> version:int
   -> contents:string

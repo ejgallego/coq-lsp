@@ -35,6 +35,8 @@ let coq_init opts =
   (* Core Coq initialization *)
   Lib.init ();
   Global.set_engagement Declarations.PredicativeSet;
+  Flags.set_native_compiler false;
+  Global.set_native_compiler false;
 
   (**************************************************************************)
   (* Feedback setup                                                         *)
@@ -51,7 +53,7 @@ let coq_init opts =
 
 
 (* Inits the context for a document *)
-let doc_init ~root_state ~load_path ~libname ~require_libs =
+let doc_init ~root_state ~vo_load_path ~ml_include_path ~libname ~require_libs =
 
   Vernacstate.unfreeze_interp_state root_state;
 
@@ -69,7 +71,8 @@ let doc_init ~root_state ~load_path ~libname ~require_libs =
   (* Set load path; important, this has to happen before we declare
      the library below as [Declaremods/Library] will infer the module
      name by looking at the load path! *)
-  List.iter Mltop.add_coq_path load_path;
+  List.iter Mltop.add_ml_dir ml_include_path;
+  List.iter Loadpath.add_vo_path vo_load_path;
   Declaremods.start_library libname;
 
   (* Import initial libraries. *)

@@ -1,3 +1,3 @@
-(lang dune 1.6)
+(lang dune 2.5)
 (name coq-lsp)
 

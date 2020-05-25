@@ -45,10 +45,10 @@ type t =
 type 'a result = Ok of 'a | Error of Loc.t option * Pp.t
 
 let mk_doc state =
-  let root_state, load_path, _ = state in
+  let root_state, vo_load_path, ml_include_path, _ = state in
   let libname = Names.(DirPath.make [Id.of_string "foo"]) in
   let require_libs = ["Coq.Init.Prelude", None, Some false] in
-  Coq_init.doc_init ~root_state ~load_path ~libname ~require_libs
+  Coq_init.doc_init ~root_state ~vo_load_path ~ml_include_path ~libname ~require_libs
 
 let create ~state ~uri ~version ~contents =
   { uri
@@ -64,26 +64,24 @@ let create ~state ~uri ~version ~contents =
 let coq_protect f x =
   try let res = f x in Ok res
   with exn ->
-  let (e, info) = CErrors.push exn in
-  (* XXX: This is madness in Coq upstream, we should fix it *)
-  let (e, info) = ExplainErr.process_vernac_interp_error (e, info) in
+  let (e, info) = Exninfo.capture exn in
   let loc = Loc.(get_loc info) in
   let msg = CErrors.iprint (e, info) in
   Error (loc, msg)
 
 let parse_stm ~st ps =
-  let mode = Option.map Vernacentries.(fun _ -> get_default_proof_mode ()) st.Vernacstate.lemmas in
+  let mode = Option.map (fun _ -> Vernacinterp.get_default_proof_mode ()) st.Vernacstate.lemmas in
   coq_protect Vernacstate.(Parser.parse st.parsing Pvernac.(main_entry mode)) ps
 
 let interp_command ~st stm =
-  coq_protect (Vernacentries.interp ~st) stm
+  coq_protect (Vernacinterp.interp ~st) stm
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =
-  let rec dot st = match Stream.next st with
+  let rec dot f st = match Stream.next st with
     | Tok.KEYWORD ("."|"...") -> ()
     | Tok.EOI -> ()
-    | _ -> dot st
+    | _ -> dot f st
   in
   Pcoq.Entry.of_parser "Coqtoplevel.dot" dot
 
@@ -99,16 +97,16 @@ let rec discard_to_dot ps =
     | e when CErrors.noncritical e -> ()
 
 let pr_goal (st : Vernacstate.t) : Pp.t option =
-  Option.map (Lemmas.Stack.with_top_pstate ~f:(fun pstate ->
+  Option.map (Vernacstate.LemmaStack.with_top_pstate ~f:(fun pstate ->
       let proof = Proof_global.get_proof pstate in
       Printer.pr_open_subgoals ~proof)) st.Vernacstate.lemmas
 
 (* Simple heuristic for Qed. *)
 let state_recovery_heuristic st v =
-  match Vernacprop.under_control v with
+  match v.CAst.v.Vernacexpr.expr with
   (* Drop the top proof state if we reach a faulty Qed. *)
   | Vernacexpr.VernacEndProof _ ->
-    Vernacstate.{ st with lemmas = Option.cata (fun s -> snd @@ Lemmas.Stack.pop s) None st.lemmas }
+    Vernacstate.{ st with lemmas = Option.cata (fun s -> snd @@ Vernacstate.LemmaStack.pop s) None st.lemmas }
   | _ -> st
 
 type process_action =

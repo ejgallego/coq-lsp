@@ -58,7 +58,7 @@ let completed_table : (string, Coq_doc.t * Vernacstate.t) Hashtbl.t = Hashtbl.cr
 
 (* Notification handling; reply is optional / asynchronous *)
 let do_check_text ofmt ~state ~doc =
-  let _, _, coq_queue = state in
+  let _, _, _, coq_queue = state in
   let doc, final_st, diags = Coq_doc.check ~doc ~coq_queue in
   Hashtbl.replace completed_table doc.uri (doc,final_st);
   LIO.send_json ofmt @@ diags
@@ -132,7 +132,7 @@ let match_coq_def f { Coq_doc.ast = v ; _ } =
   let open Vernacexpr in
   let ndecls =
     (* TODO: (co)fixpoint, instance, assumption *)
-    match Vernacprop.under_control v with
+    match v.v.expr with
     | VernacDefinition (_, (CAst.{ loc = Some loc; v=name },_), _) ->
       Nameops.Name.fold_left (fun _ id -> [loc,id]) [] name
     | VernacStartTheoremProof (_, ndecls) ->
@@ -320,10 +320,13 @@ let dispatch_message ofmt ~state dict =
   (* Notifications *)
   | "textDocument/didOpen" ->
     do_open ofmt ~state params
+
   | "textDocument/didChange" ->
     do_change ofmt ~state params
+
   | "textDocument/didClose" ->
     do_close ofmt params
+
   | "exit" ->
     exit 0
 
@@ -342,10 +345,10 @@ let process_input ofmt ~state (com : J.t) =
   | exn ->
     let bt = Printexc.get_backtrace () in
     LIO.log_error "process_input" (Printexc.to_string exn);
-    LIO.log_error "process_input" Pp.(string_of_ppcmds CErrors.(iprint (push exn)));
+    LIO.log_error "process_input" Pp.(string_of_ppcmds CErrors.(iprint (Exninfo.capture exn)));
     LIO.log_error "BT" bt
 
-let lsp_main log_file std load_path =
+let lsp_main log_file std vo_load_path ml_include_path =
 
   Printexc.record_backtrace true;
   LSP.std_protocol := std;
@@ -379,7 +382,8 @@ let lsp_main log_file std load_path =
                ; ml_load = None
                ; debug = false
                },
-    load_path,
+    vo_load_path,
+    ml_include_path,
     fb_queue
   in
 
@@ -394,7 +398,7 @@ let lsp_main log_file std load_path =
   with exn ->
     let bt = Printexc.get_backtrace () in
     LIO.log_error "fatal error" Printexc.(to_string exn);
-    LIO.log_error "fatal_error" Pp.(string_of_ppcmds CErrors.(iprint (push exn)));
+    LIO.log_error "fatal_error" Pp.(string_of_ppcmds CErrors.(iprint (Exninfo.capture exn)));
     LIO.log_error "BT" bt;
     F.pp_print_flush !LIO.debug_fmt ();
     flush_all ();
@@ -416,58 +420,47 @@ let std =
   let doc = "Restrict to standard LSP protocol" in
   Arg.(value & flag & info ["std"] ~doc)
 
-let coq_lp_conv ~implicit (unix_path,lp) = Mltop.{
-    path_spec = VoPath {
-        coq_path  = Libnames.dirpath_of_string lp;
-        unix_path;
-        has_ml    = AddRecML;
-        implicit;
-      };
-    recursive = true;
+let coq_lp_conv ~implicit (unix_path,lp) =
+  { Loadpath.coq_path  = Libnames.dirpath_of_string lp
+  ; unix_path
+  ; has_ml = true
+  ; implicit
+  ; recursive = true
   }
 
 let coqlib =
   let doc = "Load Coq.Init.Prelude from $(docv); plugins/ and theories/ should live there." in
   Arg.(value & opt string Coq_config.coqlib & info ["coqlib"] ~docv:"COQPATH" ~doc)
 
-let rload_path : Mltop.coq_path list Term.t =
+let rload_path : Loadpath.vo_path list Term.t =
   let doc = "Bind a logical loadpath LP to a directory DIR and implicitly open its namespace." in
   Term.(const List.(map (coq_lp_conv ~implicit:true)) $
         Arg.(value & opt_all (pair dir string) [] & info ["R"; "rec-load-path"] ~docv:"DIR,LP"~doc))
 
-let load_path : Mltop.coq_path list Term.t =
+let load_path : Loadpath.vo_path list Term.t =
   let doc = "Bind a logical loadpath LP to a directory DIR" in
   Term.(const List.(map (coq_lp_conv ~implicit:false)) $
         Arg.(value & opt_all (pair dir string) [] & info ["Q"; "load-path"] ~docv:"DIR,LP" ~doc))
 
-let coq_include_conv unix_path = Mltop.{
-    path_spec = MlPath unix_path;
-    recursive = false;
-  }
-
-let ml_include_path : Mltop.coq_path list Term.t =
+let ml_include_path : string list Term.t =
   let doc = "Include DIR in default loadpath, for locating ML files" in
-  Term.(const List.(map coq_include_conv) $
-        Arg.(value & opt_all dir [] & info ["I"; "ml-include-path"] ~docv:"DIR" ~doc))
+  Arg.(value & opt_all dir [] & info ["I"; "ml-include-path"] ~docv:"DIR" ~doc)
 
 let coq_loadpath_default ~implicit coq_path =
-  let open Mltop in
   let mk_path prefix = coq_path ^ "/" ^ prefix in
   let mk_lp ~ml ~root ~dir ~implicit =
-    { recursive = true;
-      path_spec = VoPath {
-          unix_path = mk_path dir;
-          coq_path  = root;
-          has_ml    = ml;
-          implicit;
-        };
-    } in
+    { Loadpath.unix_path = mk_path dir
+    ; coq_path  = root
+    ; has_ml    = ml
+    ; implicit
+    ; recursive = true }
+  in
   (* in 8.8 we can use Libnames.default_* *)
   let coq_root     = Names.DirPath.make [Libnames.coq_root] in
   let default_root = Libnames.default_root_prefix in
-  [mk_lp ~ml:AddRecML ~root:coq_root     ~implicit       ~dir:"plugins";
-   mk_lp ~ml:AddNoML  ~root:coq_root     ~implicit       ~dir:"theories";
-   mk_lp ~ml:AddRecML ~root:default_root ~implicit:false ~dir:"user-contrib";
+  [mk_lp ~ml:true ~root:coq_root     ~implicit       ~dir:"plugins";
+   mk_lp ~ml:false ~root:coq_root    ~implicit       ~dir:"theories";
+   mk_lp ~ml:true ~root:default_root ~implicit:false ~dir:"user-contrib";
   ]
 
 let term_append l = Term.(List.(fold_right (fun t l -> pure append $ t $ l) l (pure [])))
@@ -482,8 +475,8 @@ let lsp_cmd =
   ]
   in
   let coq_loadpath = Term.(pure (coq_loadpath_default ~implicit:true) $ coqlib) in
-  let load_path = term_append [coq_loadpath; rload_path; load_path; ml_include_path] in
-  Term.(const lsp_main $ log_file $ std $ load_path),
+  let vo_load_path = term_append [coq_loadpath; rload_path; load_path] in
+  Term.(const lsp_main $ log_file $ std $ vo_load_path $ ml_include_path),
   Term.info "coq-lsp" ~version:"0.01" ~doc ~man
 
 let main () =
