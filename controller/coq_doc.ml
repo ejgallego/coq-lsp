@@ -97,8 +97,8 @@ let rec discard_to_dot ps =
     | e when CErrors.noncritical e -> ()
 
 let pr_goal (st : Vernacstate.t) : Pp.t option =
-  Option.map (Vernacstate.LemmaStack.with_top_pstate ~f:(fun pstate ->
-      let proof = Proof_global.get_proof pstate in
+  Option.map (Vernacstate.LemmaStack.with_top ~f:(fun pstate ->
+      let proof = Declare.Proof.get pstate in
       Printer.pr_open_subgoals ~proof)) st.Vernacstate.lemmas
 
 (* Simple heuristic for Qed. *)
