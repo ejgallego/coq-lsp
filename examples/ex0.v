@@ -1,7 +1,7 @@
 (* This example showcases some features of the early server *)
 
 From Coq Require Import ssreflect ssrbool.
-From Coq Require Import Omega.
+(* From Coq Require Import Omega. *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -13,7 +13,7 @@ Proof. by elim: n. Qed.
 Lemma addnC n m : n + m = m + n.
 Proof. by elim: n => //= ? ->. Qed.
 
-Lemma addnA n m l : n + m + l = m + (n + l).
+Lemma addnAC n m l : n + m + l = m + (n + l).
 Proof. by elim: n => //= ? ->. Qed.
 
 Lemma level1 : True.
@@ -73,3 +73,14 @@ Proof. apply: admit. Qed.
 
 Lemma eq0 : 0 = 0.
 Proof. omega. Qed.
+
+Section Foo.
+
+Lemma addnA m n p : m + n + p = m + (n + p).
+Proof. by elim: m n p => //= m IHn n p; rewrite IHn. Qed.
+
+Lemma foo' (n : nat) : n = n.
+Proof.
+rewrite addnA.
+Qed.
+(* End Foo. *)

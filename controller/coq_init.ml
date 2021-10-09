@@ -30,11 +30,11 @@ type coq_opts =
 let coq_init opts =
   if opts.debug then (
     Printexc.record_backtrace true;
-    Flags.debug := true );
+    CDebug.set_flags "misc");
 
   (* Core Coq initialization *)
   Lib.init ();
-  Global.set_engagement Declarations.PredicativeSet;
+  Global.set_impredicative_set false;
   Flags.set_native_compiler false;
   Global.set_native_compiler false;
 

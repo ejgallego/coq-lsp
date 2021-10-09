@@ -455,10 +455,9 @@ let coq_loadpath_default ~implicit coq_path =
     ; implicit
     ; recursive = true }
   in
-  (* in 8.8 we can use Libnames.default_* *)
   let coq_root     = Names.DirPath.make [Libnames.coq_root] in
   let default_root = Libnames.default_root_prefix in
-  [mk_lp ~ml:true ~root:coq_root     ~implicit       ~dir:"plugins";
+  [mk_lp ~ml:true ~root:coq_root     ~implicit       ~dir:"../coq-core/plugins";
    mk_lp ~ml:false ~root:coq_root    ~implicit       ~dir:"theories";
    mk_lp ~ml:true ~root:default_root ~implicit:false ~dir:"user-contrib";
   ]

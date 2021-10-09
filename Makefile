@@ -3,13 +3,13 @@
 COQ_BUILD_CONTEXT=../_build/default/coq
 
 build: coq_boot
-	dune build $(DUNEOPT) coq/coq.install coq-lsp.install
+	dune build $(DUNEOPT) coq/coq-core.install coq/coq-stdlib.install coq-lsp.install
 
 build-all: coq_boot
 	dune build $(DUNEOPT) @all
 
 coq/config/coq_config.ml:
-	cd coq && ocaml ./configure.ml -no-ask -prefix $(shell pwd)/_build/install/default/ -native-compiler no
+	cd coq && ./configure -no-ask -prefix $(shell pwd)/_build/install/default/ -native-compiler no
 
 coq_boot: coq/config/coq_config.ml
 

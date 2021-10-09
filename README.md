@@ -24,6 +24,16 @@ In case you are developing the server/controller, you can, instead of 3-4 above:
 
 The worker protocol is designed to be as stateless as possible.
 
+## Features
+
+### Incremental compilation
+
+Update your file, and only re-check what's impacted.
+
+[insert gif]
+
+This support be extended in the future to proofs.
+
 ## Licensing information
 
 This work is partially derived from:

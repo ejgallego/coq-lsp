@@ -5,4 +5,4 @@
  (link_flags -linkall)
  ; Unfortunate we have to link the STM due to the LTAC plugin
  ; depending on it, we should fix this upstream
- (libraries num coq.vernac coq.stm lsp cmdliner))
+ (libraries coq-core.vernac coq-core.stm lsp cmdliner))

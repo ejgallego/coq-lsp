@@ -77,13 +77,14 @@ let interp_command ~st stm =
   coq_protect (Vernacinterp.interp ~st) stm
 
 (* Read the input stream until a dot is encountered *)
-let parse_to_dot =
-  let rec dot f st = match Stream.next st with
+let parse_to_dot : unit Pcoq.Entry.t =
+  (* type 'a parser_fun = { parser_fun : te LStream.t -> 'a } *)
+  let rec dot st = match LStream.next st with
     | Tok.KEYWORD ("."|"...") -> ()
     | Tok.EOI -> ()
-    | _ -> dot f st
+    | _ -> dot st
   in
-  Pcoq.Entry.of_parser "Coqtoplevel.dot" dot
+  Pcoq.Entry.of_parser "Coqtoplevel.dot" { parser_fun = dot }
 
 (* If an error occurred while parsing, we try to read the input until a dot
    token is encountered.
