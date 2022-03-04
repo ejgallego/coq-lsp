@@ -100,7 +100,7 @@ let rec discard_to_dot ps =
 let pr_goal (st : Vernacstate.t) : Pp.t option =
   Option.map (Vernacstate.LemmaStack.with_top ~f:(fun pstate ->
       let proof = Declare.Proof.get pstate in
-      Printer.pr_open_subgoals ~proof)) st.Vernacstate.lemmas
+      Printer.pr_open_subgoals ~quiet:false ~diffs:None proof)) st.Vernacstate.lemmas
 
 (* Simple heuristic for Qed. *)
 let state_recovery_heuristic st v =
@@ -168,6 +168,7 @@ let process_and_parse ~coq_queue doc =
         let st = state_recovery_heuristic st ast in
         stm doc st diags
   in
+  (* we re-start from the root *)
   stm doc doc.root []
 
 let check ~doc ~coq_queue =

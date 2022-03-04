@@ -462,9 +462,9 @@ let coq_loadpath_default ~implicit coq_path =
    mk_lp ~ml:true ~root:default_root ~implicit:false ~dir:"user-contrib";
   ]
 
-let term_append l = Term.(List.(fold_right (fun t l -> pure append $ t $ l) l (pure [])))
+let term_append l = Term.(List.(fold_right (fun t l -> const append $ t $ l) l (const [])))
 
-let lsp_cmd =
+let lsp_cmd : unit Cmd.t =
   let doc = "Coq LSP Server" in
   let man = [
     `S "DESCRIPTION";
@@ -473,14 +473,14 @@ let lsp_cmd =
     `P "See the documentation on the project's webpage for more information"
   ]
   in
-  let coq_loadpath = Term.(pure (coq_loadpath_default ~implicit:true) $ coqlib) in
+  let coq_loadpath = Term.(const (coq_loadpath_default ~implicit:true) $ coqlib) in
   let vo_load_path = term_append [coq_loadpath; rload_path; load_path] in
-  Term.(const lsp_main $ log_file $ std $ vo_load_path $ ml_include_path),
-  Term.info "coq-lsp" ~version:"0.01" ~doc ~man
+  Cmd.(v
+         (Cmd.info "coq-lsp" ~version:"0.01" ~doc ~man)
+         (Term.(const lsp_main $ log_file $ std $ vo_load_path $ ml_include_path)))
 
 let main () =
-  match Term.eval lsp_cmd with
-  | `Error _ -> exit 1
-  | _        -> exit 0
+  let ecode = Cmd.eval lsp_cmd in
+  exit ecode
 
 let _ = main ()
