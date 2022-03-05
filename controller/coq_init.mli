@@ -20,16 +20,15 @@
 
 type coq_opts =
   { fb_handler : Feedback.feedback -> unit
-  (** callback to handle async feedback *)
-  ; ml_load : (string -> unit) option
-  (** callback to load cma/cmo files *)
-  ; debug : bool
-  (** Enable Coq Debug mode *)
+        (** callback to handle async feedback *)
+  ; ml_load : (string -> unit) option  (** callback to load cma/cmo files *)
+  ; debug : bool  (** Enable Coq Debug mode *)
   }
 
 val coq_init : coq_opts -> Vernacstate.t
-val doc_init
-  :  root_state:Vernacstate.t
+
+val doc_init :
+     root_state:Vernacstate.t
   -> vo_load_path:Loadpath.vo_path list
   -> ml_include_path:string list
   -> libname:Names.DirPath.t
