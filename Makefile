@@ -1,17 +1,10 @@
-.PHONY: coq_boot build build-all clean opam
+.PHONY: default all clean opam
 
-COQ_BUILD_CONTEXT=../_build/default/coq
+default:
+	dune build $(DUNEOPT) coq-lsp.install
 
-build: coq_boot
-	dune build $(DUNEOPT) coq/coq-core.install coq/coq-stdlib.install coq-lsp.install
-
-build-all: coq_boot
+all:
 	dune build $(DUNEOPT) @all
-
-coq/config/coq_config.ml:
-	cd coq && ./configure -no-ask -prefix $(shell pwd)/_build/install/default/ -native-compiler no
-
-coq_boot: coq/config/coq_config.ml
 
 clean:
 	dune clean
@@ -20,3 +13,4 @@ clean:
 opam:
 	opam pin add coq-lsp . --kind=path -y
 	opam install coq-lsp
+

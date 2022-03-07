@@ -1,4 +1,0 @@
-[submodule "coq"]
-	path = coq
-	url = git@github.com:ejgallego/coq.git
-	branch = proof+no_global_partial

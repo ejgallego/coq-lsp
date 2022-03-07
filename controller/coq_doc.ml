@@ -102,7 +102,7 @@ let pr_goal (st : Vernacstate.t) : Pp.t option =
   Option.map
     (Vernacstate.LemmaStack.with_top ~f:(fun pstate ->
          let proof = Declare.Proof.get pstate in
-         Printer.pr_open_subgoals ~quiet:false ~diffs:None proof))
+         Printer.pr_open_subgoals ~proof))
     st.Vernacstate.lemmas
 
 (* Simple heuristic for Qed. *)

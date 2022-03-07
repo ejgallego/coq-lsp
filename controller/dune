@@ -1,7 +1,6 @@
 (executable
  (name coq_lsp)
  (public_name coq-lsp)
- (modules lsp_util coq_init coq_doc coq_lsp)
  (link_flags -linkall)
  ; Unfortunate we have to link the STM due to the LTAC plugin
  ; depending on it, we should fix this upstream
