@@ -19,27 +19,25 @@
 type ast = Vernacexpr.vernac_control
 
 type node =
-  { ast  : ast
+  { ast : ast
   ; exec : bool
   ; goal : Pp.t option
   }
 
 type t =
   { uri : string
-  ; version: int
+  ; version : int
   ; contents : string
   ; root : Vernacstate.t
   ; nodes : node list
   }
 
-val create
-  :  state:(Vernacstate.t * Loadpath.vo_path list * string list * _)
+val create :
+     state:Vernacstate.t * Loadpath.vo_path list * string list * _
   -> uri:string
   -> version:int
   -> contents:string
   -> t
 
-val check
-  :  doc:t
-  -> coq_queue:string Queue.t
-  -> t * Vernacstate.t * Yojson.Basic.t
+val check :
+  doc:t -> coq_queue:string Queue.t -> t * Vernacstate.t * Yojson.Basic.t

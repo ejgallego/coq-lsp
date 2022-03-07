@@ -31,60 +31,58 @@ let parse_uri str =
   let l = String.length str - 7 in
   String.(sub str 7 l)
 
-let mk_reply ~id ~result = `Assoc [ "jsonrpc", `String "2.0"; "id",     `Int id;   "result", result ]
-let mk_event m p   = `Assoc [ "jsonrpc", `String "2.0"; "method", `String m; "params", `Assoc p ]
+let mk_reply ~id ~result =
+  `Assoc [ ("jsonrpc", `String "2.0"); ("id", `Int id); ("result", result) ]
 
-(*
-let json_of_goal g =
-  let pr_hyp (s,(_,t)) =
-    `Assoc ["hname", `String s;
-            "htype", `String (Format.asprintf "%a" Print.pp_term (Bindlib.unbox t))] in
-  let open Proofs in
-  let j_env = List.map pr_hyp g.g_hyps in
-  `Assoc [
-    "gid", `Int g.g_meta.meta_key
-  ; "hyps", `List j_env
-  ; "type", `String (Format.asprintf "%a" Print.pp_term g.g_type)]
+let mk_event m p =
+  `Assoc
+    [ ("jsonrpc", `String "2.0"); ("method", `String m); ("params", `Assoc p) ]
 
-let json_of_thm thm =
-  let open Proofs in
-  match thm with
-  | None ->
-    `Null
-  | Some thm ->
-    `Assoc [
-      "goals", `List List.(map json_of_goal thm.t_goals)
-    ]
-*)
+(* let json_of_goal g = let pr_hyp (s,(_,t)) = `Assoc ["hname", `String s;
+   "htype", `String (Format.asprintf "%a" Print.pp_term (Bindlib.unbox t))] in
+   let open Proofs in let j_env = List.map pr_hyp g.g_hyps in `Assoc [ "gid",
+   `Int g.g_meta.meta_key ; "hyps", `List j_env ; "type", `String
+   (Format.asprintf "%a" Print.pp_term g.g_type)]
+
+   let json_of_thm thm = let open Proofs in match thm with | None -> `Null |
+   Some thm -> `Assoc [ "goals", `List List.(map json_of_goal thm.t_goals) ] *)
 
 (* XXX: ejgallego , does Coq also start lines at 0? *)
 type point =
   { line : int
-  ; character: int
+  ; character : int
   }
 
 type range =
-  { start: point
+  { start : point
   ; _end : point
   }
 
-let mk_range { start ; _end } : J.t =
-  `Assoc ["start", `Assoc ["line", `Int start.line ; "character", `Int start.character];
-          "end",   `Assoc ["line", `Int _end.line  ; "character", `Int _end.character]]
+let mk_range { start; _end } : J.t =
+  `Assoc
+    [ ( "start"
+      , `Assoc
+          [ ("line", `Int start.line); ("character", `Int start.character) ] )
+    ; ( "end"
+      , `Assoc [ ("line", `Int _end.line); ("character", `Int _end.character) ]
+      )
+    ]
 
-(* let mk_diagnostic ((p : Pos.pos), (lvl : int), (msg : string), (thm : Proofs.theorem option)) : J.json = *)
-let mk_diagnostic ((r : range), (lvl : int), (msg : string), (_thm : unit option)) : J.t =
+(* let mk_diagnostic ((p : Pos.pos), (lvl : int), (msg : string), (thm :
+   Proofs.theorem option)) : J.json = *)
+let mk_diagnostic
+    ((r : range), (lvl : int), (msg : string), (_thm : unit option)) : J.t =
   (* let goal = json_of_thm thm in *)
   let range = mk_range r in
-  `Assoc ((* mk_extra ["goal_info", goal] @ *)
-          ["range", range;
-           "severity", `Int lvl;
-           "message",  `String msg;
-          ])
+  `Assoc
+    [ (* mk_extra ["goal_info", goal] @ *)
+      ("range", range)
+    ; ("severity", `Int lvl)
+    ; ("message", `String msg)
+    ]
 
 let mk_diagnostics ~uri ~version ld : J.t =
-  let extra = mk_extra ["version", `Int version] in
-  mk_event "textDocument/publishDiagnostics" @@
-    extra @
-    ["uri", `String uri;
-     "diagnostics", `List List.(map mk_diagnostic ld)]
+  let extra = mk_extra [ ("version", `Int version) ] in
+  mk_event "textDocument/publishDiagnostics"
+  @@ extra
+  @ [ ("uri", `String uri); ("diagnostics", `List List.(map mk_diagnostic ld)) ]
