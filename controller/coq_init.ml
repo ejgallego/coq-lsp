@@ -52,6 +52,26 @@ let coq_init opts =
   (* End of initialization *)
 
 
+let loadpath_from_coqproject () : Loadpath.vo_path list =
+  if not (Sys.file_exists "_CoqProject") then [] else begin
+    Lsp.Io.log_error "init" "Parsing _CoqProject";
+    let open CoqProject_file in
+    let to_vo_loadpath f implicit =
+      let open Loadpath in
+      let (unix_path, coq_path) = f in
+      Lsp.Io.log_error "init"
+        (Printf.sprintf "Path from _CoqProject: %s %s" unix_path.path coq_path);
+      { implicit = implicit;
+        recursive = true;
+        has_ml = false;
+        unix_path = unix_path.path;
+        coq_path = Libnames.dirpath_of_string coq_path } in
+    let {r_includes; q_includes; _} =
+      read_project_file ~warning_fn:(fun _ -> ()) "_CoqProject" in
+    let vo_path = List.map (fun f -> to_vo_loadpath f.thing false) q_includes in
+    List.append vo_path (List.map (fun f -> to_vo_loadpath f.thing true) r_includes)
+  end
+
 (* Inits the context for a document *)
 let doc_init ~root_state ~vo_load_path ~ml_include_path ~libname ~require_libs =
 
@@ -73,6 +93,7 @@ let doc_init ~root_state ~vo_load_path ~ml_include_path ~libname ~require_libs =
      name by looking at the load path! *)
   List.iter Mltop.add_ml_dir ml_include_path;
   List.iter Loadpath.add_vo_path vo_load_path;
+  List.iter Loadpath.add_vo_path (loadpath_from_coqproject ());
   Declaremods.start_library libname;
 
   (* Import initial libraries. *)
