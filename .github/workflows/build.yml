@@ -1,0 +1,27 @@
+name: Github CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [macOS-latest, ubuntu-latest]
+      fail-fast: true
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Setup OCaml
+        uses: ocaml/setup-ocaml@v2
+
+      - name: Build coq-lsp
+        run: |
+          eval $(opam env)
+          opam install . --deps-only
+          make build
