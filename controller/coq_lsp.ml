@@ -331,8 +331,9 @@ let lsp_main log_file std vo_load_path ml_include_path =
         | _ -> ())
     , q )
   in
+  let debug = true in
   let state =
-    ( Coq_init.coq_init Coq_init.{ fb_handler; ml_load = None; debug = false }
+    ( Coq_init.coq_init Coq_init.{ fb_handler; ml_load = None; debug }
     , vo_load_path
     , ml_include_path
     , fb_queue )
