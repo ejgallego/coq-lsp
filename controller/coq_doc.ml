@@ -48,7 +48,7 @@ type 'a result =
 let mk_doc state =
   let root_state, vo_load_path, ml_include_path, _ = state in
   let libname = Names.(DirPath.make [ Id.of_string "foo" ]) in
-  let require_libs = [ ("Coq.Init.Prelude", None, Some false) ] in
+  let require_libs = [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ] in
   Coq_init.doc_init ~root_state ~vo_load_path ~ml_include_path ~libname
     ~require_libs
 
@@ -82,7 +82,7 @@ let interp_command ~st stm = coq_protect (Vernacinterp.interp ~st) stm
 let parse_to_dot : unit Pcoq.Entry.t =
   (* type 'a parser_fun = { parser_fun : te LStream.t -> 'a } *)
   let rec dot st =
-    match LStream.next st with
+    match Gramlib.LStream.next st with
     | Tok.KEYWORD ("." | "...") -> ()
     | Tok.EOI -> ()
     | _ -> dot st
@@ -126,7 +126,7 @@ type process_action =
 
 (* XXX: Imperative problem *)
 let process_and_parse ~coq_queue doc =
-  let doc_handle = Pcoq.Parsable.make Stream.(of_string doc.contents) in
+  let doc_handle = Pcoq.Parsable.make Gramlib.Stream.(of_string doc.contents) in
   let rec stm doc st diags =
     Lsp.Io.log_error "coq" "parsing sentence";
     (* Parsing *)
