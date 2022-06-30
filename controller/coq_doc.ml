@@ -122,7 +122,7 @@ let process_and_parse ~coq_queue doc =
     (* We interpret the command now *)
     | Process ast -> (
       match Memo.interp_command ~st ast with
-      | Ok st ->
+      | Ok { st ; _ } ->
         (* let ok_diag = node.pos, 4, "OK", !Proofs.theorem in *)
         let ok_diag = (to_orange ast.CAst.loc, 3, "OK", None) in
         let diags = ok_diag :: diags in

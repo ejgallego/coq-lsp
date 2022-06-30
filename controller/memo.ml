@@ -1,4 +1,17 @@
-type interp_result = (Vernacstate.t, Loc.t option * Pp.t) result
+module InterpInfo = struct
+
+  type t =
+    { st : Vernacstate.t
+    ; warnings : unit
+    }
+
+end
+
+type interp_result = (InterpInfo.t, Loc.t option * Pp.t) result
+
+let coq_interp ~st cmd =
+  let st = Vernacinterp.interp ~st cmd in
+  { InterpInfo.st; warnings = () }
 
 let cache : (Vernacstate.t * Vernacexpr.vernac_control, interp_result) Hashtbl.t = Hashtbl.create 1000
 
@@ -16,7 +29,7 @@ let interp_command ~st stm : _ result =
     let kind = Stats.Kind.Exec in
     let res =
       Stats.record ~kind
-        ~f:(Coq_util.coq_protect (Vernacinterp.interp ~st)) stm
+        ~f:(Coq_util.coq_protect (coq_interp ~st)) stm
     in
     let () = Hashtbl.add cache (st,stm) res in
     res
