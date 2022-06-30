@@ -32,5 +32,6 @@ val doc_init :
   -> vo_load_path:Loadpath.vo_path list
   -> ml_include_path:string list
   -> libname:Names.DirPath.t
-  -> require_libs:(string * string option * Vernacexpr.export_with_cats option) list
+  -> require_libs:
+       (string * string option * Vernacexpr.export_with_cats option) list
   -> Vernacstate.t

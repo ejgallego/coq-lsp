@@ -29,8 +29,7 @@ let coq_init opts =
   if opts.debug then (
     Printexc.record_backtrace true;
     CDebug.set_flags "bt";
-    CDebug.set_flags "all"
-  );
+    CDebug.set_flags "all");
 
   (* Core Coq initialization *)
   Lib.init ();
@@ -77,7 +76,6 @@ let loadpath_from_coqproject () : Loadpath.vo_path list =
 
 (* Inits the context for a document *)
 let doc_init ~root_state ~vo_load_path ~ml_include_path ~libname ~require_libs =
-
   Lsp.Io.log_error "init" "starting";
 
   Vernacstate.unfreeze_interp_state root_state;
@@ -88,7 +86,9 @@ let doc_init ~root_state ~vo_load_path ~ml_include_path ~libname ~require_libs =
     let rq_file (dir, from, exp) =
       let mp = Libnames.qualid_of_string dir in
       let mfrom = Option.map Libnames.qualid_of_string from in
-      Flags.silently (Vernacentries.vernac_require mfrom exp) [mp,Vernacexpr.ImportAll]
+      Flags.silently
+        (Vernacentries.vernac_require mfrom exp)
+        [ (mp, Vernacexpr.ImportAll) ]
     in
     List.(iter rq_file (rev libs))
   in
