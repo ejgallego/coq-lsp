@@ -35,3 +35,6 @@ let interp_command ~st stm : _ result =
     res
 
 let mem_stats () = Obj.reachable_words (Obj.magic cache)
+
+let load_from_disk ~file:_ = ()
+let save_to_disk ~file:_ = ()

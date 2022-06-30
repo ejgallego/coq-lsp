@@ -32,6 +32,9 @@ Edit your file, and `coq-lsp` will try to re-check only what is necessary.
 
 [insert gif]
 
+Moreover, `coq-lsp` will save its document cache to disk so you can
+restart your proof session where you left it at the last time.
+
 This is currently undergoing refinement.
 
 ### Document outline:

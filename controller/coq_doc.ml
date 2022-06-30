@@ -80,11 +80,23 @@ let pr_goal (st : Vernacstate.t) : Pp.t option =
          Printer.pr_open_subgoals ~quiet:false ~diffs:None proof))
     st.Vernacstate.lemmas
 
+(* Gross hack *)
+let proof_st = ref None
+
+let register_hack_proof_recover ast st =
+  match ast.CAst.v.Vernacexpr.expr with
+  | Vernacexpr.VernacStartTheoremProof _ ->
+    proof_st := Some st; ()
+  | _ -> ()
+
 (* Simple heuristic for Qed. *)
 let state_recovery_heuristic st v =
   match v.CAst.v.Vernacexpr.expr with
   (* Drop the top proof state if we reach a faulty Qed. *)
   | Vernacexpr.VernacEndProof _ ->
+    let st = Option.default st !proof_st in
+    Lsp.Io.log_error "recovery" (string_of_int (Hashtbl.hash st));
+    proof_st := None;
     Vernacstate.
       { st with
         lemmas =
@@ -121,6 +133,7 @@ let process_and_parse ~coq_queue doc =
     | Skip -> stm doc st diags
     (* We interpret the command now *)
     | Process ast -> (
+      register_hack_proof_recover ast st;
       match Memo.interp_command ~st ast with
       | Ok { st ; _ } ->
         (* let ok_diag = node.pos, 4, "OK", !Proofs.theorem in *)

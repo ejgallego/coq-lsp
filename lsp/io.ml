@@ -51,10 +51,8 @@ let read_request ic =
   (* if the format string is invalid. *)
   | Invalid_argument msg -> raise (ReadError msg)
 
-let debug_send = false
-
 let send_json fmt obj =
-  if debug_send then
+  if Debug.debug_send then
     log_object "send" obj;
   let msg = F.asprintf "%a" J.(pretty_print ~std:true) obj in
   let size = String.length msg in

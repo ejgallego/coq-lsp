@@ -339,11 +339,9 @@ let lsp_main log_file std vo_load_path ml_include_path =
     , fb_queue )
   in
 
-  let debug_send = false in
-
   let rec loop state =
     let com = LIO.read_request stdin in
-    if debug_send then
+    if Lsp.Debug.debug_read then
       LIO.log_object "read" com;
     process_input oc ~state com;
     F.pp_print_flush lp_fmt ();

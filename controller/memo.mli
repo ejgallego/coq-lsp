@@ -13,3 +13,6 @@ val interp_command :
   (InterpInfo.t, Loc.t option * Pp.t) result
 
 val mem_stats : unit -> int
+
+val load_from_disk : file:string -> unit
+val save_to_disk : file:string -> unit
