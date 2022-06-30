@@ -2,3 +2,6 @@ _build
 .merlin
 *.install
 log-*.txt
+
+.vscode
+.git-ps
