@@ -5,6 +5,12 @@ COQ_BUILD_CONTEXT=../_build/default/coq
 build: coq_boot
 	dune build $(DUNEOPT) coq/coq-core.install coq/coq-stdlib.install coq-lsp.install
 
+format: coq_boot
+	dune fmt
+
+watch: coq_boot
+	dune build -w $(DUNEOPT) coq/coq-core.install coq/coq-stdlib.install coq-lsp.install
+
 build-all: coq_boot
 	dune build $(DUNEOPT) @all
 
