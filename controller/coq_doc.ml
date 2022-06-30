@@ -1,16 +1,7 @@
 (************************************************************************)
-(*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
-(* <O___,, *       (see CREDITS file for the list of authors)           *)
-(*   \VV/  **************************************************************)
-(*    //   *    This file is distributed under the terms of the         *)
-(*         *     GNU Lesser General Public License Version 2.1          *)
-(*         *     (see LICENSE file for the text of the license)         *)
-(************************************************************************)
-
-(************************************************************************)
 (* Coq Language Server Protocol                                         *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2022 Inria           -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 (* Status: Experimental                                                 *)
@@ -41,10 +32,6 @@ type t =
 (* let mk_error ~doc pos msg =
  *   LSP.mk_diagnostics ~uri:doc.uri ~version:doc.version [pos, 1, msg, None] *)
 
-type 'a result =
-  | Ok of 'a
-  | Error of Loc.t option * Pp.t
-
 let mk_doc state =
   let root_state, vo_load_path, ml_include_path, _ = state in
   let libname = Names.(DirPath.make [ Id.of_string "foo" ]) in
@@ -58,25 +45,13 @@ let create ~state ~uri ~version ~contents =
 (* XXX: Save on close? *)
 (* let close_doc _modname = () *)
 
-let coq_protect f x =
-  try
-    let res = f x in
-    Ok res
-  with exn ->
-    let e, info = Exninfo.capture exn in
-    let loc = Loc.(get_loc info) in
-    let msg = CErrors.iprint (e, info) in
-    Error (loc, msg)
-
 let parse_stm ~st ps =
   let mode =
     Option.map
       (fun _ -> Vernacinterp.get_default_proof_mode ())
       st.Vernacstate.lemmas
   in
-  coq_protect Vernacstate.(Parser.parse st.parsing Pvernac.(main_entry mode)) ps
-
-let interp_command ~st stm = coq_protect (Vernacinterp.interp ~st) stm
+  Coq_util.coq_protect Vernacstate.(Parser.parse st.parsing Pvernac.(main_entry mode)) ps
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot : unit Pcoq.Entry.t =
@@ -146,7 +121,7 @@ let process_and_parse ~coq_queue doc =
     | Skip -> stm doc st diags
     (* We interpret the command now *)
     | Process ast -> (
-      match interp_command ~st ast with
+      match Memo.interp_command ~st ast with
       | Ok st ->
         (* let ok_diag = node.pos, 4, "OK", !Proofs.theorem in *)
         let ok_diag = (to_orange ast.CAst.loc, 3, "OK", None) in
@@ -178,11 +153,18 @@ let process_and_parse ~coq_queue doc =
   (* we re-start from the root *)
   stm doc doc.root []
 
+let print_stats () =
+  let size = Memo.mem_stats () in
+  Lsp.Io.log_error "stats" (string_of_int size);
+  Lsp.Io.log_error "cache" (Stats.dump ());
+  Stats.reset ()
+
 let check ~doc ~coq_queue =
   let uri, version = (doc.uri, doc.version) in
 
   (* Start library *)
   let doc, st, diags = (process_and_parse ~coq_queue) doc in
+  print_stats ();
   ( doc
   , st
   , LSP.mk_diagnostics ~uri ~version
