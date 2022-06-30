@@ -6,6 +6,7 @@ jobs:
   build:
     strategy:
       matrix:
+        ocaml: [ 4.14.x ]
         os: [macOS-latest, ubuntu-latest]
       fail-fast: true
 
@@ -19,9 +20,11 @@ jobs:
 
       - name: Setup OCaml
         uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml }}
+          dune-cache: true
 
       - name: Build coq-lsp
         run: |
-          eval $(opam env)
           opam install . --deps-only
-          make build
+          opam exec -- make build
