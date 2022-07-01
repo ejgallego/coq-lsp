@@ -13,6 +13,12 @@ Moreover, we expect the code to evolve significantly, including a full
 rewrite, so if you would like to contribute, please **first
 coordinate** with the dev team before writing any code.
 
+### Development Channel
+
+Our development channel can be found at [Coq's
+Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp), don't
+hesitate to stop by.
+
 ## Roadmap
 
 For now the main focus of the project to write clean and maintainable
@@ -89,8 +95,8 @@ The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
 
 ## Team
 
-- Emilio J. Gallego Arias (Inria Paris, coordinator)
 - Ali Caglayan (co-coordinator)
+- Emilio J. Gallego Arias (Inria Paris, co-coordinator)
 - Ramkumar Ramachandra
 
 ## Acknowledgments
