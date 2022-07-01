@@ -23,11 +23,11 @@ module Stats = struct
 
 end
 
-let cache : (Vernacstate.t * Vernacexpr.vernac_control, interp_result) Hashtbl.t = Hashtbl.create 1000
+let cache : (Vernacstate.t * Vernacexpr.vernac_control, interp_result) Hashtbl.t ref = ref (Hashtbl.create 1000)
 
 let in_cache st stm =
   let kind = CS.Kind.Hashing in
-  CS.record ~kind ~f:(Hashtbl.find_opt) cache (st, stm)
+  CS.record ~kind ~f:(Hashtbl.find_opt) !cache (st, stm)
 
 let interp_command ~st stm : _ result Stats.t =
   match in_cache st stm with
@@ -41,10 +41,17 @@ let interp_command ~st stm : _ result Stats.t =
       CS.record ~kind
         ~f:(Coq_util.coq_protect (coq_interp ~st)) stm
     in
-    let () = Hashtbl.add cache (st,stm) res in
+    let () = Hashtbl.add !cache (st,stm) res in
     Stats.make res
 
 let mem_stats () = Obj.reachable_words (Obj.magic cache)
 
-let load_from_disk ~file:_ = ()
-let save_to_disk ~file:_ = ()
+let load_from_disk ~file =
+  let in_c = open_in_bin file in
+  cache := Marshal.from_channel in_c;
+  close_in in_c
+
+let save_to_disk ~file =
+  let out_c = open_out_bin file in
+  Marshal.to_channel out_c !cache [];
+  close_out out_c
