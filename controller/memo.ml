@@ -1,3 +1,5 @@
+module CS = Stats
+
 module InterpInfo = struct
 
   type t =
@@ -13,26 +15,34 @@ let coq_interp ~st cmd =
   let st = Vernacinterp.interp ~st cmd in
   { InterpInfo.st; warnings = () }
 
+module Stats = struct
+
+  type 'a t = { res : 'a; cache_hit : bool; memory : int; time: float }
+
+  let make ?(cache_hit=false) res = { res; cache_hit; memory = 0; time = 0.0 }
+
+end
+
 let cache : (Vernacstate.t * Vernacexpr.vernac_control, interp_result) Hashtbl.t = Hashtbl.create 1000
 
 let in_cache st stm =
-  let kind = Stats.Kind.Hashing in
-  Stats.record ~kind ~f:(Hashtbl.find_opt) cache (st, stm)
+  let kind = CS.Kind.Hashing in
+  CS.record ~kind ~f:(Hashtbl.find_opt) cache (st, stm)
 
-let interp_command ~st stm : _ result =
+let interp_command ~st stm : _ result Stats.t =
   match in_cache st stm with
   | Some st ->
     Lsp.Io.log_error "coq" "cache hit";
-    st
+    Stats.make ~cache_hit:true st
   | None ->
     Lsp.Io.log_error "coq" "cache miss";
-    let kind = Stats.Kind.Exec in
+    let kind = CS.Kind.Exec in
     let res =
-      Stats.record ~kind
+      CS.record ~kind
         ~f:(Coq_util.coq_protect (coq_interp ~st)) stm
     in
     let () = Hashtbl.add cache (st,stm) res in
-    res
+    Stats.make res
 
 let mem_stats () = Obj.reachable_words (Obj.magic cache)
 

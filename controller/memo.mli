@@ -7,10 +7,16 @@ module InterpInfo : sig
 
 end
 
+module Stats : sig
+
+  type 'a t = { res : 'a; cache_hit : bool; memory : int; time: float }
+
+end
+
 val interp_command :
   st:Vernacstate.t ->
   Vernacexpr.vernac_control ->
-  (InterpInfo.t, Loc.t option * Pp.t) result
+  (InterpInfo.t, Loc.t option * Pp.t) result Stats.t
 
 val mem_stats : unit -> int
 
