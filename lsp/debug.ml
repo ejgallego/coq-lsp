@@ -1,4 +1,5 @@
-let debug_send = false
-let debug_read = false
+let debug = false
+let debug_send = debug
+let debug_read = debug
 
 
