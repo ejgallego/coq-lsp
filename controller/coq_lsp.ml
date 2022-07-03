@@ -272,6 +272,8 @@ let do_completion ofmt ~id params =
   LIO.send_json ofmt msg
 (* LIO.log_error "do_completion" (string_of_int line ^"-"^ string_of_int pos) *)
 
+let memo_cache_file = ".coq-lsp.cache"
+
 (* XXX: We could split requests and notifications but with the OCaml theading
    model there is not a lot of difference yet; something to think for the
    future. *)
@@ -290,7 +292,17 @@ let dispatch_message ofmt ~state dict =
   | "textDocument/didOpen" -> do_open ofmt ~state params
   | "textDocument/didChange" -> do_change ofmt ~state params
   | "textDocument/didClose" -> do_close ofmt params
-  | "exit" -> exit 0
+  | "exit" ->
+    begin
+      try
+        Memo.save_to_disk ~file:memo_cache_file;
+      with
+      | exn ->
+        LIO.log_error "memo" (Printexc.to_string exn);
+        Sys.remove memo_cache_file;
+        ()
+    end;
+    exit 0
   (* NOOPs *)
   | "initialized" | "workspace/didChangeWatchedFiles" -> ()
   | msg -> LIO.log_error "no_handler" msg
@@ -306,8 +318,9 @@ let process_input ofmt ~state (com : J.t) =
     LIO.log_error "BT" bt
 
 let lsp_main log_file std vo_load_path ml_include_path =
-  Printexc.record_backtrace true;
+
   LSP.std_protocol := std;
+  Exninfo.record_backtrace true;
 
   let oc = F.std_formatter in
 
@@ -331,13 +344,28 @@ let lsp_main log_file std vo_load_path ml_include_path =
         | _ -> ())
     , q )
   in
-  let debug = true in
+  let debug = Lsp.Debug.debug in
   let state =
     ( Coq_init.coq_init Coq_init.{ fb_handler; ml_load = None; debug }
     , vo_load_path
     , ml_include_path
     , fb_queue )
   in
+
+  begin
+    try
+      if Sys.file_exists memo_cache_file then
+        begin
+          LIO.log_error "memo" "loading cache file";
+          Memo.load_from_disk ~file:memo_cache_file
+        end
+      else
+        LIO.log_error "memo" "cache file not present";
+    with exn ->
+      LIO.log_error "memo" ("loading cache: " ^ Printexc.to_string exn);
+      (* Sys.remove memo_cache_file; *)
+      ()
+  end;
 
   let rec loop state =
     let com = LIO.read_request stdin in
@@ -348,13 +376,15 @@ let lsp_main log_file std vo_load_path ml_include_path =
     flush lp_oc;
     loop state
   in
-  try loop state
+  try
+    loop state
   with exn ->
     let bt = Printexc.get_backtrace () in
-    LIO.log_error "fatal error" Printexc.(to_string exn);
-    LIO.log_error "fatal_error"
-      Pp.(string_of_ppcmds CErrors.(iprint (Exninfo.capture exn)));
-    LIO.log_error "BT" bt;
+    let exn, info = Exninfo.capture exn in
+    let exn_msg = Printexc.to_string exn in
+    LIO.log_error "fatal error" (exn_msg ^ bt);
+    LIO.log_error "fatal_error [coq iprint]"
+      Pp.(string_of_ppcmds CErrors.(iprint (exn,info)));
     F.pp_print_flush !LIO.debug_fmt ();
     flush_all ();
     close_out debug_oc;

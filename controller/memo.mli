@@ -13,6 +13,9 @@ module Stats : sig
 
 end
 
+(* debug *)
+val input_info : (Vernacexpr.vernac_control * Vernacstate.t) -> string
+
 val interp_command :
   st:Vernacstate.t ->
   Vernacexpr.vernac_control ->

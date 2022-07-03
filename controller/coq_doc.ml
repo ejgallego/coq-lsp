@@ -95,7 +95,7 @@ let state_recovery_heuristic st v =
   (* Drop the top proof state if we reach a faulty Qed. *)
   | Vernacexpr.VernacEndProof _ ->
     let st = Option.default st !proof_st in
-    Lsp.Io.log_error "recovery" (string_of_int (Hashtbl.hash st));
+    Lsp.Io.log_error "recovery" (Memo.input_info (v,st));
     proof_st := None;
     Vernacstate.
       { st with
@@ -133,6 +133,7 @@ let process_and_parse ~coq_queue doc =
     | Skip -> stm doc st diags
     (* We interpret the command now *)
     | Process ast -> (
+      Lsp.Io.log_error "coq" ("parsed sentence: " ^ Pp.string_of_ppcmds (Ppvernac.pr_vernac ast));
       register_hack_proof_recover ast st;
       match (Memo.interp_command ~st ast).Memo.Stats.res with
       | Ok { st ; _ } ->
