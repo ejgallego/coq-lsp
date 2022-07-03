@@ -50,6 +50,10 @@ to definitions.
 
 [insert gif]
 
+### Jump to definition
+
+In progress, pending on https://github.com/coq/coq/pull/16261
+
 ## Building the Server
 
 To build the server, you'll need and environment with the dependencies
