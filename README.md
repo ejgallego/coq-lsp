@@ -107,5 +107,5 @@ The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
 
 Work on this server has been made possible thanks to many discussions,
 inspirations, and sharing of ideas from colleagues. In particular we'd
-like to thank the Dune build system team, Shachar Itzaky, Clément
-Pit-Claudel, and Makarius Wenzel for their help.
+like to thank Rudi Grinberg, Shachar Itzaky, Andrey Mokhov, Clément
+Pit-Claudel, and Makarius Wenzel for their help and advice.
