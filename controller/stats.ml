@@ -28,7 +28,7 @@ let time f x =
 let record ~kind ~f x =
   let res, time = time f x in
   bump kind time;
-  res
+  res, time
 
 let dump () =
   Format.asprintf "hashing: %f | parsing: %f | exec: %f"

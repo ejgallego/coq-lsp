@@ -2,7 +2,9 @@ module Kind : sig
   type t = Hashing | Parsing | Exec
 end
 
-val record : kind:Kind.t -> f:('a -> 'b) -> 'a -> 'b
+val time : ('a -> 'b) -> 'a -> 'b * float
+
+val record : kind:Kind.t -> f:('a -> 'b) -> 'a -> 'b * float
 
 val dump : unit -> string
 

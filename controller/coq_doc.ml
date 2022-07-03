@@ -135,7 +135,12 @@ let process_and_parse ~coq_queue doc =
     | Process ast -> (
       Lsp.Io.log_error "coq" ("parsed sentence: " ^ Pp.string_of_ppcmds (Ppvernac.pr_vernac ast));
       register_hack_proof_recover ast st;
-      match (Memo.interp_command ~st ast).Memo.Stats.res with
+      (* memory is disabled as it is quite slow and misleading *)
+      let { Memo.Stats.res; cache_hit; memory = _; time } = Memo.interp_command ~st ast in
+      let memo_msg = Format.asprintf "Cache Hit: %b | Time: %f" cache_hit time in
+      let memo_diag = (to_orange ast.CAst.loc, 3, memo_msg, None) in
+      let diags = memo_diag :: diags in
+      match res with
       | Ok { st ; _ } ->
         (* let ok_diag = node.pos, 4, "OK", !Proofs.theorem in *)
         let ok_diag = (to_orange ast.CAst.loc, 3, "OK", None) in

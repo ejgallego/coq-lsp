@@ -19,7 +19,11 @@ module Stats = struct
 
   type 'a t = { res : 'a; cache_hit : bool; memory : int; time: float }
 
-  let make ?(cache_hit=false) res = { res; cache_hit; memory = 0; time = 0.0 }
+  let make ?(cache_hit=false) ~time res =
+    (* This is quite slow! *)
+    (* let memory = Obj.magic res |> Obj.reachable_words in *)
+    let memory = 0 in
+    { res; cache_hit; memory; time }
 
 end
 
@@ -50,22 +54,23 @@ let cache : cache ref = ref (HC.create 1000)
 
 let in_cache st stm =
   let kind = CS.Kind.Hashing in
-  CS.record ~kind ~f:(HC.find_opt) !cache (stm, st)
+  CS.record ~kind ~f:(HC.find_opt !cache) (stm, st)
 
 let interp_command ~st stm : _ result Stats.t =
   match in_cache st stm with
-  | Some st ->
+  | Some st, time ->
     Lsp.Io.log_error "coq" "cache hit";
-    Stats.make ~cache_hit:true st
-  | None ->
+    Stats.make ~cache_hit:true ~time st
+  | None, time_hash ->
     Lsp.Io.log_error "coq" "cache miss";
     let kind = CS.Kind.Exec in
-    let res =
+    let res, time_interp =
       CS.record ~kind
         ~f:(Coq_util.coq_protect (coq_interp ~st)) stm
     in
     let () = HC.add !cache (stm,st) res in
-    Stats.make res
+    let time = time_hash +. time_interp in
+    Stats.make ~time res
 
 let mem_stats () = Obj.reachable_words (Obj.magic cache)
 
