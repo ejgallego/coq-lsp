@@ -1,9 +1,9 @@
 {
   "name": "vsc-galinas",
-  "version": "0.0.0",
-  "publisher": "Fondation Inria",
+  "version": "0.0.1",
+  "publisher": "Inria",
   "engines": {
-    "vscode": "^1.30.0"
+    "vscode": "^1.68.0"
   },
   "activationEvents": [
     "onLanguage:coq"
@@ -37,9 +37,28 @@
         "command": "vsc-galinas.restart",
         "title": "Start or restart the Coq language server"
       }
+    ],
+    "configuration": [
+      {
+        "type": "object",
+	"title": "Coq LSP configuration",
+	"properties": {
+	  "vsc-galinas.trace.server": {
+	    "scope": "window",
+	    "type": "string",
+	    "enum": [
+	      "off",
+	      "messages",
+	      "verbose"
+	    ],
+	    "default": "verbose",
+	    "description": "Traces the communication between VS Code and the language server."
+	  }
+	}
+      }
     ]
   },
   "dependencies": {
-    "vscode-languageclient": "^4.1.4"
+    "vscode-languageclient": "^8.0.1"
   }
 }
