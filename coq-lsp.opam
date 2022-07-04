@@ -17,8 +17,11 @@ doc: "https://coq.github.io/coq-lsp/"
 depends: [
   "ocaml"        {         >= "4.13.1" }
   "dune"         { build & >= "3.0.2"  }
-  # Not yet required
+
+  # Not yet required, install Coq deps instead
   # "coq"          {         >= "8.17"   }
+  "ocamlfind" {>= "1.8.1"}
+  "zarith" {>= "1.11"}
 
   # lsp dependencies
   "cmdliner"     { >= "1.1.0" }
