@@ -49,7 +49,7 @@ let parse_stm ~st ps =
       (fun _ -> Vernacinterp.get_default_proof_mode ())
       st.Vernacstate.lemmas in
   let parse ps = Vernacstate.(Parser.parse st.parsing Pvernac.(main_entry mode) ps) |> Option.map Coq_ast.of_coq in
-  Coq_util.coq_protect ps ~f:parse
+  Stats.record ~kind:Stats.Kind.Parsing ~f:(Coq_util.coq_protect ~f:parse) ps
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot : unit Pcoq.Entry.t =
@@ -113,16 +113,16 @@ type process_action =
 let process_and_parse ~coq_queue doc =
   let doc_handle = Pcoq.Parsable.make Gramlib.Stream.(of_string doc.contents) in
   let rec stm doc st diags =
-    Lsp.Io.log_error "coq" "parsing sentence";
+    if Lsp.Debug.parsing then Lsp.Io.log_error "coq" "parsing sentence";
     (* Parsing *)
-    let action, diags =
+    let action, diags, parsing_time =
       match parse_stm ~st doc_handle with
-      | Ok None -> (EOF, diags)
-      | Ok (Some ast) -> (Process ast, diags)
-      | Error (loc, msg) ->
+      | Ok None, time -> (EOF, diags, time)
+      | Ok (Some ast), time -> (Process ast, diags, time)
+      | Error (loc, msg), time ->
         let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
         discard_to_dot doc_handle;
-        (Skip, diags)
+        (Skip, diags, time)
     in
     (* Execution *)
     match action with
@@ -132,11 +132,12 @@ let process_and_parse ~coq_queue doc =
     (* We interpret the command now *)
     | Process ast -> (
       let loc = Coq_ast.loc ast in
-      Lsp.Io.log_error "coq" ("parsed sentence: " ^ Pp.string_of_ppcmds (Coq_ast.print ast));
+      if Lsp.Debug.parsing then Lsp.Io.log_error "coq" ("parsed sentence: " ^ Pp.string_of_ppcmds (Coq_ast.print ast));
       register_hack_proof_recover ast st;
       (* memory is disabled as it is quite slow and misleading *)
       let { Memo.Stats.res; cache_hit; memory = _; time } = Memo.interp_command ~st ast in
-      let memo_msg = Format.asprintf "Cache Hit: %b | Time: %f" cache_hit time in
+      let cptime = Stats.get ~kind:Stats.Kind.Parsing in
+      let memo_msg = Format.asprintf "Cache Hit: %b | Exec Time: %f | Parsing time: %f | Cumulative parsing: %f" cache_hit time parsing_time cptime in
       let memo_diag = (to_orange loc, 4, memo_msg, None) in
       let diags = memo_diag :: diags in
       match res with

@@ -30,6 +30,8 @@ let record ~kind ~f x =
   bump kind time;
   res, time
 
+let get ~kind = find kind
+
 let dump () =
   Format.asprintf "hashing: %f | parsing: %f | exec: %f"
     (find Kind.Hashing)
