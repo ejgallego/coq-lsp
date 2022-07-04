@@ -1,4 +1,4 @@
-let coq_protect f x =
+let coq_protect ~f x =
   try
     let res = f x in
     Ok res

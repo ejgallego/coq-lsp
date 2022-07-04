@@ -1,20 +1,5 @@
 module CS = Stats
 
-module InterpInfo = struct
-
-  type t =
-    { st : Vernacstate.t
-    ; warnings : unit
-    }
-
-end
-
-type interp_result = (InterpInfo.t, Loc.t option * Pp.t) result
-
-let coq_interp ~st cmd =
-  let st = Vernacinterp.interp ~st cmd in
-  { InterpInfo.st; warnings = () }
-
 module Stats = struct
 
   type 'a t = { res : 'a; cache_hit : bool; memory : int; time: float }
@@ -49,7 +34,7 @@ let input_info (v,st) =
 
 module HC = Hashtbl.Make(VernacInput)
 
-type cache = interp_result HC.t
+type cache = Vernacstate.t Coq_interp.interp_result HC.t
 let cache : cache ref = ref (HC.create 1000)
 
 let in_cache st stm =
@@ -64,10 +49,7 @@ let interp_command ~st stm : _ result Stats.t =
   | None, time_hash ->
     Lsp.Io.log_error "coq" "cache miss";
     let kind = CS.Kind.Exec in
-    let res, time_interp =
-      CS.record ~kind
-        ~f:(Coq_util.coq_protect (coq_interp ~st)) stm
-    in
+    let res, time_interp = CS.record ~kind ~f:(Coq_interp.interp ~st) stm in
     let () = HC.add !cache (stm,st) res in
     let time = time_hash +. time_interp in
     Stats.make ~time res

@@ -51,7 +51,7 @@ let parse_stm ~st ps =
       (fun _ -> Vernacinterp.get_default_proof_mode ())
       st.Vernacstate.lemmas
   in
-  Coq_util.coq_protect Vernacstate.(Parser.parse st.parsing Pvernac.(main_entry mode)) ps
+  Coq_util.coq_protect ps ~f:Vernacstate.(Parser.parse st.parsing Pvernac.(main_entry mode))
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot : unit Pcoq.Entry.t =
@@ -138,10 +138,10 @@ let process_and_parse ~coq_queue doc =
       (* memory is disabled as it is quite slow and misleading *)
       let { Memo.Stats.res; cache_hit; memory = _; time } = Memo.interp_command ~st ast in
       let memo_msg = Format.asprintf "Cache Hit: %b | Time: %f" cache_hit time in
-      let memo_diag = (to_orange ast.CAst.loc, 3, memo_msg, None) in
+      let memo_diag = (to_orange ast.CAst.loc, 4, memo_msg, None) in
       let diags = memo_diag :: diags in
       match res with
-      | Ok { st ; _ } ->
+      | Ok { res = st ; _ } ->
         (* let ok_diag = node.pos, 4, "OK", !Proofs.theorem in *)
         let ok_diag = (to_orange ast.CAst.loc, 3, "OK", None) in
         let diags = ok_diag :: diags in
