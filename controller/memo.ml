@@ -15,22 +15,22 @@ end
 (* This requires a ppx likely as to ignore the CAst location *)
 module VernacInput = struct
 
-  type t = Vernacexpr.vernac_control * Vernacstate.t
+  type t = Coq_ast.t * Vernacstate.t
 
   let equal (v1, st1) (v2, st2) =
-    if compare v1.CAst.v v2.CAst.v = 0
+    if Coq_ast.compare v1 v2 = 0
     then
       if compare st1 st2 = 0
       then true
       else false
     else false
 
-  let hash (v, st) = Hashtbl.hash (v.CAst.v, st)
+  let hash (v, st) = Hashtbl.hash (Coq_ast.hash v, st)
 
 end
 
 let input_info (v,st) =
-  Format.asprintf "stm: %d | st %d" (Hashtbl.hash v.CAst.v) (Hashtbl.hash st)
+  Format.asprintf "stm: %d | st %d" (Coq_ast.hash v) (Hashtbl.hash st)
 
 module HC = Hashtbl.Make(VernacInput)
 

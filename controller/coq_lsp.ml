@@ -148,69 +148,11 @@ let kind_of_type _tm = 13
    13 (* Variable *) | Type | Kind | Symb _ | _ when is_undef -> 14 (* Constant
    *) | _ -> 12 (* Function *) *)
 
-let match_coq_def f { Coq_doc.ast = v; _ } =
-  let open Vernacexpr in
-  let ndecls =
-    (* TODO: (co)fixpoint, instance, assumption *)
-    match v.v.expr with
-    | VernacDefinition (_, (CAst.{ loc = Some loc; v = name }, _), _) ->
-      Nameops.Name.fold_left (fun _ id -> [ (loc, id) ]) [] name
-    | VernacStartTheoremProof (_, ndecls) ->
-      let f_id = function
-        | (CAst.{ loc = None; _ }, _), _ -> None
-        | (CAst.{ loc = Some loc; v }, _), _ -> Some (loc, v)
-      in
-      CList.map_filter f_id ndecls
-    | _ -> []
-  in
-  CList.map (fun (loc, id) -> f loc id) ndecls
-(* | VernacLoad (_, _) -> (??) | VernacSyntaxExtension (_, _) -> (??) |
-   VernacOpenCloseScope (_, _) -> (??) | VernacDeclareScope _ -> (??) |
-   VernacDelimiters (_, _) -> (??) | VernacBindScope (_, _) -> (??) |
-   VernacInfix (_, _, _) -> (??) | VernacNotation (_, _, _) -> (??) |
-   VernacNotationAddFormat (_, _, _) -> (??) | VernacDeclareCustomEntry _ ->
-   (??) | VernacEndProof _ -> (??) | VernacExactProof _ -> (??) |
-   VernacAssumption (_, _, _) -> (??) | VernacInductive (_, _, _, _) -> (??) |
-   VernacFixpoint (_, _) -> (??) | VernacCoFixpoint (_, _) -> (??) |
-   VernacScheme _ -> (??) | VernacCombinedScheme (_, _) -> (??) | VernacUniverse
-   _ -> (??) | VernacConstraint _ -> (??) | VernacBeginSection _ -> (??) |
-   VernacEndSegment _ -> (??) | VernacRequire (_, _, _) -> (??) | VernacImport
-   (_, _) -> (??) | VernacCanonical _ -> (??) | VernacCoercion (_, _, _) -> (??)
-   | VernacIdentityCoercion (_, _, _) -> (??) | VernacNameSectionHypSet (_, _)
-   -> (??) | VernacInstance (_, _, _, _) -> (??) | VernacDeclareInstance (_, _,
-   _) -> (??) | VernacContext _ -> (??) | VernacExistingInstance _ -> (??) |
-   VernacExistingClass _ -> (??) | VernacDeclareModule (_, _, _, _) -> (??) |
-   VernacDefineModule (_, _, _, _, _) -> (??) | VernacDeclareModuleType (_, _,
-   _, _) -> (??) | VernacInclude _ -> (??) | VernacSolveExistential (_, _) ->
-   (??) | VernacAddLoadPath (_, _, _) -> (??) | VernacRemoveLoadPath _ -> (??) |
-   VernacAddMLPath (_, _) -> (??) | VernacDeclareMLModule _ -> (??) |
-   VernacChdir _ -> (??) | VernacWriteState _ -> (??) | VernacRestoreState _ ->
-   (??) | VernacResetName _ -> (??) | VernacResetInitial -> (??) | VernacBack _
-   -> (??) | VernacBackTo _ -> (??) | VernacCreateHintDb (_, _) -> (??) |
-   VernacRemoveHints (_, _) -> (??) | VernacHints (_, _) -> (??) |
-   VernacSyntacticDefinition (_, _, _) -> (??) | VernacArguments (_, _, _, _, _)
-   -> (??) | VernacReserve _ -> (??) | VernacGeneralizable _ -> (??) |
-   VernacSetOpacity _ -> (??) | VernacSetStrategy _ -> (??) | VernacUnsetOption
-   (_, _) -> (??) | VernacSetOption (_, _, _) -> (??) | VernacAddOption (_, _)
-   -> (??) | VernacRemoveOption (_, _) -> (??) | VernacMemOption (_, _) -> (??)
-   | VernacPrintOption _ -> (??) | VernacCheckMayEval (_, _, _) -> (??) |
-   VernacGlobalCheck _ -> (??) | VernacDeclareReduction (_, _) -> (??) |
-   VernacPrint _ -> (??) | VernacSearch (_, _, _) -> (??) | VernacLocate _ ->
-   (??) | VernacRegister (_, _) -> (??) | VernacPrimitive (_, _, _) -> (??) |
-   VernacComments _ -> (??) | VernacAbort _ -> (??) | VernacAbortAll -> (??) |
-   VernacRestart -> (??) | VernacUndo _ -> (??) | VernacUndoTo _ -> (??) |
-   VernacFocus _ -> (??) | VernacUnfocus -> (??) | VernacUnfocused -> (??) |
-   VernacBullet _ -> (??) | VernacSubproof _ -> (??) | VernacEndSubproof -> (??)
-   | VernacShow _ -> (??) | VernacCheckGuard -> (??) | VernacProof (_, _) ->
-   (??) | VernacProofMode _ -> (??) | VernacExtend (_, _) -> (??)) *)
-
-let grab_definitions f nodes =
-  List.fold_left (fun acc s -> match_coq_def f s @ acc) [] nodes
-
 let do_symbols ofmt ~id params =
   let file, _, (doc, _) = grab_doc params in
   let f loc id = mk_syminfo file (Names.Id.to_string id, "", 12, loc) in
-  let slist = grab_definitions f doc.Coq_doc.nodes in
+  let ast = List.map (fun v -> v.Coq_doc.ast) doc.Coq_doc.nodes in
+  let slist = Coq_ast.grab_definitions f ast in
   let msg = LSP.mk_reply ~id ~result:(`List slist) in
   LIO.send_json ofmt msg
 
@@ -246,7 +188,9 @@ let in_range ?loc (line, pos) =
 let get_goals ~doc ~line ~pos =
   let node =
     List.find_opt
-      (fun { Coq_doc.ast = CAst.{ loc; _ }; _ } -> in_range ?loc (line, pos))
+      (fun { Coq_doc.ast; _ } ->
+         let loc = Coq_ast.loc ast in
+         in_range ?loc (line, pos))
       doc.Coq_doc.nodes
   in
   Option.map
@@ -266,7 +210,8 @@ let do_completion ofmt ~id params =
   let uri, _line, _pos = get_docTextPosition params in
   let doc, _ = Hashtbl.find completed_table uri in
   let f _loc id = `Assoc [ ("label", `String Names.Id.(to_string id)) ] in
-  let clist = grab_definitions f doc.Coq_doc.nodes in
+  let ast = List.map (fun v -> v.Coq_doc.ast) doc.Coq_doc.nodes in
+  let clist = Coq_ast.grab_definitions f ast in
   let result = `List clist in
   let msg = LSP.mk_reply ~id ~result in
   LIO.send_json ofmt msg

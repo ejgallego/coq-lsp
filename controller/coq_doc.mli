@@ -16,10 +16,8 @@
 (* Status: Experimental                                                 *)
 (************************************************************************)
 
-type ast = Vernacexpr.vernac_control
-
 type node =
-  { ast : ast
+  { ast : Coq_ast.t
   ; exec : bool
   ; goal : Pp.t option
   }

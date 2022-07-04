@@ -10,10 +10,8 @@
 open Lsp_util
 module LSP = Lsp.Base
 
-type ast = Vernacexpr.vernac_control
-
 type node =
-  { ast : ast
+  { ast : Coq_ast.t
   ; exec : bool
   ; goal : Pp.t option
   }
@@ -49,9 +47,9 @@ let parse_stm ~st ps =
   let mode =
     Option.map
       (fun _ -> Vernacinterp.get_default_proof_mode ())
-      st.Vernacstate.lemmas
-  in
-  Coq_util.coq_protect ps ~f:Vernacstate.(Parser.parse st.parsing Pvernac.(main_entry mode))
+      st.Vernacstate.lemmas in
+  let parse ps = Vernacstate.(Parser.parse st.parsing Pvernac.(main_entry mode) ps) |> Option.map Coq_ast.of_coq in
+  Coq_util.coq_protect ps ~f:parse
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot : unit Pcoq.Entry.t =
@@ -84,14 +82,14 @@ let pr_goal (st : Vernacstate.t) : Pp.t option =
 let proof_st = ref None
 
 let register_hack_proof_recover ast st =
-  match ast.CAst.v.Vernacexpr.expr with
+  match (Coq_ast.to_coq ast).CAst.v.Vernacexpr.expr with
   | Vernacexpr.VernacStartTheoremProof _ ->
     proof_st := Some st; ()
   | _ -> ()
 
 (* Simple heuristic for Qed. *)
 let state_recovery_heuristic st v =
-  match v.CAst.v.Vernacexpr.expr with
+  match (Coq_ast.to_coq v).CAst.v.Vernacexpr.expr with
   (* Drop the top proof state if we reach a faulty Qed. *)
   | Vernacexpr.VernacEndProof _ ->
     let st = Option.default st !proof_st in
@@ -109,7 +107,7 @@ let state_recovery_heuristic st v =
 type process_action =
   | EOF
   | Skip
-  | Process of Vernacexpr.vernac_control
+  | Process of Coq_ast.t
 
 (* XXX: Imperative problem *)
 let process_and_parse ~coq_queue doc =
@@ -133,17 +131,18 @@ let process_and_parse ~coq_queue doc =
     | Skip -> stm doc st diags
     (* We interpret the command now *)
     | Process ast -> (
-      Lsp.Io.log_error "coq" ("parsed sentence: " ^ Pp.string_of_ppcmds (Ppvernac.pr_vernac ast));
+      let loc = Coq_ast.loc ast in
+      Lsp.Io.log_error "coq" ("parsed sentence: " ^ Pp.string_of_ppcmds (Coq_ast.print ast));
       register_hack_proof_recover ast st;
       (* memory is disabled as it is quite slow and misleading *)
       let { Memo.Stats.res; cache_hit; memory = _; time } = Memo.interp_command ~st ast in
       let memo_msg = Format.asprintf "Cache Hit: %b | Time: %f" cache_hit time in
-      let memo_diag = (to_orange ast.CAst.loc, 4, memo_msg, None) in
+      let memo_diag = (to_orange loc, 4, memo_msg, None) in
       let diags = memo_diag :: diags in
       match res with
       | Ok { res = st ; _ } ->
         (* let ok_diag = node.pos, 4, "OK", !Proofs.theorem in *)
-        let ok_diag = (to_orange ast.CAst.loc, 3, "OK", None) in
+        let ok_diag = (to_orange loc, 3, "OK", None) in
         let diags = ok_diag :: diags in
 
         (* this handling of the queue is wrong XXX *)
@@ -154,15 +153,15 @@ let process_and_parse ~coq_queue doc =
               Format.asprintf "feedbacks: %d" Queue.(length coq_queue)
             in
             Queue.clear coq_queue;
-            let queue_diag = (to_orange ast.CAst.loc, 3, fb_msg, None) in
+            let queue_diag = (to_orange loc, 3, fb_msg, None) in
             queue_diag :: diags)
           else diags
         in
         let node = { ast; exec = true; goal = pr_goal st } in
         let doc = { doc with nodes = node :: doc.nodes } in
         stm doc st diags
-      | Error (loc, msg) ->
-        let loc = Option.append loc ast.CAst.loc in
+      | Error (err_loc, msg) ->
+        let loc = Option.append err_loc loc in
         let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
         let node = { ast; exec = false; goal = pr_goal st } in
         let doc = { doc with nodes = node :: doc.nodes } in
