@@ -1,93 +1,96 @@
+This TODO file is a draft, for now we organize it in terms of Coq
+todos, and coq-lsp todos. We also include some other interesting
+info.
+
+* Coq LSP Todos
+
+ - profit from command refinement
+ - lsp server process and coq-lsp-checker client for every document
+ - dune integration, auto-build, dap
+ - documentation links
+ - jump to definition
+ - integration with tracing
+ - warnings suggestions / fix
+ - flags for coq process
+ - Implement onsave => compile vo file? [see on-disk cache issues below]
+
+* On-disk cache:
+
+  This is a complex topic due to sharing; for now, we have some basic
+  support for an on-disk cache, but quite a bit of engineering effort
+  may be needed for coq-lsp to be able to use it effectively.
+
+  As a reference, a 18 MiB hash table can become 2.5 GiB if serialized
+  naively without sharing.
+
+  Using `Marshall` for our Memo hash table does indeed work fine
+  w.r.t. space, however the newly loaded hash table seems to be
+  degenerate in some sense as the following happens:
+
+  - once the cache is loaded, for some reason `Hashtbl.find_opt` takes
+    ages, spending all its time in `compare`
+
+  - moreover, for some reason the state is different, and we get a
+    cache miss.
+
+  So a first step we would like to understand why we get a cache miss,
+  likely due to some CEphemeron's?
+
+  We get a cache miss even in the root state, so a first
+  interesting try would be `-boot -noinit` and see if we have a miss.
+
+  Or even better, we could develop a state diff tool.
+
+* Coq DB and libobject
+
+  A big task is to rework libobject so we have more principled access.
+
+  There is a start of discussion in https://github.com/coq/coq/pull/16261
+
 * Coq / Platform
 
-- Critical: remove ?proof argument to vernac_interp [this would allow
-  to hide a lot of internals of Lemmas]
+  Other misc todos:
 
-- Critical: admitted doesn't seem to drop the proof. That's very bad!
+- parsing state: this is the most critical part to do in Coq, as of
+  today, parsing at different points in Coq requires a very costly
+  state reconstruction, which greatly increases latency.
 
-  [the more I look to the implementation of admitted the more puzzled
-   I am]
+- common initialization code:
 
-- Remove derive, API for multiple proof terms.
+  A initial attempt was done in https://github.com/coq/coq/pulls/13418
+  following EJGA suggestions, but we want to merge with the other 3
+  copies that predate it, here, in SerAPI, and in jsCoq.
 
-- Improve typeclass hook onto pretyper
+  Some more flexibility is needed.
 
-- in order to implement lazy proof checking properly we need to refine
-  the type of vernac interp. We absolutely need 3 types or commands:
+- Remove derive, improve API for multiple proof terms.
 
-  - parsing only: GeneralState.t -> ParsingState.t -> ParsingState.t
-  - tactics: GeneralState.t -> Proofstate.t -> Proofstate.t
-  - general commands: GeneralState.t -> GeneralState.t
+  See issue: https://github.com/coq/coq/issues/10363
 
-  this will be hard to do upstream, but it is quite important.
+- proof handling refactoring:
 
-* Rough plan:
+  See issue:  https://github.com/coq/coq/issues/10041
 
-- overlays for PRs [pr-wise I'm done with regards to lsp, just waiting
-  for merges]
+  This was greatly advanced but still work to do, and many
+  possibilities
 
-- initialization code / libraries, etc... [port from SerAPI, likely
-  will make it a library]
+- Improve typeclass hook onto pretyper ? That seems messy, not sure it
+  is worth it.
 
-- task manager: design / POC done , just need to do 2, then this. The
-  protocol is really simple however there are some tricks needed. The
-  protocol only sends text for now, one process per document + a
-  control thread, using Lwt. Main todo here is that we need to account
-  for several processes per document. For example, completion will
-  need it's own process. So I dunno how much to complicate the
-  design. Coq is a bit special in that processing may take a looong
-  time.
+- refine the type of vernac interpretation. We want to make the
+  general state more explicit, in particular for parsing-only
+  commands, tactics, commands that alter the module structure.
 
-- things to do together: first thing will be incremental checking !
+  A nice idea here would be to give the vernac more structure
 
-* Minor bits
+- provide API for Coq SMT / CoqHammer and other tools to register
+  processes with the document manager, there was a discussion in a Coq
+  Hackathon about this.
 
-- remove Coq-specific bits from lsp_* [maybe make the modules a functor]
-- better handling of protocol IO / different kind of requests
+- OCaml multicore
 
-* Document-related
+* Related and interesting libraries
 
-- Prefix-based incremental checking
-- Lazy checking? What can we use for the UI?
-- Classification is a pain and fragile, what should the replacement be?
-
-
-* Protocol todos:
-
-- Implement onsave => compile vo file [this needs integration with Dune]
-
-* Control thread:
-
-- before master sends a task, it should check if the previous one was
-  cancelled, otherwise it should signal then send a new task.
-
-  No point on sending a task if the worker is not ready.
-
-- master / worker
-
-- define protocol as DSL, serialize with ppx
-
-- use Jane Street Async stuff to interact with processes? Does it work
-  on Win?
-  https://ocaml.janestreet.com/ocaml-core/latest/doc/async/index.html
-
-- what about Lwt? Does it work on Win?
-* Per-dev todo list:
-** Maxime
-   - get rid of Derive
-   - Shepherd vernac PR
-   - design of typed vernac interpretation?
-   - remove ?proof argument to vernac_interp [this would allow
-     to hide a lot of internals of Lemmas]?
-
-     [tree started by Emilio, needs some discussion on the semantics
-      of save_proof]
-
-** Vincent
-   - have a look to editors?
-   - [after unlock] incremental checking / document model
-
-** Emilio
-   - finish PRs [mostly done, in need of tweaks]
-   - finish the architecture, release lock
-   - write mail to Leo
+ - lev + lev_fiber: prime candidate for us using it
+ - let-def/lwd
+ - what about Lwt? Does it work OK on Win?
