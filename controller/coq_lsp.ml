@@ -248,6 +248,9 @@ let memo_read_from_disk () =
     Sys.remove memo_cache_file;
     ()
 
+let memo_read_from_disk () =
+  if false then memo_read_from_disk ()
+
 exception Lsp_exit
 
 (* XXX: We could split requests and notifications but with the OCaml theading
