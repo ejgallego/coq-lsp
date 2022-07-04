@@ -229,6 +229,10 @@ let memo_save_to_disk () =
     Sys.remove memo_cache_file;
     ()
 
+(* We disable it for now, see todo.org for more information *)
+let memo_save_to_disk () =
+  if false then memo_save_to_disk ()
+
 let memo_read_from_disk () =
   try
     if Sys.file_exists memo_cache_file then

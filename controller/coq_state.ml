@@ -1,8 +1,18 @@
 type t = Vernacstate.t
 
+let any_out oc (a : Summary.Frozen.any) =
+  let Summary.Frozen.Any (tag, _value) = a in
+  let name = Summary.Dyn.repr tag in
+  Lsp.Io.log_error "marshall" name;
+  Marshal.to_channel oc a []
+
+let _frozen_out oc (s : Summary.Frozen.t) =
+  Summary.Frozen.iter (any_out oc) s
+
 let summary_out oc (s : Summary.frozen) =
   let { Summary.summaries; ml_module } = s in
-  Marshal.to_channel oc summaries [Closures];
+  (* frozen_out oc summaries; *)
+  Marshal.to_channel oc summaries [];
   Marshal.to_channel oc ml_module [];
   ()
 
@@ -23,7 +33,7 @@ let system_in ic : Vernacstate.System.t =
   let s : Summary.frozen = summary_in ic in
   (l,s)
 
-let marshal_out oc st =
+let _marshal_out oc st =
   let { Vernacstate.parsing; system; lemmas; program; opaques; shallow } = st in
   Marshal.to_channel oc parsing [];
   system_out oc system;
@@ -34,7 +44,7 @@ let marshal_out oc st =
   Marshal.to_channel oc shallow [];
   ()
 
-let marshal_in ic =
+let _marshal_in ic =
   let parsing = Marshal.from_channel ic in
   let system = system_in ic in
   let lemmas = Marshal.from_channel ic in
@@ -42,6 +52,9 @@ let marshal_in ic =
   let opaques = Marshal.from_channel ic in
   let shallow = Marshal.from_channel ic in
   { Vernacstate.parsing; system; lemmas; program; opaques; shallow }
+
+let marshal_in ic = (Marshal.from_channel ic : t)
+let marshal_out oc st = Marshal.to_channel oc st []
 
 let of_coq x = x
 let to_coq x = x

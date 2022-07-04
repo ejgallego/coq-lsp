@@ -72,14 +72,14 @@ let interp_command ~st stm : _ result Stats.t =
 
 let mem_stats () = Obj.reachable_words (Obj.magic cache)
 
-let hashtbl_out oc t =
+let _hashtbl_out oc t =
   Marshal.to_channel oc (HC.length t) [];
   HC.iter (fun vi res ->
       VernacInput.marshal_out oc vi;
       Result.marshal_out oc res
     ) t
 
-let hashtbl_in ic =
+let _hashtbl_in ic =
   let ht = HC.create 1000 in
   let count : int = Marshal.from_channel ic in
   for _i = 0 to count - 1 do
@@ -90,13 +90,15 @@ let hashtbl_in ic =
   ht
 
 let load_from_disk ~file =
-  let in_c = open_in_bin file in
-  let in_cache : cache = hashtbl_in in_c in
+  let ic = open_in_bin file in
+  (* let in_cache : cache = hashtbl_in in_c in *)
+  let in_cache : cache = Marshal.from_channel ic in
   cache := in_cache;
-  close_in in_c
+  close_in ic
 
 let save_to_disk ~file =
-  let out_c = open_out_bin file in
+  let oc = open_out_bin file in
   let out_cache : cache = !cache in
-  hashtbl_out out_c out_cache;
-  close_out out_c
+  Marshal.to_channel oc out_cache [];
+  (* hashtbl_out out_c out_cache; *)
+  close_out oc
