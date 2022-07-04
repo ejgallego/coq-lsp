@@ -29,22 +29,24 @@ let flush_log () = F.pp_print_flush !debug_fmt ()
 
 exception ReadError of string
 
-let read_request ic =
+let read_request_raw ic =
   let cl = input_line ic in
   let sin = Scanf.Scanning.from_string cl in
-  try
-    let raw_obj =
-      Scanf.bscanf sin "Content-Length: %d\r" (fun size ->
-          let buf = Bytes.create size in
-          (* Consume the second \r\n *)
-          let _ = input_line ic in
-          really_input ic buf 0 size;
-          Bytes.to_string buf)
-    in
-    J.from_string raw_obj
+  let raw_obj =
+    Scanf.bscanf sin "Content-Length: %d\r" (fun size ->
+        let buf = Bytes.create size in
+        (* Consume the second \r\n *)
+        let _ = input_line ic in
+        really_input ic buf 0 size;
+        Bytes.to_string buf)
+  in
+  J.from_string raw_obj
+
+let read_request ic =
+  try read_request_raw ic
   with
   (* if the end of input is encountered while some more characters are needed to
-     read the current conversion specification. *)
+     read the current conversion specification, or the lsp server closes *)
   | End_of_file -> raise (ReadError "EOF")
   (* if the input does not match the format. *)
   | Scanf.Scan_failure msg

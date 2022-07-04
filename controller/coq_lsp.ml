@@ -333,7 +333,9 @@ let lsp_main log_file std vo_load_path ml_include_path =
   try
     loop state
   with
-  | Lsp_exit ->
+  | LIO.ReadError "EOF"
+  | Lsp_exit as exn ->
+    LIO.log_error "main" ("exiting" ^ if exn = Lsp_exit then "" else " [uncontrolled LSP shutdown]");
     LIO.flush_log ();
     flush_all ();
     close_out debug_oc;
