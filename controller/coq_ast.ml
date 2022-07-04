@@ -1,12 +1,14 @@
+module Vernacexpr = Serlib.Ser_vernacexpr
+
 type t = Vernacexpr.vernac_control
 
-let hash x = Hashtbl.hash x.CAst.v
-let compare x y = compare x.CAst.v y.CAst.v
+let hash x = Serlib.Ser_vernacexpr.hash_vernac_control x
+let compare x y = Serlib.Ser_vernacexpr.compare_vernac_control x y
+
 let to_coq x = x
 let of_coq x = x
 let print = Ppvernac.pr_vernac
 let loc { CAst.loc ; _ } = loc
-
 
 let match_coq_def f v : _ list =
   let open Vernacexpr in

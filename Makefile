@@ -3,7 +3,7 @@
 COQ_BUILD_CONTEXT=../_build/default/coq
 
 build: coq_boot
-	dune build $(DUNEOPT) coq/coq-core.install coq/coq-stdlib.install coq-lsp.install
+	dune build $(DUNEOPT) coq/coq-core.install coq/coq-stdlib.install coq-serapi/coq-serapi.install coq-lsp.install
 
 format: coq_boot
 	dune fmt
