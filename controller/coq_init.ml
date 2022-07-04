@@ -61,7 +61,8 @@ let coq_init opts =
   (**************************************************************************)
   (* Add root state!!                                                       *)
   (**************************************************************************)
-  Vernacstate.freeze_interp_state ~marshallable:false
+  Vernacstate.freeze_interp_state ~marshallable:false |> Coq_state.of_coq
+
 (* End of initialization *)
 
 let loadpath_from_coqproject () : Loadpath.vo_path list =
@@ -92,7 +93,7 @@ let loadpath_from_coqproject () : Loadpath.vo_path list =
 let doc_init ~root_state ~vo_load_path ~ml_include_path ~libname ~require_libs =
   Lsp.Io.log_error "init" "starting";
 
-  Vernacstate.unfreeze_interp_state root_state;
+  Vernacstate.unfreeze_interp_state (Coq_state.to_coq root_state);
 
   (* This should go away in Coq itself *)
   Safe_typing.allow_delayed_constants := true;
@@ -119,4 +120,4 @@ let doc_init ~root_state ~vo_load_path ~ml_include_path ~libname ~require_libs =
   load_objs require_libs;
 
   (* We return the state at this point! *)
-  Vernacstate.freeze_interp_state ~marshallable:false
+  Vernacstate.freeze_interp_state ~marshallable:false |> Coq_state.of_coq

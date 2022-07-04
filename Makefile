@@ -2,14 +2,16 @@
 
 COQ_BUILD_CONTEXT=../_build/default/coq
 
+PKG_SET=coq/coq-core.install coq/coq-stdlib.install coq-serapi/coq-serapi.install coq-lsp.install
+
 build: coq_boot
-	dune build $(DUNEOPT) coq/coq-core.install coq/coq-stdlib.install coq-serapi/coq-serapi.install coq-lsp.install
+	dune build $(DUNEOPT) $(PKG_SET)
 
 format: coq_boot
 	dune fmt
 
 watch: coq_boot
-	dune build -w $(DUNEOPT) coq/coq-core.install coq/coq-stdlib.install coq-lsp.install
+	dune build -w $(DUNEOPT) $(PKG_SET)
 
 build-all: coq_boot
 	dune build $(DUNEOPT) @all

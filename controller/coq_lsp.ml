@@ -75,7 +75,7 @@ let do_shutdown ofmt ~id =
 
 let doc_table : (string, _) Hashtbl.t = Hashtbl.create 39
 
-let completed_table : (string, Coq_doc.t * Vernacstate.t) Hashtbl.t =
+let completed_table : (string, Coq_doc.t * Coq_state.t) Hashtbl.t =
   Hashtbl.create 39
 
 (* Notification handling; reply is optional / asynchronous *)

@@ -26,16 +26,16 @@ type t =
   { uri : string
   ; version : int
   ; contents : string
-  ; root : Vernacstate.t
+  ; root : Coq_state.t
   ; nodes : node list
   }
 
 val create :
-     state:Vernacstate.t * Loadpath.vo_path list * string list * _
+     state:Coq_state.t * Loadpath.vo_path list * string list * _
   -> uri:string
   -> version:int
   -> contents:string
   -> t
 
 val check :
-  doc:t -> coq_queue:string Queue.t -> t * Vernacstate.t * Yojson.Basic.t
+  doc:t -> coq_queue:string Queue.t -> t * Coq_state.t * Yojson.Basic.t

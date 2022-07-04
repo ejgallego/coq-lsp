@@ -15,17 +15,27 @@ end
 (* This requires a ppx likely as to ignore the CAst location *)
 module VernacInput = struct
 
-  type t = Coq_ast.t * Vernacstate.t
+  type t = Coq_ast.t * Coq_state.t
 
   let equal (v1, st1) (v2, st2) =
     if Coq_ast.compare v1 v2 = 0
     then
-      if compare st1 st2 = 0
+      if Coq_state.compare st1 st2 = 0
       then true
       else false
     else false
 
   let hash (v, st) = Hashtbl.hash (Coq_ast.hash v, st)
+
+  let marshal_out oc (v, st) =
+    Coq_ast.marshal_out oc v;
+    Coq_state.marshal_out oc st;
+    ()
+
+  let marshal_in ic =
+    let v = Coq_ast.marshal_in ic in
+    let st = Coq_state.marshal_in ic in
+    (v, st)
 
 end
 
@@ -34,7 +44,13 @@ let input_info (v,st) =
 
 module HC = Hashtbl.Make(VernacInput)
 
-type cache = Vernacstate.t Coq_interp.interp_result HC.t
+module Result = struct
+  type t = Coq_state.t Coq_interp.interp_result
+  let marshal_in ic = (Coq_interp.marshal_in Coq_state.marshal_in ic : t)
+  let marshal_out oc t = Coq_interp.marshal_out Coq_state.marshal_out oc t
+end
+
+type cache = Result.t HC.t
 let cache : cache ref = ref (HC.create 1000)
 
 let in_cache st stm =
@@ -56,14 +72,31 @@ let interp_command ~st stm : _ result Stats.t =
 
 let mem_stats () = Obj.reachable_words (Obj.magic cache)
 
+let hashtbl_out oc t =
+  Marshal.to_channel oc (HC.length t) [];
+  HC.iter (fun vi res ->
+      VernacInput.marshal_out oc vi;
+      Result.marshal_out oc res
+    ) t
+
+let hashtbl_in ic =
+  let ht = HC.create 1000 in
+  let count : int = Marshal.from_channel ic in
+  for _i = 0 to count - 1 do
+    let vi = VernacInput.marshal_in ic in
+    let res = Result.marshal_in ic in
+    HC.add ht vi res
+  done;
+  ht
+
 let load_from_disk ~file =
   let in_c = open_in_bin file in
-  let in_cache : cache = Marshal.from_channel in_c in
+  let in_cache : cache = hashtbl_in in_c in
   cache := in_cache;
   close_in in_c
 
 let save_to_disk ~file =
   let out_c = open_out_bin file in
   let out_cache : cache = !cache in
-  Marshal.to_channel out_c out_cache [Closures];
+  hashtbl_out out_c out_cache;
   close_out out_c

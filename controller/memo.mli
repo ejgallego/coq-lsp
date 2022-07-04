@@ -5,12 +5,12 @@ module Stats : sig
 end
 
 (* debug *)
-val input_info : (Coq_ast.t * Vernacstate.t) -> string
+val input_info : (Coq_ast.t * Coq_state.t) -> string
 
 val interp_command :
-  st:Vernacstate.t ->
+  st:Coq_state.t ->
   Coq_ast.t ->
-  Vernacstate.t Coq_interp.interp_result Stats.t
+  Coq_state.t Coq_interp.interp_result Stats.t
 
 val mem_stats : unit -> int
 

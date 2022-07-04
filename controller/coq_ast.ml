@@ -69,3 +69,6 @@ let match_coq_def f v : _ list =
 
 let grab_definitions f nodes =
   List.fold_left (fun acc s -> match_coq_def f s @ acc) [] nodes
+
+let marshal_in ic = (Marshal.from_channel ic : t)
+let marshal_out oc v = Marshal.to_channel oc v []

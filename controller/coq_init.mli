@@ -25,13 +25,13 @@ type coq_opts =
   ; debug : bool  (** Enable Coq Debug mode *)
   }
 
-val coq_init : coq_opts -> Vernacstate.t
+val coq_init : coq_opts -> Coq_state.t
 
 val doc_init :
-     root_state:Vernacstate.t
+     root_state:Coq_state.t
   -> vo_load_path:Loadpath.vo_path list
   -> ml_include_path:string list
   -> libname:Names.DirPath.t
   -> require_libs:
        (string * string option * Vernacexpr.export_with_cats option) list
-  -> Vernacstate.t
+  -> Coq_state.t

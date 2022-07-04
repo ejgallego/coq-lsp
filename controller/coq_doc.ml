@@ -23,7 +23,7 @@ type t =
   { uri : string
   ; version : int
   ; contents : string
-  ; root : Vernacstate.t
+  ; root : Coq_state.t
   ; nodes : node list
   }
 
@@ -44,11 +44,9 @@ let create ~state ~uri ~version ~contents =
 (* let close_doc _modname = () *)
 
 let parse_stm ~st ps =
-  let mode =
-    Option.map
-      (fun _ -> Vernacinterp.get_default_proof_mode ())
-      st.Vernacstate.lemmas in
-  let parse ps = Vernacstate.(Parser.parse st.parsing Pvernac.(main_entry mode) ps) |> Option.map Coq_ast.of_coq in
+  let mode = Coq_state.mode ~st in
+  let st = Coq_state.parsing ~st in
+  let parse ps = Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps |> Option.map Coq_ast.of_coq in
   Stats.record ~kind:Stats.Kind.Parsing ~f:(Coq_util.coq_protect ~f:parse) ps
 
 (* Read the input stream until a dot is encountered *)
@@ -71,7 +69,8 @@ let rec discard_to_dot ps =
   | CLexer.Error.E _ -> discard_to_dot ps
   | e when CErrors.noncritical e -> ()
 
-let pr_goal (st : Vernacstate.t) : Pp.t option =
+let pr_goal (st : Coq_state.t) : Pp.t option =
+  let st = Coq_state.to_coq st in
   Option.map
     (Vernacstate.LemmaStack.with_top ~f:(fun pstate ->
          let proof = Declare.Proof.get pstate in
@@ -95,13 +94,7 @@ let state_recovery_heuristic st v =
     let st = Option.default st !proof_st in
     Lsp.Io.log_error "recovery" (Memo.input_info (v,st));
     proof_st := None;
-    Vernacstate.
-      { st with
-        lemmas =
-          Option.cata
-            (fun s -> snd @@ Vernacstate.LemmaStack.pop s)
-            None st.lemmas
-      }
+    Coq_state.drop_proofs ~st
   | _ -> st
 
 type process_action =
