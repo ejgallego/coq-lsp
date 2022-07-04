@@ -311,7 +311,7 @@ let lsp_main log_file std vo_load_path ml_include_path =
         | _ -> ())
     , q )
   in
-  let debug = Lsp.Debug.debug in
+  let debug = Lsp.Debug.all in
   let state =
     ( Coq_init.coq_init Coq_init.{ fb_handler; ml_load = None; debug }
     , vo_load_path
@@ -323,7 +323,7 @@ let lsp_main log_file std vo_load_path ml_include_path =
 
   let rec loop state =
     let com = LIO.read_request stdin in
-    if Lsp.Debug.debug_read then
+    if Lsp.Debug.read then
       LIO.log_object "read" com;
     process_input oc ~state com;
     F.pp_print_flush lp_fmt ();

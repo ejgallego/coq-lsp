@@ -113,7 +113,7 @@ type process_action =
 let process_and_parse ~coq_queue doc =
   let doc_handle = Pcoq.Parsable.make Gramlib.Stream.(of_string doc.contents) in
   let rec stm doc st diags =
-    if Lsp.Debug.parsing then Lsp.Io.log_error "coq" "parsing sentence";
+    (* if Lsp.Debug.parsing then Lsp.Io.log_error "coq" "parsing sentence"; *)
     (* Parsing *)
     let action, diags, parsing_time =
       match parse_stm ~st doc_handle with
@@ -142,7 +142,6 @@ let process_and_parse ~coq_queue doc =
       let diags = memo_diag :: diags in
       match res with
       | Ok { res = st ; _ } ->
-        (* let ok_diag = node.pos, 4, "OK", !Proofs.theorem in *)
         let ok_diag = (to_orange loc, 3, "OK", None) in
         let diags = ok_diag :: diags in
 
@@ -151,7 +150,10 @@ let process_and_parse ~coq_queue doc =
         let diags =
           if qlength > 0 then (
             let fb_msg =
-              Format.asprintf "feedbacks: %d" Queue.(length coq_queue)
+              let fbs = Queue.fold (fun acc l -> l :: acc) [] coq_queue in
+              Format.asprintf "feedbacks: %d @\n @[<v>%a@]"
+                Queue.(length coq_queue)
+                Format.(pp_print_list pp_print_string) fbs
             in
             Queue.clear coq_queue;
             let queue_diag = (to_orange loc, 3, fb_msg, None) in
@@ -176,6 +178,8 @@ let print_stats () =
   let size = Memo.mem_stats () in
   Lsp.Io.log_error "stats" (string_of_int size);
   Lsp.Io.log_error "cache" (Stats.dump ());
+  Lsp.Io.log_error "coq parsing" (Cstats.dump ());
+  Cstats.reset ();
   Stats.reset ()
 
 let check ~doc ~coq_queue =

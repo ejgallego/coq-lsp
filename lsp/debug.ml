@@ -1,6 +1,9 @@
-let debug = false
-let debug_send = debug
-let debug_read = debug
+(* Enable all debug flags *)
+let all = false
 
-let parsing = false
+(* LSP messages: Send and receive *)
+let send = false || all
+let read = false || all
 
+(* Parsing (this is a bit expensive as it will call the printer *)
+let parsing = false || all
