@@ -83,5 +83,5 @@ let load_from_disk ~file =
 let save_to_disk ~file =
   let out_c = open_out_bin file in
   let out_cache : cache = !cache in
-  Marshal.to_channel out_c out_cache [Marshal.Closures];
+  Marshal.to_channel out_c out_cache [Closures];
   close_out out_c

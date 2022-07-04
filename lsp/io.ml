@@ -25,6 +25,8 @@ let log_error hdr msg = F.fprintf !debug_fmt "[%s]: @[%s@]@\n%!" hdr msg
 let log_object hdr obj =
   F.fprintf !debug_fmt "[%s]: @[%a@]@\n%!" hdr J.(pretty_print ~std:false) obj
 
+let flush_log () = F.pp_print_flush !debug_fmt ()
+
 exception ReadError of string
 
 let read_request ic =

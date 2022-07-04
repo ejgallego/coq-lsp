@@ -274,6 +274,33 @@ let do_completion ofmt ~id params =
 
 let memo_cache_file = ".coq-lsp.cache"
 
+let memo_save_to_disk () =
+  try
+    Memo.save_to_disk ~file:memo_cache_file;
+    LIO.log_error "memo" "cache saved to disk"
+  with
+  | exn ->
+    LIO.log_error "memo" (Printexc.to_string exn);
+    Sys.remove memo_cache_file;
+    ()
+
+let memo_read_from_disk () =
+  try
+    if Sys.file_exists memo_cache_file then
+      begin
+        LIO.log_error "memo" "trying to load cache file";
+        Memo.load_from_disk ~file:memo_cache_file;
+        LIO.log_error "memo" "cache file loaded";
+      end
+    else
+      LIO.log_error "memo" "cache file not present";
+  with exn ->
+    LIO.log_error "memo" ("loading cache failed: " ^ Printexc.to_string exn);
+    Sys.remove memo_cache_file;
+    ()
+
+exception Lsp_exit
+
 (* XXX: We could split requests and notifications but with the OCaml theading
    model there is not a lot of difference yet; something to think for the
    future. *)
@@ -292,17 +319,10 @@ let dispatch_message ofmt ~state dict =
   | "textDocument/didOpen" -> do_open ofmt ~state params
   | "textDocument/didChange" -> do_change ofmt ~state params
   | "textDocument/didClose" -> do_close ofmt params
+  | "textDocument/didSave" ->
+    memo_save_to_disk ()
   | "exit" ->
-    begin
-      try
-        Memo.save_to_disk ~file:memo_cache_file;
-      with
-      | exn ->
-        LIO.log_error "memo" (Printexc.to_string exn);
-        Sys.remove memo_cache_file;
-        ()
-    end;
-    exit 0
+    raise Lsp_exit
   (* NOOPs *)
   | "initialized" | "workspace/didChangeWatchedFiles" -> ()
   | msg -> LIO.log_error "no_handler" msg
@@ -310,6 +330,8 @@ let dispatch_message ofmt ~state dict =
 let process_input ofmt ~state (com : J.t) =
   try dispatch_message ofmt ~state (U.to_assoc com) with
   | U.Type_error (msg, obj) -> LIO.log_object msg obj
+  | Lsp_exit ->
+    raise Lsp_exit
   | exn ->
     let bt = Printexc.get_backtrace () in
     LIO.log_error "process_input" (Printexc.to_string exn);
@@ -352,20 +374,7 @@ let lsp_main log_file std vo_load_path ml_include_path =
     , fb_queue )
   in
 
-  begin
-    try
-      if Sys.file_exists memo_cache_file then
-        begin
-          LIO.log_error "memo" "loading cache file";
-          Memo.load_from_disk ~file:memo_cache_file
-        end
-      else
-        LIO.log_error "memo" "cache file not present";
-    with exn ->
-      LIO.log_error "memo" ("loading cache: " ^ Printexc.to_string exn);
-      (* Sys.remove memo_cache_file; *)
-      ()
-  end;
+  memo_read_from_disk ();
 
   let rec loop state =
     let com = LIO.read_request stdin in
@@ -378,14 +387,21 @@ let lsp_main log_file std vo_load_path ml_include_path =
   in
   try
     loop state
-  with exn ->
+  with
+  | Lsp_exit ->
+    LIO.flush_log ();
+    flush_all ();
+    close_out debug_oc;
+    close_out lp_oc
+
+  | exn ->
     let bt = Printexc.get_backtrace () in
     let exn, info = Exninfo.capture exn in
     let exn_msg = Printexc.to_string exn in
     LIO.log_error "fatal error" (exn_msg ^ bt);
     LIO.log_error "fatal_error [coq iprint]"
       Pp.(string_of_ppcmds CErrors.(iprint (exn,info)));
-    F.pp_print_flush !LIO.debug_fmt ();
+    LIO.flush_log ();
     flush_all ();
     close_out debug_oc;
     close_out lp_oc
