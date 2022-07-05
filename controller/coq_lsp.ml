@@ -81,7 +81,7 @@ let completed_table : (string, Coq_doc.t * Coq_state.t) Hashtbl.t =
 (* Notification handling; reply is optional / asynchronous *)
 let do_check_text ofmt ~state ~doc =
   let _, _, _, coq_queue = state in
-  let doc, final_st, diags = Coq_doc.check ~doc ~coq_queue in
+  let doc, final_st, diags = Coq_doc.check ~ofmt ~doc ~coq_queue in
   Hashtbl.replace completed_table doc.uri (doc, final_st);
   LIO.send_json ofmt @@ diags
 
@@ -319,6 +319,7 @@ let lsp_main log_file std vo_load_path ml_include_path =
   memo_read_from_disk ();
 
   let rec loop state =
+    (* XXX: Implement a queue, compact *)
     let com = LIO.read_request stdin in
     if Lsp.Debug.read then LIO.log_object "read" com;
     process_input oc ~state com;

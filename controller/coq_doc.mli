@@ -38,4 +38,5 @@ val create :
   -> t
 
 val check :
+  ofmt:Format.formatter ->
   doc:t -> coq_queue:string Queue.t -> t * Coq_state.t * Yojson.Basic.t

@@ -106,10 +106,25 @@ type process_action =
   | Skip
   | Process of Coq_ast.t
 
+let json_of_diags ~uri ~version diags =
+  LSP.mk_diagnostics ~uri ~version
+  @@ List.fold_left
+    (fun acc (pos, lvl, msg, goal) ->
+       match pos with
+       | None -> acc
+       | Some pos -> (pos, lvl, msg, goal) :: acc)
+    [] diags
+
 (* XXX: Imperative problem *)
-let process_and_parse ~coq_queue doc =
+let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
   let doc_handle = Pcoq.Parsable.make Gramlib.Stream.(of_string doc.contents) in
   let rec stm doc st diags =
+    (* Eager update! *)
+    if Config.eager_diagnostics then
+      begin
+        let diags = json_of_diags ~uri ~version diags in
+        Lsp.Io.send_json ofmt diags
+      end;
     (* if Lsp.Debug.parsing then Lsp.Io.log_error "coq" "parsing sentence"; *)
     (* Parsing *)
     let action, diags, parsing_time =
@@ -189,18 +204,12 @@ let print_stats () =
   Cstats.reset ();
   Stats.reset ()
 
-let check ~doc ~coq_queue =
+let check ~ofmt ~doc ~coq_queue =
   let uri, version = (doc.uri, doc.version) in
 
   (* Start library *)
-  let doc, st, diags = (process_and_parse ~coq_queue) doc in
+  let doc, st, diags = (process_and_parse ~ofmt ~uri ~version ~coq_queue) doc in
   print_stats ();
   ( doc
   , st
-  , LSP.mk_diagnostics ~uri ~version
-    @@ List.fold_left
-         (fun acc (pos, lvl, msg, goal) ->
-           match pos with
-           | None -> acc
-           | Some pos -> (pos, lvl, msg, goal) :: acc)
-         [] diags )
+  , json_of_diags ~uri ~version diags )
