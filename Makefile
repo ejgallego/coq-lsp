@@ -29,5 +29,9 @@ opam:
 	opam pin add coq-lsp . --kind=path -y
 	opam install coq-lsp
 
+# Create local opam switch
+opam-switch:
+	opam switch create . --empty
+
 submodules-init:
 	git submodule update --init
