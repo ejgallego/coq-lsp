@@ -46,7 +46,10 @@ let create ~state ~uri ~version ~contents =
 let parse_stm ~st ps =
   let mode = Coq_state.mode ~st in
   let st = Coq_state.parsing ~st in
-  let parse ps = Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps |> Option.map Coq_ast.of_coq in
+  let parse ps =
+    Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
+    |> Option.map Coq_ast.of_coq
+  in
   Stats.record ~kind:Stats.Kind.Parsing ~f:(Coq_util.coq_protect ~f:parse) ps
 
 (* Read the input stream until a dot is encountered *)
@@ -83,7 +86,8 @@ let proof_st = ref None
 let register_hack_proof_recover ast st =
   match (Coq_ast.to_coq ast).CAst.v.Vernacexpr.expr with
   | Vernacexpr.VernacStartTheoremProof _ ->
-    proof_st := Some st; ()
+    proof_st := Some st;
+    ()
   | _ -> ()
 
 (* Simple heuristic for Qed. *)
@@ -92,7 +96,7 @@ let state_recovery_heuristic st v =
   (* Drop the top proof state if we reach a faulty Qed. *)
   | Vernacexpr.VernacEndProof _ ->
     let st = Option.default st !proof_st in
-    Lsp.Io.log_error "recovery" (Memo.input_info (v,st));
+    Lsp.Io.log_error "recovery" (Memo.input_info (v, st));
     proof_st := None;
     Coq_state.drop_proofs ~st
   | _ -> st
@@ -125,16 +129,25 @@ let process_and_parse ~coq_queue doc =
     (* We interpret the command now *)
     | Process ast -> (
       let loc = Coq_ast.loc ast in
-      if Lsp.Debug.parsing then Lsp.Io.log_error "coq" ("parsed sentence: " ^ Pp.string_of_ppcmds (Coq_ast.print ast));
+      if Lsp.Debug.parsing then
+        Lsp.Io.log_error "coq"
+          ("parsed sentence: " ^ Pp.string_of_ppcmds (Coq_ast.print ast));
       register_hack_proof_recover ast st;
       (* memory is disabled as it is quite slow and misleading *)
-      let { Memo.Stats.res; cache_hit; memory = _; time } = Memo.interp_command ~st ast in
+      let { Memo.Stats.res; cache_hit; memory = _; time } =
+        Memo.interp_command ~st ast
+      in
       let cptime = Stats.get ~kind:Stats.Kind.Parsing in
-      let memo_msg = Format.asprintf "Cache Hit: %b | Exec Time: %f | Parsing time: %f | Cumulative parsing: %f" cache_hit time parsing_time cptime in
+      let memo_msg =
+        Format.asprintf
+          "Cache Hit: %b | Exec Time: %f | Parsing time: %f | Cumulative \
+           parsing: %f"
+          cache_hit time parsing_time cptime
+      in
       let memo_diag = (to_orange loc, 4, memo_msg, None) in
       let diags = memo_diag :: diags in
       match res with
-      | Ok { res = st ; _ } ->
+      | Ok { res = st; _ } ->
         let ok_diag = (to_orange loc, 3, "OK", None) in
         let diags = ok_diag :: diags in
 
@@ -146,7 +159,8 @@ let process_and_parse ~coq_queue doc =
               let fbs = Queue.fold (fun acc l -> l :: acc) [] coq_queue in
               Format.asprintf "feedbacks: %d @\n @[<v>%a@]"
                 Queue.(length coq_queue)
-                Format.(pp_print_list pp_print_string) fbs
+                Format.(pp_print_list pp_print_string)
+                fbs
             in
             Queue.clear coq_queue;
             let queue_diag = (to_orange loc, 3, fb_msg, None) in

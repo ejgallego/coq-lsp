@@ -1,12 +1,10 @@
 (executable
  (name coq_lsp)
  (public_name coq-lsp)
- (modules lsp_util coq_init coq_ast coq_interp coq_doc coq_state coq_lsp coq_util stats memo)
+ (modules lsp_util coq_init coq_ast coq_interp coq_doc coq_state coq_lsp
+   coq_util stats memo)
  (link_flags -linkall)
  ; Unfortunate we have to link the STM due to the LTAC plugin
  ; depending on it, we should fix this upstream
- (libraries
-   coq-core.vernac coq-core.stm
-   coq-serapi.serlib
-   coq-serapi.sertop_v8_12
-   lsp cmdliner))
+ (libraries coq-core.vernac coq-core.stm coq-serapi.serlib
+   coq-serapi.sertop_v8_12 lsp cmdliner))

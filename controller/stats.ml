@@ -8,11 +8,13 @@
 (************************************************************************)
 
 module Kind = struct
-  type t = Hashing | Parsing | Exec
+  type t =
+    | Hashing
+    | Parsing
+    | Exec
 end
 
 let stats = Hashtbl.create 1000
-
 let find kind = Hashtbl.find_opt stats kind |> Option.default 0.0
 
 let bump kind time =
@@ -23,20 +25,18 @@ let time f x =
   let before = Unix.gettimeofday () in
   let res = f x in
   let after = Unix.gettimeofday () in
-  res, after -. before
+  (res, after -. before)
 
 let record ~kind ~f x =
   let res, time = time f x in
   bump kind time;
-  res, time
+  (res, time)
 
 let get ~kind = find kind
 
 let dump () =
-  Format.asprintf "hashing: %f | parsing: %f | exec: %f"
-    (find Kind.Hashing)
-    (find Kind.Parsing)
-    (find Kind.Exec)
+  Format.asprintf "hashing: %f | parsing: %f | exec: %f" (find Kind.Hashing)
+    (find Kind.Parsing) (find Kind.Exec)
 
 let reset () =
   Hashtbl.remove stats Kind.Hashing;
