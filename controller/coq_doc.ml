@@ -204,8 +204,10 @@ let print_stats () =
     end;
 
   Lsp.Io.log_error "cache" (Stats.dump ());
+  Lsp.Io.log_error "cache" (Memo.CacheStats.stats ());
   Lsp.Io.log_error "coq parsing" (Cstats.dump ());
   Cstats.reset ();
+  Memo.CacheStats.reset ();
   Stats.reset ()
 
 let check ~ofmt ~doc ~coq_queue =

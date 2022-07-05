@@ -37,6 +37,20 @@ module VernacInput = struct
     (v, st)
 end
 
+module CacheStats = struct
+
+  let nhit, ntotal = ref 0, ref 0
+
+  let reset () = nhit := 0; ntotal := 0
+  let hit () = incr nhit; incr ntotal
+  let miss () = incr ntotal
+
+  let stats () =
+    if !ntotal = 0 then "no stats" else
+      let hit_rate = Stdlib.Float.of_int !nhit /. Stdlib.Float.of_int !ntotal *. 100.0 in
+      Format.asprintf "cache hit rate: %3.2f@\n" hit_rate
+end
+
 let input_info (v, st) =
   Format.asprintf "stm: %d | st %d" (Coq_ast.hash v) (Hashtbl.hash st)
 
@@ -61,14 +75,17 @@ let interp_command ~st stm : _ result Stats.t =
   match in_cache st stm with
   | Some st, time ->
     Lsp.Io.log_error "coq" "cache hit";
+    CacheStats.hit ();
     Stats.make ~cache_hit:true ~time st
   | None, time_hash ->
     Lsp.Io.log_error "coq" "cache miss";
+    CacheStats.miss ();
     let kind = CS.Kind.Exec in
     let res, time_interp = CS.record ~kind ~f:(Coq_interp.interp ~st) stm in
     let () = HC.add !cache (stm, st) res in
     let time = time_hash +. time_interp in
     Stats.make ~time res
+
 
 let mem_stats () = Obj.reachable_words (Obj.magic cache)
 

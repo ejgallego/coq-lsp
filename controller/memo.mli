@@ -16,3 +16,8 @@ val interp_command :
 val mem_stats : unit -> int
 val load_from_disk : file:string -> unit
 val save_to_disk : file:string -> unit
+
+module CacheStats : sig
+  val reset : unit -> unit
+  val stats : unit -> string
+end
