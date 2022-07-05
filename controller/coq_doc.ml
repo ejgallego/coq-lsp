@@ -197,8 +197,12 @@ let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
   stm doc doc.root []
 
 let print_stats () =
-  let size = Memo.mem_stats () in
-  Lsp.Io.log_error "stats" (string_of_int size);
+  if Config.mem_stats then
+    begin
+      let size = Memo.mem_stats () in
+      Lsp.Io.log_error "stats" (string_of_int size)
+    end;
+
   Lsp.Io.log_error "cache" (Stats.dump ());
   Lsp.Io.log_error "coq parsing" (Cstats.dump ());
   Cstats.reset ();
