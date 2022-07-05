@@ -28,3 +28,6 @@ clean:
 opam:
 	opam pin add coq-lsp . --kind=path -y
 	opam install coq-lsp
+
+submodules-init:
+	git submodule update --init
