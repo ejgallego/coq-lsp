@@ -16,7 +16,7 @@ build: coq_boot
 	dune build $(DUNEOPT) $(PKG_SET)
 
 format: coq_boot
-	dune fmt
+	dune fmt $(DUNEOPT)
 
 watch: coq_boot
 	dune build -w $(DUNEOPT) $(PKG_SET)
