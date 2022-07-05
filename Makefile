@@ -25,7 +25,10 @@ build-all: coq_boot
 	dune build $(DUNEOPT) @all
 
 coq/config/coq_config.ml:
-	cd coq && ./configure -no-ask -prefix $(shell pwd)/_build/install/default/ -native-compiler no && cp theories/dune.disabled theories/dune
+	cd coq \
+	&& ./configure -no-ask -prefix $(shell pwd)/_build/install/default/ \
+		-native-compiler no \
+	&& cp theories/dune.disabled theories/dune
 
 coq_boot: coq/config/coq_config.ml
 
