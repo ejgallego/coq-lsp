@@ -33,5 +33,9 @@ opam:
 opam-switch:
 	opam switch create . --empty
 
+# Install opam deps
+opam-deps:
+	opam install ./coq-lsp.opam -y --deps-only
+
 submodules-init:
 	git submodule update --init
