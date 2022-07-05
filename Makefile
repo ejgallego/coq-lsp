@@ -15,7 +15,7 @@ ocaml-lsp-server
 build: coq_boot
 	dune build $(DUNEOPT) $(PKG_SET)
 
-format: coq_boot
+fmt format: coq_boot
 	dune fmt $(DUNEOPT)
 
 watch: coq_boot
