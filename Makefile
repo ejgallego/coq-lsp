@@ -6,8 +6,11 @@ vendor/coq/coq-stdlib.install \
 vendor/coq-serapi/coq-serapi.install \
 coq-lsp.install
 
+# Get the ocamlformat version from the .ocamlformat file
+OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
+
 DEV_DEPS= \
-ocamlformat.0.22.4 \
+$(OCAMLFORMAT) \
 ocaml-lsp-server
 
 .PHONY: build
