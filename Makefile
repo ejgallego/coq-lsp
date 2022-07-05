@@ -3,9 +3,9 @@
 COQ_BUILD_CONTEXT=../_build/default/coq
 
 PKG_SET= \
-coq/coq-core.install \
-coq/coq-stdlib.install \
-coq-serapi/coq-serapi.install \
+vendor/coq/coq-core.install \
+vendor/coq/coq-stdlib.install \
+vendor/coq-serapi/coq-serapi.install \
 coq-lsp.install
 
 DEV_DEPS= \
@@ -25,7 +25,7 @@ build-all: coq_boot
 	dune build $(DUNEOPT) @all
 
 coq/config/coq_config.ml:
-	cd coq \
+	cd vendor/coq \
 	&& ./configure -no-ask -prefix $(shell pwd)/_build/install/default/ \
 		-native-compiler no \
 	&& cp theories/dune.disabled theories/dune
