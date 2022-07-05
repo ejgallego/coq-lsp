@@ -15,6 +15,7 @@ ocaml-lsp-server
 build: coq_boot
 	dune build $(DUNEOPT) $(PKG_SET)
 
+.PHONY: fmt format
 fmt format: coq_boot
 	dune fmt $(DUNEOPT)
 
