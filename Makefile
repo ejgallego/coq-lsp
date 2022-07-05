@@ -2,7 +2,11 @@
 
 COQ_BUILD_CONTEXT=../_build/default/coq
 
-PKG_SET=coq/coq-core.install coq/coq-stdlib.install coq-serapi/coq-serapi.install coq-lsp.install
+PKG_SET= \
+coq/coq-core.install \
+coq/coq-stdlib.install \
+coq-serapi/coq-serapi.install \
+coq-lsp.install
 
 DEV_DEPS= \
 ocamlformat.0.22.4 \
