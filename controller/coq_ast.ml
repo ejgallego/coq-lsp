@@ -4,11 +4,10 @@ type t = Vernacexpr.vernac_control
 
 let hash x = Serlib.Ser_vernacexpr.hash_vernac_control x
 let compare x y = Serlib.Ser_vernacexpr.compare_vernac_control x y
-
 let to_coq x = x
 let of_coq x = x
 let print = Ppvernac.pr_vernac
-let loc { CAst.loc ; _ } = loc
+let loc { CAst.loc; _ } = loc
 
 let match_coq_def f v : _ list =
   let open Vernacexpr in
@@ -70,5 +69,5 @@ let match_coq_def f v : _ list =
 let grab_definitions f nodes =
   List.fold_left (fun acc s -> match_coq_def f s @ acc) [] nodes
 
-let marshal_in ic = (Marshal.from_channel ic : t)
+let marshal_in ic : t = Marshal.from_channel ic
 let marshal_out oc v = Marshal.to_channel oc v []

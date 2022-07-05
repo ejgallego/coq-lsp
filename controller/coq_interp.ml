@@ -1,10 +1,8 @@
 module Info = struct
-
   type 'a t =
     { res : 'a
     ; warnings : unit
     }
-
 end
 
 type 'a interp_result = ('a Info.t, Loc.t option * Pp.t) result
@@ -15,10 +13,9 @@ let coq_interp ~st cmd =
   Vernacinterp.interp ~st cmd |> Coq_state.of_coq
 
 let interp ~st cmd =
-  Coq_util.coq_protect cmd
-    ~f:(fun cmd ->
-        let res = coq_interp ~st cmd in
-        { Info.res; warnings = () })
+  Coq_util.coq_protect cmd ~f:(fun cmd ->
+      let res = coq_interp ~st cmd in
+      { Info.res; warnings = () })
 
 let marshal_out f oc res =
   match res with
@@ -39,4 +36,4 @@ let marshal_in f ic =
   else
     let loc : Loc.t option = Marshal.from_channel ic in
     let msg : Pp.t = Marshal.from_channel ic in
-    Error (loc,msg)
+    Error (loc, msg)

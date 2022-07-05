@@ -43,8 +43,7 @@ let read_request_raw ic =
   J.from_string raw_obj
 
 let read_request ic =
-  try read_request_raw ic
-  with
+  try read_request_raw ic with
   (* if the end of input is encountered while some more characters are needed to
      read the current conversion specification, or the lsp server closes *)
   | End_of_file -> raise (ReadError "EOF")
@@ -56,8 +55,7 @@ let read_request ic =
   | Invalid_argument msg -> raise (ReadError msg)
 
 let send_json fmt obj =
-  if Debug.send then
-    log_object "send" obj;
+  if Debug.send then log_object "send" obj;
   let msg = F.asprintf "%a" J.(pretty_print ~std:true) obj in
   let size = String.length msg in
   F.fprintf fmt "Content-Length: %d\r\n\r\n%s%!" size msg

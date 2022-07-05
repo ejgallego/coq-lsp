@@ -1,8 +1,8 @@
 [submodule "coq"]
-	path = coq
+	path = vendor/coq
 	url = git@github.com:ejgallego/coq.git
 	branch = proof+no_global_partial
 [submodule "coq-serapi"]
-	path = coq-serapi
+	path = vendor/coq-serapi
 	url = git@github.com:ejgallego/coq-serapi.git
 	branch = v8.17

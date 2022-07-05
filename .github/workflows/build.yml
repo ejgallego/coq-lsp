@@ -6,25 +6,46 @@ jobs:
   build:
     strategy:
       matrix:
-        ocaml: [ 4.14.x ]
+        ocaml: [4.14.x]
         os: [macOS-latest, ubuntu-latest]
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Checkout code
+      - name: 🔭 Checkout code
         uses: actions/checkout@v3
         with:
           submodules: recursive
 
-      - name: Setup OCaml
+      - name: 🐫 Setup OCaml
         uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml }}
           dune-cache: true
-      - name: Build coq-lsp
+
+      - name: 🧱 Build coq-lsp
         run: |
-          eval $(opam env)
-          opam install . --deps-only
+          opam exec -- make opam-deps
           opam exec -- make build
+
+  lint-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔭 Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: 🐫 Setup OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: 4.14.x
+          dune-cache: true
+
+      - name: 📐 Format
+        # TODO make this faster, use nix?
+        run: |
+          opam exec -- make opam-deps
+          opam exec -- make opam-dev-deps
+          opam exec -- make fmt

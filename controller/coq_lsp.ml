@@ -189,8 +189,8 @@ let get_goals ~doc ~line ~pos =
   let node =
     List.find_opt
       (fun { Coq_doc.ast; _ } ->
-         let loc = Coq_ast.loc ast in
-         in_range ?loc (line, pos))
+        let loc = Coq_ast.loc ast in
+        in_range ?loc (line, pos))
       doc.Coq_doc.nodes
   in
   Option.map
@@ -223,33 +223,27 @@ let memo_save_to_disk () =
   try
     Memo.save_to_disk ~file:memo_cache_file;
     LIO.log_error "memo" "cache saved to disk"
-  with
-  | exn ->
+  with exn ->
     LIO.log_error "memo" (Printexc.to_string exn);
     Sys.remove memo_cache_file;
     ()
 
 (* We disable it for now, see todo.org for more information *)
-let memo_save_to_disk () =
-  if false then memo_save_to_disk ()
+let memo_save_to_disk () = if false then memo_save_to_disk ()
 
 let memo_read_from_disk () =
   try
-    if Sys.file_exists memo_cache_file then
-      begin
-        LIO.log_error "memo" "trying to load cache file";
-        Memo.load_from_disk ~file:memo_cache_file;
-        LIO.log_error "memo" "cache file loaded";
-      end
-    else
-      LIO.log_error "memo" "cache file not present";
+    if Sys.file_exists memo_cache_file then (
+      LIO.log_error "memo" "trying to load cache file";
+      Memo.load_from_disk ~file:memo_cache_file;
+      LIO.log_error "memo" "cache file loaded")
+    else LIO.log_error "memo" "cache file not present"
   with exn ->
     LIO.log_error "memo" ("loading cache failed: " ^ Printexc.to_string exn);
     Sys.remove memo_cache_file;
     ()
 
-let memo_read_from_disk () =
-  if false then memo_read_from_disk ()
+let memo_read_from_disk () = if false then memo_read_from_disk ()
 
 exception Lsp_exit
 
@@ -271,10 +265,8 @@ let dispatch_message ofmt ~state dict =
   | "textDocument/didOpen" -> do_open ofmt ~state params
   | "textDocument/didChange" -> do_change ofmt ~state params
   | "textDocument/didClose" -> do_close ofmt params
-  | "textDocument/didSave" ->
-    memo_save_to_disk ()
-  | "exit" ->
-    raise Lsp_exit
+  | "textDocument/didSave" -> memo_save_to_disk ()
+  | "exit" -> raise Lsp_exit
   (* NOOPs *)
   | "initialized" | "workspace/didChangeWatchedFiles" -> ()
   | msg -> LIO.log_error "no_handler" msg
@@ -282,8 +274,7 @@ let dispatch_message ofmt ~state dict =
 let process_input ofmt ~state (com : J.t) =
   try dispatch_message ofmt ~state (U.to_assoc com) with
   | U.Type_error (msg, obj) -> LIO.log_object msg obj
-  | Lsp_exit ->
-    raise Lsp_exit
+  | Lsp_exit -> raise Lsp_exit
   | exn ->
     let bt = Printexc.get_backtrace () in
     LIO.log_error "process_input" (Printexc.to_string exn);
@@ -292,7 +283,6 @@ let process_input ofmt ~state (com : J.t) =
     LIO.log_error "BT" bt
 
 let lsp_main log_file std vo_load_path ml_include_path =
-
   LSP.std_protocol := std;
   Exninfo.record_backtrace true;
 
@@ -330,31 +320,27 @@ let lsp_main log_file std vo_load_path ml_include_path =
 
   let rec loop state =
     let com = LIO.read_request stdin in
-    if Lsp.Debug.read then
-      LIO.log_object "read" com;
+    if Lsp.Debug.read then LIO.log_object "read" com;
     process_input oc ~state com;
     F.pp_print_flush lp_fmt ();
     flush lp_oc;
     loop state
   in
-  try
-    loop state
-  with
-  | LIO.ReadError "EOF"
-  | Lsp_exit as exn ->
-    LIO.log_error "main" ("exiting" ^ if exn = Lsp_exit then "" else " [uncontrolled LSP shutdown]");
+  try loop state with
+  | (LIO.ReadError "EOF" | Lsp_exit) as exn ->
+    LIO.log_error "main"
+      ("exiting" ^ if exn = Lsp_exit then "" else " [uncontrolled LSP shutdown]");
     LIO.flush_log ();
     flush_all ();
     close_out debug_oc;
     close_out lp_oc
-
   | exn ->
     let bt = Printexc.get_backtrace () in
     let exn, info = Exninfo.capture exn in
     let exn_msg = Printexc.to_string exn in
     LIO.log_error "fatal error" (exn_msg ^ bt);
     LIO.log_error "fatal_error [coq iprint]"
-      Pp.(string_of_ppcmds CErrors.(iprint (exn,info)));
+      Pp.(string_of_ppcmds CErrors.(iprint (exn, info)));
     LIO.flush_log ();
     flush_all ();
     close_out debug_oc;

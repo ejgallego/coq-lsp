@@ -1,28 +1,27 @@
 module CS = Stats
 
 module Stats = struct
+  type 'a t =
+    { res : 'a
+    ; cache_hit : bool
+    ; memory : int
+    ; time : float
+    }
 
-  type 'a t = { res : 'a; cache_hit : bool; memory : int; time: float }
-
-  let make ?(cache_hit=false) ~time res =
+  let make ?(cache_hit = false) ~time res =
     (* This is quite slow! *)
     (* let memory = Obj.magic res |> Obj.reachable_words in *)
     let memory = 0 in
     { res; cache_hit; memory; time }
-
 end
 
 (* This requires a ppx likely as to ignore the CAst location *)
 module VernacInput = struct
-
   type t = Coq_ast.t * Coq_state.t
 
   let equal (v1, st1) (v2, st2) =
-    if Coq_ast.compare v1 v2 = 0
-    then
-      if Coq_state.compare st1 st2 = 0
-      then true
-      else false
+    if Coq_ast.compare v1 v2 = 0 then
+      if Coq_state.compare st1 st2 = 0 then true else false
     else false
 
   let hash (v, st) = Hashtbl.hash (Coq_ast.hash v, st)
@@ -36,21 +35,22 @@ module VernacInput = struct
     let v = Coq_ast.marshal_in ic in
     let st = Coq_state.marshal_in ic in
     (v, st)
-
 end
 
-let input_info (v,st) =
+let input_info (v, st) =
   Format.asprintf "stm: %d | st %d" (Coq_ast.hash v) (Hashtbl.hash st)
 
-module HC = Hashtbl.Make(VernacInput)
+module HC = Hashtbl.Make (VernacInput)
 
 module Result = struct
   type t = Coq_state.t Coq_interp.interp_result
-  let marshal_in ic = (Coq_interp.marshal_in Coq_state.marshal_in ic : t)
+
+  let marshal_in ic : t = Coq_interp.marshal_in Coq_state.marshal_in ic
   let marshal_out oc t = Coq_interp.marshal_out Coq_state.marshal_out oc t
 end
 
 type cache = Result.t HC.t
+
 let cache : cache ref = ref (HC.create 1000)
 
 let in_cache st stm =
@@ -66,7 +66,7 @@ let interp_command ~st stm : _ result Stats.t =
     Lsp.Io.log_error "coq" "cache miss";
     let kind = CS.Kind.Exec in
     let res, time_interp = CS.record ~kind ~f:(Coq_interp.interp ~st) stm in
-    let () = HC.add !cache (stm,st) res in
+    let () = HC.add !cache (stm, st) res in
     let time = time_hash +. time_interp in
     Stats.make ~time res
 
@@ -74,10 +74,11 @@ let mem_stats () = Obj.reachable_words (Obj.magic cache)
 
 let _hashtbl_out oc t =
   Marshal.to_channel oc (HC.length t) [];
-  HC.iter (fun vi res ->
+  HC.iter
+    (fun vi res ->
       VernacInput.marshal_out oc vi;
-      Result.marshal_out oc res
-    ) t
+      Result.marshal_out oc res)
+    t
 
 let _hashtbl_in ic =
   let ht = HC.create 1000 in
