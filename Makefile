@@ -10,6 +10,7 @@ coq-lsp.install
 OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
 
 DEV_DEPS= \
+dune \
 $(OCAMLFORMAT) \
 ocaml-lsp-server
 
