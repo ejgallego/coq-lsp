@@ -4,6 +4,10 @@ COQ_BUILD_CONTEXT=../_build/default/coq
 
 PKG_SET=coq/coq-core.install coq/coq-stdlib.install coq-serapi/coq-serapi.install coq-lsp.install
 
+DEV_DEPS= \
+ocamlformat.0.22.4 \
+ocaml-lsp-server
+
 build: coq_boot
 	dune build $(DUNEOPT) $(PKG_SET)
 
@@ -36,6 +40,10 @@ opam-switch:
 # Install opam deps
 opam-deps:
 	opam install ./coq-lsp.opam -y --deps-only
+
+# Install opam deps
+opam-dev-deps:
+	opam install -y $(DEV_DEPS)
 
 submodules-init:
 	git submodule update --init
