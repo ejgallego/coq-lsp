@@ -49,5 +49,6 @@ opam-deps:
 opam-dev-deps:
 	opam install -y $(DEV_DEPS)
 
+# Initialise submodules
 submodules-init:
 	git submodule update --init
