@@ -35,7 +35,7 @@
     "commands": [
       {
         "command": "vsc-galinas.restart",
-        "title": "Start or restart the Coq language server"
+        "title": "Coq: Restart Language Server"
       }
     ],
     "configuration": [
