@@ -24,10 +24,11 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml }}
           dune-cache: true
 
+      - name: 🐫🐪🐫 Get dependencies
+        run: opam exec -- make opam-deps
+
       - name: 🧱 Build coq-lsp
-        run: |
-          opam exec -- make opam-deps
-          opam exec -- make build
+        run: opam exec -- make build
 
   lint-fmt:
     runs-on: ubuntu-latest
@@ -43,9 +44,12 @@ jobs:
           ocaml-compiler: 4.14.x
           dune-cache: true
 
-      - name: 📐 Format
-        # TODO make this faster, use nix?
+      # TODO make this faster, use nix?
+
+      - name: 🐫🐪🐫 Get dependencies
         run: |
           opam exec -- make opam-deps
           opam exec -- make opam-dev-deps
-          opam exec -- make fmt
+
+      - name: 📐 Format
+        run: opam exec -- make fmt
