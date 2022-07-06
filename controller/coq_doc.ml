@@ -109,22 +109,20 @@ type process_action =
 let json_of_diags ~uri ~version diags =
   LSP.mk_diagnostics ~uri ~version
   @@ List.fold_left
-    (fun acc (pos, lvl, msg, goal) ->
-       match pos with
-       | None -> acc
-       | Some pos -> (pos, lvl, msg, goal) :: acc)
-    [] diags
+       (fun acc (pos, lvl, msg, goal) ->
+         match pos with
+         | None -> acc
+         | Some pos -> (pos, lvl, msg, goal) :: acc)
+       [] diags
 
 (* XXX: Imperative problem *)
 let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
   let doc_handle = Pcoq.Parsable.make Gramlib.Stream.(of_string doc.contents) in
   let rec stm doc st diags =
     (* Eager update! *)
-    if Config.eager_diagnostics then
-      begin
-        let diags = json_of_diags ~uri ~version diags in
-        Lsp.Io.send_json ofmt diags
-      end;
+    (if Config.eager_diagnostics then
+     let diags = json_of_diags ~uri ~version diags in
+     Lsp.Io.send_json ofmt diags);
     (* if Lsp.Debug.parsing then Lsp.Io.log_error "coq" "parsing sentence"; *)
     (* Parsing *)
     let action, diags, parsing_time =
@@ -197,11 +195,9 @@ let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
   stm doc doc.root []
 
 let print_stats () =
-  if Config.mem_stats then
-    begin
-      let size = Memo.mem_stats () in
-      Lsp.Io.log_error "stats" (string_of_int size)
-    end;
+  (if Config.mem_stats then
+   let size = Memo.mem_stats () in
+   Lsp.Io.log_error "stats" (string_of_int size));
 
   Lsp.Io.log_error "cache" (Stats.dump ());
   Lsp.Io.log_error "cache" (Memo.CacheStats.stats ());
@@ -216,6 +212,4 @@ let check ~ofmt ~doc ~coq_queue =
   (* Start library *)
   let doc, st, diags = (process_and_parse ~ofmt ~uri ~version ~coq_queue) doc in
   print_stats ();
-  ( doc
-  , st
-  , json_of_diags ~uri ~version diags )
+  (doc, st, json_of_diags ~uri ~version diags)
