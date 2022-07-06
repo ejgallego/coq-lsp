@@ -142,9 +142,14 @@ let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
     (* We interpret the command now *)
     | Process ast -> (
       let loc = Coq_ast.loc ast in
-      if Lsp.Debug.parsing then
-        Lsp.Io.log_error "coq"
-          ("parsed sentence: " ^ Pp.string_of_ppcmds (Coq_ast.print ast));
+      (if Lsp.Debug.parsing then
+       let line =
+         Option.cata
+           (fun loc -> "[l: " ^ string_of_int loc.Loc.line_nb ^ "] ")
+           "" loc
+       in
+       Lsp.Io.log_error "coq"
+         ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq_ast.print ast)));
       register_hack_proof_recover ast st;
       (* memory is disabled as it is quite slow and misleading *)
       let { Memo.Stats.res; cache_hit; memory = _; time } =

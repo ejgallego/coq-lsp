@@ -82,11 +82,11 @@ let in_cache st stm =
 let interp_command ~st stm : _ result Stats.t =
   match in_cache st stm with
   | Some st, time ->
-    Lsp.Io.log_error "coq" "cache hit";
+    if Lsp.Debug.cache then Lsp.Io.log_error "coq" "cache hit";
     CacheStats.hit ();
     Stats.make ~cache_hit:true ~time st
   | None, time_hash ->
-    Lsp.Io.log_error "coq" "cache miss";
+    if Lsp.Debug.cache then Lsp.Io.log_error "coq" "cache miss";
     CacheStats.miss ();
     let kind = CS.Kind.Exec in
     let res, time_interp = CS.record ~kind ~f:(Coq_interp.interp ~st) stm in

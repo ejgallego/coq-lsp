@@ -19,8 +19,13 @@
 module F = Format
 module J = Yojson.Basic
 
+let mut = Mutex.create ()
 let debug_fmt = ref F.err_formatter
-let log_error hdr msg = F.fprintf !debug_fmt "[%s]: @[%s@]@\n%!" hdr msg
+
+let log_error hdr msg =
+  Mutex.lock mut;
+  F.fprintf !debug_fmt "[%s]: @[%s@]@\n%!" hdr msg;
+  Mutex.unlock mut
 
 let log_object hdr obj =
   F.fprintf !debug_fmt "[%s]: @[%a@]@\n%!" hdr J.(pretty_print ~std:false) obj
@@ -55,7 +60,9 @@ let read_request ic =
   | Invalid_argument msg -> raise (ReadError msg)
 
 let send_json fmt obj =
+  Mutex.lock mut;
   if Debug.send then log_object "send" obj;
   let msg = F.asprintf "%a" J.(pretty_print ~std:true) obj in
   let size = String.length msg in
-  F.fprintf fmt "Content-Length: %d\r\n\r\n%s%!" size msg
+  F.fprintf fmt "Content-Length: %d\r\n\r\n%s%!" size msg;
+  Mutex.unlock mut

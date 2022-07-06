@@ -244,6 +244,20 @@ let memo_read_from_disk () =
     ()
 
 let memo_read_from_disk () = if false then memo_read_from_disk ()
+let event_queue = ref (Queue.create ())
+
+let queue_optimize dict =
+  (* remove redudant didChanges *)
+  let new_method = string_field "method" dict in
+  if String.equal new_method "textDocument/didChange" then
+    match Queue.peek_opt !event_queue with
+    | None -> ()
+    | Some dict' ->
+      let top_method = string_field "method" dict' in
+      if String.equal top_method "textDocument/didChange" then (
+        LIO.log_error "queue"
+          "dropped redundant didChange from top of the queue";
+        ignore (Queue.pop !event_queue))
 
 exception Lsp_exit
 
@@ -252,6 +266,7 @@ exception Lsp_exit
    future. *)
 let dispatch_message ofmt ~state dict =
   let id = oint_field "id" dict in
+  (* LIO.log_error "lsp" ("recv request id: " ^ string_of_int id); *)
   let params = odict_field "params" dict in
   match string_field "method" dict with
   (* Requests *)
@@ -271,16 +286,32 @@ let dispatch_message ofmt ~state dict =
   | "initialized" | "workspace/didChangeWatchedFiles" -> ()
   | msg -> LIO.log_error "no_handler" msg
 
-let process_input ofmt ~state (com : J.t) =
-  try dispatch_message ofmt ~state (U.to_assoc com) with
-  | U.Type_error (msg, obj) -> LIO.log_object msg obj
-  | Lsp_exit -> raise Lsp_exit
-  | exn ->
-    let bt = Printexc.get_backtrace () in
-    LIO.log_error "process_input" (Printexc.to_string exn);
-    LIO.log_error "process_input"
-      Pp.(string_of_ppcmds CErrors.(iprint (Exninfo.capture exn)));
-    LIO.log_error "BT" bt
+let process_input (com : J.t) =
+  let dict = U.to_assoc com in
+  (* Optimization: don't stack multiple didChange msgs *)
+  queue_optimize dict;
+  Queue.add dict !event_queue;
+  ()
+
+let rec process_queue ofmt ~state =
+  (match Queue.peek_opt !event_queue with
+  | None ->
+    (* LIO.log_error "process_queue" "queue is empty, yielding!"; *)
+    Thread.delay 0.1
+  | Some com -> (
+    (* TODO we should optimize the queue *)
+    ignore (Queue.pop !event_queue);
+    LIO.log_error "process_queue" "We got job to do";
+    try dispatch_message ofmt ~state com with
+    | U.Type_error (msg, obj) -> LIO.log_object msg obj
+    | Lsp_exit -> raise Lsp_exit
+    | exn ->
+      let bt = Printexc.get_backtrace () in
+      LIO.log_error "process_input" (Printexc.to_string exn);
+      LIO.log_error "process_input"
+        Pp.(string_of_ppcmds CErrors.(iprint (Exninfo.capture exn)));
+      LIO.log_error "BT" bt));
+  process_queue ofmt ~state
 
 let lsp_main log_file std vo_load_path ml_include_path =
   LSP.std_protocol := std;
@@ -318,16 +349,18 @@ let lsp_main log_file std vo_load_path ml_include_path =
 
   memo_read_from_disk ();
 
-  let rec loop state =
+  let (_ : Thread.t) = Thread.create (fun () -> process_queue oc ~state) () in
+
+  let rec loop () =
     (* XXX: Implement a queue, compact *)
     let com = LIO.read_request stdin in
     if Lsp.Debug.read then LIO.log_object "read" com;
-    process_input oc ~state com;
+    process_input com;
     F.pp_print_flush lp_fmt ();
     flush lp_oc;
-    loop state
+    loop ()
   in
-  try loop state with
+  try loop () with
   | (LIO.ReadError "EOF" | Lsp_exit) as exn ->
     LIO.log_error "main"
       ("exiting" ^ if exn = Lsp_exit then "" else " [uncontrolled LSP shutdown]");

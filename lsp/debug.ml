@@ -1,6 +1,9 @@
 (* Enable all debug flags *)
 let all = false
 
+(* cache *)
+let cache = false || all
+
 (* LSP messages: Send and receive *)
 let send = false || all
 let read = false || all
