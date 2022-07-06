@@ -5,4 +5,4 @@
  ; Unfortunate we have to link the STM due to the LTAC plugin
  ; depending on it, we should fix this upstream
  (libraries coq-core.vernac coq-core.stm coq-serapi.serlib
-   coq-serapi.sertop_v8_12 lsp cmdliner))
+   coq-serapi.sertop_v8_12 threads lsp cmdliner))
