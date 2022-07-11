@@ -45,18 +45,6 @@ let create ~state ~uri ~version ~contents =
 (* XXX: Save on close? *)
 (* let close_doc _modname = () *)
 
-let parse_stm ~st ps =
-  let mode = Coq.State.mode ~st in
-  let st = Coq.State.parsing ~st in
-  let parse ps =
-    (* Coq is missing this, so we add it here. Note that this MUST run inside
-       coq_protect *)
-    Control.check_for_interrupt ();
-    Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
-    |> Option.map Coq.Ast.of_coq
-  in
-  Stats.record ~kind:Stats.Kind.Parsing ~f:(Coq.Protect.eval ~f:parse) ps
-
 (* Read the input stream until a dot or a "end of proof" token is encountered *)
 let parse_to_terminator : unit Pcoq.Entry.t =
   (* type 'a parser_fun = { parser_fun : te LStream.t -> 'a } *)
@@ -134,9 +122,8 @@ let interp_and_info ~parsing_time ~st ~fb_queue ast =
 (* XXX: Imperative problem *)
 let process_and_parse ~uri ~version ~fb_queue doc =
   let loc = Loc.initial (InFile { dirpath = None; file = uri }) in
-  let doc_handle =
-    Pcoq.Parsable.make ~loc Gramlib.Stream.(of_string doc.contents)
-  in
+  let text = doc.contents in
+  let doc_handle = Pcoq.Parsable.make ~loc Gramlib.Stream.(of_string text) in
   let rec stm doc st diags =
     (* Eager update! *)
     (* XXX *)
@@ -144,7 +131,9 @@ let process_and_parse ~uri ~version ~fb_queue doc =
     if Debug.parsing then Io.Log.error "coq" "parsing sentence";
     (* Parsing *)
     let action, diags, parsing_time =
-      match parse_stm ~st doc_handle with
+      let mode = Coq.State.mode ~st in
+      let st = Coq.State.parsing ~st in
+      match Memo.parse ~mode ~st ~text doc_handle with
       | Coq.Protect.R.Interrupted, time -> (EOF, diags, time)
       | Coq.Protect.R.Completed res, time -> (
         match res with

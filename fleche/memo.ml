@@ -1,3 +1,12 @@
+(************************************************************************)
+(* Coq Language Server Protocol                                         *)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2022 Inria           -- Dual License LGPL 2.1 / GPL3+      *)
+(* Written by: Emilio J. Gallego Arias                                  *)
+(************************************************************************)
+(* Status: Experimental                                                 *)
+(************************************************************************)
+
 module CS = Stats
 
 module Stats = struct
@@ -149,6 +158,102 @@ let interp_command ~st ~fb_queue stm : _ Stats.t =
       Stats.make ~time res)
 
 let mem_stats () = Obj.reachable_words (Obj.magic cache)
+
+module ParseInput = struct
+  type t = Pvernac.proof_mode option * Vernacstate.Parser.t * Loc.t * string
+
+  let hash x = Hashtbl.hash x
+  let equal x y = compare x y = 0
+end
+
+module PC = Hashtbl.Make (ParseInput)
+
+let parse_coq ~mode ~st ps =
+  let parse ps =
+    (* Coq is missing this, so we add it here. Note that this MUST run
+       inside Coq.Protect. *)
+    Control.check_for_interrupt ();
+    Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
+    |> Option.map Coq.Ast.of_coq
+  in
+  Coq.Protect.eval ~f:parse ps
+
+(* What about parsing stats? *)
+(* Stats.record ~kind:Stats.Kind.Parsing ~f:(Coq.Protect.eval ~f:parse) ps *\) *)
+
+let loc_of_parse_res loc res =
+  match res with
+  | Ok (Some res) -> Option.get (Coq.Ast.loc res)
+  | Ok None -> loc (* EOF = end loc == start loc *)
+  | Error (loc, _) -> Option.get loc
+
+let lcache = Hashtbl.create 1000
+let pcache = PC.create 1000
+
+let get_segment l_b text =
+  let len = l_b.Loc.ep - l_b.Loc.bp in
+  let gs = String.sub text l_b.Loc.bp len in
+  Io.Log.error "get_segment" gs;
+  gs
+
+let in_parse_cache mode st text ps =
+  let kind = CS.Kind.Hashing in
+  let stream_loc = Pcoq.Parsable.loc ps in
+  match Hashtbl.find_opt lcache stream_loc with
+  | None -> (None, 0.0)
+  | Some ast_loc ->
+    Io.Log.error "in_parse_cache" "start pos in segment cache";
+    (* Mmmmm, this seems tricky *)
+    let segment = get_segment ast_loc text in
+    let loc_pr = Loc.pr ast_loc |> Pp.string_of_ppcmds in
+    Io.Log.error "coq" ("query parse cache: " ^ loc_pr ^ " | " ^ segment);
+    let f key =
+      PC.find_opt pcache key
+      |> Option.map (fun hit -> (hit, String.length segment))
+    in
+    CS.record ~kind ~f (mode, st, ast_loc, segment)
+
+let parse ~mode ~st ~text ps =
+  match in_parse_cache mode st text ps with
+  | Some (res, skip), time ->
+    Io.Log.error "coq" "parse cache hit";
+    CacheStats.hit ();
+    Pcoq.Parsable.consume ps skip;
+    (* Stats.make ~cache_hit:true ~time st *)
+    (res, time)
+  | None, time_hash -> (
+    Io.Log.error "coq" "parse cache miss";
+    CacheStats.miss ();
+    let kind = CS.Kind.Parsing in
+    let f = parse_coq ~mode ~st in
+    let stream_loc = Pcoq.Parsable.loc ps in
+    let res, time_parse = CS.record ~kind ~f ps in
+    let time = time_hash +. time_parse in
+    match res with
+    | Coq.Protect.R.Interrupted ->
+      (* We don't cache *)
+      (res, time)
+    | Coq.Protect.R.Completed pres ->
+      let ast_loc = loc_of_parse_res stream_loc pres in
+      let segment = get_segment ast_loc text in
+      let () = Hashtbl.add lcache stream_loc ast_loc in
+      let loc_pr = Loc.pr ast_loc |> Pp.string_of_ppcmds in
+      Io.Log.error "coq" ("add to parse cache: " ^ loc_pr ^ " | " ^ segment);
+      let () = PC.add pcache (mode, st, ast_loc, segment) res in
+      (* let _ = Pcoq.Parsable.t *)
+      (res, time))
+
+(* Strategy to cache parsing:
+
+   We will use a table: (mode, pstate, start_loc, text_segment) -> parse_result
+
+   + After parsing we must compute text_segment, that is not easy with Coq API.
+   Use the document from LSP for now.
+
+   + We also need to know the start loc, we need to tweak Coq's API.
+
+   We check we have the same starting pos, state, mode, segment (using LSP or
+   npeek work here) If cache hit, great! drop n elements, otherwise, parse. *)
 
 let _hashtbl_out oc t =
   Marshal.to_channel oc (HC.length t) [];

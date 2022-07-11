@@ -19,9 +19,7 @@ Lemma addnC n m : n + m = m + n.
 Proof. by elim: n => //= ? ->. Qed.
 
 Lemma addnAC n m l : n + m + l = m + (n + l).
-Proof.
-  by elim : n => //= ? ->.
-Qed.
+Proof. by elim : n => //= ? ->. Qed.
 
 Lemma level1 : True.
   Lemma level2 : True.
@@ -53,8 +51,12 @@ Definition snd' (x : pair') := match x with
  | Pair _ y => y
 end.
 
-Lemma foo n m : n + m = m + n.
+Lemma foo (a : Type) n m : n + m = m + a + n.
 Proof.
+Qed.
+
+Lemma foo2 : Type.
+exact nat.
 Qed.
 
 (* Church enconding *)
@@ -64,7 +66,7 @@ Definition pair'' (A B : Type) :=
 
 Variables (x y : Type).
 
-Lemma foo : x = x.
+Lemma foo' : x = x.
 Proof. by []. Qed.
 
 Record network := 
@@ -77,6 +79,8 @@ Record network :=
 Lemma broken1 : False.
 Proof. admit.
 Qed.
+
+About broken1.
 
 Definition adios := 9.
 
