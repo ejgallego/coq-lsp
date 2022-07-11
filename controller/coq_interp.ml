@@ -5,7 +5,7 @@ module Info = struct
     }
 end
 
-type 'a interp_result = ('a Info.t, Loc.t option * Pp.t) result
+type 'a interp_result = ('a Info.t, Coq_util.Error.t) result
 
 let coq_interp ~st cmd =
   let st = Coq_state.to_coq st in
@@ -22,7 +22,8 @@ let marshal_out f oc res =
   | Ok { Info.res; warnings = _ } ->
     Marshal.to_channel oc 0 [];
     f oc res
-  | Error (loc, msg) ->
+  | Error Coq_util.Error.Interrupted -> ()
+  | Error (Eval (loc, msg)) ->
     Marshal.to_channel oc 1 [];
     Marshal.to_channel oc loc [];
     Marshal.to_channel oc msg [];
@@ -36,4 +37,4 @@ let marshal_in f ic =
   else
     let loc : Loc.t option = Marshal.from_channel ic in
     let msg : Pp.t = Marshal.from_channel ic in
-    Error (loc, msg)
+    Error (Coq_util.Error.Eval (loc, msg))

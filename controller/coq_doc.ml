@@ -129,7 +129,8 @@ let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
       match parse_stm ~st doc_handle with
       | Ok None, time -> (EOF, diags, time)
       | Ok (Some ast), time -> (Process ast, diags, time)
-      | Error (loc, msg), time ->
+      | Error Coq_util.Error.Interrupted, time -> (Skip, diags, time)
+      | Error (Coq_util.Error.Eval (loc, msg)), time ->
         let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
         discard_to_dot doc_handle;
         (Skip, diags, time)
@@ -188,7 +189,10 @@ let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
         let node = { ast; exec = true; goal = pr_goal st } in
         let doc = { doc with nodes = node :: doc.nodes } in
         stm doc st diags
-      | Error (err_loc, msg) ->
+      | Error Coq_util.Error.Interrupted ->
+        (* Exit *)
+        (doc, st, diags)
+      | Error (Coq_util.Error.Eval (err_loc, msg)) ->
         let loc = Option.append err_loc loc in
         let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
         let node = { ast; exec = false; goal = pr_goal st } in
