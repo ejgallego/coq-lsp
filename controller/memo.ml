@@ -85,14 +85,20 @@ let interp_command ~st stm : _ result Stats.t =
     if Lsp.Debug.cache then Lsp.Io.log_error "coq" "cache hit";
     CacheStats.hit ();
     Stats.make ~cache_hit:true ~time st
-  | None, time_hash ->
+  | None, time_hash -> (
     if Lsp.Debug.cache then Lsp.Io.log_error "coq" "cache miss";
     CacheStats.miss ();
     let kind = CS.Kind.Exec in
     let res, time_interp = CS.record ~kind ~f:(Coq_interp.interp ~st) stm in
-    let () = HC.add !cache (stm, st) res in
     let time = time_hash +. time_interp in
-    Stats.make ~time res
+    match res with
+    | Error Coq_util.Error.Interrupted ->
+      (* Don't cache interruptions *)
+      Stats.make ~time res
+    | res ->
+      let () = HC.add !cache (stm, st) res in
+      let time = time_hash +. time_interp in
+      Stats.make ~time res)
 
 let mem_stats () = Obj.reachable_words (Obj.magic cache)
 
