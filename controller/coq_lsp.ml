@@ -250,14 +250,15 @@ let queue_optimize dict =
   (* remove redudant didChanges *)
   let new_method = string_field "method" dict in
   if String.equal new_method "textDocument/didChange" then
-    match Queue.peek_opt !event_queue with
-    | None -> ()
-    | Some dict' ->
-      let top_method = string_field "method" dict' in
-      if String.equal top_method "textDocument/didChange" then (
-        LIO.log_error "queue"
-          "dropped redundant didChange from top of the queue";
-        ignore (Queue.pop !event_queue))
+    (* Request Coq to stop in case it is already checking *)
+    Control.interrupt := true;
+  match Queue.peek_opt !event_queue with
+  | None -> ()
+  | Some dict' ->
+    let top_method = string_field "method" dict' in
+    if String.equal top_method "textDocument/didChange" then (
+      LIO.log_error "queue" "dropped redundant didChange from top of the queue";
+      ignore (Queue.pop !event_queue))
 
 exception Lsp_exit
 
@@ -299,6 +300,8 @@ let rec process_queue ofmt ~state =
     (* LIO.log_error "process_queue" "queue is empty, yielding!"; *)
     Thread.delay 0.1
   | Some com -> (
+    (* We let Coq work normally now *)
+    Control.interrupt := false;
     (* TODO we should optimize the queue *)
     ignore (Queue.pop !event_queue);
     LIO.log_error "process_queue" "We got job to do";
