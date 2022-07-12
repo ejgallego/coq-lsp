@@ -47,6 +47,9 @@ let parse_stm ~st ps =
   let mode = Coq_state.mode ~st in
   let st = Coq_state.parsing ~st in
   let parse ps =
+    (* Coq is missing this, so we add it here. Note that this MUST run inside
+       coq_protect *)
+    Control.check_for_interrupt ();
     Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
     |> Option.map Coq_ast.of_coq
   in
