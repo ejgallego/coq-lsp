@@ -129,7 +129,7 @@ let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
       match parse_stm ~st doc_handle with
       | Ok None, time -> (EOF, diags, time)
       | Ok (Some ast), time -> (Process ast, diags, time)
-      | Error Coq_util.Error.Interrupted, time -> (Skip, diags, time)
+      | Error Coq_util.Error.Interrupted, time -> (EOF, diags, time)
       | Error (Coq_util.Error.Eval (loc, msg)), time ->
         let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
         discard_to_dot doc_handle;
