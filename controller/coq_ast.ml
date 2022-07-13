@@ -6,8 +6,12 @@ let hash x = Serlib.Ser_vernacexpr.hash_vernac_control x
 let compare x y = Serlib.Ser_vernacexpr.compare_vernac_control x y
 let to_coq x = x
 let of_coq x = x
-let print = Ppvernac.pr_vernac
 let loc { CAst.loc; _ } = loc
+
+(* Printer is very fiddly w.r.t. state, especially when used for debug, so we
+   just let it fail for now. *)
+let print x =
+  try Ppvernac.pr_vernac x with _ -> Pp.str "XXX Coq printer crashed"
 
 let match_coq_def f v : _ list =
   let open Vernacexpr in

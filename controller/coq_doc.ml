@@ -53,7 +53,7 @@ let parse_stm ~st ps =
     Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
     |> Option.map Coq_ast.of_coq
   in
-  Stats.record ~kind:Stats.Kind.Parsing ~f:(Coq_util.coq_protect ~f:parse) ps
+  Stats.record ~kind:Stats.Kind.Parsing ~f:(Coq_protect.eval ~f:parse) ps
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot : unit Pcoq.Entry.t =
@@ -118,6 +118,20 @@ let json_of_diags ~uri ~version diags =
          | Some pos -> (pos, lvl, msg, goal) :: acc)
        [] diags
 
+let get_queue_diags ~loc coq_queue =
+  let qlength = Queue.length coq_queue in
+  if qlength > 0 then (
+    let fb_msg =
+      let fbs = Queue.fold (fun acc l -> l :: acc) [] coq_queue in
+      Format.asprintf "feedbacks: %d @\n @[<v>%a@]"
+        Queue.(length coq_queue)
+        Format.(pp_print_list pp_print_string)
+        fbs
+    in
+    Queue.clear coq_queue;
+    [ (to_orange loc, 3, fb_msg, None) ])
+  else []
+
 (* XXX: Imperative problem *)
 let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
   let doc_handle = Pcoq.Parsable.make Gramlib.Stream.(of_string doc.contents) in
@@ -130,13 +144,15 @@ let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
     (* Parsing *)
     let action, diags, parsing_time =
       match parse_stm ~st doc_handle with
-      | Ok None, time -> (EOF, diags, time)
-      | Ok (Some ast), time -> (Process ast, diags, time)
-      | Error Coq_util.Error.Interrupted, time -> (EOF, diags, time)
-      | Error (Coq_util.Error.Eval (loc, msg)), time ->
-        let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
-        discard_to_dot doc_handle;
-        (Skip, diags, time)
+      | Coq_protect.R.Interrupted, time -> (EOF, diags, time)
+      | Coq_protect.R.Completed res, time -> (
+        match res with
+        | Ok None -> (EOF, diags, time)
+        | Ok (Some ast) -> (Process ast, diags, time)
+        | Error (loc, msg) ->
+          let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
+          discard_to_dot doc_handle;
+          (Skip, diags, time))
     in
     (* Execution *)
     match action with
@@ -169,39 +185,28 @@ let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
       let memo_diag = (to_orange loc, 4, memo_msg, None) in
       let diags = memo_diag :: diags in
       match res with
-      | Ok { res = st; _ } ->
-        let ok_diag = (to_orange loc, 3, "OK", None) in
-        let diags = ok_diag :: diags in
-
-        (* this handling of the queue is wrong XXX *)
-        let qlength = Queue.length coq_queue in
-        let diags =
-          if qlength > 0 then (
-            let fb_msg =
-              let fbs = Queue.fold (fun acc l -> l :: acc) [] coq_queue in
-              Format.asprintf "feedbacks: %d @\n @[<v>%a@]"
-                Queue.(length coq_queue)
-                Format.(pp_print_list pp_print_string)
-                fbs
-            in
-            Queue.clear coq_queue;
-            let queue_diag = (to_orange loc, 3, fb_msg, None) in
-            queue_diag :: diags)
-          else diags
-        in
-        let node = { ast; exec = true; goal = pr_goal st } in
-        let doc = { doc with nodes = node :: doc.nodes } in
-        stm doc st diags
-      | Error Coq_util.Error.Interrupted ->
+      | Coq_protect.R.Interrupted ->
         (* Exit *)
         (doc, st, diags)
-      | Error (Coq_util.Error.Eval (err_loc, msg)) ->
-        let loc = Option.append err_loc loc in
-        let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
-        let node = { ast; exec = false; goal = pr_goal st } in
-        let doc = { doc with nodes = node :: doc.nodes } in
-        let st = state_recovery_heuristic st ast in
-        stm doc st diags)
+      | Coq_protect.R.Completed res -> (
+        match res with
+        | Ok { res = st; _ } ->
+          let ok_diag = (to_orange loc, 3, "OK", None) in
+          let diags = ok_diag :: diags in
+
+          (* this handling of the queue is wrong XXX *)
+          let queue_diags = get_queue_diags ~loc coq_queue in
+          let diags = queue_diags @ diags in
+          let node = { ast; exec = true; goal = pr_goal st } in
+          let doc = { doc with nodes = node :: doc.nodes } in
+          stm doc st diags
+        | Error (err_loc, msg) ->
+          let loc = Option.append err_loc loc in
+          let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
+          let node = { ast; exec = false; goal = pr_goal st } in
+          let doc = { doc with nodes = node :: doc.nodes } in
+          let st = state_recovery_heuristic st ast in
+          stm doc st diags))
   in
   (* we re-start from the root *)
   stm doc doc.root []
