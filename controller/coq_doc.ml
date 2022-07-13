@@ -47,6 +47,9 @@ let parse_stm ~st ps =
   let mode = Coq_state.mode ~st in
   let st = Coq_state.parsing ~st in
   let parse ps =
+    (* Coq is missing this, so we add it here. Note that this MUST run inside
+       coq_protect *)
+    Control.check_for_interrupt ();
     Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
     |> Option.map Coq_ast.of_coq
   in
@@ -129,7 +132,7 @@ let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
       match parse_stm ~st doc_handle with
       | Ok None, time -> (EOF, diags, time)
       | Ok (Some ast), time -> (Process ast, diags, time)
-      | Error Coq_util.Error.Interrupted, time -> (Skip, diags, time)
+      | Error Coq_util.Error.Interrupted, time -> (EOF, diags, time)
       | Error (Coq_util.Error.Eval (loc, msg)), time ->
         let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
         discard_to_dot doc_handle;
