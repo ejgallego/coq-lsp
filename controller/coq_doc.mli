@@ -18,7 +18,6 @@
 
 type node =
   { ast : Coq_ast.t
-  ; exec : bool
   ; goal : Pp.t option
   }
 
@@ -40,5 +39,5 @@ val create :
 val check :
      ofmt:Format.formatter
   -> doc:t
-  -> coq_queue:string Queue.t
+  -> fb_queue:Pp.t list ref
   -> t * Coq_state.t * Yojson.Basic.t

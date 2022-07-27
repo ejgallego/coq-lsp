@@ -12,7 +12,6 @@ module LSP = Lsp.Base
 
 type node =
   { ast : Coq_ast.t
-  ; exec : bool
   ; goal : Pp.t option
   }
 
@@ -75,14 +74,6 @@ let rec discard_to_dot ps =
   | CLexer.Error.E _ -> discard_to_dot ps
   | e when CErrors.noncritical e -> ()
 
-let pr_goal (st : Coq_state.t) : Pp.t option =
-  let st = Coq_state.to_coq st in
-  Option.map
-    (Vernacstate.LemmaStack.with_top ~f:(fun pstate ->
-         let proof = Declare.Proof.get pstate in
-         Printer.pr_open_subgoals ~quiet:false ~diffs:None proof))
-    st.Vernacstate.lemmas
-
 (* Gross hack *)
 let proof_st = ref None
 
@@ -118,22 +109,18 @@ let json_of_diags ~uri ~version diags =
          | Some pos -> (pos, lvl, msg, goal) :: acc)
        [] diags
 
-let get_queue_diags ~loc coq_queue =
-  let qlength = Queue.length coq_queue in
-  if qlength > 0 then (
-    let fb_msg =
-      let fbs = Queue.fold (fun acc l -> l :: acc) [] coq_queue in
-      Format.asprintf "feedbacks: %d @\n @[<v>%a@]"
-        Queue.(length coq_queue)
-        Format.(pp_print_list pp_print_string)
-        fbs
-    in
-    Queue.clear coq_queue;
-    [ (to_orange loc, 3, fb_msg, None) ])
-  else []
+(* Make each fb a diag *)
+let process_feedback ~loc fbs =
+  let fb_msg =
+    Format.asprintf "feedbacks: %d @\n @[<v>%a@]"
+      List.(length fbs)
+      Format.(pp_print_list Pp.pp_with)
+      fbs
+  in
+  [ (to_orange loc, 3, fb_msg, None) ]
 
 (* XXX: Imperative problem *)
-let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
+let process_and_parse ~ofmt ~uri ~version ~fb_queue doc =
   let doc_handle = Pcoq.Parsable.make Gramlib.Stream.(of_string doc.contents) in
   let rec stm doc st diags =
     (* Eager update! *)
@@ -173,7 +160,7 @@ let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
       register_hack_proof_recover ast st;
       (* memory is disabled as it is quite slow and misleading *)
       let { Memo.Stats.res; cache_hit; memory = _; time } =
-        Memo.interp_command ~st ast
+        Memo.interp_command ~st ~fb_queue ast
       in
       let cptime = Stats.get ~kind:Stats.Kind.Parsing in
       let memo_msg =
@@ -190,20 +177,20 @@ let process_and_parse ~ofmt ~uri ~version ~coq_queue doc =
         (doc, st, diags)
       | Coq_protect.R.Completed res -> (
         match res with
-        | Ok { res = st; _ } ->
+        | Ok { res = st; goal; feedback } ->
           let ok_diag = (to_orange loc, 3, "OK", None) in
           let diags = ok_diag :: diags in
-
-          (* this handling of the queue is wrong XXX *)
-          let queue_diags = get_queue_diags ~loc coq_queue in
-          let diags = queue_diags @ diags in
-          let node = { ast; exec = true; goal = pr_goal st } in
+          let fb_diags = process_feedback ~loc feedback in
+          let diags = fb_diags @ diags in
+          let node = { ast; goal } in
           let doc = { doc with nodes = node :: doc.nodes } in
           stm doc st diags
         | Error (err_loc, msg) ->
           let loc = Option.append err_loc loc in
           let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
-          let node = { ast; exec = false; goal = pr_goal st } in
+          let node = { ast; goal = None } in
+          (* This should be handled by Coq_protect.eval XXX *)
+          fb_queue := [];
           let doc = { doc with nodes = node :: doc.nodes } in
           let st = state_recovery_heuristic st ast in
           stm doc st diags))
@@ -223,10 +210,10 @@ let print_stats () =
   Memo.CacheStats.reset ();
   Stats.reset ()
 
-let check ~ofmt ~doc ~coq_queue =
+let check ~ofmt ~doc ~fb_queue =
   let uri, version = (doc.uri, doc.version) in
 
   (* Start library *)
-  let doc, st, diags = (process_and_parse ~ofmt ~uri ~version ~coq_queue) doc in
+  let doc, st, diags = (process_and_parse ~ofmt ~uri ~version ~fb_queue) doc in
   print_stats ();
   (doc, st, json_of_diags ~uri ~version diags)

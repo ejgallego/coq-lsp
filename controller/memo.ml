@@ -79,7 +79,7 @@ let in_cache st stm =
   let kind = CS.Kind.Hashing in
   CS.record ~kind ~f:(HC.find_opt !cache) (stm, st)
 
-let interp_command ~st stm : _ Stats.t =
+let interp_command ~st ~fb_queue stm : _ Stats.t =
   match in_cache st stm with
   | Some st, time ->
     if Lsp.Debug.cache then Lsp.Io.log_error "coq" "cache hit";
@@ -89,11 +89,14 @@ let interp_command ~st stm : _ Stats.t =
     if Lsp.Debug.cache then Lsp.Io.log_error "coq" "cache miss";
     CacheStats.miss ();
     let kind = CS.Kind.Exec in
-    let res, time_interp = CS.record ~kind ~f:(Coq_interp.interp ~st) stm in
+    let res, time_interp =
+      CS.record ~kind ~f:(Coq_interp.interp ~st ~fb_queue) stm
+    in
     let time = time_hash +. time_interp in
     match res with
     | Coq_protect.R.Interrupted as res ->
       (* Don't cache interruptions *)
+      fb_queue := [];
       Stats.make ~time res
     | Coq_protect.R.Completed _ as res ->
       let () = HC.add !cache (stm, st) res in

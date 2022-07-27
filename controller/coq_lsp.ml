@@ -80,8 +80,8 @@ let completed_table : (string, Coq_doc.t * Coq_state.t) Hashtbl.t =
 
 (* Notification handling; reply is optional / asynchronous *)
 let do_check_text ofmt ~state ~doc =
-  let _, _, _, coq_queue = state in
-  let doc, final_st, diags = Coq_doc.check ~ofmt ~doc ~coq_queue in
+  let _, _, _, fb_queue = state in
+  let doc, final_st, diags = Coq_doc.check ~ofmt ~doc ~fb_queue in
   Hashtbl.replace completed_table doc.uri (doc, final_st);
   LIO.send_json ofmt @@ diags
 
@@ -338,11 +338,11 @@ let lsp_main log_file std vo_load_path ml_include_path =
    * Console.err_fmt := lp_fmt; *)
   (* Console.verbose := 4; *)
   let fb_handler, fb_queue =
-    let q = Queue.create () in
+    let q = ref [] in
     ( (fun Feedback.{ contents; _ } ->
         Format.fprintf lp_fmt "%s@\n%!" "fb received";
         match contents with
-        | Message (_lvl, _loc, msg) -> Queue.push Pp.(string_of_ppcmds msg) q
+        | Message (_lvl, _loc, msg) -> q := msg :: !q
         | _ -> ())
     , q )
   in
