@@ -310,9 +310,13 @@ let rec process_queue ofmt ~state =
     | Lsp_exit -> raise Lsp_exit
     | exn ->
       let bt = Printexc.get_backtrace () in
-      LIO.log_error "process_input" (Printexc.to_string exn);
-      LIO.log_error "process_input"
-        Pp.(string_of_ppcmds CErrors.(iprint (Exninfo.capture exn)));
+      let iexn = Exninfo.capture exn in
+      LIO.log_error "process_queue"
+        (if Printexc.backtrace_status () then "bt=true" else "bt=false");
+      let method_name = string_field "method" com in
+      LIO.log_error "process_queue" ("exn in method: " ^ method_name);
+      LIO.log_error "process_queue" (Printexc.to_string exn);
+      LIO.log_error "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
       LIO.log_error "BT" bt));
   process_queue ofmt ~state
 
@@ -342,7 +346,7 @@ let lsp_main log_file std vo_load_path ml_include_path =
         | _ -> ())
     , q )
   in
-  let debug = Lsp.Debug.all in
+  let debug = Lsp.Debug.backtraces in
   let state =
     ( Coq_init.coq_init Coq_init.{ fb_handler; ml_load = None; debug }
     , vo_load_path

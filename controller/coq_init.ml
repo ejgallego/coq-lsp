@@ -26,16 +26,13 @@ type coq_opts =
   }
 
 let coq_init opts =
-  if opts.debug then (
-    Printexc.record_backtrace true;
-    CDebug.set_flags "bt";
-    CDebug.set_flags "all");
-
   (* Core Coq initialization *)
   Lib.init ();
   Global.set_impredicative_set false;
   Flags.set_native_compiler false;
   Global.set_native_compiler false;
+
+  if opts.debug then CDebug.set_flags "backtrace";
 
   (**************************************************************************)
   (* Feedback setup                                                         *)
