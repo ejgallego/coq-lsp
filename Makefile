@@ -18,6 +18,10 @@ ocaml-lsp-server
 build: coq_boot
 	dune build $(DUNEOPT) $(PKG_SET)
 
+.PHONY: check
+check: coq_boot
+	dune build $(DUNEOPT) @check
+
 .PHONY: fmt format
 fmt format: coq_boot
 	dune fmt $(DUNEOPT)
