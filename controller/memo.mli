@@ -11,7 +11,10 @@ end
 val input_info : Coq_ast.t * Coq_state.t -> string
 
 val interp_command :
-  st:Coq_state.t -> Coq_ast.t -> Coq_state.t Coq_interp.interp_result Stats.t
+     st:Coq_state.t
+  -> fb_queue:Pp.t list ref
+  -> Coq_ast.t
+  -> Coq_state.t Coq_interp.interp_result Stats.t
 
 val mem_stats : unit -> int
 val load_from_disk : file:string -> unit
