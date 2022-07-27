@@ -121,7 +121,10 @@ let process_feedback ~loc fbs =
 
 (* XXX: Imperative problem *)
 let process_and_parse ~ofmt ~uri ~version ~fb_queue doc =
-  let doc_handle = Pcoq.Parsable.make Gramlib.Stream.(of_string doc.contents) in
+  let loc = Loc.initial (InFile { dirpath = None; file = uri }) in
+  let doc_handle =
+    Pcoq.Parsable.make ~loc Gramlib.Stream.(of_string doc.contents)
+  in
   let rec stm doc st diags =
     (* Eager update! *)
     (if Config.eager_diagnostics then
@@ -215,5 +218,6 @@ let check ~ofmt ~doc ~fb_queue =
 
   (* Start library *)
   let doc, st, diags = (process_and_parse ~ofmt ~uri ~version ~fb_queue) doc in
+  let doc = { doc with nodes = List.rev doc.nodes } in
   print_stats ();
   (doc, st, json_of_diags ~uri ~version diags)
