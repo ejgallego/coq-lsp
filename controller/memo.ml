@@ -65,10 +65,17 @@ let input_info (v, st) =
 module HC = Hashtbl.Make (VernacInput)
 
 module Result = struct
-  type t = Coq_state.t Coq_interp.interp_result
+  (* We store the location as to compute an offset for cached results *)
+  type t = Loc.t * Coq_state.t Coq_interp.interp_result
 
-  let marshal_in ic : t = Coq_interp.marshal_in Coq_state.marshal_in ic
-  let marshal_out oc t = Coq_interp.marshal_out Coq_state.marshal_out oc t
+  (* XXX *)
+  let marshal_in ic : t =
+    let loc = Marshal.from_channel ic in
+    (loc, Coq_interp.marshal_in Coq_state.marshal_in ic)
+
+  let marshal_out oc (loc, t) =
+    Marshal.to_channel oc loc [];
+    Coq_interp.marshal_out Coq_state.marshal_out oc t
 end
 
 type cache = Result.t HC.t
@@ -79,12 +86,50 @@ let in_cache st stm =
   let kind = CS.Kind.Hashing in
   CS.record ~kind ~f:(HC.find_opt !cache) (stm, st)
 
+(* XXX: Move elsewhere *)
+let loc_offset (l1 : Loc.t) (l2 : Loc.t) =
+  let line_offset = l2.line_nb - l1.line_nb in
+  let bol_offset = l2.bol_pos - l1.bol_pos in
+  let line_last_offset = l2.line_nb_last - l1.line_nb_last in
+  let bol_last_offset = l2.bol_pos_last - l1.bol_pos_last in
+  let bp_offset = l2.bp - l1.bp in
+  let ep_offset = l2.ep - l1.ep in
+  ( line_offset
+  , bol_offset
+  , line_last_offset
+  , bol_last_offset
+  , bp_offset
+  , ep_offset )
+
+let loc_apply_offset
+    ( line_offset
+    , bol_offset
+    , line_last_offset
+    , bol_last_offset
+    , bp_offset
+    , ep_offset ) (loc : Loc.t) =
+  { loc with
+    line_nb = loc.line_nb + line_offset
+  ; bol_pos = loc.bol_pos + bol_offset
+  ; line_nb_last = loc.line_nb_last + line_last_offset
+  ; bol_pos_last = loc.bol_pos_last + bol_last_offset
+  ; bp = loc.bp + bp_offset
+  ; ep = loc.ep + ep_offset
+  }
+
+let adjust_offset ~stm_loc ~cached_loc res =
+  let offset = loc_offset cached_loc stm_loc in
+  let f = loc_apply_offset offset in
+  Coq_protect.map_loc ~f res
+
 let interp_command ~st ~fb_queue stm : _ Stats.t =
+  let stm_loc = Coq_ast.loc stm |> Option.get in
   match in_cache st stm with
-  | Some st, time ->
+  | Some (cached_loc, res), time ->
     if Lsp.Debug.cache then Lsp.Io.log_error "coq" "cache hit";
     CacheStats.hit ();
-    Stats.make ~cache_hit:true ~time st
+    let res = adjust_offset ~stm_loc ~cached_loc res in
+    Stats.make ~cache_hit:true ~time res
   | None, time_hash -> (
     if Lsp.Debug.cache then Lsp.Io.log_error "coq" "cache miss";
     CacheStats.miss ();
@@ -99,7 +144,7 @@ let interp_command ~st ~fb_queue stm : _ Stats.t =
       fb_queue := [];
       Stats.make ~time res
     | Coq_protect.R.Completed _ as res ->
-      let () = HC.add !cache (stm, st) res in
+      let () = HC.add !cache (stm, st) (stm_loc, res) in
       let time = time_hash +. time_interp in
       Stats.make ~time res)
 

@@ -4,6 +4,11 @@ module R = struct
     | Interrupted (* signal sent, eval didn't complete *)
 end
 
+let map_loc ~f = function
+  | R.Completed (Error (loc, msg)) ->
+    R.Completed (Error (Option.map f loc, msg))
+  | res -> res
+
 let eval ~f x =
   try
     let res = f x in
