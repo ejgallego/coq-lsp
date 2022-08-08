@@ -40,8 +40,16 @@ let read_request_raw ic =
   let raw_obj =
     Scanf.bscanf sin "Content-Length: %d\r" (fun size ->
         let buf = Bytes.create size in
-        (* Consume the second \r\n *)
-        let _ = input_line ic in
+        (* Consume the second \r\n or header *)
+        let ohdr = input_line ic in
+        (* If the second line is a return, then no more headers *)
+        let () =
+          if ohdr.[0] = '\r' then
+            ()
+          else
+            (* Fixme (or use ocaml-lsp) Skip the Content-type header *)
+            ignore(input_line ic)
+        in
         really_input ic buf 0 size;
         Bytes.to_string buf)
   in
