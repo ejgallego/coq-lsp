@@ -44,11 +44,10 @@ let read_request_raw ic =
         let ohdr = input_line ic in
         (* If the second line is a return, then no more headers *)
         let () =
-          if ohdr.[0] = '\r' then
-            ()
+          if ohdr.[0] = '\r' then ()
           else
             (* Fixme (or use ocaml-lsp) Skip the Content-type header *)
-            ignore(input_line ic)
+            ignore (input_line ic)
         in
         really_input ic buf 0 size;
         Bytes.to_string buf)
