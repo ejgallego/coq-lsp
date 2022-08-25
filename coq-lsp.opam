@@ -19,7 +19,10 @@ depends: [
   "dune"         { build & >= "3.0.2"  }
 
   # Not yet required, install Coq deps instead
-  # "coq"          {         >= "8.17"   }
+  # "coq"        {         >= "8.17"   }
+
+  # Permanent storage
+  "irmin"        { >= "3.3.2" }
 
   # coq deps
   "ocamlfind" {>= "1.8.1"}

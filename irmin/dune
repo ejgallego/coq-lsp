@@ -1,0 +1,10 @@
+(library
+ (name storage)
+ (public_name coq-lsp.storage)
+ (modules :standard \ test)
+ (libraries irmin irmin.mem))
+
+(executable
+ (name test)
+ (modules test)
+ (libraries storage lwt.unix))
