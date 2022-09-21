@@ -1,7 +1,9 @@
+module G = Serapi.Serapi_goals
+
 module Info : sig
   type 'a t =
     { res : 'a
-    ; goal : Pp.t option
+    ; goal : Pp.t G.reified_goal G.ser_goals option
     ; feedback : Pp.t list
     }
 end

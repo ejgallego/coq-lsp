@@ -9,10 +9,13 @@
 
 open Lsp_util
 module LSP = Lsp.Base
+module G = Serapi.Serapi_goals
 
+(* [node list] is a very crude form of a meta-data map "loc -> data" , where for
+   now [data] is only the goals. *)
 type node =
   { ast : Coq_ast.t
-  ; goal : Pp.t option
+  ; goal : Pp.t G.reified_goal G.ser_goals option
   }
 
 (* Private. A doc is a list of nodes for now. The first element in the list is
@@ -181,6 +184,7 @@ let process_and_parse ~ofmt ~uri ~version ~fb_queue doc =
       | Coq_protect.R.Completed res -> (
         match res with
         | Ok { res = st; goal; feedback } ->
+          (* let goals = Coq_state.goals *)
           let ok_diag = (to_orange loc, 3, "OK", None) in
           let diags = ok_diag :: diags in
           let fb_diags = process_feedback ~loc feedback in

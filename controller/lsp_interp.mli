@@ -10,36 +10,15 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Written by: Emilio J. Gallego Arias                                  *)
-(************************************************************************)
-(* Status: Experimental                                                 *)
+(* Copyright (C) 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+  *)
+(* Copyright (C) 2019-2022 Emilio J. Gallego Arias, INRIA               *)
+(* Copyright (C) 2022-2022 Shachar Itzhaky, Technion                    *)
 (************************************************************************)
 
 module G = Serapi.Serapi_goals
 
-type node =
-  { ast : Coq_ast.t
-  ; goal : Pp.t G.reified_goal G.ser_goals option
-  }
+val get_goals :
+  doc:Coq_doc.t -> line:int -> pos:int -> Pp.t G.reified_goal G.ser_goals option
 
-type t =
-  { uri : string
-  ; version : int
-  ; contents : string
-  ; root : Coq_state.t
-  ; nodes : node list
-  }
-
-val create :
-     state:Coq_state.t * Loadpath.vo_path list * string list * _
-  -> uri:string
-  -> version:int
-  -> contents:string
-  -> t
-
-val check :
-     ofmt:Format.formatter
-  -> doc:t
-  -> fb_queue:Pp.t list ref
-  -> t * Coq_state.t * Lsp.Base.Diagnostic.t list
+val get_goals_point :
+  doc:Coq_doc.t -> point:int -> Pp.t G.reified_goal G.ser_goals option
