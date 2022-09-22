@@ -207,7 +207,7 @@ let pp_goals (g : _ Serapi.Serapi_goals.ser_goals) =
 let do_hover ofmt ~id params =
   let uri, line, pos = get_docTextPosition params in
   let doc, _ = Hashtbl.find completed_table uri in
-  Lsp_interp.get_goals ~doc ~line ~pos
+  Lsp_interp.get_goals_line_col ~doc ~point:(line, pos)
   |> Option.iter (fun goals ->
          let goals = pp_goals goals |> Pp.string_of_ppcmds in
          let result = `Assoc [ ("contents", `String goals) ] in

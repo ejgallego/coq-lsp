@@ -38,27 +38,38 @@ let in_range ?loc (line, pos) =
     || (line1 - 1 = line && col1 <= pos)
     || (line2 - 1 = line && pos <= col2)
 
-let get_goals ~doc ~line ~pos =
-  let node =
-    List.find_opt
-      (fun { Coq_doc.ast; _ } ->
-        let loc = Coq_ast.loc ast in
-        in_range ?loc (line, pos))
-      doc.Coq_doc.nodes
-  in
-  Option.cata (fun node -> node.Coq_doc.goal) None node
+let gt_range ?loc:_ (_line, _pos) = false
 
 let in_range_point ?loc point =
   match loc with
   | None -> false
   | Some loc -> loc.Loc.bp <= point && point < loc.ep
 
-let get_goals_point ~doc ~point =
-  let node =
-    List.find_opt
-      (fun { Coq_doc.ast; _ } ->
-        let loc = Coq_ast.loc ast in
-        in_range_point ?loc point)
-      doc.Coq_doc.nodes
+let gt_range_point ?loc point =
+  match loc with
+  | None -> false
+  | Some loc -> point < loc.Loc.bp
+
+type approx =
+  | Exact
+  | PickPrev
+
+let get_goals ~in_range ~gt_range ~doc ~point ~approx =
+  let rec find prev l =
+    match l with
+    | [] -> prev
+    | node :: xs -> (
+      let loc = Coq_ast.loc node.Coq_doc.ast in
+      match approx with
+      | Exact -> if in_range ?loc point then Some node else find (Some node) xs
+      | PickPrev -> if gt_range ?loc point then prev else find (Some node) xs)
   in
-  Option.cata (fun node -> node.Coq_doc.goal) None node
+  find None doc.Coq_doc.nodes
+  |> Option.cata (fun node -> node.Coq_doc.goal) None
+
+let get_goals_line_col ~doc ~point =
+  get_goals ~in_range ~gt_range ~doc ~point ~approx:Exact
+
+let get_goals_point ~doc ~point ~approx =
+  get_goals ~in_range:in_range_point ~gt_range:gt_range_point ~doc ~point
+    ~approx

@@ -17,8 +17,15 @@
 
 module G = Serapi.Serapi_goals
 
-val get_goals :
-  doc:Coq_doc.t -> line:int -> pos:int -> Pp.t G.reified_goal G.ser_goals option
+val get_goals_line_col :
+  doc:Coq_doc.t -> point:int * int -> Pp.t G.reified_goal G.ser_goals option
+
+type approx =
+  | Exact
+  | PickPrev
 
 val get_goals_point :
-  doc:Coq_doc.t -> point:int -> Pp.t G.reified_goal G.ser_goals option
+     doc:Coq_doc.t
+  -> point:int
+  -> approx:approx
+  -> Pp.t G.reified_goal G.ser_goals option
