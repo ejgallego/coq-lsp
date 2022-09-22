@@ -227,6 +227,7 @@ let check ~ofmt ~doc ~fb_queue =
   let uri, version = (doc.uri, doc.version) in
 
   (* Start library *)
+  let doc = { doc with nodes = [] } in
   let doc, st, diags = (process_and_parse ~ofmt ~uri ~version ~fb_queue) doc in
   let doc = { doc with nodes = List.rev doc.nodes } in
   print_stats ();
