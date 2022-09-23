@@ -213,6 +213,16 @@ let print_stats () =
   Memo.CacheStats.reset ();
   Stats.reset ()
 
+let mk_diag range severity message = { LSP.Diagnostic.range; severity; message }
+
+let diags_of_diags diags =
+  List.fold_left
+    (fun acc (pos, lvl, msg, _goal) ->
+      match pos with
+      | None -> acc
+      | Some pos -> mk_diag pos lvl msg :: acc)
+    [] diags
+
 let check ~ofmt ~doc ~fb_queue =
   let uri, version = (doc.uri, doc.version) in
 
@@ -220,4 +230,6 @@ let check ~ofmt ~doc ~fb_queue =
   let doc, st, diags = (process_and_parse ~ofmt ~uri ~version ~fb_queue) doc in
   let doc = { doc with nodes = List.rev doc.nodes } in
   print_stats ();
-  (doc, st, json_of_diags ~uri ~version diags)
+  (* (doc, st, json_of_diags ~uri ~version diags) *)
+  let diags = diags_of_diags diags in
+  (doc, st, diags)

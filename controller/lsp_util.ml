@@ -16,13 +16,13 @@
 (* Status: Experimental                                                 *)
 (************************************************************************)
 
-let to_range (p : Loc.t) : Lsp.Base.range =
+let to_range (p : Loc.t) : Lsp.Base.Range.t =
   let Loc.{ line_nb; line_nb_last; bol_pos; bol_pos_last; bp; ep; _ } = p in
   let start_line = line_nb - 1 in
   let start_col = bp - bol_pos in
   let end_line = line_nb_last - 1 in
   let end_col = ep - bol_pos_last in
-  Lsp.Base.
+  Lsp.Base.Range.
     { start = { line = start_line; character = start_col }
     ; _end = { line = end_line; character = end_col }
     }

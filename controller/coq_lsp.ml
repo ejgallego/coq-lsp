@@ -50,6 +50,7 @@ let odict_field name dict =
 
 module LIO = Lsp.Io
 module LSP = Lsp.Base
+open Controller
 
 (* Request Handling: The client expects a reply *)
 let do_initialize ofmt ~id _params =
@@ -83,6 +84,13 @@ let do_check_text ofmt ~state ~doc =
   let _, _, _, fb_queue = state in
   let doc, final_st, diags = Coq_doc.check ~ofmt ~doc ~fb_queue in
   Hashtbl.replace completed_table doc.uri (doc, final_st);
+  let diags =
+    List.map
+      (fun { LSP.Diagnostic.range; severity; message } ->
+        (range, severity, message, None))
+      diags
+  in
+  let diags = LSP.mk_diagnostics ~uri:doc.uri ~version:doc.version diags in
   LIO.send_json ofmt @@ diags
 
 let do_change ofmt ~doc change =

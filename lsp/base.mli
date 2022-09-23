@@ -10,34 +10,41 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019 MINES ParisTech -- LGPL 2.1+                          *)
+(* Copyright 2019-2022 Inria -- LGPL 2.1+                               *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
-(* Status: Experimental                                                 *)
-(************************************************************************)
 
-type node =
-  { ast : Coq_ast.t
-  ; goal : Pp.t option
-  }
+module Point : sig
+  type t =
+    { line : int
+    ; character : int
+    }
+end
 
-type t =
-  { uri : string
-  ; version : int
-  ; contents : string
-  ; root : Coq_state.t
-  ; nodes : node list
-  }
+module Range : sig
+  type t =
+    { start : Point.t
+    ; _end : Point.t
+    }
+end
 
-val create :
-     state:Coq_state.t * Loadpath.vo_path list * string list * _
-  -> uri:string
+module Diagnostic : sig
+  type t =
+    { range : Range.t
+    ; severity : int
+    ; message : string
+    }
+end
+
+val mk_range : Range.t -> Yojson.Basic.t
+val mk_reply : id:int -> result:Yojson.Basic.t -> Yojson.Basic.t
+
+(* val mk_diagnostic : Range.t * int * string * unit option -> Yojson.Basic.t *)
+val mk_diagnostics :
+     uri:string
   -> version:int
-  -> contents:string
-  -> t
+  -> (Range.t * int * string * unit option) list
+  -> Yojson.Basic.t
 
-val check :
-     ofmt:Format.formatter
-  -> doc:t
-  -> fb_queue:Pp.t list ref
-  -> t * Coq_state.t * Lsp.Base.Diagnostic.t list
+val std_protocol : bool ref
