@@ -10,22 +10,41 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019 MINES ParisTech -- LGPL 2.1+                          *)
+(* Copyright 2019-2022 Inria -- LGPL 2.1+                               *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
-(* Status: Experimental                                                 *)
-(************************************************************************)
 
-let to_range (p : Loc.t) : Lsp.Base.Range.t =
-  let Loc.{ line_nb; line_nb_last; bol_pos; bol_pos_last; bp; ep; _ } = p in
-  let start_line = line_nb - 1 in
-  let start_col = bp - bol_pos in
-  let end_line = line_nb_last - 1 in
-  let end_col = ep - bol_pos_last in
-  Lsp.Base.Range.
-    { start = { line = start_line; character = start_col }
-    ; _end = { line = end_line; character = end_col }
+module Point : sig
+  type t =
+    { line : int
+    ; character : int
     }
+end
 
-let to_orange = Option.map to_range
-let to_msg x = Pp.string_of_ppcmds x
+module Range : sig
+  type t =
+    { start : Point.t
+    ; _end : Point.t
+    }
+end
+
+module Diagnostic : sig
+  type t =
+    { range : Range.t
+    ; severity : int
+    ; message : string
+    }
+end
+
+val mk_range : Range.t -> Yojson.Basic.t
+val mk_reply : id:int -> result:Yojson.Basic.t -> Yojson.Basic.t
+
+(* val mk_diagnostic : Range.t * int * string * unit option -> Yojson.Basic.t *)
+val mk_diagnostics :
+     uri:string
+  -> version:int
+  -> (Range.t * int * string * unit option) list
+  -> Yojson.Basic.t
+
+val std_protocol : bool ref

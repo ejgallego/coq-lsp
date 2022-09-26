@@ -27,7 +27,7 @@ module J = Yojson.Basic
 let mk_extra l = if !std_protocol then [] else l
 
 (* Ad-hoc parsing for file:///foo... *)
-let parse_uri str =
+let _parse_uri str =
   let l = String.length str - 7 in
   String.(sub str 7 l)
 
@@ -48,17 +48,21 @@ let mk_event m p =
    Some thm -> `Assoc [ "goals", `List List.(map json_of_goal thm.t_goals) ] *)
 
 (* XXX: ejgallego , does Coq also start lines at 0? *)
-type point =
-  { line : int
-  ; character : int
-  }
+module Point = struct
+  type t =
+    { line : int
+    ; character : int
+    }
+end
 
-type range =
-  { start : point
-  ; _end : point
-  }
+module Range = struct
+  type t =
+    { start : Point.t
+    ; _end : Point.t
+    }
+end
 
-let mk_range { start; _end } : J.t =
+let mk_range { Range.start; _end } : J.t =
   `Assoc
     [ ( "start"
       , `Assoc
@@ -71,7 +75,7 @@ let mk_range { start; _end } : J.t =
 (* let mk_diagnostic ((p : Pos.pos), (lvl : int), (msg : string), (thm :
    Proofs.theorem option)) : J.json = *)
 let mk_diagnostic
-    ((r : range), (lvl : int), (msg : string), (_thm : unit option)) : J.t =
+    ((r : Range.t), (lvl : int), (msg : string), (_thm : unit option)) : J.t =
   (* let goal = json_of_thm thm in *)
   let range = mk_range r in
   `Assoc
@@ -86,3 +90,11 @@ let mk_diagnostics ~uri ~version ld : J.t =
   mk_event "textDocument/publishDiagnostics"
   @@ extra
   @ [ ("uri", `String uri); ("diagnostics", `List List.(map mk_diagnostic ld)) ]
+
+module Diagnostic = struct
+  type t =
+    { range : Range.t
+    ; severity : int
+    ; message : string
+    }
+end

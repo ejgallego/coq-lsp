@@ -9,10 +9,13 @@
 
 open Lsp_util
 module LSP = Lsp.Base
+module G = Serapi.Serapi_goals
 
+(* [node list] is a very crude form of a meta-data map "loc -> data" , where for
+   now [data] is only the goals. *)
 type node =
   { ast : Coq_ast.t
-  ; goal : Pp.t option
+  ; goal : Pp.t G.reified_goal G.ser_goals option
   }
 
 (* Private. A doc is a list of nodes for now. The first element in the list is
@@ -181,6 +184,7 @@ let process_and_parse ~ofmt ~uri ~version ~fb_queue doc =
       | Coq_protect.R.Completed res -> (
         match res with
         | Ok { res = st; goal; feedback } ->
+          (* let goals = Coq_state.goals *)
           let ok_diag = (to_orange loc, 3, "OK", None) in
           let diags = ok_diag :: diags in
           let fb_diags = process_feedback ~loc feedback in
@@ -213,11 +217,24 @@ let print_stats () =
   Memo.CacheStats.reset ();
   Stats.reset ()
 
+let mk_diag range severity message = { LSP.Diagnostic.range; severity; message }
+
+let diags_of_diags diags =
+  List.fold_left
+    (fun acc (pos, lvl, msg, _goal) ->
+      match pos with
+      | None -> acc
+      | Some pos -> mk_diag pos lvl msg :: acc)
+    [] diags
+
 let check ~ofmt ~doc ~fb_queue =
   let uri, version = (doc.uri, doc.version) in
 
   (* Start library *)
+  let doc = { doc with nodes = [] } in
   let doc, st, diags = (process_and_parse ~ofmt ~uri ~version ~fb_queue) doc in
   let doc = { doc with nodes = List.rev doc.nodes } in
   print_stats ();
-  (doc, st, json_of_diags ~uri ~version diags)
+  (* (doc, st, json_of_diags ~uri ~version diags) *)
+  let diags = diags_of_diags diags in
+  (doc, st, diags)

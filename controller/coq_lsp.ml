@@ -50,6 +50,7 @@ let odict_field name dict =
 
 module LIO = Lsp.Io
 module LSP = Lsp.Base
+open Controller
 
 (* Request Handling: The client expects a reply *)
 let do_initialize ofmt ~id _params =
@@ -83,6 +84,13 @@ let do_check_text ofmt ~state ~doc =
   let _, _, _, fb_queue = state in
   let doc, final_st, diags = Coq_doc.check ~ofmt ~doc ~fb_queue in
   Hashtbl.replace completed_table doc.uri (doc, final_st);
+  let diags =
+    List.map
+      (fun { LSP.Diagnostic.range; severity; message } ->
+        (range, severity, message, None))
+      diags
+  in
+  let diags = LSP.mk_diagnostics ~uri:doc.uri ~version:doc.version diags in
   LIO.send_json ofmt @@ diags
 
 let do_change ofmt ~doc change =
@@ -163,45 +171,45 @@ let get_docTextPosition params =
   let line, character = (int_field "line" pos, int_field "character" pos) in
   (file, line, character)
 
-(* XXX refactor *)
-let in_range ?loc (line, pos) =
-  match loc with
-  | None -> false
-  | Some loc ->
-    let Loc.
-          { line_nb = line1
-          ; line_nb_last = line2
-          ; bol_pos
-          ; bol_pos_last
-          ; bp
-          ; ep
-          ; _
-          } =
-      loc
-    in
-    let col1 = bp - bol_pos in
-    let col2 = ep - bol_pos_last in
-    (line1 - 1 < line && line < line2 - 1)
-    || (line1 - 1 = line && col1 <= pos)
-    || (line2 - 1 = line && pos <= col2)
+let pr_hyp (h : _ Serapi.Serapi_goals.hyp) =
+  let names, _body, ty = h in
+  Pp.(prlist Names.Id.print names ++ str " : " ++ ty)
 
-let get_goals ~doc ~line ~pos =
-  let node =
-    List.find_opt
-      (fun { Coq_doc.ast; _ } ->
-        let loc = Coq_ast.loc ast in
-        in_range ?loc (line, pos))
-      doc.Coq_doc.nodes
+let pr_hyps hyps =
+  Pp.(
+    pr_vertical_list pr_hyp hyps
+    ++ fnl ()
+    ++ str "============================================"
+    ++ fnl ())
+
+let pr_goal ~hyps (g : _ Serapi.Serapi_goals.reified_goal) =
+  let hyps = if hyps then pr_hyps g.hyp else Pp.mt () in
+  Pp.(hyps ++ g.ty)
+
+let pp_goals (g : _ Serapi.Serapi_goals.ser_goals) =
+  let { Serapi.Serapi_goals.goals
+      ; stack = _
+      ; bullet = _
+      ; shelf = _
+      ; given_up = _
+      } =
+    g
   in
-  Option.map
-    (fun node -> Option.cata Pp.string_of_ppcmds "No goals" node.Coq_doc.goal)
-    node
+  match goals with
+  | [] -> Pp.str "No goals left"
+  | g :: gs ->
+    Pp.(
+      v 0 (pr_goal ~hyps:true g)
+      ++ cut ()
+      ++ prlist_with_sep cut (pr_goal ~hyps:false) gs)
 
+(* XXX refactor *)
 let do_hover ofmt ~id params =
   let uri, line, pos = get_docTextPosition params in
   let doc, _ = Hashtbl.find completed_table uri in
-  get_goals ~doc ~line ~pos
+  Lsp_interp.get_goals_line_col ~doc ~point:(line, pos)
   |> Option.iter (fun goals ->
+         let goals = pp_goals goals |> Pp.string_of_ppcmds in
          let result = `Assoc [ ("contents", `String goals) ] in
          let msg = LSP.mk_reply ~id ~result in
          LIO.send_json ofmt msg)

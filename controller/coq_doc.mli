@@ -16,9 +16,11 @@
 (* Status: Experimental                                                 *)
 (************************************************************************)
 
+module G = Serapi.Serapi_goals
+
 type node =
   { ast : Coq_ast.t
-  ; goal : Pp.t option
+  ; goal : Pp.t G.reified_goal G.ser_goals option
   }
 
 type t =
@@ -40,4 +42,4 @@ val check :
      ofmt:Format.formatter
   -> doc:t
   -> fb_queue:Pp.t list ref
-  -> t * Coq_state.t * Yojson.Basic.t
+  -> t * Coq_state.t * Lsp.Base.Diagnostic.t list

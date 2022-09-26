@@ -10,22 +10,22 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Written by: Emilio J. Gallego Arias                                  *)
-(************************************************************************)
-(* Status: Experimental                                                 *)
+(* Copyright (C) 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+  *)
+(* Copyright (C) 2019-2022 Emilio J. Gallego Arias, INRIA               *)
+(* Copyright (C) 2022-2022 Shachar Itzhaky, Technion                    *)
 (************************************************************************)
 
-let to_range (p : Loc.t) : Lsp.Base.Range.t =
-  let Loc.{ line_nb; line_nb_last; bol_pos; bol_pos_last; bp; ep; _ } = p in
-  let start_line = line_nb - 1 in
-  let start_col = bp - bol_pos in
-  let end_line = line_nb_last - 1 in
-  let end_col = ep - bol_pos_last in
-  Lsp.Base.Range.
-    { start = { line = start_line; character = start_col }
-    ; _end = { line = end_line; character = end_col }
-    }
+module G = Serapi.Serapi_goals
 
-let to_orange = Option.map to_range
-let to_msg x = Pp.string_of_ppcmds x
+val get_goals_line_col :
+  doc:Coq_doc.t -> point:int * int -> Pp.t G.reified_goal G.ser_goals option
+
+type approx =
+  | Exact
+  | PickPrev
+
+val get_goals_point :
+     doc:Coq_doc.t
+  -> point:int
+  -> approx:approx
+  -> Pp.t G.reified_goal G.ser_goals option

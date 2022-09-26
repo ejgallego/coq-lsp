@@ -64,6 +64,7 @@ let mode ~st =
     st.Vernacstate.lemmas
 
 let parsing ~st = st.Vernacstate.parsing
+let lemmas ~st = st.Vernacstate.lemmas
 
 let drop_proofs ~st =
   let open Vernacstate in
