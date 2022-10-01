@@ -28,7 +28,9 @@ let log_error hdr msg =
   Mutex.unlock mut
 
 let log_object hdr obj =
-  F.fprintf !debug_fmt "[%s]: @[%a@]@\n%!" hdr J.(pretty_print ~std:false) obj
+  Mutex.lock mut;
+  F.fprintf !debug_fmt "[%s]: @[%a@]@\n%!" hdr J.(pretty_print ~std:false) obj;
+  Mutex.unlock mut
 
 let flush_log () = F.pp_print_flush !debug_fmt ()
 

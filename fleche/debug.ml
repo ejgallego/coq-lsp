@@ -8,6 +8,10 @@ let cache = false || all
 let send = false || all
 let read = false || all
 
+(* finding tokens from a position *)
+let find = false || all
+let completion = false || all
+
 (* Parsing (this is a bit expensive as it will call the printer *)
 let parsing = false || all
 

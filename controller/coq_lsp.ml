@@ -166,15 +166,15 @@ let get_docTextPosition params =
   (file, (line, character))
 
 (* XXX refactor *)
+let ( %> ) f g x = g (f x)
+
+let pr_ogoals =
+  Option.cata (Coq.Goals.pp_goals %> Pp.string_of_ppcmds) "no goals"
+
 let do_hover ofmt ~id params =
   let uri, point = get_docTextPosition params in
   let doc = Hashtbl.find doc_table uri in
-  let goal_string =
-    Fleche.Info.LC.goals ~doc ~point Exact
-    |> Option.cata
-         (fun goals -> Coq.Goals.pp_goals goals |> Pp.string_of_ppcmds)
-         "<em>no goals</em>"
-  in
+  let goal_string = Fleche.Info.LC.goals ~doc ~point Exact |> pr_ogoals in
   let info_string =
     Fleche.Info.LC.info ~doc ~point Exact |> Option.default "no info"
   in
@@ -190,15 +190,19 @@ let do_hover ofmt ~id params =
   LIO.send_json ofmt msg
 
 let do_completion ofmt ~id params =
-  let uri, _ = get_docTextPosition params in
+  let uri, point = get_docTextPosition params in
   let doc = Hashtbl.find doc_table uri in
-  let f _loc id = `Assoc [ ("label", `String Names.Id.(to_string id)) ] in
-  let ast = List.map (fun v -> v.Fleche.Doc.ast) doc.Fleche.Doc.nodes in
-  let clist = Coq.Ast.grab_definitions f ast in
-  let result = `List clist in
+  let clist = Fleche.Info.LC.completion ~doc ~point () in
+  let result =
+    Option.cata
+      (fun clist ->
+        let f id = `Assoc [ ("label", `String id) ] in
+        List.map f clist)
+      [] clist
+    |> fun l -> `List l
+  in
   let msg = LSP.mk_reply ~id ~result in
   LIO.send_json ofmt msg
-(* LIO.log_error "do_completion" (string_of_int line ^"-"^ string_of_int pos) *)
 
 let memo_cache_file = ".coq-lsp.cache"
 

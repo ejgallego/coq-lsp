@@ -45,7 +45,7 @@ module type S = sig
 
   val goals : (approx, Coq.Goals.reified_pp) query
   val info : (approx, string) query
-  val completion : (string, string list) query
+  val completion : (unit, string list) query
 end
 
 module LC : S with module P := LineCol
