@@ -148,6 +148,18 @@ let interp_command ~st ~fb_queue stm : _ Stats.t =
       let time = time_hash +. time_interp in
       Stats.make ~time res)
 
+module AC = Hashtbl.Make (Coq.State)
+
+let admit_cache = AC.create 1000
+
+let interp_admitted ~st =
+  match AC.find_opt admit_cache st with
+  | None ->
+    let admitted_st = Coq.State.admit ~st in
+    AC.add admit_cache st admitted_st;
+    admitted_st
+  | Some admitted_st -> admitted_st
+
 let mem_stats () = Obj.reachable_words (Obj.magic cache)
 
 let _hashtbl_out oc t =

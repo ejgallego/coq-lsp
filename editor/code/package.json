@@ -143,6 +143,11 @@
               "Show on click",
               "Show on click and on cursor movement"
             ]
+          },
+          "coq-lsp.admit_on_bad_qed": {
+            "type": "boolean",
+            "default": true,
+            "description": "If a `Qed.` command fails, admit the proof automatically."
           }
         }
       }

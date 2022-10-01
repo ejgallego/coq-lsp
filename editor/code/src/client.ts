@@ -8,6 +8,7 @@ import {
   Uri,
   TextEditor,
   OverviewRulerLane,
+  WorkspaceConfiguration,
 } from "vscode";
 import * as vscode from "vscode";
 import { Range } from "vscode-languageclient";
@@ -32,10 +33,14 @@ interface CoqLspServerConfig {
   ok_diagnostics: boolean;
   goal_after_tactic: boolean;
   show_coq_info_messages: boolean;
+  show_notices_as_diagnostics: boolean;
+  admit_on_bad_qed: boolean;
 }
+
 interface CoqLspClientConfig {
   show_goals_on: ShowGoalsOnCursorChange;
 }
+
 let config: CoqLspClientConfig;
 let client: LanguageClient;
 let goalPanel: GoalPanel | null;
@@ -71,6 +76,8 @@ export function activate(context: ExtensionContext): void {
       if (goalPanel) goalPanel.dispose();
     }
 
+    // EJGA: didn't find a way to make CoqLspConfig a subclass of WorkspaceConfiguration
+    // despite that class being open. Would be nice to avoid this copy indeed.
     const wsConfig = workspace.getConfiguration("coq-lsp");
     config = { show_goals_on: wsConfig.show_goals_on };
     const initializationOptions: CoqLspServerConfig = {
@@ -79,6 +86,8 @@ export function activate(context: ExtensionContext): void {
       ok_diagnostics: wsConfig.ok_diagnostics,
       goal_after_tactic: wsConfig.goal_after_tactic,
       show_coq_info_messages: wsConfig.show_coq_info_messages,
+      show_notices_as_diagnostics: wsConfig.show_notices_as_diagnostics,
+      admit_on_bad_qed: wsConfig.admit_on_bad_qed,
     };
 
     const clientOptions: LanguageClientOptions = {

@@ -16,6 +16,8 @@
    command. The `show_notices_as_diagnostics` option allows to restore
    old behavior (@ejgallego, #128, fixes #125)
  - Print some more info about Coq workspace configuration (@ejgallego, #151)
+ - Admit failed `Qed` by default; allow users to configure it
+   (@ejgallego, #118, fixes #90)
 
 # coq-lsp 0.1.1: Location
 -------------------------
