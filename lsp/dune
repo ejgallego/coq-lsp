@@ -1,4 +1,4 @@
 (library
  (name lsp)
  (public_name coq-lsp.lsp)
- (libraries yojson threads))
+ (libraries fleche yojson threads))

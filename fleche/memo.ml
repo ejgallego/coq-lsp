@@ -17,23 +17,23 @@ end
 
 (* This requires a ppx likely as to ignore the CAst location *)
 module VernacInput = struct
-  type t = Coq_ast.t * Coq_state.t
+  type t = Coq.Ast.t * Coq.State.t
 
   let equal (v1, st1) (v2, st2) =
-    if Coq_ast.compare v1 v2 = 0 then
-      if Coq_state.compare st1 st2 = 0 then true else false
+    if Coq.Ast.compare v1 v2 = 0 then
+      if Coq.State.compare st1 st2 = 0 then true else false
     else false
 
-  let hash (v, st) = Hashtbl.hash (Coq_ast.hash v, st)
+  let hash (v, st) = Hashtbl.hash (Coq.Ast.hash v, st)
 
   let marshal_out oc (v, st) =
-    Coq_ast.marshal_out oc v;
-    Coq_state.marshal_out oc st;
+    Coq.Ast.marshal_out oc v;
+    Coq.State.marshal_out oc st;
     ()
 
   let marshal_in ic =
-    let v = Coq_ast.marshal_in ic in
-    let st = Coq_state.marshal_in ic in
+    let v = Coq.Ast.marshal_in ic in
+    let st = Coq.State.marshal_in ic in
     (v, st)
 end
 
@@ -60,22 +60,22 @@ module CacheStats = struct
 end
 
 let input_info (v, st) =
-  Format.asprintf "stm: %d | st %d" (Coq_ast.hash v) (Hashtbl.hash st)
+  Format.asprintf "stm: %d | st %d" (Coq.Ast.hash v) (Hashtbl.hash st)
 
 module HC = Hashtbl.Make (VernacInput)
 
 module Result = struct
   (* We store the location as to compute an offset for cached results *)
-  type t = Loc.t * Coq_state.t Coq_interp.interp_result
+  type t = Loc.t * Coq.State.t Coq.Interp.interp_result
 
   (* XXX *)
   let marshal_in ic : t =
     let loc = Marshal.from_channel ic in
-    (loc, Coq_interp.marshal_in Coq_state.marshal_in ic)
+    (loc, Coq.Interp.marshal_in Coq.State.marshal_in ic)
 
   let marshal_out oc (loc, t) =
     Marshal.to_channel oc loc [];
-    Coq_interp.marshal_out Coq_state.marshal_out oc t
+    Coq.Interp.marshal_out Coq.State.marshal_out oc t
 end
 
 type cache = Result.t HC.t
@@ -120,30 +120,30 @@ let loc_apply_offset
 let adjust_offset ~stm_loc ~cached_loc res =
   let offset = loc_offset cached_loc stm_loc in
   let f = loc_apply_offset offset in
-  Coq_protect.map_loc ~f res
+  Coq.Protect.map_loc ~f res
 
 let interp_command ~st ~fb_queue stm : _ Stats.t =
-  let stm_loc = Coq_ast.loc stm |> Option.get in
+  let stm_loc = Coq.Ast.loc stm |> Option.get in
   match in_cache st stm with
   | Some (cached_loc, res), time ->
-    if Lsp.Debug.cache then Lsp.Io.log_error "coq" "cache hit";
+    if Debug.cache then Io.Log.error "coq" "cache hit";
     CacheStats.hit ();
     let res = adjust_offset ~stm_loc ~cached_loc res in
     Stats.make ~cache_hit:true ~time res
   | None, time_hash -> (
-    if Lsp.Debug.cache then Lsp.Io.log_error "coq" "cache miss";
+    if Debug.cache then Io.Log.error "coq" "cache miss";
     CacheStats.miss ();
     let kind = CS.Kind.Exec in
     let res, time_interp =
-      CS.record ~kind ~f:(Coq_interp.interp ~st ~fb_queue) stm
+      CS.record ~kind ~f:(Coq.Interp.interp ~st ~fb_queue) stm
     in
     let time = time_hash +. time_interp in
     match res with
-    | Coq_protect.R.Interrupted as res ->
+    | Coq.Protect.R.Interrupted as res ->
       (* Don't cache interruptions *)
       fb_queue := [];
       Stats.make ~time res
-    | Coq_protect.R.Completed _ as res ->
+    | Coq.Protect.R.Completed _ as res ->
       let () = HC.add !cache (stm, st) (stm_loc, res) in
       let time = time_hash +. time_interp in
       Stats.make ~time res)

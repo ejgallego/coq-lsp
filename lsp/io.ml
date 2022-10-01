@@ -68,7 +68,7 @@ let read_request ic =
 
 let send_json fmt obj =
   Mutex.lock mut;
-  if Debug.send then log_object "send" obj;
+  if Fleche.Debug.send then log_object "send" obj;
   let msg = F.asprintf "%a" J.(pretty_print ~std:true) obj in
   let size = String.length msg in
   F.fprintf fmt "Content-Length: %d\r\n\r\n%s%!" size msg;

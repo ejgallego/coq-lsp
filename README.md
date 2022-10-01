@@ -30,6 +30,20 @@ API can be tailored to provide a good interactive experience.
 For the planned first release, we hope to provide a reasonable
 implementation of core LSP features, editor support in VS Code.
 
+### Code organization
+
+`coq-lsp` consists of several components:
+
+- `coq-serapi`: [vendored] improved utility functions to handle Coq AST
+- `coq`: Utility library / abstracted Coq API. This is the main entry
+  point for communication with Coq.
+- `fleche`: incremental document processing backend. Exposes a generic
+  API, but closely modelled to match LSP methods
+- `lsp`: small generic LSP utilities, at some point to be replaced by
+  a generic lib
+- `controller`: LSP controller, a thin layer translating LSP transport
+  layer to `flèche` surface API.
+
 ## Features
 
 ### Incremental compilation:

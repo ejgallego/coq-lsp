@@ -59,13 +59,12 @@ let get_goals ~in_range ~gt_range ~doc ~point ~approx =
     match l with
     | [] -> prev
     | node :: xs -> (
-      let loc = Coq_ast.loc node.Coq_doc.ast in
+      let loc = Coq.Ast.loc node.Doc.ast in
       match approx with
       | Exact -> if in_range ?loc point then Some node else find (Some node) xs
       | PickPrev -> if gt_range ?loc point then prev else find (Some node) xs)
   in
-  find None doc.Coq_doc.nodes
-  |> Option.cata (fun node -> node.Coq_doc.goal) None
+  find None doc.Doc.nodes |> Option.cata (fun node -> node.Doc.goal) None
 
 let get_goals_line_col ~doc ~point =
   get_goals ~in_range ~gt_range ~doc ~point ~approx:Exact

@@ -15,17 +15,12 @@
 (* Copyright (C) 2022-2022 Shachar Itzhaky, Technion                    *)
 (************************************************************************)
 
-module G = Serapi.Serapi_goals
-
 val get_goals_line_col :
-  doc:Coq_doc.t -> point:int * int -> Pp.t G.reified_goal G.ser_goals option
+  doc:Doc.t -> point:int * int -> Coq.Goals.reified_pp option
 
 type approx =
   | Exact
   | PickPrev
 
 val get_goals_point :
-     doc:Coq_doc.t
-  -> point:int
-  -> approx:approx
-  -> Pp.t G.reified_goal G.ser_goals option
+  doc:Doc.t -> point:int -> approx:approx -> Coq.Goals.reified_pp option

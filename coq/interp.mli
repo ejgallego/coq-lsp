@@ -11,21 +11,27 @@
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
-(* Status: Experimental                                                 *)
-(************************************************************************)
 
-let to_range (p : Loc.t) : Lsp.Base.Range.t =
-  let Loc.{ line_nb; line_nb_last; bol_pos; bol_pos_last; bp; ep; _ } = p in
-  let start_line = line_nb - 1 in
-  let start_col = bp - bol_pos in
-  let end_line = line_nb_last - 1 in
-  let end_col = ep - bol_pos_last in
-  Lsp.Base.Range.
-    { start = { line = start_line; character = start_col }
-    ; _end = { line = end_line; character = end_col }
+module Info : sig
+  type 'a t =
+    { res : 'a
+    ; goal : Pp.t Goals.reified_goal Goals.goals option
+    ; feedback : Pp.t Loc.located list
     }
+end
 
-let to_orange = Option.map to_range
-let to_msg x = Pp.string_of_ppcmds x
+type 'a interp_result = 'a Info.t Protect.R.t
+
+val interp :
+     st:State.t
+  -> fb_queue:Pp.t Loc.located list ref
+  -> Ast.t
+  -> State.t interp_result
+
+val marshal_in : (in_channel -> 'a) -> in_channel -> 'a interp_result
+
+val marshal_out :
+  (out_channel -> 'a -> unit) -> out_channel -> 'a interp_result -> unit

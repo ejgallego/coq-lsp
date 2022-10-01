@@ -9,20 +9,38 @@
 (************************************************************************)
 
 (************************************************************************)
-(* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- LGPL 2.1+                          *)
-(* Copyright 2019-2022 Inria -- LGPL 2.1+                               *)
+(* Coq serialization API/Plugin SERAPI                                  *)
+(* Copyright 2016-2019 MINES ParisTech -- LGPL 2.1+                     *)
+(* Copyright 2019-2022 Inria           -- LGPL 2.1+                     *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val mk_range : Fleche.Types.Range.t -> Yojson.Basic.t
-val mk_reply : id:int -> result:Yojson.Basic.t -> Yojson.Basic.t
+type 'a hyp = Names.Id.t list * 'a option * 'a
 
-(* val mk_diagnostic : Range.t * int * string * unit option -> Yojson.Basic.t *)
-val mk_diagnostics :
-     uri:string
-  -> version:int
-  -> (Fleche.Types.Range.t * int * string * unit option) list
-  -> Yojson.Basic.t
+type info =
+  { evar : Evar.t
+  ; name : Names.Id.t option
+  }
 
-val std_protocol : bool ref
+type 'a reified_goal =
+  { info : info
+  ; ty : 'a
+  ; hyp : 'a hyp list
+  }
+
+type 'a goals =
+  { goals : 'a list
+  ; stack : ('a list * 'a list) list
+  ; bullet : Pp.t option
+  ; shelf : 'a list
+  ; given_up : 'a list
+  }
+
+type reified_pp = Pp.t reified_goal goals
+
+(** Stm-independent goal processor *)
+val process_goal_gen :
+     (Environ.env -> Evd.evar_map -> Constr.t -> 'a)
+  -> Evd.evar_map
+  -> Evar.t
+  -> 'a reified_goal

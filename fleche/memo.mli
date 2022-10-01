@@ -8,13 +8,13 @@ module Stats : sig
 end
 
 (* debug *)
-val input_info : Coq_ast.t * Coq_state.t -> string
+val input_info : Coq.Ast.t * Coq.State.t -> string
 
 val interp_command :
-     st:Coq_state.t
+     st:Coq.State.t
   -> fb_queue:Pp.t Loc.located list ref
-  -> Coq_ast.t
-  -> Coq_state.t Coq_interp.interp_result Stats.t
+  -> Coq.Ast.t
+  -> Coq.State.t Coq.Interp.interp_result Stats.t
 
 val mem_stats : unit -> int
 val load_from_disk : file:string -> unit
