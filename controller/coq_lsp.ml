@@ -350,7 +350,7 @@ let lsp_main log_file std vo_load_path ml_include_path =
     ( (fun Feedback.{ contents; _ } ->
         Format.fprintf lp_fmt "%s@\n%!" "fb received";
         match contents with
-        | Message (_lvl, _loc, msg) -> q := msg :: !q
+        | Message (_lvl, loc, msg) -> q := (loc, msg) :: !q
         | _ -> ())
     , q )
   in

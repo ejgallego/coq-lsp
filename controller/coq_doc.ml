@@ -14,8 +14,11 @@ module G = Serapi.Serapi_goals
 (* [node list] is a very crude form of a meta-data map "loc -> data" , where for
    now [data] is only the goals. *)
 type node =
-  { ast : Coq_ast.t
+  { ast : Coq_ast.t  (** Ast of node *)
+  ; state : Coq_state.t  (** (Full) State of node *)
   ; goal : Pp.t G.reified_goal G.ser_goals option
+        (** Goal of node / to be made lazy *)
+  ; feedback : Pp.t Loc.located list  (** Messages relative to the node *)
   }
 
 (* Private. A doc is a list of nodes for now. The first element in the list is
@@ -113,11 +116,13 @@ let json_of_diags ~uri ~version diags =
        [] diags
 
 (* Make each fb a diag *)
+let pp_located fmt (_loc, pp) = Pp.pp_with fmt pp
+
 let process_feedback ~loc fbs =
   let fb_msg =
     Format.asprintf "feedbacks: %d @\n @[<v>%a@]"
       List.(length fbs)
-      Format.(pp_print_list Pp.pp_with)
+      Format.(pp_print_list pp_located)
       fbs
   in
   [ (to_orange loc, 3, fb_msg, None) ]
@@ -183,23 +188,24 @@ let process_and_parse ~ofmt ~uri ~version ~fb_queue doc =
         (doc, st, diags)
       | Coq_protect.R.Completed res -> (
         match res with
-        | Ok { res = st; goal; feedback } ->
+        | Ok { res = state; goal; feedback } ->
           (* let goals = Coq_state.goals *)
           let ok_diag = (to_orange loc, 3, "OK", None) in
           let diags = ok_diag :: diags in
           let fb_diags = process_feedback ~loc feedback in
           let diags = fb_diags @ diags in
-          let node = { ast; goal } in
+          let node = { ast; state; goal; feedback } in
           let doc = { doc with nodes = node :: doc.nodes } in
-          stm doc st diags
+          stm doc state diags
         | Error (err_loc, msg) ->
           let loc = Option.append err_loc loc in
           let diags = (to_orange loc, 1, to_msg msg, None) :: diags in
-          let node = { ast; goal = None } in
           (* This should be handled by Coq_protect.eval XXX *)
           fb_queue := [];
-          let doc = { doc with nodes = node :: doc.nodes } in
           let st = state_recovery_heuristic st ast in
+          (* XXX actually feedbacks can also come for errors, see XXX above *)
+          let node = { ast; goal = None; state = st; feedback = [] } in
+          let doc = { doc with nodes = node :: doc.nodes } in
           stm doc st diags))
   in
   (* we re-start from the root *)

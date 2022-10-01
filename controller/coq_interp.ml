@@ -4,7 +4,7 @@ module Info = struct
   type 'a t =
     { res : 'a
     ; goal : Pp.t G.reified_goal G.ser_goals option
-    ; feedback : Pp.t list
+    ; feedback : Pp.t Loc.located list
     }
 end
 

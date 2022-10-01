@@ -4,7 +4,7 @@ module Info : sig
   type 'a t =
     { res : 'a
     ; goal : Pp.t G.reified_goal G.ser_goals option
-    ; feedback : Pp.t list
+    ; feedback : Pp.t Loc.located list
     }
 end
 
@@ -12,7 +12,7 @@ type 'a interp_result = 'a Info.t Coq_protect.R.t
 
 val interp :
      st:Coq_state.t
-  -> fb_queue:Pp.t list ref
+  -> fb_queue:Pp.t Loc.located list ref
   -> Coq_ast.t
   -> Coq_state.t interp_result
 

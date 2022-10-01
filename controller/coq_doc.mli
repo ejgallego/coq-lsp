@@ -18,9 +18,14 @@
 
 module G = Serapi.Serapi_goals
 
+(* [node list] is a very crude form of a meta-data map "loc -> data" , where for
+   now [data] is only the goals. *)
 type node =
-  { ast : Coq_ast.t
+  { ast : Coq_ast.t  (** Ast of node *)
+  ; state : Coq_state.t  (** (Full) State of node *)
   ; goal : Pp.t G.reified_goal G.ser_goals option
+        (** Goal of node / to be made lazy *)
+  ; feedback : Pp.t Loc.located list  (** Messages relative to the node *)
   }
 
 type t =
@@ -41,5 +46,5 @@ val create :
 val check :
      ofmt:Format.formatter
   -> doc:t
-  -> fb_queue:Pp.t list ref
+  -> fb_queue:Pp.t Loc.located list ref
   -> t * Coq_state.t * Lsp.Base.Diagnostic.t list
