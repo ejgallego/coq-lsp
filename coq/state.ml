@@ -1,9 +1,9 @@
 type t = Vernacstate.t
 
 let any_out oc (a : Summary.Frozen.any) =
-  let (Summary.Frozen.Any (tag, _value)) = a in
-  let name = Summary.Dyn.repr tag in
-  Lsp.Io.log_error "marshall" name;
+  (* let (Summary.Frozen.Any (tag, _value)) = a in *)
+  (* let name = Summary.Dyn.repr tag in *)
+  (* Lsp.Io.log_error "marshall" name; *)
   Marshal.to_channel oc a []
 
 let _frozen_out oc (s : Summary.Frozen.t) = Summary.Frozen.iter (any_out oc) s
@@ -72,3 +72,7 @@ let drop_proofs ~st =
     lemmas =
       Option.cata (fun s -> snd @@ Vernacstate.LemmaStack.pop s) None st.lemmas
   }
+
+let in_state ~st ~f a =
+  Vernacstate.unfreeze_interp_state st;
+  f a

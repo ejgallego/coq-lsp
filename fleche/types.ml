@@ -10,19 +10,43 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- LGPL 2.1+                          *)
-(* Copyright 2019-2022 Inria -- LGPL 2.1+                               *)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val mk_range : Fleche.Types.Range.t -> Yojson.Basic.t
-val mk_reply : id:int -> result:Yojson.Basic.t -> Yojson.Basic.t
+(* XXX: ejgallego, do we start lines at 0? *)
+module Point = struct
+  type t =
+    { line : int
+    ; character : int
+    }
+end
 
-(* val mk_diagnostic : Range.t * int * string * unit option -> Yojson.Basic.t *)
-val mk_diagnostics :
-     uri:string
-  -> version:int
-  -> (Fleche.Types.Range.t * int * string * unit option) list
-  -> Yojson.Basic.t
+module Range = struct
+  type t =
+    { start : Point.t
+    ; _end : Point.t
+    }
+end
 
-val std_protocol : bool ref
+module Diagnostic = struct
+  type t =
+    { range : Range.t
+    ; severity : int
+    ; message : string
+    }
+end
+
+let to_range (p : Loc.t) : Range.t =
+  let Loc.{ line_nb; line_nb_last; bol_pos; bol_pos_last; bp; ep; _ } = p in
+  let start_line = line_nb - 1 in
+  let start_col = bp - bol_pos in
+  let end_line = line_nb_last - 1 in
+  let end_col = ep - bol_pos_last in
+  Range.
+    { start = { line = start_line; character = start_col }
+    ; _end = { line = end_line; character = end_col }
+    }
+
+let to_orange = Option.map to_range

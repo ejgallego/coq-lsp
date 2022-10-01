@@ -9,23 +9,40 @@
 (************************************************************************)
 
 (************************************************************************)
-(* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Coq serialization API/Plugin SERAPI                                  *)
+(* Copyright 2016-2019 MINES ParisTech -- LGPL 2.1+                     *)
+(* Copyright 2019-2022 Inria           -- LGPL 2.1+                     *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
-(* Status: Experimental                                                 *)
-(************************************************************************)
 
-let to_range (p : Loc.t) : Lsp.Base.Range.t =
-  let Loc.{ line_nb; line_nb_last; bol_pos; bol_pos_last; bp; ep; _ } = p in
-  let start_line = line_nb - 1 in
-  let start_col = bp - bol_pos in
-  let end_line = line_nb_last - 1 in
-  let end_col = ep - bol_pos_last in
-  Lsp.Base.Range.
-    { start = { line = start_line; character = start_col }
-    ; _end = { line = end_line; character = end_col }
-    }
+type 'a hyp = Names.Id.t list * 'a option * 'a
 
-let to_orange = Option.map to_range
-let to_msg x = Pp.string_of_ppcmds x
+type info =
+  { evar : Evar.t
+  ; name : Names.Id.t option
+  }
+
+type 'a reified_goal =
+  { info : info
+  ; ty : 'a
+  ; hyp : 'a hyp list
+  }
+
+type 'a goals =
+  { goals : 'a list
+  ; stack : ('a list * 'a list) list
+  ; bullet : Pp.t option
+  ; shelf : 'a list
+  ; given_up : 'a list
+  }
+
+(** Stm-independent goal processor *)
+val process_goal_gen :
+     (Environ.env -> Evd.evar_map -> Constr.t -> 'a)
+  -> Evd.evar_map
+  -> Evar.t
+  -> 'a reified_goal
+
+type reified_pp = Pp.t reified_goal goals
+
+val pp_goals : reified_pp -> Pp.t

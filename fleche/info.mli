@@ -10,36 +10,35 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Written by: Emilio J. Gallego Arias                                  *)
+(* Copyright (C) 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+  *)
+(* Copyright (C) 2019-2022 Emilio J. Gallego Arias, INRIA               *)
+(* Copyright (C) 2022-2022 Shachar Itzhaky, Technion                    *)
 (************************************************************************)
-(* Status: Experimental                                                 *)
-(************************************************************************)
 
-module G = Serapi.Serapi_goals
+(* Some issues due to different API in clients... *)
+module type Point = sig
+  type t
 
-type node =
-  { ast : Coq_ast.t
-  ; goal : Pp.t G.reified_goal G.ser_goals option
-  }
+  val in_range : ?loc:Loc.t -> t -> bool
+  val gt_range : ?loc:Loc.t -> t -> bool
+end
 
-type t =
-  { uri : string
-  ; version : int
-  ; contents : string
-  ; root : Coq_state.t
-  ; nodes : node list
-  }
+module LineCol : Point with type t = int * int
+module Offset : Point with type t = int
 
-val create :
-     state:Coq_state.t * Loadpath.vo_path list * string list * _
-  -> uri:string
-  -> version:int
-  -> contents:string
-  -> t
+type approx =
+  | Exact
+  | PickPrev
 
-val check :
-     ofmt:Format.formatter
-  -> doc:t
-  -> fb_queue:Pp.t list ref
-  -> t * Coq_state.t * Lsp.Base.Diagnostic.t list
+(** Located queries *)
+module type S = sig
+  module P : Point
+
+  type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
+
+  val goals : (approx, Coq.Goals.reified_pp) query
+  val completion : (string, string list) query
+end
+
+module LC : S with module P := LineCol
+module O : S with module P := Offset

@@ -10,22 +10,28 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright (C) 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+  *)
-(* Copyright (C) 2019-2022 Emilio J. Gallego Arias, INRIA               *)
-(* Copyright (C) 2022-2022 Shachar Itzhaky, Technion                    *)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module G = Serapi.Serapi_goals
+module Info : sig
+  type 'a t =
+    { res : 'a
+    ; goal : Pp.t Goals.reified_goal Goals.goals option
+    ; feedback : Pp.t Loc.located list
+    }
+end
 
-val get_goals_line_col :
-  doc:Coq_doc.t -> point:int * int -> Pp.t G.reified_goal G.ser_goals option
+type 'a interp_result = 'a Info.t Protect.R.t
 
-type approx =
-  | Exact
-  | PickPrev
+val interp :
+     st:State.t
+  -> fb_queue:Pp.t Loc.located list ref
+  -> Ast.t
+  -> State.t interp_result
 
-val get_goals_point :
-     doc:Coq_doc.t
-  -> point:int
-  -> approx:approx
-  -> Pp.t G.reified_goal G.ser_goals option
+val marshal_in : (in_channel -> 'a) -> in_channel -> 'a interp_result
+
+val marshal_out :
+  (out_channel -> 'a -> unit) -> out_channel -> 'a interp_result -> unit

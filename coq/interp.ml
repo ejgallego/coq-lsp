@@ -1,10 +1,25 @@
-module G = Serapi.Serapi_goals
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
+(************************************************************************)
+(* Coq Language Server Protocol                                         *)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Written by: Emilio J. Gallego Arias                                  *)
+(************************************************************************)
 
 module Info = struct
   type 'a t =
     { res : 'a
-    ; goal : Pp.t G.reified_goal G.ser_goals option
-    ; feedback : Pp.t list
+    ; goal : Goals.reified_pp option
+    ; feedback : Pp.t Loc.located list
     }
 end
 
@@ -26,13 +41,13 @@ let if_not_empty (pp : Pp.t) =
   if Pp.(repr pp = Ppcmd_empty) then None else Some pp
 
 let reify_goals ppx lemmas =
-  let open G in
+  let open Goals in
   let proof =
     Vernacstate.LemmaStack.with_top lemmas ~f:(fun pstate ->
         Declare.Proof.get pstate)
   in
   let { Proof.goals; stack; sigma; _ } = Proof.data proof in
-  let ppx = List.map (G.process_goal_gen ppx sigma) in
+  let ppx = List.map (Goals.process_goal_gen ppx sigma) in
   Some
     { goals = ppx goals
     ; stack = List.map (fun (g1, g2) -> (ppx g1, ppx g2)) stack
@@ -45,18 +60,18 @@ let pr_goal st =
   let ppx env sigma x =
     (* Jscoq_util.pp_opt *) Printer.pr_ltype_env env sigma x
   in
-  let lemmas = Coq_state.lemmas ~st in
+  let lemmas = State.lemmas ~st in
   Option.cata (reify_goals ppx) None lemmas
 
-type 'a interp_result = 'a Info.t Coq_protect.R.t
+type 'a interp_result = 'a Info.t Protect.R.t
 
 let coq_interp ~st cmd =
-  let st = Coq_state.to_coq st in
-  let cmd = Coq_ast.to_coq cmd in
-  Vernacinterp.interp ~st cmd |> Coq_state.of_coq
+  let st = State.to_coq st in
+  let cmd = Ast.to_coq cmd in
+  Vernacinterp.interp ~st cmd |> State.of_coq
 
 let interp ~st ~fb_queue cmd =
-  Coq_protect.eval cmd ~f:(fun cmd ->
+  Protect.eval cmd ~f:(fun cmd ->
       let res = coq_interp ~st cmd in
       (* It is safe to call the printer here as the state is guaranteed to be
          the right one after `coq_interp`, but beware! *)
@@ -66,8 +81,8 @@ let interp ~st ~fb_queue cmd =
 
 let marshal_out f oc res =
   match res with
-  | Coq_protect.R.Interrupted -> ()
-  | Coq_protect.R.Completed res -> (
+  | Protect.R.Interrupted -> ()
+  | Protect.R.Completed res -> (
     match res with
     | Ok res ->
       Marshal.to_channel oc 0 [];
@@ -82,8 +97,8 @@ let marshal_in f ic =
   let tag : int = Marshal.from_channel ic in
   if tag = 0 then
     let res = f ic in
-    Coq_protect.R.Completed (Ok { Info.res; goal = None; feedback = [] })
+    Protect.R.Completed (Ok { Info.res; goal = None; feedback = [] })
   else
     let loc : Loc.t option = Marshal.from_channel ic in
     let msg : Pp.t = Marshal.from_channel ic in
-    Coq_protect.R.Completed (Error (loc, msg))
+    Protect.R.Completed (Error (loc, msg))

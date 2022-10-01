@@ -10,19 +10,38 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- LGPL 2.1+                          *)
-(* Copyright 2019-2022 Inria -- LGPL 2.1+                               *)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
+(* Status: Experimental                                                 *)
+(************************************************************************)
 
-val mk_range : Fleche.Types.Range.t -> Yojson.Basic.t
-val mk_reply : id:int -> result:Yojson.Basic.t -> Yojson.Basic.t
+(* [node list] is a very crude form of a meta-data map "loc -> data" , where for
+   now [data] is only the goals. *)
+type node =
+  { ast : Coq.Ast.t  (** Ast of node *)
+  ; state : Coq.State.t  (** (Full) State of node *)
+  ; goal : Coq.Goals.reified_pp option  (** Goal of node / to be made lazy *)
+  ; feedback : Pp.t Loc.located list  (** Messages relative to the node *)
+  }
 
-(* val mk_diagnostic : Range.t * int * string * unit option -> Yojson.Basic.t *)
-val mk_diagnostics :
-     uri:string
+type t =
+  { uri : string
+  ; version : int
+  ; contents : string
+  ; root : Coq.State.t
+  ; nodes : node list
+  }
+
+val create :
+     state:Coq.State.t * Loadpath.vo_path list * string list * _
+  -> uri:string
   -> version:int
-  -> (Fleche.Types.Range.t * int * string * unit option) list
-  -> Yojson.Basic.t
+  -> contents:string
+  -> t
 
-val std_protocol : bool ref
+val check :
+     ofmt:Format.formatter
+  -> doc:t
+  -> fb_queue:Pp.t Loc.located list ref
+  -> t * Coq.State.t * Types.Diagnostic.t list

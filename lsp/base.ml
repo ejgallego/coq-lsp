@@ -47,22 +47,7 @@ let mk_event m p =
    let json_of_thm thm = let open Proofs in match thm with | None -> `Null |
    Some thm -> `Assoc [ "goals", `List List.(map json_of_goal thm.t_goals) ] *)
 
-(* XXX: ejgallego , does Coq also start lines at 0? *)
-module Point = struct
-  type t =
-    { line : int
-    ; character : int
-    }
-end
-
-module Range = struct
-  type t =
-    { start : Point.t
-    ; _end : Point.t
-    }
-end
-
-let mk_range { Range.start; _end } : J.t =
+let mk_range { Fleche.Types.Range.start; _end } : J.t =
   `Assoc
     [ ( "start"
       , `Assoc
@@ -75,7 +60,10 @@ let mk_range { Range.start; _end } : J.t =
 (* let mk_diagnostic ((p : Pos.pos), (lvl : int), (msg : string), (thm :
    Proofs.theorem option)) : J.json = *)
 let mk_diagnostic
-    ((r : Range.t), (lvl : int), (msg : string), (_thm : unit option)) : J.t =
+    ( (r : Fleche.Types.Range.t)
+    , (lvl : int)
+    , (msg : string)
+    , (_thm : unit option) ) : J.t =
   (* let goal = json_of_thm thm in *)
   let range = mk_range r in
   `Assoc
@@ -90,11 +78,3 @@ let mk_diagnostics ~uri ~version ld : J.t =
   mk_event "textDocument/publishDiagnostics"
   @@ extra
   @ [ ("uri", `String uri); ("diagnostics", `List List.(map mk_diagnostic ld)) ]
-
-module Diagnostic = struct
-  type t =
-    { range : Range.t
-    ; severity : int
-    ; message : string
-    }
-end
