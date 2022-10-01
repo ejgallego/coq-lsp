@@ -63,8 +63,7 @@ let parse_to_terminator : unit Pcoq.Entry.t =
   (* type 'a parser_fun = { parser_fun : te LStream.t -> 'a } *)
   let rec dot st =
     match Gramlib.LStream.next st with
-    | Tok.KEYWORD ("." | "..." | "Qed" | "Defined")
-    | Tok.BULLET _ -> ()
+    | Tok.KEYWORD ("." | "..." | "Qed" | "Defined") | Tok.BULLET _ -> ()
     | Tok.EOI -> ()
     | _ -> dot st
   in
