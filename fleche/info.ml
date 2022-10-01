@@ -25,27 +25,18 @@ end
 module LineCol : Point with type t = int * int = struct
   type t = int * int
 
-  let debug_in_range = true
+  let debug_in_range = false
 
   let in_range ?loc (line, col) =
     (* Coq starts at 1, lsp at 0 *)
-    let line = line + 1 in
     match loc with
     | None -> false
     | Some loc ->
-      let Loc.
-            { line_nb = line1
-            ; line_nb_last = line2
-            ; bol_pos
-            ; bol_pos_last
-            ; bp
-            ; ep
-            ; _
-            } =
-        loc
-      in
-      let col1 = bp - bol_pos in
-      let col2 = ep - bol_pos_last in
+      let r = Types.to_range loc in
+      let line1 = r.start.line in
+      let col1 = r.start.character in
+      let line2 = r._end.line in
+      let col2 = r._end.character in
       if debug_in_range then
         Io.Log.error "in_range"
           (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1
@@ -55,7 +46,20 @@ module LineCol : Point with type t = int * int = struct
       if line1 = line && line2 = line then col1 <= col && col < col2
       else (line1 = line && col1 <= col) || (line2 = line && col < col2)
 
-  let gt_range ?loc:_ (_line, _pos) = false
+  let gt_range ?loc (line, col) =
+    match loc with
+    | None -> false
+    | Some loc ->
+      let r = Types.to_range loc in
+      let line1 = r.start.line in
+      let col1 = r.start.character in
+      let line2 = r._end.line in
+      let col2 = r._end.character in
+      if debug_in_range then
+        Io.Log.error "gt_range"
+          (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1
+             line2 col2);
+      line2 < line || (line2 = line && col2 <= col)
 end
 
 module Offset : Point with type t = int = struct
@@ -79,12 +83,19 @@ type approx =
 module type S = sig
   module P : Point
 
-  val goals :
-    doc:Doc.t -> point:P.t -> approx:approx -> Coq.Goals.reified_pp option
+  type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
+
+  val goals : (approx, Coq.Goals.reified_pp) query
+  val completion : (string, string list) query
 end
 
+let some x = Some x
+let obind x f = Option.bind f x
+
 module Make (P : Point) : S with module P := P = struct
-  let goals ~doc ~point ~approx =
+  type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
+
+  let find ~doc ~point approx =
     let rec find prev l =
       match l with
       | [] -> prev
@@ -95,7 +106,30 @@ module Make (P : Point) : S with module P := P = struct
         | PickPrev ->
           if P.gt_range ?loc point then prev else find (Some node) xs)
     in
-    find None doc.Doc.nodes |> Option.cata (fun node -> node.Doc.goal) None
+    find None doc.Doc.nodes
+
+  let goals ~doc ~point approx =
+    find ~doc ~point approx |> obind (fun node -> node.Doc.goal)
+
+  (* XXX: This belongs in Coq *)
+  let pr_extref gr =
+    match gr with
+    | Globnames.TrueGlobal gr -> Printer.pr_global gr
+    | Globnames.Abbrev kn -> Names.KerName.print kn
+
+  (* XXX This may fail when passed "foo." for example, so more sanitizing is
+     needed *)
+  let to_qualid p = try Some (Libnames.qualid_of_string p) with _ -> None
+
+  let completion ~doc ~point prefix =
+    find ~doc ~point Exact
+    |> obind (fun node ->
+           Coq.State.in_state ~st:node.Doc.state prefix ~f:(fun prefix ->
+               to_qualid prefix
+               |> obind (fun p ->
+                      Nametab.completion_canditates p
+                      |> List.map (fun x -> Pp.string_of_ppcmds (pr_extref x))
+                      |> some)))
 end
 
 module LC = Make (LineCol)

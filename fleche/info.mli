@@ -30,11 +30,14 @@ type approx =
   | Exact
   | PickPrev
 
+(** Located queries *)
 module type S = sig
   module P : Point
 
-  val goals :
-    doc:Doc.t -> point:P.t -> approx:approx -> Coq.Goals.reified_pp option
+  type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
+
+  val goals : (approx, Coq.Goals.reified_pp) query
+  val completion : (string, string list) query
 end
 
 module LC : S with module P := LineCol

@@ -170,7 +170,7 @@ let do_hover ofmt ~id params =
   let uri, line, pos = get_docTextPosition params in
   let doc = Hashtbl.find doc_table uri in
   let goal_string =
-    Fleche.Info.LC.goals ~doc ~point:(line, pos) ~approx:Exact
+    Fleche.Info.LC.goals ~doc ~point:(line, pos) Exact
     |> Option.cata
          (fun goals -> Coq.Goals.pp_goals goals |> Pp.string_of_ppcmds)
          "no goals"

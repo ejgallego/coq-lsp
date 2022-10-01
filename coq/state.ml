@@ -72,3 +72,7 @@ let drop_proofs ~st =
     lemmas =
       Option.cata (fun s -> snd @@ Vernacstate.LemmaStack.pop s) None st.lemmas
   }
+
+let in_state ~st ~f a =
+  Vernacstate.unfreeze_interp_state st;
+  f a
