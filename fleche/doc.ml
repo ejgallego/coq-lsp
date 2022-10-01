@@ -58,12 +58,13 @@ let parse_stm ~st ps =
   in
   Stats.record ~kind:Stats.Kind.Parsing ~f:(Coq.Protect.eval ~f:parse) ps
 
-(* Read the input stream until a dot is encountered *)
-let parse_to_dot : unit Pcoq.Entry.t =
+(* Read the input stream until a dot or a "end of proof" token is encountered *)
+let parse_to_terminator : unit Pcoq.Entry.t =
   (* type 'a parser_fun = { parser_fun : te LStream.t -> 'a } *)
   let rec dot st =
     match Gramlib.LStream.next st with
-    | Tok.KEYWORD ("." | "...") -> ()
+    | Tok.KEYWORD ("." | "..." | "Qed" | "Defined")
+    | Tok.BULLET _ -> ()
     | Tok.EOI -> ()
     | _ -> dot st
   in
@@ -74,7 +75,7 @@ let parse_to_dot : unit Pcoq.Entry.t =
    char was eaten *)
 
 let rec discard_to_dot ps =
-  try Pcoq.Entry.parse parse_to_dot ps with
+  try Pcoq.Entry.parse parse_to_terminator ps with
   | CLexer.Error.E _ -> discard_to_dot ps
   | e when CErrors.noncritical e -> ()
 
