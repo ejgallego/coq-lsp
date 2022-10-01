@@ -5,8 +5,8 @@ let all = false
 let cache = false || all
 
 (* LSP messages: Send and receive *)
-let send = true || all
-let read = true || all
+let send = false || all
+let read = false || all
 
 (* Parsing (this is a bit expensive as it will call the printer *)
 let parsing = false || all

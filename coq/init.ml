@@ -42,7 +42,7 @@ let coq_init opts =
   ignore (Feedback.add_feeder opts.fb_handler);
 
   (* SerAPI plugins *)
-  let load_plugin = Sertop.Sertop_loader.plugin_handler None in
+  let load_plugin = Loader.plugin_handler None in
   let load_module = Dynlink.loadfile in
 
   (* Custom toplevel is used for bytecode-to-js dynlink *)
