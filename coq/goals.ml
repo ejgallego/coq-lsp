@@ -80,3 +80,28 @@ let process_goal_gen ppx sigma g : 'a reified_goal =
 
 (* let if_not_empty (pp : Pp.t) = if Pp.(repr pp = Ppcmd_empty) then None else
    Some pp *)
+
+let pr_hyp (h : _ hyp) =
+  let names, _body, ty = h in
+  Pp.(prlist Names.Id.print names ++ str " : " ++ ty)
+
+let pr_hyps hyps =
+  Pp.(
+    pr_vertical_list pr_hyp hyps
+    ++ fnl ()
+    ++ str "============================================"
+    ++ fnl ())
+
+let pr_goal ~hyps (g : _ reified_goal) =
+  let hyps = if hyps then pr_hyps g.hyp else Pp.mt () in
+  Pp.(hyps ++ g.ty)
+
+let pp_goals (g : _ goals) =
+  let { goals; stack = _; bullet = _; shelf = _; given_up = _ } = g in
+  match goals with
+  | [] -> Pp.str "No goals left"
+  | g :: gs ->
+    Pp.(
+      v 0 (pr_goal ~hyps:true g)
+      ++ cut ()
+      ++ prlist_with_sep cut (pr_goal ~hyps:false) gs)

@@ -15,12 +15,27 @@
 (* Copyright (C) 2022-2022 Shachar Itzhaky, Technion                    *)
 (************************************************************************)
 
-val get_goals_line_col :
-  doc:Doc.t -> point:int * int -> Coq.Goals.reified_pp option
+(* Some issues due to different API in clients... *)
+module type Point = sig
+  type t
+
+  val in_range : ?loc:Loc.t -> t -> bool
+  val gt_range : ?loc:Loc.t -> t -> bool
+end
+
+module LineCol : Point with type t = int * int
+module Offset : Point with type t = int
 
 type approx =
   | Exact
   | PickPrev
 
-val get_goals_point :
-  doc:Doc.t -> point:int -> approx:approx -> Coq.Goals.reified_pp option
+module type S = sig
+  module P : Point
+
+  val goals :
+    doc:Doc.t -> point:P.t -> approx:approx -> Coq.Goals.reified_pp option
+end
+
+module LC : S with module P := LineCol
+module O : S with module P := Offset

@@ -72,10 +72,7 @@ let do_shutdown ofmt ~id =
   let msg = LSP.mk_reply ~id ~result:`Null in
   LIO.send_json ofmt msg
 
-let doc_table : (string, _) Hashtbl.t = Hashtbl.create 39
-
-let completed_table : (string, Fleche.Doc.t * Coq.State.t) Hashtbl.t =
-  Hashtbl.create 39
+let doc_table : (string, Fleche.Doc.t) Hashtbl.t = Hashtbl.create 39
 
 let lsp_of_diags ~uri ~version diags =
   List.map
@@ -87,8 +84,8 @@ let lsp_of_diags ~uri ~version diags =
 (* Notification handling; reply is optional / asynchronous *)
 let do_check_text ofmt ~state ~doc =
   let _, _, _, fb_queue = state in
-  let doc, final_st, diags = Fleche.Doc.check ~ofmt ~doc ~fb_queue in
-  Hashtbl.replace completed_table doc.uri (doc, final_st);
+  let doc, _final_st, diags = Fleche.Doc.check ~ofmt ~doc ~fb_queue in
+  Hashtbl.replace doc_table doc.uri doc;
   let diags = lsp_of_diags ~uri:doc.uri ~version:doc.version diags in
   LIO.send_json ofmt @@ diags
 
@@ -132,10 +129,8 @@ let do_close _ofmt params =
 let grab_doc params =
   let document = dict_field "textDocument" params in
   let doc_file = string_field "uri" document in
-  let start_doc, end_doc =
-    Hashtbl.(find doc_table doc_file, find completed_table doc_file)
-  in
-  (doc_file, start_doc, end_doc)
+  let doc = Hashtbl.(find doc_table doc_file) in
+  (doc_file, doc)
 
 let mk_syminfo file (name, _path, kind, pos) : J.t =
   `Assoc
@@ -156,7 +151,7 @@ let kind_of_type _tm = 13
    *) | _ -> 12 (* Function *) *)
 
 let do_symbols ofmt ~id params =
-  let file, _, (doc, _) = grab_doc params in
+  let file, doc = grab_doc params in
   let f loc id = mk_syminfo file (Names.Id.to_string id, "", 12, loc) in
   let ast = List.map (fun v -> v.Fleche.Doc.ast) doc.Fleche.Doc.nodes in
   let slist = Coq.Ast.grab_definitions f ast in
@@ -170,45 +165,23 @@ let get_docTextPosition params =
   let line, character = (int_field "line" pos, int_field "character" pos) in
   (file, line, character)
 
-let pr_hyp (h : _ Coq.Goals.hyp) =
-  let names, _body, ty = h in
-  Pp.(prlist Names.Id.print names ++ str " : " ++ ty)
-
-let pr_hyps hyps =
-  Pp.(
-    pr_vertical_list pr_hyp hyps
-    ++ fnl ()
-    ++ str "============================================"
-    ++ fnl ())
-
-let pr_goal ~hyps (g : _ Coq.Goals.reified_goal) =
-  let hyps = if hyps then pr_hyps g.hyp else Pp.mt () in
-  Pp.(hyps ++ g.ty)
-
-let pp_goals (g : _ Coq.Goals.goals) =
-  let { Coq.Goals.goals; stack = _; bullet = _; shelf = _; given_up = _ } = g in
-  match goals with
-  | [] -> Pp.str "No goals left"
-  | g :: gs ->
-    Pp.(
-      v 0 (pr_goal ~hyps:true g)
-      ++ cut ()
-      ++ prlist_with_sep cut (pr_goal ~hyps:false) gs)
-
 (* XXX refactor *)
 let do_hover ofmt ~id params =
   let uri, line, pos = get_docTextPosition params in
-  let doc, _ = Hashtbl.find completed_table uri in
-  Fleche.Info.get_goals_line_col ~doc ~point:(line, pos)
-  |> Option.iter (fun goals ->
-         let goals = pp_goals goals |> Pp.string_of_ppcmds in
-         let result = `Assoc [ ("contents", `String goals) ] in
-         let msg = LSP.mk_reply ~id ~result in
-         LIO.send_json ofmt msg)
+  let doc = Hashtbl.find doc_table uri in
+  let goal_string =
+    Fleche.Info.LC.goals ~doc ~point:(line, pos) ~approx:Exact
+    |> Option.cata
+         (fun goals -> Coq.Goals.pp_goals goals |> Pp.string_of_ppcmds)
+         "no goals"
+  in
+  let result = `Assoc [ ("contents", `String goal_string) ] in
+  let msg = LSP.mk_reply ~id ~result in
+  LIO.send_json ofmt msg
 
 let do_completion ofmt ~id params =
   let uri, _line, _pos = get_docTextPosition params in
-  let doc, _ = Hashtbl.find completed_table uri in
+  let doc = Hashtbl.find doc_table uri in
   let f _loc id = `Assoc [ ("label", `String Names.Id.(to_string id)) ] in
   let ast = List.map (fun v -> v.Fleche.Doc.ast) doc.Fleche.Doc.nodes in
   let clist = Coq.Ast.grab_definitions f ast in
