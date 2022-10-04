@@ -7,3 +7,13 @@
 (* Status: Experimental                                                 *)
 (************************************************************************)
 
+type t =
+  { range : Types.Range.t
+  ; text : String.t
+  }
+
+val make : contents:String.t -> loc:Loc.t -> t
+
+(** [find ~offset span] finds an identifier at offset, offset is absolutely
+    positioned *)
+val find : offset:int -> t -> string

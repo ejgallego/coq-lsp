@@ -160,7 +160,7 @@ let interp_command ~st ~fb_queue stm : _ Stats.t =
 let mem_stats () = Obj.reachable_words (Obj.magic cache)
 
 module ParseInput = struct
-  type t = Pvernac.proof_mode option * Vernacstate.Parser.t * Loc.t * string
+  type t = Pvernac.proof_mode option * Vernacstate.Parser.t * Span.t
 
   let hash x = Hashtbl.hash x
   let equal x y = compare x y = 0
@@ -170,8 +170,8 @@ module PC = Hashtbl.Make (ParseInput)
 
 let parse_coq ~mode ~st ps =
   let parse ps =
-    (* Coq is missing this, so we add it here. Note that this MUST run
-       inside Coq.Protect. *)
+    (* Coq is missing this, so we add it here. Note that this MUST run inside
+       Coq.Protect. *)
     Control.check_for_interrupt ();
     Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
     |> Option.map Coq.Ast.of_coq
@@ -190,12 +190,6 @@ let loc_of_parse_res loc res =
 let lcache = Hashtbl.create 1000
 let pcache = PC.create 1000
 
-let get_segment l_b text =
-  let len = l_b.Loc.ep - l_b.Loc.bp in
-  let gs = String.sub text l_b.Loc.bp len in
-  Io.Log.error "get_segment" gs;
-  gs
-
 let in_parse_cache mode st text ps =
   let kind = CS.Kind.Hashing in
   let stream_loc = Pcoq.Parsable.loc ps in
@@ -204,14 +198,14 @@ let in_parse_cache mode st text ps =
   | Some ast_loc ->
     Io.Log.error "in_parse_cache" "start pos in segment cache";
     (* Mmmmm, this seems tricky *)
-    let segment = get_segment ast_loc text in
+    let span = Span.make ~contents:text ~loc:ast_loc in
     let loc_pr = Loc.pr ast_loc |> Pp.string_of_ppcmds in
-    Io.Log.error "coq" ("query parse cache: " ^ loc_pr ^ " | " ^ segment);
+    Io.Log.error "coq" ("query parse cache: " ^ loc_pr ^ " | " ^ span.text);
     let f key =
       PC.find_opt pcache key
-      |> Option.map (fun hit -> (hit, String.length segment))
+      |> Option.map (fun hit -> (hit, String.length span.text))
     in
-    CS.record ~kind ~f (mode, st, ast_loc, segment)
+    CS.record ~kind ~f (mode, st, span)
 
 let parse ~mode ~st ~text ps =
   match in_parse_cache mode st text ps with
@@ -235,11 +229,11 @@ let parse ~mode ~st ~text ps =
       (res, time)
     | Coq.Protect.R.Completed pres ->
       let ast_loc = loc_of_parse_res stream_loc pres in
-      let segment = get_segment ast_loc text in
+      let span = Span.make ~contents:text ~loc:ast_loc in
       let () = Hashtbl.add lcache stream_loc ast_loc in
       let loc_pr = Loc.pr ast_loc |> Pp.string_of_ppcmds in
-      Io.Log.error "coq" ("add to parse cache: " ^ loc_pr ^ " | " ^ segment);
-      let () = PC.add pcache (mode, st, ast_loc, segment) res in
+      Io.Log.error "coq" ("add to parse cache: " ^ loc_pr ^ " | " ^ span.text);
+      let () = PC.add pcache (mode, st, span) res in
       (* let _ = Pcoq.Parsable.t *)
       (res, time))
 
