@@ -19,17 +19,14 @@ module Info : sig
   type 'a t =
     { res : 'a
     ; goal : Pp.t Goals.reified_goal Goals.goals option
-    ; feedback : Pp.t Loc.located list
+    ; feedback : Message.t list
     }
 end
 
 type 'a interp_result = 'a Info.t Protect.R.t
 
 val interp :
-     st:State.t
-  -> fb_queue:Pp.t Loc.located list ref
-  -> Ast.t
-  -> State.t interp_result
+  st:State.t -> fb_queue:Message.t list ref -> Ast.t -> State.t interp_result
 
 val marshal_in : (in_channel -> 'a) -> in_channel -> 'a interp_result
 

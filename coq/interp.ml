@@ -19,7 +19,7 @@ module Info = struct
   type 'a t =
     { res : 'a
     ; goal : Goals.reified_pp option
-    ; feedback : Pp.t Loc.located list
+    ; feedback : Message.t list
     }
 end
 

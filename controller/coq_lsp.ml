@@ -173,9 +173,20 @@ let do_hover ofmt ~id params =
     Fleche.Info.LC.goals ~doc ~point:(line, pos) Exact
     |> Option.cata
          (fun goals -> Coq.Goals.pp_goals goals |> Pp.string_of_ppcmds)
-         "no goals"
+         "<em>no goals</em>"
   in
-  let result = `Assoc [ ("contents", `String goal_string) ] in
+  let info_string =
+    Fleche.Info.LC.info ~doc ~point:(line, pos) Exact
+    |> Option.default "no info"
+  in
+  let hover_string = goal_string ^ "\n---\n" ^ info_string in
+  let result =
+    `Assoc
+      [ ( "contents"
+        , `Assoc
+            [ ("kind", `String "markdown"); ("value", `String hover_string) ] )
+      ]
+  in
   let msg = LSP.mk_reply ~id ~result in
   LIO.send_json ofmt msg
 
@@ -318,12 +329,23 @@ let lsp_main log_file std vo_load_path ml_include_path =
   (* Console.out_fmt := lp_fmt;
    * Console.err_fmt := lp_fmt; *)
   (* Console.verbose := 4; *)
+  let lvl_to_severity (lvl : Feedback.level) =
+    match lvl with
+    | Feedback.Debug -> 5
+    | Feedback.Info -> 4
+    | Feedback.Notice -> 3
+    | Feedback.Warning -> 2
+    | Feedback.Error -> 1
+  in
+
   let fb_handler, fb_queue =
     let q = ref [] in
     ( (fun Feedback.{ contents; _ } ->
         Format.fprintf lp_fmt "%s@\n%!" "fb received";
         match contents with
-        | Message (_lvl, loc, msg) -> q := (loc, msg) :: !q
+        | Message (lvl, loc, msg) ->
+          let lvl = lvl_to_severity lvl in
+          q := (loc, lvl, msg) :: !q
         | _ -> ())
     , q )
   in

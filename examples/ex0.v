@@ -11,6 +11,8 @@ Proof. by elim: n. Qed.
 
 Definition m := addn0.
 
+Print m.
+
 Definition a := 2.
 
 Lemma addnC n m : n + m = m + n.
@@ -65,15 +67,16 @@ Variables (x y : Type).
 Lemma foo : x = x.
 Proof. by []. Qed.
 
-Record network := {
-  time : Type;
-  address : Type;
-  payload : Type;
-  send : time -> address -> time -> bool;
-}.
+Record network := 
+ { time : Type
+ ; address : Type
+ ; payload : Type
+ ; send : time -> address -> time -> bool
+ }.
 
 Lemma broken1 : False.
-Proof. Qed.
+Proof. admit.
+Qed.
 
 Definition adios := 9.
 
@@ -83,7 +86,7 @@ Proof. apply: admit. Qed.
 Lemma eq0 : 0 = 0.
 Proof. by []. Qed.
 
-Lemma eqN (n : nat) : n = n.
+Lemma eqN (n m : nat) : n = n.
 Proof.
 by [].
 Qed.
@@ -93,7 +96,9 @@ Section Foo.
 Lemma addnA m n p : m + n + p = m + (n + p).
 Proof. by elim: m n p => //= m IHn n p; rewrite IHn. Qed.
 
-Lemma foo' (n : nat) : n = n.
+Lemma foobar (n : nat) : n = n.
 Proof. by []. Qed.
+
+Definition muu := 3.
 
 (* End Foo. *)
