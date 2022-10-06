@@ -38,7 +38,8 @@ coq/config/coq_config.ml:
 	cd vendor/coq \
 	&& ./configure -no-ask -prefix $(shell pwd)/_build/install/default/ \
 		-native-compiler no \
-	&& cp theories/dune.disabled theories/dune
+	&& cp theories/dune.disabled theories/dune \
+	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
 
 .PHONY: coq_boot
 coq_boot: coq/config/coq_config.ml
