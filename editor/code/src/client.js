@@ -3,36 +3,40 @@
 const vscode = require("vscode");
 const vscc = require("vscode-languageclient");
 
-function activate (context) {
-    vscode.window.showInformationMessage('Going to activate!');
+function activate(context) {
+    vscode.window.showInformationMessage('Starting coq-lsp!');
     let clientOptions = {
         documentSelector: [
-            {scheme: 'file', language: 'coq'}
+            { scheme: 'file', language: 'coq' }
         ]
     };
 
     let client = null;
 
-    const restart = () => {
+    const start = () => {
         if (client) {
             client.stop();
         }
-        vscode.window.showInformationMessage('Going to start!');
         client = new vscc.LanguageClient(
             'coq-lsp-server',
             'Coq Language Server',
             {
                 command: 'coq-lsp',
-                args: [ '--std' ]
+                args: ['--std']
             },
             clientOptions
         );
         context.subscriptions.push(client.start());
     };
 
-    vscode.commands.registerCommand('vsc-galinas.restart', restart);
 
-    restart();
+    const restart = () => {
+        vscode.window.showInformationMessage('Restarting coq-lsp!');
+        start();
+    };
+
+    vscode.commands.registerCommand('vsc-galinas.restart', restart);
+    start();
 }
 
 exports.activate = activate;
