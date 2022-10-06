@@ -74,6 +74,9 @@ To build the server, you'll need and environment with the dependencies
 stated in `coq-lsp.opam`. [Opam](https://opam.ocaml.org/) users can do
 `opam install --deps-only .`.
 
+There is a Nix flake available which will setup the necessery environment and
+can be used via `nix develop`.
+
 Once you have done that, do `make`, and the server will be build under
 `_build/install/default/bin/`
 
