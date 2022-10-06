@@ -21,6 +21,13 @@ module type Point = sig
 
   val in_range : ?loc:Loc.t -> t -> bool
   val gt_range : ?loc:Loc.t -> t -> bool
+
+  (** [to_offset] will help to resolve a position from for example (line,col) to
+      an offset, but in some case requires a lookup method. *)
+  type offset_table = string
+
+  val to_offset : t -> offset_table -> int
+  val to_string : t -> string
 end
 
 module LineCol : Point with type t = int * int

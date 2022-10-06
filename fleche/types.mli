@@ -19,6 +19,7 @@ module Point : sig
   type t =
     { line : int
     ; character : int
+    ; offset : int
     }
 end
 
