@@ -25,7 +25,7 @@ let list_field name dict = U.to_list List.(assoc name dict)
 let string_field name dict = U.to_string List.(assoc name dict)
 
 (* Conditionals *)
-let option_empty x =
+let _option_empty x =
   match x with
   | None -> true
   | Some _ -> false
@@ -144,7 +144,7 @@ let mk_syminfo file (name, _path, kind, pos) : J.t =
           ] )
     ]
 
-let kind_of_type _tm = 13
+let _kind_of_type _tm = 13
 (* let open Terms in let open Timed in let is_undef = option_empty !(tm.sym_def)
    && List.length !(tm.sym_rules) = 0 in match !(tm.sym_type) with | Vari _ ->
    13 (* Variable *) | Type | Kind | Symb _ | _ when is_undef -> 14 (* Constant
@@ -163,21 +163,20 @@ let get_docTextPosition params =
   let file = string_field "uri" document in
   let pos = dict_field "position" params in
   let line, character = (int_field "line" pos, int_field "character" pos) in
-  (file, line, character)
+  (file, (line, character))
 
 (* XXX refactor *)
 let do_hover ofmt ~id params =
-  let uri, line, pos = get_docTextPosition params in
+  let uri, point = get_docTextPosition params in
   let doc = Hashtbl.find doc_table uri in
   let goal_string =
-    Fleche.Info.LC.goals ~doc ~point:(line, pos) Exact
+    Fleche.Info.LC.goals ~doc ~point Exact
     |> Option.cata
          (fun goals -> Coq.Goals.pp_goals goals |> Pp.string_of_ppcmds)
          "<em>no goals</em>"
   in
   let info_string =
-    Fleche.Info.LC.info ~doc ~point:(line, pos) Exact
-    |> Option.default "no info"
+    Fleche.Info.LC.info ~doc ~point Exact |> Option.default "no info"
   in
   let hover_string = goal_string ^ "\n---\n" ^ info_string in
   let result =
@@ -191,7 +190,7 @@ let do_hover ofmt ~id params =
   LIO.send_json ofmt msg
 
 let do_completion ofmt ~id params =
-  let uri, _line, _pos = get_docTextPosition params in
+  let uri, _ = get_docTextPosition params in
   let doc = Hashtbl.find doc_table uri in
   let f _loc id = `Assoc [ ("label", `String Names.Id.(to_string id)) ] in
   let ast = List.map (fun v -> v.Fleche.Doc.ast) doc.Fleche.Doc.nodes in

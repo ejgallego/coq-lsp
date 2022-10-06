@@ -20,11 +20,32 @@ module type Point = sig
 
   val in_range : ?loc:Loc.t -> t -> bool
   val gt_range : ?loc:Loc.t -> t -> bool
+
+  type offset_table = string
+
+  val to_offset : t -> offset_table -> int
+  val to_string : t -> string
 end
 
 module LineCol : Point with type t = int * int = struct
   type t = int * int
+  type offset_table = string
 
+  let line_length offset text =
+    match String.index_from_opt text offset '\n' with
+    | Some l -> l - offset
+    | None -> String.length text - offset
+
+  let rec to_offset cur lc (l, c) text =
+    Io.Log.error "to_offset"
+      (Format.asprintf "cur: %d | lc: %d | l: %d c: %d" cur lc l c);
+    if lc = l then cur + c
+    else
+      let ll = line_length cur text + 1 in
+      to_offset (cur + ll) (lc + 1) (l, c) text
+
+  let to_offset (l, c) text = to_offset 0 0 (l, c) text
+  let to_string (l, c) = "(" ^ string_of_int l ^ "," ^ string_of_int c ^ ")"
   let debug_in_range = false
 
   let in_range ?loc (line, col) =
@@ -59,11 +80,12 @@ module LineCol : Point with type t = int * int = struct
         Io.Log.error "gt_range"
           (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1
              line2 col2);
-      line2 < line || (line2 = line && col2 <= col)
+      line < line1 || (line = line1 && col < col1)
 end
 
 module Offset : Point with type t = int = struct
   type t = int
+  type offset_table = string
 
   let in_range ?loc point =
     match loc with
@@ -74,6 +96,9 @@ module Offset : Point with type t = int = struct
     match loc with
     | None -> false
     | Some loc -> point < loc.Loc.bp
+
+  let to_offset off _ = off
+  let to_string off = string_of_int off
 end
 
 type approx =
