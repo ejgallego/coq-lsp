@@ -21,8 +21,7 @@
 type node =
   { ast : Coq.Ast.t  (** Ast of node *)
   ; state : Coq.State.t  (** (Full) State of node *)
-  ; goal : Coq.Goals.reified_pp option  (** Goal of node / to be made lazy *)
-  ; feedback : Pp.t Loc.located list  (** Messages relative to the node *)
+  ; memo_info : string
   }
 
 type t =
@@ -43,5 +42,5 @@ val create :
 val check :
      ofmt:Format.formatter
   -> doc:t
-  -> fb_queue:Pp.t Loc.located list ref
+  -> fb_queue:Coq.Message.t list ref
   -> t * Coq.State.t * Types.Diagnostic.t list

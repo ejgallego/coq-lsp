@@ -24,7 +24,7 @@ let std_protocol = ref true
 
 module J = Yojson.Basic
 
-let mk_extra l = if !std_protocol then [] else l
+let _mk_extra l = if !std_protocol then [] else l
 
 (* Ad-hoc parsing for file:///foo... *)
 let _parse_uri str =
@@ -74,7 +74,8 @@ let mk_diagnostic
     ]
 
 let mk_diagnostics ~uri ~version ld : J.t =
-  let extra = mk_extra [ ("version", `Int version) ] in
   mk_event "textDocument/publishDiagnostics"
-  @@ extra
-  @ [ ("uri", `String uri); ("diagnostics", `List List.(map mk_diagnostic ld)) ]
+  @@ [ ("uri", `String uri)
+     ; ("version", `Int version)
+     ; ("diagnostics", `List List.(map mk_diagnostic ld))
+     ]

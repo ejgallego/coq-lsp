@@ -15,8 +15,7 @@
 type node =
   { ast : Coq.Ast.t  (** Ast of node *)
   ; state : Coq.State.t  (** (Full) State of node *)
-  ; goal : Coq.Goals.reified_pp option  (** Goal of node / to be made lazy *)
-  ; feedback : Pp.t Loc.located list  (** Messages relative to the node *)
+  ; memo_info : string
   }
 
 (* Private. A doc is a list of nodes for now. The first element in the list is
@@ -63,7 +62,8 @@ let parse_to_terminator : unit Pcoq.Entry.t =
   (* type 'a parser_fun = { parser_fun : te LStream.t -> 'a } *)
   let rec dot st =
     match Gramlib.LStream.next st with
-    | Tok.KEYWORD ("." | "..." | "Qed" | "Defined") | Tok.BULLET _ -> ()
+    | Tok.KEYWORD ("." | "..." | "Qed" | "Defined" | "Admitted") | Tok.BULLET _
+      -> ()
     | Tok.EOI -> ()
     | _ -> dot st
   in
@@ -105,21 +105,31 @@ type process_action =
   | Process of Coq.Ast.t
 
 (* Make each fb a diag *)
-let pp_located fmt (_loc, pp) = Pp.pp_with fmt pp
+let _pp_located fmt (_loc, pp) = Pp.pp_with fmt pp
 
 let mk_diag range severity message =
-  let range = Types.to_range (Option.get range) in
+  let range = Types.to_range range in
   let message = Pp.string_of_ppcmds message in
   Types.Diagnostic.{ range; severity; message }
 
-let process_feedback ~loc fbs =
-  let fb_msg =
-    Format.asprintf "feedbacks: %d @\n @[<v>%a@]"
-      List.(length fbs)
-      Format.(pp_print_list pp_located)
-      fbs
+let feed_to_diag ~loc (range, severity, message) =
+  let range = Option.default loc range in
+  mk_diag range severity message
+
+let process_feedback ~loc fbs = List.map (feed_to_diag ~loc) fbs
+
+let interp_and_info ~parsing_time ~st ~fb_queue ast =
+  let { Memo.Stats.res; cache_hit; memory = _; time } =
+    Memo.interp_command ~st ~fb_queue ast
   in
-  [ mk_diag loc 3 (Pp.str fb_msg) ]
+  let cptime = Stats.get ~kind:Stats.Kind.Parsing in
+  let cetime = Stats.get ~kind:Stats.Kind.Exec in
+  let memo_info =
+    Format.asprintf
+      "Cache Hit: %b | Parse (s/c): %.4f / %.2f | Exec (s/c): %.4f / %.2f"
+      cache_hit parsing_time cptime time cetime
+  in
+  (res, memo_info)
 
 (* XXX: Imperative problem *)
 let process_and_parse ~uri ~version ~fb_queue doc =
@@ -141,6 +151,7 @@ let process_and_parse ~uri ~version ~fb_queue doc =
         | Ok None -> (EOF, diags, time)
         | Ok (Some ast) -> (Process ast, diags, time)
         | Error (loc, msg) ->
+          let loc = Option.get loc in
           let diags = mk_diag loc 1 msg :: diags in
           discard_to_dot doc_handle;
           (Skip, diags, time))
@@ -152,52 +163,38 @@ let process_and_parse ~uri ~version ~fb_queue doc =
     | Skip -> stm doc st diags
     (* We interpret the command now *)
     | Process ast -> (
-      let loc = Coq.Ast.loc ast in
+      let loc = Coq.Ast.loc ast |> Option.get in
       (if Debug.parsing then
-       let line =
-         Option.cata
-           (fun loc -> "[l: " ^ string_of_int loc.Loc.line_nb ^ "] ")
-           "" loc
-       in
+       let line = "[l: " ^ string_of_int loc.Loc.line_nb ^ "] " in
        Io.Log.error "coq"
          ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast)));
       register_hack_proof_recover ast st;
       (* memory is disabled as it is quite slow and misleading *)
-      let { Memo.Stats.res; cache_hit; memory = _; time } =
-        Memo.interp_command ~st ~fb_queue ast
-      in
-      let cptime = Stats.get ~kind:Stats.Kind.Parsing in
-      let memo_msg =
-        Format.asprintf
-          "Cache Hit: %b | Exec Time: %f | Parsing time: %f | Cumulative \
-           parsing: %f"
-          cache_hit time parsing_time cptime
-      in
-      let memo_diag = mk_diag loc 4 (Pp.str memo_msg) in
-      let diags = memo_diag :: diags in
+      let res, memo_info = interp_and_info ~parsing_time ~st ~fb_queue ast in
       match res with
       | Coq.Protect.R.Interrupted ->
         (* Exit *)
         (doc, st, diags)
       | Coq.Protect.R.Completed res -> (
         match res with
-        | Ok { res = state; goal; feedback } ->
+        | Ok { res = state; feedback } ->
           (* let goals = Coq.State.goals *)
           let ok_diag = mk_diag loc 3 (Pp.str "OK") in
           let diags = ok_diag :: diags in
           let fb_diags = process_feedback ~loc feedback in
           let diags = fb_diags @ diags in
-          let node = { ast; state; goal; feedback } in
+          let node = { ast; state; memo_info } in
           let doc = { doc with nodes = node :: doc.nodes } in
           stm doc state diags
         | Error (err_loc, msg) ->
-          let loc = Option.append err_loc loc in
+          let loc = Option.default loc err_loc in
           let diags = mk_diag loc 1 msg :: diags in
-          (* This should be handled by Coq.Protect.eval XXX *)
+          (* FB should be handled by Coq.Protect.eval XXX *)
+          let fb_diags = List.rev !fb_queue |> process_feedback ~loc in
           fb_queue := [];
+          let diags = fb_diags @ diags in
           let st = state_recovery_heuristic st ast in
-          (* XXX actually feedbacks can also come for errors, see XXX above *)
-          let node = { ast; goal = None; state = st; feedback = [] } in
+          let node = { ast; state = st; memo_info } in
           let doc = { doc with nodes = node :: doc.nodes } in
           stm doc st diags))
   in

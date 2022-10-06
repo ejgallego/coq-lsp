@@ -12,7 +12,7 @@ val input_info : Coq.Ast.t * Coq.State.t -> string
 
 val interp_command :
      st:Coq.State.t
-  -> fb_queue:Pp.t Loc.located list ref
+  -> fb_queue:Coq.Message.t list ref
   -> Coq.Ast.t
   -> Coq.State.t Coq.Interp.interp_result Stats.t
 
