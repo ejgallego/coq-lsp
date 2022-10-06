@@ -84,7 +84,14 @@ Once you have done that, do `make`, and the server will be build under
 Assuming the server is built, install the extension as follows:
 
  1. Symlink the `editor/code` directory into `~/.vscode/extensions/`.
- 2. Run `npm install` in the `editor/code` directory.
+    ```sh
+    ln -s ~/path/to/coq-lsp/editor/code ~/.vscode
+    ```
+    (link source should be absolute or else it won't work!)
+ 2. Run `npm install` in `editor/code`.
+    ```sh
+    (cd editor/code && npm i)
+    ```
 
 Now you can launch VS Code through `dune`: `dune exec -- code -n` ,
 this will setup the right environment variables such as `PATH` and
