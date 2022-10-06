@@ -109,8 +109,34 @@ module Make (P : Point) : S with module P := P = struct
     in
     find None doc.Doc.nodes
 
+  let if_not_empty (pp : Pp.t) =
+    if Pp.(repr pp = Ppcmd_empty) then None else Some pp
+
+  let reify_goals ppx lemmas =
+    let open Coq.Goals in
+    let proof =
+      Vernacstate.LemmaStack.with_top lemmas ~f:(fun pstate ->
+          Declare.Proof.get pstate)
+    in
+    let { Proof.goals; stack; sigma; _ } = Proof.data proof in
+    let ppx = List.map (Coq.Goals.process_goal_gen ppx sigma) in
+    Some
+      { goals = ppx goals
+      ; stack = List.map (fun (g1, g2) -> (ppx g1, ppx g2)) stack
+      ; bullet = if_not_empty @@ Proof_bullet.suggest proof
+      ; shelf = Evd.shelf sigma |> ppx
+      ; given_up = Evd.given_up sigma |> Evar.Set.elements |> ppx
+      }
+
+  let pr_goal st =
+    let ppx env sigma x =
+      (* Jscoq_util.pp_opt *) Printer.pr_ltype_env env sigma x
+    in
+    let lemmas = Coq.State.lemmas ~st in
+    Option.cata (reify_goals ppx) None lemmas
+
   let goals ~doc ~point approx =
-    find ~doc ~point approx |> obind (fun node -> node.Doc.goal)
+    find ~doc ~point approx |> obind (fun node -> pr_goal node.Doc.state)
 
   let info ~doc ~point approx =
     find ~doc ~point approx |> Option.map (fun node -> node.Doc.memo_info)

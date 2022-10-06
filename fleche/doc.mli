@@ -21,7 +21,6 @@
 type node =
   { ast : Coq.Ast.t  (** Ast of node *)
   ; state : Coq.State.t  (** (Full) State of node *)
-  ; goal : Coq.Goals.reified_pp option  (** Goal of node / to be made lazy *)
   ; memo_info : string
   }
 

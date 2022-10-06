@@ -18,7 +18,6 @@
 module Info : sig
   type 'a t =
     { res : 'a
-    ; goal : Pp.t Goals.reified_goal Goals.goals option
     ; feedback : Message.t list
     }
 end

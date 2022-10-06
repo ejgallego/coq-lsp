@@ -15,7 +15,6 @@
 type node =
   { ast : Coq.Ast.t  (** Ast of node *)
   ; state : Coq.State.t  (** (Full) State of node *)
-  ; goal : Coq.Goals.reified_pp option  (** Goal of node / to be made lazy *)
   ; memo_info : string
   }
 
@@ -177,13 +176,13 @@ let process_and_parse ~uri ~version ~fb_queue doc =
         (doc, st, diags)
       | Coq.Protect.R.Completed res -> (
         match res with
-        | Ok { res = state; goal; feedback } ->
+        | Ok { res = state; feedback } ->
           (* let goals = Coq.State.goals *)
           let ok_diag = mk_diag loc 3 (Pp.str "OK") in
           let diags = ok_diag :: diags in
           let fb_diags = process_feedback ~loc feedback in
           let diags = fb_diags @ diags in
-          let node = { ast; state; goal; memo_info } in
+          let node = { ast; state; memo_info } in
           let doc = { doc with nodes = node :: doc.nodes } in
           stm doc state diags
         | Error (err_loc, msg) ->
@@ -194,7 +193,7 @@ let process_and_parse ~uri ~version ~fb_queue doc =
           fb_queue := [];
           let diags = fb_diags @ diags in
           let st = state_recovery_heuristic st ast in
-          let node = { ast; goal = None; state = st; memo_info } in
+          let node = { ast; state = st; memo_info } in
           let doc = { doc with nodes = node :: doc.nodes } in
           stm doc st diags))
   in
