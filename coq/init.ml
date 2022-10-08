@@ -21,7 +21,9 @@
 type coq_opts =
   { fb_handler : Feedback.feedback -> unit
         (** callback to handle async feedback *)
-  ; ml_load : (string -> unit) option  (** callback to load cma/cmo files *)
+  ; load_module : string -> unit  (** callback to load cma/cmo files *)
+  ; load_plugin : Mltop.PluginSpec.t -> unit
+        (** callback to load findlib packages *)
   ; debug : bool  (** Enable Coq Debug mode *)
   }
 
@@ -42,14 +44,14 @@ let coq_init opts =
   ignore (Feedback.add_feeder opts.fb_handler);
 
   (* SerAPI plugins *)
-  let load_plugin = Loader.plugin_handler None in
-  let load_module = Dynlink.loadfile in
+  let load_plugin = opts.load_plugin in
+  let load_module = opts.load_module in
 
   (* Custom toplevel is used for bytecode-to-js dynlink *)
   let ser_mltop : Mltop.toplevel =
     let open Mltop in
     { load_plugin
-    ; load_module (* We ignore all the other operations for now. *)
+    ; load_module
     ; add_dir = (fun _ -> ())
     ; ml_loop = (fun _ -> ())
     }

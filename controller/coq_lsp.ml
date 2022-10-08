@@ -351,9 +351,12 @@ let lsp_main log_file std vo_load_path ml_include_path =
 
   Fleche.Io.CallBack.set (lsp_cb oc);
 
+  let load_module = Dynlink.loadfile in
+  let load_plugin = Coq.Loader.plugin_handler None in
+
   let debug = Fleche.Debug.backtraces in
   let state =
-    ( Coq.Init.(coq_init { fb_handler; ml_load = None; debug })
+    ( Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin })
     , vo_load_path
     , ml_include_path
     , fb_queue )

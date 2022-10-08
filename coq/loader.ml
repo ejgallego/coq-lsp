@@ -40,8 +40,8 @@ let map_serlib fl_pkg =
     Some ("coq-serapi.serlib." ^ plugin_name)
   else None
 
-let plugin_handler user_handler =
-  let loader = Option.default (Fl_dynload.load_packages ~debug:false) user_handler in
+let plugin_handler user_loader =
+  let loader = Option.default (Fl_dynload.load_packages ~debug:false) user_loader in
   fun fl_pkg ->
     let _, fl_pkg = Mltop.PluginSpec.repr fl_pkg in
     match map_serlib fl_pkg with
