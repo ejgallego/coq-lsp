@@ -70,6 +70,11 @@ opam-dev-deps:
 	opam install -y $(DEV_DEPS)
 
 # Initialise submodules
-.PHONY: submodules
+.PHONY: submodules-init
 submodules-init:
 	git submodule update --init
+
+# Deinitialize submodules
+.PHONY: submodules-deinit
+submodules-deinit:
+	git submodule deinit -f --all
