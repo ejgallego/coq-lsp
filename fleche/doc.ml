@@ -107,6 +107,11 @@ type process_action =
 (* Make each fb a diag *)
 let _pp_located fmt (_loc, pp) = Pp.pp_with fmt pp
 
+let pp_words fmt w =
+  if w < 1024.0 then Format.fprintf fmt "%.0f  w" w
+  else if w < 1024.0 *. 1024.0 then Format.fprintf fmt "%.2f Kw" (w /. 1024.0)
+  else Format.fprintf fmt "%.2f Mw" (w /. (1024.0 *. 1024.0))
+
 let mk_diag range severity message =
   let range = Types.to_range range in
   let message = Pp.string_of_ppcmds message in
@@ -119,17 +124,23 @@ let feed_to_diag ~loc (range, severity, message) =
 let process_feedback ~loc fbs = List.map (feed_to_diag ~loc) fbs
 
 let interp_and_info ~parsing_time ~st ~fb_queue ast =
+  let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
   let { Memo.Stats.res; cache_hit; memory = _; time } =
     Memo.interp_command ~st ~fb_queue ast
   in
   let cptime = Stats.get ~kind:Stats.Kind.Parsing in
   let cetime = Stats.get ~kind:Stats.Kind.Exec in
+  let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in
   let memo_info =
     Format.asprintf
       "Cache Hit: %b | Parse (s/c): %.4f / %.2f | Exec (s/c): %.4f / %.2f"
       cache_hit parsing_time cptime time cetime
   in
-  (res, memo_info)
+  let mem_info =
+    Format.asprintf "major words: %a | diff %a" pp_words mw_after pp_words
+      (mw_after -. mw_prev)
+  in
+  (res, memo_info ^ "\n" ^ mem_info)
 
 (* XXX: Imperative problem *)
 let process_and_parse ~uri ~version ~fb_queue doc =

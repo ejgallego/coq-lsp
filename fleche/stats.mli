@@ -1,3 +1,4 @@
+(** time-based stats *)
 module Kind : sig
   type t =
     | Hashing
