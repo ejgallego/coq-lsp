@@ -1,0 +1,33 @@
+### Welcome to Coq LSP
+
+- You can edit this document as you please
+- Coq will recognize the code snippets as Coq
+- You will be able to save the document and link to other documents soon
+
+```
+From Coq Require Import List.
+Import ListNotations.
+```
+
+```
+Lemma rev_snoc_cons A :
+  forall (x : A) (l : list A), rev (l ++ [x]) = x :: rev l.
+Proof.
+  induction l.
+  - reflexivity.
+  - simpl. rewrite IHl. simpl. reflexivity.
+Qed.
+```
+
+Try to update _above_ and **below**:
+```
+Theorem rev_rev A : forall (l : list A), rev (rev l) = l.
+Proof.
+  induction l.
+  - reflexivity.
+  - simpl. rewrite rev_snoc_cons. rewrite IHl.
+    reflexivity.
+Qed.
+```
+
+Please edit your code here!

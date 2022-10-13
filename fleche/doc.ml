@@ -224,13 +224,32 @@ let print_stats () =
   Memo.CacheStats.reset ();
   Stats.reset ()
 
-let check ~ofmt:_ ~doc ~fb_queue =
-  let uri, version = (doc.uri, doc.version) in
+let gen l = String.make (String.length l) ' '
 
+let rec md_map_lines coq l =
+  match l with
+  | [] -> []
+  | l :: ls ->
+    if String.equal "```" l then gen l :: md_map_lines (not coq) ls
+    else (if coq then l else gen l) :: md_map_lines coq ls
+
+let markdown_process text =
+  let lines = String.split_on_char '\n' text in
+  let lines = md_map_lines false lines in
+  String.concat "\n" lines
+
+let process_contents ~uri ~contents =
+  let ext = Filename.extension uri in
+  let is_markdown = String.equal ext ".mv" in
+  if is_markdown then markdown_process contents else contents
+
+let check ~ofmt:_ ~doc ~fb_queue =
+  let uri, version, contents = (doc.uri, doc.version, doc.contents) in
+  let processed_content = process_contents ~uri ~contents in
   (* Start library *)
-  let doc = { doc with nodes = [] } in
+  let doc = { doc with nodes = []; contents = processed_content } in
   let doc, st, diags = (process_and_parse ~uri ~version ~fb_queue) doc in
-  let doc = { doc with nodes = List.rev doc.nodes } in
+  let doc = { doc with nodes = List.rev doc.nodes; contents } in
   print_stats ();
   (* (doc, st, json_of_diags ~uri ~version diags) *)
   (doc, st, diags)
