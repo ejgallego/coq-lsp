@@ -20,7 +20,8 @@
           "gallina"
         ],
         "extensions": [
-          ".v"
+          ".v",
+          ".mv"
         ],
         "configuration": "./coq.configuration.json"
       }
