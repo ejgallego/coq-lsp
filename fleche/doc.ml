@@ -149,9 +149,6 @@ let process_and_parse ~uri ~version ~fb_queue doc =
     Pcoq.Parsable.make ~loc Gramlib.Stream.(of_string doc.contents)
   in
   let rec stm doc st diags =
-    (* Eager update! *)
-    (* XXX *)
-    if Config.eager_diagnostics then Io.Report.diagnostics ~uri ~version diags;
     if Debug.parsing then Io.Log.error "coq" "parsing sentence";
     (* Parsing *)
     let action, diags, parsing_time =
@@ -175,6 +172,10 @@ let process_and_parse ~uri ~version ~fb_queue doc =
     (* We interpret the command now *)
     | Process ast -> (
       let loc = Coq.Ast.loc ast |> Option.get in
+      (* XXX Eager update! *)
+      (if Config.eager_diagnostics then
+       let proc_diag = mk_diag loc 3 (Pp.str "Processing") in
+       Io.Report.diagnostics ~uri ~version (proc_diag :: diags));
       (if Debug.parsing then
        let line = "[l: " ^ string_of_int loc.Loc.line_nb ^ "] " in
        Io.Log.error "coq"
