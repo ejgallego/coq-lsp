@@ -31,10 +31,19 @@ module Range : sig
 end
 
 module Diagnostic : sig
+  module Extra : sig
+    type t =
+      | FailedRequire of
+          { prefix : Libnames.qualid option
+          ; refs : Libnames.qualid list
+          }
+  end
+
   type t =
     { range : Range.t
     ; severity : int
     ; message : string
+    ; extra : Extra.t list
     }
 end
 
