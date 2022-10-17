@@ -1,5 +1,5 @@
 (* Enable all debug flags *)
-let all = false
+let all = true
 
 (* cache *)
 let cache = false || all

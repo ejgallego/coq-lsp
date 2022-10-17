@@ -103,6 +103,7 @@ type process_action =
   | EOF
   | Skip
   | Process of Coq.Ast.t
+  | Wait of (string * Coq.Ast.t)
 
 (* Make each fb a diag *)
 let _pp_located fmt (_loc, pp) = Pp.pp_with fmt pp
@@ -142,52 +143,50 @@ let interp_and_info ~parsing_time ~st ~fb_queue ast =
   in
   (res, memo_info ^ "\n" ^ mem_info)
 
+let _to_str_lp = function | Loadpath.LibNotFound -> "Lib Not found" | LibUnmappedDir -> "Dir not mapped"
+
+let extract_require ast = match (Coq.Ast.to_coq ast).v with
+  | { Vernacexpr.expr = VernacRequire (_from, _, imports); _ } ->
+    let libname = List.hd imports |> fst in
+    Some (Libnames.string_of_qualid libname)
+    (* (let root = match from with
+     *     | None -> None
+     *     | Some from ->
+     *       let (hd, tl) = Libnames.repr_qualid from in
+     *       Some (Libnames.add_dirpath_suffix hd tl)
+     *  in
+     *  let libname = List.hd imports |> fst in
+     *  match Loadpath.locate_qualified_library ?root libname with
+     *  | Ok (_, file) -> Some file
+     *  | Error msg ->
+     *    Io.Log.error "loadpath" (to_str_lp msg);
+     *    None) *)
+  | _ -> None
+
 (* XXX: Imperative problem *)
 let process_and_parse ~uri ~version ~fb_queue doc =
   let loc = Loc.initial (InFile { dirpath = None; file = uri }) in
   let doc_handle =
     Pcoq.Parsable.make ~loc Gramlib.Stream.(of_string doc.contents)
   in
-  let rec stm doc st diags =
-    if Debug.parsing then Io.Log.error "coq" "parsing sentence";
-    (* Parsing *)
-    let action, diags, parsing_time =
-      match parse_stm ~st doc_handle with
-      | Coq.Protect.R.Interrupted, time -> (EOF, diags, time)
-      | Coq.Protect.R.Completed res, time -> (
-        match res with
-        | Ok None -> (EOF, diags, time)
-        | Ok (Some ast) -> (Process ast, diags, time)
-        | Error (loc, msg) ->
-          let loc = Option.get loc in
-          let diags = mk_diag loc 1 msg :: diags in
-          discard_to_dot doc_handle;
-          (Skip, diags, time))
-    in
-    (* Execution *)
-    match action with
-    (* End of file *)
-    | EOF -> (doc, st, diags)
-    | Skip -> stm doc st diags
-    (* We interpret the command now *)
-    | Process ast -> (
-      let loc = Coq.Ast.loc ast |> Option.get in
-      (* XXX Eager update! *)
-      (if Config.eager_diagnostics then
+  let process ~parsing_time stm ast st diags =
+    let loc = Coq.Ast.loc ast |> Option.get in
+    (* XXX Eager update! *)
+    (if Config.eager_diagnostics then
        let proc_diag = mk_diag loc 3 (Pp.str "Processing") in
        Io.Report.diagnostics ~uri ~version (proc_diag :: diags));
-      (if Debug.parsing then
+    (if Debug.parsing then
        let line = "[l: " ^ string_of_int loc.Loc.line_nb ^ "] " in
        Io.Log.error "coq"
          ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast)));
-      register_hack_proof_recover ast st;
-      (* memory is disabled as it is quite slow and misleading *)
-      let res, memo_info = interp_and_info ~parsing_time ~st ~fb_queue ast in
-      match res with
-      | Coq.Protect.R.Interrupted ->
-        (* Exit *)
-        (doc, st, diags)
-      | Coq.Protect.R.Completed res -> (
+    register_hack_proof_recover ast st;
+    (* memory is disabled as it is quite slow and misleading *)
+    let res, memo_info = interp_and_info ~parsing_time ~st ~fb_queue ast in
+    match res with
+    | Coq.Protect.R.Interrupted ->
+      (* Exit *)
+      (doc, st, diags)
+    | Coq.Protect.R.Completed res -> (
         match res with
         | Ok { res = state; feedback } ->
           (* let goals = Coq.State.goals *)
@@ -208,7 +207,46 @@ let process_and_parse ~uri ~version ~fb_queue doc =
           let st = state_recovery_heuristic st ast in
           let node = { ast; state = st; memo_info } in
           let doc = { doc with nodes = node :: doc.nodes } in
-          stm doc st diags))
+          stm doc st diags)
+  in
+  let rec stm doc st diags =
+    if Debug.parsing then Io.Log.error "coq" "parsing sentence";
+    (* Parsing *)
+    let action, diags, parsing_time =
+      match parse_stm ~st doc_handle with
+      | Coq.Protect.R.Interrupted, time -> (EOF, diags, time)
+      | Coq.Protect.R.Completed res, time -> (
+        match res with
+        | Ok None -> (EOF, diags, time)
+        | Ok (Some ast) ->
+          (match extract_require ast with
+          | None ->
+            (Process ast, diags, time)
+          | Some file ->
+            (Wait (file, ast), diags, time))
+        | Error (loc, msg) ->
+          let loc = Option.get loc in
+          let diags = mk_diag loc 1 msg :: diags in
+          discard_to_dot doc_handle;
+          (Skip, diags, time))
+    in
+    (* Execution *)
+    match action with
+    (* End of file *)
+    | EOF -> (doc, st, diags)
+    | Skip -> stm doc st diags
+    (* Wait *)
+    | Wait (file, ast) ->
+      let cmd = Format.asprintf "dune build --root . %s.vo" file in
+      let inc, pid = Unix.open_process_in cmd |> (fun inc -> inc, Unix.process_in_pid inc) in
+      let _ = Unix.waitpid [] pid in
+      Stdlib.close_in inc;
+      (* let string_out = Stdlib.input_line inc in *)
+      (* Io.Log.error "dune" string_out; *)
+      process ~parsing_time stm ast st diags
+    (* We interpret the command now *)
+    | Process ast ->
+      process ~parsing_time stm ast st diags
   in
   (* we re-start from the root *)
   stm doc doc.root []
