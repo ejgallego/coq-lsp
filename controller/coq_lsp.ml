@@ -76,7 +76,7 @@ let doc_table : (string, Fleche.Doc.t) Hashtbl.t = Hashtbl.create 39
 
 let lsp_of_diags ~uri ~version diags =
   List.map
-    (fun { Fleche.Types.Diagnostic.range; severity; message } ->
+    (fun { Fleche.Types.Diagnostic.range; severity; message; extra = _ } ->
       (range, severity, message, None))
     diags
   |> LSP.mk_diagnostics ~uri ~version

@@ -32,10 +32,19 @@ module Range = struct
 end
 
 module Diagnostic = struct
+  module Extra = struct
+    type t =
+      | FailedRequire of
+          { prefix : Libnames.qualid option
+          ; refs : Libnames.qualid list
+          }
+  end
+
   type t =
     { range : Range.t
     ; severity : int
     ; message : string
+    ; extra : Extra.t list
     }
 end
 

@@ -112,10 +112,19 @@ let pp_words fmt w =
   else if w < 1024.0 *. 1024.0 then Format.fprintf fmt "%.2f Kw" (w /. 1024.0)
   else Format.fprintf fmt "%.2f Mw" (w /. (1024.0 *. 1024.0))
 
-let mk_diag range severity message =
+let mk_diag ?(extra = []) range severity message =
   let range = Types.to_range range in
   let message = Pp.string_of_ppcmds message in
-  Types.Diagnostic.{ range; severity; message }
+  Types.Diagnostic.{ range; severity; message; extra }
+
+(* modular error diagnostic generation *)
+let mk_error_diagnostic ~loc ~msg ~ast =
+  match (Coq.Ast.to_coq ast).v with
+  | Vernacexpr.{ expr = VernacRequire (prefix, _export, module_refs); _ } ->
+    let refs = List.map fst module_refs in
+    let extra = [ Types.Diagnostic.Extra.FailedRequire { prefix; refs } ] in
+    mk_diag ~extra loc 1 msg
+  | _ -> mk_diag loc 1 msg
 
 let feed_to_diag ~loc (range, severity, message) =
   let range = Option.default loc range in
@@ -200,7 +209,7 @@ let process_and_parse ~uri ~version ~fb_queue doc =
           stm doc state diags
         | Error (err_loc, msg) ->
           let loc = Option.default loc err_loc in
-          let diags = mk_diag loc 1 msg :: diags in
+          let diags = mk_error_diagnostic ~loc ~msg ~ast :: diags in
           (* FB should be handled by Coq.Protect.eval XXX *)
           let fb_diags = List.rev !fb_queue |> process_feedback ~loc in
           fb_queue := [];
