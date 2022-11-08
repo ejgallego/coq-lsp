@@ -1,6 +1,8 @@
+type error = Loc.t option * Pp.t
+
 module R : sig
   type 'a t =
-    | Completed of ('a, Loc.t option * Pp.t) result
+    | Completed of ('a, error) result
     | Interrupted (* signal sent, eval didn't complete *)
 end
 

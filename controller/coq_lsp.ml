@@ -1,17 +1,7 @@
 (************************************************************************)
-(*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
-(* <O___,, *       (see CREDITS file for the list of authors)           *)
-(*   \VV/  **************************************************************)
-(*    //   *    This file is distributed under the terms of the         *)
-(*         *     GNU Lesser General Public License Version 2.1          *)
-(*         *     (see LICENSE file for the text of the license)         *)
-(************************************************************************)
-
-(************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019      MINES ParisTech -- Dual License LGPL 2.1 / GPL3+ *)
+(* Copyright 2019-2022 Inria           -- Dual License LGPL 2.1 / GPL3+ *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
@@ -140,7 +130,7 @@ let mk_syminfo file (name, _path, kind, pos) : J.t =
       ( "location"
       , `Assoc
           [ ("uri", `String file)
-          ; ("range", LSP.mk_range Fleche.Types.(to_range pos))
+          ; ("range", LSP.mk_range Fleche.Lang.Loc.(to_range pos))
           ] )
     ]
 
@@ -152,9 +142,11 @@ let _kind_of_type _tm = 13
 
 let do_symbols ofmt ~id params =
   let file, doc = grab_doc params in
-  let f loc id = mk_syminfo file (Names.Id.to_string id, "", 12, loc) in
+  let f loc id =
+    mk_syminfo file (Fleche.Lang.Ast.Id.to_string id, "", 12, loc)
+  in
   let ast = List.map (fun v -> v.Fleche.Doc.ast) doc.Fleche.Doc.nodes in
-  let slist = Coq.Ast.grab_definitions f ast in
+  let slist = Fleche.Lang.Ast.grab_definitions f ast in
   let msg = LSP.mk_reply ~id ~result:(`List slist) in
   LIO.send_json ofmt msg
 
@@ -192,9 +184,11 @@ let do_hover ofmt ~id params =
 let do_completion ofmt ~id params =
   let uri, _ = get_docTextPosition params in
   let doc = Hashtbl.find doc_table uri in
-  let f _loc id = `Assoc [ ("label", `String Names.Id.(to_string id)) ] in
+  let f _loc id =
+    `Assoc [ ("label", `String Fleche.Lang.Ast.Id.(to_string id)) ]
+  in
   let ast = List.map (fun v -> v.Fleche.Doc.ast) doc.Fleche.Doc.nodes in
-  let clist = Coq.Ast.grab_definitions f ast in
+  let clist = Fleche.Lang.Ast.grab_definitions f ast in
   let result = `List clist in
   let msg = LSP.mk_reply ~id ~result in
   LIO.send_json ofmt msg
@@ -319,25 +313,9 @@ let lsp_main log_file std vo_load_path ml_include_path =
   let debug_oc = open_out log_file in
   LIO.debug_fmt := F.formatter_of_out_channel debug_oc;
 
-  (* Dedukti stuff *)
-  let lvl_to_severity (lvl : Feedback.level) =
-    match lvl with
-    | Feedback.Debug -> 5
-    | Feedback.Info -> 4
-    | Feedback.Notice -> 3
-    | Feedback.Warning -> 2
-    | Feedback.Error -> 1
-  in
-
-  let fb_handler, fb_queue =
-    let q = ref [] in
-    ( (fun Feedback.{ contents; _ } ->
-        match contents with
-        | Message (lvl, loc, msg) ->
-          let lvl = lvl_to_severity lvl in
-          q := (loc, lvl, msg) :: !q
-        | _ -> ())
-    , q )
+  let msg_handler, msg_queue =
+    let q : Fleche.Lang.Message.t list ref = ref [] in
+    ((fun (loc, lvl, msg) -> q := (loc, lvl, msg) :: !q), q)
   in
 
   Fleche.Io.CallBack.set (lsp_cb oc);
@@ -347,10 +325,10 @@ let lsp_main log_file std vo_load_path ml_include_path =
 
   let debug = Fleche.Debug.backtraces in
   let state =
-    ( Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin })
+    ( Fleche.Lang.Init.(init { msg_handler; debug; load_module; load_plugin })
     , vo_load_path
     , ml_include_path
-    , fb_queue )
+    , msg_queue )
   in
 
   memo_read_from_disk ();

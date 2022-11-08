@@ -18,22 +18,25 @@
 (* Low-level, internal Coq initialization                                 *)
 (**************************************************************************)
 
-type coq_opts =
-  { fb_handler : Feedback.feedback -> unit
-        (** callback to handle async feedback *)
+type opts =
+  { msg_handler : Message.t -> unit  (** callback to handle async feedback *)
   ; load_module : string -> unit  (** callback to load cma/cmo files *)
   ; load_plugin : Mltop.PluginSpec.t -> unit
         (** callback to load findlib packages *)
   ; debug : bool  (** Enable Coq Debug mode *)
   }
 
-val coq_init : coq_opts -> State.t
+val init : opts -> State.t
 
-val doc_init :
-     root_state:State.t
-  -> vo_load_path:Loadpath.vo_path list
-  -> ml_include_path:string list
-  -> libname:Names.DirPath.t
-  -> require_libs:
-       (string * string option * Vernacexpr.export_with_cats option) list
-  -> State.t
+module Doc : sig
+  type require_decl =
+    string * string option * Vernacexpr.export_with_cats option
+
+  type env =
+    { vo_load_path : Loadpath.vo_path list
+    ; ml_load_path : string list
+    ; requires : require_decl list
+    }
+
+  val make : root_state:State.t -> env:env -> name:Names.DirPath.t -> State.t
+end
