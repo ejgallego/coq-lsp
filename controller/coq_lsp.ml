@@ -316,18 +316,10 @@ let lsp_main log_file std vo_load_path ml_include_path =
   Exninfo.record_backtrace true;
 
   let oc = F.std_formatter in
-
   let debug_oc = open_out log_file in
   LIO.debug_fmt := F.formatter_of_out_channel debug_oc;
 
-  (* XXX: Capture better / per sentence. *)
-  let lp_oc = open_out "log-coq_lsp.txt" in
-  let lp_fmt = F.formatter_of_out_channel lp_oc in
-
   (* Dedukti stuff *)
-  (* Console.out_fmt := lp_fmt;
-   * Console.err_fmt := lp_fmt; *)
-  (* Console.verbose := 4; *)
   let lvl_to_severity (lvl : Feedback.level) =
     match lvl with
     | Feedback.Debug -> 5
@@ -340,7 +332,6 @@ let lsp_main log_file std vo_load_path ml_include_path =
   let fb_handler, fb_queue =
     let q = ref [] in
     ( (fun Feedback.{ contents; _ } ->
-        Format.fprintf lp_fmt "%s@\n%!" "fb received";
         match contents with
         | Message (lvl, loc, msg) ->
           let lvl = lvl_to_severity lvl in
@@ -371,8 +362,6 @@ let lsp_main log_file std vo_load_path ml_include_path =
     let com = LIO.read_request stdin in
     if Fleche.Debug.read then LIO.log_object "read" com;
     process_input com;
-    F.pp_print_flush lp_fmt ();
-    flush lp_oc;
     loop ()
   in
   try loop () with
@@ -381,8 +370,7 @@ let lsp_main log_file std vo_load_path ml_include_path =
       ("exiting" ^ if exn = Lsp_exit then "" else " [uncontrolled LSP shutdown]");
     LIO.flush_log ();
     flush_all ();
-    close_out debug_oc;
-    close_out lp_oc
+    close_out debug_oc
   | exn ->
     let bt = Printexc.get_backtrace () in
     let exn, info = Exninfo.capture exn in
@@ -392,8 +380,7 @@ let lsp_main log_file std vo_load_path ml_include_path =
       Pp.(string_of_ppcmds CErrors.(iprint (exn, info)));
     LIO.flush_log ();
     flush_all ();
-    close_out debug_oc;
-    close_out lp_oc
+    close_out debug_oc
 
 (* Arguments handling *)
 open Cmdliner
