@@ -182,7 +182,7 @@ let process_and_parse ~uri ~version ~fb_queue doc =
     | Process ast -> (
       let loc = Coq.Ast.loc ast |> Option.get in
       (* XXX Eager update! *)
-      (if Config.eager_diagnostics then
+      (if !Config.v.eager_diagnostics then
        let proc_diag = mk_diag loc 3 (Pp.str "Processing") in
        Io.Report.diagnostics ~uri ~version (proc_diag :: diags));
       (if Debug.parsing then
@@ -201,7 +201,9 @@ let process_and_parse ~uri ~version ~fb_queue doc =
         | Ok { res = state; feedback } ->
           (* let goals = Coq.State.goals *)
           let ok_diag = mk_diag loc 3 (Pp.str "OK") in
-          let diags = if Config.ok_diag then ok_diag :: diags else diags in
+          let diags =
+            if !Config.v.ok_diagnostics then ok_diag :: diags else diags
+          in
           let fb_diags = process_feedback ~loc feedback in
           let diags = fb_diags @ diags in
           let node = { ast; state; memo_info } in
@@ -223,7 +225,7 @@ let process_and_parse ~uri ~version ~fb_queue doc =
   stm doc doc.root []
 
 let print_stats () =
-  (if Config.mem_stats then
+  (if !Config.v.mem_stats then
    let size = Memo.mem_stats () in
    Io.Log.error "stats" (string_of_int size));
 

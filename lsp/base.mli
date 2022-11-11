@@ -15,14 +15,14 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val mk_range : Fleche.Types.Range.t -> Yojson.Basic.t
-val mk_reply : id:int -> result:Yojson.Basic.t -> Yojson.Basic.t
+val mk_range : Fleche.Types.Range.t -> Yojson.Safe.t
+val mk_reply : id:int -> result:Yojson.Safe.t -> Yojson.Safe.t
 
 (* val mk_diagnostic : Range.t * int * string * unit option -> Yojson.Basic.t *)
 val mk_diagnostics :
      uri:string
   -> version:int
   -> (Fleche.Types.Range.t * int * string * unit option) list
-  -> Yojson.Basic.t
+  -> Yojson.Safe.t
 
 val std_protocol : bool ref

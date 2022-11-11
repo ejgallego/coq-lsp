@@ -16,8 +16,8 @@
 (************************************************************************)
 
 module F = Format
-module J = Yojson.Basic
-module U = Yojson.Basic.Util
+module J = Yojson.Safe
+module U = Yojson.Safe.Util
 
 let int_field name dict = U.to_int List.(assoc name dict)
 let dict_field name dict = U.to_assoc List.(assoc name dict)
@@ -30,7 +30,7 @@ let _option_empty x =
   | None -> true
   | Some _ -> false
 
-let option_cata f x d =
+let option_cata f d x =
   match x with
   | None -> d
   | Some x -> f x
@@ -40,29 +40,74 @@ let option_default x d =
   | None -> d
   | Some x -> x
 
-let oint_field name dict = option_cata U.to_int List.(assoc_opt name dict) 0
+let oint_field name dict = option_cata U.to_int 0 List.(assoc_opt name dict)
+let ostring_field name dict = Option.map U.to_string (List.assoc_opt name dict)
 
 let odict_field name dict =
   option_default
     U.(to_option to_assoc (option_default List.(assoc_opt name dict) `Null))
     []
 
+module TraceValue = struct
+  type t =
+    | Off
+    | Messages
+    | Verbose
+
+  let parse = function
+    | "messages" -> Messages
+    | "verbose" -> Verbose
+    | "off" -> Off
+    | _ -> raise (Invalid_argument "TraceValue.parse")
+
+  let to_string = function
+    | Off -> "off"
+    | Messages -> "messages"
+    | Verbose -> "verbose"
+end
+
 module LIO = Lsp.Io
 module LSP = Lsp.Base
 
 (* Request Handling: The client expects a reply *)
-let do_initialize ofmt ~id _params =
+module CoqLspOption = struct
+  type t = [%import: Fleche.Config.t] [@@deriving yojson]
+end
+
+let do_client_options coq_lsp_options =
+  LIO.log_error "init" "custom client options:";
+  LIO.log_object "init" (`Assoc coq_lsp_options);
+  match CoqLspOption.of_yojson (`Assoc coq_lsp_options) with
+  | Ok v -> Fleche.Config.v := v
+  | Error _msg -> ()
+
+let do_initialize ofmt ~id params =
+  let coq_lsp_options = odict_field "initializationOptions" params in
+  do_client_options coq_lsp_options;
+  let client_capabilities = odict_field "capabilities" params in
+  LIO.log_error "init" "client capabilities:";
+  LIO.log_object "init" (`Assoc client_capabilities);
+  let trace =
+    ostring_field "trace" params |> option_cata TraceValue.parse TraceValue.Off
+  in
+  LIO.log_error "init" ("trace: " ^ TraceValue.to_string trace);
+  let capabilities =
+    [ ("textDocumentSync", `Int 1)
+    ; ("documentSymbolProvider", `Bool true)
+    ; ("hoverProvider", `Bool true)
+    ; ("completionProvider", `Assoc [])
+    ; ("codeActionProvider", `Bool false)
+    ]
+  in
   let msg =
     LSP.mk_reply ~id
       ~result:
         (`Assoc
-          [ ( "capabilities"
+          [ ("capabilities", `Assoc capabilities)
+          ; ( "serverInfo"
             , `Assoc
-                [ ("textDocumentSync", `Int 1)
-                ; ("documentSymbolProvider", `Bool true)
-                ; ("hoverProvider", `Bool true)
-                ; ("completionProvider", `Assoc [])
-                ; ("codeActionProvider", `Bool false)
+                [ ("name", `String "coq-lsp (C) Inria 2022")
+                ; ("version", `String "0.1+alpha")
                 ] )
           ])
   in
@@ -201,12 +246,12 @@ let do_completion ofmt ~id params =
 (* LIO.log_error "do_completion" (string_of_int line ^"-"^ string_of_int pos) *)
 
 (* Replace by ppx when we can print goals properly in the client *)
-let mk_hyp { Coq.Goals.names; def = _; ty } : Yojson.Basic.t =
+let mk_hyp { Coq.Goals.names; def = _; ty } : Yojson.Safe.t =
   let names = List.map (fun id -> `String (Names.Id.to_string id)) names in
   let ty = Pp.string_of_ppcmds ty in
   `Assoc [ ("names", `List names); ("ty", `String ty) ]
 
-let mk_goal { Coq.Goals.info = _; ty; hyps } : Yojson.Basic.t =
+let mk_goal { Coq.Goals.info = _; ty; hyps } : Yojson.Safe.t =
   let ty = Pp.string_of_ppcmds ty in
   `Assoc [ ("ty", `String ty); ("hyps", `List (List.map mk_hyp hyps)) ]
 
