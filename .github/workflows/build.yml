@@ -36,6 +36,19 @@ jobs:
       - name: 🧱 Build coq-lsp
         run: opam exec -- make build
 
+  client-compile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./editor/code
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: npm ci
+      - run: npm run compile
+
   lint-fmt:
     runs-on: ubuntu-latest
     steps:
