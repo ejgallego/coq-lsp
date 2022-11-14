@@ -1,14 +1,36 @@
 {
-  "name": "vsc-galinas",
-  "version": "0.0.1",
+  "name": "coq-lsp",
+  "displayName": "coq-lsp",
+  "description": "Coq LSP provides native vsCode support for checking Coq proof documents",
+  "version": "0.1.0",
+  "contributors": [
+    "Emilio Jesús Gallego Arias <e@x80.org>",
+    "Ali Caglayan <alizter@gmail.com>",
+    "Shachar Itzhaky <shachari@cs.technion.ac.il>",
+    "Ramkumar Ramachandra <r@artagnon.com>"
+  ],
   "publisher": "Inria",
   "engines": {
-    "vscode": "^1.68.0"
+    "vscode": "^1.73.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "keywords": [
+    "interactive theorem proving",
+    "dependent types",
+    "coq",
+    "software verification"
+  ],
+  "homepage": "https://github.com/ejgallego/coq-lsp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ejgallego/coq-lsp"
   },
   "activationEvents": [
     "onLanguage:coq"
   ],
-  "main": "./src/client",
   "contributes": {
     "languages": [
       {
@@ -35,31 +57,53 @@
     ],
     "commands": [
       {
-        "command": "vsc-galinas.restart",
-        "title": "Coq: Restart Language Server"
+        "command": "coq-lsp.restart",
+        "title": "Coq LSP: Restart Language Server"
       }
     ],
     "configuration": [
       {
         "type": "object",
-	"title": "Coq LSP configuration",
-	"properties": {
-	  "vsc-galinas.trace.server": {
-	    "scope": "window",
-	    "type": "string",
-	    "enum": [
-	      "off",
-	      "messages",
-	      "verbose"
-	    ],
-	    "default": "verbose",
-	    "description": "Traces the communication between VS Code and the language server."
-	  }
-	}
+        "title": "Coq LSP configuration",
+        "properties": {
+          "coq-lsp.trace.server": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "off",
+              "messages",
+              "verbose"
+            ],
+            "default": "verbose",
+            "description": "Traces the communication between VS Code and the language server."
+          },
+          "coq-lsp.path": {
+            "type": "string",
+            "default": "coq-lsp",
+            "description": "Path to the coq-lsp binary, by default, search in PATH"
+          },
+          "coq-lsp.args": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": [ "--std" ],
+            "description": "Arguments to the coq-lsp server"
+          }
+        }
       }
     ]
   },
+  "devDependencies": {
+    "typescript": "^4.8.4",
+    "@types/node": "^10.14.15",
+    "@types/vscode": "^1.73.0"
+  },
   "dependencies": {
-    "vscode-languageclient": "^8.0.1"
+    "vscode-languageclient": "^8.0.2"
+  },
+  "main": "./out/src/client.js",
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
   }
 }

@@ -4,7 +4,8 @@ _opam
 *.install
 log-*.txt
 
-.vscode
 .git-ps
 
 *.cache
+
+editor/code/out

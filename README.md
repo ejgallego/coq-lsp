@@ -93,9 +93,9 @@ Assuming the server is built, install the extension as follows:
     ln -s ~/path/to/coq-lsp/editor/code ~/.vscode
     ```
     (link source should be absolute or else it won't work!)
- 2. Run `npm install` in `editor/code`.
+ 2. Run `npm install && npm run compile` in `editor/code`.
     ```sh
-    (cd editor/code && npm i)
+    (cd editor/code && npm i && npm run compile)
     ```
 
 Now you can launch VS Code through `dune`: `dune exec -- code -n` ,
