@@ -4,8 +4,6 @@ type t = Vernacexpr.vernac_control
 
 let hash x = Serlib.Ser_vernacexpr.hash_vernac_control x
 let compare x y = Serlib.Ser_vernacexpr.compare_vernac_control x y
-let to_coq x = x
-let of_coq x = x
 let loc { CAst.loc; _ } = loc
 
 (* Printer is very fiddly w.r.t. state, especially when used for debug, so we
@@ -75,3 +73,38 @@ let grab_definitions f nodes =
 
 let marshal_in ic : t = Marshal.from_channel ic
 let marshal_out oc v = Marshal.to_channel oc v []
+
+module Internal = struct
+  let to_coq x = x
+  let of_coq x = x
+end
+
+(* Structure inference *)
+module View = struct
+  type ast = t
+
+  type t =
+    (* This could be also extracted from the interpretation *)
+    | Open of unit
+    | End of unit
+    | Require of
+        { prefix : Libnames.qualid option
+        ; refs : Libnames.qualid list
+        }
+    | Other
+
+  let kind ast =
+    match ast.CAst.v.Vernacexpr.expr with
+    | Vernacexpr.VernacStartTheoremProof _ -> Open ()
+    | Vernacexpr.VernacEndProof _ -> End ()
+    | Vernacexpr.VernacRequire (prefix, _export, module_refs) ->
+      let refs = List.map fst module_refs in
+      Require { prefix; refs }
+    | _ -> Other
+end
+
+module Id = Names.Id
+
+module QualId = struct
+  type t = Libnames.qualid
+end

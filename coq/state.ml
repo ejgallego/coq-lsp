@@ -1,5 +1,11 @@
 type t = Vernacstate.t
 
+module Proof = struct
+  type proof = Vernacstate.LemmaStack.t
+
+  let get ~st = st.Vernacstate.lemmas
+end
+
 let any_out oc (a : Summary.Frozen.any) =
   (* let (Summary.Frozen.Any (tag, _value)) = a in *)
   (* let name = Summary.Dyn.repr tag in *)
@@ -52,19 +58,25 @@ let _marshal_in ic =
   let shallow = Marshal.from_channel ic in
   { Vernacstate.parsing; system; lemmas; program; opaques; shallow }
 
-let marshal_in ic : t = Marshal.from_channel ic
-let marshal_out oc st = Marshal.to_channel oc st []
-let of_coq x = x
-let to_coq x = x
+module Marshal = struct
+  let read ic : t = Marshal.from_channel ic
+  let write oc st = Marshal.to_channel oc st []
+end
+
+module Internal = struct
+  let of_coq x = x
+  let to_coq x = x
+end
+
 let compare x y = compare x y
 
 let mode ~st =
   Option.map
     (fun _ -> Vernacinterp.get_default_proof_mode ())
     st.Vernacstate.lemmas
+  |> Option.map Parse.Proof_mode.Internal.of_coq
 
-let parsing ~st = st.Vernacstate.parsing
-let lemmas ~st = st.Vernacstate.lemmas
+let parsing ~st = st.Vernacstate.parsing |> Parse.State.Internal.of_coq
 
 let drop_proofs ~st =
   let open Vernacstate in

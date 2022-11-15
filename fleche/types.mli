@@ -15,39 +15,19 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module Point : sig
-  type t =
-    { line : int
-    ; character : int
-    ; offset : int
-    }
-end
-
-module Range : sig
-  type t =
-    { start : Point.t
-    ; _end : Point.t
-    }
-end
-
 module Diagnostic : sig
   module Extra : sig
     type t =
       | FailedRequire of
-          { prefix : Libnames.qualid option
-          ; refs : Libnames.qualid list
+          { prefix : Lang.Ast.QualId.t option
+          ; refs : Lang.Ast.QualId.t list
           }
   end
 
   type t =
-    { range : Range.t
+    { range : Lang.Range.t
     ; severity : int
     ; message : string
     ; extra : Extra.t list
     }
 end
-
-(** XXX specific to Coq *)
-val to_range : Loc.t -> Range.t
-
-val to_orange : Loc.t option -> Range.t option

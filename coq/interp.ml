@@ -30,9 +30,9 @@ let get_feedback fb_queue =
 type 'a interp_result = 'a Info.t Protect.R.t
 
 let coq_interp ~st cmd =
-  let st = State.to_coq st in
-  let cmd = Ast.to_coq cmd in
-  Vernacinterp.interp ~st cmd |> State.of_coq
+  let st = State.Internal.to_coq st in
+  let cmd = Ast.Internal.to_coq cmd in
+  Vernacinterp.interp ~st cmd |> State.Internal.of_coq
 
 let interp ~st ~fb_queue cmd =
   Protect.eval cmd ~f:(fun cmd ->

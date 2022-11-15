@@ -1,3 +1,5 @@
+type error = Loc.t option * Pp.t
+
 module R = struct
   type 'a t =
     | Completed of ('a, Loc.t option * Pp.t) result

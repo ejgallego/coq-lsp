@@ -18,16 +18,15 @@
 (* Low-level, internal Coq initialization                                 *)
 (**************************************************************************)
 
-type coq_opts =
-  { fb_handler : Feedback.feedback -> unit
-        (** callback to handle async feedback *)
+type opts =
+  { msg_handler : Message.t -> unit  (** callback to handle async feedback *)
   ; load_module : string -> unit  (** callback to load cma/cmo files *)
   ; load_plugin : Mltop.PluginSpec.t -> unit
         (** callback to load findlib packages *)
   ; debug : bool  (** Enable Coq Debug mode *)
   }
 
-let coq_init opts =
+let init opts =
   (* Core Coq initialization *)
   Lib.init ();
   Global.set_impredicative_set false;
@@ -41,7 +40,22 @@ let coq_init opts =
   (**************************************************************************)
 
   (* Initialize logging. *)
-  ignore (Feedback.add_feeder opts.fb_handler);
+  let lvl_to_severity (lvl : Feedback.level) =
+    match lvl with
+    | Feedback.Debug -> 5
+    | Feedback.Info -> 4
+    | Feedback.Notice -> 3
+    | Feedback.Warning -> 2
+    | Feedback.Error -> 1
+  in
+
+  let fb_handler = function
+    | Feedback.{ contents = Message (lvl, loc, msg); _ } ->
+      let lvl = lvl_to_severity lvl in
+      opts.msg_handler (loc, lvl, msg)
+    | _ -> ()
+  in
+  ignore (Feedback.add_feeder fb_handler);
 
   (* SerAPI plugins *)
   let load_plugin = opts.load_plugin in
@@ -61,7 +75,7 @@ let coq_init opts =
   (**************************************************************************)
   (* Add root state!!                                                       *)
   (**************************************************************************)
-  Vernacstate.freeze_interp_state ~marshallable:false |> State.of_coq
+  Vernacstate.freeze_interp_state ~marshallable:false |> State.Internal.of_coq
 
 (* End of initialization *)
 
@@ -90,33 +104,44 @@ let loadpath_from_coqproject () : Loadpath.vo_path list =
       (List.map (fun f -> to_vo_loadpath f.thing true) r_includes)
 
 (* Inits the context for a document *)
-let doc_init ~root_state ~vo_load_path ~ml_include_path ~libname ~require_libs =
-  (* Lsp.Io.log_error "init" "starting"; *)
-  Vernacstate.unfreeze_interp_state (State.to_coq root_state);
+module Doc = struct
+  type require_decl =
+    string * string option * Vernacexpr.export_with_cats option
 
-  (* This should go away in Coq itself *)
-  Safe_typing.allow_delayed_constants := true;
-  let load_objs libs =
-    let rq_file (dir, from, exp) =
-      let mp = Libnames.qualid_of_string dir in
-      let mfrom = Option.map Libnames.qualid_of_string from in
-      Flags.silently
-        (Vernacentries.vernac_require mfrom exp)
-        [ (mp, Vernacexpr.ImportAll) ]
+  type env =
+    { vo_load_path : Loadpath.vo_path list
+    ; ml_load_path : string list
+    ; requires : require_decl list
+    }
+
+  let make ~root_state ~env ~name =
+    (* Lsp.Io.log_error "init" "starting"; *)
+    Vernacstate.unfreeze_interp_state (State.Internal.to_coq root_state);
+
+    (* This should go away in Coq itself *)
+    Safe_typing.allow_delayed_constants := true;
+    let load_objs libs =
+      let rq_file (dir, from, exp) =
+        let mp = Libnames.qualid_of_string dir in
+        let mfrom = Option.map Libnames.qualid_of_string from in
+        Flags.silently
+          (Vernacentries.vernac_require mfrom exp)
+          [ (mp, Vernacexpr.ImportAll) ]
+      in
+      List.(iter rq_file (rev libs))
     in
-    List.(iter rq_file (rev libs))
-  in
 
-  (* Set load path; important, this has to happen before we declare the library
-     below as [Declaremods/Library] will infer the module name by looking at the
-     load path! *)
-  List.iter Mltop.add_ml_dir ml_include_path;
-  List.iter Loadpath.add_vo_path vo_load_path;
-  List.iter Loadpath.add_vo_path (loadpath_from_coqproject ());
-  Declaremods.start_library libname;
+    (* Set load path; important, this has to happen before we declare the
+       library below as [Declaremods/Library] will infer the module name by
+       looking at the load path! *)
+    List.iter Mltop.add_ml_dir env.ml_load_path;
+    List.iter Loadpath.add_vo_path env.vo_load_path;
+    List.iter Loadpath.add_vo_path (loadpath_from_coqproject ());
+    Declaremods.start_library name;
 
-  (* Import initial libraries. *)
-  load_objs require_libs;
+    (* Import initial libraries. *)
+    load_objs env.requires;
 
-  (* We return the state at this point! *)
-  Vernacstate.freeze_interp_state ~marshallable:false |> State.of_coq
+    (* We return the state at this point! *)
+    Vernacstate.freeze_interp_state ~marshallable:false |> State.Internal.of_coq
+end

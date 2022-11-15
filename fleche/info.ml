@@ -1,25 +1,16 @@
 (************************************************************************)
-(*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
-(* <O___,, *       (see CREDITS file for the list of authors)           *)
-(*   \VV/  **************************************************************)
-(*    //   *    This file is distributed under the terms of the         *)
-(*         *     GNU Lesser General Public License Version 2.1          *)
-(*         *     (see LICENSE file for the text of the license)         *)
-(************************************************************************)
-
-(************************************************************************)
-(* Coq Language Server Protocol                                         *)
-(* Copyright (C) 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+  *)
-(* Copyright (C) 2019-2022 Emilio J. Gallego Arias, INRIA               *)
-(* Copyright (C) 2022-2022 Shachar Itzhaky, Technion                    *)
+(* Flèche Document Manager                                              *)
+(* License: LGPL 2.1 / GPL3+                                            *)
+(* Copyright (C) 2016-2019 MINES ParisTech                              *)
+(* Copyright (C) 2019-2022 Inria                                        *)
+(* Copyright (C) 2022-2022 Shachar Itzhaky, Technion Institute of Tech  *)
 (************************************************************************)
 
 module type Point = sig
   type t
 
-  val in_range : ?loc:Loc.t -> t -> bool
-  val gt_range : ?loc:Loc.t -> t -> bool
+  val in_range : ?loc:Lang.Loc.t -> t -> bool
+  val gt_range : ?loc:Lang.Loc.t -> t -> bool
 
   type offset_table = string
 
@@ -53,7 +44,7 @@ module LineCol : Point with type t = int * int = struct
     match loc with
     | None -> false
     | Some loc ->
-      let r = Types.to_range loc in
+      let r = Lang.Loc.to_range loc in
       let line1 = r.start.line in
       let col1 = r.start.character in
       let line2 = r._end.line in
@@ -71,7 +62,7 @@ module LineCol : Point with type t = int * int = struct
     match loc with
     | None -> false
     | Some loc ->
-      let r = Types.to_range loc in
+      let r = Lang.Loc.to_range loc in
       let line1 = r.start.line in
       let col1 = r.start.character in
       let line2 = r._end.line in
@@ -90,12 +81,16 @@ module Offset : Point with type t = int = struct
   let in_range ?loc point =
     match loc with
     | None -> false
-    | Some loc -> loc.Loc.bp <= point && point < loc.ep
+    | Some loc ->
+      let loc = Lang.Loc.to_range loc in
+      loc.start.offset <= point && point < loc._end.offset
 
   let gt_range ?loc point =
     match loc with
     | None -> false
-    | Some loc -> point < loc.Loc.bp
+    | Some loc ->
+      let loc = Lang.Loc.to_range loc in
+      point < loc.start.offset
 
   let to_offset off _ = off
   let to_string off = string_of_int off
@@ -126,7 +121,7 @@ module Make (P : Point) : S with module P := P = struct
       match l with
       | [] -> prev
       | node :: xs -> (
-        let loc = Coq.Ast.loc node.Doc.ast in
+        let loc = Lang.Ast.loc node.Doc.ast in
         match approx with
         | Exact -> if P.in_range ?loc point then Some node else find None xs
         | PickPrev ->
@@ -157,7 +152,7 @@ module Make (P : Point) : S with module P := P = struct
     let ppx env sigma x =
       (* Jscoq_util.pp_opt *) Printer.pr_ltype_env env sigma x
     in
-    let lemmas = Coq.State.lemmas ~st in
+    let lemmas = Lang.State.Proof.get ~st in
     Option.cata (reify_goals ppx) None lemmas
 
   let goals ~doc ~point approx =
@@ -179,7 +174,7 @@ module Make (P : Point) : S with module P := P = struct
   let completion ~doc ~point prefix =
     find ~doc ~point Exact
     |> obind (fun node ->
-           Coq.State.in_state ~st:node.Doc.state prefix ~f:(fun prefix ->
+           Lang.State.in_state ~st:node.Doc.state prefix ~f:(fun prefix ->
                to_qualid prefix
                |> obind (fun p ->
                       Nametab.completion_canditates p

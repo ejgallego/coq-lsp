@@ -47,7 +47,7 @@ let mk_event m p =
    let json_of_thm thm = let open Proofs in match thm with | None -> `Null |
    Some thm -> `Assoc [ "goals", `List List.(map json_of_goal thm.t_goals) ] *)
 
-let mk_range { Fleche.Types.Range.start; _end } : J.t =
+let mk_range { Fleche.Lang.Range.start; _end } : J.t =
   `Assoc
     [ ( "start"
       , `Assoc
@@ -60,7 +60,7 @@ let mk_range { Fleche.Types.Range.start; _end } : J.t =
 (* let mk_diagnostic ((p : Pos.pos), (lvl : int), (msg : string), (thm :
    Proofs.theorem option)) : J.json = *)
 let mk_diagnostic
-    ( (r : Fleche.Types.Range.t)
+    ( (r : Fleche.Lang.Range.t)
     , (lvl : int)
     , (msg : string)
     , (_thm : unit option) ) : J.t =

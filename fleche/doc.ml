@@ -1,10 +1,8 @@
 (************************************************************************)
-(* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2022 Inria           -- Dual License LGPL 2.1 / GPL3+      *)
+(* Flèche Document Manager                                              *)
+(* Copyright 2016-2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+ *)
+(* Copyright 2019-2022 Inria           -- Dual License LGPL 2.1 / GPL3+ *)
 (* Written by: Emilio J. Gallego Arias                                  *)
-(************************************************************************)
-(* Status: Experimental                                                 *)
 (************************************************************************)
 
 (* open Lsp_util
@@ -13,8 +11,8 @@
 (* [node list] is a very crude form of a meta-data map "loc -> data" , where for
    now [data] is only the goals. *)
 type node =
-  { ast : Coq.Ast.t  (** Ast of node *)
-  ; state : Coq.State.t  (** (Full) State of node *)
+  { ast : Lang.Ast.t  (** Ast of node *)
+  ; state : Lang.State.t  (** (Full) State of node *)
   ; memo_info : string
   }
 
@@ -25,7 +23,7 @@ type t =
   { uri : string
   ; version : int
   ; contents : string
-  ; root : Coq.State.t
+  ; root : Lang.State.t
   ; nodes : node list
   }
 
@@ -33,11 +31,11 @@ type t =
  *   LSP.mk_diagnostics ~uri:doc.uri ~version:doc.version [pos, 1, msg, None] *)
 
 let mk_doc state =
-  let root_state, vo_load_path, ml_include_path, _ = state in
-  let libname = Names.(DirPath.make [ Id.of_string "foo" ]) in
-  let require_libs = [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ] in
-  Coq.Init.doc_init ~root_state ~vo_load_path ~ml_include_path ~libname
-    ~require_libs
+  let root_state, vo_load_path, ml_load_path, _ = state in
+  let requires = [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ] in
+  let env = { Lang.Init.Doc.vo_load_path; ml_load_path; requires } in
+  let name = Names.(DirPath.make [ Id.of_string "foo" ]) in
+  Lang.Init.Doc.make ~root_state ~env ~name
 
 let create ~state ~uri ~version ~contents =
   { uri; contents; version; root = mk_doc state; nodes = [] }
@@ -46,63 +44,41 @@ let create ~state ~uri ~version ~contents =
 (* let close_doc _modname = () *)
 
 let parse_stm ~st ps =
-  let mode = Coq.State.mode ~st in
-  let st = Coq.State.parsing ~st in
+  let mode = Lang.State.mode ~st in
+  let st = Lang.State.parsing ~st in
   let parse ps =
     (* Coq is missing this, so we add it here. Note that this MUST run inside
        coq_protect *)
     Control.check_for_interrupt ();
-    Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
-    |> Option.map Coq.Ast.of_coq
+    Lang.Parse.(parse st mode) ps
   in
-  Stats.record ~kind:Stats.Kind.Parsing ~f:(Coq.Protect.eval ~f:parse) ps
-
-(* Read the input stream until a dot or a "end of proof" token is encountered *)
-let parse_to_terminator : unit Pcoq.Entry.t =
-  (* type 'a parser_fun = { parser_fun : te LStream.t -> 'a } *)
-  let rec dot st =
-    match Gramlib.LStream.next st with
-    | Tok.KEYWORD ("." | "..." | "Qed" | "Defined" | "Admitted") | Tok.BULLET _
-      -> ()
-    | Tok.EOI -> ()
-    | _ -> dot st
-  in
-  Pcoq.Entry.of_parser "Coqtoplevel.dot" { parser_fun = dot }
-
-(* If an error occurred while parsing, we try to read the input until a dot
-   token is encountered. We assume that when a lexer error occurs, at least one
-   char was eaten *)
-
-let rec discard_to_dot ps =
-  try Pcoq.Entry.parse parse_to_terminator ps with
-  | CLexer.Error.E _ -> discard_to_dot ps
-  | e when CErrors.noncritical e -> ()
+  Stats.record ~kind:Stats.Kind.Parsing ~f:(Lang.Protect.eval ~f:parse) ps
 
 (* Gross hack *)
 let proof_st = ref None
 
 let register_hack_proof_recover ast st =
-  match (Coq.Ast.to_coq ast).CAst.v.Vernacexpr.expr with
-  | Vernacexpr.VernacStartTheoremProof _ ->
+  match Lang.Ast.View.kind ast with
+  | Open () ->
     proof_st := Some st;
     ()
   | _ -> ()
 
 (* Simple heuristic for Qed. *)
-let state_recovery_heuristic st v =
-  match (Coq.Ast.to_coq v).CAst.v.Vernacexpr.expr with
+let state_recovery_heuristic st ast =
+  match Lang.Ast.View.kind ast with
   (* Drop the top proof state if we reach a faulty Qed. *)
-  | Vernacexpr.VernacEndProof _ ->
+  | End () ->
     let st = Option.default st !proof_st in
-    Io.Log.error "recovery" (Memo.input_info (v, st));
+    Io.Log.error "recovery" (Memo.input_info (ast, st));
     proof_st := None;
-    Coq.State.drop_proofs ~st
+    Lang.State.drop_proofs ~st
   | _ -> st
 
 type process_action =
   | EOF
   | Skip
-  | Process of Coq.Ast.t
+  | Process of Lang.Ast.t
 
 (* Make each fb a diag *)
 let _pp_located fmt (_loc, pp) = Pp.pp_with fmt pp
@@ -113,15 +89,14 @@ let pp_words fmt w =
   else Format.fprintf fmt "%.2f Mw" (w /. (1024.0 *. 1024.0))
 
 let mk_diag ?(extra = []) range severity message =
-  let range = Types.to_range range in
-  let message = Pp.string_of_ppcmds message in
+  let range = Lang.Loc.to_range range in
+  let message = Lang.Pp.to_string message in
   Types.Diagnostic.{ range; severity; message; extra }
 
 (* modular error diagnostic generation *)
 let mk_error_diagnostic ~loc ~msg ~ast =
-  match (Coq.Ast.to_coq ast).v with
-  | Vernacexpr.{ expr = VernacRequire (prefix, _export, module_refs); _ } ->
-    let refs = List.map fst module_refs in
+  match Lang.Ast.View.kind ast with
+  | Require { prefix; refs } ->
     let extra = [ Types.Diagnostic.Extra.FailedRequire { prefix; refs } ] in
     mk_diag ~extra loc 1 msg
   | _ -> mk_diag loc 1 msg
@@ -129,6 +104,16 @@ let mk_error_diagnostic ~loc ~msg ~ast =
 let feed_to_diag ~loc (range, severity, message) =
   let range = Option.default loc range in
   mk_diag range severity message
+
+let send_processing_diag ~uri ~version loc diags =
+  let proc_diag = mk_diag loc 3 (Lang.Pp.str "Processing") in
+  Io.Report.diagnostics ~uri ~version (proc_diag :: diags)
+
+let print_parsing_debug_info loc ast =
+  let line = (Lang.Loc.to_range loc).start.line in
+  let line = "[l: " ^ string_of_int line ^ "] " in
+  Io.Log.error "coq"
+    ("parsed sentence: " ^ line ^ Lang.Pp.to_string (Lang.Ast.print ast))
 
 let process_feedback ~loc fbs = List.map (feed_to_diag ~loc) fbs
 
@@ -153,24 +138,24 @@ let interp_and_info ~parsing_time ~st ~fb_queue ast =
 
 (* XXX: Imperative problem *)
 let process_and_parse ~uri ~version ~fb_queue doc =
-  let loc = Loc.initial (InFile { dirpath = None; file = uri }) in
+  let loc = Lang.Loc.initial ~uri in
   let doc_handle =
-    Pcoq.Parsable.make ~loc Gramlib.Stream.(of_string doc.contents)
+    Lang.Parse.Parsable.make ~loc Gramlib.Stream.(of_string doc.contents)
   in
   let rec stm doc st diags =
     if Debug.parsing then Io.Log.error "coq" "parsing sentence";
     (* Parsing *)
     let action, diags, parsing_time =
       match parse_stm ~st doc_handle with
-      | Coq.Protect.R.Interrupted, time -> (EOF, diags, time)
-      | Coq.Protect.R.Completed res, time -> (
+      | Lang.Protect.R.Interrupted, time -> (EOF, diags, time)
+      | Lang.Protect.R.Completed res, time -> (
         match res with
         | Ok None -> (EOF, diags, time)
         | Ok (Some ast) -> (Process ast, diags, time)
         | Error (loc, msg) ->
           let loc = Option.get loc in
           let diags = mk_diag loc 1 msg :: diags in
-          discard_to_dot doc_handle;
+          Lang.Parse.discard_to_dot doc_handle;
           (Skip, diags, time))
     in
     (* Execution *)
@@ -180,27 +165,22 @@ let process_and_parse ~uri ~version ~fb_queue doc =
     | Skip -> stm doc st diags
     (* We interpret the command now *)
     | Process ast -> (
-      let loc = Coq.Ast.loc ast |> Option.get in
+      let loc = Lang.Ast.loc ast |> Option.get in
       (* XXX Eager update! *)
-      (if Config.eager_diagnostics then
-       let proc_diag = mk_diag loc 3 (Pp.str "Processing") in
-       Io.Report.diagnostics ~uri ~version (proc_diag :: diags));
-      (if Debug.parsing then
-       let line = "[l: " ^ string_of_int loc.Loc.line_nb ^ "] " in
-       Io.Log.error "coq"
-         ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast)));
+      if Config.eager_diagnostics then
+        send_processing_diag ~uri ~version loc diags;
+      if Debug.parsing then print_parsing_debug_info loc ast;
       register_hack_proof_recover ast st;
-      (* memory is disabled as it is quite slow and misleading *)
       let res, memo_info = interp_and_info ~parsing_time ~st ~fb_queue ast in
       match res with
-      | Coq.Protect.R.Interrupted ->
+      | Lang.Protect.R.Interrupted ->
         (* Exit *)
         (doc, st, diags)
-      | Coq.Protect.R.Completed res -> (
+      | Lang.Protect.R.Completed res -> (
         match res with
         | Ok { res = state; feedback } ->
-          (* let goals = Coq.State.goals *)
-          let ok_diag = mk_diag loc 3 (Pp.str "OK") in
+          (* let goals = Lang.State.goals *)
+          let ok_diag = mk_diag loc 3 (Lang.Pp.str "OK") in
           let diags = if Config.ok_diag then ok_diag :: diags else diags in
           let fb_diags = process_feedback ~loc feedback in
           let diags = fb_diags @ diags in
