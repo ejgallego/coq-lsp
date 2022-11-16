@@ -1,7 +1,9 @@
-import { window, commands, ExtensionContext, workspace } from "vscode";
+import { window, commands, ExtensionContext, workspace, WebviewPanel, ViewColumn, Uri } from "vscode";
 import { LanguageClient } from "vscode-languageclient/node";
+import { GoalPanel } from "./goals";
 
 let client : LanguageClient;
+let goalPanel : GoalPanel;
 
 export function activate (context : ExtensionContext) : void {
     window.showInformationMessage('Going to activate!');
@@ -19,6 +21,7 @@ export function activate (context : ExtensionContext) : void {
         if (client) {
             client.stop();
         }
+
         window.showInformationMessage('Going to start!');
  
         const config = workspace.getConfiguration('coq-lsp');
@@ -31,9 +34,32 @@ export function activate (context : ExtensionContext) : void {
             clientOptions
         );
         client.start();
-    };
+
+        // XXX: Fix this mess with the lifetime of the panel  
+        let panel = window.createWebviewPanel('goals', 'Goals', ViewColumn.Two, {});
+        const styleUri = panel.webview.asWebviewUri(Uri.joinPath(context.extensionUri, 'media', 'styles.css'));
+        goalPanel = new GoalPanel(client, panel, styleUri);
+};
+
+    const checkPanelAlive = () => {
+        if(!goalPanel) {
+            let panel = window.createWebviewPanel('goals', 'Goals', ViewColumn.Two, {});
+            const styleUri = panel.webview.asWebviewUri(Uri.joinPath(context.extensionUri, 'media', 'styles.css'));
+            goalPanel = new GoalPanel(client, panel, styleUri);
+        }
+    }
+    const goals = () => {
+        checkPanelAlive();
+        let uri = window.activeTextEditor?.document?.uri;
+        let position = window.activeTextEditor?.selection?.active;
+        if(uri && position) {
+            goalPanel.update(uri, position);
+        }
+    }   
 
     coqCommand('restart', restart);
+    coqCommand('goals', goals);
+
     restart();
 }
 

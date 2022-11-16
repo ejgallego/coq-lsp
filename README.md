@@ -6,12 +6,13 @@ Protocol](https://microsoft.github.io/language-server-protocol/)
 server implementation for the Coq proof assistant, as well as to serve
 as a framework for interface experimentation.
 
-**Warning**: This project is at a _very early_ stage, and it has
-**known bugs**. Use at your own risk.
+**Warning**: This project is at a _early_ stage, and it has **known
+bugs**, see the issue tracker for more information. Use at your own
+risk.
 
-Moreover, we expect the code to evolve significantly, including a full
-rewrite, so if you would like to contribute, please **first
-coordinate** with the dev team before writing any code.
+Moreover, we expect the code to evolve significantly, contributions
+are very welcome, but please **first coordinate** with the dev team
+before writing any code.
 
 ## Development Channel
 
@@ -46,6 +47,10 @@ You can edit without fear inside a `Proof. ... Qed.`, the rest of the
 document won't be rechecked, unless the proof is completed.
 
 [insert gif]
+
+### Goal Display
+
+Press `Alt+Enter` (or `Cmd+Enter` in Mac) to show goals at point in a side panel.
 
 ### Markdown support
 
@@ -101,31 +106,6 @@ In progress, pending on https://github.com/coq/coq/pull/16261
 
 ### Suggestions / Search panel
 
-## Roadmap
-
-For now the main focus of the project to write clean and maintainable
-code, and to provide a smooth user experience.
-
-A core goal at this stage is to provide feedback upstream so the Coq
-API can be tailored to provide a good interactive experience.
-
-For the planned first release, we hope to provide a reasonable
-implementation of core LSP features, editor support in VS Code.
-
-### Code organization
-
-`coq-lsp` consists of several components:
-
-- `coq-serapi`: [vendored] improved utility functions to handle Coq AST
-- `coq`: Utility library / abstracted Coq API. This is the main entry
-  point for communication with Coq.
-- `fleche`: incremental document processing backend. Exposes a generic
-  API, but closely modelled to match LSP methods
-- `lsp`: small generic LSP utilities, at some point to be replaced by
-  a generic lib
-- `controller`: LSP controller, a thin layer translating LSP transport
-  layer to `flèche` surface API.
-
 ## Building the Server
 
 To build the server, you'll need and environment with the dependencies
@@ -168,6 +148,31 @@ You can use this mode with [eglot]() with `$path_to_server
 --std`. Note that `--std` is needed otherwise eglot will choke due to
 extra messages.
 
+## Roadmap
+
+For now the main focus of the project to write clean and maintainable
+code, and to provide a smooth user experience.
+
+A core goal at this stage is to provide feedback upstream so the Coq
+API can be tailored to provide a good interactive experience.
+
+For the planned first release, we hope to provide a reasonable
+implementation of core LSP features, editor support in VS Code.
+
+### Code organization
+
+`coq-lsp` consists of several components:
+
+- `coq-serapi`: [vendored] improved utility functions to handle Coq AST
+- `coq`: Utility library / abstracted Coq API. This is the main entry
+  point for communication with Coq.
+- `fleche`: incremental document processing backend. Exposes a generic
+  API, but closely modelled to match LSP methods
+- `lsp`: small generic LSP utilities, at some point to be replaced by
+  a generic lib
+- `controller`: LSP controller, a thin layer translating LSP transport
+  layer to `flèche` surface API.
+
 ## Licensing information
 
 The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
@@ -192,5 +197,5 @@ The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
 
 Work on this server has been made possible thanks to many discussions,
 inspirations, and sharing of ideas from colleagues. In particular we'd
-like to thank Rudi Grinberg, Shachar Itzaky, Andrey Mokhov, Clément
-Pit-Claudel, and Makarius Wenzel for their help and advice.
+like to thank Rudi Grinberg, Andrey Mokhov, Clément Pit-Claudel, and
+Makarius Wenzel for their help and advice.
