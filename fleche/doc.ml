@@ -90,7 +90,7 @@ let parse_stm ~st ps =
 let parse_to_terminator : unit Pcoq.Entry.t =
   (* type 'a parser_fun = { parser_fun : te LStream.t -> 'a } *)
   let rec dot st =
-    match Gramlib.LStream.next st with
+    match LStream.next st with
     | Tok.KEYWORD ("." | "..." | "Qed" | "Defined" | "Admitted") | Tok.BULLET _
       -> ()
     | Tok.EOI -> ()
@@ -196,7 +196,9 @@ let process_and_parse ~uri ~version ~fb_queue doc loc doc_handle =
           let loc = Option.get loc in
           let diags = [ mk_diag loc 1 msg ] in
           discard_to_dot doc_handle;
-          let last_tok = Pcoq.Parsable.loc doc_handle in
+          (* Incorrect, limitation of 8.16 API *)
+          let last_tok = loc in
+          (* let last_tok = Pcoq.Parsable.loc doc_handle in *)
           (Skip last_tok, diags, time))
     in
     let doc = { doc with diags = pdiags @ doc.diags } in
@@ -208,7 +210,9 @@ let process_and_parse ~uri ~version ~fb_queue doc loc doc_handle =
     (* We interpret the command now *)
     | Process ast -> (
       let loc = Coq.Ast.loc ast |> Option.get in
-      let last_tok_new = Pcoq.Parsable.loc doc_handle in
+      (* Inexact: limitation of 8.16 API *)
+      let last_tok_new = loc in
+      (* let last_tok_new = Pcoq.Parsable.loc doc_handle in *)
       (* XXX Eager update! *)
       if !Config.v.eager_diagnostics then
         (* this is too noisy *)
@@ -300,7 +304,7 @@ let check ~ofmt:_ ~doc ~fb_queue =
     let processed_content = process_contents ~uri ~contents in
     let loc = init_loc ~uri:doc.uri in
     let handle =
-      Pcoq.Parsable.make ~loc Gramlib.Stream.(of_string processed_content)
+      Pcoq.Parsable.make ~loc Stream.(of_string processed_content)
     in
     (* Resumption disabled for now [not clear 8.16 Gramlib API can do it]*)
     (* let () = Pcoq.Parsable.consume handle offset in *)
