@@ -48,7 +48,7 @@ document won't be rechecked, unless the proof is completed.
 
 [insert gif]
 
-### Goal Display
+### Whole-Document Goal Display
 
 Press `Alt+Enter` (or `Cmd+Enter` in Mac) to show goals at point in a side panel.
 
@@ -74,7 +74,7 @@ timing statistics.
 
 [insert gif]
 
-### Configuration options
+### Client-side configuration options
 
 `coq-lsp` is configurable, and tries to adapt to your own
 workflow. What to do when a proof doesn't check, admit or ignore?  You

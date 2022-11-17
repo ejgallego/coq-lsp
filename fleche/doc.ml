@@ -229,8 +229,9 @@ let print_stats () =
 
   Io.Log.error "cache" (Stats.dump ());
   Io.Log.error "cache" (Memo.CacheStats.stats ());
-  Io.Log.error "coq parsing" (Cstats.dump ());
-  Cstats.reset ();
+  (* this requires patches to Coq *)
+  (* Io.Log.error "coq parsing" (Cstats.dump ()); *)
+  (* Cstats.reset (); *)
   Memo.CacheStats.reset ();
   Stats.reset ()
 

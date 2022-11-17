@@ -1,56 +1,41 @@
 type t = Vernacstate.t
 
-let any_out oc (a : Summary.Frozen.any) =
-  (* let (Summary.Frozen.Any (tag, _value)) = a in *)
-  (* let name = Summary.Dyn.repr tag in *)
-  (* Lsp.Io.log_error "marshall" name; *)
-  Marshal.to_channel oc a []
+(* EJGA: This requires patches to Coq, they are in the lsp_debug branch
 
-let _frozen_out oc (s : Summary.Frozen.t) = Summary.Frozen.iter (any_out oc) s
+   let any_out oc (a : Summary.Frozen.any) = (* let (Summary.Frozen.Any (tag,
+   _value)) = a in *) (* let name = Summary.Dyn.repr tag in *) (*
+   Lsp.Io.log_error "marshall" name; *) Marshal.to_channel oc a []
 
-let summary_out oc (s : Summary.frozen) =
-  let { Summary.summaries; ml_module } = s in
-  (* frozen_out oc summaries; *)
-  Marshal.to_channel oc summaries [];
-  Marshal.to_channel oc ml_module [];
-  ()
+   let _frozen_out oc (s : Summary.Frozen.t) = Summary.Frozen.iter (any_out oc)
+   s
 
-let summary_in ic : Summary.frozen =
-  let summaries = Marshal.from_channel ic in
-  let ml_module = Marshal.from_channel ic in
-  { Summary.summaries; ml_module }
+   let summary_out oc (s : Summary.frozen) = let { Summary.summaries; ml_module
+   } = s in (* frozen_out oc summaries; *) Marshal.to_channel oc summaries [];
+   Marshal.to_channel oc ml_module []; ()
 
-let system_out oc ((l : Lib.frozen), (s : Summary.frozen)) =
-  (* Both parts of system have functional values !! Likely due to Lib.frozen
-     having a Summary.frozen inside? *)
-  Marshal.to_channel oc l [ Closures ];
-  summary_out oc s;
-  ()
+   let summary_in ic : Summary.frozen = let summaries = Marshal.from_channel ic
+   in let ml_module = Marshal.from_channel ic in { Summary.summaries; ml_module
+   }
 
-let system_in ic : Vernacstate.System.t =
-  let l : Lib.frozen = Marshal.from_channel ic in
-  let s : Summary.frozen = summary_in ic in
-  (l, s)
+   let system_out oc ((l : Lib.frozen), (s : Summary.frozen)) = (* Both parts of
+   system have functional values !! Likely due to Lib.frozen having a
+   Summary.frozen inside? *) Marshal.to_channel oc l [ Closures ]; summary_out
+   oc s; ()
 
-let _marshal_out oc st =
-  let { Vernacstate.parsing; system; lemmas; program; opaques; shallow } = st in
-  Marshal.to_channel oc parsing [];
-  system_out oc system;
-  (* lemmas doesn't !! *)
-  Marshal.to_channel oc lemmas [];
-  Marshal.to_channel oc program [];
-  Marshal.to_channel oc opaques [];
-  Marshal.to_channel oc shallow [];
-  ()
+   let system_in ic : Vernacstate.System.t = let l : Lib.frozen =
+   Marshal.from_channel ic in let s : Summary.frozen = summary_in ic in (l, s)
 
-let _marshal_in ic =
-  let parsing = Marshal.from_channel ic in
-  let system = system_in ic in
-  let lemmas = Marshal.from_channel ic in
-  let program = Marshal.from_channel ic in
-  let opaques = Marshal.from_channel ic in
-  let shallow = Marshal.from_channel ic in
-  { Vernacstate.parsing; system; lemmas; program; opaques; shallow }
+   let _marshal_out oc st = let { Vernacstate.parsing; system; lemmas; program;
+   opaques; shallow } = st in Marshal.to_channel oc parsing []; system_out oc
+   system; (* lemmas doesn't !! *) Marshal.to_channel oc lemmas [];
+   Marshal.to_channel oc program []; Marshal.to_channel oc opaques [];
+   Marshal.to_channel oc shallow []; ()
+
+   let _marshal_in ic = let parsing = Marshal.from_channel ic in let system =
+   system_in ic in let lemmas = Marshal.from_channel ic in let program =
+   Marshal.from_channel ic in let opaques = Marshal.from_channel ic in let
+   shallow = Marshal.from_channel ic in { Vernacstate.parsing; system; lemmas;
+   program; opaques; shallow } *)
 
 let marshal_in ic : t = Marshal.from_channel ic
 let marshal_out oc st = Marshal.to_channel oc st []
