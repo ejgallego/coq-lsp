@@ -13,11 +13,93 @@ Moreover, we expect the code to evolve significantly, including a full
 rewrite, so if you would like to contribute, please **first
 coordinate** with the dev team before writing any code.
 
-### Development Channel
+## Development Channel
 
 Our development channel can be found at [Coq's
 Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp), don't
 hesitate to stop by.
+
+## Features
+
+### Incremental compilation and continuous document checking:
+
+Edit your file, and `coq-lsp` will try to re-check only what is
+necessary, continuously. No more dreaded `Ctrl-C Ctrl-N`! Rechecking
+tries to be smart, and will ignore whitespace changes.
+
+[insert gif]
+
+In a future release, `coq-lsp` will save its document cache to disk so
+you can restart your proof session where you left it at the last time.
+
+Incremental support is undergoing refinement, if `coq-lsp` rechecks
+when it should not, please file a bug!
+
+### Smart, Cache-aware Error recovery
+
+`coq-lsp` won't stop checking on errors, but support (and encourages)
+working with proof documents that are only partially
+working. Moreover, error recovery integrates with the incremental
+cache, and will recognize proof structure.
+
+You can edit without fear inside a `Proof. ... Qed.`, the rest of the
+document won't be rechecked, unless the proof is completed.
+
+[insert gif]
+
+### Markdown support
+
+Open a markdown file with a `.mv` extension, `coq-lsp` will check the
+code parts! `coq-lsp` places human friendly documents at the core of
+its design ideas.
+
+[insert gif]
+
+### Document outline:
+
+`coq-lsp` supports document outline, allowing you to jump directly
+to definitions in the document.
+
+[insert gif]
+
+### Detailed timing and memory stats
+
+Hover over any Coq sentence, `coq-lsp` will display detailed memory and
+timing statistics.
+
+[insert gif]
+
+### Configuration options
+
+`coq-lsp` is configurable, and tries to adapt to your own
+workflow. What to do when a proof doesn't check, admit or ignore?  You
+decide!
+
+See the `coq-lsp` extension configuration in VSCode for options available.
+
+[insert gif]
+
+### Reusability, standards, modularity
+
+The incremental document checking library of `coq-lsp` has been
+designed to be reusable by other projects written in OCaml and with
+needs for document validation UI, as well as by other Coq projects
+such as jsCoq.
+
+Moreover, we are strongly based on standards, aiming for the least
+possible extensions.
+
+## Planned features
+
+### Jump to definition
+
+In progress, pending on https://github.com/coq/coq/pull/16261
+
+### "Semantic" goal and document printing
+
+### LaTeX document support
+
+### Suggestions / Search panel
 
 ## Roadmap
 
@@ -43,30 +125,6 @@ implementation of core LSP features, editor support in VS Code.
   a generic lib
 - `controller`: LSP controller, a thin layer translating LSP transport
   layer to `flèche` surface API.
-
-## Features
-
-### Incremental compilation:
-
-Edit your file, and `coq-lsp` will try to re-check only what is necessary.
-
-[insert gif]
-
-Moreover, `coq-lsp` will save its document cache to disk so you can
-restart your proof session where you left it at the last time.
-
-This is currently undergoing refinement.
-
-### Document outline:
-
-`coq-lsp` supports LSP document outline, allowing you to jump directly
-to definitions.
-
-[insert gif]
-
-### Jump to definition
-
-In progress, pending on https://github.com/coq/coq/pull/16261
 
 ## Building the Server
 
@@ -127,6 +185,7 @@ The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
 
 - Ali Caglayan (co-coordinator)
 - Emilio J. Gallego Arias (Inria Paris, co-coordinator)
+- Shachar Itzhaky (Technion)
 - Ramkumar Ramachandra
 
 ## Acknowledgments
