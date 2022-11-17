@@ -98,6 +98,16 @@
             "items": { "type": "string" },
             "default": [ "--std" ],
             "description": "Arguments to the coq-lsp server"
+          },
+          "coq-lsp.eager_diagnostics": {
+            "type": "boolean",
+            "default": true,
+            "description": "Send diagnostics as document is processed; if false, diagnostics are only sent when Coq finishes processing the file"
+          },
+          "coq-lsp.ok_diagnostics": {
+            "type": "boolean",
+            "default": false,
+            "description": "Send a diagnostic for sentences that are Ok; this can choke vsCode easily due to too many diagnostics"
           }
         }
       }

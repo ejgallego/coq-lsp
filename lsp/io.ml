@@ -17,7 +17,7 @@
 (************************************************************************)
 
 module F = Format
-module J = Yojson.Basic
+module J = Yojson.Safe
 
 let mut = Mutex.create ()
 let debug_fmt = ref F.err_formatter

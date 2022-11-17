@@ -8,11 +8,6 @@ let goalPanel : GoalPanel;
 export function activate (context : ExtensionContext) : void {
     window.showInformationMessage('Going to activate!');
 
-    const clientOptions = {
-        documentSelector: [
-            {scheme: 'file', language: 'coq'}
-        ]
-    };
     function coqCommand(command : string, fn : () => void) {
         let disposable = commands.registerCommand('coq-lsp.'+command, fn);
         context.subscriptions.push(disposable);
@@ -25,6 +20,17 @@ export function activate (context : ExtensionContext) : void {
         window.showInformationMessage('Going to start!');
  
         const config = workspace.getConfiguration('coq-lsp');
+        const initializationOptions = {
+            eager_diagnostics: config.eager_diagnostics,
+            ok_diagnostics: config.ok_diagnostics
+        };
+
+        const clientOptions = {
+            documentSelector: [
+                {scheme: 'file', language: 'coq'}
+            ],
+            initializationOptions
+        };
         const serverOptions = { command: config.path, args: config.args };
 
         client = new LanguageClient(

@@ -100,6 +100,8 @@ possible extensions.
 
 In progress, pending on https://github.com/coq/coq/pull/16261
 
+### Server-side Completion Help
+
 ### "Semantic" goal and document printing
 
 ### LaTeX document support

@@ -22,7 +22,7 @@
 (* Whether to send extended lsp messages *)
 let std_protocol = ref true
 
-module J = Yojson.Basic
+module J = Yojson.Safe
 
 let _mk_extra l = if !std_protocol then [] else l
 
