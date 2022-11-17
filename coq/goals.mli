@@ -15,7 +15,11 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type 'a hyp = Names.Id.t list * 'a option * 'a
+type 'a hyp =
+  { names : Names.Id.t list
+  ; def : 'a option
+  ; ty : 'a
+  }
 
 type info =
   { evar : Evar.t
@@ -25,7 +29,7 @@ type info =
 type 'a reified_goal =
   { info : info
   ; ty : 'a
-  ; hyp : 'a hyp list
+  ; hyps : 'a hyp list
   }
 
 type 'a goals =

@@ -15,7 +15,11 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type 'a hyp = Names.Id.t list * 'a option * 'a
+type 'a hyp =
+  { names : Names.Id.t list
+  ; def : 'a option
+  ; ty : 'a
+  }
 
 type info =
   { evar : Evar.t
@@ -25,7 +29,7 @@ type info =
 type 'a reified_goal =
   { info : info
   ; ty : 'a
-  ; hyp : 'a hyp list
+  ; hyps : 'a hyp list
   }
 
 type 'a goals =
@@ -44,16 +48,20 @@ module CDC = Context.Compacted.Declaration
 
 type cdcl = Constr.compacted_declaration
 
-let to_tuple ppx : cdcl -> Names.Id.t list * 'pc option * 'pc =
+let to_tuple ppx : cdcl -> 'pc hyp =
   let open CDC in
   function
-  | LocalAssum (idl, tm) -> (List.map Context.binder_name idl, None, ppx tm)
+  | LocalAssum (idl, tm) ->
+    { names = List.map Context.binder_name idl; def = None; ty = ppx tm }
   | LocalDef (idl, tdef, tm) ->
-    (List.map Context.binder_name idl, Some (ppx tdef), ppx tm)
+    { names = List.map Context.binder_name idl
+    ; def = Some (ppx tdef)
+    ; ty = ppx tm
+    }
 
 (** gets a hypothesis *)
 let get_hyp (ppx : Constr.t -> 'pc) (_sigma : Evd.evar_map) (hdecl : cdcl) :
-    Names.Id.t list * 'pc option * 'pc =
+    'pc hyp =
   to_tuple ppx hdecl
 
 (** gets the constr associated to the type of the current goal *)
@@ -74,15 +82,15 @@ let process_goal_gen ppx sigma g : 'a reified_goal =
   (* why is compaction neccesary... ? [eg for better display] *)
   let ctx = Termops.compact_named_context (Environ.named_context env) in
   let ppx = ppx env sigma in
-  let hyp = List.map (get_hyp ppx sigma) ctx in
+  let hyps = List.map (get_hyp ppx sigma) ctx in
   let info = build_info sigma g in
-  { info; ty = get_goal_type ppx sigma g; hyp }
+  { info; ty = get_goal_type ppx sigma g; hyps }
 
 (* let if_not_empty (pp : Pp.t) = if Pp.(repr pp = Ppcmd_empty) then None else
    Some pp *)
 
 let pr_hyp (h : _ hyp) =
-  let names, _body, ty = h in
+  let { names; ty; def = _ } = h in
   Pp.(prlist Names.Id.print names ++ str " : " ++ ty)
 
 let pr_hyps hyps =
@@ -93,7 +101,7 @@ let pr_hyps hyps =
     ++ fnl ())
 
 let pr_goal ~hyps (g : _ reified_goal) =
-  let hyps = if hyps then pr_hyps g.hyp else Pp.mt () in
+  let hyps = if hyps then pr_hyps g.hyps else Pp.mt () in
   Pp.(hyps ++ g.ty)
 
 let pp_goals (g : _ goals) =

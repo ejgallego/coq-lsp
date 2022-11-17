@@ -1,0 +1,26 @@
+body {
+    font-size:medium;
+    /* font-size: var(--vscode-editor-font-size); */
+    font-family: var(--vscode-editor-font-family);
+    /* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
+}
+
+.hname{
+    color : var(--vscode-editorLineNumber-foreground);
+}
+
+.htype {
+    color : var(--vscode-editor-foreground);
+}
+
+.numGoal{
+    color : var(--vscode-editorLineNumber-foreground);
+}
+
+.goal {
+    color: var(--vscode-editor-foreground);
+}
+
+.sep, hr {
+    color : var(--vscode-editorRuler-foreground);
+}

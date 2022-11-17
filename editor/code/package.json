@@ -59,6 +59,17 @@
       {
         "command": "coq-lsp.restart",
         "title": "Coq LSP: Restart Language Server"
+      },
+      {
+        "command": "coq-lsp.goals",
+        "title": "Coq LSP: Show Goals at Point"
+      }
+    ],
+    "keybindings": [
+      { "command": "coq-lsp.goals",
+        "key": "alt+enter",
+        "mac": "meta+enter",
+        "when": "editorFocus"
       }
     ],
     "configuration": [

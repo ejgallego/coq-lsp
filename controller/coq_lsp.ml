@@ -200,6 +200,27 @@ let do_completion ofmt ~id params =
   LIO.send_json ofmt msg
 (* LIO.log_error "do_completion" (string_of_int line ^"-"^ string_of_int pos) *)
 
+(* Replace by ppx when we can print goals properly in the client *)
+let mk_hyp { Coq.Goals.names; def = _; ty } : Yojson.Basic.t =
+  let names = List.map (fun id -> `String (Names.Id.to_string id)) names in
+  let ty = Pp.string_of_ppcmds ty in
+  `Assoc [ ("names", `List names); ("ty", `String ty) ]
+
+let mk_goal { Coq.Goals.info = _; ty; hyps } : Yojson.Basic.t =
+  let ty = Pp.string_of_ppcmds ty in
+  `Assoc [ ("ty", `String ty); ("hyps", `List (List.map mk_hyp hyps)) ]
+
+let mk_goals { Coq.Goals.goals; _ } = List.map mk_goal goals
+let mk_goals = Option.cata mk_goals []
+
+let do_goals ofmt ~id params =
+  let uri, point = get_docTextPosition params in
+  let doc = Hashtbl.find doc_table uri in
+  let goals = Fleche.Info.LC.goals ~doc ~point PickPrev in
+  let result = `List (mk_goals goals) in
+  let msg = LSP.mk_reply ~id ~result in
+  LIO.send_json ofmt msg
+
 let memo_cache_file = ".coq-lsp.cache"
 
 let memo_save_to_disk () =
@@ -260,6 +281,8 @@ let dispatch_message ofmt ~state dict =
   | "textDocument/completion" -> do_completion ofmt ~id params
   | "textDocument/documentSymbol" -> do_symbols ofmt ~id params
   | "textDocument/hover" -> do_hover ofmt ~id params
+  (* Proof-specific stuff *)
+  | "proof/goals" -> do_goals ofmt ~id params
   (* Notifications *)
   | "textDocument/didOpen" -> do_open ofmt ~state params
   | "textDocument/didChange" -> do_change ofmt ~state params
