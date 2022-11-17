@@ -61,7 +61,7 @@ let parse_stm ~st ps =
 let parse_to_terminator : unit Pcoq.Entry.t =
   (* type 'a parser_fun = { parser_fun : te LStream.t -> 'a } *)
   let rec dot st =
-    match Gramlib.LStream.next st with
+    match LStream.next st with
     | Tok.KEYWORD ("." | "..." | "Qed" | "Defined" | "Admitted") | Tok.BULLET _
       -> ()
     | Tok.EOI -> ()
@@ -154,9 +154,7 @@ let interp_and_info ~parsing_time ~st ~fb_queue ast =
 (* XXX: Imperative problem *)
 let process_and_parse ~uri ~version ~fb_queue doc =
   let loc = Loc.initial (InFile { dirpath = None; file = uri }) in
-  let doc_handle =
-    Pcoq.Parsable.make ~loc Gramlib.Stream.(of_string doc.contents)
-  in
+  let doc_handle = Pcoq.Parsable.make ~loc Stream.(of_string doc.contents) in
   let rec stm doc st diags =
     if Debug.parsing then Io.Log.error "coq" "parsing sentence";
     (* Parsing *)

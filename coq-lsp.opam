@@ -15,24 +15,13 @@ license: "LGPL-2.1"
 doc: "https://coq.github.io/coq-lsp/"
 
 depends: [
-  "ocaml"        {         >= "4.13.1" }
-  "dune"         { build & >= "3.0.2" & < "3.4" }
+  "ocaml"        { >= "4.13.1" }
+  "dune"         { >= "3.0.2"  }
 
   # Not yet required, install Coq deps instead
-  # "coq"          {         >= "8.17"   }
-
-  # coq deps
-  "ocamlfind" {>= "1.8.1"}
-  "zarith" {>= "1.11"}
-
-  # serapi deps
-  "sexplib"             {           >= "v0.13.0"             }
-  "ppx_deriving"        {           >= "4.2.1"               }
-  "ppx_sexp_conv"       {           >= "v0.13.0" & < "v0.16" }
-  "ppx_compare"         {           >= "v0.13.0" & < "v0.16" }
-  "ppx_hash"            {           >= "v0.13.0" & < "v0.16" }
-  "ppx_import"          { build   & >= "1.5-3"               }
-  "ppx_deriving_yojson" {           >= "3.4"                 }
+  "coq"            {         >= "8.16.0" & < "8.17" }
+  "coq-serapi"     {         >= "8.16.0" & < "8.17" }
+  "camlp-streams"  {         >= "5.0"               }
 
   # lsp dependencies
   "cmdliner"     { >= "1.1.0" }
