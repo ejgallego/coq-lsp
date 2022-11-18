@@ -24,12 +24,20 @@ type node =
   ; memo_info : string
   }
 
-type t =
+module Completion : sig
+  type t =
+    | Yes
+    | Stopped of Loc.t (* Location of the last valid token *)
+end
+
+type t = private
   { uri : string
   ; version : int
   ; contents : string
   ; root : Coq.State.t
   ; nodes : node list
+  ; diags : Types.Diagnostic.t list
+  ; completed : Completion.t
   }
 
 val create :
@@ -39,8 +47,7 @@ val create :
   -> contents:string
   -> t
 
+val bump_version : version:int -> text:string -> t -> t
+
 val check :
-     ofmt:Format.formatter
-  -> doc:t
-  -> fb_queue:Coq.Message.t list ref
-  -> t * Coq.State.t * Types.Diagnostic.t list
+  ofmt:Format.formatter -> doc:t -> fb_queue:Coq.Message.t list ref -> t

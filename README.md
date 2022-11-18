@@ -94,6 +94,15 @@ such as jsCoq.
 Moreover, we are strongly based on standards, aiming for the least
 possible extensions.
 
+### A Platform for Research !
+
+A key `coq-lsp` goal is to serve as central platform for researchers
+in Human-Computer-Interaction, Machine Learning, and Software
+Engineering willing to interact with Coq.
+
+Ẁith this goal, `coq-lsp` extends and will eventually replace
+`coq-serapi`, which has been used by many to that purpose.
+
 ## Planned features
 
 ### Jump to definition

@@ -18,6 +18,12 @@ type node =
   ; memo_info : string
   }
 
+module Completion = struct
+  type t =
+    | Yes
+    | Stopped of Loc.t (* Location of the last valid token *)
+end
+
 (* Private. A doc is a list of nodes for now. The first element in the list is
    assumed to be the tip of the document. The initial document is the empty
    list. *)
@@ -27,10 +33,9 @@ type t =
   ; contents : string
   ; root : Coq.State.t
   ; nodes : node list
+  ; diags : Types.Diagnostic.t list
+  ; completed : Completion.t
   }
-
-(* let mk_error ~doc pos msg =
- *   LSP.mk_diagnostics ~uri:doc.uri ~version:doc.version [pos, 1, msg, None] *)
 
 let mk_doc state =
   let root_state, vo_load_path, ml_include_path, _ = state in
@@ -39,8 +44,32 @@ let mk_doc state =
   Coq.Init.doc_init ~root_state ~vo_load_path ~ml_include_path ~libname
     ~require_libs
 
+let init_loc ~uri = Loc.initial (InFile { dirpath = None; file = uri })
+
 let create ~state ~uri ~version ~contents =
-  { uri; contents; version; root = mk_doc state; nodes = [] }
+  { uri
+  ; contents
+  ; version
+  ; root = mk_doc state
+  ; nodes = []
+  ; diags = []
+  ; completed = Stopped (init_loc ~uri)
+  }
+
+let bump_version ~version ~text doc =
+  (* We need to resume checking in full when a new document *)
+  { doc with
+    version
+  ; nodes = []
+  ; diags = []
+  ; contents = text
+  ; completed = Stopped (init_loc ~uri:doc.uri)
+  }
+
+let add_node ~node ~diags doc =
+  { doc with nodes = node :: doc.nodes; diags = diags @ doc.diags }
+
+let set_completion ~completed doc = { doc with completed }
 
 (* XXX: Save on close? *)
 (* let close_doc _modname = () *)
@@ -100,9 +129,9 @@ let state_recovery_heuristic st v =
   | _ -> st
 
 type process_action =
-  | EOF
-  | Skip
-  | Process of Coq.Ast.t
+  | EOF of Completion.t (* completed *)
+  | Skip of Loc.t (* last valid token *)
+  | Process of Coq.Ast.t (* ast to process *)
 
 (* Make each fb a diag *)
 let _pp_located fmt (_loc, pp) = Pp.pp_with fmt pp
@@ -152,39 +181,40 @@ let interp_and_info ~parsing_time ~st ~fb_queue ast =
   (res, memo_info ^ "\n___\n" ^ mem_info)
 
 (* XXX: Imperative problem *)
-let process_and_parse ~uri ~version ~fb_queue doc =
-  let loc = Loc.initial (InFile { dirpath = None; file = uri }) in
-  let doc_handle =
-    Pcoq.Parsable.make ~loc Gramlib.Stream.(of_string doc.contents)
-  in
-  let rec stm doc st diags =
+let process_and_parse ~uri ~version ~fb_queue doc loc doc_handle =
+  let rec stm doc st last_ok =
     if Debug.parsing then Io.Log.error "coq" "parsing sentence";
     (* Parsing *)
-    let action, diags, parsing_time =
+    let action, pdiags, parsing_time =
       match parse_stm ~st doc_handle with
-      | Coq.Protect.R.Interrupted, time -> (EOF, diags, time)
+      | Coq.Protect.R.Interrupted, time -> (EOF (Stopped last_ok), [], time)
       | Coq.Protect.R.Completed res, time -> (
         match res with
-        | Ok None -> (EOF, diags, time)
-        | Ok (Some ast) -> (Process ast, diags, time)
+        | Ok None -> (EOF Yes, [], time)
+        | Ok (Some ast) -> (Process ast, [], time)
         | Error (loc, msg) ->
           let loc = Option.get loc in
-          let diags = mk_diag loc 1 msg :: diags in
+          let diags = [ mk_diag loc 1 msg ] in
           discard_to_dot doc_handle;
-          (Skip, diags, time))
+          let offset = Pcoq.Parsable.loc doc_handle in
+          (Skip offset, diags, time))
     in
+    let doc = { doc with diags = pdiags @ doc.diags } in
     (* Execution *)
     match action with
     (* End of file *)
-    | EOF -> (doc, st, diags)
-    | Skip -> stm doc st diags
+    | EOF completed -> set_completion ~completed doc
+    | Skip last_ok -> stm doc st last_ok
     (* We interpret the command now *)
     | Process ast -> (
       let loc = Coq.Ast.loc ast |> Option.get in
+      let last_ok_new = Pcoq.Parsable.loc doc_handle in
       (* XXX Eager update! *)
-      (if !Config.v.eager_diagnostics then
-       let proc_diag = mk_diag loc 3 (Pp.str "Processing") in
-       Io.Report.diagnostics ~uri ~version (proc_diag :: diags));
+      if !Config.v.eager_diagnostics then
+        (* this is too noisy *)
+        (* let proc_diag = mk_diag loc 3 (Pp.str "Processing") in *)
+        (* Io.Report.diagnostics ~uri ~version (proc_diag :: doc.diags)); *)
+        Io.Report.diagnostics ~uri ~version doc.diags;
       (if Debug.parsing then
        let line = "[l: " ^ string_of_int loc.Loc.line_nb ^ "] " in
        Io.Log.error "coq"
@@ -195,34 +225,36 @@ let process_and_parse ~uri ~version ~fb_queue doc =
       match res with
       | Coq.Protect.R.Interrupted ->
         (* Exit *)
-        (doc, st, diags)
+        set_completion ~completed:(Stopped last_ok) doc
       | Coq.Protect.R.Completed res -> (
         match res with
         | Ok { res = state; feedback } ->
           (* let goals = Coq.State.goals *)
-          let ok_diag = mk_diag loc 3 (Pp.str "OK") in
           let diags =
-            if !Config.v.ok_diagnostics then ok_diag :: diags else diags
+            if !Config.v.ok_diagnostics then
+              let ok_diag = mk_diag loc 3 (Pp.str "OK") in
+              [ ok_diag ]
+            else []
           in
           let fb_diags = process_feedback ~loc feedback in
           let diags = fb_diags @ diags in
           let node = { ast; state; memo_info } in
-          let doc = { doc with nodes = node :: doc.nodes } in
-          stm doc state diags
+          let doc = add_node ~node ~diags doc in
+          stm doc state last_ok_new
         | Error (err_loc, msg) ->
           let loc = Option.default loc err_loc in
-          let diags = mk_error_diagnostic ~loc ~msg ~ast :: diags in
+          let diags = [ mk_error_diagnostic ~loc ~msg ~ast ] in
           (* FB should be handled by Coq.Protect.eval XXX *)
           let fb_diags = List.rev !fb_queue |> process_feedback ~loc in
           fb_queue := [];
           let diags = fb_diags @ diags in
           let st = state_recovery_heuristic st ast in
           let node = { ast; state = st; memo_info } in
-          let doc = { doc with nodes = node :: doc.nodes } in
-          stm doc st diags))
+          let doc = add_node ~node ~diags doc in
+          stm doc st last_ok_new))
   in
   (* we re-start from the root *)
-  stm doc doc.root []
+  stm doc doc.root loc
 
 let print_stats () =
   (if !Config.v.mem_stats then
@@ -257,12 +289,32 @@ let process_contents ~uri ~contents =
   if is_markdown then markdown_process contents else contents
 
 let check ~ofmt:_ ~doc ~fb_queue =
-  let uri, version, contents = (doc.uri, doc.version, doc.contents) in
-  let processed_content = process_contents ~uri ~contents in
-  (* Start library *)
-  let doc = { doc with nodes = []; contents = processed_content } in
-  let doc, st, diags = (process_and_parse ~uri ~version ~fb_queue) doc in
-  let doc = { doc with nodes = List.rev doc.nodes; contents } in
-  print_stats ();
-  (* (doc, st, json_of_diags ~uri ~version diags) *)
-  (doc, st, diags)
+  match doc.completed with
+  | Yes ->
+    Io.Log.error "check" "completed=yes";
+    doc
+  | Stopped loc ->
+    Io.Log.error "check" ("completed=stopped at offset: " ^ string_of_int loc.ep);
+    let uri, version, contents = (doc.uri, doc.version, doc.contents) in
+    (* Process markdown *)
+    let processed_content = process_contents ~uri ~contents in
+    let loc = init_loc ~uri:doc.uri in
+    let handle =
+      Pcoq.Parsable.make ~loc Gramlib.Stream.(of_string processed_content)
+    in
+    (* Resumption disabled for now [not clear 8.16 Gramlib API can do it]*)
+    (* let () = Pcoq.Parsable.consume handle offset in *)
+    let doc =
+      { doc with contents = processed_content; diags = []; nodes = [] }
+    in
+    let doc = process_and_parse ~uri ~version ~fb_queue doc loc handle in
+    (* Restore the contents, reverse the accumulators *)
+    let doc =
+      { doc with
+        nodes = List.rev doc.nodes
+      ; diags = List.rev doc.diags
+      ; contents
+      }
+    in
+    print_stats ();
+    doc

@@ -129,17 +129,10 @@ let lsp_of_diags ~uri ~version diags =
 (* Notification handling; reply is optional / asynchronous *)
 let do_check_text ofmt ~state ~doc =
   let _, _, _, fb_queue = state in
-  let doc, _final_st, diags = Fleche.Doc.check ~ofmt ~doc ~fb_queue in
+  let doc = Fleche.Doc.check ~ofmt ~doc ~fb_queue in
   Hashtbl.replace doc_table doc.uri doc;
-  let diags = lsp_of_diags ~uri:doc.uri ~version:doc.version diags in
+  let diags = lsp_of_diags ~uri:doc.uri ~version:doc.version doc.diags in
   LIO.send_json ofmt @@ diags
-
-let do_change ofmt ~doc change =
-  let open Fleche.Doc in
-  LIO.log_error "checking file"
-    (doc.uri ^ " / version: " ^ string_of_int doc.version);
-  let doc = { doc with contents = string_field "text" change } in
-  do_check_text ofmt ~doc
 
 let do_open ofmt ~state params =
   let document = dict_field "textDocument" params in
@@ -156,15 +149,35 @@ let do_open ofmt ~state params =
   Hashtbl.add doc_table uri doc;
   do_check_text ofmt ~state ~doc
 
+let check_completed dict =
+  let params = odict_field "params" dict in
+  let document = dict_field "textDocument" params in
+  let uri = string_field "uri" document in
+  let doc = Hashtbl.find doc_table uri in
+  doc.completed = Yes
+
 let do_change ofmt ~state params =
   let document = dict_field "textDocument" params in
   let uri, version =
     (string_field "uri" document, int_field "version" document)
   in
+  LIO.log_error "checking file" (uri ^ " / version: " ^ string_of_int version);
   let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
-  let doc = Hashtbl.find doc_table uri in
-  let doc = { doc with Fleche.Doc.version } in
-  List.iter (do_change ofmt ~state ~doc) changes
+  match changes with
+  | [] -> ()
+  | _ :: _ :: _ ->
+    LIO.log_error "do_change"
+      "more than one change unsupported due to sync method";
+    assert false
+  | change :: _ ->
+    let text = string_field "text" change in
+    let doc = Hashtbl.find doc_table uri in
+    let doc =
+      (* Note that we can restart the checking with the same version! *)
+      if version > doc.version then Fleche.Doc.bump_version ~version ~text doc
+      else doc
+    in
+    do_check_text ofmt ~state ~doc
 
 let do_close _ofmt params =
   let document = dict_field "textDocument" params in
@@ -290,21 +303,26 @@ let memo_read_from_disk () =
     ()
 
 let memo_read_from_disk () = if false then memo_read_from_disk ()
-let event_queue = ref (Queue.create ())
 
-let queue_optimize dict =
-  (* remove redudant didChanges *)
-  let new_method = string_field "method" dict in
-  if String.equal new_method "textDocument/didChange" then
-    (* Request Coq to stop in case it is already checking *)
-    Control.interrupt := true;
-  match Queue.peek_opt !event_queue with
-  | None -> ()
-  | Some dict' ->
-    let top_method = string_field "method" dict' in
-    if String.equal top_method "textDocument/didChange" then (
-      LIO.log_error "queue" "dropped redundant didChange from top of the queue";
-      ignore (Queue.pop !event_queue))
+(* The rule is: we keep the latest change check notification in the variable; it
+   is only served when the rest of requests are served.
+
+   Note that we should add a method to detect stale requests; maybe cancel them
+   when a new edit comes. *)
+let change_pending = ref None
+let request_queue = Queue.create ()
+
+let process_input (com : J.t) =
+  let dict = U.to_assoc com in
+  let method_ = string_field "method" dict in
+  match method_ with
+  | "textDocument/didChange" ->
+    (* TODO: cancel all requests? *)
+    change_pending := Some dict;
+    Control.interrupt := true
+  | _ ->
+    Queue.push dict request_queue;
+    Control.interrupt := true
 
 exception Lsp_exit
 
@@ -335,37 +353,39 @@ let dispatch_message ofmt ~state dict =
   | "initialized" | "workspace/didChangeWatchedFiles" -> ()
   | msg -> LIO.log_error "no_handler" msg
 
-let process_input (com : J.t) =
-  let dict = U.to_assoc com in
-  (* Optimization: don't stack multiple didChange msgs *)
-  queue_optimize dict;
-  Queue.add dict !event_queue;
-  ()
+let dispatch_message ofmt ~state com =
+  try dispatch_message ofmt ~state com with
+  | U.Type_error (msg, obj) -> LIO.log_object msg obj
+  | Lsp_exit -> raise Lsp_exit
+  | exn ->
+    let bt = Printexc.get_backtrace () in
+    let iexn = Exninfo.capture exn in
+    LIO.log_error "process_queue"
+      (if Printexc.backtrace_status () then "bt=true" else "bt=false");
+    let method_name = string_field "method" com in
+    LIO.log_error "process_queue" ("exn in method: " ^ method_name);
+    LIO.log_error "process_queue" (Printexc.to_string exn);
+    LIO.log_error "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
+    LIO.log_error "BT" bt
 
 let rec process_queue ofmt ~state =
-  (match Queue.peek_opt !event_queue with
-  | None ->
+  (match Queue.peek_opt request_queue with
+  | None -> (
     (* LIO.log_error "process_queue" "queue is empty, yielding!"; *)
-    Thread.delay 0.1
-  | Some com -> (
+    match !change_pending with
+    | Some com ->
+      Control.interrupt := false;
+      dispatch_message ofmt ~state com;
+      (* Only if completed! *)
+      if check_completed com then change_pending := None
+    | None -> Thread.delay 0.1)
+  | Some com ->
     (* We let Coq work normally now *)
     Control.interrupt := false;
     (* TODO we should optimize the queue *)
-    ignore (Queue.pop !event_queue);
+    ignore (Queue.pop request_queue);
     LIO.log_error "process_queue" "We got job to do";
-    try dispatch_message ofmt ~state com with
-    | U.Type_error (msg, obj) -> LIO.log_object msg obj
-    | Lsp_exit -> raise Lsp_exit
-    | exn ->
-      let bt = Printexc.get_backtrace () in
-      let iexn = Exninfo.capture exn in
-      LIO.log_error "process_queue"
-        (if Printexc.backtrace_status () then "bt=true" else "bt=false");
-      let method_name = string_field "method" com in
-      LIO.log_error "process_queue" ("exn in method: " ^ method_name);
-      LIO.log_error "process_queue" (Printexc.to_string exn);
-      LIO.log_error "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
-      LIO.log_error "BT" bt));
+    dispatch_message ofmt ~state com);
   process_queue ofmt ~state
 
 let lsp_cb oc =
