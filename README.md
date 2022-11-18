@@ -8,7 +8,7 @@ as a framework for interface experimentation.
 
 **Warning**: This project is at a _early_ stage, and it has **known
 bugs**, see the issue tracker for more information. Use at your own
-risk.
+risk. See [install information](#Installation) for install instructions.
 
 Moreover, we expect the code to evolve significantly, contributions
 are very welcome, but please **first coordinate** with the dev team
@@ -129,7 +129,15 @@ Supporting inlays and Lean-style infoview.
 
 ### Suggestions / Search panel
 
-## Building the Server
+## Installation
+
+### Requirements
+
+### Server: opam
+
+TODO
+
+### Server: Building from sources
 
 To build the server, you'll need and environment with the dependencies
 stated in `coq-lsp.opam`. [Opam](https://opam.ocaml.org/) users can do
@@ -138,14 +146,18 @@ stated in `coq-lsp.opam`. [Opam](https://opam.ocaml.org/) users can do
 Once you have done that, do `make`, and the server will be build under
 `_build/install/default/bin/`
 
-### Nix support
+### Server: Nix development support
 
 There is a Nix flake available which will setup the necessery environment and
 can be used via `nix develop`. You can then run `make` as usual.
 
 ## Editor support and Client
 
-### Visual Studio Code
+### Visual Studio Code: Marketplace
+
+TODO
+
+### Visual Studio Code: Building from Sources
 
 Assuming the server is built, install the extension as follows:
 
