@@ -149,7 +149,7 @@ let interp_and_info ~parsing_time ~st ~fb_queue ast =
     Format.asprintf "major words: %a | diff %a" pp_words mw_after pp_words
       (mw_after -. mw_prev)
   in
-  (res, memo_info ^ "\n" ^ mem_info)
+  (res, memo_info ^ "\n___\n" ^ mem_info)
 
 (* XXX: Imperative problem *)
 let process_and_parse ~uri ~version ~fb_queue doc =
