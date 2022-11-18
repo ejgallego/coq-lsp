@@ -100,11 +100,32 @@ possible extensions.
 
 In progress, pending on https://github.com/coq/coq/pull/16261
 
+### Proof skipping
+
+Configure which proofs to skip or delay, to make your document
+workflow more reactive.
+
+### Contextual continuous checking
+
+Check only what is visible, _à la_ Isabelle.
+
 ### Server-side Completion Help
 
 ### "Semantic" goal and document printing
 
 ### LaTeX document support
+
+### Workspace Integration
+
+Don't worry about ever having to build your project again, `coq-lsp`
+will detect your workspace and build setup, and will keep everything
+up to date automatically.
+
+### Responsible elaboration and refinement
+
+Supporting inlays and Lean-style infoview.
+
+### "Computational", Jupyter-style Documents
 
 ### Suggestions / Search panel
 
