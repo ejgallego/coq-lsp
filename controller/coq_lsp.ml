@@ -214,21 +214,14 @@ let get_docTextPosition params =
 let do_hover ofmt ~id params =
   let uri, point = get_docTextPosition params in
   let doc = Hashtbl.find doc_table uri in
-  let goal_string =
-    Fleche.Info.LC.goals ~doc ~point Exact
-    |> Option.cata
-         (fun goals -> Coq.Goals.pp_goals goals |> Pp.string_of_ppcmds)
-         "<em>no goals</em>"
-  in
   let info_string =
     Fleche.Info.LC.info ~doc ~point Exact |> Option.default "no info"
   in
-  let hover_string = goal_string ^ "\n---\n" ^ info_string in
   let result =
     `Assoc
       [ ( "contents"
         , `Assoc
-            [ ("kind", `String "markdown"); ("value", `String hover_string) ] )
+            [ ("kind", `String "markdown"); ("value", `String info_string) ] )
       ]
   in
   let msg = LSP.mk_reply ~id ~result in
