@@ -155,13 +155,16 @@ module Make (P : Point) : S with module P := P = struct
 
   let pr_goal st =
     let ppx env sigma x =
-      (* Jscoq_util.pp_opt *) Printer.pr_ltype_env env sigma x
+      (* It is conveneint to optimize the Pp.t type, see [Jscoq_util.pp_opt] *)
+      Printer.pr_ltype_env ~goal_concl_style:true env sigma x
     in
     let lemmas = Coq.State.lemmas ~st in
     Option.cata (reify_goals ppx) None lemmas
 
   let goals ~doc ~point approx =
-    find ~doc ~point approx |> obind (fun node -> pr_goal node.Doc.state)
+    find ~doc ~point approx
+    |> obind (fun node ->
+           Coq.State.in_state ~st:node.Doc.state ~f:pr_goal node.Doc.state)
 
   let info ~doc ~point approx =
     find ~doc ~point approx |> Option.map (fun node -> node.Doc.memo_info)
