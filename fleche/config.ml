@@ -8,6 +8,9 @@ type t =
   ; eager_diagnostics : bool [@default true]
         (** [eager_diagnostics] Send (full) diagnostics after processing each *)
   ; ok_diagnostics : bool [@default false]  (** Show diagnostic for OK lines *)
+  ; goal_after_tactic : bool [@default false]
+        (** When showing goals and the cursor is in a tactic, if false, show
+            goals before executing the tactic, if true, show goals after *)
   }
 
 let default =
@@ -15,6 +18,7 @@ let default =
   ; gc_quick_stats = true
   ; eager_diagnostics = true
   ; ok_diagnostics = false
+  ; goal_after_tactic = false
   }
 
 let v = ref default

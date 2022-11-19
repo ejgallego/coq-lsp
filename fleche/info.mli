@@ -34,8 +34,9 @@ module LineCol : Point with type t = int * int
 module Offset : Point with type t = int
 
 type approx =
-  | Exact
-  | PickPrev
+  | Exact  (** Exact on point *)
+  | PrevIfEmpty  (** If no match, return prev *)
+  | Prev  (** If no match, return prev, if match, too *)
 
 (** Located queries *)
 module type S = sig

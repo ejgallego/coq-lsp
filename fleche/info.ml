@@ -103,7 +103,10 @@ end
 
 type approx =
   | Exact
-  | PickPrev
+  (* Exact on point *)
+  | PrevIfEmpty
+  (* If no match, return prev *)
+  | Prev
 
 module type S = sig
   module P : Point
@@ -129,8 +132,11 @@ module Make (P : Point) : S with module P := P = struct
         let loc = Coq.Ast.loc node.Doc.ast in
         match approx with
         | Exact -> if P.in_range ?loc point then Some node else find None xs
-        | PickPrev ->
-          if P.gt_range ?loc point then prev else find (Some node) xs)
+        | PrevIfEmpty ->
+          if P.gt_range ?loc point then prev else find (Some node) xs
+        | Prev ->
+          if P.gt_range ?loc point || P.in_range ?loc point then prev
+          else find (Some node) xs)
     in
     find None doc.Doc.nodes
 
