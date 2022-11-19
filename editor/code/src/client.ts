@@ -3,8 +3,14 @@ import { LanguageClient } from "vscode-languageclient/node";
 import { GoalPanel } from "./goals";
 
 let client : LanguageClient;
-let goalPanel : GoalPanel;
+let goalPanel : GoalPanel | null;
 
+export function panelFactory(context : ExtensionContext) {
+    let panel = window.createWebviewPanel('goals', 'Goals', ViewColumn.Two, {});
+    panel.onDidDispose(() => { goalPanel = null; });
+    const styleUri = panel.webview.asWebviewUri(Uri.joinPath(context.extensionUri, 'media', 'styles.css'));
+    return new GoalPanel(client, panel, styleUri);
+}
 export function activate (context : ExtensionContext) : void {
     window.showInformationMessage('Going to activate!');
 
@@ -15,6 +21,7 @@ export function activate (context : ExtensionContext) : void {
     const restart = () => {
         if (client) {
             client.stop();
+            if(goalPanel) goalPanel.dispose();
         }
 
         window.showInformationMessage('Going to start!');
@@ -42,23 +49,19 @@ export function activate (context : ExtensionContext) : void {
         client.start();
 
         // XXX: Fix this mess with the lifetime of the panel  
-        let panel = window.createWebviewPanel('goals', 'Goals', ViewColumn.Two, {});
-        const styleUri = panel.webview.asWebviewUri(Uri.joinPath(context.extensionUri, 'media', 'styles.css'));
-        goalPanel = new GoalPanel(client, panel, styleUri);
+        goalPanel = panelFactory(context);
 };
 
     const checkPanelAlive = () => {
         if(!goalPanel) {
-            let panel = window.createWebviewPanel('goals', 'Goals', ViewColumn.Two, {});
-            const styleUri = panel.webview.asWebviewUri(Uri.joinPath(context.extensionUri, 'media', 'styles.css'));
-            goalPanel = new GoalPanel(client, panel, styleUri);
+            goalPanel = panelFactory(context);
         }
     }
     const goals = () => {
         checkPanelAlive();
         let uri = window.activeTextEditor?.document?.uri;
         let position = window.activeTextEditor?.selection?.active;
-        if(uri && position) {
+        if(goalPanel && uri && position) {
             goalPanel.update(uri, position);
         }
     }   
