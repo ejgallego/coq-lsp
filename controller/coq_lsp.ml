@@ -251,10 +251,14 @@ let mk_goal { Coq.Goals.info = _; ty; hyps } : Yojson.Safe.t =
 let mk_goals { Coq.Goals.goals; _ } = List.map mk_goal goals
 let mk_goals = Option.cata mk_goals []
 
+let goals_mode =
+  if !Fleche.Config.v.goal_after_tactic then Fleche.Info.PrevIfEmpty
+  else Fleche.Info.Prev
+
 let do_goals ofmt ~id params =
   let uri, point = get_docTextPosition params in
   let doc = Hashtbl.find doc_table uri in
-  let goals = Fleche.Info.LC.goals ~doc ~point PickPrev in
+  let goals = Fleche.Info.LC.goals ~doc ~point goals_mode in
   let result = `List (mk_goals goals) in
   let msg = LSP.mk_reply ~id ~result in
   LIO.send_json ofmt msg

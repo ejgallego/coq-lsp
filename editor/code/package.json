@@ -108,6 +108,11 @@
             "type": "boolean",
             "default": false,
             "description": "Send a diagnostic for sentences that are Ok; this can choke vsCode easily due to too many diagnostics"
+          },
+          "coq-lsp.goal_after_tactic": {
+            "type": "boolean",
+            "default": false,
+            "description": "When showing goals and the cursor is in a tactic, if false, show goals before executing the tactic, if true, show goals after"
           }
         }
       }
