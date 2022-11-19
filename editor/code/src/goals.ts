@@ -97,10 +97,16 @@ class GoalView {
 
 export class GoalPanel {
     private view : GoalView;
+    private panel : WebviewPanel;
+
     constructor(client : LanguageClient, panel : WebviewPanel, styleUri : Uri) {
+        this.panel = panel;
         this.view = new GoalView(client, panel.webview, styleUri);
     }
     update(uri : Uri, position : Position) {
         this.view.update(uri, position);
+    }
+    dispose() {
+        this.panel.dispose();
     }
 }
