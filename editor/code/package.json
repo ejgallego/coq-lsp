@@ -9,7 +9,8 @@
     "Shachar Itzhaky <shachari@cs.technion.ac.il>",
     "Ramkumar Ramachandra <r@artagnon.com>"
   ],
-  "publisher": "Inria",
+
+  "publisher": "ejgallego",
   "engines": {
     "vscode": "^1.73.0"
   },
@@ -66,7 +67,8 @@
       }
     ],
     "keybindings": [
-      { "command": "coq-lsp.goals",
+      {
+        "command": "coq-lsp.goals",
         "key": "alt+enter",
         "mac": "meta+enter",
         "when": "editorFocus"
@@ -95,8 +97,12 @@
           },
           "coq-lsp.args": {
             "type": "array",
-            "items": { "type": "string" },
-            "default": [ "--std" ],
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "--std"
+            ],
             "description": "Arguments to the coq-lsp server"
           },
           "coq-lsp.eager_diagnostics": {
@@ -119,17 +125,22 @@
     ]
   },
   "devDependencies": {
-    "typescript": "^4.8.4",
     "@types/node": "^10.14.15",
-    "@types/vscode": "^1.73.0"
+    "@types/vscode": "^1.73.0",
+    "esbuild": "^0.15.14",
+    "typescript": "^4.8.4"
   },
   "dependencies": {
     "vscode-languageclient": "^8.0.2"
   },
   "main": "./out/src/client.js",
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
+    "esbuild-base": "esbuild ./src/client.ts --bundle --outfile=out/src/client.js --external:vscode --format=cjs --platform=node",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
     "compile": "tsc -p ./",
+    "test-compile": "tsc -p ./",
     "watch": "tsc -watch -p ./"
   }
 }
