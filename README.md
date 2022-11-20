@@ -71,7 +71,7 @@ Press `Alt+Enter` (or `Cmd+Enter` in Mac) to show goals at point in a side panel
 ### Markdown support
 
 Open a markdown file with a `.mv` extension, `coq-lsp` will check the
-code parts! `coq-lsp` places human friendly documents at the core of
+code parts! `coq-lsp` places human-friendly documents at the core of
 its design ideas.
 
 <img alt="Coq + Markdown Editing" height="286px" src="etc/img/lsp-markdown.gif"/>
