@@ -8,7 +8,7 @@ as a framework for interface experimentation.
 
 **Warning**: This project is at a _early_ stage, and it has **known
 bugs**, see the issue tracker for more information. Use at your own
-risk. See [install information](#Installation) for install instructions.
+risk.
 
 Moreover, we expect the code to evolve significantly, contributions
 are very welcome, but please **first coordinate** with the dev team
@@ -19,6 +19,15 @@ before writing any code.
 Our development channel can be found at [Coq's
 Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp), don't
 hesitate to stop by.
+
+## Installation
+
+- `coq-lsp` server: `opam install coq-lsp`
+
+## Clients
+
+- Visual Studio Code: https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
+- GNU Emacs: `M-x eglot [Enter] coq-lsp [Enter]`
 
 ## Features
 
@@ -140,15 +149,9 @@ Supporting inlays and Lean-style infoview.
 
 ### Suggestions / Search panel
 
-## Installation
+## Development / Building from sources
 
-### Requirements
-
-### Server: opam
-
-TODO
-
-### Server: Building from sources
+### Server:
 
 To build the server, you'll need and environment with the dependencies
 stated in `coq-lsp.opam`. [Opam](https://opam.ocaml.org/) users can do
@@ -162,39 +165,28 @@ Once you have done that, do `make`, and the server will be build under
 There is a Nix flake available which will setup the necessery environment and
 can be used via `nix develop`. You can then run `make` as usual.
 
-## Editor support and Client
+### Visual Studio Code:
 
-### Visual Studio Code: Marketplace
+Run `npm install && npm run compile` in `editor/code`.
 
-TODO
+```sh
+(cd editor/code && npm i && npm run compile)
+```
 
-### Visual Studio Code: Building from Sources
+Now you can launch VS Code through `dune exec -- code -n` , this will
+setup the right environment variables such as `PATH` and `OCAMLPATH`.
+Alternatively, you can just put the server in path and run `code`.
 
-Assuming the server is built, install the extension as follows:
-
- 1. Symlink the `editor/code` directory into `~/.vscode/extensions/`.
-    ```sh
-    ln -s ~/path/to/coq-lsp/editor/code ~/.vscode
-    ```
-    (link source should be absolute or else it won't work!)
- 2. Run `npm install && npm run compile` in `editor/code`.
-    ```sh
-    (cd editor/code && npm i && npm run compile)
-    ```
-
-Now you can launch VS Code through `dune`: `dune exec -- code -n` ,
-this will setup the right environment variables such as `PATH` and
-`OCAMLPATH`.
-
-Alternatively, you can just install the server and run `code`.
+Now, run the extension normally using the left "Run and Debug" panel
+in Visual Studio Code.
 
 ### Emacs
 
 You can use this mode with [eglot]() with `$path_to_server
---std`. Note that `--std` is needed otherwise eglot will choke due to
+--std`. Note that `--std` is needed otherwise eglot may choke due to
 extra messages.
 
-## Roadmap
+### Roadmap
 
 For now the main focus of the project to write clean and maintainable
 code, and to provide a smooth user experience.
