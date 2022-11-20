@@ -182,12 +182,12 @@ let interp_and_info ~parsing_time ~st ~fb_queue ast =
 
 (* XXX: Imperative problem *)
 let process_and_parse ~uri ~version ~fb_queue doc loc doc_handle =
-  let rec stm doc st last_ok =
+  let rec stm doc st last_tok =
     if Debug.parsing then Io.Log.error "coq" "parsing sentence";
     (* Parsing *)
     let action, pdiags, parsing_time =
       match parse_stm ~st doc_handle with
-      | Coq.Protect.R.Interrupted, time -> (EOF (Stopped last_ok), [], time)
+      | Coq.Protect.R.Interrupted, time -> (EOF (Stopped last_tok), [], time)
       | Coq.Protect.R.Completed res, time -> (
         match res with
         | Ok None -> (EOF Yes, [], time)
@@ -196,19 +196,19 @@ let process_and_parse ~uri ~version ~fb_queue doc loc doc_handle =
           let loc = Option.get loc in
           let diags = [ mk_diag loc 1 msg ] in
           discard_to_dot doc_handle;
-          let offset = Pcoq.Parsable.loc doc_handle in
-          (Skip offset, diags, time))
+          let last_tok = Pcoq.Parsable.loc doc_handle in
+          (Skip last_tok, diags, time))
     in
     let doc = { doc with diags = pdiags @ doc.diags } in
     (* Execution *)
     match action with
     (* End of file *)
     | EOF completed -> set_completion ~completed doc
-    | Skip last_ok -> stm doc st last_ok
+    | Skip last_tok -> stm doc st last_tok
     (* We interpret the command now *)
     | Process ast -> (
       let loc = Coq.Ast.loc ast |> Option.get in
-      let last_ok_new = Pcoq.Parsable.loc doc_handle in
+      let last_tok_new = Pcoq.Parsable.loc doc_handle in
       (* XXX Eager update! *)
       if !Config.v.eager_diagnostics then
         (* this is too noisy *)
@@ -225,7 +225,7 @@ let process_and_parse ~uri ~version ~fb_queue doc loc doc_handle =
       match res with
       | Coq.Protect.R.Interrupted ->
         (* Exit *)
-        set_completion ~completed:(Stopped last_ok) doc
+        set_completion ~completed:(Stopped last_tok) doc
       | Coq.Protect.R.Completed res -> (
         match res with
         | Ok { res = state; feedback } ->
@@ -240,7 +240,7 @@ let process_and_parse ~uri ~version ~fb_queue doc loc doc_handle =
           let diags = fb_diags @ diags in
           let node = { ast; state; memo_info } in
           let doc = add_node ~node ~diags doc in
-          stm doc state last_ok_new
+          stm doc state last_tok_new
         | Error (err_loc, msg) ->
           let loc = Option.default loc err_loc in
           let diags = [ mk_error_diagnostic ~loc ~msg ~ast ] in
@@ -251,7 +251,7 @@ let process_and_parse ~uri ~version ~fb_queue doc loc doc_handle =
           let st = state_recovery_heuristic st ast in
           let node = { ast; state = st; memo_info } in
           let doc = add_node ~node ~diags doc in
-          stm doc st last_ok_new))
+          stm doc st last_tok_new))
   in
   (* we re-start from the root *)
   stm doc doc.root loc
