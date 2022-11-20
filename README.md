@@ -78,8 +78,8 @@ its design ideas.
 
 ### Document outline:
 
-`coq-lsp` supports document outline, allowing you to jump directly
-to definitions in the document.
+`coq-lsp` supports document outline and code folding, allowing you to
+jump directly to definitions in the document.
 
 <img alt="Document Outline Demo" height="286px" src="etc/img/lsp-outline.gif"/>
 
@@ -98,7 +98,7 @@ decide!
 
 See the `coq-lsp` extension configuration in VSCode for options available.
 
-[insert gif]
+<img alt="Configuration screen" height="286px" src="etc/img/lsp-config.png"/>
 
 ### Reusability, standards, modularity
 
