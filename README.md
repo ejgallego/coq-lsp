@@ -52,27 +52,29 @@ document won't be rechecked, unless the proof is completed.
 
 Press `Alt+Enter` (or `Cmd+Enter` in Mac) to show goals at point in a side panel.
 
+<img alt="Whole-Document Goal Display" height="286px" src="etc/img/lsp-goals.gif"/>
+
 ### Markdown support
 
 Open a markdown file with a `.mv` extension, `coq-lsp` will check the
 code parts! `coq-lsp` places human friendly documents at the core of
 its design ideas.
 
-[insert gif]
+<img alt="Coq + Markdown Editing" height="286px" src="etc/img/lsp-markdown.gif"/>
 
 ### Document outline:
 
 `coq-lsp` supports document outline, allowing you to jump directly
 to definitions in the document.
 
-[insert gif]
+<img alt="Document Outline Demo" height="286px" src="etc/img/lsp-outline.gif"/>
 
 ### Detailed timing and memory stats
 
 Hover over any Coq sentence, `coq-lsp` will display detailed memory and
 timing statistics.
 
-[insert gif]
+<img alt="Stats on Hover" height="286px" src="etc/img/lsp-hover.gif"/>
 
 ### Client-side configuration options
 
