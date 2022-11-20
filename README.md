@@ -28,7 +28,7 @@ Edit your file, and `coq-lsp` will try to re-check only what is
 necessary, continuously. No more dreaded `Ctrl-C Ctrl-N`! Rechecking
 tries to be smart, and will ignore whitespace changes.
 
-[insert gif]
+<img alt="Incremental checking" height="286px" src="etc/img/lsp-incr.gif"/>
 
 In a future release, `coq-lsp` will save its document cache to disk so
 you can restart your proof session where you left it at the last time.
