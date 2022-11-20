@@ -7,12 +7,11 @@ server implementation for the Coq proof assistant, as well as to serve
 as a framework for interface experimentation.
 
 **Warning**: This project is at a _early_ stage, and it has **known
-bugs**, see the issue tracker for more information. Use at your own
-risk.
+bugs**, see the issue tracker for more information.
 
-Moreover, we expect the code to evolve significantly, contributions
-are very welcome, but please **first coordinate** with the dev team
-before writing any code.
+Contributions are very welcome, but please **first coordinate** with
+the dev team in Zulip before writing any code, as the code evolves
+pretty quickly.
 
 ## Development Channel
 
@@ -28,6 +27,12 @@ hesitate to stop by.
 
 - Visual Studio Code: https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
 - GNU Emacs: `M-x eglot [Enter] coq-lsp [Enter]`
+
+## Troubleshooting
+
+- Most problems can be resolved by restarting `coq-lsp`, in Visual
+  Studio Code, `Ctrl+Shift+P` will give you access to the
+  `coq-lsp.restart` command.
 
 ## Features
 
