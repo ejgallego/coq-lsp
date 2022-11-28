@@ -23,7 +23,7 @@ check: coq_boot
 	dune build $(DUNEOPT) @check
 
 .PHONY: fmt format
-fmt format: coq_boot
+fmt format:
 	dune fmt $(DUNEOPT)
 
 .PHONY: watch
