@@ -1,5 +1,11 @@
-# coq-lsp 0.1.1: Location
------------------------
+# coq-lsp 0.2.0: Location
+-------------------------
+
+# coq-lsp 0.1.1:
+----------------
+
+ - Don't crash if the log file can't be created (@ejgallego , #87)
+ - Use LSP functions for client-side logging (@ejgallego , #87)
 
 # coq-lsp 0.1.0: Memory
 -----------------------

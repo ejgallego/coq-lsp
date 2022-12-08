@@ -1,5 +1,5 @@
 import { window, commands, ExtensionContext, workspace, WebviewPanel, ViewColumn, Uri } from "vscode";
-import { LanguageClient } from "vscode-languageclient/node";
+import { LanguageClient, LanguageClientOptions } from "vscode-languageclient/node";
 import { GoalPanel } from "./goals";
 
 let client : LanguageClient;
@@ -11,6 +11,7 @@ export function panelFactory(context : ExtensionContext) {
     const styleUri = panel.webview.asWebviewUri(Uri.joinPath(context.extensionUri, 'media', 'styles.css'));
     return new GoalPanel(client, panel, styleUri);
 }
+
 export function activate (context : ExtensionContext) : void {
     window.showInformationMessage('Going to activate!');
 
@@ -32,10 +33,12 @@ export function activate (context : ExtensionContext) : void {
             ok_diagnostics: config.ok_diagnostics
         };
 
-        const clientOptions = {
+        const clientOptions : LanguageClientOptions = {
             documentSelector: [
                 {scheme: 'file', language: 'coq'}
             ],
+            outputChannelName: "Coq LSP Server Events",
+            revealOutputChannelOn: 1,
             initializationOptions
         };
         const serverOptions = { command: config.path, args: config.args };

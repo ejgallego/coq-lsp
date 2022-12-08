@@ -67,6 +67,7 @@ module TraceValue = struct
 end
 
 module LIO = Lsp.Io
+module Log = Lsp.Log
 module LSP = Lsp.Base
 
 (* Request Handling: The client expects a reply *)
@@ -75,8 +76,8 @@ module CoqLspOption = struct
 end
 
 let do_client_options coq_lsp_options =
-  LIO.log_error "init" "custom client options:";
-  LIO.log_object "init" (`Assoc coq_lsp_options);
+  Log.log_error "init" "custom client options:";
+  Log.log_object "init" (`Assoc coq_lsp_options);
   match CoqLspOption.of_yojson (`Assoc coq_lsp_options) with
   | Ok v -> Fleche.Config.v := v
   | Error _msg -> ()
@@ -85,12 +86,12 @@ let do_initialize ofmt ~id params =
   let coq_lsp_options = odict_field "initializationOptions" params in
   do_client_options coq_lsp_options;
   let client_capabilities = odict_field "capabilities" params in
-  LIO.log_error "init" "client capabilities:";
-  LIO.log_object "init" (`Assoc client_capabilities);
+  Log.log_error "init" "client capabilities:";
+  Log.log_object "init" (`Assoc client_capabilities);
   let trace =
     ostring_field "trace" params |> option_cata TraceValue.parse TraceValue.Off
   in
-  LIO.log_error "init" ("trace: " ^ TraceValue.to_string trace);
+  Log.log_error "init" ("trace: " ^ TraceValue.to_string trace);
   let capabilities =
     [ ("textDocumentSync", `Int 1)
     ; ("documentSymbolProvider", `Bool true)
@@ -145,7 +146,7 @@ let do_open ofmt ~state params =
   (match Hashtbl.find_opt doc_table uri with
   | None -> ()
   | Some _ ->
-    LIO.log_error "do_open" ("file " ^ uri ^ " not properly closed by client"));
+    Log.log_error "do_open" ("file " ^ uri ^ " not properly closed by client"));
   Hashtbl.add doc_table uri doc;
   do_check_text ofmt ~state ~doc
 
@@ -161,12 +162,12 @@ let do_change ofmt ~state params =
   let uri, version =
     (string_field "uri" document, int_field "version" document)
   in
-  LIO.log_error "checking file" (uri ^ " / version: " ^ string_of_int version);
+  Log.log_error "checking file" (uri ^ " / version: " ^ string_of_int version);
   let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
   match changes with
   | [] -> ()
   | _ :: _ :: _ ->
-    LIO.log_error "do_change"
+    Log.log_error "do_change"
       "more than one change unsupported due to sync method";
     assert false
   | change :: _ ->
@@ -281,9 +282,9 @@ let memo_cache_file = ".coq-lsp.cache"
 let memo_save_to_disk () =
   try
     Fleche.Memo.save_to_disk ~file:memo_cache_file;
-    LIO.log_error "memo" "cache saved to disk"
+    Log.log_error "memo" "cache saved to disk"
   with exn ->
-    LIO.log_error "memo" (Printexc.to_string exn);
+    Log.log_error "memo" (Printexc.to_string exn);
     Sys.remove memo_cache_file;
     ()
 
@@ -293,12 +294,12 @@ let memo_save_to_disk () = if false then memo_save_to_disk ()
 let memo_read_from_disk () =
   try
     if Sys.file_exists memo_cache_file then (
-      LIO.log_error "memo" "trying to load cache file";
+      Log.log_error "memo" "trying to load cache file";
       Fleche.Memo.load_from_disk ~file:memo_cache_file;
-      LIO.log_error "memo" "cache file loaded")
-    else LIO.log_error "memo" "cache file not present"
+      Log.log_error "memo" "cache file loaded")
+    else Log.log_error "memo" "cache file not present"
   with exn ->
-    LIO.log_error "memo" ("loading cache failed: " ^ Printexc.to_string exn);
+    Log.log_error "memo" ("loading cache failed: " ^ Printexc.to_string exn);
     Sys.remove memo_cache_file;
     ()
 
@@ -351,27 +352,27 @@ let dispatch_message ofmt ~state dict =
   | "exit" -> raise Lsp_exit
   (* NOOPs *)
   | "initialized" | "workspace/didChangeWatchedFiles" -> ()
-  | msg -> LIO.log_error "no_handler" msg
+  | msg -> Log.log_error "no_handler" msg
 
 let dispatch_message ofmt ~state com =
   try dispatch_message ofmt ~state com with
-  | U.Type_error (msg, obj) -> LIO.log_object msg obj
+  | U.Type_error (msg, obj) -> Log.log_object msg obj
   | Lsp_exit -> raise Lsp_exit
   | exn ->
     let bt = Printexc.get_backtrace () in
     let iexn = Exninfo.capture exn in
-    LIO.log_error "process_queue"
+    Log.log_error "process_queue"
       (if Printexc.backtrace_status () then "bt=true" else "bt=false");
     let method_name = string_field "method" com in
-    LIO.log_error "process_queue" ("exn in method: " ^ method_name);
-    LIO.log_error "process_queue" (Printexc.to_string exn);
-    LIO.log_error "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
-    LIO.log_error "BT" bt
+    Log.log_error "process_queue" ("exn in method: " ^ method_name);
+    Log.log_error "process_queue" (Printexc.to_string exn);
+    Log.log_error "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
+    Log.log_error "BT" bt
 
 let rec process_queue ofmt ~state =
   (match Queue.peek_opt request_queue with
   | None -> (
-    (* LIO.log_error "process_queue" "queue is empty, yielding!"; *)
+    (* Log.log_error "process_queue" "queue is empty, yielding!"; *)
     match !change_pending with
     | Some com ->
       Control.interrupt := false;
@@ -384,46 +385,47 @@ let rec process_queue ofmt ~state =
     Control.interrupt := false;
     (* TODO we should optimize the queue *)
     ignore (Queue.pop request_queue);
-    LIO.log_error "process_queue" "We got job to do";
+    Log.log_error "process_queue" "We got job to do";
     dispatch_message ofmt ~state com);
   process_queue ofmt ~state
 
 let lsp_cb oc =
   Fleche.Io.CallBack.
-    { log_error = Lsp.Io.log_error
+    { log_error = Log.log_error
     ; send_diagnostics =
         (fun ~uri ~version diags ->
           lsp_of_diags ~uri ~version diags |> Lsp.Io.send_json oc)
     }
+
+let lvl_to_severity (lvl : Feedback.level) =
+  match lvl with
+  | Feedback.Debug -> 5
+  | Feedback.Info -> 4
+  | Feedback.Notice -> 3
+  | Feedback.Warning -> 2
+  | Feedback.Error -> 1
+
+let mk_fb_handler () =
+  let q = ref [] in
+  ( (fun Feedback.{ contents; _ } ->
+      match contents with
+      | Message (lvl, loc, msg) ->
+        let lvl = lvl_to_severity lvl in
+        q := (loc, lvl, msg) :: !q
+      | _ -> ())
+  , q )
 
 let lsp_main log_file std vo_load_path ml_include_path =
   LSP.std_protocol := std;
   Exninfo.record_backtrace true;
 
   let oc = F.std_formatter in
-  let debug_oc = open_out log_file in
-  LIO.debug_fmt := F.formatter_of_out_channel debug_oc;
 
-  (* Dedukti stuff *)
-  let lvl_to_severity (lvl : Feedback.level) =
-    match lvl with
-    | Feedback.Debug -> 5
-    | Feedback.Info -> 4
-    | Feedback.Notice -> 3
-    | Feedback.Warning -> 2
-    | Feedback.Error -> 1
-  in
+  (* Setup logging *)
+  let client_cb message = LIO.logMessage oc ~lvl:2 ~message in
+  Log.start_log ~client_cb log_file;
 
-  let fb_handler, fb_queue =
-    let q = ref [] in
-    ( (fun Feedback.{ contents; _ } ->
-        match contents with
-        | Message (lvl, loc, msg) ->
-          let lvl = lvl_to_severity lvl in
-          q := (loc, lvl, msg) :: !q
-        | _ -> ())
-    , q )
-  in
+  let fb_handler, fb_queue = mk_fb_handler () in
 
   Fleche.Io.CallBack.set (lsp_cb oc);
 
@@ -445,27 +447,29 @@ let lsp_main log_file std vo_load_path ml_include_path =
   let rec loop () =
     (* XXX: Implement a queue, compact *)
     let com = LIO.read_request stdin in
-    if Fleche.Debug.read then LIO.log_object "read" com;
+    if Fleche.Debug.read then Log.log_object "read" com;
     process_input com;
     loop ()
   in
   try loop () with
   | (LIO.ReadError "EOF" | Lsp_exit) as exn ->
-    LIO.log_error "main"
-      ("exiting" ^ if exn = Lsp_exit then "" else " [uncontrolled LSP shutdown]");
-    LIO.flush_log ();
-    flush_all ();
-    close_out debug_oc
+    let reason =
+      "exiting" ^ if exn = Lsp_exit then "" else " [uncontrolled LSP shutdown]"
+    in
+    Log.log_error "main" reason;
+    LIO.logMessage oc ~lvl:1 ~message:("server " ^ reason);
+    Log.end_log ();
+    flush_all ()
   | exn ->
     let bt = Printexc.get_backtrace () in
     let exn, info = Exninfo.capture exn in
     let exn_msg = Printexc.to_string exn in
-    LIO.log_error "fatal error" (exn_msg ^ bt);
-    LIO.log_error "fatal_error [coq iprint]"
+    Log.log_error "fatal error" (exn_msg ^ bt);
+    Log.log_error "fatal_error [coq iprint]"
       Pp.(string_of_ppcmds CErrors.(iprint (exn, info)));
-    LIO.flush_log ();
-    flush_all ();
-    close_out debug_oc
+    LIO.logMessage oc ~lvl:1 ~message:("server crash: " ^ exn_msg ^ bt);
+    Log.end_log ();
+    flush_all ()
 
 (* Arguments handling *)
 open Cmdliner
