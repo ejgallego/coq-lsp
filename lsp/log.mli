@@ -10,25 +10,18 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- LGPL 2.1+                          *)
-(* Copyright 2019-2022 Inria -- LGPL 2.1+                               *)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val mk_range : Fleche.Types.Range.t -> Yojson.Safe.t
+(** Set the error formatter output *)
+val start_log : client_cb:(string -> unit) -> string -> unit
 
-(** Build notification *)
-val mk_notification :
-  method_:string -> params:(string * Yojson.Safe.t) list -> Yojson.Safe.t
+val end_log : unit -> unit
 
-(** Answer to a request *)
-val mk_reply : id:int -> result:Yojson.Safe.t -> Yojson.Safe.t
+(** Log string to server error log *)
+val log_error : string -> string -> unit
 
-(* val mk_diagnostic : Range.t * int * string * unit option -> Yojson.Basic.t *)
-val mk_diagnostics :
-     uri:string
-  -> version:int
-  -> (Fleche.Types.Range.t * int * string * unit option) list
-  -> Yojson.Safe.t
-
-val std_protocol : bool ref
+(** Log JSON object to server error log *)
+val log_object : string -> Yojson.Safe.t -> unit

@@ -10,25 +10,22 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- LGPL 2.1+                          *)
-(* Copyright 2019-2022 Inria -- LGPL 2.1+                               *)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val mk_range : Fleche.Types.Range.t -> Yojson.Safe.t
+(** Read a JSON-RPC request from channel *)
+val read_request : in_channel -> Yojson.Safe.t
 
-(** Build notification *)
-val mk_notification :
-  method_:string -> params:(string * Yojson.Safe.t) list -> Yojson.Safe.t
+exception ReadError of string
 
-(** Answer to a request *)
-val mk_reply : id:int -> result:Yojson.Safe.t -> Yojson.Safe.t
+(** Send a JSON-RPC request to channel *)
+val send_json : Format.formatter -> Yojson.Safe.t -> unit
 
-(* val mk_diagnostic : Range.t * int * string * unit option -> Yojson.Basic.t *)
-val mk_diagnostics :
-     uri:string
-  -> version:int
-  -> (Fleche.Types.Range.t * int * string * unit option) list
-  -> Yojson.Safe.t
+(** Send a [window/logMessage] notification to the client *)
+val logMessage : Format.formatter -> lvl:int -> message:string -> unit
 
-val std_protocol : bool ref
+(** Send a [$/logTrace] notification to the client *)
+val logTrace :
+  Format.formatter -> message:string -> ?verbose:string -> unit -> unit

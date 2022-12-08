@@ -32,7 +32,8 @@ hesitate to stop by.
 
 - Most problems can be resolved by restarting `coq-lsp`, in Visual
   Studio Code, `Ctrl+Shift+P` will give you access to the
-  `coq-lsp.restart` command.
+  `coq-lsp.restart` command. You can also look for messages in the
+  "Output" window in VSCode, "Coq LSP Server Events" channel.
 
 ## Features
 

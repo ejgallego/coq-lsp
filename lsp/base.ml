@@ -34,9 +34,12 @@ let _parse_uri str =
 let mk_reply ~id ~result =
   `Assoc [ ("jsonrpc", `String "2.0"); ("id", `Int id); ("result", result) ]
 
-let mk_event m p =
+let mk_notification ~method_ ~params =
   `Assoc
-    [ ("jsonrpc", `String "2.0"); ("method", `String m); ("params", `Assoc p) ]
+    [ ("jsonrpc", `String "2.0")
+    ; ("method", `String method_)
+    ; ("params", `Assoc params)
+    ]
 
 (* let json_of_goal g = let pr_hyp (s,(_,t)) = `Assoc ["hname", `String s;
    "htype", `String (Format.asprintf "%a" Print.pp_term (Bindlib.unbox t))] in
@@ -74,8 +77,9 @@ let mk_diagnostic
     ]
 
 let mk_diagnostics ~uri ~version ld : J.t =
-  mk_event "textDocument/publishDiagnostics"
-  @@ [ ("uri", `String uri)
-     ; ("version", `Int version)
-     ; ("diagnostics", `List List.(map mk_diagnostic ld))
-     ]
+  mk_notification ~method_:"textDocument/publishDiagnostics"
+    ~params:
+      [ ("uri", `String uri)
+      ; ("version", `Int version)
+      ; ("diagnostics", `List List.(map mk_diagnostic ld))
+      ]
