@@ -8,6 +8,7 @@
  - Use LSP functions for client-side logging (@ejgallego , #87)
  - Log `_CoqProject` detection settings to client window (@ejgallego, #88)
  - Use plugin include paths from `_CoqProject` (@ejgallego, #88)
+ - Support OCaml >= 4.12 (@ejgallego, #93)
 
 # coq-lsp 0.1.0: Memory
 -----------------------

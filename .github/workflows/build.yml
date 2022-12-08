@@ -17,8 +17,8 @@ jobs:
   build:
     strategy:
       matrix:
-        ocaml: [4.14.x]
-        os: [macOS-latest, ubuntu-latest]
+        ocaml: [4.14.x, 4.13.x, 4.12.x]
+        os: [ubuntu-latest]
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -33,6 +33,26 @@ jobs:
         uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml }}
+          dune-cache: true
+
+      - name: 🐫🐪🐫 Get dependencies
+        run: opam exec -- make opam-deps
+
+      - name: 🧱 Build coq-lsp
+        run: opam exec -- make build
+
+  osx:
+    runs-on: macOS-latest
+    steps:
+      - name: 🔭 Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: 🐫 Setup OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: 4.14.x
           dune-cache: true
 
       - name: 🐫🐪🐫 Get dependencies
