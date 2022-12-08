@@ -31,7 +31,6 @@ let coq_init opts =
   (* Core Coq initialization *)
   Lib.init ();
   Global.set_impredicative_set false;
-  Flags.set_native_compiler false;
   Global.set_native_compiler false;
 
   if opts.debug then CDebug.set_flags "backtrace";
