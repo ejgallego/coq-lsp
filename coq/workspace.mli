@@ -15,37 +15,16 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-let mut = Mutex.create ()
-let debug_chan = ref None
+module Setup : sig
+  type t =
+    { vo_load_path : Loadpath.vo_path list
+    ; ml_include_path : string list
+    ; options : (Goptions.option_name * Coqargs.option_command) list
+          (** This includes warnings *)
+    }
+end
 
-let start_log ~client_cb file =
-  let abs_file = Filename.concat (Sys.getcwd ()) file in
-  try
-    let debug_oc = open_out file in
-    debug_chan := Some (debug_oc, Format.formatter_of_out_channel debug_oc);
-    client_cb (Format.asprintf "server log file %s created" abs_file)
-  with _ ->
-    client_cb (Format.asprintf "creation of server log file %s failed" abs_file)
+type t = Setup.t * string
 
-let end_log () =
-  Option.iter
-    (fun (oc, fmt) ->
-      Format.pp_print_flush fmt ();
-      Stdlib.flush oc;
-      close_out oc)
-    !debug_chan;
-  debug_chan := None
-
-let with_log f = Option.iter (fun (_, fmt) -> f fmt) !debug_chan
-
-let log_error hdr msg =
-  with_log (fun fmt ->
-      Mutex.lock mut;
-      Format.fprintf fmt "[%s]: @[%s@]@\n%!" hdr msg;
-      Mutex.unlock mut)
-
-let log_object hdr obj =
-  with_log (fun fmt ->
-      Format.fprintf fmt "[%s]: @[%a@]@\n%!" hdr
-        Yojson.Safe.(pretty_print ~std:false)
-        obj)
+val apply : t -> unit
+val guess : coqlib:string -> cmdline:Setup.t -> t

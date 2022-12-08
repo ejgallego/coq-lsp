@@ -41,7 +41,8 @@ type t = private
   }
 
 val create :
-     state:Coq.State.t * Loadpath.vo_path list * string list * _
+     state:Coq.State.t
+  -> workspace:Coq.Workspace.t
   -> uri:string
   -> version:int
   -> contents:string

@@ -31,8 +31,7 @@ val coq_init : coq_opts -> State.t
 
 val doc_init :
      root_state:State.t
-  -> vo_load_path:Loadpath.vo_path list
-  -> ml_include_path:string list
+  -> workspace:Workspace.t
   -> libname:Names.DirPath.t
   -> require_libs:
        (string * string option * Vernacexpr.export_with_cats option) list

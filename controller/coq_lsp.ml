@@ -66,6 +66,17 @@ module TraceValue = struct
     | Verbose -> "verbose"
 end
 
+(* LSP loop internal state, mainly the stuff needed to create a new document.
+   Note that we could [apply] [workspace] to the root_state, but for now we keep
+   the flexibility for a server to work with different workspaces. *)
+module State = struct
+  type t =
+    { root_state : Coq.State.t
+    ; workspace : Coq.Workspace.t
+    ; fb_queue : Coq.Message.t list ref
+    }
+end
+
 module LIO = Lsp.Io
 module Log = Lsp.Log
 module LSP = Lsp.Base
@@ -129,7 +140,7 @@ let lsp_of_diags ~uri ~version diags =
 
 (* Notification handling; reply is optional / asynchronous *)
 let do_check_text ofmt ~state ~doc =
-  let _, _, _, fb_queue = state in
+  let fb_queue = state.State.fb_queue in
   let doc = Fleche.Doc.check ~ofmt ~doc ~fb_queue in
   Hashtbl.replace doc_table doc.uri doc;
   let diags = lsp_of_diags ~uri:doc.uri ~version:doc.version doc.diags in
@@ -142,7 +153,10 @@ let do_open ofmt ~state params =
     , int_field "version" document
     , string_field "text" document )
   in
-  let doc = Fleche.Doc.create ~state ~uri ~contents ~version in
+  let root_state, workspace = State.(state.root_state, state.workspace) in
+  let doc =
+    Fleche.Doc.create ~state:root_state ~workspace ~uri ~contents ~version
+  in
   (match Hashtbl.find_opt doc_table uri with
   | None -> ()
   | Some _ ->
@@ -415,30 +429,41 @@ let mk_fb_handler () =
       | _ -> ())
   , q )
 
-let lsp_main log_file std vo_load_path ml_include_path =
+let log_workspace oc (_, from) =
+  let message = "Configuration loaded from " ^ from in
+  LIO.logMessage oc ~lvl:3 ~message
+
+let lsp_main log_file std coqlib vo_load_path ml_include_path =
   LSP.std_protocol := std;
   Exninfo.record_backtrace true;
 
   let oc = F.std_formatter in
 
   (* Setup logging *)
-  let client_cb message = LIO.logMessage oc ~lvl:2 ~message in
+  let client_cb message = LIO.logMessage oc ~lvl:3 ~message in
   Log.start_log ~client_cb log_file;
-
-  let fb_handler, fb_queue = mk_fb_handler () in
 
   Fleche.Io.CallBack.set (lsp_cb oc);
 
+  (* Core Coq initialization *)
+  let fb_handler, fb_queue = mk_fb_handler () in
+  let debug = Fleche.Debug.backtraces in
   let load_module = Dynlink.loadfile in
   let load_plugin = Coq.Loader.plugin_handler None in
-
-  let debug = Fleche.Debug.backtraces in
-  let state =
-    ( Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin })
-    , vo_load_path
-    , ml_include_path
-    , fb_queue )
+  let root_state =
+    Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin })
   in
+
+  (* Workspace initialization *)
+  let options = [] in
+  let cmdline =
+    { Coq.Workspace.Setup.vo_load_path; ml_include_path; options }
+  in
+  let workspace = Coq.Workspace.guess ~coqlib ~cmdline in
+  log_workspace oc workspace;
+
+  (* Core LSP loop context *)
+  let state = { State.root_state; workspace; fb_queue } in
 
   memo_read_from_disk ();
 
@@ -530,23 +555,6 @@ let ml_include_path : string list Term.t =
   Arg.(
     value & opt_all dir [] & info [ "I"; "ml-include-path" ] ~docv:"DIR" ~doc)
 
-let coq_loadpath_default ~implicit coq_path =
-  let mk_path prefix = coq_path ^ "/" ^ prefix in
-  let mk_lp ~ml ~root ~dir ~implicit =
-    { Loadpath.unix_path = mk_path dir
-    ; coq_path = root
-    ; has_ml = ml
-    ; implicit
-    ; recursive = true
-    }
-  in
-  let coq_root = Names.DirPath.make [ Libnames.coq_root ] in
-  let default_root = Libnames.default_root_prefix in
-  [ mk_lp ~ml:true ~root:coq_root ~implicit ~dir:"../coq-core/plugins"
-  ; mk_lp ~ml:false ~root:coq_root ~implicit ~dir:"theories"
-  ; mk_lp ~ml:true ~root:default_root ~implicit:false ~dir:"user-contrib"
-  ]
-
 let term_append l =
   Term.(List.(fold_right (fun t l -> const append $ t $ l) l (const [])))
 
@@ -559,14 +567,13 @@ let lsp_cmd : unit Cmd.t =
     ; `P "See the documentation on the project's webpage for more information"
     ]
   in
-  let coq_loadpath =
-    Term.(const (coq_loadpath_default ~implicit:true) $ coqlib)
-  in
-  let vo_load_path = term_append [ coq_loadpath; rload_path; load_path ] in
+  let vo_load_path = term_append [ rload_path; load_path ] in
   Cmd.(
     v
       (Cmd.info "coq-lsp" ~version:"0.01" ~doc ~man)
-      Term.(const lsp_main $ log_file $ std $ vo_load_path $ ml_include_path))
+      Term.(
+        const lsp_main $ log_file $ std $ coqlib $ vo_load_path
+        $ ml_include_path))
 
 let main () =
   let ecode = Cmd.eval lsp_cmd in
