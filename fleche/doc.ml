@@ -37,20 +37,18 @@ type t =
   ; completed : Completion.t
   }
 
-let mk_doc state =
-  let root_state, vo_load_path, ml_include_path, _ = state in
+let mk_doc root_state workspace =
   let libname = Names.(DirPath.make [ Id.of_string "foo" ]) in
   let require_libs = [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ] in
-  Coq.Init.doc_init ~root_state ~vo_load_path ~ml_include_path ~libname
-    ~require_libs
+  Coq.Init.doc_init ~root_state ~workspace ~libname ~require_libs
 
 let init_loc ~uri = Loc.initial (InFile { dirpath = None; file = uri })
 
-let create ~state ~uri ~version ~contents =
+let create ~state ~workspace ~uri ~version ~contents =
   { uri
   ; contents
   ; version
-  ; root = mk_doc state
+  ; root = mk_doc state workspace
   ; nodes = []
   ; diags = []
   ; completed = Stopped (init_loc ~uri)

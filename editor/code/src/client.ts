@@ -1,5 +1,5 @@
 import { window, commands, ExtensionContext, workspace, WebviewPanel, ViewColumn, Uri } from "vscode";
-import { LanguageClient, LanguageClientOptions } from "vscode-languageclient/node";
+import { LanguageClient, LanguageClientOptions, RevealOutputChannelOn } from "vscode-languageclient/node";
 import { GoalPanel } from "./goals";
 
 let client : LanguageClient;
@@ -38,7 +38,7 @@ export function activate (context : ExtensionContext) : void {
                 {scheme: 'file', language: 'coq'}
             ],
             outputChannelName: "Coq LSP Server Events",
-            revealOutputChannelOn: 1,
+            revealOutputChannelOn: RevealOutputChannelOn.Info,
             initializationOptions
         };
         const serverOptions = { command: config.path, args: config.args };
