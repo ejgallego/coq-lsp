@@ -399,7 +399,8 @@ let rec process_queue ofmt ~state =
     Control.interrupt := false;
     (* TODO we should optimize the queue *)
     ignore (Queue.pop request_queue);
-    Log.log_error "process_queue" "We got job to do";
+    let m = string_field "method" com in
+    Log.log_error "process_queue" ("We got job to do:" ^ m);
     dispatch_message ofmt ~state com);
   process_queue ofmt ~state
 
