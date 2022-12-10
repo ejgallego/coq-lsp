@@ -10,7 +10,9 @@
  - Use plugin include paths from `_CoqProject` (@ejgallego, #88)
  - Support OCaml >= 4.12 (@ejgallego, #93)
  - Optimize the number of diagnostics sent in eager mode (@ejgallego, #104)
- - Improved syntax highlighting (@artagnon, #105)
+ - Improved syntax highlighting on VSCode client (@artagnon, #105)
+ - Resume document checking from the point it was interrupted
+   (@ejgallego, #95, #99)
 
 # coq-lsp 0.1.0: Memory
 -----------------------

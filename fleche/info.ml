@@ -113,6 +113,7 @@ module type S = sig
 
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
 
+  val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
   val info : (approx, string) query
   val completion : (string, string list) query
@@ -166,6 +167,9 @@ module Make (P : Point) : S with module P := P = struct
     in
     let lemmas = Coq.State.lemmas ~st in
     Option.cata (reify_goals ppx) None lemmas
+
+  let ast ~doc ~point approx =
+    find ~doc ~point approx |> Option.map (fun node -> node.Doc.ast)
 
   let goals ~doc ~point approx =
     find ~doc ~point approx

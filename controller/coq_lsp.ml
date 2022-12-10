@@ -244,17 +244,29 @@ let get_docTextPosition params =
   (file, (line, character))
 
 (* XXX refactor *)
+let ast_info ast =
+  let loc = Coq.Ast.loc ast |> Option.get in
+  Pp.string_of_ppcmds (Loc.pr loc)
+
 let do_hover ofmt ~id params =
+  let show_ast_info = false in
   let uri, point = get_docTextPosition params in
   let doc = Hashtbl.find doc_table uri in
+  let ast_string =
+    Fleche.Info.LC.ast ~doc ~point Exact
+    |> Option.map ast_info |> Option.default "no ast"
+  in
   let info_string =
     Fleche.Info.LC.info ~doc ~point Exact |> Option.default "no info"
+  in
+  let hover_string =
+    if show_ast_info then ast_string ^ "\n___\n" ^ info_string else info_string
   in
   let result =
     `Assoc
       [ ( "contents"
         , `Assoc
-            [ ("kind", `String "markdown"); ("value", `String info_string) ] )
+            [ ("kind", `String "markdown"); ("value", `String hover_string) ] )
       ]
   in
   let msg = LSP.mk_reply ~id ~result in
@@ -387,22 +399,22 @@ let dispatch_message ofmt ~state dict =
 let rec process_queue ofmt ~state =
   (match Queue.peek_opt request_queue with
   | None -> (
-    (* Log.log_error "process_queue" "queue is empty, yielding!"; *)
     match !Check.pending with
     | Some uri ->
+      Log.log_error "process_queue" "resuming document checking";
       Control.interrupt := false;
       Check.do_check ofmt ~fb_queue:state.State.fb_queue ~uri;
       (* Only if completed! *)
       if Check.completed uri then Check.pending := None
     | None -> Thread.delay 0.1)
   | Some com ->
-    (* We let Coq work normally now *)
-    Control.interrupt := false;
     (* TODO we should optimize the queue *)
     ignore (Queue.pop request_queue);
     let dict = U.to_assoc com in
     let m = string_field "method" dict in
-    Log.log_error "process_queue" ("We got job to do:" ^ m);
+    Log.log_error "process_queue" ("Serving Request: " ^ m);
+    (* We let Coq work normally now *)
+    Control.interrupt := false;
     dispatch_message ofmt ~state dict);
   process_queue ofmt ~state
 

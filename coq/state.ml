@@ -41,7 +41,30 @@ let marshal_in ic : t = Marshal.from_channel ic
 let marshal_out oc st = Marshal.to_channel oc st []
 let of_coq x = x
 let to_coq x = x
-let compare x y = compare x y
+
+(* let compare x y = compare x y *)
+let compare (x : t) (y : t) =
+  let open Vernacstate in
+  let { parsing = p1
+      ; system = s1
+      ; lemmas = l1
+      ; program = g1
+      ; opaques = o1
+      ; shallow = h1
+      } =
+    x
+  in
+  let { parsing = p2
+      ; system = s2
+      ; lemmas = l2
+      ; program = g2
+      ; opaques = o2
+      ; shallow = h2
+      } =
+    y
+  in
+  if p1 == p2 && s1 == s2 && l1 == l2 && g1 == g2 && o1 == o2 && h1 == h2 then 0
+  else 1
 
 let mode ~st =
   Option.map
