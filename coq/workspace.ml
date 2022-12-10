@@ -100,5 +100,7 @@ let guess ~coqlib ~cmdline =
       , Filename.concat (Sys.getcwd ()) "_CoqProject" )
     else (cmdline, "Command-line arguments")
   in
-  ( Setup.append (coq_loadpath_default ~implicit:false coqlib) vo_workspace
+  (* Import stdlib without `From Coq` requirement *)
+  let implicit = true in
+  ( Setup.append (coq_loadpath_default ~implicit coqlib) vo_workspace
   , origin )
