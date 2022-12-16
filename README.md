@@ -6,7 +6,7 @@ Protocol](https://microsoft.github.io/language-server-protocol/)
 server implementation for the Coq proof assistant, as well as to serve
 as a framework for interface experimentation.
 
-**Warning**: This project is at a _early_ stage, and it has **known
+**Warning**: This project is at an _early_ stage, and it has **known
 bugs**, see the issue tracker for more information.
 
 Contributions are very welcome, but please **first coordinate** with
@@ -45,7 +45,7 @@ tries to be smart, and will ignore whitespace changes.
 
 <img alt="Incremental checking" height="286px" src="etc/img/lsp-incr.gif"/>
 
-In a future release, `coq-lsp` will save its document cache to disk so
+In a future release, `coq-lsp` will save its document cache to disk, so
 you can restart your proof session where you left it at the last time.
 
 Incremental support is undergoing refinement, if `coq-lsp` rechecks
@@ -60,8 +60,6 @@ cache, and will recognize proof structure.
 
 You can edit without fear inside a `Proof. ... Qed.`, the rest of the
 document won't be rechecked, unless the proof is completed.
-
-[insert gif]
 
 ### Whole-Document Goal Display
 
@@ -117,7 +115,7 @@ A key `coq-lsp` goal is to serve as central platform for researchers
 in Human-Computer-Interaction, Machine Learning, and Software
 Engineering willing to interact with Coq.
 
-Ẁith this goal, `coq-lsp` extends and will eventually replace
+Towards this goal, `coq-lsp` extends and will eventually replace
 `coq-serapi`, which has been used by many to that purpose.
 
 ## Planned features
@@ -149,7 +147,7 @@ up to date automatically.
 
 ### Responsible elaboration and refinement
 
-Supporting inlays and Lean-style infoview.
+Supporting inlays and Lean-style info view.
 
 ### "Computational", Jupyter-style Documents
 
@@ -168,7 +166,7 @@ Once you have done that, do `make`, and the server will be build under
 
 ### Server: Nix development support
 
-There is a Nix flake available which will setup the necessery environment and
+There is a Nix flake available which will setup the necessary environment and
 can be used via `nix develop`. You can then run `make` as usual.
 
 ### Visual Studio Code:
@@ -179,7 +177,7 @@ Run `npm install && npm run compile` in `editor/code`.
 (cd editor/code && npm i && npm run compile)
 ```
 
-Now you can launch VS Code through `dune exec -- code -n` , this will
+Now you can launch VS Code through `dune exec -- code -n`, this will
 setup the right environment variables such as `PATH` and `OCAMLPATH`.
 Alternatively, you can just put the server in path and run `code`.
 
@@ -188,7 +186,7 @@ in Visual Studio Code.
 
 ### Emacs
 
-You can use this mode with [eglot]() with `$path_to_server
+You can use this mode with [eglot](https://joaotavora.github.io/eglot/) with `$path_to_server
 --std`. Note that `--std` is needed otherwise eglot may choke due to
 extra messages.
 
@@ -240,6 +238,6 @@ The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
 ## Acknowledgments
 
 Work on this server has been made possible thanks to many discussions,
-inspirations, and sharing of ideas from colleagues. In particular we'd
+inspirations, and sharing of ideas from colleagues. In particular, we'd
 like to thank Rudi Grinberg, Andrey Mokhov, Clément Pit-Claudel, and
 Makarius Wenzel for their help and advice.

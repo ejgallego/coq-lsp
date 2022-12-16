@@ -1,0 +1,5 @@
+{"rule":"SETUP_VERB","sentence":"^\\QThere is a Nix flake available which will setup the necessery environment and can be used via \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"SETUP_VERB","sentence":"^\\QThere is a Nix flake available which will setup the necessary environment and can be used via \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"SETUP_VERB","sentence":"^\\QNow you can launch VS Code through \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q, this will setup the right environment variables such as \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q and \\E(?:Dummy|Ina|Jimmy-)[0-9]+\\Q.\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QSyntax files in editor/code are partially derived from VSCoq by Christian J. Bell, distributed under the terms of the MIT license (see ./vsc-galinas/License-vscoq.text).\\E$"}
+{"rule":"COMMA_PARENTHESIS_WHITESPACE","sentence":"^\\QSyntax files in editor/code are partially derived from VSCoq by Christian J. Bell, distributed under the terms of the MIT license (see ./vsc-galinas/License-vscoq.text).\\E$"}
