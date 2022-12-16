@@ -102,5 +102,4 @@ let guess ~coqlib ~cmdline =
   in
   (* Import stdlib without `From Coq` requirement *)
   let implicit = true in
-  ( Setup.append (coq_loadpath_default ~implicit coqlib) vo_workspace
-  , origin )
+  (Setup.append (coq_loadpath_default ~implicit coqlib) vo_workspace, origin)
