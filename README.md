@@ -175,8 +175,7 @@ Run `npm install && npm run compile` in `editor/code`.
 ```
 
 Now you can launch VS Code through `dune exec -- code -n`, this will setup the
-right environment variables such as `PATH` and `OCAMLPATH`. Alternatively, you
-can just put the server in path and run `code`.
+right environment variables such as `PATH` and `OCAMLPATH`.
 
 Now, run the extension normally using the left "Run and Debug" panel in Visual
 Studio Code.
