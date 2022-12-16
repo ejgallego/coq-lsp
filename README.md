@@ -237,3 +237,8 @@ Work on this server has been made possible thanks to many discussions,
 inspirations, and sharing of ideas from colleagues. In particular, we'd like to
 thank Rudi Grinberg, Andrey Mokhov, Clément Pit-Claudel, and Makarius Wenzel
 for their help and advice.
+
+<!-- Local Variables: -->
+<!-- mode: Markdown -->
+<!-- fill-column: 80 -->
+<!-- End: -->
