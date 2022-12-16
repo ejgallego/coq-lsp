@@ -138,15 +138,25 @@ let lsp_of_diags ~uri ~version diags =
     diags
   |> LSP.mk_diagnostics ~uri ~version
 
-(* Notification handling; reply is optional / asynchronous *)
-let do_check_text ofmt ~state ~doc =
-  let fb_queue = state.State.fb_queue in
-  let doc = Fleche.Doc.check ~ofmt ~doc ~fb_queue in
-  Hashtbl.replace doc_table doc.uri doc;
-  let diags = lsp_of_diags ~uri:doc.uri ~version:doc.version doc.diags in
-  LIO.send_json ofmt @@ diags
+module Check = struct
+  let pending = ref None
 
-let do_open ofmt ~state params =
+  (* Notification handling; reply is optional / asynchronous *)
+  let do_check ofmt ~fb_queue ~uri =
+    let doc = Hashtbl.find doc_table uri in
+    let doc = Fleche.Doc.check ~ofmt ~doc ~fb_queue in
+    Hashtbl.replace doc_table doc.uri doc;
+    let diags = lsp_of_diags ~uri:doc.uri ~version:doc.version doc.diags in
+    LIO.send_json ofmt @@ diags
+
+  let completed uri =
+    let doc = Hashtbl.find doc_table uri in
+    doc.completed = Yes
+
+  let schedule ~uri = pending := Some uri
+end
+
+let do_open ~state params =
   let document = dict_field "textDocument" params in
   let uri, version, contents =
     ( string_field "uri" document
@@ -162,16 +172,9 @@ let do_open ofmt ~state params =
   | Some _ ->
     Log.log_error "do_open" ("file " ^ uri ^ " not properly closed by client"));
   Hashtbl.add doc_table uri doc;
-  do_check_text ofmt ~state ~doc
+  Check.schedule ~uri
 
-let check_completed dict =
-  let params = odict_field "params" dict in
-  let document = dict_field "textDocument" params in
-  let uri = string_field "uri" document in
-  let doc = Hashtbl.find doc_table uri in
-  doc.completed = Yes
-
-let do_change ofmt ~state params =
+let do_change params =
   let document = dict_field "textDocument" params in
   let uri, version =
     (string_field "uri" document, int_field "version" document)
@@ -188,11 +191,13 @@ let do_change ofmt ~state params =
     let text = string_field "text" change in
     let doc = Hashtbl.find doc_table uri in
     let doc =
-      (* Note that we can restart the checking with the same version! *)
+      (* [bump_version] will clean stale info about the document, in particular
+         partial results of a previous checking *)
       if version > doc.version then Fleche.Doc.bump_version ~version ~text doc
       else doc
     in
-    do_check_text ofmt ~state ~doc
+    let () = Hashtbl.replace doc_table uri doc in
+    Check.schedule ~uri
 
 let do_close _ofmt params =
   let document = dict_field "textDocument" params in
@@ -323,21 +328,17 @@ let memo_read_from_disk () = if false then memo_read_from_disk ()
    is only served when the rest of requests are served.
 
    Note that we should add a method to detect stale requests; maybe cancel them
-   when a new edit comes. *)
-let change_pending = ref None
+   when a new edit comes.
+
+   Also, this should eventually become a queue, instead of a single
+   change_pending setup. *)
 let request_queue = Queue.create ()
 
 let process_input (com : J.t) =
-  let dict = U.to_assoc com in
-  let method_ = string_field "method" dict in
-  match method_ with
-  | "textDocument/didChange" ->
-    (* TODO: cancel all requests? *)
-    change_pending := Some dict;
-    Control.interrupt := true
-  | _ ->
-    Queue.push dict request_queue;
-    Control.interrupt := true
+  (* TODO: this is the place to cancel pending requests that are invalid, and in
+     general, to perform queue optimizations *)
+  Queue.push com request_queue;
+  Control.interrupt := true
 
 exception Lsp_exit
 
@@ -352,15 +353,15 @@ let dispatch_message ofmt ~state dict =
   (* Requests *)
   | "initialize" -> do_initialize ofmt ~id params
   | "shutdown" -> do_shutdown ofmt ~id
-  (* Symbols in the document *)
+  (* Symbols and info about the document *)
   | "textDocument/completion" -> do_completion ofmt ~id params
   | "textDocument/documentSymbol" -> do_symbols ofmt ~id params
   | "textDocument/hover" -> do_hover ofmt ~id params
   (* Proof-specific stuff *)
   | "proof/goals" -> do_goals ofmt ~id params
   (* Notifications *)
-  | "textDocument/didOpen" -> do_open ofmt ~state params
-  | "textDocument/didChange" -> do_change ofmt ~state params
+  | "textDocument/didOpen" -> do_open ~state params
+  | "textDocument/didChange" -> do_change params
   | "textDocument/didClose" -> do_close ofmt params
   | "textDocument/didSave" -> memo_save_to_disk ()
   | "exit" -> raise Lsp_exit
@@ -368,8 +369,8 @@ let dispatch_message ofmt ~state dict =
   | "initialized" | "workspace/didChangeWatchedFiles" -> ()
   | msg -> Log.log_error "no_handler" msg
 
-let dispatch_message ofmt ~state com =
-  try dispatch_message ofmt ~state com with
+let dispatch_message ofmt ~state dict =
+  try dispatch_message ofmt ~state dict with
   | U.Type_error (msg, obj) -> Log.log_object msg obj
   | Lsp_exit -> raise Lsp_exit
   | exn ->
@@ -377,7 +378,7 @@ let dispatch_message ofmt ~state com =
     let iexn = Exninfo.capture exn in
     Log.log_error "process_queue"
       (if Printexc.backtrace_status () then "bt=true" else "bt=false");
-    let method_name = string_field "method" com in
+    let method_name = string_field "method" dict in
     Log.log_error "process_queue" ("exn in method: " ^ method_name);
     Log.log_error "process_queue" (Printexc.to_string exn);
     Log.log_error "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
@@ -387,21 +388,22 @@ let rec process_queue ofmt ~state =
   (match Queue.peek_opt request_queue with
   | None -> (
     (* Log.log_error "process_queue" "queue is empty, yielding!"; *)
-    match !change_pending with
-    | Some com ->
+    match !Check.pending with
+    | Some uri ->
       Control.interrupt := false;
-      dispatch_message ofmt ~state com;
+      Check.do_check ofmt ~fb_queue:state.State.fb_queue ~uri;
       (* Only if completed! *)
-      if check_completed com then change_pending := None
+      if Check.completed uri then Check.pending := None
     | None -> Thread.delay 0.1)
   | Some com ->
     (* We let Coq work normally now *)
     Control.interrupt := false;
     (* TODO we should optimize the queue *)
     ignore (Queue.pop request_queue);
-    let m = string_field "method" com in
+    let dict = U.to_assoc com in
+    let m = string_field "method" dict in
     Log.log_error "process_queue" ("We got job to do:" ^ m);
-    dispatch_message ofmt ~state com);
+    dispatch_message ofmt ~state dict);
   process_queue ofmt ~state
 
 let lsp_cb oc =
