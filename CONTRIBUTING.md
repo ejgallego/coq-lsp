@@ -17,3 +17,4 @@ environment, you can run the extension from the Run panel.
 ## Miscellaneous events
 
 - We use `ocamlformat` to automatically format our codebase.
+- We use [prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) to automatically format Typescript files.
