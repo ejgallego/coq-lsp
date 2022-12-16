@@ -1,4 +1,4 @@
-import { Webview, Position, Uri, ViewColumn, WebviewPanel } from "vscode";
+import { Webview, Position, Uri, WebviewPanel } from "vscode";
 import { RequestType } from "vscode-languageclient";
 import { LanguageClient } from "vscode-languageclient/node";
 
@@ -38,14 +38,10 @@ function getGoalsEnvContent(goals : Goal[]){
 
 // Returns the HTML code of the panel and the inset ccontent
 function buildGoalsContent(goals : Goal[], styleUri : Uri) {
-    
-    let header, footer : String;
-
     // get the HTML code of goals environment
     let codeEnvGoals : String = getGoalsEnvContent(goals);
 
     // Use #FA8072 color too?
-
     return `
     <!DOCTYPE html>
     <html lang="en">
@@ -56,7 +52,7 @@ function buildGoalsContent(goals : Goal[], styleUri : Uri) {
         <title>Goals</title>
     </head>
     <body>
-        <p class="goals_env"> 
+        <p class="goals_env">
         ${codeEnvGoals}
         </p>
     </body>
@@ -76,7 +72,7 @@ class GoalView {
     }
 
     update(uri : Uri, position : Position) {
-        this.sendGoalsRequest(uri, position)    
+        this.sendGoalsRequest(uri, position);
     }
 
     display(goals : Goal[]) {

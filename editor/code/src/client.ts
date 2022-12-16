@@ -1,4 +1,4 @@
-import { window, commands, ExtensionContext, workspace, WebviewPanel, ViewColumn, Uri } from "vscode";
+import { window, commands, ExtensionContext, workspace, ViewColumn, Uri } from "vscode";
 import { LanguageClient, LanguageClientOptions, RevealOutputChannelOn } from "vscode-languageclient/node";
 import { GoalPanel } from "./goals";
 
@@ -26,7 +26,7 @@ export function activate (context : ExtensionContext) : void {
         }
 
         window.showInformationMessage('Going to start!');
- 
+
         const config = workspace.getConfiguration('coq-lsp');
         const initializationOptions = {
             eager_diagnostics: config.eager_diagnostics,
@@ -51,7 +51,7 @@ export function activate (context : ExtensionContext) : void {
         );
         client.start();
 
-        // XXX: Fix this mess with the lifetime of the panel  
+        // XXX: Fix this mess with the lifetime of the panel
         goalPanel = panelFactory(context);
 };
 
@@ -67,7 +67,7 @@ export function activate (context : ExtensionContext) : void {
         if(goalPanel && uri && position) {
             goalPanel.update(uri, position);
         }
-    }   
+    }
 
     coqCommand('restart', restart);
     coqCommand('goals', goals);
