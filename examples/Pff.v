@@ -1710,6 +1710,7 @@ Qed.
 Theorem FboundedShiftLess :
  forall (b : Fbound) (f : float) (n m : nat),
  m <= n -> Fbounded b (Fshift radix n f) -> Fbounded b (Fshift radix m f).
+Proof.
 intros b f n m H' H'0; split; auto.
 simpl in |- *; auto.
 apply Z.le_lt_trans with (Z.abs (Fnum (Fshift radix n f))).
@@ -1719,10 +1720,8 @@ repeat rewrite Zpower_nat_is_exp.
 repeat rewrite Zabs_Zmult; auto.
 apply Zle_Zmult_comp_l; auto with zarith.
 apply Zle_Zmult_comp_l; auto with zarith.
-repeat rewrite Z.abs_eq; auto with zarith.
+rewrite 2!Z.abs_eq by (apply Zpower_NR0; lia).
 apply Zpower_nat_monotone_le; lia.
-apply Zpower_NR0; lia.
-apply Zpower_NR0; lia.
 apply H'0.
 apply Z.le_trans with (Fexp (Fshift radix n f)); try apply H'0.
 simpl in |- *; unfold Zminus in |- *; auto with zarith.
@@ -13706,6 +13705,7 @@ Qed.
 Lemma Veltkamp_aux_aux: forall v:float,  (FtoRradix v=hx) -> Fcanonic radix b' v ->
   (Rabs (x-v) <= (powerRZ radix (s+Fexp x)) /2)%R
   -> (powerRZ radix (t-1+Fexp x) <= v)%R.
+Proof.
 intros.
 case (Rle_or_lt (powerRZ radix (t-1)+(powerRZ radix s)/2)%R (Fnum x)); intros W.
 fold FtoRradix; apply Rplus_le_reg_l with (-v+x-powerRZ radix (t-1+Fexp x))%R.
@@ -13943,7 +13943,7 @@ rewrite Z.abs_eq in H3; auto with zarith.
 rewrite Z.abs_eq in H3; [idtac|apply LeR0Fnum with radix; auto with zarith real].
 rewrite Zmult_comm with (Fnum x) radix.
 apply Z.le_trans with (2:=H3); rewrite pGivesBound.
-pattern t at 2; replace t with (1+(pred t)); auto with zarith.
+pattern t at 2; replace t with (1+(pred t)) by auto with zarith.
 rewrite Zpower_nat_is_exp.
 replace ( Zpower_nat radix 1) with radix;[idtac|unfold Zpower_nat; simpl]; auto with zarith.
 unfold Zminus; rewrite plus_IZR; rewrite Ropp_Ropp_IZR; rewrite Zpower_nat_Z_powerRZ.
@@ -21657,8 +21657,8 @@ apply Ft.
 rewrite <- Zabs_Zopp; rewrite Z.abs_eq; auto with zarith.
 apply Z.lt_le_trans with 3%Z; auto with zarith.
 apply Z.le_trans with (nNormMin radix precision); auto with zarith.
-unfold nNormMin; apply Z.le_trans with (Zpower_nat radix 2); auto with zarith.
-simpl; auto with zarith.
+unfold nNormMin; apply Z.le_trans with (Zpower_nat radix 2).
+easy.
 apply Zpower_nat_monotone_le; auto with zarith.
 apply nNrMMimLevNum; auto with zarith.
 rewrite CanonicFulp; auto with zarith.
@@ -25381,11 +25381,9 @@ apply Rle_trans with (3*powerRZ radix (Fexp ph))%R;
 2: apply IZR_neq; lia.
 2: apply trans_eq with (IZR (3*radix)); auto with real zarith; rewrite mult_IZR; simpl; ring.
 2: apply IZR_neq; lia.
-apply Rmult_le_compat_r; auto with real zarith.
+apply Rmult_le_compat_r.
 apply powerRZ_le, IZR_lt; lia.
-apply Rle_trans with (2+1)%R; auto with real.
-apply Rplus_le_compat_l; apply Rle_trans with (/1)%R; auto with real.
-right; ring.
+lra.
 apply FcanonicLeastExp with radix bo p; auto with zarith.
 rewrite FnormalizeCorrect; auto with real zarith.
 apply FnormalizeCanonic; auto with zarith.
