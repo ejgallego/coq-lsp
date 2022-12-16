@@ -9,6 +9,7 @@
  - Log `_CoqProject` detection settings to client window (@ejgallego, #88)
  - Use plugin include paths from `_CoqProject` (@ejgallego, #88)
  - Support OCaml >= 4.12 (@ejgallego, #93)
+ - Optimize the number of diagnostics sent in eager mode (@ejgallego, #104)
 
 # coq-lsp 0.1.0: Memory
 -----------------------

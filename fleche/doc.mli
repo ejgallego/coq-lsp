@@ -37,6 +37,7 @@ type t = private
   ; root : Coq.State.t
   ; nodes : node list
   ; diags : Types.Diagnostic.t list
+  ; diags_dirty : bool
   ; completed : Completion.t
   }
 

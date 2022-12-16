@@ -34,6 +34,7 @@ type t =
   ; root : Coq.State.t
   ; nodes : node list
   ; diags : Types.Diagnostic.t list
+  ; diags_dirty : bool  (** Used to optimize `eager_diagnostics` *)
   ; completed : Completion.t
   }
 
@@ -51,6 +52,7 @@ let create ~state ~workspace ~uri ~version ~contents =
   ; root = mk_doc state workspace
   ; nodes = []
   ; diags = []
+  ; diags_dirty = false
   ; completed = Stopped (init_loc ~uri)
   }
 
@@ -61,11 +63,22 @@ let bump_version ~version ~text doc =
   ; nodes = []
   ; diags = []
   ; contents = text
+  ; diags_dirty = false
   ; completed = Stopped (init_loc ~uri:doc.uri)
   }
 
 let add_node ~node ~diags doc =
-  { doc with nodes = node :: doc.nodes; diags = diags @ doc.diags }
+  let diags_dirty = if diags <> [] then true else doc.diags_dirty in
+  { doc with nodes = node :: doc.nodes; diags = diags @ doc.diags; diags_dirty }
+
+let send_eager_diagnostics ~uri ~version ~doc =
+  (* this is too noisy *)
+  (* let proc_diag = mk_diag loc 3 (Pp.str "Processing") in *)
+  (* Io.Report.diagnostics ~uri ~version (proc_diag :: doc.diags)); *)
+  if doc.diags_dirty && !Config.v.eager_diagnostics then (
+    Io.Report.diagnostics ~uri ~version doc.diags;
+    { doc with diags_dirty = false })
+  else doc
 
 let set_completion ~completed doc = { doc with completed }
 
@@ -125,6 +138,11 @@ let state_recovery_heuristic st v =
     proof_st := None;
     Coq.State.drop_proofs ~st
   | _ -> st
+
+let debug_parsed_sentence ~loc ~ast =
+  let line = "[l: " ^ string_of_int loc.Loc.line_nb ^ "] " in
+  Io.Log.error "coq"
+    ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast))
 
 type process_action =
   | EOF of Completion.t (* completed *)
@@ -208,15 +226,8 @@ let process_and_parse ~uri ~version ~fb_queue doc loc doc_handle =
       let loc = Coq.Ast.loc ast |> Option.get in
       let last_tok_new = Pcoq.Parsable.loc doc_handle in
       (* XXX Eager update! *)
-      if !Config.v.eager_diagnostics then
-        (* this is too noisy *)
-        (* let proc_diag = mk_diag loc 3 (Pp.str "Processing") in *)
-        (* Io.Report.diagnostics ~uri ~version (proc_diag :: doc.diags)); *)
-        Io.Report.diagnostics ~uri ~version doc.diags;
-      (if Debug.parsing then
-       let line = "[l: " ^ string_of_int loc.Loc.line_nb ^ "] " in
-       Io.Log.error "coq"
-         ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast)));
+      let doc = send_eager_diagnostics ~uri ~version ~doc in
+      let () = if Debug.parsing then debug_parsed_sentence ~loc ~ast in
       register_hack_proof_recover ast st;
       (* memory is disabled as it is quite slow and misleading *)
       let res, memo_info = interp_and_info ~parsing_time ~st ~fb_queue ast in
