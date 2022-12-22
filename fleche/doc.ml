@@ -10,6 +10,11 @@
 (* open Lsp_util
  * module LSP = Lsp.Base *)
 
+let hd_opt ~default l =
+  match l with
+  | [] -> default
+  | h :: _ -> h
+
 (* [node list] is a very crude form of a meta-data map "loc -> data" , where for
    now [data] is only the goals. *)
 type node =
@@ -139,7 +144,8 @@ let state_recovery_heuristic st v =
     Coq.State.drop_proofs ~st
   | _ -> st
 
-let debug_parsed_sentence ~loc ~ast =
+let debug_parsed_sentence ~ast =
+  let loc = Coq.Ast.loc ast |> Option.get in
   let line = "[l: " ^ string_of_int loc.Loc.line_nb ^ "] " in
   Io.Log.error "coq"
     ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast))
@@ -179,6 +185,7 @@ let process_feedback ~loc fbs = List.map (feed_to_diag ~loc) fbs
 
 let interp_and_info ~parsing_time ~st ~fb_queue ast =
   let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
+  (* memo memory stats are disabled: slow and misleading *)
   let { Memo.Stats.res; cache_hit; memory = _; time } =
     Memo.interp_command ~st ~fb_queue ast
   in
@@ -197,8 +204,9 @@ let interp_and_info ~parsing_time ~st ~fb_queue ast =
   (res, memo_info ^ "\n___\n" ^ mem_info)
 
 (* XXX: Imperative problem *)
-let process_and_parse ~uri ~version ~fb_queue doc loc doc_handle =
+let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
   let rec stm doc st last_tok =
+    let doc = send_eager_diagnostics ~uri ~version ~doc in
     if Debug.parsing then Io.Log.error "coq" "parsing sentence";
     (* Parsing *)
     let action, pdiags, parsing_time =
@@ -207,7 +215,9 @@ let process_and_parse ~uri ~version ~fb_queue doc loc doc_handle =
       | Coq.Protect.R.Completed res, time -> (
         match res with
         | Ok None -> (EOF Yes, [], time)
-        | Ok (Some ast) -> (Process ast, [], time)
+        | Ok (Some ast) ->
+          let () = if Debug.parsing then debug_parsed_sentence ~ast in
+          (Process ast, [], time)
         | Error (loc, msg) ->
           let loc = Option.get loc in
           let diags = [ mk_diag loc 1 msg ] in
@@ -224,18 +234,16 @@ let process_and_parse ~uri ~version ~fb_queue doc loc doc_handle =
     (* We interpret the command now *)
     | Process ast -> (
       let loc = Coq.Ast.loc ast |> Option.get in
-      let last_tok_new = Pcoq.Parsable.loc doc_handle in
-      (* XXX Eager update! *)
-      let doc = send_eager_diagnostics ~uri ~version ~doc in
-      let () = if Debug.parsing then debug_parsed_sentence ~loc ~ast in
+      (* We register pre-interp for now *)
       register_hack_proof_recover ast st;
-      (* memory is disabled as it is quite slow and misleading *)
       let res, memo_info = interp_and_info ~parsing_time ~st ~fb_queue ast in
       match res with
       | Coq.Protect.R.Interrupted ->
         (* Exit *)
         set_completion ~completed:(Stopped last_tok) doc
       | Coq.Protect.R.Completed res -> (
+        (* We can resume checking from this point then *)
+        let last_tok_new = Pcoq.Parsable.loc doc_handle in
         match res with
         | Ok { res = state; feedback } ->
           (* let goals = Coq.State.goals *)
@@ -262,8 +270,11 @@ let process_and_parse ~uri ~version ~fb_queue doc loc doc_handle =
           let doc = add_node ~node ~diags doc in
           stm doc st last_tok_new))
   in
-  (* we re-start from the root *)
-  stm doc doc.root loc
+  (* Note that nodes and diags in reversed order here *)
+  let st =
+    hd_opt ~default:doc.root (List.map (fun { state; _ } -> state) doc.nodes)
+  in
+  stm doc st last_tok
 
 let print_stats () =
   (if !Config.v.mem_stats then
@@ -297,27 +308,43 @@ let process_contents ~uri ~contents =
   let is_markdown = String.equal ext ".mv" in
   if is_markdown then markdown_process contents else contents
 
+let log_resume last_tok =
+  Io.Log.error "check"
+    Format.(
+      asprintf "resuming, from: %d l: %d" last_tok.Loc.ep
+        last_tok.Loc.line_nb_last)
+
 let check ~ofmt:_ ~doc ~fb_queue =
   match doc.completed with
   | Yes ->
-    Io.Log.error "check" "completed=yes";
+    Io.Log.error "check" "resuming, completed=yes, nothing to do";
     doc
-  | Stopped loc ->
-    Io.Log.error "check" ("completed=stopped at offset: " ^ string_of_int loc.ep);
+  | Stopped last_tok ->
+    log_resume last_tok;
     let uri, version, contents = (doc.uri, doc.version, doc.contents) in
     (* Process markdown *)
     let processed_content = process_contents ~uri ~contents in
-    let loc = init_loc ~uri:doc.uri in
+    (* Compute resume point, basically [CLexer.after] + stream setup *)
+    let resume_loc = CLexer.after last_tok in
+    let offset = resume_loc.bp in
+    let processed_content =
+      String.(sub processed_content offset (length processed_content - offset))
+    in
     let handle =
-      Pcoq.Parsable.make ~loc Gramlib.Stream.(of_string processed_content)
+      Pcoq.Parsable.make ~loc:resume_loc
+        Gramlib.Stream.(of_string ~offset processed_content)
     in
-    (* Resumption disabled for now [not clear 8.16 Gramlib API can do it]*)
-    (* let () = Pcoq.Parsable.consume handle offset in *)
+    (* Set the document to "internal" mode *)
     let doc =
-      { doc with contents = processed_content; diags = []; nodes = [] }
+      { doc with
+        contents = processed_content
+      ; nodes = List.rev doc.nodes
+      ; diags = List.rev doc.diags
+      }
     in
-    let doc = process_and_parse ~uri ~version ~fb_queue doc loc handle in
-    (* Restore the contents, reverse the accumulators *)
+    let doc = process_and_parse ~uri ~version ~fb_queue doc last_tok handle in
+    (* Set the document to "finished" mode: Restore the original contents,
+       reverse the accumulators *)
     let doc =
       { doc with
         nodes = List.rev doc.nodes
@@ -325,5 +352,13 @@ let check ~ofmt:_ ~doc ~fb_queue =
       ; contents
       }
     in
+    let end_msg =
+      match doc.completed with
+      | Yes ->
+        "done: document fully checked "
+        ^ Pp.string_of_ppcmds (Loc.pr (Pcoq.Parsable.loc handle))
+      | Stopped loc -> "done: stopped at " ^ Pp.string_of_ppcmds (Loc.pr loc)
+    in
+    Io.Log.error "check" end_msg;
     print_stats ();
     doc
