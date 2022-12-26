@@ -159,25 +159,27 @@ let rec discard_to_dot ps =
   | CLexer.Error.E _ -> discard_to_dot ps
   | e when CErrors.noncritical e -> ()
 
-(* Gross hack *)
-let proof_st = ref None
-
-let register_hack_proof_recover ast st =
-  match (Coq.Ast.to_coq ast).CAst.v.Vernacexpr.expr with
-  | Vernacexpr.VernacStartTheoremProof _ ->
-    proof_st := Some st;
-    ()
-  | _ -> ()
+let rec find_recovery_for_failed_qed ~default nodes =
+  match nodes with
+  | [] -> (default, None)
+  | { ast = None; _ } :: ns -> find_recovery_for_failed_qed ~default ns
+  | { ast = Some ast; state = _; _ } :: ns -> (
+    match (Coq.Ast.to_coq ast).CAst.v.Vernacexpr.expr with
+    | Vernacexpr.VernacStartTheoremProof _ -> (
+      match ns with
+      | [] -> (default, None)
+      | n :: _ -> (n.state, Some n.loc))
+    | _ -> find_recovery_for_failed_qed ~default ns)
 
 (* Simple heuristic for Qed. *)
-let state_recovery_heuristic st v =
+let state_recovery_heuristic doc st v =
   match (Coq.Ast.to_coq v).CAst.v.Vernacexpr.expr with
   (* Drop the top proof state if we reach a faulty Qed. *)
   | Vernacexpr.VernacEndProof _ ->
-    let st = Option.default st !proof_st in
-    Io.Log.error "recovery" (Memo.input_info (v, st));
-    proof_st := None;
-    Coq.State.drop_proofs ~st
+    let st, loc = find_recovery_for_failed_qed ~default:st doc.nodes in
+    let loc_msg = Option.cata Coq.Ast.pr_loc "no loc" loc in
+    Io.Log.error "recovery" (loc_msg ^ " " ^ Memo.input_info (v, st));
+    st
   | _ -> st
 
 let debug_parsed_sentence ~ast =
@@ -297,7 +299,6 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
     | Process ast -> (
       let ast_loc = Coq.Ast.loc ast |> Option.get in
       (* We register pre-interp for now *)
-      register_hack_proof_recover ast st;
       let res, memo_info = interp_and_info ~parsing_time ~st ~fb_queue ast in
       match res with
       | Coq.Protect.R.Interrupted ->
@@ -329,7 +330,7 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
           let fb_diags = List.rev !fb_queue |> process_feedback ~loc:err_loc in
           fb_queue := [];
           let diags = parsing_diags @ fb_diags @ diags in
-          let st = state_recovery_heuristic st ast in
+          let st = state_recovery_heuristic doc st ast in
           let node =
             { loc = ast_loc; ast = Some ast; diags; state = st; memo_info }
           in
