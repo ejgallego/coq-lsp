@@ -135,8 +135,11 @@ export function activate(context: ExtensionContext): void {
     };
 
     let disposable = window.onDidChangeTextEditorSelection((evt : vscode.TextEditorSelectionChangeEvent) => {
+
+        if(evt.textEditor.document.languageId != 'coq') return;
+
         const show =
-            (evt.kind == vscode.TextEditorSelectionChangeKind.Keyboard && 
+            (evt.kind == vscode.TextEditorSelectionChangeKind.Keyboard &&
              config.show_goals_on == ShowGoalsOnCursorChange.OnMouseAndKeyboard) ||
             (evt.kind == vscode.TextEditorSelectionChangeKind.Mouse &&
              (config.show_goals_on == ShowGoalsOnCursorChange.OnMouse ||
