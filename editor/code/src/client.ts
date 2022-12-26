@@ -5,6 +5,7 @@ import {
     workspace,
     ViewColumn,
     Uri,
+    TextEditor,
 } from "vscode";
 import {
     LanguageClient,
@@ -32,6 +33,10 @@ export function activate(context: ExtensionContext): void {
 
     function coqCommand(command: string, fn: () => void) {
         let disposable = commands.registerCommand("coq-lsp." + command, fn);
+        context.subscriptions.push(disposable);
+    }
+    function coqEditorCommand(command: string, fn: (editor: TextEditor) => void) {
+        let disposable = commands.registerTextEditorCommand("coq-lsp." + command, fn);
         context.subscriptions.push(disposable);
     }
     const restart = () => {
@@ -73,17 +78,18 @@ export function activate(context: ExtensionContext): void {
             goalPanel = panelFactory(context);
         }
     };
-    const goals = () => {
+    
+    const goals = (editor : TextEditor) => {
         checkPanelAlive();
-        let uri = window.activeTextEditor?.document?.uri;
-        let position = window.activeTextEditor?.selection?.active;
-        if (goalPanel && uri && position) {
+        let uri = editor.document.uri;
+        let position = editor.selection.active;
+        if (goalPanel) {
             goalPanel.update(uri, position);
         }
     };
 
     coqCommand("restart", restart);
-    coqCommand("goals", goals);
+    coqEditorCommand("goals", goals);
 
     restart();
 }
