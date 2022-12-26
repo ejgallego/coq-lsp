@@ -50,7 +50,7 @@ export function panelFactory(context: ExtensionContext) {
 }
 
 export function activate(context: ExtensionContext): void {
-    window.showInformationMessage("Going to activate!");
+    window.showInformationMessage("Coq LSP Extension: Going to activate!");
 
     function coqCommand(command: string, fn: () => void) {
         let disposable = commands.registerCommand("coq-lsp." + command, fn);
