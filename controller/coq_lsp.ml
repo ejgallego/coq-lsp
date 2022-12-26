@@ -439,13 +439,21 @@ let lvl_to_severity (lvl : Feedback.level) =
   | Feedback.Warning -> 2
   | Feedback.Error -> 1
 
+let add_message lvl loc msg q =
+  let lvl = lvl_to_severity lvl in
+  q := (loc, lvl, msg) :: !q
+
 let mk_fb_handler () =
   let q = ref [] in
   ( (fun Feedback.{ contents; _ } ->
       match contents with
-      | Message (lvl, loc, msg) ->
-        let lvl = lvl_to_severity lvl in
-        q := (loc, lvl, msg) :: !q
+      | Message (((Error | Warning | Notice) as lvl), loc, msg) ->
+        add_message lvl loc msg q
+      | Message ((Info as lvl), loc, msg) ->
+        if !Fleche.Config.v.show_coq_info_messages then
+          add_message lvl loc msg q
+        else ()
+      | Message (Debug, _loc, _msg) -> ()
       | _ -> ())
   , q )
 

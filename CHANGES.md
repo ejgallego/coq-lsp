@@ -1,8 +1,5 @@
-# coq-lsp 0.2.0: Location
+# coq-lsp 0.1.1: Location
 -------------------------
-
-# coq-lsp 0.1.1:
-----------------
 
  - Don't crash if the log file can't be created (@ejgallego , #87)
  - Use LSP functions for client-side logging (@ejgallego , #87)
@@ -13,6 +10,9 @@
  - Improved syntax highlighting on VSCode client (@artagnon, #105)
  - Resume document checking from the point it was interrupted
    (@ejgallego, #95, #99)
+ - Don't convert Coq "Info" messages such as "Foo is defined" to
+   feedback by default; users willing to see them can set the
+   corresponding option (@ejgallego, #113)
 
 # coq-lsp 0.1.0: Memory
 -----------------------
