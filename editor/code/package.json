@@ -123,6 +123,13 @@
             "type": "boolean",
             "default": false,
             "description": "Show Coq's Info messages as diagnostics, such as 'foo has been defined.' and miscellaneous operational messages."
+          },
+          "coq-lsp.show_goals_on": {
+            "type": "number",
+            "default": 1,
+            "description": "When to show goals and information about the current cursor",
+            "enum": [0,1,2],
+            "enumItemLabels": ["Don't follow cursor", "Show on click", "Show on click and on cursor movement"]
           }
         }
       }

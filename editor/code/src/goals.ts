@@ -1,5 +1,5 @@
 import { Webview, Position, Uri, WebviewPanel } from "vscode";
-import { RequestType } from "vscode-languageclient";
+import { RequestType, TextDocumentIdentifier, VersionedTextDocumentIdentifier } from "vscode-languageclient";
 import { LanguageClient } from "vscode-languageclient/node";
 
 interface Hyp {
@@ -11,7 +11,10 @@ interface Goal {
     hyps: Hyp[];
 }
 
-interface GoalRequest {}
+interface GoalRequest {
+    textDocument: TextDocumentIdentifier,
+    position: Position
+}
 
 // returns the HTML code of goals environment
 function getGoalsEnvContent(goals: Goal[]) {
@@ -88,7 +91,7 @@ class GoalView {
     // LSP Protocol extension for Goals
     sendGoalsRequest(uri: Uri, position: Position) {
         let doc = { uri: uri.toString() };
-        let cursor = { textDocument: doc, position: position };
+        let cursor : GoalRequest = { textDocument: doc, position: position };
         const req = new RequestType<GoalRequest, Goal[], void>("proof/goals");
         this.client.sendRequest(req, cursor).then(
             (goals) => this.display(goals),

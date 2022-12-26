@@ -16,6 +16,9 @@
  - Send `$/coq/fileProgress` progress notifications from server,
    similarly to what Lean does; display them in Code's right gutter
    (@ejgallego, #106, fixes #54)
+ - Show goals on click by default, allow users to configure the
+   behavior to follow cursor in different ways (@ejgallego, #116,
+   fixes #89)
 
 # coq-lsp 0.1.0: Memory
 -----------------------
