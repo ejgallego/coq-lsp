@@ -75,3 +75,17 @@ let grab_definitions f nodes =
 
 let marshal_in ic : t = Marshal.from_channel ic
 let marshal_out oc v = Marshal.to_channel oc v []
+
+let pr_loc ?(print_file = false) loc =
+  let open Loc in
+  let file =
+    if print_file then
+      match loc.fname with
+      | ToplevelInput -> "Toplevel input"
+      | InFile { file; _ } -> "File \"" ^ file ^ "\""
+    else "loc"
+  in
+  Format.asprintf "%s: line: %d, col: %d -- line: %d, col: %d / {%d-%d}" file
+    loc.line_nb (loc.bp - loc.bol_pos) loc.line_nb_last
+    (loc.ep - loc.bol_pos_last)
+    loc.bp loc.ep

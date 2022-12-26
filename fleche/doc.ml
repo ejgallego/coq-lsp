@@ -18,8 +18,10 @@ let hd_opt ~default l =
 (* [node list] is a very crude form of a meta-data map "loc -> data" , where for
    now [data] is only the goals. *)
 type node =
-  { ast : Coq.Ast.t  (** Ast of node *)
+  { loc : Loc.t
+  ; ast : Coq.Ast.t option  (** Ast of node *)
   ; state : Coq.State.t  (** (Full) State of node *)
+  ; diags : Types.Diagnostic.t list
   ; memo_info : string
   }
 
@@ -38,7 +40,6 @@ type t =
   ; contents : string
   ; root : Coq.State.t
   ; nodes : node list
-  ; diags : Types.Diagnostic.t list
   ; diags_dirty : bool  (** Used to optimize `eager_diagnostics` *)
   ; completed : Completion.t
   }
@@ -56,7 +57,6 @@ let create ~state ~workspace ~uri ~version ~contents =
   ; version
   ; root = mk_doc state workspace
   ; nodes = []
-  ; diags = []
   ; diags_dirty = false
   ; completed = Stopped (init_loc ~uri)
   }
@@ -66,22 +66,24 @@ let bump_version ~version ~text doc =
   { doc with
     version
   ; nodes = []
-  ; diags = []
   ; contents = text
   ; diags_dirty = false
   ; completed = Stopped (init_loc ~uri:doc.uri)
   }
 
-let add_node ~node ~diags doc =
-  let diags_dirty = if diags <> [] then true else doc.diags_dirty in
-  { doc with nodes = node :: doc.nodes; diags = diags @ doc.diags; diags_dirty }
+let add_node ~node doc =
+  let diags_dirty = if node.diags <> [] then true else doc.diags_dirty in
+  { doc with nodes = node :: doc.nodes; diags_dirty }
+
+let concat_diags doc = List.concat_map (fun node -> node.diags) doc.nodes
 
 let send_eager_diagnostics ~uri ~version ~doc =
   (* this is too noisy *)
   (* let proc_diag = mk_diag loc 3 (Pp.str "Processing") in *)
   (* Io.Report.diagnostics ~uri ~version (proc_diag :: doc.diags)); *)
   if doc.diags_dirty && !Config.v.eager_diagnostics then (
-    Io.Report.diagnostics ~uri ~version doc.diags;
+    let diags = concat_diags doc in
+    Io.Report.diagnostics ~uri ~version diags;
     { doc with diags_dirty = false })
   else doc
 
@@ -152,7 +154,7 @@ let debug_parsed_sentence ~ast =
 
 type process_action =
   | EOF of Completion.t (* completed *)
-  | Skip of Loc.t (* last valid token *)
+  | Skip of Loc.t * Loc.t (* span of the skipped sentence + last valid token *)
   | Process of Coq.Ast.t (* ast to process *)
 
 (* Make each fb a diag *)
@@ -203,13 +205,22 @@ let interp_and_info ~parsing_time ~st ~fb_queue ast =
   in
   (res, memo_info ^ "\n___\n" ^ mem_info)
 
+let build_span start_loc end_loc =
+  Loc.
+    { start_loc with
+      line_nb_last = end_loc.line_nb_last
+    ; bol_pos_last = end_loc.bol_pos_last
+    ; ep = end_loc.ep
+    }
+
 (* XXX: Imperative problem *)
 let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
   let rec stm doc st last_tok =
     let doc = send_eager_diagnostics ~uri ~version ~doc in
     if Debug.parsing then Io.Log.error "coq" "parsing sentence";
     (* Parsing *)
-    let action, pdiags, parsing_time =
+    let action, parsing_diags, parsing_time =
+      let start_loc = Pcoq.Parsable.loc doc_handle |> CLexer.after in
       match parse_stm ~st doc_handle with
       | Coq.Protect.R.Interrupted, time -> (EOF (Stopped last_tok), [], time)
       | Coq.Protect.R.Completed res, time -> (
@@ -219,21 +230,32 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
           let () = if Debug.parsing then debug_parsed_sentence ~ast in
           (Process ast, [], time)
         | Error (loc, msg) ->
-          let loc = Option.get loc in
-          let diags = [ mk_diag loc 1 msg ] in
+          let err_loc = Option.get loc in
+          let diags = [ mk_diag err_loc 1 msg ] in
           discard_to_dot doc_handle;
           let last_tok = Pcoq.Parsable.loc doc_handle in
-          (Skip last_tok, diags, time))
+          let span_loc = build_span start_loc last_tok in
+          (Skip (span_loc, last_tok), diags, time))
     in
-    let doc = { doc with diags = pdiags @ doc.diags } in
     (* Execution *)
     match action with
     (* End of file *)
     | EOF completed -> set_completion ~completed doc
-    | Skip last_tok -> stm doc st last_tok
+    | Skip (span_loc, last_tok) ->
+      (* We add the parsing diags *)
+      let node =
+        { loc = span_loc
+        ; ast = None
+        ; diags = parsing_diags
+        ; state = st
+        ; memo_info = ""
+        }
+      in
+      let doc = add_node ~node doc in
+      stm doc st last_tok
     (* We interpret the command now *)
     | Process ast -> (
-      let loc = Coq.Ast.loc ast |> Option.get in
+      let ast_loc = Coq.Ast.loc ast |> Option.get in
       (* We register pre-interp for now *)
       register_hack_proof_recover ast st;
       let res, memo_info = interp_and_info ~parsing_time ~st ~fb_queue ast in
@@ -249,25 +271,29 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
           (* let goals = Coq.State.goals *)
           let diags =
             if !Config.v.ok_diagnostics then
-              let ok_diag = mk_diag loc 3 (Pp.str "OK") in
+              let ok_diag = mk_diag ast_loc 3 (Pp.str "OK") in
               [ ok_diag ]
             else []
           in
-          let fb_diags = process_feedback ~loc feedback in
-          let diags = fb_diags @ diags in
-          let node = { ast; state; memo_info } in
-          let doc = add_node ~node ~diags doc in
+          let fb_diags = process_feedback ~loc:ast_loc feedback in
+          let diags = parsing_diags @ fb_diags @ diags in
+          let node =
+            { loc = ast_loc; ast = Some ast; diags; state; memo_info }
+          in
+          let doc = add_node ~node doc in
           stm doc state last_tok_new
         | Error (err_loc, msg) ->
-          let loc = Option.default loc err_loc in
-          let diags = [ mk_error_diagnostic ~loc ~msg ~ast ] in
+          let err_loc = Option.default ast_loc err_loc in
+          let diags = [ mk_error_diagnostic ~loc:err_loc ~msg ~ast ] in
           (* FB should be handled by Coq.Protect.eval XXX *)
-          let fb_diags = List.rev !fb_queue |> process_feedback ~loc in
+          let fb_diags = List.rev !fb_queue |> process_feedback ~loc:err_loc in
           fb_queue := [];
-          let diags = fb_diags @ diags in
+          let diags = parsing_diags @ fb_diags @ diags in
           let st = state_recovery_heuristic st ast in
-          let node = { ast; state = st; memo_info } in
-          let doc = add_node ~node ~diags doc in
+          let node =
+            { loc = ast_loc; ast = Some ast; diags; state = st; memo_info }
+          in
+          let doc = add_node ~node doc in
           stm doc st last_tok_new))
   in
   (* Note that nodes and diags in reversed order here *)
@@ -336,22 +362,12 @@ let check ~ofmt:_ ~doc ~fb_queue =
     in
     (* Set the document to "internal" mode *)
     let doc =
-      { doc with
-        contents = processed_content
-      ; nodes = List.rev doc.nodes
-      ; diags = List.rev doc.diags
-      }
+      { doc with contents = processed_content; nodes = List.rev doc.nodes }
     in
     let doc = process_and_parse ~uri ~version ~fb_queue doc last_tok handle in
     (* Set the document to "finished" mode: Restore the original contents,
        reverse the accumulators *)
-    let doc =
-      { doc with
-        nodes = List.rev doc.nodes
-      ; diags = List.rev doc.diags
-      ; contents
-      }
-    in
+    let doc = { doc with nodes = List.rev doc.nodes; contents } in
     let end_msg =
       match doc.completed with
       | Yes ->

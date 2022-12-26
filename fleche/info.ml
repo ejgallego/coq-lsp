@@ -113,6 +113,7 @@ module type S = sig
 
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
 
+  val loc : (approx, Loc.t) query
   val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
   val info : (approx, string) query
@@ -130,13 +131,13 @@ module Make (P : Point) : S with module P := P = struct
       match l with
       | [] -> prev
       | node :: xs -> (
-        let loc = Coq.Ast.loc node.Doc.ast in
+        let loc = node.Doc.loc in
         match approx with
-        | Exact -> if P.in_range ?loc point then Some node else find None xs
+        | Exact -> if P.in_range ~loc point then Some node else find None xs
         | PrevIfEmpty ->
-          if P.gt_range ?loc point then prev else find (Some node) xs
+          if P.gt_range ~loc point then prev else find (Some node) xs
         | Prev ->
-          if P.gt_range ?loc point || P.in_range ?loc point then prev
+          if P.gt_range ~loc point || P.in_range ~loc point then prev
           else find (Some node) xs)
     in
     find None doc.Doc.nodes
@@ -168,8 +169,13 @@ module Make (P : Point) : S with module P := P = struct
     let lemmas = Coq.State.lemmas ~st in
     Option.cata (reify_goals ppx) None lemmas
 
+  let loc ~doc ~point approx =
+    let node = find ~doc ~point approx in
+    Option.map (fun node -> node.Doc.loc) node
+
   let ast ~doc ~point approx =
-    find ~doc ~point approx |> Option.map (fun node -> node.Doc.ast)
+    let node = find ~doc ~point approx in
+    Option.bind node (fun node -> node.Doc.ast)
 
   let goals ~doc ~point approx =
     find ~doc ~point approx
