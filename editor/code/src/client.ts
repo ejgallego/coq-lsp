@@ -7,7 +7,8 @@ import {
     ViewColumn,
     Uri,
     TextEditor,
-    OverviewRulerLane
+    OverviewRulerLane,
+    WorkspaceConfiguration
 } from "vscode";
 import * as vscode from "vscode";
 import { Range } from "vscode-languageclient";
@@ -19,6 +20,21 @@ import {
 import { GoalPanel } from "./goals";
 import { coqFileProgress, CoqFileProgressParams } from "./progress";
 
+enum ShowGoalsOnCursorChange {
+    Never = 0,
+    OnMouse = 1,
+    OnMouseAndKeyboard = 2
+};
+
+interface CoqLspConfig {
+    eager_diagnostics: boolean,
+    ok_diagnostics: boolean,
+    goal_after_tactic: boolean,
+    show_coq_info_messages: boolean,
+    show_goals_on : ShowGoalsOnCursorChange
+}
+
+let config : CoqLspConfig;
 let client: LanguageClient;
 let goalPanel: GoalPanel | null;
 
@@ -52,19 +68,22 @@ export function activate(context: ExtensionContext): void {
 
         window.showInformationMessage("Coq Language Server: starting");
 
-        const config = workspace.getConfiguration("coq-lsp");
-        const initializationOptions = {
-            eager_diagnostics: config.eager_diagnostics,
-            ok_diagnostics: config.ok_diagnostics,
+        const wsConfig = workspace.getConfiguration("coq-lsp");
+        config = {
+            eager_diagnostics: wsConfig.eager_diagnostics,
+            ok_diagnostics: wsConfig.ok_diagnostics,
+            goal_after_tactic: wsConfig.goal_after_tactic,
+            show_coq_info_messages: wsConfig.show_coq_info_messages,
+            show_goals_on: wsConfig.show_goals_on
         };
 
         const clientOptions: LanguageClientOptions = {
             documentSelector: [{ scheme: "file", language: "coq" }],
             outputChannelName: "Coq LSP Server Events",
             revealOutputChannelOn: RevealOutputChannelOn.Info,
-            initializationOptions,
+            initializationOptions: config,
         };
-        const serverOptions = { command: config.path, args: config.args };
+        const serverOptions = { command: wsConfig.path, args: wsConfig.args };
 
         client = new LanguageClient(
             "coq-lsp-server",
@@ -83,6 +102,7 @@ export function activate(context: ExtensionContext): void {
         // XXX: Fix this mess with the lifetime of the panel
         goalPanel = panelFactory(context);
     };
+
     const progressDecoration = window.createTextEditorDecorationType(
         { overviewRulerColor: 'rgba(255,165,0,0.5)', overviewRulerLane: OverviewRulerLane.Left}
     );
@@ -113,6 +133,20 @@ export function activate(context: ExtensionContext): void {
             goalPanel.update(uri, position);
         }
     };
+
+    let disposable = window.onDidChangeTextEditorSelection((evt : vscode.TextEditorSelectionChangeEvent) => {
+        const show =
+            (evt.kind == vscode.TextEditorSelectionChangeKind.Keyboard && 
+             config.show_goals_on == ShowGoalsOnCursorChange.OnMouseAndKeyboard) ||
+            (evt.kind == vscode.TextEditorSelectionChangeKind.Mouse &&
+             (config.show_goals_on == ShowGoalsOnCursorChange.OnMouse ||
+              config.show_goals_on == ShowGoalsOnCursorChange.OnMouseAndKeyboard));
+
+        if(show) {
+            goals(evt.textEditor);
+        }});
+
+    context.subscriptions.push(disposable);
 
     coqCommand("restart", restart);
     coqEditorCommand("goals", goals);
