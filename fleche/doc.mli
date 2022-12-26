@@ -28,14 +28,15 @@ type node =
 
 module Completion : sig
   type t =
-    | Yes
-    | Stopped of Loc.t (* Location of the last valid token *)
+    | Yes of Loc.t  (** Location of the last token in the document *)
+    | Stopped of Loc.t  (** Location of the last valid token *)
 end
 
 type t = private
   { uri : string
   ; version : int
   ; contents : string
+  ; end_loc : int * int * int
   ; root : Coq.State.t
   ; nodes : node list
   ; diags_dirty : bool
@@ -50,7 +51,7 @@ val create :
   -> contents:string
   -> t
 
-val bump_version : version:int -> text:string -> t -> t
+val bump_version : version:int -> contents:string -> t -> t
 
 val check :
   ofmt:Format.formatter -> doc:t -> fb_queue:Coq.Message.t list ref -> t

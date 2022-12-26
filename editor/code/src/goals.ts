@@ -10,6 +10,7 @@ interface Goal {
     ty: string;
     hyps: Hyp[];
 }
+
 interface GoalRequest {}
 
 // returns the HTML code of goals environment

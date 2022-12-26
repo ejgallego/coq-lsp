@@ -138,6 +138,21 @@ let lsp_of_diags ~uri ~version diags =
     diags
   |> LSP.mk_diagnostics ~uri ~version
 
+let lsp_of_progress ~uri ~version progress =
+  let progress =
+    List.map
+      (fun (range, kind) ->
+        `Assoc [ ("range", LSP.mk_range range); ("kind", `Int kind) ])
+      progress
+  in
+  let params =
+    [ ( "textDocument"
+      , `Assoc [ ("uri", `String uri); ("version", `Int version) ] )
+    ; ("processing", `List progress)
+    ]
+  in
+  LSP.mk_notification ~method_:"$/coq/fileProgress" ~params
+
 let asts_of_doc doc =
   List.filter_map (fun v -> v.Fleche.Doc.ast) doc.Fleche.Doc.nodes
 
@@ -158,7 +173,9 @@ module Check = struct
 
   let completed uri =
     let doc = Hashtbl.find doc_table uri in
-    doc.completed = Yes
+    match doc.completed with
+    | Yes _ -> true
+    | _ -> false
 
   let schedule ~uri = pending := Some uri
 end
@@ -186,7 +203,6 @@ let do_change params =
   let uri, version =
     (string_field "uri" document, int_field "version" document)
   in
-  Log.log_error "checking file" (uri ^ " / version: " ^ string_of_int version);
   let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
   match changes with
   | [] -> ()
@@ -195,12 +211,18 @@ let do_change params =
       "more than one change unsupported due to sync method";
     assert false
   | change :: _ ->
-    let text = string_field "text" change in
+    let contents = string_field "text" change in
     let doc = Hashtbl.find doc_table uri in
     let doc =
       (* [bump_version] will clean stale info about the document, in particular
          partial results of a previous checking *)
-      if version > doc.version then Fleche.Doc.bump_version ~version ~text doc
+      if version > doc.version then (
+        Log.log_error "bump file" (uri ^ " / version: " ^ string_of_int version);
+        let tb = Unix.gettimeofday () in
+        let doc = Fleche.Doc.bump_version ~version ~contents doc in
+        let diff = Unix.gettimeofday () -. tb in
+        Log.log_error "bump file took" (Format.asprintf "%f" diff);
+        doc)
       else doc
     in
     let () = Hashtbl.replace doc_table uri doc in
@@ -352,6 +374,8 @@ let memo_read_from_disk () = if false then memo_read_from_disk ()
 let request_queue = Queue.create ()
 
 let process_input (com : J.t) =
+  if Fleche.Debug.sched_wakeup then
+    Log.log_error "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   (* TODO: this is the place to cancel pending requests that are invalid, and in
      general, to perform queue optimizations *)
   Queue.push com request_queue;
@@ -402,6 +426,8 @@ let dispatch_message ofmt ~state dict =
     Log.log_error "BT" bt
 
 let rec process_queue ofmt ~state =
+  if Fleche.Debug.sched_wakeup then
+    Log.log_error "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   (match Queue.peek_opt request_queue with
   | None -> (
     match !Check.pending with
@@ -429,6 +455,9 @@ let lsp_cb oc =
     ; send_diagnostics =
         (fun ~uri ~version diags ->
           lsp_of_diags ~uri ~version diags |> Lsp.Io.send_json oc)
+    ; send_fileProgress =
+        (fun ~uri ~version progress ->
+          lsp_of_progress ~uri ~version progress |> Lsp.Io.send_json oc)
     }
 
 let lvl_to_severity (lvl : Feedback.level) =
