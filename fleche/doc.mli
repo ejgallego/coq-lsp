@@ -19,8 +19,10 @@
 (* [node list] is a very crude form of a meta-data map "loc -> data" , where for
    now [data] is only the goals. *)
 type node =
-  { ast : Coq.Ast.t  (** Ast of node *)
+  { loc : Loc.t
+  ; ast : Coq.Ast.t option  (** Ast of node *)
   ; state : Coq.State.t  (** (Full) State of node *)
+  ; diags : Types.Diagnostic.t list  (** Diagnostics associated to the node *)
   ; memo_info : string
   }
 
@@ -36,7 +38,6 @@ type t = private
   ; contents : string
   ; root : Coq.State.t
   ; nodes : node list
-  ; diags : Types.Diagnostic.t list
   ; diags_dirty : bool
   ; completed : Completion.t
   }

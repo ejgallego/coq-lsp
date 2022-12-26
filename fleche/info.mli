@@ -44,6 +44,7 @@ module type S = sig
 
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
 
+  val loc : (approx, Loc.t) query
   val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
   val info : (approx, string) query

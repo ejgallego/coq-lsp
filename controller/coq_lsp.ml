@@ -138,6 +138,12 @@ let lsp_of_diags ~uri ~version diags =
     diags
   |> LSP.mk_diagnostics ~uri ~version
 
+let asts_of_doc doc =
+  List.filter_map (fun v -> v.Fleche.Doc.ast) doc.Fleche.Doc.nodes
+
+let diags_of_doc doc =
+  List.concat_map (fun node -> node.Fleche.Doc.diags) doc.Fleche.Doc.nodes
+
 module Check = struct
   let pending = ref None
 
@@ -146,7 +152,8 @@ module Check = struct
     let doc = Hashtbl.find doc_table uri in
     let doc = Fleche.Doc.check ~ofmt ~doc ~fb_queue in
     Hashtbl.replace doc_table doc.uri doc;
-    let diags = lsp_of_diags ~uri:doc.uri ~version:doc.version doc.diags in
+    let diags = diags_of_doc doc in
+    let diags = lsp_of_diags ~uri:doc.uri ~version:doc.version diags in
     LIO.send_json ofmt @@ diags
 
   let completed uri =
@@ -231,7 +238,7 @@ let _kind_of_type _tm = 13
 let do_symbols ofmt ~id params =
   let file, doc = grab_doc params in
   let f loc id = mk_syminfo file (Names.Id.to_string id, "", 12, loc) in
-  let ast = List.map (fun v -> v.Fleche.Doc.ast) doc.Fleche.Doc.nodes in
+  let ast = asts_of_doc doc in
   let slist = Coq.Ast.grab_definitions f ast in
   let msg = LSP.mk_reply ~id ~result:(`List slist) in
   LIO.send_json ofmt msg
@@ -244,23 +251,21 @@ let get_docTextPosition params =
   (file, (line, character))
 
 (* XXX refactor *)
-let ast_info ast =
-  let loc = Coq.Ast.loc ast |> Option.get in
-  Pp.string_of_ppcmds (Loc.pr loc)
+let loc_info loc = Coq.Ast.pr_loc loc
 
 let do_hover ofmt ~id params =
-  let show_ast_info = false in
+  let show_loc_info = true in
   let uri, point = get_docTextPosition params in
   let doc = Hashtbl.find doc_table uri in
-  let ast_string =
-    Fleche.Info.LC.ast ~doc ~point Exact
-    |> Option.map ast_info |> Option.default "no ast"
+  let loc_string =
+    Fleche.Info.LC.loc ~doc ~point Exact
+    |> Option.map loc_info |> Option.default "no ast"
   in
   let info_string =
     Fleche.Info.LC.info ~doc ~point Exact |> Option.default "no info"
   in
   let hover_string =
-    if show_ast_info then ast_string ^ "\n___\n" ^ info_string else info_string
+    if show_loc_info then loc_string ^ "\n___\n" ^ info_string else info_string
   in
   let result =
     `Assoc
@@ -276,7 +281,7 @@ let do_completion ofmt ~id params =
   let uri, _ = get_docTextPosition params in
   let doc = Hashtbl.find doc_table uri in
   let f _loc id = `Assoc [ ("label", `String Names.Id.(to_string id)) ] in
-  let ast = List.map (fun v -> v.Fleche.Doc.ast) doc.Fleche.Doc.nodes in
+  let ast = asts_of_doc doc in
   let clist = Coq.Ast.grab_definitions f ast in
   let result = `List clist in
   let msg = LSP.mk_reply ~id ~result in
