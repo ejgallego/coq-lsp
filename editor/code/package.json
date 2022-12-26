@@ -119,6 +119,11 @@
             "type": "boolean",
             "default": false,
             "description": "When showing goals and the cursor is in a tactic, if false, show goals before executing the tactic, if true, show goals after"
+          },
+          "coq-lsp.show_coq_info_messages": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show Coq's Info messages as diagnostics, such as 'foo has been defined.' and miscellaneous operational messages."
           }
         }
       }
