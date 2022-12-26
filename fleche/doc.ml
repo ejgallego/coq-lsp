@@ -7,9 +7,6 @@
 (* Status: Experimental                                                 *)
 (************************************************************************)
 
-(* open Lsp_util
- * module LSP = Lsp.Base *)
-
 let hd_opt ~default l =
   match l with
   | [] -> default
@@ -27,8 +24,8 @@ type node =
 
 module Completion = struct
   type t =
-    | Yes
-    | Stopped of Loc.t (* Location of the last valid token *)
+    | Yes of Loc.t  (** Location of the last token in the document *)
+    | Stopped of Loc.t  (** Location of the last valid token *)
 end
 
 (* Private. A doc is a list of nodes for now. The first element in the list is
@@ -38,6 +35,7 @@ type t =
   { uri : string
   ; version : int
   ; contents : string
+  ; end_loc : int * int * int
   ; root : Coq.State.t
   ; nodes : node list
   ; diags_dirty : bool  (** Used to optimize `eager_diagnostics` *)
@@ -51,9 +49,16 @@ let mk_doc root_state workspace =
 
 let init_loc ~uri = Loc.initial (InFile { dirpath = None; file = uri })
 
+let get_last_text text =
+  let lines = CString.split_on_char '\n' text in
+  let last_line = hd_opt ~default:"" (List.rev lines) in
+  (List.length lines, String.length last_line, String.length text)
+
 let create ~state ~workspace ~uri ~version ~contents =
+  let end_loc = get_last_text contents in
   { uri
   ; contents
+  ; end_loc
   ; version
   ; root = mk_doc state workspace
   ; nodes = []
@@ -61,12 +66,14 @@ let create ~state ~workspace ~uri ~version ~contents =
   ; completed = Stopped (init_loc ~uri)
   }
 
-let bump_version ~version ~text doc =
+let bump_version ~version ~contents doc =
+  let end_loc = get_last_text contents in
   (* We need to resume checking in full when a new document *)
   { doc with
     version
   ; nodes = []
-  ; contents = text
+  ; contents
+  ; end_loc
   ; diags_dirty = false
   ; completed = Stopped (init_loc ~uri:doc.uri)
   }
@@ -88,6 +95,34 @@ let send_eager_diagnostics ~uri ~version ~doc =
   else doc
 
 let set_completion ~completed doc = { doc with completed }
+
+(* We approximate the remnants of the document. It would be easier if instead of
+   reporting what is missing, we would report what is done, but for now we are
+   trying this paradigm.
+
+   As we are quite dynamic (for now) in terms of what we observe of the document
+   (basically we observe it linearly), we must compute the final position with a
+   bit of a hack. *)
+let compute_progress end_loc last_done =
+  let start =
+    { Types.Point.line = last_done.Loc.line_nb_last - 1
+    ; character = last_done.ep - last_done.bol_pos_last
+    ; offset = last_done.ep
+    }
+  in
+  let end_line, end_col, end_offset = end_loc in
+  let end_ =
+    { Types.Point.line = end_line - 1
+    ; character = end_col
+    ; offset = end_offset
+    }
+  in
+  let range = Types.Range.{ start; end_ } in
+  (range, 1)
+
+let report_progress ~doc last_tok =
+  let progress = compute_progress doc.end_loc last_tok in
+  Io.Report.fileProgress ~uri:doc.uri ~version:doc.version [ progress ]
 
 (* XXX: Save on close? *)
 (* let close_doc _modname = () *)
@@ -119,7 +154,6 @@ let parse_to_terminator : unit Pcoq.Entry.t =
 (* If an error occurred while parsing, we try to read the input until a dot
    token is encountered. We assume that when a lexer error occurs, at least one
    char was eaten *)
-
 let rec discard_to_dot ps =
   try Pcoq.Entry.parse parse_to_terminator ps with
   | CLexer.Error.E _ -> discard_to_dot ps
@@ -217,6 +251,7 @@ let build_span start_loc end_loc =
 let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
   let rec stm doc st last_tok =
     let doc = send_eager_diagnostics ~uri ~version ~doc in
+    report_progress ~doc last_tok;
     if Debug.parsing then Io.Log.error "coq" "parsing sentence";
     (* Parsing *)
     let action, parsing_diags, parsing_time =
@@ -225,7 +260,12 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
       | Coq.Protect.R.Interrupted, time -> (EOF (Stopped last_tok), [], time)
       | Coq.Protect.R.Completed res, time -> (
         match res with
-        | Ok None -> (EOF Yes, [], time)
+        | Ok None ->
+          (* We actually need to fix Coq to return the location of the true file
+             EOF, the below trick doesn't work. That will involved updating the
+             type of `main_entry` *)
+          let last_tok = Pcoq.Parsable.loc doc_handle in
+          (EOF (Yes last_tok), [], time)
         | Ok (Some ast) ->
           let () = if Debug.parsing then debug_parsed_sentence ~ast in
           (Process ast, [], time)
@@ -342,7 +382,7 @@ let log_resume last_tok =
 
 let check ~ofmt:_ ~doc ~fb_queue =
   match doc.completed with
-  | Yes ->
+  | Yes _ ->
     Io.Log.error "check" "resuming, completed=yes, nothing to do";
     doc
   | Stopped last_tok ->
@@ -369,11 +409,14 @@ let check ~ofmt:_ ~doc ~fb_queue =
        reverse the accumulators *)
     let doc = { doc with nodes = List.rev doc.nodes; contents } in
     let end_msg =
-      match doc.completed with
-      | Yes ->
-        "done: document fully checked "
-        ^ Pp.string_of_ppcmds (Loc.pr (Pcoq.Parsable.loc handle))
-      | Stopped loc -> "done: stopped at " ^ Pp.string_of_ppcmds (Loc.pr loc)
+      let timestamp = Unix.gettimeofday () in
+      let loc =
+        match doc.completed with
+        | Yes loc -> loc
+        | Stopped loc -> loc
+      in
+      Format.asprintf "done [%.2f]: document fully checked %a" timestamp
+        Pp.pp_with (Loc.pr loc)
     in
     Io.Log.error "check" end_msg;
     print_stats ();

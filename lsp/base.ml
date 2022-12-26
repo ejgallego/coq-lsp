@@ -50,13 +50,13 @@ let mk_notification ~method_ ~params =
    let json_of_thm thm = let open Proofs in match thm with | None -> `Null |
    Some thm -> `Assoc [ "goals", `List List.(map json_of_goal thm.t_goals) ] *)
 
-let mk_range { Fleche.Types.Range.start; _end } : J.t =
+let mk_range { Fleche.Types.Range.start; end_ } : J.t =
   `Assoc
     [ ( "start"
       , `Assoc
           [ ("line", `Int start.line); ("character", `Int start.character) ] )
     ; ( "end"
-      , `Assoc [ ("line", `Int _end.line); ("character", `Int _end.character) ]
+      , `Assoc [ ("line", `Int end_.line); ("character", `Int end_.character) ]
       )
     ]
 

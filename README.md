@@ -150,6 +150,12 @@ Supporting inlays and Lean-style info view.
 
 ### Suggestions / Search panel
 
+## Protocol Notes
+
+`coq-lsp` mostly implements the [LSP Standard](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/), plus some extensions specific to Coq.
+
+Check [the `coq-lsp` protocol documentation](etc/doc/PROTOCOL.md) for more details.
+
 ## Development / Building from sources
 
 ### Server:

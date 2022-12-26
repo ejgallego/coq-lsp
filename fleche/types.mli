@@ -26,7 +26,7 @@ end
 module Range : sig
   type t =
     { start : Point.t
-    ; _end : Point.t
+    ; end_ : Point.t
     }
 end
 

@@ -56,8 +56,8 @@ module LineCol : Point with type t = int * int = struct
       let r = Types.to_range loc in
       let line1 = r.start.line in
       let col1 = r.start.character in
-      let line2 = r._end.line in
-      let col2 = r._end.character in
+      let line2 = r.end_.line in
+      let col2 = r.end_.character in
       if debug_in_range then
         Io.Log.error "in_range"
           (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1
@@ -74,8 +74,8 @@ module LineCol : Point with type t = int * int = struct
       let r = Types.to_range loc in
       let line1 = r.start.line in
       let col1 = r.start.character in
-      let line2 = r._end.line in
-      let col2 = r._end.character in
+      let line2 = r.end_.line in
+      let col2 = r.end_.character in
       if debug_in_range then
         Io.Log.error "gt_range"
           (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1

@@ -27,7 +27,7 @@ end
 module Range = struct
   type t =
     { start : Point.t
-    ; _end : Point.t
+    ; end_ : Point.t
     }
 end
 
@@ -56,7 +56,7 @@ let to_range (p : Loc.t) : Range.t =
   let end_col = ep - bol_pos_last in
   Range.
     { start = { line = start_line; character = start_col; offset = bp }
-    ; _end = { line = end_line; character = end_col; offset = ep }
+    ; end_ = { line = end_line; character = end_col; offset = ep }
     }
 
 let to_orange = Option.map to_range

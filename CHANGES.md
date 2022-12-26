@@ -13,6 +13,9 @@
  - Don't convert Coq "Info" messages such as "Foo is defined" to
    feedback by default; users willing to see them can set the
    corresponding option (@ejgallego, #113)
+ - Send `$/coq/fileProgress` progress notifications from server,
+   similarly to what Lean does; display them in Code's right gutter
+   (@ejgallego, #106, fixes #54)
 
 # coq-lsp 0.1.0: Memory
 -----------------------
