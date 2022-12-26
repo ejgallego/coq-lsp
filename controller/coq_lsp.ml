@@ -331,7 +331,16 @@ let do_goals ofmt ~id params =
   let uri, point = get_docTextPosition params in
   let doc = Hashtbl.find doc_table uri in
   let goals = Fleche.Info.LC.goals ~doc ~point goals_mode in
-  let result = `List (mk_goals goals) in
+  let result =
+    `Assoc
+      [ ( "textDocument"
+        , `Assoc [ ("uri", `String uri); ("version", `Int doc.version) ] )
+      ; ( "position"
+        , `Assoc [ ("line", `Int (fst point)); ("character", `Int (snd point)) ]
+        )
+      ; ("goals", `List (mk_goals goals))
+      ]
+  in
   let msg = LSP.mk_reply ~id ~result in
   LIO.send_json ofmt msg
 

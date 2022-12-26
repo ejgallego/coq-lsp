@@ -59,8 +59,9 @@ that none of them are stable yet:
 
 In order to display proof goals, `coq-lsp` supports the `proof/goals` request, parameters are:
 ```typescript
-{ textDocument: uri
-, position: Position
+interface GoalRequest {
+    textDocument: TextDocumentIdentifier;
+    position: Position;
 }
 ```
 
@@ -70,21 +71,27 @@ interface Hyp {
     names: string;
     ty: string;
 }
+
 interface Goal {
     ty: string;
     hyps: Hyp[];
 }
 
-interface CoqFileProgressParams {
+interface GoalAnswer {
+    textDocument: VersionedTextDocumentIdentifier;
+    position: Position;
+    goals : Goal[];
+}
 
 ```
 
 which can be then rendered by the client in way that is desired.
 
-`proof/goals` was first used in the lambdapi-lsp server implementation, and we adapted it.
+`proof/goals` was first used in the lambdapi-lsp server implementation, and we adapted it to `coq-lsp`.
 
 #### Changelog
 
+- v2: include position and document in the request response
 - v1: initial version, imported from lambdapi-lsp
 
 ### File checking progress

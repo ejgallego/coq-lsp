@@ -19,6 +19,8 @@
  - Show goals on click by default, allow users to configure the
    behavior to follow cursor in different ways (@ejgallego, #116,
    fixes #89)
+ - Show file position in goal buffer, use collapsible elements for
+   goal list (@ejgallego, #115, fixes #109)
 
 # coq-lsp 0.1.0: Memory
 -----------------------
