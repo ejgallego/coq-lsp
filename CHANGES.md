@@ -1,8 +1,8 @@
 # coq-lsp 0.1.1: Location
 -------------------------
 
- - Don't crash if the log file can't be created (@ejgallego , #87)
- - Use LSP functions for client-side logging (@ejgallego , #87)
+ - Don't crash if the log file can't be created (@ejgallego, #87)
+ - Use LSP functions for client-side logging (@ejgallego, #87)
  - Log `_CoqProject` detection settings to client window (@ejgallego, #88)
  - Use plugin include paths from `_CoqProject` (@ejgallego, #88)
  - Support OCaml >= 4.12 (@ejgallego, #93)
@@ -21,6 +21,8 @@
    fixes #89)
  - Show file position in goal buffer, use collapsible elements for
    goal list (@ejgallego, #115, fixes #109)
+ - Resume checking from common prefix on document update (@ejgallego,
+   #111, fixes #110)
 
 # coq-lsp 0.1.0: Memory
 -----------------------

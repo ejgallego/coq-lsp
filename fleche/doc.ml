@@ -66,16 +66,48 @@ let create ~state ~workspace ~uri ~version ~contents =
   ; completed = Stopped (init_loc ~uri)
   }
 
+let recover_up_to_offset doc offset =
+  Io.Log.error "prefix"
+    (Format.asprintf "common prefix offset found at %d" offset);
+  let rec find acc_nodes acc_loc nodes =
+    match nodes with
+    | [] -> (List.rev acc_nodes, acc_loc)
+    | n :: ns ->
+      Io.Log.error "scan"
+        (Format.asprintf "consider node at %s" (Coq.Ast.pr_loc n.loc));
+      if n.loc.Loc.ep >= offset then (List.rev acc_nodes, acc_loc)
+      else find (n :: acc_nodes) n.loc ns
+  in
+  let loc = init_loc ~uri:doc.uri in
+  find [] loc doc.nodes
+
+let compute_common_prefix ~contents doc =
+  let s1 = doc.contents in
+  let l1 = String.length s1 in
+  let s2 = contents in
+  let l2 = String.length s2 in
+  let rec match_or_stop i =
+    if i = l1 || i = l2 then i
+    else if Char.equal s1.[i] s2.[i] then match_or_stop (i + 1)
+    else i
+  in
+  let common_idx = match_or_stop 0 in
+  let nodes, loc = recover_up_to_offset doc common_idx in
+  Io.Log.error "prefix" ("resuming from " ^ Coq.Ast.pr_loc loc);
+  let completed = Completion.Stopped loc in
+  (nodes, completed)
+
 let bump_version ~version ~contents doc =
+  (* When a new document, we resume checking from a common prefix *)
+  let nodes, completed = compute_common_prefix ~contents doc in
   let end_loc = get_last_text contents in
-  (* We need to resume checking in full when a new document *)
   { doc with
     version
-  ; nodes = []
+  ; nodes
   ; contents
   ; end_loc
-  ; diags_dirty = false
-  ; completed = Stopped (init_loc ~uri:doc.uri)
+  ; diags_dirty = true (* EJGA: Is it worth to optimize this? *)
+  ; completed
   }
 
 let add_node ~node doc =
@@ -338,6 +370,9 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
           stm doc st last_tok_new))
   in
   (* Note that nodes and diags in reversed order here *)
+  (match doc.nodes with
+  | [] -> ()
+  | n :: _ -> Io.Log.error "resume" ("last node :" ^ Coq.Ast.pr_loc n.loc));
   let st =
     hd_opt ~default:doc.root (List.map (fun { state; _ } -> state) doc.nodes)
   in
