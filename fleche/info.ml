@@ -117,6 +117,7 @@ module type S = sig
   val loc : (approx, Loc.t) query
   val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
+  val messages : (approx, Coq.Message.t list) query
   val info : (approx, string) query
   val completion : (string, string list) query
 end
@@ -184,6 +185,9 @@ module Make (P : Point) : S with module P := P = struct
     find ~doc ~point approx
     |> obind (fun node ->
            Coq.State.in_state ~st:node.Doc.state ~f:pr_goal node.Doc.state)
+
+  let messages ~doc ~point approx =
+    find ~doc ~point approx |> Option.map (fun node -> node.Doc.messages)
 
   let info ~doc ~point approx =
     find ~doc ~point approx |> Option.map (fun node -> node.Doc.memo_info)

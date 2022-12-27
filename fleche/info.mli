@@ -48,6 +48,7 @@ module type S = sig
   val loc : (approx, Loc.t) query
   val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
+  val messages : (approx, Coq.Message.t list) query
   val info : (approx, string) query
   val completion : (string, string list) query
 end
