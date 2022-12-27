@@ -34,6 +34,13 @@ let _parse_uri str =
 let mk_reply ~id ~result =
   `Assoc [ ("jsonrpc", `String "2.0"); ("id", `Int id); ("result", result) ]
 
+let mk_request_error ~id ~code ~message =
+  `Assoc
+    [ ("jsonrpc", `String "2.0")
+    ; ("id", `Int id)
+    ; ("error", `Assoc [ ("code", `Int code); ("message", `String message) ])
+    ]
+
 let mk_notification ~method_ ~params =
   `Assoc
     [ ("jsonrpc", `String "2.0")

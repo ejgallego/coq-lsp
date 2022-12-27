@@ -23,6 +23,8 @@
    goal list (@ejgallego, #115, fixes #109)
  - Resume checking from common prefix on document update (@ejgallego,
    #111, fixes #110)
+ - Cancel / reject requests that can be served due to document not
+   being processed sufficiently (@ejgallego, fixes #100)
 
 # coq-lsp 0.1.0: Memory
 -----------------------
