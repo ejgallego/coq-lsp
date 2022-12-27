@@ -5,6 +5,7 @@ type t =
   ; gc_quick_stats : bool [@default true]
         (** [gc_quick_stats] Show the diff of [Gc.quick_stats] data for each
             sentence *)
+  ; client_version : string [@default "any"]
   ; eager_diagnostics : bool [@default true]
         (** [eager_diagnostics] Send (full) diagnostics after processing each *)
   ; ok_diagnostics : bool [@default false]  (** Show diagnostic for OK lines *)
@@ -18,6 +19,7 @@ type t =
 let default =
   { mem_stats = false
   ; gc_quick_stats = true
+  ; client_version = "any"
   ; eager_diagnostics = true
   ; ok_diagnostics = false
   ; goal_after_tactic = false

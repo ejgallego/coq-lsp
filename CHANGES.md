@@ -1,3 +1,9 @@
+# coq-lsp 0.1.2:
+----------------
+
+ - Send an error to the client if the client and server versions don't
+   match (@ejgallego, #126)
+
 # coq-lsp 0.1.1: Location
 -------------------------
 
