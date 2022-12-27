@@ -298,9 +298,9 @@ let do_position_request ofmt ~id params ~handler =
 
 let hover_handler ~doc ~point =
   let show_loc_info = true in
+  let loc_span = Fleche.Info.LC.loc ~doc ~point Exact in
   let loc_string =
-    Fleche.Info.LC.loc ~doc ~point Exact
-    |> Option.map Coq.Ast.pr_loc |> Option.default "no ast"
+    Option.map Coq.Ast.pr_loc loc_span |> Option.default "no ast"
   in
   let info_string =
     Fleche.Info.LC.info ~doc ~point Exact |> Option.default "no info"
@@ -309,10 +309,13 @@ let hover_handler ~doc ~point =
     if show_loc_info then loc_string ^ "\n___\n" ^ info_string else info_string
   in
   `Assoc
-    [ ( "contents"
-      , `Assoc [ ("kind", `String "markdown"); ("value", `String hover_string) ]
-      )
-    ]
+    ([ ( "contents"
+       , `Assoc
+           [ ("kind", `String "markdown"); ("value", `String hover_string) ] )
+     ]
+    @ Option.cata
+        (fun loc -> [ ("range", LSP.mk_range (Fleche.Types.to_range loc)) ])
+        [] loc_span)
 
 let do_hover ofmt = do_position_request ofmt ~handler:hover_handler
 
