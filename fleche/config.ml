@@ -11,6 +11,8 @@ type t =
   ; goal_after_tactic : bool [@default false]
         (** When showing goals and the cursor is in a tactic, if false, show
             goals before executing the tactic, if true, show goals after *)
+  ; show_coq_info_messages : bool [@default false]
+        (** Ignore `msg_info` messages in diagnostics *)
   }
 
 let default =
@@ -19,6 +21,7 @@ let default =
   ; eager_diagnostics = true
   ; ok_diagnostics = false
   ; goal_after_tactic = false
+  ; show_coq_info_messages = false
   }
 
 let v = ref default

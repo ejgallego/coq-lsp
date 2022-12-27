@@ -1,6 +1,6 @@
 body {
-    font-size:medium;
-    /* font-size: var(--vscode-editor-font-size); */
+    font-size: var(--vscode-editor-font-size);
+    /* font-size: medium */
     font-family: var(--vscode-editor-font-family);
     /* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
 }
@@ -23,4 +23,9 @@ body {
 
 .sep, hr {
     color : var(--vscode-editorRuler-foreground);
+}
+
+.goalDiv {
+    margin-left: 0.5ex;
+    margin-top: 0.5ex;
 }

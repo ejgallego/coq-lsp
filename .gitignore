@@ -9,3 +9,5 @@ log-*.txt
 *.cache
 
 editor/code/out
+
+result

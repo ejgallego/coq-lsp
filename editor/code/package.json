@@ -9,7 +9,6 @@
     "Shachar Itzhaky <shachari@cs.technion.ac.il>",
     "Ramkumar Ramachandra <r@artagnon.com>"
   ],
-
   "publisher": "ejgallego",
   "engines": {
     "vscode": "^1.73.0"
@@ -53,7 +52,7 @@
       {
         "language": "coq",
         "scopeName": "source.coq",
-        "path": "./syntaxes/coq.tmLanguage"
+        "path": "./syntaxes/coq.json"
       }
     ],
     "commands": [
@@ -119,6 +118,18 @@
             "type": "boolean",
             "default": false,
             "description": "When showing goals and the cursor is in a tactic, if false, show goals before executing the tactic, if true, show goals after"
+          },
+          "coq-lsp.show_coq_info_messages": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show Coq's Info messages as diagnostics, such as 'foo has been defined.' and miscellaneous operational messages."
+          },
+          "coq-lsp.show_goals_on": {
+            "type": "number",
+            "default": 1,
+            "description": "When to show goals and information about the current cursor",
+            "enum": [0,1,2],
+            "enumItemLabels": ["Don't follow cursor", "Show on click", "Show on click and on cursor movement"]
           }
         }
       }
@@ -126,11 +137,13 @@
   },
   "devDependencies": {
     "@types/node": "^10.14.15",
+    "@types/throttle-debounce": "^5.0.0",
     "@types/vscode": "^1.73.0",
     "esbuild": "^0.15.14",
     "typescript": "^4.8.4"
   },
   "dependencies": {
+    "throttle-debounce": "^5.0.0",
     "vscode-languageclient": "^8.0.2"
   },
   "main": "./out/src/client.js",

@@ -9,3 +9,4 @@ val print : t -> Pp.t
 val grab_definitions : (Loc.t -> Names.Id.t -> 'a) -> t list -> 'a list
 val marshal_in : in_channel -> t
 val marshal_out : out_channel -> t -> unit
+val pr_loc : ?print_file:bool -> Loc.t -> string

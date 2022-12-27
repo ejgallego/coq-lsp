@@ -34,9 +34,19 @@ let _parse_uri str =
 let mk_reply ~id ~result =
   `Assoc [ ("jsonrpc", `String "2.0"); ("id", `Int id); ("result", result) ]
 
-let mk_event m p =
+let mk_request_error ~id ~code ~message =
   `Assoc
-    [ ("jsonrpc", `String "2.0"); ("method", `String m); ("params", `Assoc p) ]
+    [ ("jsonrpc", `String "2.0")
+    ; ("id", `Int id)
+    ; ("error", `Assoc [ ("code", `Int code); ("message", `String message) ])
+    ]
+
+let mk_notification ~method_ ~params =
+  `Assoc
+    [ ("jsonrpc", `String "2.0")
+    ; ("method", `String method_)
+    ; ("params", `Assoc params)
+    ]
 
 (* let json_of_goal g = let pr_hyp (s,(_,t)) = `Assoc ["hname", `String s;
    "htype", `String (Format.asprintf "%a" Print.pp_term (Bindlib.unbox t))] in
@@ -47,13 +57,13 @@ let mk_event m p =
    let json_of_thm thm = let open Proofs in match thm with | None -> `Null |
    Some thm -> `Assoc [ "goals", `List List.(map json_of_goal thm.t_goals) ] *)
 
-let mk_range { Fleche.Types.Range.start; _end } : J.t =
+let mk_range { Fleche.Types.Range.start; end_ } : J.t =
   `Assoc
     [ ( "start"
       , `Assoc
           [ ("line", `Int start.line); ("character", `Int start.character) ] )
     ; ( "end"
-      , `Assoc [ ("line", `Int _end.line); ("character", `Int _end.character) ]
+      , `Assoc [ ("line", `Int end_.line); ("character", `Int end_.character) ]
       )
     ]
 
@@ -74,8 +84,9 @@ let mk_diagnostic
     ]
 
 let mk_diagnostics ~uri ~version ld : J.t =
-  mk_event "textDocument/publishDiagnostics"
-  @@ [ ("uri", `String uri)
-     ; ("version", `Int version)
-     ; ("diagnostics", `List List.(map mk_diagnostic ld))
-     ]
+  mk_notification ~method_:"textDocument/publishDiagnostics"
+    ~params:
+      [ ("uri", `String uri)
+      ; ("version", `Int version)
+      ; ("diagnostics", `List List.(map mk_diagnostic ld))
+      ]

@@ -16,3 +16,6 @@ let parsing = false || all
 
 (* Backtraces *)
 let backtraces = false || all
+
+(* Sched wakeup *)
+let sched_wakeup = false || all

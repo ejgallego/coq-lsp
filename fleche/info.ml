@@ -56,8 +56,8 @@ module LineCol : Point with type t = int * int = struct
       let r = Types.to_range loc in
       let line1 = r.start.line in
       let col1 = r.start.character in
-      let line2 = r._end.line in
-      let col2 = r._end.character in
+      let line2 = r.end_.line in
+      let col2 = r.end_.character in
       if debug_in_range then
         Io.Log.error "in_range"
           (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1
@@ -74,8 +74,8 @@ module LineCol : Point with type t = int * int = struct
       let r = Types.to_range loc in
       let line1 = r.start.line in
       let col1 = r.start.character in
-      let line2 = r._end.line in
-      let col2 = r._end.character in
+      let line2 = r.end_.line in
+      let col2 = r.end_.character in
       if debug_in_range then
         Io.Log.error "gt_range"
           (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1
@@ -113,6 +113,9 @@ module type S = sig
 
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
 
+  val node : (approx, Doc.node) query
+  val loc : (approx, Loc.t) query
+  val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
   val info : (approx, string) query
   val completion : (string, string list) query
@@ -129,16 +132,18 @@ module Make (P : Point) : S with module P := P = struct
       match l with
       | [] -> prev
       | node :: xs -> (
-        let loc = Coq.Ast.loc node.Doc.ast in
+        let loc = node.Doc.loc in
         match approx with
-        | Exact -> if P.in_range ?loc point then Some node else find None xs
+        | Exact -> if P.in_range ~loc point then Some node else find None xs
         | PrevIfEmpty ->
-          if P.gt_range ?loc point then prev else find (Some node) xs
+          if P.gt_range ~loc point then prev else find (Some node) xs
         | Prev ->
-          if P.gt_range ?loc point || P.in_range ?loc point then prev
+          if P.gt_range ~loc point || P.in_range ~loc point then prev
           else find (Some node) xs)
     in
     find None doc.Doc.nodes
+
+  let node = find
 
   let if_not_empty (pp : Pp.t) =
     if Pp.(repr pp = Ppcmd_empty) then None else Some pp
@@ -166,6 +171,14 @@ module Make (P : Point) : S with module P := P = struct
     in
     let lemmas = Coq.State.lemmas ~st in
     Option.cata (reify_goals ppx) None lemmas
+
+  let loc ~doc ~point approx =
+    let node = find ~doc ~point approx in
+    Option.map (fun node -> node.Doc.loc) node
+
+  let ast ~doc ~point approx =
+    let node = find ~doc ~point approx in
+    Option.bind node (fun node -> node.Doc.ast)
 
   let goals ~doc ~point approx =
     find ~doc ~point approx

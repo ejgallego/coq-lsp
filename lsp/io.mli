@@ -15,48 +15,17 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-(* XXX: ejgallego, do we start lines at 0? *)
-module Point = struct
-  type t =
-    { line : int
-    ; character : int
-    ; offset : int
-    }
-end
+(** Read a JSON-RPC request from channel *)
+val read_request : in_channel -> Yojson.Safe.t
 
-module Range = struct
-  type t =
-    { start : Point.t
-    ; end_ : Point.t
-    }
-end
+exception ReadError of string
 
-module Diagnostic = struct
-  module Extra = struct
-    type t =
-      | FailedRequire of
-          { prefix : Libnames.qualid option
-          ; refs : Libnames.qualid list
-          }
-  end
+(** Send a JSON-RPC request to channel *)
+val send_json : Format.formatter -> Yojson.Safe.t -> unit
 
-  type t =
-    { range : Range.t
-    ; severity : int
-    ; message : string
-    ; extra : Extra.t list
-    }
-end
+(** Send a [window/logMessage] notification to the client *)
+val logMessage : Format.formatter -> lvl:int -> message:string -> unit
 
-let to_range (p : Loc.t) : Range.t =
-  let Loc.{ line_nb; line_nb_last; bol_pos; bol_pos_last; bp; ep; _ } = p in
-  let start_line = line_nb - 1 in
-  let start_col = bp - bol_pos in
-  let end_line = line_nb_last - 1 in
-  let end_col = ep - bol_pos_last in
-  Range.
-    { start = { line = start_line; character = start_col; offset = bp }
-    ; end_ = { line = end_line; character = end_col; offset = ep }
-    }
-
-let to_orange = Option.map to_range
+(** Send a [$/logTrace] notification to the client *)
+val logTrace :
+  Format.formatter -> message:string -> ?verbose:string -> unit -> unit

@@ -15,48 +15,37 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-(* XXX: ejgallego, do we start lines at 0? *)
-module Point = struct
-  type t =
-    { line : int
-    ; character : int
-    ; offset : int
-    }
-end
+let mut = Mutex.create ()
+let debug_chan = ref None
 
-module Range = struct
-  type t =
-    { start : Point.t
-    ; end_ : Point.t
-    }
-end
+let start_log ~client_cb file =
+  let abs_file = Filename.concat (Sys.getcwd ()) file in
+  try
+    let debug_oc = open_out file in
+    debug_chan := Some (debug_oc, Format.formatter_of_out_channel debug_oc);
+    client_cb (Format.asprintf "server log file %s created" abs_file)
+  with _ ->
+    client_cb (Format.asprintf "creation of server log file %s failed" abs_file)
 
-module Diagnostic = struct
-  module Extra = struct
-    type t =
-      | FailedRequire of
-          { prefix : Libnames.qualid option
-          ; refs : Libnames.qualid list
-          }
-  end
+let end_log () =
+  Option.iter
+    (fun (oc, fmt) ->
+      Format.pp_print_flush fmt ();
+      Stdlib.flush oc;
+      close_out oc)
+    !debug_chan;
+  debug_chan := None
 
-  type t =
-    { range : Range.t
-    ; severity : int
-    ; message : string
-    ; extra : Extra.t list
-    }
-end
+let with_log f = Option.iter (fun (_, fmt) -> f fmt) !debug_chan
 
-let to_range (p : Loc.t) : Range.t =
-  let Loc.{ line_nb; line_nb_last; bol_pos; bol_pos_last; bp; ep; _ } = p in
-  let start_line = line_nb - 1 in
-  let start_col = bp - bol_pos in
-  let end_line = line_nb_last - 1 in
-  let end_col = ep - bol_pos_last in
-  Range.
-    { start = { line = start_line; character = start_col; offset = bp }
-    ; end_ = { line = end_line; character = end_col; offset = ep }
-    }
+let log_error hdr msg =
+  with_log (fun fmt ->
+      Mutex.lock mut;
+      Format.fprintf fmt "[%s]: @[%s@]@\n%!" hdr msg;
+      Mutex.unlock mut)
 
-let to_orange = Option.map to_range
+let log_object hdr obj =
+  with_log (fun fmt ->
+      Format.fprintf fmt "[%s]: @[%a@]@\n%!" hdr
+        Yojson.Safe.(pretty_print ~std:false)
+        obj)
