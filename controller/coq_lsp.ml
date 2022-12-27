@@ -233,11 +233,16 @@ let do_close _ofmt params =
   let doc_file = string_field "uri" document in
   Hashtbl.remove doc_table doc_file
 
-let grab_doc params =
+let get_textDocument params =
   let document = dict_field "textDocument" params in
-  let doc_file = string_field "uri" document in
-  let doc = Hashtbl.(find doc_table doc_file) in
-  (doc_file, doc)
+  let uri = string_field "uri" document in
+  let doc = Hashtbl.find doc_table uri in
+  (uri, doc)
+
+let get_position params =
+  let pos = dict_field "position" params in
+  let line, character = (int_field "line" pos, int_field "character" pos) in
+  (line, character)
 
 let mk_syminfo file (name, _path, kind, pos) : J.t =
   `Assoc
@@ -258,27 +263,23 @@ let _kind_of_type _tm = 13
    *) | _ -> 12 (* Function *) *)
 
 let do_symbols ofmt ~id params =
-  let file, doc = grab_doc params in
-  let f loc id = mk_syminfo file (Names.Id.to_string id, "", 12, loc) in
-  let ast = asts_of_doc doc in
-  let slist = Coq.Ast.grab_definitions f ast in
-  let msg = LSP.mk_reply ~id ~result:(`List slist) in
-  LIO.send_json ofmt msg
-
-let get_docTextPosition params =
-  let document = dict_field "textDocument" params in
-  let file = string_field "uri" document in
-  let pos = dict_field "position" params in
-  let line, character = (int_field "line" pos, int_field "character" pos) in
-  (file, (line, character))
-
-(* XXX refactor *)
-let loc_info loc = Coq.Ast.pr_loc loc
+  let uri, doc = get_textDocument params in
+  match doc.completed with
+  | Yes _ ->
+    let f loc id = mk_syminfo uri (Names.Id.to_string id, "", 12, loc) in
+    let ast = asts_of_doc doc in
+    let slist = Coq.Ast.grab_definitions f ast in
+    let msg = LSP.mk_reply ~id ~result:(`List slist) in
+    LIO.send_json ofmt msg
+  | Stopped _ ->
+    let code = -32802 in
+    let message = "Document is not ready" in
+    LSP.mk_request_error ~id ~code ~message |> LIO.send_json ofmt
 
 let do_position_request ofmt ~id params ~handler =
-  let uri, point = get_docTextPosition params in
+  let _uri, doc = get_textDocument params in
+  let point = get_position params in
   let line, col = point in
-  let doc = Hashtbl.find doc_table uri in
   let in_range =
     match doc.completed with
     | Yes _ -> true
@@ -299,7 +300,7 @@ let hover_handler ~doc ~point =
   let show_loc_info = true in
   let loc_string =
     Fleche.Info.LC.loc ~doc ~point Exact
-    |> Option.map loc_info |> Option.default "no ast"
+    |> Option.map Coq.Ast.pr_loc |> Option.default "no ast"
   in
   let info_string =
     Fleche.Info.LC.info ~doc ~point Exact |> Option.default "no info"
