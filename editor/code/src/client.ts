@@ -12,7 +12,7 @@ import {
 } from "vscode";
 import * as vscode from "vscode";
 import { Range } from "vscode-languageclient";
-import { 
+import {
     LanguageClient,
     LanguageClientOptions,
     RevealOutputChannelOn,
@@ -26,15 +26,17 @@ enum ShowGoalsOnCursorChange {
     OnMouseAndKeyboard = 2
 };
 
-interface CoqLspConfig {
+interface CoqLspServerConfig {
+    client_version: string,
     eager_diagnostics: boolean,
     ok_diagnostics: boolean,
     goal_after_tactic: boolean,
-    show_coq_info_messages: boolean,
+    show_coq_info_messages: boolean
+}
+interface CoqLspClientConfig {
     show_goals_on : ShowGoalsOnCursorChange
 }
-
-let config : CoqLspConfig;
+let config : CoqLspClientConfig;
 let client: LanguageClient;
 let goalPanel: GoalPanel | null;
 
@@ -69,19 +71,21 @@ export function activate(context: ExtensionContext): void {
         window.showInformationMessage("Coq Language Server: starting");
 
         const wsConfig = workspace.getConfiguration("coq-lsp");
-        config = {
+        config = { show_goals_on: wsConfig.show_goals_on };
+        const initializationOptions : CoqLspServerConfig = {
+            client_version: context.extension.packageJSON.version,
             eager_diagnostics: wsConfig.eager_diagnostics,
             ok_diagnostics: wsConfig.ok_diagnostics,
             goal_after_tactic: wsConfig.goal_after_tactic,
-            show_coq_info_messages: wsConfig.show_coq_info_messages,
-            show_goals_on: wsConfig.show_goals_on
+            show_coq_info_messages: wsConfig.show_coq_info_messages
         };
 
         const clientOptions: LanguageClientOptions = {
             documentSelector: [{ scheme: "file", language: "coq" }],
             outputChannelName: "Coq LSP Server Events",
             revealOutputChannelOn: RevealOutputChannelOn.Info,
-            initializationOptions: config,
+            initializationOptions,
+            markdown: { isTrusted: true, supportHtml: true}
         };
         const serverOptions = { command: wsConfig.path, args: wsConfig.args };
 

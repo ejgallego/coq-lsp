@@ -1,3 +1,10 @@
+# coq-lsp 0.1.2:
+----------------
+
+- Requires coq-lsp server 0.1.2, see full changelog at
+  https://github.com/ejgallego/coq-lsp/releases/tag/0.1.2
+- Extension will now enforce that server has the correct version
+
 # coq-lsp 0.1.1: Location
 -------------------------
 

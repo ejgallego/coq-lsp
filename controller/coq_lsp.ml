@@ -91,11 +91,20 @@ let do_client_options coq_lsp_options =
   Log.log_object "init" (`Assoc coq_lsp_options);
   match CoqLspOption.of_yojson (`Assoc coq_lsp_options) with
   | Ok v -> Fleche.Config.v := v
-  | Error _msg -> ()
+  | Error msg -> Log.log_error "CoqLspOption.of_yojson error: " msg
+
+let check_client_version ofmt version : unit =
+  Log.log_error "version" version;
+  match version with
+  | "any" | "0.1.2" -> ()
+  | v ->
+    let message = Format.asprintf "Incorrect version: %s , expected 0.1.2" v in
+    LIO.logMessage ofmt ~lvl:1 ~message
 
 let do_initialize ofmt ~id params =
   let coq_lsp_options = odict_field "initializationOptions" params in
   do_client_options coq_lsp_options;
+  check_client_version ofmt !Fleche.Config.v.client_version;
   let client_capabilities = odict_field "capabilities" params in
   Log.log_error "init" "client capabilities:";
   Log.log_object "init" (`Assoc client_capabilities);
@@ -272,6 +281,7 @@ let do_symbols ofmt ~id params =
     let msg = LSP.mk_reply ~id ~result:(`List slist) in
     LIO.send_json ofmt msg
   | Stopped _ ->
+    (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
     let code = -32802 in
     let message = "Document is not ready" in
     LSP.mk_request_error ~id ~code ~message |> LIO.send_json ofmt
