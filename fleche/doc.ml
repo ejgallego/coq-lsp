@@ -159,6 +159,18 @@ let report_progress ~doc last_tok =
 (* XXX: Save on close? *)
 (* let close_doc _modname = () *)
 
+let bp_ = ref 0
+
+let undamage_jf loc =
+  Loc.
+    { loc with
+      bol_pos = loc.bol_pos - !bp_
+    ; bp = loc.bp - !bp_
+    ; ep = loc.ep - !bp_
+    }
+
+let undamage_jf_opt loc = Option.map undamage_jf loc
+
 let parse_stm ~st ps =
   let mode = Coq.State.mode ~st in
   let st = Coq.State.parsing ~st in
@@ -167,6 +179,8 @@ let parse_stm ~st ps =
        coq_protect *)
     Control.check_for_interrupt ();
     Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
+    |> Option.map (fun { CAst.loc; v } ->
+           CAst.make ?loc:(undamage_jf_opt loc) v)
     |> Option.map Coq.Ast.of_coq
   in
   Stats.record ~kind:Stats.Kind.Parsing ~f:(Coq.Protect.eval ~f:parse) ps
@@ -281,6 +295,34 @@ let build_span start_loc end_loc =
     ; ep = end_loc.ep
     }
 
+(* Copied from CLexer *)
+let clexer_after loc =
+  Loc.
+    { loc with
+      line_nb = loc.line_nb_last
+    ; bol_pos = loc.bol_pos_last
+    ; bp = loc.ep
+    }
+
+let stream_of_string ~offset text =
+  let pad = String.make offset ' ' in
+  let str = Stream.of_string (pad ^ text) in
+  for _i = 1 to offset do
+    Stream.junk str
+  done;
+  str
+
+module PCoqHack = struct
+  type t =
+    { pa_tok_strm : Tok.t LStream.t
+    ; lexer_state : CLexer.Lexer.State.t ref
+    }
+
+  let loc (p : Pcoq.Parsable.t) : Loc.t =
+    let p : t = Obj.magic p in
+    LStream.current_loc p.pa_tok_strm |> undamage_jf
+end
+
 (* XXX: Imperative problem *)
 let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
   let rec stm doc st last_tok =
@@ -289,7 +331,7 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
     if Debug.parsing then Io.Log.error "coq" "parsing sentence";
     (* Parsing *)
     let action, parsing_diags, parsing_time =
-      let start_loc = Pcoq.Parsable.loc doc_handle |> CLexer.after in
+      let start_loc = PCoqHack.loc doc_handle |> clexer_after in
       match parse_stm ~st doc_handle with
       | Coq.Protect.R.Interrupted, time -> (EOF (Stopped last_tok), [], time)
       | Coq.Protect.R.Completed res, time -> (
@@ -298,16 +340,17 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
           (* We actually need to fix Coq to return the location of the true file
              EOF, the below trick doesn't work. That will involved updating the
              type of `main_entry` *)
-          let last_tok = Pcoq.Parsable.loc doc_handle in
+          let last_tok = PCoqHack.loc doc_handle in
           (EOF (Yes last_tok), [], time)
         | Ok (Some ast) ->
           let () = if Debug.parsing then debug_parsed_sentence ~ast in
           (Process ast, [], time)
         | Error (loc, msg) ->
           let err_loc = Option.get loc in
+          (* let err_loc = undamage_jf err_loc in *)
           let diags = [ mk_diag err_loc 1 msg ] in
           discard_to_dot doc_handle;
-          let last_tok = Pcoq.Parsable.loc doc_handle in
+          let last_tok = PCoqHack.loc doc_handle in
           let span_loc = build_span start_loc last_tok in
           (Skip (span_loc, last_tok), diags, time))
     in
@@ -337,7 +380,7 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
         set_completion ~completed:(Stopped last_tok) doc
       | Coq.Protect.R.Completed res -> (
         (* We can resume checking from this point then *)
-        let last_tok_new = Pcoq.Parsable.loc doc_handle in
+        let last_tok_new = PCoqHack.loc doc_handle in
         match res with
         | Ok { res = state; feedback } ->
           (* let goals = Coq.State.goals *)
@@ -356,6 +399,7 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
           stm doc state last_tok_new
         | Error (err_loc, msg) ->
           let err_loc = Option.default ast_loc err_loc in
+          (* let err_loc = undamage_jf err_loc in *)
           let diags = [ mk_error_diagnostic ~loc:err_loc ~msg ~ast ] in
           (* FB should be handled by Coq.Protect.eval XXX *)
           let fb_diags = List.rev !fb_queue |> process_feedback ~loc:err_loc in
@@ -426,14 +470,15 @@ let check ~ofmt:_ ~doc ~fb_queue =
     (* Process markdown *)
     let processed_content = process_contents ~uri ~contents in
     (* Compute resume point, basically [CLexer.after] + stream setup *)
-    let resume_loc = CLexer.after last_tok in
+    let resume_loc = clexer_after last_tok in
     let offset = resume_loc.bp in
     let processed_content =
       String.(sub processed_content offset (length processed_content - offset))
     in
+    bp_ := resume_loc.bp;
     let handle =
       Pcoq.Parsable.make ~loc:resume_loc
-        Gramlib.Stream.(of_string ~offset processed_content)
+        (stream_of_string ~offset processed_content)
     in
     (* Set the document to "internal" mode *)
     let doc =

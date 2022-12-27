@@ -11,7 +11,7 @@ dev-repo: "git+https://github.com/ejgallego/coq-lsp.git"
 authors: [
   "Emilio Jesús Gallego Arias <e@x80.org>"
 ]
-license: "LGPL-2.1"
+license: "LGPL-2.1-or-later"
 doc: "https://ejgallego.github.io/coq-lsp/"
 
 depends: [
