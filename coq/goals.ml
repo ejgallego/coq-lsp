@@ -82,7 +82,7 @@ let process_goal_gen ppx sigma g : 'a reified_goal =
   (* why is compaction neccesary... ? [eg for better display] *)
   let ctx = Termops.compact_named_context (Environ.named_context env) in
   let ppx = ppx env sigma in
-  let hyps = List.map (get_hyp ppx sigma) ctx in
+  let hyps = List.map (get_hyp ppx sigma) ctx |> List.rev in
   let info = build_info sigma g in
   { info; ty = get_goal_type ppx sigma g; hyps }
 
