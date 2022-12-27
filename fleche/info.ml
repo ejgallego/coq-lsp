@@ -113,6 +113,7 @@ module type S = sig
 
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
 
+  val node : (approx, Doc.node) query
   val loc : (approx, Loc.t) query
   val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
@@ -141,6 +142,8 @@ module Make (P : Point) : S with module P := P = struct
           else find (Some node) xs)
     in
     find None doc.Doc.nodes
+
+  let node = find
 
   let if_not_empty (pp : Pp.t) =
     if Pp.(repr pp = Ppcmd_empty) then None else Some pp

@@ -275,10 +275,28 @@ let get_docTextPosition params =
 (* XXX refactor *)
 let loc_info loc = Coq.Ast.pr_loc loc
 
-let do_hover ofmt ~id params =
-  let show_loc_info = true in
+let do_position_request ofmt ~id params ~handler =
   let uri, point = get_docTextPosition params in
+  let line, col = point in
   let doc = Hashtbl.find doc_table uri in
+  let in_range =
+    match doc.completed with
+    | Yes _ -> true
+    | Stopped loc ->
+      line < loc.line_nb_last
+      || (line = loc.line_nb_last && col <= loc.ep - loc.bol_pos_last)
+  in
+  if in_range then
+    let result = handler ~doc ~point in
+    LSP.mk_reply ~id ~result |> LIO.send_json ofmt
+  else
+    (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
+    let code = -32802 in
+    let message = "Document is not ready" in
+    LSP.mk_request_error ~id ~code ~message |> LIO.send_json ofmt
+
+let hover_handler ~doc ~point =
+  let show_loc_info = true in
   let loc_string =
     Fleche.Info.LC.loc ~doc ~point Exact
     |> Option.map loc_info |> Option.default "no ast"
@@ -289,26 +307,13 @@ let do_hover ofmt ~id params =
   let hover_string =
     if show_loc_info then loc_string ^ "\n___\n" ^ info_string else info_string
   in
-  let result =
-    `Assoc
-      [ ( "contents"
-        , `Assoc
-            [ ("kind", `String "markdown"); ("value", `String hover_string) ] )
-      ]
-  in
-  let msg = LSP.mk_reply ~id ~result in
-  LIO.send_json ofmt msg
+  `Assoc
+    [ ( "contents"
+      , `Assoc [ ("kind", `String "markdown"); ("value", `String hover_string) ]
+      )
+    ]
 
-let do_completion ofmt ~id params =
-  let uri, _ = get_docTextPosition params in
-  let doc = Hashtbl.find doc_table uri in
-  let f _loc id = `Assoc [ ("label", `String Names.Id.(to_string id)) ] in
-  let ast = asts_of_doc doc in
-  let clist = Coq.Ast.grab_definitions f ast in
-  let result = `List clist in
-  let msg = LSP.mk_reply ~id ~result in
-  LIO.send_json ofmt msg
-(* LIO.log_error "do_completion" (string_of_int line ^"-"^ string_of_int pos) *)
+let do_hover ofmt = do_position_request ofmt ~handler:hover_handler
 
 (* Replace by ppx when we can print goals properly in the client *)
 let mk_hyp { Coq.Goals.names; def = _; ty } : Yojson.Safe.t =
@@ -327,23 +332,26 @@ let goals_mode =
   if !Fleche.Config.v.goal_after_tactic then Fleche.Info.PrevIfEmpty
   else Fleche.Info.Prev
 
-let do_goals ofmt ~id params =
-  let uri, point = get_docTextPosition params in
-  let doc = Hashtbl.find doc_table uri in
+let goals_handler ~doc ~point =
   let goals = Fleche.Info.LC.goals ~doc ~point goals_mode in
-  let result =
-    `Assoc
-      [ ( "textDocument"
-        , `Assoc [ ("uri", `String uri); ("version", `Int doc.version) ] )
-      ; ( "position"
-        , `Assoc [ ("line", `Int (fst point)); ("character", `Int (snd point)) ]
-        )
-      ; ("goals", `List (mk_goals goals))
-      ]
-  in
-  let msg = LSP.mk_reply ~id ~result in
-  LIO.send_json ofmt msg
+  `Assoc
+    [ ( "textDocument"
+      , `Assoc [ ("uri", `String doc.uri); ("version", `Int doc.version) ] )
+    ; ( "position"
+      , `Assoc [ ("line", `Int (fst point)); ("character", `Int (snd point)) ]
+      )
+    ; ("goals", `List (mk_goals goals))
+    ]
 
+let do_goals ofmt = do_position_request ofmt ~handler:goals_handler
+
+let completion_handler ~doc ~point:_ =
+  let f _loc id = `Assoc [ ("label", `String Names.Id.(to_string id)) ] in
+  let ast = asts_of_doc doc in
+  let clist = Coq.Ast.grab_definitions f ast in
+  `List clist
+
+let do_completion ofmt = do_position_request ofmt ~handler:completion_handler
 let memo_cache_file = ".coq-lsp.cache"
 
 let memo_save_to_disk () =

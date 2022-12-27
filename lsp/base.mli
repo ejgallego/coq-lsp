@@ -24,6 +24,9 @@ val mk_notification :
 (** Answer to a request *)
 val mk_reply : id:int -> result:Yojson.Safe.t -> Yojson.Safe.t
 
+(** Fail a request *)
+val mk_request_error : id:int -> code:int -> message:string -> Yojson.Safe.t
+
 (* val mk_diagnostic : Range.t * int * string * unit option -> Yojson.Basic.t *)
 val mk_diagnostics :
      uri:string
