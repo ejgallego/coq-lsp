@@ -16,7 +16,6 @@ type t =
   ; client_version : string [@default "any"]
   ; eager_diagnostics : bool [@default true]
         (** [eager_diagnostics] Send (full) diagnostics after processing each *)
-  ; ok_diagnostics : bool [@default false]  (** Show diagnostic for OK lines *)
   ; goal_after_tactic : bool [@default false]
         (** When showing goals and the cursor is in a tactic, if false, show
             goals before executing the tactic, if true, show goals after *)
@@ -44,7 +43,6 @@ let default =
   ; gc_quick_stats = true
   ; client_version = "any"
   ; eager_diagnostics = true
-  ; ok_diagnostics = false
   ; goal_after_tactic = false
   ; show_coq_info_messages = false
   ; show_notices_as_diagnostics = false

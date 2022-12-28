@@ -544,12 +544,6 @@ let parsed_node ~range ~ast ~state ~parsing_diags ~parsing_feedback ~diags
   in
   { Node.range; ast = Some ast; diags; messages; state; info }
 
-let maybe_ok_diagnostics ~range =
-  if !Config.v.ok_diagnostics then
-    let ok_diag = Diags.make range 3 (Pp.str "OK") in
-    [ ok_diag ]
-  else []
-
 let strategy_of_coq_err ~node ~state ~last_tok = function
   | Coq.Protect.Error.Anomaly _ -> Stop (Failed last_tok, node)
   | User _ -> Continue { state; last_tok; node }
@@ -566,10 +560,9 @@ let node_of_coq_result ~doc ~range ~ast ~st ~parsing_diags ~parsing_feedback
     ~feedback ~info last_tok res =
   match res with
   | Ok { Coq.Interp.Info.res = state } ->
-    let ok_diags = maybe_ok_diagnostics ~range in
     let node =
-      parsed_node ~range ~ast ~state ~parsing_diags ~parsing_feedback
-        ~diags:ok_diags ~feedback ~info
+      parsed_node ~range ~ast ~state ~parsing_diags ~parsing_feedback ~diags:[]
+        ~feedback ~info
     in
     Continue { state; last_tok; node }
   | Error (Coq.Protect.Error.Anomaly (err_range, msg) as coq_err)
