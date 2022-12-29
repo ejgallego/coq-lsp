@@ -13,6 +13,7 @@
    (@ejgallego, #350)
  - Auto-ignore Coq object files; can be disabled in config
    (@ejgallego, #365)
+ - Remove the Ok diagnostics setting (@artagnon, #129)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
