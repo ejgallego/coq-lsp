@@ -18,6 +18,27 @@
 module F = Format
 module J = Yojson.Safe
 
+module TraceValue = struct
+  type t =
+    | Off
+    | Messages
+    | Verbose
+
+  let parse = function
+    | "messages" -> Messages
+    | "verbose" -> Verbose
+    | "off" -> Off
+    | _ -> raise (Invalid_argument "TraceValue.parse")
+
+  let to_string = function
+    | Off -> "off"
+    | Messages -> "messages"
+    | Verbose -> "verbose"
+end
+
+let trace_value = ref TraceValue.Off
+let set_trace_value value = trace_value := value
+
 let read_request_raw ic =
   let cl = input_line ic in
   let sin = Scanf.Scanning.from_string cl in
@@ -56,7 +77,6 @@ let mut = Mutex.create ()
 
 let send_json fmt obj =
   Mutex.lock mut;
-  if Fleche.Debug.send then Log.log_object "send" obj;
   let msg = F.asprintf "%a" J.(pretty_print ~std:true) obj in
   let size = String.length msg in
   F.fprintf fmt "Content-Length: %d\r\n\r\n%s%!" size msg;
@@ -68,9 +88,31 @@ let logMessage fmt ~lvl ~message =
   let msg = Base.mk_notification ~method_ ~params in
   send_json fmt msg
 
-let logTrace fmt ~message ?verbose () =
+let logTrace fmt ~verbose ~message =
   let method_ = "$/logTrace" in
-  let verbose = Option.cata (fun v -> [ ("verbose", `String v) ]) [] verbose in
-  let params = [ ("message", `String message) ] @ verbose in
-  let msg = Base.mk_notification ~method_ ~params in
-  send_json fmt msg
+  if !trace_value = TraceValue.parse verbose then
+    if !trace_value = TraceValue.Messages then
+      let params = [ ("message", `String message) ] in
+      let msg = Base.mk_notification ~method_ ~params in
+      send_json fmt msg
+    else if !trace_value = TraceValue.Verbose then
+      let params =
+        [ ("message", `String message); ("verbose", `String verbose) ]
+      in
+      let msg = Base.mk_notification ~method_ ~params in
+      send_json fmt msg
+
+let log_info hdr msg =
+  logTrace F.std_formatter ~verbose:"verbose"
+    ~message:(Format.asprintf "[%s]: @[%s@]@\n%!" hdr msg)
+
+let log_error hdr msg =
+  logTrace F.std_formatter ~verbose:"messages"
+    ~message:(Format.asprintf "[%s]: @[%s@]@\n%!" hdr msg)
+
+let log_object hdr obj =
+  logTrace F.std_formatter ~verbose:"verbose"
+    ~message:
+      (Format.asprintf "[%s]: @[%a@]@\n%!" hdr
+         Yojson.Safe.(pretty_print ~std:false)
+         obj)

@@ -15,6 +15,19 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+(* We export this module *)
+module TraceValue : sig
+  type t =
+    | Off
+    | Messages
+    | Verbose
+
+  val parse : string -> t
+  val to_string : t -> string
+end
+
+val set_trace_value : TraceValue.t -> unit
+
 (** Read a JSON-RPC request from channel *)
 val read_request : in_channel -> Yojson.Safe.t
 
@@ -27,5 +40,13 @@ val send_json : Format.formatter -> Yojson.Safe.t -> unit
 val logMessage : Format.formatter -> lvl:int -> message:string -> unit
 
 (** Send a [$/logTrace] notification to the client *)
-val logTrace :
-  Format.formatter -> message:string -> ?verbose:string -> unit -> unit
+val logTrace : Format.formatter -> verbose:string -> message:string -> unit
+
+(** Log string to server info log *)
+val log_info : string -> string -> unit
+
+(** Log string to server error log *)
+val log_error : string -> string -> unit
+
+(** Log JSON object to server info log *)
+val log_object : string -> Yojson.Safe.t -> unit
