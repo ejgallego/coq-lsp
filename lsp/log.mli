@@ -23,5 +23,8 @@ val end_log : unit -> unit
 (** Log string to server error log *)
 val log_error : string -> string -> unit
 
+(** Log string to server info log *)
+val log_info : string -> string -> unit
+
 (** Log JSON object to server error log *)
 val log_object : string -> Yojson.Safe.t -> unit

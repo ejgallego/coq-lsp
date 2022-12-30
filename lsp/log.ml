@@ -44,6 +44,12 @@ let log_error hdr msg =
       Format.fprintf fmt "[%s]: @[%s@]@\n%!" hdr msg;
       Mutex.unlock mut)
 
+let log_info hdr msg =
+  with_log (fun fmt ->
+      Mutex.lock mut;
+      Format.fprintf fmt "[%s]: @[%s@]@\n%!" hdr msg;
+      Mutex.unlock mut)
+
 let log_object hdr obj =
   with_log (fun fmt ->
       Format.fprintf fmt "[%s]: @[%a@]@\n%!" hdr

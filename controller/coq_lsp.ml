@@ -87,14 +87,14 @@ module CoqLspOption = struct
 end
 
 let do_client_options coq_lsp_options =
-  Log.log_error "init" "custom client options:";
+  Log.log_info "init" "custom client options:";
   Log.log_object "init" (`Assoc coq_lsp_options);
   match CoqLspOption.of_yojson (`Assoc coq_lsp_options) with
   | Ok v -> Fleche.Config.v := v
   | Error msg -> Log.log_error "CoqLspOption.of_yojson error: " msg
 
 let check_client_version ofmt version : unit =
-  Log.log_error "version" version;
+  Log.log_info "version" version;
   match version with
   | "any" | "0.1.2" -> ()
   | v ->
@@ -106,12 +106,12 @@ let do_initialize ofmt ~id params =
   do_client_options coq_lsp_options;
   check_client_version ofmt !Fleche.Config.v.client_version;
   let client_capabilities = odict_field "capabilities" params in
-  Log.log_error "init" "client capabilities:";
+  Log.log_info "init" "client capabilities:";
   Log.log_object "init" (`Assoc client_capabilities);
   let trace =
     ostring_field "trace" params |> option_cata TraceValue.parse TraceValue.Off
   in
-  Log.log_error "init" ("trace: " ^ TraceValue.to_string trace);
+  Log.log_info "init" ("trace: " ^ TraceValue.to_string trace);
   let capabilities =
     [ ("textDocumentSync", `Int 1)
     ; ("documentSymbolProvider", `Bool true)
@@ -226,11 +226,11 @@ let do_change params =
       (* [bump_version] will clean stale info about the document, in particular
          partial results of a previous checking *)
       if version > doc.version then (
-        Log.log_error "bump file" (uri ^ " / version: " ^ string_of_int version);
+        Log.log_info "bump file" (uri ^ " / version: " ^ string_of_int version);
         let tb = Unix.gettimeofday () in
         let doc = Fleche.Doc.bump_version ~version ~contents doc in
         let diff = Unix.gettimeofday () -. tb in
-        Log.log_error "bump file took" (Format.asprintf "%f" diff);
+        Log.log_info "bump file took" (Format.asprintf "%f" diff);
         doc)
       else doc
     in
@@ -371,9 +371,9 @@ let memo_cache_file = ".coq-lsp.cache"
 let memo_save_to_disk () =
   try
     Fleche.Memo.save_to_disk ~file:memo_cache_file;
-    Log.log_error "memo" "cache saved to disk"
+    Log.log_info "memo" "cache saved to disk"
   with exn ->
-    Log.log_error "memo" (Printexc.to_string exn);
+    Log.log_info "memo" (Printexc.to_string exn);
     Sys.remove memo_cache_file;
     ()
 
@@ -383,12 +383,12 @@ let memo_save_to_disk () = if false then memo_save_to_disk ()
 let memo_read_from_disk () =
   try
     if Sys.file_exists memo_cache_file then (
-      Log.log_error "memo" "trying to load cache file";
+      Log.log_info "memo" "trying to load cache file";
       Fleche.Memo.load_from_disk ~file:memo_cache_file;
-      Log.log_error "memo" "cache file loaded")
-    else Log.log_error "memo" "cache file not present"
+      Log.log_info "memo" "cache file loaded")
+    else Log.log_info "memo" "cache file not present"
   with exn ->
-    Log.log_error "memo" ("loading cache failed: " ^ Printexc.to_string exn);
+    Log.log_info "memo" ("loading cache failed: " ^ Printexc.to_string exn);
     Sys.remove memo_cache_file;
     ()
 
@@ -406,7 +406,7 @@ let request_queue = Queue.create ()
 
 let process_input (com : J.t) =
   if Fleche.Debug.sched_wakeup then
-    Log.log_error "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
+    Log.log_info "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   (* TODO: this is the place to cancel pending requests that are invalid, and in
      general, to perform queue optimizations *)
   Queue.push com request_queue;
@@ -448,22 +448,22 @@ let dispatch_message ofmt ~state dict =
   | exn ->
     let bt = Printexc.get_backtrace () in
     let iexn = Exninfo.capture exn in
-    Log.log_error "process_queue"
+    Log.log_info "process_queue"
       (if Printexc.backtrace_status () then "bt=true" else "bt=false");
     let method_name = string_field "method" dict in
-    Log.log_error "process_queue" ("exn in method: " ^ method_name);
-    Log.log_error "process_queue" (Printexc.to_string exn);
-    Log.log_error "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
-    Log.log_error "BT" bt
+    Log.log_info "process_queue" ("exn in method: " ^ method_name);
+    Log.log_info "process_queue" (Printexc.to_string exn);
+    Log.log_info "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
+    Log.log_info "BT" bt
 
 let rec process_queue ofmt ~state =
   if Fleche.Debug.sched_wakeup then
-    Log.log_error "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
+    Log.log_info "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   (match Queue.peek_opt request_queue with
   | None -> (
     match !Check.pending with
     | Some uri ->
-      Log.log_error "process_queue" "resuming document checking";
+      Log.log_info "process_queue" "resuming document checking";
       Control.interrupt := false;
       Check.do_check ofmt ~fb_queue:state.State.fb_queue ~uri;
       (* Only if completed! *)
@@ -474,7 +474,7 @@ let rec process_queue ofmt ~state =
     ignore (Queue.pop request_queue);
     let dict = U.to_assoc com in
     let m = string_field "method" dict in
-    Log.log_error "process_queue" ("Serving Request: " ^ m);
+    Log.log_info "process_queue" ("Serving Request: " ^ m);
     (* We let Coq work normally now *)
     Control.interrupt := false;
     dispatch_message ofmt ~state dict);
