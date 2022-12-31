@@ -128,8 +128,16 @@
             "type": "number",
             "default": 1,
             "description": "When to show goals and information about the current cursor",
-            "enum": [0,1,2],
-            "enumItemLabels": ["Don't follow cursor", "Show on click", "Show on click and on cursor movement"]
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "enumItemLabels": [
+              "Don't follow cursor",
+              "Show on click",
+              "Show on click and on cursor movement"
+            ]
           }
         }
       }
@@ -140,6 +148,7 @@
     "@types/throttle-debounce": "^5.0.0",
     "@types/vscode": "^1.73.0",
     "esbuild": "^0.15.14",
+    "prettier": "^2.8.1",
     "typescript": "^4.8.4"
   },
   "dependencies": {
