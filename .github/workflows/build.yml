@@ -46,7 +46,7 @@ jobs:
         run: opam exec -- make opam-deps
 
       - name: 🧱 Build coq-lsp
-        run: opam exec -- make build
+        run: opam exec -- make
 
   build-nix:
     name: Nix
@@ -70,6 +70,7 @@ jobs:
         run: nix build .?submodules=1
 
   client-compile:
+    name: Build VSCode extension
     runs-on: ubuntu-latest
     defaults:
       run:

@@ -10,34 +10,38 @@ homepage: "https://github.com/ejgallego/coq-lsp"
 dev-repo: "git+https://github.com/ejgallego/coq-lsp.git"
 authors: [
   "Emilio Jesús Gallego Arias <e@x80.org>"
+  "Ali Caglayan <alizter@gmail.com>"
+  "Shachar Itzhaky <shachari@cs.technion.ac.il>"
+  "Ramkumar Ramachandra <r@artagnon.com>"
 ]
 license: "LGPL-2.1"
 doc: "https://ejgallego.github.io/coq-lsp/"
 
 depends: [
   "ocaml"        {         >= "4.12.0" }
-  "dune"         { build & >= "3.5.0"  }
+  "dune"         { build & >= "3.6.1"  }
 
   # Not yet required, install Coq deps instead
   # "coq"          {         >= "8.17"   }
 
   # coq deps
-  "ocamlfind" {>= "1.8.1"}
-  "zarith" {>= "1.11"}
+  "ocamlfind" {>= "1.9.5"}
+  "zarith" {>= "1.12"}
 
   # serapi deps
-  "sexplib"             {           >= "v0.13.0"  }
-  "ppx_deriving"        {           >= "4.2.1"    }
-  "ppx_sexp_conv"       {           >= "v0.13.0"  }
-  "ppx_compare"         {           >= "v0.13.0"  }
-  "ppx_hash"            {           >= "v0.13.0"  }
-  "ppx_import"          { build   & >= "1.5-3"    }
-  "ppx_deriving_yojson" {           >= "3.4"      }
+  "sexplib"             {           >= "v0.15.1"  }
+  "ppx_deriving"        {           >= "5.2.1"    }
+  "ppx_sexp_conv"       {           >= "v0.15.1"  }
+  "ppx_compare"         {           >= "v0.15.0"  }
+  "ppx_hash"            {           >= "v0.15.0"  }
+  "ppx_import"          { build   & >= "1.10.0"   }
+  "ppx_deriving_yojson" {           >= "3.7.0"    }
 
   # lsp dependencies
-  "cmdliner"     { >= "1.1.0" }
-  "yojson"       { >= "1.7.0" }
+  "cmdliner"     { >= "1.1.1" }
+  "yojson"       { >= "2.0.2" }
 ]
 
-build: [ [ "dune" "build" "-p" name "-j" jobs ] ]
-run-test: [ [ "dune" "runtest" "-p" name "-j" jobs ] ]
+build: [
+  [ "dune" "build" ]
+]

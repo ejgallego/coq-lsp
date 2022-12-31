@@ -62,7 +62,7 @@ opam-switch:
 # Install opam deps
 .PHONY: opam-deps
 opam-deps:
-	opam install ./coq-lsp.opam -y --deps-only
+	opam install . -y --deps-only
 
 # Install opam deps
 .PHONY: opam-dev-deps
