@@ -6,8 +6,12 @@
     ocamllsp.url = "git+https://www.github.com/ocaml/ocaml-lsp?submodules=1";
     ocamllsp.inputs.opam-nix.follows = "opam-nix";
     ocamllsp.inputs.nixpkgs.follows = "nixpkgs";
+    opam-repository = {
+      url = "github:ocaml/opam-repository";
+      flake = false;
+    };
   };
-  outputs = { self, flake-utils, opam-nix, nixpkgs, ocamllsp }@inputs:
+  outputs = { self, flake-utils, opam-nix, nixpkgs, ocamllsp, opam-repository }@inputs:
     let package = "coq-lsp";
     in flake-utils.lib.eachDefaultSystem (system:
       let
@@ -16,6 +20,7 @@
         };
         pkgs = nixpkgs.legacyPackages.${system};
         ocamlformat =
+          # Detection of ocamlformat version from .ocamlformat file
           let
             ocamlformat_version =
               let
@@ -34,7 +39,10 @@
       {
         packages =
           let
-            scope = opam-nix.lib.${system}.buildOpamProject' { } ./.
+            scope = opam-nix.lib.${system}.buildOpamProject'
+              {
+                repos = [ opam-repository ];
+              } ./.
               (devPackages // { ocaml-base-compiler = "4.14.0"; });
           in
           scope // { default = self.packages.${system}.${package}; };
