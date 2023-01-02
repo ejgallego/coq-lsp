@@ -19,12 +19,12 @@ module Setup : sig
   type t =
     { vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
-    ; options : (Goptions.option_name * Coqargs.option_command) list
-          (** This includes warnings *)
+    ; options : string list  (** This includes warnings *)
     }
 end
 
 type t = Setup.t * string
 
+val no_init : bool ref
 val apply : t -> unit
 val guess : coqlib:string -> cmdline:Setup.t -> t
