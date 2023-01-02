@@ -8,17 +8,17 @@ import {
   Uri,
   TextEditor,
   OverviewRulerLane,
-  WorkspaceConfiguration,
 } from "vscode";
 import * as vscode from "vscode";
 import { Range } from "vscode-languageclient";
 import {
   LanguageClient,
+  ServerOptions,
   LanguageClientOptions,
   RevealOutputChannelOn,
 } from "vscode-languageclient/node";
 import { GoalPanel } from "./goals";
-import { coqFileProgress, CoqFileProgressParams } from "./progress";
+import { coqFileProgress } from "./progress";
 
 enum ShowGoalsOnCursorChange {
   Never = 0,
@@ -71,8 +71,6 @@ export function activate(context: ExtensionContext): void {
       if (goalPanel) goalPanel.dispose();
     }
 
-    window.showInformationMessage("Coq Language Server: starting");
-
     const wsConfig = workspace.getConfiguration("coq-lsp");
     config = { show_goals_on: wsConfig.show_goals_on };
     const initializationOptions: CoqLspServerConfig = {
@@ -90,11 +88,14 @@ export function activate(context: ExtensionContext): void {
       initializationOptions,
       markdown: { isTrusted: true, supportHtml: true },
     };
-    const serverOptions = { command: wsConfig.path, args: wsConfig.args };
+    const serverOptions: ServerOptions = {
+      command: wsConfig.path,
+      args: wsConfig.args,
+    };
 
     client = new LanguageClient(
-      "coq-lsp-server",
-      "Coq Language Server",
+      "coq-lsp",
+      "Coq LSP Server",
       serverOptions,
       clientOptions
     );
