@@ -120,7 +120,37 @@ let do_shutdown ofmt ~id =
   let msg = LSP.mk_reply ~id ~result:`Null in
   LIO.send_json ofmt msg
 
-let doc_table : (string, Fleche.Doc.t) Hashtbl.t = Hashtbl.create 39
+(* Handler for document *)
+module DocHandle = struct
+  type t =
+    { doc : Fleche.Doc.t
+    ; requests : unit (* placeholder for requests attached to a document *)
+    }
+
+  let doc_table : (string, t) Hashtbl.t = Hashtbl.create 39
+
+  let create ~uri ~doc =
+    (match Hashtbl.find_opt doc_table uri with
+    | None -> ()
+    | Some _ ->
+      LIO.log_error "do_open" ("file " ^ uri ^ " not properly closed by client"));
+    Hashtbl.add doc_table uri { doc; requests = () }
+
+  let close ~uri = Hashtbl.remove doc_table uri
+  let find ~uri = Hashtbl.find doc_table uri
+  let find_doc ~uri = (find ~uri).doc
+
+  let _update ~handle ~(doc : Fleche.Doc.t) =
+    Hashtbl.replace doc_table doc.uri { handle with doc }
+
+  (* Clear requests *)
+  let update_doc_version ~(doc : Fleche.Doc.t) =
+    Hashtbl.replace doc_table doc.uri { doc; requests = () }
+
+  (* trigger pending incremental requests *)
+  let update_doc_info ~handle ~(doc : Fleche.Doc.t) =
+    Hashtbl.replace doc_table doc.uri { handle with doc }
+end
 
 let lsp_of_diags ~uri ~version diags =
   List.map
@@ -155,15 +185,15 @@ module Check = struct
 
   (* Notification handling; reply is optional / asynchronous *)
   let do_check ofmt ~fb_queue ~uri =
-    let doc = Hashtbl.find doc_table uri in
-    let doc = Fleche.Doc.check ~ofmt ~doc ~fb_queue in
-    Hashtbl.replace doc_table doc.uri doc;
+    let handle = DocHandle.find ~uri in
+    let doc = Fleche.Doc.check ~ofmt ~doc:handle.doc ~fb_queue in
+    DocHandle.update_doc_info ~handle ~doc;
     let diags = diags_of_doc doc in
     let diags = lsp_of_diags ~uri:doc.uri ~version:doc.version diags in
     LIO.send_json ofmt @@ diags
 
   let completed uri =
-    let doc = Hashtbl.find doc_table uri in
+    let doc = DocHandle.find_doc ~uri in
     match doc.completed with
     | Yes _ -> true
     | _ -> false
@@ -182,11 +212,7 @@ let do_open ~state params =
   let doc =
     Fleche.Doc.create ~state:root_state ~workspace ~uri ~contents ~version
   in
-  (match Hashtbl.find_opt doc_table uri with
-  | None -> ()
-  | Some _ ->
-    LIO.log_error "do_open" ("file " ^ uri ^ " not properly closed by client"));
-  Hashtbl.add doc_table uri doc;
+  DocHandle.create ~uri ~doc;
   Check.schedule ~uri
 
 let do_change params =
@@ -203,31 +229,29 @@ let do_change params =
     assert false
   | change :: _ ->
     let contents = string_field "text" change in
-    let doc = Hashtbl.find doc_table uri in
-    let doc =
-      (* [bump_version] will clean stale info about the document, in particular
-         partial results of a previous checking *)
-      if version > doc.version then (
-        LIO.log_info "bump file" (uri ^ " / version: " ^ string_of_int version);
-        let tb = Unix.gettimeofday () in
-        let doc = Fleche.Doc.bump_version ~version ~contents doc in
-        let diff = Unix.gettimeofday () -. tb in
-        LIO.log_info "bump file took" (Format.asprintf "%f" diff);
-        doc)
-      else doc
-    in
-    let () = Hashtbl.replace doc_table uri doc in
-    Check.schedule ~uri
+    let doc = DocHandle.find_doc ~uri in
+    if version > doc.version then (
+      LIO.log_info "bump file" (uri ^ " / version: " ^ string_of_int version);
+      let tb = Unix.gettimeofday () in
+      let doc = Fleche.Doc.bump_version ~version ~contents doc in
+      let diff = Unix.gettimeofday () -. tb in
+      LIO.log_info "bump file took" (Format.asprintf "%f" diff);
+      let () = DocHandle.update_doc_version ~doc in
+      Check.schedule ~uri)
+    else
+      (* That's a weird case, get got changes without a version bump? Do nothing
+         for now *)
+      ()
 
 let do_close _ofmt params =
   let document = dict_field "textDocument" params in
-  let doc_file = string_field "uri" document in
-  Hashtbl.remove doc_table doc_file
+  let uri = string_field "uri" document in
+  DocHandle.close ~uri
 
 let get_textDocument params =
   let document = dict_field "textDocument" params in
   let uri = string_field "uri" document in
-  let doc = Hashtbl.find doc_table uri in
+  let doc = DocHandle.find_doc ~uri in
   (uri, doc)
 
 let get_position params =
