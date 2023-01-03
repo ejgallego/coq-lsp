@@ -3,6 +3,8 @@
 
  - Send an error to the client if the client and server versions don't
    match (@ejgallego, #126)
+ - Parse options -noinit, -indices-matter, and -impredicative-set from
+   `_CoqProject` (@artagnon, #140)
 
 # coq-lsp 0.1.1: Location
 -------------------------

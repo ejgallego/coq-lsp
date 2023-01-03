@@ -19,8 +19,7 @@ module Setup = struct
   type t =
     { vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
-    ; options : (Goptions.option_name * Coqargs.option_command) list
-          (** This includes warnings *)
+    ; options : string list  (** This includes warnings *)
     }
 
   let append base { vo_load_path; ml_include_path; options } =
@@ -30,6 +29,8 @@ module Setup = struct
     }
 end
 
+let no_init = ref false
+
 type t = Setup.t * string
 (* | CoqProject of Setup.t *)
 (* | Dune *)
@@ -37,11 +38,20 @@ type t = Setup.t * string
 let apply ({ Setup.vo_load_path; ml_include_path; options }, _) =
   List.iter Mltop.add_ml_dir ml_include_path;
   List.iter Loadpath.add_vo_path vo_load_path;
-  List.iter Coqargs.set_option options;
-  ()
-
-(* TODO, parse _CoqProject extra_args in Coq format *)
-let parse_coq_args _ = []
+  let rec iter_opts opts =
+    match opts with
+    | "-indices-matter" :: _ ->
+      Global.set_indices_matter true;
+      iter_opts (List.tl opts)
+    | "-impredicative-set" :: _ ->
+      Global.set_impredicative_set true;
+      iter_opts (List.tl opts)
+    | "-noinit" :: _ ->
+      no_init := true;
+      iter_opts (List.tl opts)
+    | _ -> ()
+  in
+  iter_opts options
 
 let loadpath_from_coqproject () : Setup.t =
   (* Io.Log.error "init" "Parsing _CoqProject"; *)
@@ -67,7 +77,7 @@ let loadpath_from_coqproject () : Setup.t =
     List.append vo_path
       (List.map (fun f -> to_vo_loadpath f.thing true) r_includes)
   in
-  let options = parse_coq_args extra_args in
+  let options = List.map (fun f -> f.thing) extra_args in
   { vo_load_path; ml_include_path; options }
 
 let coq_loadpath_default ~implicit coq_path =
