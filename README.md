@@ -167,10 +167,19 @@ in `coq-lsp.opam`. [Opam](https://opam.ocaml.org/) users can do `opam install
 Once you have done that, do `make`, and the server will be build under
 `_build/install/default/bin/`
 
-### Server: Nix development support
+### Nix
 
-There is a Nix flake available which will setup the necessary environment and
-can be used via `nix develop`. You can then run `make` as usual.
+We have a Nix flake that you can use. For development, simply run `nix develop`.
+
+If you wish to do `nix build` or compose this flake from another project, you
+will need to use the .?submodules=1` trick, since we use submodules here for
+vendoring. For example, building requires:
+
+```
+nix build .?submodules=1
+```
+
+You can use this flake in other flakes or Nix derviations.
 
 ### Visual Studio Code:
 
