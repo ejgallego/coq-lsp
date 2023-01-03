@@ -7,6 +7,7 @@
    `_CoqProject` (@artagnon, #140)
  - Log file `log-lsp.txt` has been removed in favor of `coq-lsp.trace.server`
    (@artagnon, #130)
+ - Added --bt flag to print a backtrace on error (@Alizter, #???)
 
 # coq-lsp 0.1.1: Location
 -------------------------
