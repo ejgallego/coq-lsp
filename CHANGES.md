@@ -5,6 +5,8 @@
    match (@ejgallego, #126)
  - Parse options -noinit, -indices-matter, and -impredicative-set from
    `_CoqProject` (@artagnon, #140)
+ - Log file `log-lsp.txt` has been removed in favor of `coq-lsp.trace.server`
+   (@artagnon, #130)
 
 # coq-lsp 0.1.1: Location
 -------------------------
