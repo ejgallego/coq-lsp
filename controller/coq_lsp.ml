@@ -569,9 +569,9 @@ let lsp_main bt std coqlib vo_load_path ml_include_path =
   in
 
   (* Workspace initialization *)
-  let options = [] in
   let cmdline =
-    { Coq.Workspace.Setup.vo_load_path; ml_include_path; options }
+    let w = Coq.Workspace.Setup.default ~implicit:true ~coqlib:"" in
+    Coq.Workspace.Setup.append_loadpaths w ~vo_load_path ~ml_include_path
   in
   let workspace = Coq.Workspace.guess ~coqlib ~cmdline in
   log_workspace workspace;

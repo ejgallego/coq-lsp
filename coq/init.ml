@@ -71,30 +71,15 @@ let coq_init opts =
 (* Per-document, internal Coq initialization                              *)
 (**************************************************************************)
 
-(* Require a set of libraries *)
-let load_objs libs =
-  let rq_file (dir, from, exp) =
-    let mp = Libnames.qualid_of_string dir in
-    let mfrom = Option.map Libnames.qualid_of_string from in
-    Flags.silently
-      (Vernacentries.vernac_require mfrom exp)
-      [ (mp, Vernacexpr.ImportAll) ]
-  in
-  List.(iter rq_file (rev libs))
-
 (* Inits the context for a document *)
-let doc_init ~root_state ~workspace ~libname ~require_libs =
+let doc_init ~root_state ~workspace ~libname =
   (* Lsp.Io.log_error "init" "starting"; *)
   Vernacstate.unfreeze_interp_state (State.to_coq root_state);
 
   (* Set load paths from workspace info. *Important*, this has to happen before
      we declare the library below as [Declaremods/Library] will infer the module
      name by looking at the load path! *)
-  Workspace.apply workspace;
-  Declaremods.start_library libname;
-
-  (* Import initial libraries. *)
-  load_objs require_libs;
+  Workspace.apply ~libname workspace;
 
   (* We return the state at this point! *)
   Vernacstate.freeze_interp_state ~marshallable:false |> State.of_coq

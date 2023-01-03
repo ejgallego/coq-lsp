@@ -19,41 +19,90 @@ module Setup = struct
   type t =
     { vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
-    ; options : string list  (** This includes warnings *)
+    ; require_libs :
+        (string * string option * Vernacexpr.export_with_cats option) list
+    ; indices_matter : bool
+    ; impredicative_set : bool
     }
 
-  let append base { vo_load_path; ml_include_path; options } =
-    { vo_load_path = base.vo_load_path @ vo_load_path
+  let default ~implicit ~coqlib =
+    let mk_path prefix = coqlib ^ "/" ^ prefix in
+    let mk_lp ~ml ~root ~dir ~implicit =
+      { Loadpath.unix_path = mk_path dir
+      ; coq_path = root
+      ; has_ml = ml
+      ; implicit
+      ; recursive = true
+      }
+    in
+    let coq_root = Names.DirPath.make [ Libnames.coq_root ] in
+    let default_root = Libnames.default_root_prefix in
+    let require_libs =
+      [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ]
+    in
+    { vo_load_path =
+        [ mk_lp ~ml:false ~root:coq_root ~implicit ~dir:"theories"
+        ; mk_lp ~ml:true ~root:default_root ~implicit:false ~dir:"user-contrib"
+        ]
+    ; ml_include_path =
+        (let unix_path = Filename.concat coqlib "../coq-core/plugins" in
+         System.all_subdirs ~unix_path |> List.map fst)
+    ; require_libs
+    ; indices_matter = false
+    ; impredicative_set = false
+    }
+
+  let append_loadpaths base ~vo_load_path ~ml_include_path =
+    { base with
+      vo_load_path = base.vo_load_path @ vo_load_path
     ; ml_include_path = base.ml_include_path @ ml_include_path
-    ; options = base.options @ options
     }
 end
-
-let no_init = ref false
 
 type t = Setup.t * string
 (* | CoqProject of Setup.t *)
 (* | Dune *)
 
-let apply ({ Setup.vo_load_path; ml_include_path; options }, _) =
+let rec parse_args args init w =
+  match args with
+  | [] -> (init, w)
+  | "-indices-matter" :: rest ->
+    parse_args rest init { w with Setup.indices_matter = true }
+  | "-impredicative-nset" :: rest ->
+    parse_args rest init { w with impredicative_set = true }
+  | "-noinit" :: rest -> parse_args rest false w
+  | _ :: rest ->
+    (* emit warning? *)
+    parse_args rest init w
+
+(* Require a set of libraries *)
+let load_objs libs =
+  let rq_file (dir, from, exp) =
+    let mp = Libnames.qualid_of_string dir in
+    let mfrom = Option.map Libnames.qualid_of_string from in
+    Flags.silently
+      (Vernacentries.vernac_require mfrom exp)
+      [ (mp, Vernacexpr.ImportAll) ]
+  in
+  List.(iter rq_file (rev libs))
+
+let apply ~libname
+    ( { Setup.vo_load_path
+      ; ml_include_path
+      ; require_libs
+      ; indices_matter
+      ; impredicative_set
+      ; _
+      }
+    , _ ) =
+  Global.set_indices_matter indices_matter;
+  Global.set_impredicative_set impredicative_set;
   List.iter Mltop.add_ml_dir ml_include_path;
   List.iter Loadpath.add_vo_path vo_load_path;
-  let rec iter_opts opts =
-    match opts with
-    | "-indices-matter" :: _ ->
-      Global.set_indices_matter true;
-      iter_opts (List.tl opts)
-    | "-impredicative-set" :: _ ->
-      Global.set_impredicative_set true;
-      iter_opts (List.tl opts)
-    | "-noinit" :: _ ->
-      no_init := true;
-      iter_opts (List.tl opts)
-    | _ -> ()
-  in
-  iter_opts options
+  Declaremods.start_library libname;
+  load_objs require_libs
 
-let loadpath_from_coqproject () : Setup.t =
+let loadpath_from_coqproject ~coqlib : Setup.t =
   (* Io.Log.error "init" "Parsing _CoqProject"; *)
   let open CoqProject_file in
   let to_vo_loadpath f implicit =
@@ -77,39 +126,18 @@ let loadpath_from_coqproject () : Setup.t =
     List.append vo_path
       (List.map (fun f -> to_vo_loadpath f.thing true) r_includes)
   in
-  let options = List.map (fun f -> f.thing) extra_args in
-  { vo_load_path; ml_include_path; options }
-
-let coq_loadpath_default ~implicit coq_path =
-  let mk_path prefix = coq_path ^ "/" ^ prefix in
-  let mk_lp ~ml ~root ~dir ~implicit =
-    { Loadpath.unix_path = mk_path dir
-    ; coq_path = root
-    ; has_ml = ml
-    ; implicit
-    ; recursive = true
-    }
+  let args = List.map (fun f -> f.thing) extra_args in
+  let implicit = true in
+  let workspace = Setup.default ~coqlib ~implicit in
+  let init, workspace = parse_args args true workspace in
+  let workspace =
+    if not init then { workspace with require_libs = [] } else workspace
   in
-  let coq_root = Names.DirPath.make [ Libnames.coq_root ] in
-  let default_root = Libnames.default_root_prefix in
-  { Setup.vo_load_path =
-      [ mk_lp ~ml:false ~root:coq_root ~implicit ~dir:"theories"
-      ; mk_lp ~ml:true ~root:default_root ~implicit:false ~dir:"user-contrib"
-      ]
-  ; ml_include_path =
-      (let unix_path = Filename.concat coq_path "../coq-core/plugins" in
-       System.all_subdirs ~unix_path |> List.map fst)
-  ; options = []
-  }
+  Setup.append_loadpaths workspace ~vo_load_path ~ml_include_path
 
 (* We append the default loadpath, TODO, support -noinit *)
 let guess ~coqlib ~cmdline =
-  let vo_workspace, origin =
-    if Sys.file_exists "_CoqProject" then
-      ( loadpath_from_coqproject ()
-      , Filename.concat (Sys.getcwd ()) "_CoqProject" )
-    else (cmdline, "Command-line arguments")
-  in
-  (* Import stdlib without `From Coq` requirement *)
-  let implicit = true in
-  (Setup.append (coq_loadpath_default ~implicit coqlib) vo_workspace, origin)
+  if Sys.file_exists "_CoqProject" then
+    ( loadpath_from_coqproject ~coqlib
+    , Filename.concat (Sys.getcwd ()) "_CoqProject" )
+  else (cmdline, "Command-line arguments")

@@ -4,7 +4,7 @@
  - Send an error to the client if the client and server versions don't
    match (@ejgallego, #126)
  - Parse options -noinit, -indices-matter, and -impredicative-set from
-   `_CoqProject` (@artagnon, #140)
+   `_CoqProject` (@artagnon, @ejgallego, #140, #150)
  - Log file `log-lsp.txt` has been removed in favor of `coq-lsp.trace.server`
    (@artagnon, @ejgallego, #130, #148)
  - Added --bt flag to print a backtrace on error (@Alizter, #147)

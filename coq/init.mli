@@ -33,6 +33,4 @@ val doc_init :
      root_state:State.t
   -> workspace:Workspace.t
   -> libname:Names.DirPath.t
-  -> require_libs:
-       (string * string option * Vernacexpr.export_with_cats option) list
   -> State.t
