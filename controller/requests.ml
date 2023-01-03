@@ -15,9 +15,7 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type document_request =
-  uri:string -> doc:Fleche.Doc.t -> (Yojson.Safe.t, int * string) Result.t
-
+type document_request = uri:string -> doc:Fleche.Doc.t -> Yojson.Safe.t
 type position_request = doc:Fleche.Doc.t -> point:int * int -> Yojson.Safe.t
 
 module Util = struct
@@ -44,18 +42,10 @@ let _kind_of_type _tm = 13
    *) | _ -> 12 (* Function *) *)
 
 let symbols ~uri ~(doc : Fleche.Doc.t) =
-  match doc.completed with
-  | Yes _ ->
-    let f loc id = mk_syminfo uri (Names.Id.to_string id, "", 12, loc) in
-    let ast = Util.asts_of_doc doc in
-    let slist = Coq.Ast.grab_definitions f ast in
-    let result = `List slist in
-    Ok result
-  | Stopped _ | Failed _ ->
-    (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
-    let code = -32802 in
-    let message = "Document is not ready" in
-    Error (code, message)
+  let f loc id = mk_syminfo uri (Names.Id.to_string id, "", 12, loc) in
+  let ast = Util.asts_of_doc doc in
+  let slist = Coq.Ast.grab_definitions f ast in
+  `List slist
 
 let hover ~doc ~point =
   let show_loc_info = true in
