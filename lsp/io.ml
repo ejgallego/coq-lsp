@@ -88,31 +88,25 @@ let logMessage fmt ~lvl ~message =
   let msg = Base.mk_notification ~method_ ~params in
   send_json fmt msg
 
-let logTrace fmt ~verbose ~message =
+let logTrace fmt ~message ~extra =
   let method_ = "$/logTrace" in
-  if !trace_value = TraceValue.parse verbose then
-    if !trace_value = TraceValue.Messages then
-      let params = [ ("message", `String message) ] in
-      let msg = Base.mk_notification ~method_ ~params in
-      send_json fmt msg
-    else if !trace_value = TraceValue.Verbose then
-      let params =
-        [ ("message", `String message); ("verbose", `String verbose) ]
-      in
-      let msg = Base.mk_notification ~method_ ~params in
-      send_json fmt msg
+  let params =
+    match (!trace_value, extra) with
+    | Verbose, Some extra ->
+      [ ("message", `String message); ("verbose", `String extra) ]
+    | _, _ -> [ ("message", `String message) ]
+  in
+  Base.mk_notification ~method_ ~params |> send_json fmt
 
-let log_info hdr msg =
-  logTrace F.std_formatter ~verbose:"verbose"
-    ~message:(Format.asprintf "[%s]: @[%s@]@\n%!" hdr msg)
+let trace hdr ?extra msg =
+  let message = Format.asprintf "[%s]: @[%s@]@\n%!" hdr msg in
+  logTrace F.std_formatter ~message ~extra
 
-let log_error hdr msg =
-  logTrace F.std_formatter ~verbose:"messages"
-    ~message:(Format.asprintf "[%s]: @[%s@]@\n%!" hdr msg)
-
-let log_object hdr obj =
-  logTrace F.std_formatter ~verbose:"verbose"
-    ~message:
-      (Format.asprintf "[%s]: @[%a@]@\n%!" hdr
-         Yojson.Safe.(pretty_print ~std:false)
-         obj)
+let trace_object hdr obj =
+  let message =
+    Format.asprintf "[%s]: @[%a@]@\n%!" hdr
+      Yojson.Safe.(pretty_print ~std:false)
+      obj
+  in
+  (* Fixme, use the extra parameter *)
+  trace hdr message

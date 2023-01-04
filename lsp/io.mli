@@ -40,13 +40,11 @@ val send_json : Format.formatter -> Yojson.Safe.t -> unit
 val logMessage : Format.formatter -> lvl:int -> message:string -> unit
 
 (** Send a [$/logTrace] notification to the client *)
-val logTrace : Format.formatter -> verbose:string -> message:string -> unit
+val logTrace : Format.formatter -> message:string -> extra:string option -> unit
 
-(** Log string to server info log *)
-val log_info : string -> string -> unit
-
-(** Log string to server error log *)
-val log_error : string -> string -> unit
+(** [log hdr ?extra message] Log [message] to server info log with header [hdr].
+    [extra] will be used when [trace_value] is set to [Verbose] *)
+val trace : string -> ?extra:string -> string -> unit
 
 (** Log JSON object to server info log *)
-val log_object : string -> Yojson.Safe.t -> unit
+val trace_object : string -> Yojson.Safe.t -> unit

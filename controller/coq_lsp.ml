@@ -68,19 +68,19 @@ module CoqLspOption = struct
 end
 
 let do_client_options coq_lsp_options =
-  LIO.log_info "init" "custom client options:";
-  LIO.log_object "init" (`Assoc coq_lsp_options);
+  LIO.trace "init" "custom client options:";
+  LIO.trace_object "init" (`Assoc coq_lsp_options);
   match CoqLspOption.of_yojson (`Assoc coq_lsp_options) with
   | Ok v -> Fleche.Config.v := v
-  | Error msg -> LIO.log_error "CoqLspOption.of_yojson error: " msg
+  | Error msg -> LIO.trace "CoqLspOption.of_yojson error: " msg
 
 let check_client_version version : unit =
-  LIO.log_info "version" version;
+  LIO.trace "version" version;
   match version with
   | "any" | "0.1.2" -> ()
   | v ->
     let message = Format.asprintf "Incorrect version: %s , expected 0.1.2" v in
-    LIO.log_error "version" message
+    LIO.trace "version" message
 
 let do_initialize ofmt ~id params =
   let trace =
@@ -92,8 +92,8 @@ let do_initialize ofmt ~id params =
   do_client_options coq_lsp_options;
   check_client_version !Fleche.Config.v.client_version;
   let client_capabilities = odict_field "capabilities" params in
-  LIO.log_info "init" "client capabilities:";
-  LIO.log_object "init" (`Assoc client_capabilities);
+  LIO.trace "init" "client capabilities:";
+  LIO.trace_object "init" (`Assoc client_capabilities);
   let capabilities =
     [ ("textDocumentSync", `Int 1)
     ; ("documentSymbolProvider", `Bool true)
@@ -133,7 +133,7 @@ module DocHandle = struct
     (match Hashtbl.find_opt doc_table uri with
     | None -> ()
     | Some _ ->
-      LIO.log_error "do_open" ("file " ^ uri ^ " not properly closed by client"));
+      LIO.trace "do_open" ("file " ^ uri ^ " not properly closed by client"));
     Hashtbl.add doc_table uri { doc; requests = () }
 
   let close ~uri = Hashtbl.remove doc_table uri
@@ -224,18 +224,17 @@ let do_change params =
   match changes with
   | [] -> ()
   | _ :: _ :: _ ->
-    LIO.log_error "do_change"
-      "more than one change unsupported due to sync method";
+    LIO.trace "do_change" "more than one change unsupported due to sync method";
     assert false
   | change :: _ ->
     let contents = string_field "text" change in
     let doc = DocHandle.find_doc ~uri in
     if version > doc.version then (
-      LIO.log_info "bump file" (uri ^ " / version: " ^ string_of_int version);
+      LIO.trace "bump file" (uri ^ " / version: " ^ string_of_int version);
       let tb = Unix.gettimeofday () in
       let doc = Fleche.Doc.bump_version ~version ~contents doc in
       let diff = Unix.gettimeofday () -. tb in
-      LIO.log_info "bump file took" (Format.asprintf "%f" diff);
+      LIO.trace "bump file took" (Format.asprintf "%f" diff);
       let () = DocHandle.update_doc_version ~doc in
       Check.schedule ~uri)
     else
@@ -397,9 +396,9 @@ let memo_cache_file = ".coq-lsp.cache"
 let memo_save_to_disk () =
   try
     Fleche.Memo.save_to_disk ~file:memo_cache_file;
-    LIO.log_info "memo" "cache saved to disk"
+    LIO.trace "memo" "cache saved to disk"
   with exn ->
-    LIO.log_info "memo" (Printexc.to_string exn);
+    LIO.trace "memo" (Printexc.to_string exn);
     Sys.remove memo_cache_file;
     ()
 
@@ -409,12 +408,12 @@ let memo_save_to_disk () = if false then memo_save_to_disk ()
 let memo_read_from_disk () =
   try
     if Sys.file_exists memo_cache_file then (
-      LIO.log_info "memo" "trying to load cache file";
+      LIO.trace "memo" "trying to load cache file";
       Fleche.Memo.load_from_disk ~file:memo_cache_file;
-      LIO.log_info "memo" "cache file loaded")
-    else LIO.log_info "memo" "cache file not present"
+      LIO.trace "memo" "cache file loaded")
+    else LIO.trace "memo" "cache file not present"
   with exn ->
-    LIO.log_info "memo" ("loading cache failed: " ^ Printexc.to_string exn);
+    LIO.trace "memo" ("loading cache failed: " ^ Printexc.to_string exn);
     Sys.remove memo_cache_file;
     ()
 
@@ -432,7 +431,7 @@ let request_queue = Queue.create ()
 
 let process_input (com : J.t) =
   if Fleche.Debug.sched_wakeup then
-    LIO.log_info "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
+    LIO.trace "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   (* TODO: this is the place to cancel pending requests that are invalid, and in
      general, to perform queue optimizations *)
   Queue.push com request_queue;
@@ -466,31 +465,31 @@ let dispatch_message ofmt ~state dict =
   | "exit" -> raise Lsp_exit
   (* NOOPs *)
   | "initialized" | "workspace/didChangeWatchedFiles" -> ()
-  | msg -> LIO.log_error "no_handler" msg
+  | msg -> LIO.trace "no_handler" msg
 
 let dispatch_message ofmt ~state dict =
   try dispatch_message ofmt ~state dict with
-  | U.Type_error (msg, obj) -> LIO.log_object msg obj
+  | U.Type_error (msg, obj) -> LIO.trace_object msg obj
   | Lsp_exit -> raise Lsp_exit
   | exn ->
     let bt = Printexc.get_backtrace () in
     let iexn = Exninfo.capture exn in
-    LIO.log_info "process_queue"
+    LIO.trace "process_queue"
       (if Printexc.backtrace_status () then "bt=true" else "bt=false");
     let method_name = string_field "method" dict in
-    LIO.log_info "process_queue" ("exn in method: " ^ method_name);
-    LIO.log_info "process_queue" (Printexc.to_string exn);
-    LIO.log_info "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
-    LIO.log_info "BT" bt
+    LIO.trace "process_queue" ("exn in method: " ^ method_name);
+    LIO.trace "process_queue" (Printexc.to_string exn);
+    LIO.trace "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
+    LIO.trace "BT" bt
 
 let rec process_queue ofmt ~state =
   if Fleche.Debug.sched_wakeup then
-    LIO.log_info "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
+    LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   (match Queue.peek_opt request_queue with
   | None -> (
     match !Check.pending with
     | Some uri ->
-      LIO.log_info "process_queue" "resuming document checking";
+      LIO.trace "process_queue" "resuming document checking";
       Control.interrupt := false;
       Check.do_check ofmt ~fb_queue:state.State.fb_queue ~uri;
       (* Only if completed! *)
@@ -501,7 +500,7 @@ let rec process_queue ofmt ~state =
     ignore (Queue.pop request_queue);
     let dict = U.to_assoc com in
     let m = string_field "method" dict in
-    LIO.log_info "process_queue" ("Serving Request: " ^ m);
+    LIO.trace "process_queue" ("Serving Request: " ^ m);
     (* We let Coq work normally now *)
     Control.interrupt := false;
     dispatch_message ofmt ~state dict);
@@ -509,7 +508,7 @@ let rec process_queue ofmt ~state =
 
 let lsp_cb oc =
   Fleche.Io.CallBack.
-    { log_error = LIO.log_error
+    { log_error = LIO.trace ?extra:None
     ; send_diagnostics =
         (fun ~uri ~version diags ->
           lsp_of_diags ~uri ~version diags |> Lsp.Io.send_json oc)
@@ -546,7 +545,7 @@ let mk_fb_handler () =
 
 let log_workspace (_, from) =
   let message = "Configuration loaded from " ^ from in
-  LIO.log_info "config" message
+  LIO.trace "config" message
 
 let lsp_main bt std coqlib vo_load_path ml_include_path =
   LSP.std_protocol := std;
@@ -586,7 +585,7 @@ let lsp_main bt std coqlib vo_load_path ml_include_path =
   let rec loop () =
     (* XXX: Implement a queue, compact *)
     let com = LIO.read_request stdin in
-    if Fleche.Debug.read then LIO.log_object "read" com;
+    if Fleche.Debug.read then LIO.trace_object "read" com;
     process_input com;
     loop ()
   in
@@ -595,15 +594,15 @@ let lsp_main bt std coqlib vo_load_path ml_include_path =
     let reason =
       "exiting" ^ if exn = Lsp_exit then "" else " [uncontrolled LSP shutdown]"
     in
-    LIO.log_error "main" reason
+    LIO.trace "main" reason
   | exn ->
     let bt = Printexc.get_backtrace () in
     let exn, info = Exninfo.capture exn in
     let exn_msg = Printexc.to_string exn in
-    LIO.log_error "fatal error" (exn_msg ^ bt);
-    LIO.log_error "fatal_error [coq iprint]"
+    LIO.trace "fatal error" (exn_msg ^ bt);
+    LIO.trace "fatal_error [coq iprint]"
       Pp.(string_of_ppcmds CErrors.(iprint (exn, info)));
-    LIO.log_error "server crash" (exn_msg ^ bt)
+    LIO.trace "server crash" (exn_msg ^ bt)
 
 (* Arguments handling *)
 open Cmdliner
