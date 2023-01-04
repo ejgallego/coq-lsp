@@ -532,7 +532,7 @@ let log_workspace (_, from) =
   let message = "Configuration loaded from " ^ from in
   LIO.log_info "config" message
 
-let lsp_main std coqlib vo_load_path ml_include_path =
+let lsp_main bt std coqlib vo_load_path ml_include_path =
   LSP.std_protocol := std;
   Exninfo.record_backtrace true;
 
@@ -545,7 +545,7 @@ let lsp_main std coqlib vo_load_path ml_include_path =
 
   (* Core Coq initialization *)
   let fb_handler, fb_queue = mk_fb_handler () in
-  let debug = Fleche.Debug.backtraces in
+  let debug = bt || Fleche.Debug.backtraces in
   let load_module = Dynlink.loadfile in
   let load_plugin = Coq.Loader.plugin_handler None in
   let root_state =
@@ -592,13 +592,13 @@ let lsp_main std coqlib vo_load_path ml_include_path =
 (* Arguments handling *)
 open Cmdliner
 
-(* let bt =
- *   let doc = "Enable backtraces" in
- *   Arg.(value & flag & info ["bt"] ~doc) *)
-
 let std =
   let doc = "Restrict to standard LSP protocol" in
   Arg.(value & flag & info [ "std" ] ~doc)
+
+let bt =
+  let doc = "Enable backtraces" in
+  Cmdliner.Arg.(value & flag & info [ "bt" ] ~doc)
 
 let coq_lp_conv ~implicit (unix_path, lp) =
   { Loadpath.coq_path = Libnames.dirpath_of_string lp
@@ -660,7 +660,7 @@ let lsp_cmd : unit Cmd.t =
   Cmd.(
     v
       (Cmd.info "coq-lsp" ~version:"0.01" ~doc ~man)
-      Term.(const lsp_main $ std $ coqlib $ vo_load_path $ ml_include_path))
+      Term.(const lsp_main $ bt $ std $ coqlib $ vo_load_path $ ml_include_path))
 
 let main () =
   let ecode = Cmd.eval lsp_cmd in
