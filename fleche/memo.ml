@@ -56,7 +56,7 @@ module CacheStats = struct
       let hit_rate =
         Stdlib.Float.of_int !nhit /. Stdlib.Float.of_int !ntotal *. 100.0
       in
-      Format.asprintf "cache hit rate: %3.2f@\n" hit_rate
+      Format.asprintf "cache hit rate: %3.2f" hit_rate
 end
 
 let input_info (v, st) =

@@ -101,14 +101,12 @@ let logTrace fmt ~message ~extra =
   Base.mk_notification ~method_ ~params |> send_json fmt
 
 let trace hdr ?extra msg =
-  let message = Format.asprintf "[%s]: @[%s@]@\n%!" hdr msg in
+  let message = Format.asprintf "[%s]: @[%s@]" hdr msg in
   logTrace F.std_formatter ~message ~extra
 
 let trace_object hdr obj =
   let message =
-    Format.asprintf "[%s]: @[%a@]@\n%!" hdr
-      Yojson.Safe.(pretty_print ~std:false)
-      obj
+    Format.asprintf "[%s]: @[%a@]" hdr Yojson.Safe.(pretty_print ~std:false) obj
   in
   (* Fixme, use the extra parameter *)
   trace hdr message
