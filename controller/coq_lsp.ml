@@ -74,13 +74,13 @@ let do_client_options coq_lsp_options =
   | Ok v -> Fleche.Config.v := v
   | Error msg -> LIO.trace "CoqLspOption.of_yojson error: " msg
 
-let check_client_version version : unit =
+let check_client_version ofmt version : unit =
   LIO.trace "version" version;
   match version with
   | "any" | "0.1.2" -> ()
   | v ->
     let message = Format.asprintf "Incorrect version: %s , expected 0.1.2" v in
-    LIO.trace "version" message
+    LIO.logMessage ofmt ~lvl:1 ~message
 
 let do_initialize ofmt ~id params =
   let trace =
@@ -90,7 +90,7 @@ let do_initialize ofmt ~id params =
   LIO.set_trace_value trace;
   let coq_lsp_options = odict_field "initializationOptions" params in
   do_client_options coq_lsp_options;
-  check_client_version !Fleche.Config.v.client_version;
+  check_client_version ofmt !Fleche.Config.v.client_version;
   let client_capabilities = odict_field "capabilities" params in
   LIO.trace "init" "client capabilities:";
   LIO.trace_object "init" (`Assoc client_capabilities);
@@ -543,9 +543,9 @@ let mk_fb_handler () =
       | _ -> ())
   , q )
 
-let log_workspace (_, from) =
+let log_workspace ofmt (_, from) =
   let message = "Configuration loaded from " ^ from in
-  LIO.trace "config" message
+  LIO.logMessage ofmt ~lvl:3 ~message
 
 let lsp_main bt std coqlib vo_load_path ml_include_path =
   LSP.std_protocol := std;
@@ -573,7 +573,7 @@ let lsp_main bt std coqlib vo_load_path ml_include_path =
     { Coq.Workspace.Setup.vo_load_path; ml_include_path; options }
   in
   let workspace = Coq.Workspace.guess ~coqlib ~cmdline in
-  log_workspace workspace;
+  log_workspace oc workspace;
 
   (* Core LSP loop context *)
   let state = { State.root_state; workspace; fb_queue } in
@@ -591,10 +591,11 @@ let lsp_main bt std coqlib vo_load_path ml_include_path =
   in
   try loop () with
   | (LIO.ReadError "EOF" | Lsp_exit) as exn ->
-    let reason =
-      "exiting" ^ if exn = Lsp_exit then "" else " [uncontrolled LSP shutdown]"
+    let message =
+      "server exiting"
+      ^ if exn = Lsp_exit then "" else " [uncontrolled LSP shutdown]"
     in
-    LIO.trace "main" reason
+    LIO.logMessage oc ~lvl:1 ~message
   | exn ->
     let bt = Printexc.get_backtrace () in
     let exn, info = Exninfo.capture exn in
@@ -602,7 +603,8 @@ let lsp_main bt std coqlib vo_load_path ml_include_path =
     LIO.trace "fatal error" (exn_msg ^ bt);
     LIO.trace "fatal_error [coq iprint]"
       Pp.(string_of_ppcmds CErrors.(iprint (exn, info)));
-    LIO.trace "server crash" (exn_msg ^ bt)
+    LIO.trace "server crash" (exn_msg ^ bt);
+    LIO.logMessage oc ~lvl:1 ~message:("server crash: " ^ exn_msg)
 
 (* Arguments handling *)
 open Cmdliner
