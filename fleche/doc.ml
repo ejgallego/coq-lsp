@@ -80,8 +80,9 @@ let recover_up_to_offset doc offset =
     match nodes with
     | [] -> (List.rev acc_nodes, acc_loc)
     | n :: ns ->
-      Io.Log.error "scan"
-        (Format.asprintf "consider node at %s" (Coq.Ast.pr_loc n.loc));
+      if Debug.scan then
+        Io.Log.error "scan"
+          (Format.asprintf "consider node at %s" (Coq.Ast.pr_loc n.loc));
       if n.loc.Loc.ep >= offset then (List.rev acc_nodes, acc_loc)
       else find (n :: acc_nodes) n.loc ns
   in
