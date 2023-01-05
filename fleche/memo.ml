@@ -56,7 +56,7 @@ module CacheStats = struct
       let hit_rate =
         Stdlib.Float.of_int !nhit /. Stdlib.Float.of_int !ntotal *. 100.0
       in
-      Format.asprintf "cache hit rate: %3.2f@\n" hit_rate
+      Format.asprintf "cache hit rate: %3.2f" hit_rate
 end
 
 let input_info (v, st) =
@@ -126,12 +126,12 @@ let interp_command ~st ~fb_queue stm : _ Stats.t =
   let stm_loc = Coq.Ast.loc stm |> Option.get in
   match in_cache st stm with
   | Some (cached_loc, res), time ->
-    if Debug.cache then Io.Log.error "coq" "cache hit";
+    if Debug.cache then Io.Log.trace "coq" "cache hit";
     CacheStats.hit ();
     let res = adjust_offset ~stm_loc ~cached_loc res in
     Stats.make ~cache_hit:true ~time res
   | None, time_hash -> (
-    if Debug.cache then Io.Log.error "coq" "cache miss";
+    if Debug.cache then Io.Log.trace "coq" "cache miss";
     CacheStats.miss ();
     let kind = CS.Kind.Exec in
     let res, time_interp =

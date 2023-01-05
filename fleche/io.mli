@@ -1,6 +1,8 @@
 module CallBack : sig
   type t =
-    { log_error : string -> string -> unit
+    { trace : string -> ?extra:string -> string -> unit
+          (** Send a log message, [extra] may contain information to be shown in
+              verbose mode *)
     ; send_diagnostics :
         uri:string -> version:int -> Types.Diagnostic.t list -> unit
     ; send_fileProgress :
@@ -11,7 +13,7 @@ module CallBack : sig
 end
 
 module Log : sig
-  val error : string -> string -> unit
+  val trace : string -> ?extra:string -> string -> unit
 end
 
 module Report : sig
