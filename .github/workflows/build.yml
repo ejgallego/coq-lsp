@@ -19,8 +19,15 @@ jobs:
   build:
     strategy:
       matrix:
-        ocaml: [4.14.x, 4.13.x, 4.12.x]
-        os: [ubuntu-latest]
+        include:
+          - os: ubuntu-latest
+            ocaml: 4.14.x
+          - os: ubuntu-latest
+            ocaml: 4.13.x
+          - os: ubuntu-latest
+            ocaml: 4.12.x
+          - os: macos-latest
+            ocaml: 4.14.x
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -43,25 +50,26 @@ jobs:
       - name: 🧱 Build coq-lsp
         run: opam exec -- make build
 
-  osx:
-    runs-on: macOS-latest
+  build-nix:
+    name: Nix
+    strategy:
+      matrix:
+        os: [macOS-latest, ubuntu-latest]
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+
     steps:
       - name: 🔭 Checkout code
         uses: actions/checkout@v3
         with:
           submodules: recursive
 
-      - name: 🐫 Setup OCaml
-        uses: ocaml/setup-ocaml@v2
-        with:
-          ocaml-compiler: 4.14.x
-          dune-cache: true
-
-      - name: 🐫🐪🐫 Get dependencies
-        run: opam exec -- make opam-deps
+      - name: ❄️ Setup Nix
+        uses: cachix/install-nix-action@v18
 
       - name: 🧱 Build coq-lsp
-        run: opam exec -- make build
+        run: nix build .?submodules=1
 
   client-compile:
     runs-on: ubuntu-latest
@@ -78,8 +86,8 @@ jobs:
       - run: npm ci
       - run: npm run compile
 
-  fmt:
-    name: Format
+  fmt-ocamlfmt:
+    name: Format with ocamlfmt
     runs-on: ubuntu-latest
     steps:
       - name: 🔭 Checkout code
@@ -88,5 +96,21 @@ jobs:
           submodules: recursive
       - name: ❄️ Setup Nix
         uses: cachix/install-nix-action@v18
-      - name: 📐 Format
+      - name: 📐 Format with ocamlfmt
         run: nix develop .#fmt -c make fmt
+
+  fmt-prettier:
+    name: Format with prettier
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./editor/code
+    steps:
+      - name: 🔭 Checkout code
+        uses: actions/checkout@v3
+      - name: 🚀 Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - run: npm ci
+      - run: npx prettier -c .

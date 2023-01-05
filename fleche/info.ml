@@ -37,7 +37,7 @@ module LineCol : Point with type t = int * int = struct
     | None -> String.length text - offset
 
   let rec to_offset cur lc (l, c) text =
-    Io.Log.error "to_offset"
+    Io.Log.trace "to_offset"
       (Format.asprintf "cur: %d | lc: %d | l: %d c: %d" cur lc l c);
     if lc = l then cur + c
     else
@@ -59,7 +59,7 @@ module LineCol : Point with type t = int * int = struct
       let line2 = r.end_.line in
       let col2 = r.end_.character in
       if debug_in_range then
-        Io.Log.error "in_range"
+        Io.Log.trace "in_range"
           (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1
              line2 col2);
       (line1 < line && line < line2)
@@ -77,7 +77,7 @@ module LineCol : Point with type t = int * int = struct
       let line2 = r.end_.line in
       let col2 = r.end_.character in
       if debug_in_range then
-        Io.Log.error "gt_range"
+        Io.Log.trace "gt_range"
           (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1
              line2 col2);
       line < line1 || (line = line1 && col < col1)
@@ -117,6 +117,7 @@ module type S = sig
   val loc : (approx, Loc.t) query
   val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
+  val messages : (approx, Coq.Message.t list) query
   val info : (approx, string) query
   val completion : (string, string list) query
 end
@@ -184,6 +185,9 @@ module Make (P : Point) : S with module P := P = struct
     find ~doc ~point approx
     |> obind (fun node ->
            Coq.State.in_state ~st:node.Doc.state ~f:pr_goal node.Doc.state)
+
+  let messages ~doc ~point approx =
+    find ~doc ~point approx |> Option.map (fun node -> node.Doc.messages)
 
   let info ~doc ~point approx =
     find ~doc ~point approx |> Option.map (fun node -> node.Doc.memo_info)

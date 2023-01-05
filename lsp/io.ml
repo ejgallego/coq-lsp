@@ -18,6 +18,29 @@
 module F = Format
 module J = Yojson.Safe
 
+module TraceValue = struct
+  type t =
+    | Off
+    | Messages
+    | Verbose
+
+  let parse = function
+    | "messages" -> Messages
+    | "verbose" -> Verbose
+    | "off" -> Off
+    | _ -> raise (Invalid_argument "TraceValue.parse")
+
+  let to_string = function
+    | Off -> "off"
+    | Messages -> "messages"
+    | Verbose -> "verbose"
+end
+
+let oc = ref F.std_formatter
+let set_log_channel c = oc := c
+let trace_value = ref TraceValue.Off
+let set_trace_value value = trace_value := value
+
 let read_request_raw ic =
   let cl = input_line ic in
   let sin = Scanf.Scanning.from_string cl in
@@ -53,24 +76,41 @@ let read_request ic =
   | Invalid_argument msg -> raise (ReadError msg)
 
 let mut = Mutex.create ()
+let log = ref (fun _ _ -> ())
 
 let send_json fmt obj =
   Mutex.lock mut;
-  if Fleche.Debug.send then Log.log_object "send" obj;
+  if Fleche.Debug.send then !log "send" obj;
   let msg = F.asprintf "%a" J.(pretty_print ~std:true) obj in
   let size = String.length msg in
   F.fprintf fmt "Content-Length: %d\r\n\r\n%s%!" size msg;
   Mutex.unlock mut
 
-let logMessage fmt ~lvl ~message =
+let logMessage ~lvl ~message =
   let method_ = "window/logMessage" in
   let params = [ ("type", `Int lvl); ("message", `String message) ] in
   let msg = Base.mk_notification ~method_ ~params in
-  send_json fmt msg
+  send_json !oc msg
 
-let logTrace fmt ~message ?verbose () =
+let logTrace ~message ~extra =
   let method_ = "$/logTrace" in
-  let verbose = Option.cata (fun v -> [ ("verbose", `String v) ]) [] verbose in
-  let params = [ ("message", `String message) ] @ verbose in
-  let msg = Base.mk_notification ~method_ ~params in
-  send_json fmt msg
+  let params =
+    match (!trace_value, extra) with
+    | Verbose, Some extra ->
+      [ ("message", `String message); ("verbose", `String extra) ]
+    | _, _ -> [ ("message", `String message) ]
+  in
+  Base.mk_notification ~method_ ~params |> send_json !oc
+
+let trace hdr ?extra msg =
+  let message = Format.asprintf "[%s]: @[%s@]" hdr msg in
+  logTrace ~message ~extra
+
+let trace_object hdr obj =
+  let message =
+    Format.asprintf "[%s]: @[%a@]" hdr Yojson.Safe.(pretty_print ~std:false) obj
+  in
+  (* Fixme, use the extra parameter *)
+  trace hdr message
+
+let () = log := trace_object

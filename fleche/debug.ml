@@ -14,6 +14,9 @@ let read = false || all || lsp
 (* Parsing (this is a bit expensive as it will call the printer *)
 let parsing = false || all
 
+(* scanning of prefix-incrementality *)
+let scan = false || all
+
 (* Backtraces *)
 let backtraces = false || all
 

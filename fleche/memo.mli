@@ -16,6 +16,7 @@ val interp_command :
   -> Coq.Ast.t
   -> Coq.State.t Coq.Interp.interp_result Stats.t
 
+val interp_admitted : st:Coq.State.t -> Coq.State.t
 val mem_stats : unit -> int
 val load_from_disk : file:string -> unit
 val save_to_disk : file:string -> unit

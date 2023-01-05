@@ -2,7 +2,7 @@
   "name": "coq-lsp",
   "displayName": "coq-lsp",
   "description": "Coq LSP provides native vsCode support for checking Coq proof documents",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "contributors": [
     "Emilio Jesús Gallego Arias <e@x80.org>",
     "Ali Caglayan <alizter@gmail.com>",
@@ -86,7 +86,7 @@
               "messages",
               "verbose"
             ],
-            "default": "verbose",
+            "default": "messages",
             "description": "Traces the communication between VS Code and the language server."
           },
           "coq-lsp.path": {
@@ -122,25 +122,44 @@
           "coq-lsp.show_coq_info_messages": {
             "type": "boolean",
             "default": false,
-            "description": "Show Coq's Info messages as diagnostics, such as 'foo has been defined.' and miscellaneous operational messages."
+            "description": "Show Coq's \"Info\" messages as diagnostics, such as 'foo has been defined.' and miscellaneous operational messages."
+          },
+          "coq-lsp.show_notices_as_diagnostics": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show Coq's \"Notice\" messages as diagnostics, such as `About` and `Search` output."
           },
           "coq-lsp.show_goals_on": {
             "type": "number",
             "default": 1,
             "description": "When to show goals and information about the current cursor",
-            "enum": [0,1,2],
-            "enumItemLabels": ["Don't follow cursor", "Show on click", "Show on click and on cursor movement"]
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "enumItemLabels": [
+              "Don't follow cursor",
+              "Show on click",
+              "Show on click and on cursor movement"
+            ]
+          },
+          "coq-lsp.admit_on_bad_qed": {
+            "type": "boolean",
+            "default": true,
+            "description": "If a `Qed.` command fails, admit the proof automatically."
           }
         }
       }
     ]
   },
   "devDependencies": {
-    "@types/node": "^10.14.15",
+    "@types/node": "^16.11.7",
     "@types/throttle-debounce": "^5.0.0",
     "@types/vscode": "^1.73.0",
-    "esbuild": "^0.15.14",
-    "typescript": "^4.8.4"
+    "esbuild": "^0.16.13",
+    "prettier": "^2.8.1",
+    "typescript": "^4.9.4"
   },
   "dependencies": {
     "throttle-debounce": "^5.0.0",

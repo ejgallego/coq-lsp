@@ -23,6 +23,7 @@ type node =
   ; ast : Coq.Ast.t option  (** Ast of node *)
   ; state : Coq.State.t  (** (Full) State of node *)
   ; diags : Types.Diagnostic.t list  (** Diagnostics associated to the node *)
+  ; messages : Coq.Message.t list
   ; memo_info : string
   }
 

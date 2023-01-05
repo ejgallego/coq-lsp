@@ -15,16 +15,27 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module Setup : sig
+type t = private
+  { vo_load_path : Loadpath.vo_path list
+  ; ml_include_path : string list
+  ; require_libs :
+      (string * string option * Vernacexpr.export_with_cats option) list
+  ; indices_matter : bool
+  ; impredicative_set : bool
+  ; kind : string  (** How was the workspace built *)
+  }
+
+val describe : t -> string
+
+module CmdLine : sig
   type t =
-    { vo_load_path : Loadpath.vo_path list
+    { coqlib : string
+    ; vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
-    ; options : (Goptions.option_name * Coqargs.option_command) list
-          (** This includes warnings *)
     }
 end
 
-type t = Setup.t * string
+val guess : cmdline:CmdLine.t -> t
 
-val apply : t -> unit
-val guess : coqlib:string -> cmdline:Setup.t -> t
+(** [apply libname w] will prepare Coq for a new file [libname] on workspace [w] *)
+val apply : libname:Names.DirPath.t -> t -> unit

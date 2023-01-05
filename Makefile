@@ -78,3 +78,8 @@ submodules-init:
 .PHONY: submodules-deinit
 submodules-deinit:
 	git submodule deinit -f --all
+
+# Build the vscode extension
+.PHONY: extension
+extension:
+	cd editor/code && npm i && npm run compile

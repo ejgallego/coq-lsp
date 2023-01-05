@@ -20,8 +20,8 @@ If a feature doesn't appear here it usually means it is not planned in the short
 |-----------------------------------|---------|------------------------------------------------------------|
 | `initialize`                      | Partial | We don't obey the advertised client capabilities           |
 | `client/registerCapability`       | No      | Not planned ATM                                            |
-| `$/setTrace`                      | No      | Planned                                                    |
-| `$/logTrace`                      | No      |                                                            |
+| `$/setTrace`                      | Yes     |                                                            |
+| `$/logTrace`                      | Yes     |                                                            |
 | `window/logMessage`               | Yes     |                                                            |
 |-----------------------------------|---------|------------------------------------------------------------|
 | `textDocument/didOpen`            | Yes     | We can't reuse Memo tables yet                             |

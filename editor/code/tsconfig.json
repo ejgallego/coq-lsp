@@ -7,13 +7,7 @@
     "strict": true,
     "rootDir": "."
   },
-  "files": [
-    "src/client.ts"
-  ],
+  "files": ["src/client.ts"],
   // Default if not specified is node_modules, out, etc...
-  "exclude": [
-    "node_modules",
-    "out",
-    ".vscode-test"
-  ]
+  "exclude": ["node_modules", "out", ".vscode-test"]
 }
