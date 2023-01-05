@@ -19,6 +19,7 @@ type node =
   ; ast : Coq.Ast.t option  (** Ast of node *)
   ; state : Coq.State.t  (** (Full) State of node *)
   ; diags : Types.Diagnostic.t list
+  ; messages : Coq.Message.t list
   ; memo_info : string
   }
 
@@ -257,7 +258,14 @@ let feed_to_diag ~loc (range, severity, message) =
   let range = Option.default loc range in
   mk_diag range severity message
 
-let process_feedback ~loc fbs = List.map (feed_to_diag ~loc) fbs
+let process_feedback ~loc fbs =
+  let diags, messages = List.partition (fun (_, lvl, _) -> lvl < 3) fbs in
+  let diags =
+    if !Config.v.show_notices_as_diagnostics then
+      diags @ List.filter (fun (_, lvl, _) -> lvl = 3) fbs
+    else diags
+  in
+  (List.map (feed_to_diag ~loc) diags, messages)
 
 let interp_and_info ~parsing_time ~st ~fb_queue ast =
   let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
@@ -327,6 +335,7 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
         { loc = span_loc
         ; ast = None
         ; diags = parsing_diags
+        ; messages = []
         ; state = st
         ; memo_info = ""
         }
@@ -354,10 +363,10 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
               [ ok_diag ]
             else []
           in
-          let fb_diags = process_feedback ~loc:ast_loc feedback in
+          let fb_diags, messages = process_feedback ~loc:ast_loc feedback in
           let diags = parsing_diags @ fb_diags @ diags in
           let node =
-            { loc = ast_loc; ast = Some ast; diags; state; memo_info }
+            { loc = ast_loc; ast = Some ast; diags; messages; state; memo_info }
           in
           let doc = add_node ~node doc in
           stm doc state last_tok_new
@@ -365,12 +374,20 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
           let err_loc = Option.default ast_loc err_loc in
           let diags = [ mk_error_diagnostic ~loc:err_loc ~msg ~ast ] in
           (* FB should be handled by Coq.Protect.eval XXX *)
-          let fb_diags = List.rev !fb_queue |> process_feedback ~loc:err_loc in
+          let fb_diags, messages =
+            List.rev !fb_queue |> process_feedback ~loc:err_loc
+          in
           fb_queue := [];
           let diags = parsing_diags @ fb_diags @ diags in
           let st = state_recovery_heuristic doc st ast in
           let node =
-            { loc = ast_loc; ast = Some ast; diags; state = st; memo_info }
+            { loc = ast_loc
+            ; ast = Some ast
+            ; diags
+            ; messages
+            ; state = st
+            ; memo_info
+            }
           in
           let doc = add_node ~node doc in
           stm doc st last_tok_new))

@@ -25,19 +25,41 @@ interface GoalAnswer {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
   goals: Goal[];
+  messages: string[];
+  error?: string;
+}
+
+function htmlOfCoqInline(t: string) {
+  return `<code>${t}</code>`;
+}
+
+function htmlOfCoqBlock(t: string) {
+  return `<pre>${t}</pre>`;
 }
 
 function htmlOfHyp(hyp: Hyp) {
   let hypBody =
     `<label class="hname">${hyp.names}</label>` +
     `<label class="sep"> : </label>` +
-    `<span class="htype">${hyp.ty}</span><br/>`;
+    `<span class="htype">${htmlOfCoqInline(hyp.ty)}</span><br/>`;
 
   return `<div class="hypothesis"> ${hypBody} </div>`;
 }
+
+function detailsOfList(elems: any[], summary: string, inner: string) {
+  let detailsStatus = elems.length == 0 ? "closed" : "open";
+  return `
+    <details ${detailsStatus}>
+        <summary>${summary} (${elems.length})</summary>
+        <div style="margin-left: 1ex;"> ${inner} </div>
+    </details>`;
+}
+
 function htmlOfGoal(goal: Goal, idx: number) {
   let hyps = goal.hyps.map(htmlOfHyp).join(" ");
-  let goalBody = `<div class="pp_goals"> <span class="goal">${goal.ty}</span><br/></div>`;
+  let goalBody = `<div class="pp_goals"> <span class="goal">${htmlOfCoqBlock(
+    goal.ty
+  )}</span></div>`;
   let summary = `<summary>Goal ${idx}</summary>`;
   return (
     `<details ${idx == 0 ? "open" : "closed"}> ${summary}` +
@@ -49,7 +71,7 @@ function htmlOfGoal(goal: Goal, idx: number) {
 // returns the HTML code of goals environment
 function htmlOfGoals(goals: Goal[]) {
   if (goals.length == 0) return "No goals";
-  else return goals.map(htmlOfGoal).join("<br/>");
+  else return goals.map(htmlOfGoal).join(" ");
 }
 
 // Returns the HTML code of the panel and the inset ccontent
@@ -57,7 +79,17 @@ function buildGoalsContent(goals: GoalAnswer, styleUri: Uri) {
   // get the HTML code of goals environment
   let vsUri = Uri.parse(goals.textDocument.uri);
   let uriBase = basename(vsUri.path);
-  let codeEnvGoals: String = htmlOfGoals(goals.goals);
+  let goalsInner: string = htmlOfGoals(goals.goals);
+  let goalsBody = detailsOfList(goals.goals, "Goals", goalsInner);
+  let messageBody = detailsOfList(
+    goals.messages,
+    "Messages",
+    goals.messages.map(htmlOfCoqBlock).join(" ")
+  );
+
+  let errorBody = goals.error
+    ? detailsOfList([0], "Error Browser", htmlOfCoqBlock(goals.error))
+    : "";
 
   // Use #FA8072 color too?
   return `
@@ -72,8 +104,14 @@ function buildGoalsContent(goals: GoalAnswer, styleUri: Uri) {
     <body>
         <details open>
             <summary>${uriBase}:${goals.position.line}:${goals.position.character}</summary>
-            <div class="goals_env" style="margin-left: 0.5ex;">
-                ${codeEnvGoals}
+            <div class="goals_env" style="margin-left: 1ex; margin-bottom: 1ex;">
+                ${goalsBody}
+            </div>
+            <div style="margin-left: 1ex; margin-bottom: 1ex;">
+                ${messageBody}
+            </div>
+            <div style="margin-left: 1ex; margin-bottom: 1ex;">
+                ${errorBody}
             </div>
         </details>
     </body>

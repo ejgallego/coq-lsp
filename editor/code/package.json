@@ -122,7 +122,12 @@
           "coq-lsp.show_coq_info_messages": {
             "type": "boolean",
             "default": false,
-            "description": "Show Coq's Info messages as diagnostics, such as 'foo has been defined.' and miscellaneous operational messages."
+            "description": "Show Coq's \"Info\" messages as diagnostics, such as 'foo has been defined.' and miscellaneous operational messages."
+          },
+          "coq-lsp.show_notices_as_diagnostics": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show Coq's \"Notice\" messages as diagnostics, such as `About` and `Search` output."
           },
           "coq-lsp.show_goals_on": {
             "type": "number",

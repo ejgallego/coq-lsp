@@ -351,21 +351,37 @@ let mk_goal { Coq.Goals.info = _; ty; hyps } : Yojson.Safe.t =
 
 let mk_goals { Coq.Goals.goals; _ } = List.map mk_goal goals
 let mk_goals = Option.cata mk_goals []
+let mk_message (_loc, _lvl, msg) = `String (Pp.string_of_ppcmds msg)
+let mk_messages m = List.map mk_message m
+let mk_messages = Option.cata mk_messages []
+
+let mk_error node =
+  let open Fleche in
+  let open Fleche.Types in
+  match List.filter (fun d -> d.Diagnostic.severity < 2) node.Doc.diags with
+  | [] -> []
+  | e :: _ -> [ ("error", `String e.Diagnostic.message) ]
 
 let goals_mode =
   if !Fleche.Config.v.goal_after_tactic then Fleche.Info.PrevIfEmpty
   else Fleche.Info.Prev
 
 let goals_handler ~doc ~point =
-  let goals = Fleche.Info.LC.goals ~doc ~point goals_mode in
+  let open Fleche in
+  let goals = Info.LC.goals ~doc ~point goals_mode in
+  let node = Info.LC.node ~doc ~point Exact in
+  let messages = Option.map (fun node -> node.Doc.messages) node in
+  let error = Option.cata mk_error [] node in
   `Assoc
-    [ ( "textDocument"
-      , `Assoc [ ("uri", `String doc.uri); ("version", `Int doc.version) ] )
-    ; ( "position"
-      , `Assoc [ ("line", `Int (fst point)); ("character", `Int (snd point)) ]
-      )
-    ; ("goals", `List (mk_goals goals))
-    ]
+    ([ ( "textDocument"
+       , `Assoc [ ("uri", `String doc.uri); ("version", `Int doc.version) ] )
+     ; ( "position"
+       , `Assoc [ ("line", `Int (fst point)); ("character", `Int (snd point)) ]
+       )
+     ; ("goals", `List (mk_goals goals))
+     ; ("messages", `List (mk_messages messages))
+     ]
+    @ error)
 
 let do_goals ofmt = do_position_request ofmt ~handler:goals_handler
 
