@@ -197,12 +197,16 @@ let rec find_recovery_for_failed_qed ~default nodes =
   match nodes with
   | [] -> (default, None)
   | { ast = None; _ } :: ns -> find_recovery_for_failed_qed ~default ns
-  | { ast = Some ast; state = _; _ } :: ns -> (
+  | { ast = Some ast; state; loc; _ } :: ns -> (
     match (Coq.Ast.to_coq ast).CAst.v.Vernacexpr.expr with
     | Vernacexpr.VernacStartTheoremProof _ -> (
-      match ns with
-      | [] -> (default, None)
-      | n :: _ -> (n.state, Some n.loc))
+      if !Config.v.admit_on_bad_qed then
+        let state = Memo.interp_admitted ~st:state in
+        (state, Some loc)
+      else
+        match ns with
+        | [] -> (default, None)
+        | n :: _ -> (n.state, Some n.loc))
     | _ -> find_recovery_for_failed_qed ~default ns)
 
 (* Simple heuristic for Qed. *)
@@ -351,7 +355,6 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
         let last_tok_new = Pcoq.Parsable.loc doc_handle in
         match res with
         | Ok { res = state; feedback } ->
-          (* let goals = Coq.State.goals *)
           let diags =
             if !Config.v.ok_diagnostics then
               let ok_diag = mk_diag ast_loc 3 (Pp.str "OK") in

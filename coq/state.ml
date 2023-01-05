@@ -66,6 +66,9 @@ let compare (x : t) (y : t) =
   if p1 == p2 && s1 == s2 && l1 == l2 && g1 == g2 && o1 == o2 && h1 == h2 then 0
   else 1
 
+let equal x y = compare x y = 0
+let hash x = Hashtbl.hash x
+
 let mode ~st =
   Option.map
     (fun _ -> Vernacinterp.get_default_proof_mode ())
@@ -74,6 +77,10 @@ let mode ~st =
 let parsing ~st = st.Vernacstate.parsing
 let lemmas ~st = st.Vernacstate.lemmas
 
+let in_state ~st ~f a =
+  Vernacstate.unfreeze_interp_state st;
+  f a
+
 let drop_proofs ~st =
   let open Vernacstate in
   { st with
@@ -81,6 +88,14 @@ let drop_proofs ~st =
       Option.cata (fun s -> snd @@ Vernacstate.LemmaStack.pop s) None st.lemmas
   }
 
-let in_state ~st ~f a =
-  Vernacstate.unfreeze_interp_state st;
-  f a
+let admit ~st =
+  let () = Vernacstate.unfreeze_interp_state st in
+  match st.Vernacstate.lemmas with
+  | None -> st
+  | Some lemmas ->
+    let pm = NeList.head st.Vernacstate.program in
+    let proof, lemmas = Vernacstate.(LemmaStack.pop lemmas) in
+    let pm = Declare.Proof.save_admitted ~pm ~proof in
+    let program = NeList.map_head (fun _ -> pm) st.Vernacstate.program in
+    let st = Vernacstate.freeze_interp_state ~marshallable:false in
+    { st with lemmas; program }
