@@ -36,11 +36,14 @@ exception ReadError of string
 (** Send a JSON-RPC request to channel *)
 val send_json : Format.formatter -> Yojson.Safe.t -> unit
 
+(** Set the log channel *)
+val set_log_channel : Format.formatter -> unit
+
 (** Send a [window/logMessage] notification to the client *)
-val logMessage : Format.formatter -> lvl:int -> message:string -> unit
+val logMessage : lvl:int -> message:string -> unit
 
 (** Send a [$/logTrace] notification to the client *)
-val logTrace : Format.formatter -> message:string -> extra:string option -> unit
+val logTrace : message:string -> extra:string option -> unit
 
 (** [log hdr ?extra message] Log [message] to server info log with header [hdr].
     [extra] will be used when [trace_value] is set to [Verbose] *)

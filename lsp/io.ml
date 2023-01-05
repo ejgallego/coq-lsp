@@ -36,6 +36,8 @@ module TraceValue = struct
     | Verbose -> "verbose"
 end
 
+let oc = ref F.std_formatter
+let set_log_channel c = oc := c
 let trace_value = ref TraceValue.Off
 let set_trace_value value = trace_value := value
 
@@ -84,13 +86,13 @@ let send_json fmt obj =
   F.fprintf fmt "Content-Length: %d\r\n\r\n%s%!" size msg;
   Mutex.unlock mut
 
-let logMessage fmt ~lvl ~message =
+let logMessage ~lvl ~message =
   let method_ = "window/logMessage" in
   let params = [ ("type", `Int lvl); ("message", `String message) ] in
   let msg = Base.mk_notification ~method_ ~params in
-  send_json fmt msg
+  send_json !oc msg
 
-let logTrace fmt ~message ~extra =
+let logTrace ~message ~extra =
   let method_ = "$/logTrace" in
   let params =
     match (!trace_value, extra) with
@@ -98,11 +100,11 @@ let logTrace fmt ~message ~extra =
       [ ("message", `String message); ("verbose", `String extra) ]
     | _, _ -> [ ("message", `String message) ]
   in
-  Base.mk_notification ~method_ ~params |> send_json fmt
+  Base.mk_notification ~method_ ~params |> send_json !oc
 
 let trace hdr ?extra msg =
   let message = Format.asprintf "[%s]: @[%s@]" hdr msg in
-  logTrace F.std_formatter ~message ~extra
+  logTrace ~message ~extra
 
 let trace_object hdr obj =
   let message =
