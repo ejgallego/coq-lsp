@@ -19,12 +19,19 @@ module Setup : sig
   type t =
     { vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
-    ; options : string list  (** This includes warnings *)
+    ; require_libs :
+        (string * string option * Vernacexpr.export_with_cats option) list
+    ; indices_matter : bool
+    ; impredicative_set : bool
     }
+
+  val default : implicit:bool -> coqlib:string -> t
+
+  val append_loadpaths :
+    t -> vo_load_path:Loadpath.vo_path list -> ml_include_path:string list -> t
 end
 
 type t = Setup.t * string
 
-val no_init : bool ref
-val apply : t -> unit
+val apply : libname:Names.DirPath.t -> t -> unit
 val guess : coqlib:string -> cmdline:Setup.t -> t

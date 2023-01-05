@@ -44,15 +44,9 @@ type t =
   }
 
 let mk_doc root_state workspace =
+  (* XXX This shouldn't be foo *)
   let libname = Names.(DirPath.make [ Id.of_string "foo" ]) in
-  if !Coq.Workspace.no_init = true then
-    let require_libs = [] in
-    Coq.Init.doc_init ~root_state ~workspace ~libname ~require_libs
-  else
-    let require_libs =
-      [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ]
-    in
-    Coq.Init.doc_init ~root_state ~workspace ~libname ~require_libs
+  Coq.Init.doc_init ~root_state ~workspace ~libname
 
 let init_loc ~uri = Loc.initial (InFile { dirpath = None; file = uri })
 
