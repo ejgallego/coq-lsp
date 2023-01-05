@@ -543,8 +543,8 @@ let mk_fb_handler () =
       | _ -> ())
   , q )
 
-let log_workspace (_, from) =
-  let message = "Configuration loaded from " ^ from in
+let log_workspace w =
+  let message = Coq.Workspace.describe w in
   LIO.logMessage ~lvl:3 ~message
 
 let lsp_main bt std coqlib vo_load_path ml_include_path =
@@ -570,10 +570,9 @@ let lsp_main bt std coqlib vo_load_path ml_include_path =
 
   (* Workspace initialization *)
   let cmdline =
-    let w = Coq.Workspace.Setup.default ~implicit:true ~coqlib:"" in
-    Coq.Workspace.Setup.append_loadpaths w ~vo_load_path ~ml_include_path
+    { Coq.Workspace.CmdLine.coqlib; vo_load_path; ml_include_path }
   in
-  let workspace = Coq.Workspace.guess ~coqlib ~cmdline in
+  let workspace = Coq.Workspace.guess ~cmdline in
   log_workspace workspace;
 
   (* Core LSP loop context *)
