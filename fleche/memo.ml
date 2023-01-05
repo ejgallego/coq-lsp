@@ -126,12 +126,12 @@ let interp_command ~st ~fb_queue stm : _ Stats.t =
   let stm_loc = Coq.Ast.loc stm |> Option.get in
   match in_cache st stm with
   | Some (cached_loc, res), time ->
-    if Debug.cache then Io.Log.error "coq" "cache hit";
+    if Debug.cache then Io.Log.trace "coq" "cache hit";
     CacheStats.hit ();
     let res = adjust_offset ~stm_loc ~cached_loc res in
     Stats.make ~cache_hit:true ~time res
   | None, time_hash -> (
-    if Debug.cache then Io.Log.error "coq" "cache miss";
+    if Debug.cache then Io.Log.trace "coq" "cache miss";
     CacheStats.miss ();
     let kind = CS.Kind.Exec in
     let res, time_interp =

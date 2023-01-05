@@ -508,7 +508,7 @@ let rec process_queue ofmt ~state =
 
 let lsp_cb oc =
   Fleche.Io.CallBack.
-    { log_error = LIO.trace ?extra:None
+    { trace = LIO.trace
     ; send_diagnostics =
         (fun ~uri ~version diags ->
           lsp_of_diags ~uri ~version diags |> Lsp.Io.send_json oc)

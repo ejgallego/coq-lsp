@@ -1,6 +1,6 @@
 module CallBack = struct
   type t =
-    { log_error : string -> string -> unit
+    { trace : string -> ?extra:string -> string -> unit
     ; send_diagnostics :
         uri:string -> version:int -> Types.Diagnostic.t list -> unit
     ; send_fileProgress :
@@ -8,7 +8,7 @@ module CallBack = struct
     }
 
   let default =
-    { log_error = (fun _ _ -> ())
+    { trace = (fun _ ?extra:_ _ -> ())
     ; send_diagnostics = (fun ~uri:_ ~version:_ _ -> ())
     ; send_fileProgress = (fun ~uri:_ ~version:_ _ -> ())
     }
@@ -18,7 +18,7 @@ module CallBack = struct
 end
 
 module Log = struct
-  let error d m = !CallBack.cb.log_error d m
+  let trace d ?extra m = !CallBack.cb.trace d ?extra m
 end
 
 module Report = struct

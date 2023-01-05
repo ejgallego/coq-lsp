@@ -74,14 +74,14 @@ let create ~state ~workspace ~uri ~version ~contents =
   }
 
 let recover_up_to_offset doc offset =
-  Io.Log.error "prefix"
+  Io.Log.trace "prefix"
     (Format.asprintf "common prefix offset found at %d" offset);
   let rec find acc_nodes acc_loc nodes =
     match nodes with
     | [] -> (List.rev acc_nodes, acc_loc)
     | n :: ns ->
       if Debug.scan then
-        Io.Log.error "scan"
+        Io.Log.trace "scan"
           (Format.asprintf "consider node at %s" (Coq.Ast.pr_loc n.loc));
       if n.loc.Loc.ep >= offset then (List.rev acc_nodes, acc_loc)
       else find (n :: acc_nodes) n.loc ns
@@ -101,7 +101,7 @@ let compute_common_prefix ~contents doc =
   in
   let common_idx = match_or_stop 0 in
   let nodes, loc = recover_up_to_offset doc common_idx in
-  Io.Log.error "prefix" ("resuming from " ^ Coq.Ast.pr_loc loc);
+  Io.Log.trace "prefix" ("resuming from " ^ Coq.Ast.pr_loc loc);
   let completed = Completion.Stopped loc in
   (nodes, completed)
 
@@ -218,14 +218,14 @@ let state_recovery_heuristic doc st v =
   | Vernacexpr.VernacEndProof _ ->
     let st, loc = find_recovery_for_failed_qed ~default:st doc.nodes in
     let loc_msg = Option.cata Coq.Ast.pr_loc "no loc" loc in
-    Io.Log.error "recovery" (loc_msg ^ " " ^ Memo.input_info (v, st));
+    Io.Log.trace "recovery" (loc_msg ^ " " ^ Memo.input_info (v, st));
     st
   | _ -> st
 
 let debug_parsed_sentence ~ast =
   let loc = Coq.Ast.loc ast |> Option.get in
   let line = "[l: " ^ string_of_int loc.Loc.line_nb ^ "] " in
-  Io.Log.error "coq"
+  Io.Log.trace "coq"
     ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast))
 
 type process_action =
@@ -301,7 +301,7 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
   let rec stm doc st last_tok =
     let doc = send_eager_diagnostics ~uri ~version ~doc in
     report_progress ~doc last_tok;
-    if Debug.parsing then Io.Log.error "coq" "parsing sentence";
+    if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
     (* Parsing *)
     let action, parsing_diags, parsing_time =
       let start_loc = Pcoq.Parsable.loc doc_handle |> CLexer.after in
@@ -396,7 +396,7 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
   (* Note that nodes and diags in reversed order here *)
   (match doc.nodes with
   | [] -> ()
-  | n :: _ -> Io.Log.error "resume" ("last node :" ^ Coq.Ast.pr_loc n.loc));
+  | n :: _ -> Io.Log.trace "resume" ("last node :" ^ Coq.Ast.pr_loc n.loc));
   let st =
     hd_opt ~default:doc.root (List.map (fun { state; _ } -> state) doc.nodes)
   in
@@ -405,10 +405,10 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
 let print_stats () =
   (if !Config.v.mem_stats then
    let size = Memo.mem_stats () in
-   Io.Log.error "stats" (string_of_int size));
+   Io.Log.trace "stats" (string_of_int size));
 
-  Io.Log.error "cache" (Stats.dump ());
-  Io.Log.error "cache" (Memo.CacheStats.stats ());
+  Io.Log.trace "cache" (Stats.dump ());
+  Io.Log.trace "cache" (Memo.CacheStats.stats ());
   (* this requires patches to Coq *)
   (* Io.Log.error "coq parsing" (Cstats.dump ()); *)
   (* Cstats.reset (); *)
@@ -435,7 +435,7 @@ let process_contents ~uri ~contents =
   if is_markdown then markdown_process contents else contents
 
 let log_resume last_tok =
-  Io.Log.error "check"
+  Io.Log.trace "check"
     Format.(
       asprintf "resuming, from: %d l: %d" last_tok.Loc.ep
         last_tok.Loc.line_nb_last)
@@ -443,7 +443,7 @@ let log_resume last_tok =
 let check ~ofmt:_ ~doc ~fb_queue =
   match doc.completed with
   | Yes _ ->
-    Io.Log.error "check" "resuming, completed=yes, nothing to do";
+    Io.Log.trace "check" "resuming, completed=yes, nothing to do";
     doc
   | Stopped last_tok ->
     log_resume last_tok;
@@ -478,6 +478,6 @@ let check ~ofmt:_ ~doc ~fb_queue =
       Format.asprintf "done [%.2f]: document fully checked %a" timestamp
         Pp.pp_with (Loc.pr loc)
     in
-    Io.Log.error "check" end_msg;
+    Io.Log.trace "check" end_msg;
     print_stats ();
     doc
