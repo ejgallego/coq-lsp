@@ -16,7 +16,7 @@ doc: "https://ejgallego.github.io/coq-lsp/"
 
 depends: [
   "ocaml"        { >= "4.12.0" }
-  "dune"         { >= "3.0.2"  }
+  "dune"         { >= "3.2"  }
 
   # Not yet required, install Coq deps instead
   "coq"            {         >= "8.16.0" & < "8.17" }
