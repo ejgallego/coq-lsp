@@ -469,8 +469,8 @@ let check ~ofmt:_ ~doc ~fb_queue =
         | Yes loc -> loc
         | Stopped loc -> loc
       in
-      Format.asprintf "done [%.2f]: document fully checked %a" timestamp
-        Pp.pp_with (Loc.pr loc)
+      Format.asprintf "done [%.2f]: document fully checked %s" timestamp
+        (Coq.Ast.pr_loc loc)
     in
     Io.Log.trace "check" end_msg;
     print_stats ();
