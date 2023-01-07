@@ -27,6 +27,10 @@ to stop by.
   https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
 - GNU Emacs: `M-x eglot [Enter] coq-lsp [Enter]`
 
+## FAQ
+
+See our [list of frequently-asked questions](./etc/FAQ.md).
+
 ## Troubleshooting
 
 - Most problems can be resolved by restarting `coq-lsp`, in Visual Studio Code,
