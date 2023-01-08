@@ -77,7 +77,7 @@ let do_client_options coq_lsp_options =
 let check_client_version version : unit =
   LIO.trace "version" version;
   match version with
-  | "any" | "0.1.2" -> ()
+  | "any" | "0.1.3" -> ()
   | v ->
     let message = Format.asprintf "Incorrect version: %s , expected 0.1.2" v in
     LIO.logMessage ~lvl:1 ~message
