@@ -19,20 +19,8 @@ depends: [
   "dune"         { build & >= "3.5.0"  }
 
   # Not yet required, install Coq deps instead
-  # "coq"          {         >= "8.17"   }
-
-  # coq deps
-  "ocamlfind" {>= "1.8.1"}
-  "zarith" {>= "1.11"}
-
-  # serapi deps
-  "sexplib"             {           >= "v0.13.0"  }
-  "ppx_deriving"        {           >= "4.2.1"    }
-  "ppx_sexp_conv"       {           >= "v0.13.0"  }
-  "ppx_compare"         {           >= "v0.13.0"  }
-  "ppx_hash"            {           >= "v0.13.0"  }
-  "ppx_import"          { build   & >= "1.5-3"    }
-  "ppx_deriving_yojson" {           >= "3.4"      }
+  "coq"          {         >= "8.17" < "8.18" }
+  "coq-serapi"   {         >= "8.17" < "8.18" }
 
   # lsp dependencies
   "cmdliner"     { >= "1.1.0" }
