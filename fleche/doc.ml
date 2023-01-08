@@ -46,7 +46,8 @@ type t =
 let mk_doc root_state workspace =
   (* XXX This shouldn't be foo *)
   let libname = Names.(DirPath.make [ Id.of_string "foo" ]) in
-  Coq.Init.doc_init ~root_state ~workspace ~libname
+  let f () = Coq.Init.doc_init ~root_state ~workspace ~libname in
+  Coq.Protect.eval ~f ()
 
 let init_loc ~uri = Loc.initial (InFile { dirpath = None; file = uri })
 
@@ -56,16 +57,17 @@ let get_last_text text =
   (List.length lines, String.length last_line, String.length text)
 
 let create ~state ~workspace ~uri ~version ~contents =
-  let end_loc = get_last_text contents in
-  { uri
-  ; contents
-  ; end_loc
-  ; version
-  ; root = mk_doc state workspace
-  ; nodes = []
-  ; diags_dirty = false
-  ; completed = Stopped (init_loc ~uri)
-  }
+  Coq.Protect.R.map (mk_doc state workspace) ~f:(fun root ->
+      let end_loc = get_last_text contents in
+      { uri
+      ; contents
+      ; end_loc
+      ; version
+      ; root
+      ; nodes = []
+      ; diags_dirty = false
+      ; completed = Stopped (init_loc ~uri)
+      })
 
 let recover_up_to_offset doc offset =
   Io.Log.trace "prefix"
