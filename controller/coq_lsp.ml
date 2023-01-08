@@ -224,11 +224,19 @@ let do_open ~state params =
     , string_field "text" document )
   in
   let root_state, workspace = State.(state.root_state, state.workspace) in
-  let doc =
-    Fleche.Doc.create ~state:root_state ~workspace ~uri ~contents ~version
-  in
-  DocHandle.create ~uri ~doc;
-  Check.schedule ~uri
+  try
+    let doc =
+      Fleche.Doc.create ~state:root_state ~workspace ~uri ~contents ~version
+    in
+    DocHandle.create ~uri ~doc;
+    Check.schedule ~uri
+  with
+  (* Fleche.Doc.create failed due to some Coq Internal Error, we need to use
+     Coq.Protect on that call *)
+  | exn ->
+    let iexn = Exninfo.capture exn in
+    LIO.trace "Fleche.Doc.create" "internal error";
+    Exninfo.iraise iexn
 
 let do_change params =
   let document = dict_field "textDocument" params in
