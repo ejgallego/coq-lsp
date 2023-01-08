@@ -10,7 +10,10 @@ val hash : t -> int
 val mode : st:t -> Pvernac.proof_mode option
 val parsing : st:t -> Vernacstate.Parser.t
 val lemmas : st:t -> Vernacstate.LemmaStack.t option
-val in_state : st:t -> f:('a -> 'b) -> 'a -> 'b
+
+(** Execute a command in state [st]. Unfortunately this can produce anomalies as
+    Coq state setting is imperative, so we need to wrap it in protect. *)
+val in_state : st:t -> f:('a -> 'b) -> 'a -> 'b Protect.R.t
 
 (** Drop the proofs from the state *)
 val drop_proofs : st:t -> t

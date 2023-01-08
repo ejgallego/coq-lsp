@@ -27,6 +27,10 @@ module Completion = struct
   type t =
     | Yes of Loc.t  (** Location of the last token in the document *)
     | Stopped of Loc.t  (** Location of the last valid token *)
+    | Failed of Loc.t  (** Critical failure, like an anomaly *)
+
+  let loc = function
+    | Yes loc | Stopped loc | Failed loc -> loc
 end
 
 (* Private. A doc is a list of nodes for now. The first element in the list is
@@ -46,8 +50,7 @@ type t =
 let mk_doc root_state workspace =
   (* XXX This shouldn't be foo *)
   let libname = Names.(DirPath.make [ Id.of_string "foo" ]) in
-  let f () = Coq.Init.doc_init ~root_state ~workspace ~libname in
-  Coq.Protect.eval ~f ()
+  Coq.Init.doc_init ~root_state ~workspace ~libname
 
 let init_loc ~uri = Loc.initial (InFile { dirpath = None; file = uri })
 
@@ -101,10 +104,9 @@ let compute_common_prefix ~contents doc =
   let completed = Completion.Stopped loc in
   (nodes, completed)
 
-let bump_version ~version ~contents doc =
+let bump_version ~version ~contents ~end_loc doc =
   (* When a new document, we resume checking from a common prefix *)
   let nodes, completed = compute_common_prefix ~contents doc in
-  let end_loc = get_last_text contents in
   { doc with
     version
   ; nodes
@@ -113,6 +115,22 @@ let bump_version ~version ~contents doc =
   ; diags_dirty = true (* EJGA: Is it worth to optimize this? *)
   ; completed
   }
+
+let bump_version ~version ~contents doc =
+  let end_loc = get_last_text contents in
+  match doc.completed with
+  (* We can do better, but we need to handle the case where the anomaly is when
+     restoring / executing the first sentence *)
+  | Failed _ ->
+    { doc with
+      version
+    ; nodes = []
+    ; contents
+    ; end_loc
+    ; diags_dirty = true
+    ; completed = Stopped (init_loc ~uri:doc.uri)
+    }
+  | Stopped _ | Yes _ -> bump_version ~version ~contents ~end_loc doc
 
 let add_node ~node doc =
   let diags_dirty = if node.diags <> [] then true else doc.diags_dirty in
@@ -164,16 +182,8 @@ let report_progress ~doc last_tok =
 (* let close_doc _modname = () *)
 
 let parse_stm ~st ps =
-  let mode = Coq.State.mode ~st in
-  let st = Coq.State.parsing ~st in
-  let parse ps =
-    (* Coq is missing this, so we add it here. Note that this MUST run inside
-       coq_protect *)
-    Control.check_for_interrupt ();
-    Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
-    |> Option.map Coq.Ast.of_coq
-  in
-  Stats.record ~kind:Stats.Kind.Parsing ~f:(Coq.Protect.eval ~f:parse) ps
+  let f ps = Coq.Parsing.parse ~st ps in
+  Stats.record ~kind:Stats.Kind.Parsing ~f ps
 
 (* Read the input stream until a dot or a "end of proof" token is encountered *)
 let parse_to_terminator : unit Pcoq.Entry.t =
@@ -318,8 +328,13 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
         | Ok (Some ast) ->
           let () = if Debug.parsing then debug_parsed_sentence ~ast in
           (Process ast, [], time)
-        | Error (loc, msg) ->
-          let err_loc = Option.get loc in
+        | Error (Anomaly (_, msg)) | Error (User (None, msg)) ->
+          (* We don't have a better altenative :(, usually missing error loc
+             here means an anomaly, so we stop *)
+          let err_loc = last_tok in
+          let diags = [ mk_diag err_loc 1 msg ] in
+          (EOF (Failed last_tok), diags, time)
+        | Error (User (Some err_loc, msg)) ->
           let diags = [ mk_diag err_loc 1 msg ] in
           discard_to_dot doc_handle;
           let last_tok = Pcoq.Parsable.loc doc_handle in
@@ -329,7 +344,18 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
     (* Execution *)
     match action with
     (* End of file *)
-    | EOF completed -> set_completion ~completed doc
+    | EOF completed ->
+      let node =
+        { loc = Completion.loc completed
+        ; ast = None
+        ; diags = parsing_diags
+        ; messages = []
+        ; state = st
+        ; memo_info = ""
+        }
+      in
+      let doc = add_node ~node doc in
+      set_completion ~completed doc
     | Skip (span_loc, last_tok) ->
       (* We add the parsing diags *)
       let node =
@@ -370,7 +396,8 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
           in
           let doc = add_node ~node doc in
           stm doc state last_tok_new
-        | Error (err_loc, msg) ->
+        | Error (Anomaly (err_loc, msg) as coq_err)
+        | Error (User (err_loc, msg) as coq_err) -> (
           let err_loc = Option.default ast_loc err_loc in
           let diags = [ mk_error_diagnostic ~loc:err_loc ~msg ~ast ] in
           (* FB should be handled by Coq.Protect.eval XXX *)
@@ -390,7 +417,9 @@ let process_and_parse ~uri ~version ~fb_queue doc last_tok doc_handle =
             }
           in
           let doc = add_node ~node doc in
-          stm doc st last_tok_new))
+          match coq_err with
+          | Anomaly _ -> set_completion ~completed:(Failed last_tok_new) doc
+          | User _ -> stm doc st last_tok_new)))
   in
   (* Note that nodes and diags in reversed order here *)
   (match doc.nodes with
@@ -439,10 +468,20 @@ let log_resume last_tok =
       asprintf "resuming, from: %d l: %d" last_tok.Loc.ep
         last_tok.Loc.line_nb_last)
 
+let safe_sub s pos len =
+  if pos < 0 || len < 0 || pos > String.length s - len then (
+    Io.Log.trace "string_sub"
+      (Format.asprintf "error for pos: %d len: %d str: %s" pos len s);
+    s)
+  else String.sub s pos len
+
 let check ~ofmt:_ ~doc ~fb_queue =
   match doc.completed with
   | Yes _ ->
     Io.Log.trace "check" "resuming, completed=yes, nothing to do";
+    doc
+  | Failed _ ->
+    Io.Log.trace "check" "can't resume, failed=yes, nothing to do";
     doc
   | Stopped last_tok ->
     log_resume last_tok;
@@ -453,7 +492,8 @@ let check ~ofmt:_ ~doc ~fb_queue =
     let resume_loc = CLexer.after last_tok in
     let offset = resume_loc.bp in
     let processed_content =
-      String.(sub processed_content offset (length processed_content - offset))
+      safe_sub processed_content offset
+        (String.length processed_content - offset)
     in
     let handle =
       Pcoq.Parsable.make ~loc:resume_loc
@@ -469,12 +509,13 @@ let check ~ofmt:_ ~doc ~fb_queue =
     let doc = { doc with nodes = List.rev doc.nodes; contents } in
     let end_msg =
       let timestamp = Unix.gettimeofday () in
-      let loc =
+      let loc, status =
         match doc.completed with
-        | Yes loc -> loc
-        | Stopped loc -> loc
+        | Yes loc -> (loc, "fully checked")
+        | Stopped loc -> (loc, "stopped")
+        | Failed loc -> (loc, "failed")
       in
-      Format.asprintf "done [%.2f]: document fully checked %s" timestamp
+      Format.asprintf "done [%.2f]: document %s with pos %s" timestamp status
         (Coq.Ast.pr_loc loc)
     in
     Io.Log.trace "check" end_msg;

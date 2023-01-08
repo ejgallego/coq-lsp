@@ -1,3 +1,9 @@
+# coq-lsp 0.1.3: 
+------------------------
+
+ - Much improved handling of Coq fatal errors, the server is now
+   hardened against them (@ejgallego, #155, #157, #160, fixes #91)
+
 # coq-lsp 0.1.2: Message
 ------------------------
 

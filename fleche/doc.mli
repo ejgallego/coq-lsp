@@ -31,6 +31,7 @@ module Completion : sig
   type t =
     | Yes of Loc.t  (** Location of the last token in the document *)
     | Stopped of Loc.t  (** Location of the last valid token *)
+    | Failed of Loc.t  (** Critical failure, like an anomaly *)
 end
 
 type t = private
