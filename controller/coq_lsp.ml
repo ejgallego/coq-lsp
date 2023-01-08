@@ -120,6 +120,9 @@ let do_shutdown ofmt ~id =
   let msg = LSP.mk_reply ~id ~result:`Null in
   LIO.send_json ofmt msg
 
+(* XXX: We need to handle this better *)
+exception AbortRequest
+
 (* Handler for document *)
 module DocHandle = struct
   type t =
@@ -137,7 +140,15 @@ module DocHandle = struct
     Hashtbl.add doc_table uri { doc; requests = () }
 
   let close ~uri = Hashtbl.remove doc_table uri
-  let find ~uri = Hashtbl.find doc_table uri
+
+  let find ~uri =
+    match Hashtbl.find_opt doc_table uri with
+    | Some h -> h
+    | None ->
+      LIO.trace "DocHandle.find" ("file " ^ uri ^ " not available");
+      raise AbortRequest
+
+  let find_opt ~uri = Hashtbl.find_opt doc_table uri
   let find_doc ~uri = (find ~uri).doc
 
   let _update ~handle ~(doc : Fleche.Doc.t) =
@@ -185,12 +196,16 @@ module Check = struct
 
   (* Notification handling; reply is optional / asynchronous *)
   let do_check ofmt ~fb_queue ~uri =
-    let handle = DocHandle.find ~uri in
-    let doc = Fleche.Doc.check ~ofmt ~doc:handle.doc ~fb_queue in
-    DocHandle.update_doc_info ~handle ~doc;
-    let diags = diags_of_doc doc in
-    let diags = lsp_of_diags ~uri:doc.uri ~version:doc.version diags in
-    LIO.send_json ofmt @@ diags
+    match DocHandle.find_opt ~uri with
+    | Some handle ->
+      let doc = Fleche.Doc.check ~ofmt ~doc:handle.doc ~fb_queue in
+      DocHandle.update_doc_info ~handle ~doc;
+      let diags = diags_of_doc doc in
+      let diags = lsp_of_diags ~uri:doc.uri ~version:doc.version diags in
+      LIO.send_json ofmt @@ diags
+    | None ->
+      LIO.trace "Check.do_check" ("file " ^ uri ^ " not available");
+      ()
 
   let completed uri =
     let doc = DocHandle.find_doc ~uri in
@@ -471,6 +486,8 @@ let dispatch_message ofmt ~state dict =
   try dispatch_message ofmt ~state dict with
   | U.Type_error (msg, obj) -> LIO.trace_object msg obj
   | Lsp_exit -> raise Lsp_exit
+  | AbortRequest ->
+    () (* XXX: Separate requests from notifications, handle this better *)
   | exn ->
     let bt = Printexc.get_backtrace () in
     let iexn = Exninfo.capture exn in
