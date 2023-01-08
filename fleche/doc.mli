@@ -44,13 +44,14 @@ type t = private
   ; completed : Completion.t
   }
 
+(** Note, [create] is not cached in the Memo.t table *)
 val create :
      state:Coq.State.t
   -> workspace:Coq.Workspace.t
   -> uri:string
   -> version:int
   -> contents:string
-  -> t
+  -> t Coq.Protect.R.t
 
 val bump_version : version:int -> contents:string -> t -> t
 

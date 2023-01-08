@@ -224,19 +224,17 @@ let do_open ~state params =
     , string_field "text" document )
   in
   let root_state, workspace = State.(state.root_state, state.workspace) in
-  try
-    let doc =
-      Fleche.Doc.create ~state:root_state ~workspace ~uri ~contents ~version
-    in
+  match
+    Fleche.Doc.create ~state:root_state ~workspace ~uri ~contents ~version
+  with
+  | Coq.Protect.R.Completed (Result.Ok doc) ->
     DocHandle.create ~uri ~doc;
     Check.schedule ~uri
-  with
-  (* Fleche.Doc.create failed due to some Coq Internal Error, we need to use
-     Coq.Protect on that call *)
-  | exn ->
-    let iexn = Exninfo.capture exn in
-    LIO.trace "Fleche.Doc.create" "internal error";
-    Exninfo.iraise iexn
+  (* Maybe send some diagnostics in this case? *)
+  | Coq.Protect.R.Completed (Result.Error (_, msg)) ->
+    let msg = Pp.string_of_ppcmds msg in
+    LIO.trace "Fleche.Doc.create" ("internal error" ^ msg)
+  | Coq.Protect.R.Interrupted -> ()
 
 let do_change params =
   let document = dict_field "textDocument" params in
@@ -497,6 +495,9 @@ let dispatch_message ofmt ~state dict =
   | AbortRequest ->
     () (* XXX: Separate requests from notifications, handle this better *)
   | exn ->
+    (* Note: We should never arrive here from Coq, as every call to Coq should
+       be wrapper in Coq.Protect. So hitting this codepath, is effectively a
+       coq-lsp internal error and should be fixed *)
     let bt = Printexc.get_backtrace () in
     let iexn = Exninfo.capture exn in
     LIO.trace "process_queue"

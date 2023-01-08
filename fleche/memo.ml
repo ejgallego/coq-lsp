@@ -120,7 +120,7 @@ let loc_apply_offset
 let adjust_offset ~stm_loc ~cached_loc res =
   let offset = loc_offset cached_loc stm_loc in
   let f = loc_apply_offset offset in
-  Coq.Protect.map_loc ~f res
+  Coq.Protect.R.map_loc ~f res
 
 let interp_command ~st ~fb_queue stm : _ Stats.t =
   let stm_loc = Coq.Ast.loc stm |> Option.get in
