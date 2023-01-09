@@ -1,5 +1,13 @@
 module Error = struct
-  type t = Loc.t option * Pp.t
+  type payload = Loc.t option * Pp.t
+
+  type t =
+    | User of payload
+    | Anomaly of payload
+
+  let map ~f = function
+    | User e -> User (f e)
+    | Anomaly e -> Anomaly (f e)
 end
 
 module R = struct
@@ -13,7 +21,7 @@ module R = struct
     | Interrupted -> Interrupted
 
   let map_error ~f = function
-    | Completed (Error (loc, msg)) -> Completed (Error (f (loc, msg)))
+    | Completed (Error e) -> Completed (Error (Error.map ~f e))
     | res -> res
 
   let map_loc ~f =
@@ -31,4 +39,5 @@ let eval ~f x =
     let e, info = Exninfo.capture exn in
     let loc = Loc.(get_loc info) in
     let msg = CErrors.iprint (e, info) in
-    R.Completed (Error (loc, msg))
+    if CErrors.is_anomaly e then R.Completed (Error (Anomaly (loc, msg)))
+    else R.Completed (Error (User (loc, msg)))

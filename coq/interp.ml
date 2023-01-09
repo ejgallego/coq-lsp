@@ -50,18 +50,15 @@ let marshal_out f oc res =
     | Ok res ->
       Marshal.to_channel oc 0 [];
       f oc res.Info.res
-    | Error (loc, msg) ->
+    | Error _err ->
       Marshal.to_channel oc 1 [];
-      Marshal.to_channel oc loc [];
-      Marshal.to_channel oc msg [];
+      (* Marshal.to_channel oc loc []; *)
+      (* Marshal.to_channel oc msg []; *)
       ())
 
-let marshal_in f ic =
-  let tag : int = Marshal.from_channel ic in
-  if tag = 0 then
-    let res = f ic in
-    Protect.R.Completed (Ok { Info.res; feedback = [] })
-  else
-    let loc : Loc.t option = Marshal.from_channel ic in
-    let msg : Pp.t = Marshal.from_channel ic in
-    Protect.R.Completed (Error (loc, msg))
+(* Needs to be implemeted by Protect.marshal_in *)
+let marshal_in _f _ic = Obj.magic 0
+(* let tag : int = Marshal.from_channel ic in if tag = 0 then let res = f ic in
+   Protect.R.Completed (Ok { Info.res; feedback = [] }) else let loc : Loc.t
+   option = Marshal.from_channel ic in let msg : Pp.t = Marshal.from_channel ic
+   in Protect.R.Completed (Error (User (loc, msg))) *)

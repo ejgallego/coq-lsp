@@ -72,7 +72,7 @@ let coq_init opts =
 (**************************************************************************)
 
 (* Inits the context for a document *)
-let doc_init ~root_state ~workspace ~libname =
+let doc_init ~root_state ~workspace ~libname () =
   (* Lsp.Io.log_error "init" "starting"; *)
   Vernacstate.unfreeze_interp_state (State.to_coq root_state);
 
@@ -83,3 +83,6 @@ let doc_init ~root_state ~workspace ~libname =
 
   (* We return the state at this point! *)
   Vernacstate.freeze_interp_state ~marshallable:false |> State.of_coq
+
+let doc_init ~root_state ~workspace ~libname =
+  Protect.eval ~f:(doc_init ~root_state ~workspace ~libname) ()

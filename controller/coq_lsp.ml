@@ -210,8 +210,8 @@ module Check = struct
   let completed uri =
     let doc = DocHandle.find_doc ~uri in
     match doc.completed with
-    | Yes _ -> true
-    | _ -> false
+    | Yes _ | Failed _ -> true
+    | Stopped _ -> false
 
   let schedule ~uri = pending := Some uri
 end
@@ -231,7 +231,8 @@ let do_open ~state params =
     DocHandle.create ~uri ~doc;
     Check.schedule ~uri
   (* Maybe send some diagnostics in this case? *)
-  | Coq.Protect.R.Completed (Result.Error (_, msg)) ->
+  | Coq.Protect.R.Completed (Result.Error (Anomaly (_, msg)))
+  | Coq.Protect.R.Completed (Result.Error (User (_, msg))) ->
     let msg = Pp.string_of_ppcmds msg in
     LIO.trace "Fleche.Doc.create" ("internal error" ^ msg)
   | Coq.Protect.R.Interrupted -> ()
@@ -306,7 +307,7 @@ let do_symbols ofmt ~id params =
     let slist = Coq.Ast.grab_definitions f ast in
     let msg = LSP.mk_reply ~id ~result:(`List slist) in
     LIO.send_json ofmt msg
-  | Stopped _ ->
+  | Stopped _ | Failed _ ->
     (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
     let code = -32802 in
     let message = "Document is not ready" in
@@ -319,7 +320,7 @@ let do_position_request ofmt ~id params ~handler =
   let in_range =
     match doc.completed with
     | Yes _ -> true
-    | Stopped loc ->
+    | Failed loc | Stopped loc ->
       line < loc.line_nb_last
       || (line = loc.line_nb_last && col <= loc.ep - loc.bol_pos_last)
   in

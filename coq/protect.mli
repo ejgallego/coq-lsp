@@ -1,14 +1,18 @@
 module Error : sig
-  type t = Loc.t option * Pp.t
+  type payload = Loc.t option * Pp.t
+
+  type t = private
+    | User of payload
+    | Anomaly of payload
 end
 
 module R : sig
-  type 'a t =
+  type 'a t = private
     | Completed of ('a, Error.t) result
     | Interrupted (* signal sent, eval didn't complete *)
 
   val map : f:('a -> 'b) -> 'a t -> 'b t
-  val map_error : f:(Error.t -> Error.t) -> 'a t -> 'a t
+  val map_error : f:(Error.payload -> Error.payload) -> 'a t -> 'a t
 
   (** Update the loc stored in the result, this is used by our cache-aware
       location *)

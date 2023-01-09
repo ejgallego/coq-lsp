@@ -168,7 +168,7 @@ module Make (P : Point) : S with module P := P = struct
   let pr_goal st =
     let ppx env sigma x =
       (* It is conveneint to optimize the Pp.t type, see [Jscoq_util.pp_opt] *)
-      Printer.pr_ltype_env ~goal_concl_style:true env sigma x
+      Coq.Print.pr_ltype_env ~goal_concl_style:true env sigma x
     in
     let lemmas = Coq.State.lemmas ~st in
     Option.cata (reify_goals ppx) None lemmas
@@ -181,10 +181,15 @@ module Make (P : Point) : S with module P := P = struct
     let node = find ~doc ~point approx in
     Option.bind node (fun node -> node.Doc.ast)
 
+  let in_state ~st ~f node =
+    match Coq.State.in_state ~st ~f node with
+    | Coq.Protect.R.Completed (Result.Ok res) -> res
+    | Coq.Protect.R.Completed (Result.Error _) | Coq.Protect.R.Interrupted ->
+      None
+
   let goals ~doc ~point approx =
     find ~doc ~point approx
-    |> obind (fun node ->
-           Coq.State.in_state ~st:node.Doc.state ~f:pr_goal node.Doc.state)
+    |> obind (fun node -> in_state ~st:node.Doc.state ~f:pr_goal node.Doc.state)
 
   let messages ~doc ~point approx =
     find ~doc ~point approx |> Option.map (fun node -> node.Doc.messages)
@@ -205,7 +210,7 @@ module Make (P : Point) : S with module P := P = struct
   let completion ~doc ~point prefix =
     find ~doc ~point Exact
     |> obind (fun node ->
-           Coq.State.in_state ~st:node.Doc.state prefix ~f:(fun prefix ->
+           in_state ~st:node.Doc.state prefix ~f:(fun prefix ->
                to_qualid prefix
                |> obind (fun p ->
                       Nametab.completion_canditates p
