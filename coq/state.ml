@@ -96,7 +96,7 @@ let in_state ~st ~f a =
     Vernacstate.unfreeze_interp_state st;
     f a
   in
-  Protect.eval ~f a
+  Protect.eval ~pure:true ~f a
 
 let admit ~st =
   let () = Vernacstate.unfreeze_interp_state st in

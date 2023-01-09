@@ -42,4 +42,4 @@ val fb_queue : Loc.t Message.t list ref
 (** Eval a function and reify the exceptions. Note [f] _must_ be pure, as in
     case of anomaly [f] may be re-executed with debug options. Beware, not
     thread-safe! *)
-val eval : f:('i -> 'o) -> 'i -> ('o, Loc.t) E.t
+val eval : f:('i -> 'o) -> pure:bool -> 'i -> ('o, Loc.t) E.t

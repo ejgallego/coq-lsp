@@ -31,18 +31,29 @@ module R = struct
 end
 
 (* Eval and reify exceptions *)
-let eval_exn ~f x =
+let rec eval_exn ~f ~retry x =
   try
     let res = f x in
     R.Completed (Ok res)
   with
   | Sys.Break -> R.Interrupted
-  | exn ->
-    let e, info = Exninfo.capture exn in
+  | exn -> (
+    let exn, info = Exninfo.capture exn in
     let loc = Loc.(get_loc info) in
-    let msg = CErrors.iprint (e, info) in
-    if CErrors.is_anomaly e then R.Completed (Error (Anomaly (loc, msg)))
-    else R.Completed (Error (User (loc, msg)))
+    let msg = CErrors.iprint (exn, info) in
+    let anomaly = CErrors.is_anomaly exn in
+    let bt = Printexc.backtrace_status () in
+    match (anomaly, bt, retry) with
+    | true, true, _ | true, false, false ->
+      R.Completed (Error (Anomaly (loc, msg)))
+    | true, false, true ->
+      (* This doesn't work because the state unfreeze will restore the
+         "no-backtrace" status *)
+      CDebug.set_flags "backtrace";
+      let res = eval_exn ~f ~retry:false x in
+      CDebug.set_flags "-backtrace";
+      res
+    | false, _, _ -> R.Completed (Error (User (loc, msg))))
 
 module E = struct
   type ('a, 'l) t =
@@ -60,8 +71,8 @@ end
 let fb_queue : Loc.t Message.t list ref = ref []
 
 (* Eval with reified exceptions and feedback *)
-let eval ~f x =
-  let r = eval_exn ~f x in
+let eval ~f ~pure x =
+  let r = eval_exn ~retry:pure ~f x in
   let feedback = List.rev !fb_queue in
   let () = fb_queue := [] in
   { E.r; feedback }

@@ -20,6 +20,11 @@
  - In `_CoqProject`, `-impredicative-set` is now parsed correctly
    (@artagnon, #241)
  - InfoView is not written in React (@ejgallego, #223)
+ - The keybinding alt+enter in VSCode is now correctly scoped
+   (@artagnon, #188)
+ - If a command produces an anomaly, coq-lsp will re-execute it with
+   stack traces enabled, as to produce a better error report
+   (@ejgallego, #161, fixes #153)
 
 # coq-lsp 0.1.3: Event
 ----------------------
