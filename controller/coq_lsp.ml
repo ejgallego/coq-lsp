@@ -74,12 +74,15 @@ let do_client_options coq_lsp_options =
   | Ok v -> Fleche.Config.v := v
   | Error msg -> LIO.trace "CoqLspOption.of_yojson error: " msg
 
-let check_client_version version : unit =
-  LIO.trace "version" version;
-  match version with
-  | "any" | "0.1.3" -> ()
-  | v ->
-    let message = Format.asprintf "Incorrect version: %s , expected 0.1.2" v in
+let check_client_version client_version : unit =
+  LIO.trace "client_version" client_version;
+  if String.(equal client_version "any" || equal client_version Version.server)
+  then () (* Version OK *)
+  else
+    let message =
+      Format.asprintf "Incorrect client version: %s , expected %s."
+        client_version Version.server
+    in
     LIO.logMessage ~lvl:1 ~message
 
 let do_initialize ofmt ~id params =
@@ -704,7 +707,7 @@ let lsp_cmd : unit Cmd.t =
   let vo_load_path = term_append [ rload_path; load_path ] in
   Cmd.(
     v
-      (Cmd.info "coq-lsp" ~version:"0.01" ~doc ~man)
+      (Cmd.info "coq-lsp" ~version:Version.server ~doc ~man)
       Term.(const lsp_main $ bt $ std $ coqlib $ vo_load_path $ ml_include_path))
 
 let main () =
