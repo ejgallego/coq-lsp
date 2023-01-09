@@ -10,33 +10,37 @@ homepage: "https://github.com/ejgallego/coq-lsp"
 dev-repo: "git+https://github.com/ejgallego/coq-lsp.git"
 authors: [
   "Emilio Jesús Gallego Arias <e@x80.org>"
+  "Ali Caglayan <alizter@gmail.com>"
+  "Shachar Itzhaky <shachari@cs.technion.ac.il>"
+  "Ramkumar Ramachandra <r@artagnon.com>"
 ]
-license: "LGPL-2.1"
+license: "LGPL-2.1-or-later"
 doc: "https://ejgallego.github.io/coq-lsp/"
 
 depends: [
-  "ocaml"        {         >= "4.12.0" }
-  "dune"         { build & >= "3.5.0"  }
-
-  # Not yet required, install Coq deps instead
-  # "coq"          {         >= "8.17"   }
-
-  # coq deps
-  "ocamlfind" {>= "1.8.1"}
-  "zarith" {>= "1.11"}
-
-  # serapi deps
-  "sexplib"             {           >= "v0.13.0"  }
-  "ppx_deriving"        {           >= "4.2.1"    }
-  "ppx_sexp_conv"       {           >= "v0.13.0"  }
-  "ppx_compare"         {           >= "v0.13.0"  }
-  "ppx_hash"            {           >= "v0.13.0"  }
-  "ppx_import"          { build   & >= "1.5-3"    }
-  "ppx_deriving_yojson" {           >= "3.4"      }
+  "ocaml"        { >= "4.12.0" }
+  "dune"         { >= "3.5.0"  }
 
   # lsp dependencies
   "cmdliner"     { >= "1.1.0" }
   "yojson"       { >= "1.7.0" }
+
+  # Uncomment this for releases
+  # "coq"          { >= "8.17" < "8.18"  }
+  # "coq-serapi"   { >= "8.17" < "8.18"  }
+
+  # coq deps: remove this for releases
+  "ocamlfind" {>= "1.8.1"}
+  "zarith" {>= "1.11"}
+
+  # serapi deps: remove this for releases
+  "sexplib"             { >= "v0.13.0"  }
+  "ppx_deriving"        { >= "4.2.1"    }
+  "ppx_sexp_conv"       { >= "v0.13.0"  }
+  "ppx_compare"         { >= "v0.13.0"  }
+  "ppx_hash"            { >= "v0.13.0"  }
+  "ppx_import"          { >= "1.5-3"    }
+  "ppx_deriving_yojson" { >= "3.4"      }
 ]
 
 build: [ [ "dune" "build" "-p" name "-j" jobs ] ]
