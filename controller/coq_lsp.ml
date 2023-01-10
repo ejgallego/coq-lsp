@@ -178,9 +178,6 @@ let lsp_of_progress ~uri ~version progress =
   in
   LSP.mk_notification ~method_:"$/coq/fileProgress" ~params
 
-let asts_of_doc doc =
-  List.filter_map (fun v -> v.Fleche.Doc.ast) doc.Fleche.Doc.nodes
-
 let diags_of_doc doc =
   List.concat_map (fun node -> node.Fleche.Doc.diags) doc.Fleche.Doc.nodes
 
@@ -273,38 +270,9 @@ let get_position params =
   let line, character = (int_field "line" pos, int_field "character" pos) in
   (line, character)
 
-let mk_syminfo file (name, _path, kind, pos) : J.t =
-  `Assoc
-    [ ("name", `String name)
-    ; ("kind", `Int kind)
-    ; (* function *)
-      ( "location"
-      , `Assoc
-          [ ("uri", `String file)
-          ; ("range", LSP.mk_range Fleche.Types.(to_range pos))
-          ] )
-    ]
-
-let _kind_of_type _tm = 13
-(* let open Terms in let open Timed in let is_undef = option_empty !(tm.sym_def)
-   && List.length !(tm.sym_rules) = 0 in match !(tm.sym_type) with | Vari _ ->
-   13 (* Variable *) | Type | Kind | Symb _ | _ when is_undef -> 14 (* Constant
-   *) | _ -> 12 (* Function *) *)
-
-let do_symbols ~params =
+let do_document_request ~params ~handler =
   let uri, doc = get_textDocument params in
-  match doc.completed with
-  | Yes _ ->
-    let f loc id = mk_syminfo uri (Names.Id.to_string id, "", 12, loc) in
-    let ast = asts_of_doc doc in
-    let slist = Coq.Ast.grab_definitions f ast in
-    let result = `List slist in
-    Ok result
-  | Stopped _ | Failed _ ->
-    (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
-    let code = -32802 in
-    let message = "Document is not ready" in
-    Error (code, message)
+  handler ~uri ~doc
 
 let do_position_request ~params ~handler =
   let _uri, doc = get_textDocument params in
@@ -324,86 +292,16 @@ let do_position_request ~params ~handler =
     let message = "Document is not ready" in
     Result.Error (code, message)
 
-let hover_handler ~doc ~point =
-  let show_loc_info = true in
-  let loc_span = Fleche.Info.LC.loc ~doc ~point Exact in
-  let loc_string =
-    Option.map Coq.Ast.pr_loc loc_span |> Option.default "no ast"
-  in
-  let info_string =
-    Fleche.Info.LC.info ~doc ~point Exact |> Option.default "no info"
-  in
-  let hover_string =
-    if show_loc_info then loc_string ^ "\n___\n" ^ info_string else info_string
-  in
-  `Assoc
-    ([ ( "contents"
-       , `Assoc
-           [ ("kind", `String "markdown"); ("value", `String hover_string) ] )
-     ]
-    @ Option.cata
-        (fun loc -> [ ("range", LSP.mk_range (Fleche.Types.to_range loc)) ])
-        [] loc_span)
-
-let do_hover = do_position_request ~handler:hover_handler
+let do_symbols = do_document_request ~handler:Requests.symbols
+let do_hover = do_position_request ~handler:Requests.hover
+let do_goals = do_position_request ~handler:Requests.goals
+let do_completion = do_position_request ~handler:Requests.completion
 
 let do_trace params =
   let trace = string_field "value" params in
   LIO.set_trace_value (LIO.TraceValue.of_string trace)
 
-(* Replace by ppx when we can print goals properly in the client *)
-let mk_hyp { Coq.Goals.names; def = _; ty } : Yojson.Safe.t =
-  let names = List.map (fun id -> `String (Names.Id.to_string id)) names in
-  let ty = Pp.string_of_ppcmds ty in
-  `Assoc [ ("names", `List names); ("ty", `String ty) ]
-
-let mk_goal { Coq.Goals.info = _; ty; hyps } : Yojson.Safe.t =
-  let ty = Pp.string_of_ppcmds ty in
-  `Assoc [ ("ty", `String ty); ("hyps", `List (List.map mk_hyp hyps)) ]
-
-let mk_goals { Coq.Goals.goals; _ } = List.map mk_goal goals
-let mk_goals = Option.cata mk_goals []
-let mk_message (_loc, _lvl, msg) = `String (Pp.string_of_ppcmds msg)
-let mk_messages m = List.map mk_message m
-let mk_messages = Option.cata mk_messages []
-
-let mk_error node =
-  let open Fleche in
-  let open Fleche.Types in
-  match List.filter (fun d -> d.Diagnostic.severity < 2) node.Doc.diags with
-  | [] -> []
-  | e :: _ -> [ ("error", `String e.Diagnostic.message) ]
-
-let goals_mode =
-  if !Fleche.Config.v.goal_after_tactic then Fleche.Info.PrevIfEmpty
-  else Fleche.Info.Prev
-
-let goals_handler ~doc ~point =
-  let open Fleche in
-  let goals = Info.LC.goals ~doc ~point goals_mode in
-  let node = Info.LC.node ~doc ~point Exact in
-  let messages = Option.map (fun node -> node.Doc.messages) node in
-  let error = Option.cata mk_error [] node in
-  `Assoc
-    ([ ( "textDocument"
-       , `Assoc [ ("uri", `String doc.uri); ("version", `Int doc.version) ] )
-     ; ( "position"
-       , `Assoc [ ("line", `Int (fst point)); ("character", `Int (snd point)) ]
-       )
-     ; ("goals", `List (mk_goals goals))
-     ; ("messages", `List (mk_messages messages))
-     ]
-    @ error)
-
-let do_goals = do_position_request ~handler:goals_handler
-
-let completion_handler ~doc ~point:_ =
-  let f _loc id = `Assoc [ ("label", `String Names.Id.(to_string id)) ] in
-  let ast = asts_of_doc doc in
-  let clist = Coq.Ast.grab_definitions f ast in
-  `List clist
-
-let do_completion = do_position_request ~handler:completion_handler
+(* Memo stuff *)
 let memo_cache_file = ".coq-lsp.cache"
 
 let memo_save_to_disk () =
