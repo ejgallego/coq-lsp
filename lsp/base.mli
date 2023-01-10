@@ -15,6 +15,26 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+(** Basic JSON-RPC Incoming Messages *)
+module Message : sig
+  type t =
+    | Notification of
+        { method_ : string
+        ; params : (string * Yojson.Safe.t) list
+        }
+    | Request of
+        { id : int
+        ; method_ : string
+        ; params : (string * Yojson.Safe.t) list
+        }
+
+  (** Reify an incoming message *)
+  val from_yojson : Yojson.Safe.t -> (t, string) Result.t
+
+  val method_ : t -> string
+  val params : t -> (string * Yojson.Safe.t) list
+end
+
 val mk_range : Fleche.Types.Range.t -> Yojson.Safe.t
 
 (** Build notification *)

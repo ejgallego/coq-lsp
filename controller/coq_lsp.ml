@@ -25,11 +25,6 @@ let list_field name dict = U.to_list List.(assoc name dict)
 let string_field name dict = U.to_string List.(assoc name dict)
 
 (* Conditionals *)
-let _option_empty x =
-  match x with
-  | None -> true
-  | Some _ -> false
-
 let option_cata f d x =
   match x with
   | None -> d
@@ -40,7 +35,6 @@ let option_default x d =
   | None -> d
   | Some x -> x
 
-let oint_field name dict = option_cata U.to_int 0 List.(assoc_opt name dict)
 let ostring_field name dict = Option.map U.to_string (List.assoc_opt name dict)
 
 let odict_field name dict =
@@ -451,7 +445,7 @@ let memo_read_from_disk () = if false then memo_read_from_disk ()
    change_pending setup. *)
 let request_queue = Queue.create ()
 
-let process_input (com : J.t) =
+let process_input (com : LSP.Message.t) =
   if Fleche.Debug.sched_wakeup then
     LIO.trace "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   (* TODO: this is the place to cancel pending requests that are invalid, and in
@@ -461,36 +455,45 @@ let process_input (com : J.t) =
 
 exception Lsp_exit
 
-(* XXX: We could split requests and notifications but with the OCaml theading
-   model there is not a lot of difference yet; something to think for the
-   future. *)
-let dispatch_message ofmt ~state dict =
-  let id = oint_field "id" dict in
-  let params = odict_field "params" dict in
-  match string_field "method" dict with
-  (* Requests *)
+let dispatch_notification ofmt ~state ~method_ ~params =
+  match method_ with
+  (* Lifecycle *)
+  | "exit" -> raise Lsp_exit
+  (* setTrace *)
+  | "$/setTrace" -> do_trace params
+  (* Document lifetime *)
+  | "textDocument/didOpen" -> do_open ~state params
+  | "textDocument/didChange" -> do_change params
+  | "textDocument/didClose" -> do_close ofmt params
+  | "textDocument/didSave" -> memo_save_to_disk ()
+  (* NOOPs *)
+  | "initialized" -> ()
+  (* Generic handler *)
+  | msg -> LIO.trace "no_handler" msg
+
+let dispatch_request ofmt ~id ~method_ ~params =
+  match method_ with
+  (* Lifecyle *)
   | "initialize" -> do_initialize ofmt ~id params
   | "shutdown" -> do_shutdown ofmt ~id
   (* Symbols and info about the document *)
   | "textDocument/completion" -> do_completion ofmt ~id params
   | "textDocument/documentSymbol" -> do_symbols ofmt ~id params
   | "textDocument/hover" -> do_hover ofmt ~id params
-  (* setTrace *)
-  | "$/setTrace" -> do_trace params
   (* Proof-specific stuff *)
   | "proof/goals" -> do_goals ofmt ~id params
-  (* Notifications *)
-  | "textDocument/didOpen" -> do_open ~state params
-  | "textDocument/didChange" -> do_change params
-  | "textDocument/didClose" -> do_close ofmt params
-  | "textDocument/didSave" -> memo_save_to_disk ()
-  | "exit" -> raise Lsp_exit
-  (* NOOPs *)
-  | "initialized" | "workspace/didChangeWatchedFiles" -> ()
+  (* Generic handler *)
   | msg -> LIO.trace "no_handler" msg
 
-let dispatch_message ofmt ~state dict =
-  try dispatch_message ofmt ~state dict with
+let dispatch_message ofmt ~state (com : LSP.Message.t) =
+  match com with
+  | Notification { method_; params } ->
+    dispatch_notification ofmt ~state ~method_ ~params
+  | Request { id; method_; params } ->
+    dispatch_request ofmt ~id ~method_ ~params
+
+let dispatch_message ofmt ~state com =
+  try dispatch_message ofmt ~state com with
   | U.Type_error (msg, obj) -> LIO.trace_object msg obj
   | Lsp_exit -> raise Lsp_exit
   | AbortRequest ->
@@ -503,7 +506,7 @@ let dispatch_message ofmt ~state dict =
     let iexn = Exninfo.capture exn in
     LIO.trace "process_queue"
       (if Printexc.backtrace_status () then "bt=true" else "bt=false");
-    let method_name = string_field "method" dict in
+    let method_name = LSP.Message.method_ com in
     LIO.trace "process_queue" ("exn in method: " ^ method_name);
     LIO.trace "process_queue" (Printexc.to_string exn);
     LIO.trace "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
@@ -525,12 +528,10 @@ let rec process_queue ofmt ~state =
   | Some com ->
     (* TODO we should optimize the queue *)
     ignore (Queue.pop request_queue);
-    let dict = U.to_assoc com in
-    let m = string_field "method" dict in
-    LIO.trace "process_queue" ("Serving Request: " ^ m);
+    LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
     (* We let Coq work normally now *)
     Control.interrupt := false;
-    dispatch_message ofmt ~state dict);
+    dispatch_message ofmt ~state com);
   process_queue ofmt ~state
 
 let lsp_cb oc =
@@ -614,7 +615,9 @@ let lsp_main bt std coqlib vo_load_path ml_include_path =
     (* XXX: Implement a queue, compact *)
     let com = LIO.read_request stdin in
     if Fleche.Debug.read then LIO.trace_object "read" com;
-    process_input com;
+    (match LSP.Message.from_yojson com with
+    | Ok msg -> process_input msg
+    | Error msg -> LIO.trace "read_request" ("error: " ^ msg));
     loop ()
   in
   try loop () with
