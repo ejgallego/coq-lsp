@@ -85,7 +85,7 @@ let check_client_version version : unit =
 let do_initialize ofmt ~id params =
   let trace =
     ostring_field "trace" params
-    |> option_cata LIO.TraceValue.parse LIO.TraceValue.Off
+    |> option_cata LIO.TraceValue.of_string LIO.TraceValue.Off
   in
   LIO.set_trace_value trace;
   let coq_lsp_options = odict_field "initializationOptions" params in
@@ -358,7 +358,7 @@ let do_hover ofmt = do_position_request ofmt ~handler:hover_handler
 
 let do_trace params =
   let trace = string_field "value" params in
-  LIO.set_trace_value (LIO.TraceValue.parse trace)
+  LIO.set_trace_value (LIO.TraceValue.of_string trace)
 
 (* Replace by ppx when we can print goals properly in the client *)
 let mk_hyp { Coq.Goals.names; def = _; ty } : Yojson.Safe.t =
@@ -571,7 +571,8 @@ let mk_fb_handler () =
   , q )
 
 let log_workspace w =
-  let message = Coq.Workspace.describe w in
+  let message, extra = Coq.Workspace.describe w in
+  LIO.trace "workspace" "initialized" ~extra;
   LIO.logMessage ~lvl:3 ~message
 
 let lsp_main bt std coqlib vo_load_path ml_include_path =

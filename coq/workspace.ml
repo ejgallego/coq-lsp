@@ -16,7 +16,8 @@
 (************************************************************************)
 
 type t =
-  { vo_load_path : Loadpath.vo_path list
+  { coqlib : string
+  ; vo_load_path : Loadpath.vo_path list
   ; ml_include_path : string list
   ; require_libs :
       (string * string option * Vernacexpr.export_with_cats option) list
@@ -38,7 +39,8 @@ let default ~implicit ~coqlib ~kind =
   let coq_root = Names.DirPath.make [ Libnames.coq_root ] in
   let default_root = Libnames.default_root_prefix in
   let require_libs = [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ] in
-  { vo_load_path =
+  { coqlib
+  ; vo_load_path =
       [ mk_lp ~ml:false ~root:coq_root ~implicit ~dir:"theories"
       ; mk_lp ~ml:true ~root:default_root ~implicit:false ~dir:"user-contrib"
       ]
@@ -57,17 +59,33 @@ let add_loadpaths base ~vo_load_path ~ml_include_path =
   ; ml_include_path = base.ml_include_path @ ml_include_path
   }
 
-let describe { kind; vo_load_path; ml_include_path; require_libs; _ } =
+let pp_load_path fmt
+    { Loadpath.unix_path; coq_path; implicit = _; has_ml = _; recursive = _ } =
+  Format.fprintf fmt "Path %s ---> %s"
+    (Names.DirPath.to_string coq_path)
+    unix_path
+
+let describe { coqlib; kind; vo_load_path; ml_include_path; require_libs; _ } =
   let require_msg =
     String.concat " " (List.map (fun (s, _, _) -> s) require_libs)
   in
   let n_vo = List.length vo_load_path in
   let n_ml = List.length ml_include_path in
-  Format.asprintf
-    "@[Configuration loaded from %s@\n\
-     - Modules [%s] will be loaded by default; %d Coq path directory bindings \
-     in scope; %d Coq plugin directory bindings in scope@]"
-    kind require_msg n_vo n_ml
+  let extra =
+    Format.asprintf "@[vo_paths:@\n @[<v>%a@]@\nml_paths:@\n @[<v>%a@]@]"
+      Format.(pp_print_list pp_print_string)
+      ml_include_path
+      (Format.pp_print_list pp_load_path)
+      vo_load_path
+  in
+  ( Format.asprintf
+      "@[Configuration loaded from %s@\n\
+      \ - coqlib is at: %s@\n\
+      \ - Modules [%s] will be loaded by default@\n\
+      \ - %d Coq path directory bindings in scope; %d Coq plugin directory \
+       bindings in scope@]"
+      kind coqlib require_msg n_vo n_ml
+  , extra )
 
 let rec parse_args args init w =
   match args with
@@ -94,7 +112,8 @@ let load_objs libs =
 
 (* NOTE: Use exhaustive match below to avoid bugs by skipping fields *)
 let apply ~libname
-    { vo_load_path
+    { coqlib = _
+    ; vo_load_path
     ; ml_include_path
     ; require_libs
     ; indices_matter
