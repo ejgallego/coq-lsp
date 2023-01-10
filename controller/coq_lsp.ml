@@ -55,6 +55,7 @@ end
 
 module LIO = Lsp.Io
 module LSP = Lsp.Base
+module Check = Doc_manager.Check
 
 (* Request Handling: The client expects a reply *)
 module CoqLspOption = struct
@@ -113,99 +114,6 @@ let do_initialize ~params =
 
 let do_shutdown ~params:_ = Ok `Null
 
-(* XXX: We need to handle this better *)
-exception AbortRequest
-
-(* Handler for document *)
-module DocHandle = struct
-  type t =
-    { doc : Fleche.Doc.t
-    ; requests : unit (* placeholder for requests attached to a document *)
-    }
-
-  let doc_table : (string, t) Hashtbl.t = Hashtbl.create 39
-
-  let create ~uri ~doc =
-    (match Hashtbl.find_opt doc_table uri with
-    | None -> ()
-    | Some _ ->
-      LIO.trace "do_open" ("file " ^ uri ^ " not properly closed by client"));
-    Hashtbl.add doc_table uri { doc; requests = () }
-
-  let close ~uri = Hashtbl.remove doc_table uri
-
-  let find ~uri =
-    match Hashtbl.find_opt doc_table uri with
-    | Some h -> h
-    | None ->
-      LIO.trace "DocHandle.find" ("file " ^ uri ^ " not available");
-      raise AbortRequest
-
-  let find_opt ~uri = Hashtbl.find_opt doc_table uri
-  let find_doc ~uri = (find ~uri).doc
-
-  let _update ~handle ~(doc : Fleche.Doc.t) =
-    Hashtbl.replace doc_table doc.uri { handle with doc }
-
-  (* Clear requests *)
-  let update_doc_version ~(doc : Fleche.Doc.t) =
-    Hashtbl.replace doc_table doc.uri { doc; requests = () }
-
-  (* trigger pending incremental requests *)
-  let update_doc_info ~handle ~(doc : Fleche.Doc.t) =
-    Hashtbl.replace doc_table doc.uri { handle with doc }
-end
-
-let lsp_of_diags ~uri ~version diags =
-  List.map
-    (fun { Fleche.Types.Diagnostic.range; severity; message; extra = _ } ->
-      (range, severity, message, None))
-    diags
-  |> LSP.mk_diagnostics ~uri ~version
-
-let lsp_of_progress ~uri ~version progress =
-  let progress =
-    List.map
-      (fun (range, kind) ->
-        `Assoc [ ("range", LSP.mk_range range); ("kind", `Int kind) ])
-      progress
-  in
-  let params =
-    [ ( "textDocument"
-      , `Assoc [ ("uri", `String uri); ("version", `Int version) ] )
-    ; ("processing", `List progress)
-    ]
-  in
-  LSP.mk_notification ~method_:"$/coq/fileProgress" ~params
-
-let diags_of_doc doc =
-  List.concat_map (fun node -> node.Fleche.Doc.diags) doc.Fleche.Doc.nodes
-
-module Check = struct
-  let pending = ref None
-
-  (* Notification handling; reply is optional / asynchronous *)
-  let do_check ofmt ~fb_queue ~uri =
-    match DocHandle.find_opt ~uri with
-    | Some handle ->
-      let doc = Fleche.Doc.check ~ofmt ~doc:handle.doc ~fb_queue in
-      DocHandle.update_doc_info ~handle ~doc;
-      let diags = diags_of_doc doc in
-      let diags = lsp_of_diags ~uri:doc.uri ~version:doc.version diags in
-      LIO.send_json ofmt @@ diags
-    | None ->
-      LIO.trace "Check.do_check" ("file " ^ uri ^ " not available");
-      ()
-
-  let completed uri =
-    let doc = DocHandle.find_doc ~uri in
-    match doc.completed with
-    | Yes _ | Failed _ -> true
-    | Stopped _ -> false
-
-  let schedule ~uri = pending := Some uri
-end
-
 let do_open ~state params =
   let document = dict_field "textDocument" params in
   let uri, version, contents =
@@ -214,18 +122,7 @@ let do_open ~state params =
     , string_field "text" document )
   in
   let root_state, workspace = State.(state.root_state, state.workspace) in
-  match
-    Fleche.Doc.create ~state:root_state ~workspace ~uri ~contents ~version
-  with
-  | Coq.Protect.R.Completed (Result.Ok doc) ->
-    DocHandle.create ~uri ~doc;
-    Check.schedule ~uri
-  (* Maybe send some diagnostics in this case? *)
-  | Coq.Protect.R.Completed (Result.Error (Anomaly (_, msg)))
-  | Coq.Protect.R.Completed (Result.Error (User (_, msg))) ->
-    let msg = Pp.string_of_ppcmds msg in
-    LIO.trace "Fleche.Doc.create" ("internal error" ^ msg)
-  | Coq.Protect.R.Interrupted -> ()
+  Doc_manager.create ~root_state ~workspace ~uri ~contents ~version
 
 let do_change params =
   let document = dict_field "textDocument" params in
@@ -240,29 +137,17 @@ let do_change params =
     assert false
   | change :: _ ->
     let contents = string_field "text" change in
-    let doc = DocHandle.find_doc ~uri in
-    if version > doc.version then (
-      LIO.trace "bump file" (uri ^ " / version: " ^ string_of_int version);
-      let tb = Unix.gettimeofday () in
-      let doc = Fleche.Doc.bump_version ~version ~contents doc in
-      let diff = Unix.gettimeofday () -. tb in
-      LIO.trace "bump file took" (Format.asprintf "%f" diff);
-      let () = DocHandle.update_doc_version ~doc in
-      Check.schedule ~uri)
-    else
-      (* That's a weird case, get got changes without a version bump? Do nothing
-         for now *)
-      ()
+    Doc_manager.change ~uri ~version ~contents
 
 let do_close _ofmt params =
   let document = dict_field "textDocument" params in
   let uri = string_field "uri" document in
-  DocHandle.close ~uri
+  Doc_manager.close ~uri
 
 let get_textDocument params =
   let document = dict_field "textDocument" params in
   let uri = string_field "uri" document in
-  let doc = DocHandle.find_doc ~uri in
+  let doc = Doc_manager.find_doc ~uri in
   (uri, doc)
 
 let get_position params =
@@ -370,7 +255,7 @@ let dispatch_message ofmt ~state com =
   try dispatch_message ofmt ~state com with
   | U.Type_error (msg, obj) -> LIO.trace_object msg obj
   | Lsp_exit -> raise Lsp_exit
-  | AbortRequest ->
+  | Doc_manager.AbortRequest ->
     () (* XXX: Separate requests from notifications, handle this better *)
   | exn ->
     (* Note: We should never arrive here from Coq, as every call to Coq should
@@ -390,17 +275,11 @@ let rec process_queue ofmt ~state =
   if Fleche.Debug.sched_wakeup then
     LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   (match Queue.peek_opt request_queue with
-  | None -> (
-    match !Check.pending with
-    | Some uri ->
-      LIO.trace "process_queue" "resuming document checking";
-      Control.interrupt := false;
-      Check.do_check ofmt ~fb_queue:state.State.fb_queue ~uri;
-      (* Only if completed! *)
-      if Check.completed uri then Check.pending := None
-    | None -> Thread.delay 0.1)
+  | None ->
+    Control.interrupt := false;
+    Check.check_or_yield ofmt ~fb_queue:state.State.fb_queue
   | Some com ->
-    (* TODO we should optimize the queue *)
+    (* TODO: optimize the queue? *)
     ignore (Queue.pop request_queue);
     LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
     (* We let Coq work normally now *)
@@ -413,10 +292,10 @@ let lsp_cb oc =
     { trace = LIO.trace
     ; send_diagnostics =
         (fun ~uri ~version diags ->
-          lsp_of_diags ~uri ~version diags |> Lsp.Io.send_json oc)
+          Lsp_util.lsp_of_diags ~uri ~version diags |> Lsp.Io.send_json oc)
     ; send_fileProgress =
         (fun ~uri ~version progress ->
-          lsp_of_progress ~uri ~version progress |> Lsp.Io.send_json oc)
+          Lsp_util.lsp_of_progress ~uri ~version progress |> Lsp.Io.send_json oc)
     }
 
 let lvl_to_severity (lvl : Feedback.level) =
