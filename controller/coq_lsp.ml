@@ -76,7 +76,7 @@ let check_client_version version : unit =
     let message = Format.asprintf "Incorrect version: %s , expected 0.1.2" v in
     LIO.logMessage ~lvl:1 ~message
 
-let do_initialize ofmt ~id params =
+let do_initialize ~params =
   let trace =
     ostring_field "trace" params
     |> option_cata LIO.TraceValue.of_string LIO.TraceValue.Off
@@ -96,23 +96,19 @@ let do_initialize ofmt ~id params =
     ; ("codeActionProvider", `Bool false)
     ]
   in
-  let msg =
-    LSP.mk_reply ~id
-      ~result:
-        (`Assoc
-          [ ("capabilities", `Assoc capabilities)
-          ; ( "serverInfo"
-            , `Assoc
-                [ ("name", `String "coq-lsp (C) Inria 2022")
-                ; ("version", `String "0.1+alpha")
-                ] )
-          ])
+  let result =
+    `Assoc
+      [ ("capabilities", `Assoc capabilities)
+      ; ( "serverInfo"
+        , `Assoc
+            [ ("name", `String "coq-lsp (C) Inria 2022")
+            ; ("version", `String "0.1+alpha")
+            ] )
+      ]
   in
-  LIO.send_json ofmt msg
+  Ok result
 
-let do_shutdown ofmt ~id =
-  let msg = LSP.mk_reply ~id ~result:`Null in
-  LIO.send_json ofmt msg
+let do_shutdown ~params:_ = Ok `Null
 
 (* XXX: We need to handle this better *)
 exception AbortRequest
@@ -292,22 +288,22 @@ let _kind_of_type _tm = 13
    13 (* Variable *) | Type | Kind | Symb _ | _ when is_undef -> 14 (* Constant
    *) | _ -> 12 (* Function *) *)
 
-let do_symbols ofmt ~id params =
+let do_symbols ~params =
   let uri, doc = get_textDocument params in
   match doc.completed with
   | Yes _ ->
     let f loc id = mk_syminfo uri (Names.Id.to_string id, "", 12, loc) in
     let ast = asts_of_doc doc in
     let slist = Coq.Ast.grab_definitions f ast in
-    let msg = LSP.mk_reply ~id ~result:(`List slist) in
-    LIO.send_json ofmt msg
+    let result = `List slist in
+    Ok result
   | Stopped _ | Failed _ ->
     (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
     let code = -32802 in
     let message = "Document is not ready" in
-    LSP.mk_request_error ~id ~code ~message |> LIO.send_json ofmt
+    Error (code, message)
 
-let do_position_request ofmt ~id params ~handler =
+let do_position_request ~params ~handler =
   let _uri, doc = get_textDocument params in
   let point = get_position params in
   let line, col = point in
@@ -318,14 +314,12 @@ let do_position_request ofmt ~id params ~handler =
       line < loc.line_nb_last
       || (line = loc.line_nb_last && col <= loc.ep - loc.bol_pos_last)
   in
-  if in_range then
-    let result = handler ~doc ~point in
-    LSP.mk_reply ~id ~result |> LIO.send_json ofmt
+  if in_range then Result.Ok (handler ~doc ~point)
   else
     (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
     let code = -32802 in
     let message = "Document is not ready" in
-    LSP.mk_request_error ~id ~code ~message |> LIO.send_json ofmt
+    Result.Error (code, message)
 
 let hover_handler ~doc ~point =
   let show_loc_info = true in
@@ -348,7 +342,7 @@ let hover_handler ~doc ~point =
         (fun loc -> [ ("range", LSP.mk_range (Fleche.Types.to_range loc)) ])
         [] loc_span)
 
-let do_hover ofmt = do_position_request ofmt ~handler:hover_handler
+let do_hover = do_position_request ~handler:hover_handler
 
 let do_trace params =
   let trace = string_field "value" params in
@@ -398,7 +392,7 @@ let goals_handler ~doc ~point =
      ]
     @ error)
 
-let do_goals ofmt = do_position_request ofmt ~handler:goals_handler
+let do_goals = do_position_request ~handler:goals_handler
 
 let completion_handler ~doc ~point:_ =
   let f _loc id = `Assoc [ ("label", `String Names.Id.(to_string id)) ] in
@@ -406,7 +400,7 @@ let completion_handler ~doc ~point:_ =
   let clist = Coq.Ast.grab_definitions f ast in
   `List clist
 
-let do_completion ofmt = do_position_request ofmt ~handler:completion_handler
+let do_completion = do_position_request ~handler:completion_handler
 let memo_cache_file = ".coq-lsp.cache"
 
 let memo_save_to_disk () =
@@ -471,19 +465,27 @@ let dispatch_notification ofmt ~state ~method_ ~params =
   (* Generic handler *)
   | msg -> LIO.trace "no_handler" msg
 
-let dispatch_request ofmt ~id ~method_ ~params =
+let dispatch_request ~method_ ~params =
   match method_ with
   (* Lifecyle *)
-  | "initialize" -> do_initialize ofmt ~id params
-  | "shutdown" -> do_shutdown ofmt ~id
+  | "initialize" -> do_initialize ~params
+  | "shutdown" -> do_shutdown ~params
   (* Symbols and info about the document *)
-  | "textDocument/completion" -> do_completion ofmt ~id params
-  | "textDocument/documentSymbol" -> do_symbols ofmt ~id params
-  | "textDocument/hover" -> do_hover ofmt ~id params
+  | "textDocument/completion" -> do_completion ~params
+  | "textDocument/documentSymbol" -> do_symbols ~params
+  | "textDocument/hover" -> do_hover ~params
   (* Proof-specific stuff *)
-  | "proof/goals" -> do_goals ofmt ~id params
+  | "proof/goals" -> do_goals ~params
   (* Generic handler *)
-  | msg -> LIO.trace "no_handler" msg
+  | msg ->
+    LIO.trace "no_handler" msg;
+    Ok `Null
+
+let dispatch_request ofmt ~id ~method_ ~params =
+  (match dispatch_request ~method_ ~params with
+  | Ok result -> LSP.mk_reply ~id ~result
+  | Error (code, message) -> LSP.mk_request_error ~id ~code ~message)
+  |> LIO.send_json ofmt
 
 let dispatch_message ofmt ~state (com : LSP.Message.t) =
   match com with
