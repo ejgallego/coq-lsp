@@ -571,7 +571,8 @@ let mk_fb_handler () =
   , q )
 
 let log_workspace w =
-  let message = Coq.Workspace.describe w in
+  let message, extra = Coq.Workspace.describe w in
+  LIO.trace "workspace" "initialized" ~extra;
   LIO.logMessage ~lvl:3 ~message
 
 let lsp_main bt std coqlib vo_load_path ml_include_path =
