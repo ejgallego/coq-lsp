@@ -21,15 +21,54 @@
 
 (* Whether to send extended lsp messages *)
 let std_protocol = ref true
-
-module J = Yojson.Safe
-
 let _mk_extra l = if !std_protocol then [] else l
 
 (* Ad-hoc parsing for file:///foo... *)
 let _parse_uri str =
   let l = String.length str - 7 in
   String.(sub str 7 l)
+
+module J = Yojson.Safe
+module U = Yojson.Safe.Util
+
+let string_field name dict = U.to_string List.(assoc name dict)
+let dict_field name dict = U.to_assoc (List.assoc name dict)
+
+module Message = struct
+  type t =
+    | Notification of
+        { method_ : string
+        ; params : (string * Yojson.Safe.t) list
+        }
+    | Request of
+        { id : int
+        ; method_ : string
+        ; params : (string * Yojson.Safe.t) list
+        }
+
+  (** Reify an incoming message *)
+  let from_yojson msg =
+    try
+      let dict = U.to_assoc msg in
+      let method_ = string_field "method" dict in
+      let params = dict_field "params" dict in
+      (match List.assoc_opt "id" dict with
+      | None -> Notification { method_; params }
+      | Some id ->
+        let id = U.to_int id in
+        Request { id; method_; params })
+      |> Result.ok
+    with
+    | Not_found -> Error "missing parameter"
+    | U.Type_error (msg, obj) ->
+      Error (Format.asprintf "msg: %s; obj: %s" msg (J.to_string obj))
+
+  let method_ = function
+    | Notification { method_; _ } | Request { method_; _ } -> method_
+
+  let params = function
+    | Notification { params; _ } | Request { params; _ } -> params
+end
 
 let mk_reply ~id ~result =
   `Assoc [ ("jsonrpc", `String "2.0"); ("id", `Int id); ("result", result) ]
