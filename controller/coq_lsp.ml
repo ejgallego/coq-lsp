@@ -11,7 +11,7 @@
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
@@ -301,35 +301,6 @@ let do_trace params =
   let trace = string_field "value" params in
   LIO.set_trace_value (LIO.TraceValue.of_string trace)
 
-(* Memo stuff *)
-let memo_cache_file = ".coq-lsp.cache"
-
-let memo_save_to_disk () =
-  try
-    Fleche.Memo.save_to_disk ~file:memo_cache_file;
-    LIO.trace "memo" "cache saved to disk"
-  with exn ->
-    LIO.trace "memo" (Printexc.to_string exn);
-    Sys.remove memo_cache_file;
-    ()
-
-(* We disable it for now, see todo.org for more information *)
-let memo_save_to_disk () = if false then memo_save_to_disk ()
-
-let memo_read_from_disk () =
-  try
-    if Sys.file_exists memo_cache_file then (
-      LIO.trace "memo" "trying to load cache file";
-      Fleche.Memo.load_from_disk ~file:memo_cache_file;
-      LIO.trace "memo" "cache file loaded")
-    else LIO.trace "memo" "cache file not present"
-  with exn ->
-    LIO.trace "memo" ("loading cache failed: " ^ Printexc.to_string exn);
-    Sys.remove memo_cache_file;
-    ()
-
-let memo_read_from_disk () = if false then memo_read_from_disk ()
-
 (* The rule is: we keep the latest change check notification in the variable; it
    is only served when the rest of requests are served.
 
@@ -360,7 +331,7 @@ let dispatch_notification ofmt ~state ~method_ ~params =
   | "textDocument/didOpen" -> do_open ~state params
   | "textDocument/didChange" -> do_change params
   | "textDocument/didClose" -> do_close ofmt params
-  | "textDocument/didSave" -> memo_save_to_disk ()
+  | "textDocument/didSave" -> Cache.save_to_disk ()
   (* NOOPs *)
   | "initialized" -> ()
   (* Generic handler *)
@@ -510,7 +481,7 @@ let lsp_main bt std coqlib vo_load_path ml_include_path =
   (* Core LSP loop context *)
   let state = { State.root_state; workspace; fb_queue } in
 
-  memo_read_from_disk ();
+  Cache.read_from_disk ();
 
   let (_ : Thread.t) = Thread.create (fun () -> process_queue oc ~state) () in
 

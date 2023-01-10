@@ -1,6 +1,6 @@
 (executable
  (name coq_lsp)
- (modules version requests coq_lsp)
+ (modules version cache requests coq_lsp)
  (public_name coq-lsp)
  (preprocess
   (staged_pps ppx_import ppx_deriving_yojson))
