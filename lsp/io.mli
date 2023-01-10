@@ -15,18 +15,7 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-(* We export this module *)
-module TraceValue : sig
-  type t =
-    | Off
-    | Messages
-    | Verbose
-
-  val parse : string -> t
-  val to_string : t -> string
-end
-
-val set_trace_value : TraceValue.t -> unit
+(** JSON-RPC input/output *)
 
 (** Read a JSON-RPC request from channel *)
 val read_request : in_channel -> Yojson.Safe.t
@@ -35,6 +24,22 @@ exception ReadError of string
 
 (** Send a JSON-RPC request to channel *)
 val send_json : Format.formatter -> Yojson.Safe.t -> unit
+
+(** Logging *)
+
+(** Trace values *)
+module TraceValue : sig
+  type t =
+    | Off
+    | Messages
+    | Verbose
+
+  val of_string : string -> t
+  val to_string : t -> string
+end
+
+(** Set the trace value *)
+val set_trace_value : TraceValue.t -> unit
 
 (** Set the log channel *)
 val set_log_channel : Format.formatter -> unit

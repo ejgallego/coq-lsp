@@ -79,10 +79,10 @@ let describe { coqlib; kind; vo_load_path; ml_include_path; require_libs; _ } =
       vo_load_path
   in
   ( Format.asprintf
-      "@[Configuration loaded from %s@\n \
-       - coqlib is at: %s@\n \
-       - Modules [%s] will be loaded by default@\n \
-       - %d Coq path directory bindings in scope; %d Coq plugin directory \
+      "@[Configuration loaded from %s@\n\
+      \ - coqlib is at: %s@\n\
+      \ - Modules [%s] will be loaded by default@\n\
+      \ - %d Coq path directory bindings in scope; %d Coq plugin directory \
        bindings in scope@]"
       kind coqlib require_msg n_vo n_ml
   , extra )
