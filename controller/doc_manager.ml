@@ -112,6 +112,22 @@ let create ~root_state ~workspace ~uri ~contents ~version =
     LIO.trace "Fleche.Doc.create" ("internal error" ^ msg)
   | Coq.Protect.R.Interrupted -> ()
 
+(* Can't wait for the day this goes away *)
+let tainted = ref false
+
+let create ~root_state ~workspace ~uri ~contents ~version =
+  if !tainted then
+    (* Warn about Coq bug *)
+    let message =
+      "You have opened two or more Coq files simultaneously in the server\n\
+       Unfortunately Coq's parser doesn't properly support that setup yet\n\
+       If you see some strange parsing errors please close all files but one\n\
+       Then restart the coq-lsp server; sorry for the inconveniencies"
+    in
+    LIO.logMessage ~lvl:2 ~message
+  else tainted := true;
+  create ~root_state ~workspace ~uri ~contents ~version
+
 let change ~uri ~version ~contents =
   let doc = Handle.find_doc ~uri in
   if version > doc.version then (
