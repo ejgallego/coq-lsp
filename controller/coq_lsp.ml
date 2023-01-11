@@ -57,6 +57,22 @@ module LIO = Lsp.Io
 module LSP = Lsp.Base
 module Check = Doc_manager.Check
 
+module PendingRequest = struct
+  type t =
+    { uri : string
+    ; handler : uri:string -> doc:Fleche.Doc.t -> J.t
+    }
+end
+
+module RResult = struct
+  type t =
+    | Ok of Yojson.Safe.t
+    | Error of int * string
+    | Postpone of PendingRequest.t
+
+  let ok x = Ok x
+end
+
 (* Request Handling: The client expects a reply *)
 module CoqLspOption = struct
   type t = [%import: Fleche.Config.t] [@@deriving yojson]
@@ -108,9 +124,9 @@ let do_initialize ~params =
           ; ("version", `String Version.server)
           ] )
     ]
-  |> Result.ok
+  |> RResult.ok
 
-let do_shutdown ~params:_ = Ok `Null
+let do_shutdown ~params:_ = RResult.Ok `Null
 
 let do_open ~state params =
   let document = dict_field "textDocument" params in
@@ -153,10 +169,6 @@ let get_position params =
   let line, character = (int_field "line" pos, int_field "character" pos) in
   (line, character)
 
-let do_document_request ~params ~handler =
-  let uri, doc = get_textDocument params in
-  handler ~uri ~doc
-
 let do_position_request ~params ~handler =
   let _uri, doc = get_textDocument params in
   let point = get_position params in
@@ -168,17 +180,25 @@ let do_position_request ~params ~handler =
       line < loc.line_nb_last
       || (line = loc.line_nb_last && col <= loc.ep - loc.bol_pos_last)
   in
-  if in_range then Result.Ok (handler ~doc ~point)
+  if in_range then RResult.Ok (handler ~doc ~point)
   else
     (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
     let code = -32802 in
     let message = "Document is not ready" in
-    Result.Error (code, message)
+    RResult.Error (code, message)
 
-let do_symbols = do_document_request ~handler:Requests.symbols
 let do_hover = do_position_request ~handler:Requests.hover
 let do_goals = do_position_request ~handler:Requests.goals
 let do_completion = do_position_request ~handler:Requests.completion
+
+(* Requires the full document to be processed *)
+let do_document_request ~params ~handler =
+  let uri, doc = get_textDocument params in
+  match doc.completed with
+  | Yes _ -> RResult.Ok (handler ~uri ~doc)
+  | Stopped _ | Failed _ -> Postpone { uri; handler }
+
+let do_symbols = do_document_request ~handler:Requests.symbols
 
 let do_trace params =
   let trace = string_field "value" params in
@@ -196,11 +216,43 @@ let rec read_request ic =
     LIO.trace "read_request" ("error: " ^ msg);
     read_request ic
 
+let rtable : (int, PendingRequest.t) Hashtbl.t = Hashtbl.create 673
+
 let answer_request ofmt ~id result =
-  (match result with
-  | Ok result -> LSP.mk_reply ~id ~result
-  | Error (code, message) -> LSP.mk_request_error ~id ~code ~message)
-  |> LIO.send_json ofmt
+  match result with
+  | RResult.Ok result -> LSP.mk_reply ~id ~result |> LIO.send_json ofmt
+  | Error (code, message) ->
+    LSP.mk_request_error ~id ~code ~message |> LIO.send_json ofmt
+  | Postpone ({ uri; _ } as pr) ->
+    Doc_manager.serve_on_completion ~uri ~id;
+    Hashtbl.add rtable id pr
+
+let do_cancel ofmt ~params =
+  let id = int_field "id" params in
+  match Hashtbl.find_opt rtable id with
+  | None ->
+    (* Request is not pending *)
+    ()
+  | Some _ ->
+    Hashtbl.remove rtable id;
+    answer_request ofmt ~id (Error (-32800, "Cancelled by client"))
+
+let serve_postponed_request id =
+  match Hashtbl.find_opt rtable id with
+  | None ->
+    LIO.trace "can't serve cancelled request: " (string_of_int id);
+    None
+  | Some { uri; handler } ->
+    LIO.trace "serving rq: " (string_of_int id ^ " uri: " ^ uri);
+    Hashtbl.remove rtable id;
+    let doc = Doc_manager.find_doc ~uri in
+    Some (RResult.Ok (handler ~uri ~doc))
+
+let serve_postponed_request ofmt id =
+  serve_postponed_request id |> Option.iter (answer_request ofmt ~id)
+
+let serve_postponed_requests ofmt rl =
+  Int.Set.iter (serve_postponed_request ofmt) rl
 
 (***********************************************************************)
 
@@ -246,6 +298,8 @@ let dispatch_notification ofmt ~state ~method_ ~params =
   | "textDocument/didChange" -> do_change params
   | "textDocument/didClose" -> do_close ofmt params
   | "textDocument/didSave" -> Cache.save_to_disk ()
+  (* Cancel Request *)
+  | "$/cancelRequest" -> do_cancel ofmt ~params
   (* NOOPs *)
   | "initialized" -> ()
   (* Generic handler *)
@@ -255,8 +309,9 @@ let dispatch_request ~method_ ~params =
   match method_ with
   (* Lifecyle *)
   | "initialize" ->
-    (* XXX This can't happen here *)
-    do_initialize ~params
+    LIO.trace "dispatch_request" "duplicate initialize request! Rejecting";
+    (* XXX what's the error code here *)
+    RResult.Error (-32600, "Invalid Request: server already initialized")
   | "shutdown" -> do_shutdown ~params
   (* Symbols and info about the document *)
   | "textDocument/completion" -> do_completion ~params
@@ -309,20 +364,24 @@ let dispatch_message ofmt ~state com =
 (** Main event queue *)
 let request_queue = Queue.create ()
 
-let rec process_queue ofmt ~state =
-  if Fleche.Debug.sched_wakeup then
-    LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
-  (match Queue.peek_opt request_queue with
+let dispatch_or_resume_check ofmt ~state =
+  match Queue.peek_opt request_queue with
   | None ->
     Control.interrupt := false;
-    Check.check_or_yield ofmt ~fb_queue:state.State.fb_queue
+    let ready = Check.check_or_yield ofmt ~fb_queue:state.State.fb_queue in
+    serve_postponed_requests ofmt ready
   | Some com ->
     (* TODO: optimize the queue? *)
     ignore (Queue.pop request_queue);
     LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
     (* We let Coq work normally now *)
     Control.interrupt := false;
-    dispatch_message ofmt ~state com);
+    dispatch_message ofmt ~state com
+
+let rec process_queue ofmt ~state =
+  if Fleche.Debug.sched_wakeup then
+    LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
+  dispatch_or_resume_check ofmt ~state;
   process_queue ofmt ~state
 
 let process_input (com : LSP.Message.t) =

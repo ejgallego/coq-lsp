@@ -24,7 +24,11 @@ exception AbortRequest
 module Handle = struct
   type t =
     { doc : Fleche.Doc.t
-    ; requests : unit (* placeholder for requests attached to a document *)
+    ; requests : Int.Set.t
+          (* For now we just store the request id to wake up on completion,
+             later on we may want to store a more interesting type, for example
+             "wake up when a location is reached", or always to continue the
+             streaming *)
     }
 
   let doc_table : (string, t) Hashtbl.t = Hashtbl.create 39
@@ -34,7 +38,7 @@ module Handle = struct
     | None -> ()
     | Some _ ->
       LIO.trace "do_open" ("file " ^ uri ^ " not properly closed by client"));
-    Hashtbl.add doc_table uri { doc; requests = () }
+    Hashtbl.add doc_table uri { doc; requests = Int.Set.empty }
 
   let close ~uri = Hashtbl.remove doc_table uri
 
@@ -48,16 +52,34 @@ module Handle = struct
   let find_opt ~uri = Hashtbl.find_opt doc_table uri
   let find_doc ~uri = (find ~uri).doc
 
-  let _update ~handle ~(doc : Fleche.Doc.t) =
+  let _update_doc ~handle ~(doc : Fleche.Doc.t) =
     Hashtbl.replace doc_table doc.uri { handle with doc }
 
   (* Clear requests *)
   let update_doc_version ~(doc : Fleche.Doc.t) =
-    Hashtbl.replace doc_table doc.uri { doc; requests = () }
+    Hashtbl.replace doc_table doc.uri { doc; requests = Int.Set.empty }
+
+  let attach_request ~uri ~id =
+    match Hashtbl.find_opt doc_table uri with
+    | Some { doc; requests } ->
+      let requests = Int.Set.add id requests in
+      Hashtbl.replace doc_table uri { doc; requests }
+    | None -> ()
+
+  (* For now only on completion, I think we want check to return the list of
+     requests that can be served / woken up *)
+  let do_requests ~doc ~handle =
+    let handle = { handle with doc } in
+    match doc.completed with
+    | Yes _ -> ({ doc; requests = Int.Set.empty }, handle.requests)
+    | Stopped _ -> (handle, Int.Set.empty)
+    | Failed _ -> (handle, Int.Set.empty)
 
   (* trigger pending incremental requests *)
   let update_doc_info ~handle ~(doc : Fleche.Doc.t) =
-    Hashtbl.replace doc_table doc.uri { handle with doc }
+    let handle, requests = do_requests ~doc ~handle in
+    Hashtbl.replace doc_table doc.uri handle;
+    requests
 end
 
 let diags_of_doc doc =
@@ -78,21 +100,24 @@ module Check = struct
     match Handle.find_opt ~uri with
     | Some handle ->
       let doc = Fleche.Doc.check ~ofmt ~doc:handle.doc ~fb_queue in
-      Handle.update_doc_info ~handle ~doc;
+      let requests = Handle.update_doc_info ~handle ~doc in
       let diags = diags_of_doc doc in
       let diags =
         Lsp_util.lsp_of_diags ~uri:doc.uri ~version:doc.version diags
       in
       LIO.send_json ofmt @@ diags;
       (* Only if completed! *)
-      if completed ~uri then pending := None
+      if completed ~uri then pending := None;
+      requests
     | None ->
       LIO.trace "Check.check" ("file " ^ uri ^ " not available");
-      ()
+      Int.Set.empty
 
   let check_or_yield ofmt ~fb_queue =
     match !pending with
-    | None -> Thread.delay 0.1
+    | None ->
+      Thread.delay 0.1;
+      Int.Set.empty
     | Some uri -> check ofmt ~fb_queue ~uri
 
   let schedule ~uri = pending := Some uri
@@ -145,3 +170,4 @@ let change ~uri ~version ~contents =
 
 let close = Handle.close
 let find_doc = Handle.find_doc
+let serve_on_completion ~uri ~id = Handle.attach_request ~uri ~id

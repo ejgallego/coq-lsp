@@ -12,6 +12,9 @@
  - `coq-lsp` will now warn the user when two files have been opened
    simultaneously and the parser may go into a broken state :/
    (@ejgallego #169)
+ - Implement request postponement and cancellation. Thus
+   `documentSymbols` will now be postponed until the document is
+   ready, (@ejgallego #141, #146, fixes #124)
 
 # coq-lsp 0.1.2: Message
 ------------------------

@@ -17,9 +17,10 @@
 
 module Check : sig
   (** Check a document, or yield if there is none pending; it will send progress
-      and diagnostics notifications to [ofmt] *)
+      and diagnostics notifications to [ofmt]. Will return the list of requests
+      that are ready to execute. *)
   val check_or_yield :
-    Format.formatter -> fb_queue:Coq.Message.t list ref -> unit
+    Format.formatter -> fb_queue:Coq.Message.t list ref -> Int.Set.t
 end
 
 (** Create a document *)
@@ -41,3 +42,6 @@ exception AbortRequest
 
 (** [find_doc ~uri] , raises AbortRequest if [uri] is invalid *)
 val find_doc : uri:string -> Fleche.Doc.t
+
+(** Request support *)
+val serve_on_completion : uri:string -> id:int -> unit
