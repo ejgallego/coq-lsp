@@ -1,5 +1,5 @@
-# coq-lsp 0.1.3: 
-------------------------
+# coq-lsp 0.1.3: View
+---------------------
 
  - Much improved handling of Coq fatal errors, the server is now
    hardened against them (@ejgallego, #155, #157, #160, fixes #91)
@@ -9,6 +9,9 @@
    to a command; this makes VsCodeVim cursor tracking work; thanks to
    Cactus (Anton) Golov for detailed bug reporting and testing
    (@ejgallego, @jesyspa, #170, fixes #163)
+ - `coq-lsp` will now warn the user when two files have been opened
+   simultaneously and the parser may go into a broken state :/
+   (@ejgallego #169)
 
 # coq-lsp 0.1.2: Message
 ------------------------
