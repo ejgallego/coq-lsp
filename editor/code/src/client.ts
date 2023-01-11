@@ -25,6 +25,7 @@ enum ShowGoalsOnCursorChange {
   Never = 0,
   OnMouse = 1,
   OnMouseAndKeyboard = 2,
+  OnMouseKeyboardCommand = 3,
 }
 
 interface CoqLspServerConfig {
@@ -164,13 +165,15 @@ export function activate(context: ExtensionContext): void {
     (evt: vscode.TextEditorSelectionChangeEvent) => {
       if (evt.textEditor.document.languageId != "coq") return;
 
-      const show =
-        (evt.kind == vscode.TextEditorSelectionChangeKind.Keyboard &&
-          config.show_goals_on == ShowGoalsOnCursorChange.OnMouseAndKeyboard) ||
-        (evt.kind == vscode.TextEditorSelectionChangeKind.Mouse &&
-          (config.show_goals_on == ShowGoalsOnCursorChange.OnMouse ||
-            config.show_goals_on ==
-              ShowGoalsOnCursorChange.OnMouseAndKeyboard));
+      const kind =
+        evt.kind == vscode.TextEditorSelectionChangeKind.Mouse
+          ? 1
+          : evt.kind == vscode.TextEditorSelectionChangeKind.Keyboard
+          ? 2
+          : evt.kind
+          ? evt.kind
+          : 1000;
+      const show = kind <= config.show_goals_on;
 
       if (show) {
         goals(evt.textEditor);

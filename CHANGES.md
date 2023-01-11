@@ -5,6 +5,10 @@
    hardened against them (@ejgallego, #155, #157, #160, fixes #91)
  - `coq-lsp` now follows the LSP specification regarding
    initialization strictly (@ejgallego, #168)
+ - New setting for goals to be updated when the selection changes due
+   to a command; this makes VsCodeVim cursor tracking work; thanks to
+   Cactus (Anton) Golov for detailed bug reporting and testing
+   (@ejgallego, @jesyspa, #170, fixes #163)
 
 # coq-lsp 0.1.2: Message
 ------------------------
