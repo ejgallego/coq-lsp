@@ -67,9 +67,10 @@ let get_hyp (ppx : Constr.t -> 'pc) (_sigma : Evd.evar_map) (hdecl : cdcl) :
 (** gets the constr associated to the type of the current goal *)
 let get_goal_type (ppx : Constr.t -> 'pc) (sigma : Evd.evar_map) (g : Evar.t) :
     _ =
+  let (EvarInfo evi) = Evd.find sigma g in
   ppx
   @@ EConstr.to_constr ~abort_on_undefined_evars:false sigma
-       Evd.(evar_concl (find sigma g))
+       Evd.(evar_concl evi)
 
 let build_info sigma g = { evar = g; name = Evd.evar_ident g sigma }
 
@@ -77,7 +78,7 @@ let build_info sigma g = { evar = g; name = Evd.evar_ident g sigma }
 let process_goal_gen ppx sigma g : 'a reified_goal =
   (* XXX This looks cumbersome *)
   let env = Global.env () in
-  let evi = Evd.find sigma g in
+  let (EvarInfo evi) = Evd.find sigma g in
   let env = Evd.evar_filtered_env env evi in
   (* why is compaction neccesary... ? [eg for better display] *)
   let ctx = Termops.compact_named_context (Environ.named_context env) in
