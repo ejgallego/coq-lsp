@@ -62,7 +62,7 @@ module CoqLspOption = struct
   type t = [%import: Fleche.Config.t] [@@deriving yojson]
 end
 
-let do_client_options coq_lsp_options =
+let do_client_options coq_lsp_options : unit =
   LIO.trace "init" "custom client options:";
   LIO.trace_object "init" (`Assoc coq_lsp_options);
   match CoqLspOption.of_yojson (`Assoc coq_lsp_options) with
@@ -100,17 +100,15 @@ let do_initialize ~params =
     ; ("codeActionProvider", `Bool false)
     ]
   in
-  let result =
-    `Assoc
-      [ ("capabilities", `Assoc capabilities)
-      ; ( "serverInfo"
-        , `Assoc
-            [ ("name", `String "coq-lsp (C) Inria 2022")
-            ; ("version", `String "0.1+alpha")
-            ] )
-      ]
-  in
-  Ok result
+  `Assoc
+    [ ("capabilities", `Assoc capabilities)
+    ; ( "serverInfo"
+      , `Assoc
+          [ ("name", `String "coq-lsp (C) Inria 2023")
+          ; ("version", `String Version.server)
+          ] )
+    ]
+  |> Result.ok
 
 let do_shutdown ~params:_ = Ok `Null
 
@@ -186,26 +184,57 @@ let do_trace params =
   let trace = string_field "value" params in
   LIO.set_trace_value (LIO.TraceValue.of_string trace)
 
-(* The rule is: we keep the latest change check notification in the variable; it
-   is only served when the rest of requests are served.
+(***********************************************************************)
 
-   Note that we should add a method to detect stale requests; maybe cancel them
-   when a new edit comes.
+(** Misc helpers *)
+let rec read_request ic =
+  let com = LIO.read_request ic in
+  if Fleche.Debug.read then LIO.trace_object "read" com;
+  match LSP.Message.from_yojson com with
+  | Ok msg -> msg
+  | Error msg ->
+    LIO.trace "read_request" ("error: " ^ msg);
+    read_request ic
 
-   Also, this should eventually become a queue, instead of a single
-   change_pending setup. *)
-let request_queue = Queue.create ()
+let answer_request ofmt ~id result =
+  (match result with
+  | Ok result -> LSP.mk_reply ~id ~result
+  | Error (code, message) -> LSP.mk_request_error ~id ~code ~message)
+  |> LIO.send_json ofmt
 
-let process_input (com : LSP.Message.t) =
-  if Fleche.Debug.sched_wakeup then
-    LIO.trace "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
-  (* TODO: this is the place to cancel pending requests that are invalid, and in
-     general, to perform queue optimizations *)
-  Queue.push com request_queue;
-  Control.interrupt := true
+(***********************************************************************)
 
+(** LSP Init routine *)
 exception Lsp_exit
 
+let log_workspace w =
+  let message, extra = Coq.Workspace.describe w in
+  LIO.trace "workspace" "initialized" ~extra;
+  LIO.logMessage ~lvl:3 ~message
+
+let rec lsp_init_loop ic ofmt ~cmdline : Coq.Workspace.t =
+  match read_request ic with
+  | LSP.Message.Request { method_ = "initialize"; id; params } ->
+    (* At this point logging is allowed per LSP spec *)
+    LIO.logMessage ~lvl:3 ~message:"Initializing server";
+    let result = do_initialize ~params in
+    answer_request ofmt ~id result;
+    LIO.logMessage ~lvl:3 ~message:"Server initialized";
+    (* Workspace initialization *)
+    let workspace = Coq.Workspace.guess ~cmdline in
+    log_workspace workspace;
+    workspace
+  | LSP.Message.Request { id; _ } ->
+    (* per spec *)
+    LSP.mk_request_error ~id ~code:(-32002) ~message:"server not initialized"
+    |> LIO.send_json ofmt;
+    lsp_init_loop ic ofmt ~cmdline
+  | LSP.Message.Notification { method_ = "exit"; params = _ } -> raise Lsp_exit
+  | LSP.Message.Notification _ ->
+    (* We can't log before getting the initialize message *)
+    lsp_init_loop ic ofmt ~cmdline
+
+(** Dispatching *)
 let dispatch_notification ofmt ~state ~method_ ~params =
   match method_ with
   (* Lifecycle *)
@@ -225,7 +254,9 @@ let dispatch_notification ofmt ~state ~method_ ~params =
 let dispatch_request ~method_ ~params =
   match method_ with
   (* Lifecyle *)
-  | "initialize" -> do_initialize ~params
+  | "initialize" ->
+    (* XXX This can't happen here *)
+    do_initialize ~params
   | "shutdown" -> do_shutdown ~params
   (* Symbols and info about the document *)
   | "textDocument/completion" -> do_completion ~params
@@ -236,13 +267,10 @@ let dispatch_request ~method_ ~params =
   (* Generic handler *)
   | msg ->
     LIO.trace "no_handler" msg;
-    Ok `Null
+    Error (-32601, "method not found")
 
 let dispatch_request ofmt ~id ~method_ ~params =
-  (match dispatch_request ~method_ ~params with
-  | Ok result -> LSP.mk_reply ~id ~result
-  | Error (code, message) -> LSP.mk_request_error ~id ~code ~message)
-  |> LIO.send_json ofmt
+  dispatch_request ~method_ ~params |> answer_request ofmt ~id
 
 let dispatch_message ofmt ~state (com : LSP.Message.t) =
   match com with
@@ -271,6 +299,16 @@ let dispatch_message ofmt ~state com =
     LIO.trace "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
     LIO.trace "BT" bt
 
+(***********************************************************************)
+(* The queue strategy is: we keep pending document checks in Doc_manager, they
+   are only resumed when the rest of requests in the queue are served.
+
+   Note that we should add a method to detect stale requests; maybe cancel them
+   when a new edit comes. *)
+
+(** Main event queue *)
+let request_queue = Queue.create ()
+
 let rec process_queue ofmt ~state =
   if Fleche.Debug.sched_wakeup then
     LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
@@ -287,6 +325,15 @@ let rec process_queue ofmt ~state =
     dispatch_message ofmt ~state com);
   process_queue ofmt ~state
 
+let process_input (com : LSP.Message.t) =
+  if Fleche.Debug.sched_wakeup then
+    LIO.trace "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
+  (* TODO: this is the place to cancel pending requests that are invalid, and in
+     general, to perform queue optimizations *)
+  Queue.push com request_queue;
+  Control.interrupt := true
+
+(* Main loop *)
 let lsp_cb oc =
   Fleche.Io.CallBack.
     { trace = LIO.trace
@@ -324,56 +371,55 @@ let mk_fb_handler () =
       | _ -> ())
   , q )
 
-let log_workspace w =
-  let message, extra = Coq.Workspace.describe w in
-  LIO.trace "workspace" "initialized" ~extra;
-  LIO.logMessage ~lvl:3 ~message
-
-let lsp_main bt std coqlib vo_load_path ml_include_path =
-  LSP.std_protocol := std;
-  Exninfo.record_backtrace true;
-
-  let oc = F.std_formatter in
-
-  (* Send a log message *)
-  LIO.set_log_channel oc;
-  LIO.logMessage ~lvl:3 ~message:"Server started";
-
-  Fleche.Io.CallBack.set (lsp_cb oc);
-
-  (* Core Coq initialization *)
+let coq_init bt =
   let fb_handler, fb_queue = mk_fb_handler () in
   let debug = bt || Fleche.Debug.backtraces in
   let load_module = Dynlink.loadfile in
   let load_plugin = Coq.Loader.plugin_handler None in
-  let root_state =
-    Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin })
-  in
+  (Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin }), fb_queue)
 
-  (* Workspace initialization *)
+let lsp_main bt std coqlib vo_load_path ml_include_path =
+  LSP.std_protocol := std;
+
+  (* We output to stdout *)
+  let ic = stdin in
+  let oc = F.std_formatter in
+
+  (* Set log channel *)
+  LIO.set_log_channel oc;
+  Fleche.Io.CallBack.set (lsp_cb oc);
+
+  (* IMPORTANT: LSP spec forbids any message from server to client before
+     initialize is received *)
+
+  (* Core Coq initialization *)
+  let root_state, fb_queue = coq_init bt in
   let cmdline =
     { Coq.Workspace.CmdLine.coqlib; vo_load_path; ml_include_path }
   in
-  let workspace = Coq.Workspace.guess ~cmdline in
-  log_workspace workspace;
 
-  (* Core LSP loop context *)
-  let state = { State.root_state; workspace; fb_queue } in
-
-  Cache.read_from_disk ();
-
-  let (_ : Thread.t) = Thread.create (fun () -> process_queue oc ~state) () in
-
-  let rec loop () =
-    (* XXX: Implement a queue, compact *)
-    let com = LIO.read_request stdin in
-    if Fleche.Debug.read then LIO.trace_object "read" com;
-    (match LSP.Message.from_yojson com with
-    | Ok msg -> process_input msg
-    | Error msg -> LIO.trace "read_request" ("error: " ^ msg));
-    loop ()
+  (* Read JSON-RPC messages and push them to the queue *)
+  let rec read_loop () =
+    let msg = read_request ic in
+    process_input msg;
+    read_loop ()
   in
-  try loop () with
+
+  (* Input/output will happen now *)
+  try
+    (* LSP Server server initialization *)
+    let workspace = lsp_init_loop ic oc ~cmdline in
+
+    (* Core LSP loop context *)
+    let state = { State.root_state; workspace; fb_queue } in
+
+    (* Read workspace state (noop for now) *)
+    Cache.read_from_disk ();
+
+    let (_ : Thread.t) = Thread.create (fun () -> process_queue oc ~state) () in
+
+    read_loop ()
+  with
   | (LIO.ReadError "EOF" | Lsp_exit) as exn ->
     let message =
       "server exiting"

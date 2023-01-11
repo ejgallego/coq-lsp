@@ -3,6 +3,8 @@
 
  - Much improved handling of Coq fatal errors, the server is now
    hardened against them (@ejgallego, #155, #157, #160, fixes #91)
+ - `coq-lsp` now follows the LSP specification regarding
+   initialization strictly (@ejgallego, #168)
 
 # coq-lsp 0.1.2: Message
 ------------------------

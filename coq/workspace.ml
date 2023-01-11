@@ -73,10 +73,10 @@ let describe { coqlib; kind; vo_load_path; ml_include_path; require_libs; _ } =
   let n_ml = List.length ml_include_path in
   let extra =
     Format.asprintf "@[vo_paths:@\n @[<v>%a@]@\nml_paths:@\n @[<v>%a@]@]"
-      Format.(pp_print_list pp_print_string)
-      ml_include_path
       (Format.pp_print_list pp_load_path)
       vo_load_path
+      Format.(pp_print_list pp_print_string)
+      ml_include_path
   in
   ( Format.asprintf
       "@[Configuration loaded from %s@\n\
