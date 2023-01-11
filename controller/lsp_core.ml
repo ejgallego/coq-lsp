@@ -251,7 +251,7 @@ let do_document_request ~params ~handler =
   | Stopped _ | Failed _ | FailedPermanent _ ->
     Postpone (PendingRequest.DocRequest { uri; handler })
 
-let do_symbols = do_document_request ~handler:Requests.symbols
+let do_symbols = do_document_request ~handler:Rq_symbols.symbols
 
 let do_trace params =
   let trace = string_field "value" params in

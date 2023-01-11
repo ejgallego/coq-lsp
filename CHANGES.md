@@ -48,6 +48,13 @@
    (@ejgallego, #315, fixes #195)
  - Info protocol messages now have location and level
    (@ejgallego, #315)
+ - Warnings are not printed in the info view messages panel
+   (@ejgallego, #, fixes #195)
+ - Improved `documentSymbol` return type for newer `DocumentSymbol[]`
+   hierarchical symbol support. This means that sections and modules
+   will now be properly represented, as well as constructors for
+   inductive types, projections for records, etc...  (@ejgallego,
+   #174, fixes #121, #122)
 
 # coq-lsp 0.1.4: View
 ---------------------

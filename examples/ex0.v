@@ -36,7 +36,7 @@ Definition hola := 3.
 
 Inductive event : Type :=
   | R of nat
-  | S of nat. 
+  | S of nat.  
 
 Record pair_emilio := {
   fst : nat;

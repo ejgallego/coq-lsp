@@ -65,6 +65,8 @@ type t = private
 (** Return the list of all asts in the doc *)
 val asts : t -> Coq.Ast.t list
 
+val asts_with_st : t -> (Coq.Ast.t * Coq.State.t) list
+
 (** Note, [create] calls Coq but it is not cached in the Memo.t table *)
 val create :
      state:Coq.State.t

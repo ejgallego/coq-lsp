@@ -3,7 +3,21 @@ type t
 val loc : t -> Loc.t option
 val hash : t -> int
 val compare : t -> t -> int
-val grab_definitions : (Loc.t -> Names.Id.t -> 'a) -> t list -> 'a list
+
+(** Information about the Ast, to move to lang *)
+module Info : sig
+  type 'l t =
+    { range : 'l
+    ; name : Names.Name.t CAst.t
+    ; kind : int
+    ; detail : string option (* usually the type *)
+    ; children : 'l t list option
+    }
+end
+
+(** [definition_info ~st ast] Compute info about a possible definition in [ast],
+    we need [~st] to compute the type. *)
+val definition_info : st:State.t -> t -> Loc.t Info.t list option
 
 (** Printing *)
 val print : t -> Pp.t
