@@ -1,5 +1,5 @@
-# coq-lsp 0.1.3: View
----------------------
+# coq-lsp 0.1.3: Event
+----------------------
 
  - Much improved handling of Coq fatal errors, the server is now
    hardened against them (@ejgallego, #155, #157, #160, fixes #91)
@@ -17,6 +17,11 @@
    ready, (@ejgallego, #141, #146, fixes #124)
  - Protocol and VS Code interfaces now support shelved and given_up
    goals (@ejgallego, #175)
+ - Allow to postpone requests to wait for data to become available on
+   document points; this is implemented to provide a nicer "show goals
+   while I type" experience. Client default has been changed to "show
+   goals on mouse, click, typing, and cursor movement) (@ejgallego,
+   #177, #179)
 
 # coq-lsp 0.1.2: Message
 ------------------------

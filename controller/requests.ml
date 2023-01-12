@@ -15,7 +15,7 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type document_request = uri:string -> doc:Fleche.Doc.t -> Yojson.Safe.t
+type document_request = doc:Fleche.Doc.t -> Yojson.Safe.t
 type position_request = doc:Fleche.Doc.t -> point:int * int -> Yojson.Safe.t
 
 module Util = struct
@@ -40,7 +40,8 @@ let _kind_of_type _tm = 13
    13 (* Variable *) | Type | Kind | Symb _ | _ when is_undef -> 14 (* Constant
    *) | _ -> 12 (* Function *) *)
 
-let symbols ~uri ~(doc : Fleche.Doc.t) =
+let symbols ~(doc : Fleche.Doc.t) =
+  let uri = doc.uri in
   let f loc id = mk_syminfo uri (Names.Id.to_string id, "", 12, loc) in
   let ast = Util.asts_of_doc doc in
   let slist = Coq.Ast.grab_definitions f ast in

@@ -59,7 +59,7 @@ module Message = struct
         Request { id; method_; params })
       |> Result.ok
     with
-    | Not_found -> Error "missing parameter"
+    | Not_found -> Error ("missing parameter: " ^ J.to_string msg)
     | U.Type_error (msg, obj) ->
       Error (Format.asprintf "msg: %s; obj: %s" msg (J.to_string obj))
 

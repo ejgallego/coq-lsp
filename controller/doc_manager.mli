@@ -31,8 +31,8 @@ val create :
   -> version:int
   -> unit
 
-(** Update a document *)
-val change : uri:string -> version:int -> contents:string -> unit
+(** Update a document, returns the list of not valid requests *)
+val change : uri:string -> version:int -> contents:string -> Int.Set.t
 
 (** Close a document *)
 val close : uri:string -> unit
@@ -42,5 +42,10 @@ exception AbortRequest
 (** [find_doc ~uri] , raises AbortRequest if [uri] is invalid *)
 val find_doc : uri:string -> Fleche.Doc.t
 
-(** Request support *)
+(** Add a request to be served when the document is completed *)
 val serve_on_completion : uri:string -> id:int -> unit
+
+(** Add a request to be served when the document point data is available, for
+    now, we allow a single request like that. Maybe returns the id of the
+    previous request which should now be cancelled. *)
+val serve_if_point : uri:string -> id:int -> point:int * int -> int option

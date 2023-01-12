@@ -83,10 +83,11 @@ module Util = struct
 
   let safe_sub s pos len =
     if pos < 0 || len < 0 || pos > String.length s - len then (
+      let s = String.sub s 0 (Stdlib.min 20 String.(length s - 1)) in
       Io.Log.trace "string_sub"
         (Format.asprintf "error for pos: %d len: %d str: %s" pos len s);
-      s)
-    else String.sub s pos len
+      None)
+    else Some (String.sub s pos len)
 
   let pp_words fmt w =
     if w < 1024.0 then Format.fprintf fmt "%.0f  w" w
@@ -160,7 +161,7 @@ type t =
   { uri : string
   ; version : int
   ; contents : string
-  ; end_loc : int * int * int
+  ; end_loc : Types.Point.t
   ; root : Coq.State.t
   ; nodes : Node.t list
   ; diags_dirty : bool  (** Used to optimize `eager_diagnostics` *)
@@ -177,7 +178,11 @@ let init_loc ~uri = Loc.initial (InFile { dirpath = None; file = uri })
 let get_last_text text =
   let lines = CString.split_on_char '\n' text in
   let last_line = Util.hd_opt ~default:"" (List.rev lines) in
-  (List.length lines, String.length last_line, String.length text)
+  Types.Point.
+    { line = List.length lines - 1
+    ; character = String.length last_line
+    ; offset = String.length text
+    }
 
 let process_init_feedback loc state feedback =
   if not (CList.is_empty feedback) then
@@ -287,18 +292,11 @@ let set_completion ~completed doc = { doc with completed }
    As we are quite dynamic (for now) in terms of what we observe of the document
    (basically we observe it linearly), we must compute the final position with a
    bit of a hack. *)
-let compute_progress end_loc last_done =
+let compute_progress end_ last_done =
   let start =
     { Types.Point.line = last_done.Loc.line_nb_last - 1
     ; character = last_done.ep - last_done.bol_pos_last
     ; offset = last_done.ep
-    }
-  in
-  let end_line, end_col, end_offset = end_loc in
-  let end_ =
-    { Types.Point.line = end_line - 1
-    ; character = end_col
-    ; offset = end_offset
     }
   in
   let range = Types.Range.{ start; end_ } in
@@ -498,6 +496,14 @@ let beyond_target pos target =
     let pos_col = Loc.(pos.ep - pos.bol_pos_last) in
     pos_line > cut_line || (pos_line = cut_line && pos_col > cut_col)
 
+let pr_target = function
+  | Target.End -> "end"
+  | Target.Position (l, c) -> Format.asprintf "{cutpoint l: %02d | c: %02d" l c
+
+let log_beyond_target last_tok target =
+  Io.Log.trace "beyond_target" ("target reached " ^ Coq.Ast.pr_loc last_tok);
+  Io.Log.trace "beyond_target" ("target is " ^ pr_target target)
+
 (* main interpretation loop *)
 let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
   let rec stm doc st last_tok =
@@ -506,7 +512,12 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
     report_progress ~ofmt ~doc last_tok;
     if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
     if beyond_target last_tok target then
-      let completed = Completion.Stopped last_tok in
+      let () = log_beyond_target last_tok target in
+      (* We set to Completed.Yes when we have reached the EOI *)
+      let completed =
+        if last_tok.Loc.ep >= doc.end_loc.offset then Completion.Yes last_tok
+        else Completion.Stopped last_tok
+      in
       set_completion ~completed doc
     else
       (* Parsing *)
@@ -527,7 +538,7 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
         let doc = add_node ~node doc in
         stm doc state last_tok
   in
-  (* Note that nodes and diags in reversed order here *)
+  (* Note that nodes and diags are expected in reversed order here *)
   (match doc.nodes with
   | [] -> ()
   | n :: _ -> Io.Log.trace "resume" ("last node :" ^ Coq.Ast.pr_loc n.loc));
@@ -549,26 +560,20 @@ let log_doc_completion (completed : Completion.t) =
     (Coq.Ast.pr_loc loc)
   |> Io.Log.trace "check"
 
-let check ~ofmt ~target ~doc () =
-  match doc.completed with
-  | Yes _ ->
-    Io.Log.trace "check" "resuming, completed=yes, nothing to do";
-    doc
-  | Failed _ ->
-    Io.Log.trace "check" "can't resume, failed=yes, nothing to do";
-    doc
-  | Stopped last_tok ->
-    DDebug.resume last_tok doc.version;
-    let uri, version, contents = (doc.uri, doc.version, doc.contents) in
-    (* Process markdown *)
-    let processed_content = Util.process_contents ~uri ~contents in
-    (* Compute resume point, basically [CLexer.after] + stream setup *)
-    let resume_loc = CLexer.after last_tok in
-    let offset = resume_loc.bp in
-    let processed_content =
-      Util.safe_sub processed_content offset
-        (String.length processed_content - offset)
-    in
+let resume_check ~ofmt ~last_tok ~doc ~target =
+  let uri, version, contents = (doc.uri, doc.version, doc.contents) in
+  (* Process markdown *)
+  let processed_content = Util.process_contents ~uri ~contents in
+  (* Compute resume point, basically [CLexer.after] + stream setup *)
+  let resume_loc = CLexer.after last_tok in
+  let offset = resume_loc.bp in
+  let pcontent_len = String.length processed_content in
+  match Util.safe_sub processed_content offset (pcontent_len - offset) with
+  | None ->
+    (* Guard against internal tricky eof errors *)
+    let completed = Completion.Failed last_tok in
+    set_completion ~completed doc
+  | Some processed_content ->
     let handle =
       Coq.Parsing.Parsable.make ~loc:resume_loc
         Gramlib.Stream.(of_string ~offset processed_content)
@@ -582,7 +587,19 @@ let check ~ofmt ~target ~doc () =
     in
     (* Set the document to "finished" mode: Restore the original contents,
        reverse the accumulators *)
-    let doc = { doc with nodes = List.rev doc.nodes; contents } in
+    { doc with nodes = List.rev doc.nodes; contents }
+
+let check ~ofmt ~target ~doc () =
+  match doc.completed with
+  | Yes _ ->
+    Io.Log.trace "check" "resuming, completed=yes, nothing to do";
+    doc
+  | Failed _ ->
+    Io.Log.trace "check" "can't resume, failed=yes, nothing to do";
+    doc
+  | Stopped last_tok ->
+    DDebug.resume last_tok doc.version;
+    let doc = resume_check ~ofmt ~last_tok ~doc ~target in
     log_doc_completion doc.completed;
     Util.print_stats ();
     doc

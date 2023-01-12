@@ -155,9 +155,10 @@ export function activate(context: ExtensionContext): void {
   const goals = (editor: TextEditor) => {
     checkPanelAlive();
     let uri = editor.document.uri;
+    let version = editor.document.version;
     let position = editor.selection.active;
     if (goalPanel) {
-      goalPanel.update(uri, position);
+      goalPanel.update(uri, version, position);
     }
   };
 

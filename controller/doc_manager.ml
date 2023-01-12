@@ -24,11 +24,12 @@ exception AbortRequest
 module Handle = struct
   type t =
     { doc : Fleche.Doc.t
-    ; requests : Int.Set.t
+    ; cp_requests : Int.Set.t
           (* For now we just store the request id to wake up on completion,
              later on we may want to store a more interesting type, for example
              "wake up when a location is reached", or always to continue the
              streaming *)
+    ; pt_request : (int * (int * int)) option (* id, point *)
     }
 
   let doc_table : (string, t) Hashtbl.t = Hashtbl.create 39
@@ -38,7 +39,8 @@ module Handle = struct
     | None -> ()
     | Some _ ->
       LIO.trace "do_open" ("file " ^ uri ^ " not properly closed by client"));
-    Hashtbl.add doc_table uri { doc; requests = Int.Set.empty }
+    Hashtbl.add doc_table uri
+      { doc; cp_requests = Int.Set.empty; pt_request = None }
 
   let close ~uri = Hashtbl.remove doc_table uri
 
@@ -57,22 +59,61 @@ module Handle = struct
 
   (* Clear requests *)
   let update_doc_version ~(doc : Fleche.Doc.t) =
-    Hashtbl.replace doc_table doc.uri { doc; requests = Int.Set.empty }
+    let invalid_reqs =
+      match Hashtbl.find_opt doc_table doc.uri with
+      | None -> Int.Set.empty
+      | Some { cp_requests; pt_request = Some pt_id; _ } ->
+        Int.Set.add (fst pt_id) cp_requests
+      | Some { cp_requests; pt_request = None; _ } -> cp_requests
+    in
+    Hashtbl.replace doc_table doc.uri
+      { doc; cp_requests = Int.Set.empty; pt_request = None };
+    invalid_reqs
 
-  let attach_request ~uri ~id =
+  let attach_cp_request ~uri ~id =
     match Hashtbl.find_opt doc_table uri with
-    | Some { doc; requests } ->
-      let requests = Int.Set.add id requests in
-      Hashtbl.replace doc_table uri { doc; requests }
+    | Some { doc; cp_requests; pt_request } ->
+      let cp_requests = Int.Set.add id cp_requests in
+      Hashtbl.replace doc_table uri { doc; cp_requests; pt_request }
     | None -> ()
+
+  let attach_pt_request ~uri ~id ~point =
+    match Hashtbl.find_opt doc_table uri with
+    | Some { doc; cp_requests; pt_request = old_request } ->
+      let pt_request = Some (id, point) in
+      Hashtbl.replace doc_table uri { doc; cp_requests; pt_request };
+      Option.map (fun (id, _) -> id) old_request
+    | None -> None
 
   (* For now only on completion, I think we want check to return the list of
      requests that can be served / woken up *)
   let do_requests ~doc ~handle =
     let handle = { handle with doc } in
     match doc.completed with
-    | Yes _ -> ({ doc; requests = Int.Set.empty }, handle.requests)
-    | Stopped _ -> (handle, Int.Set.empty)
+    | Yes _ ->
+      let pt_id =
+        match handle.pt_request with
+        | None -> Int.Set.empty
+        | Some (id, _) -> Int.Set.singleton id
+      in
+      let wake_up = Int.Set.union pt_id handle.cp_requests in
+      let pt_request = None in
+      let cp_requests = Int.Set.empty in
+      ({ handle with cp_requests; pt_request }, wake_up)
+    | Stopped stop_loc ->
+      let handle, pt_id =
+        match handle.pt_request with
+        | None -> (handle, Int.Set.empty)
+        | Some (id, (req_line, req_col)) ->
+          (* XXX: Same code than in doc.ml *)
+          let stop_line = stop_loc.line_nb_last - 1 in
+          let stop_col = stop_loc.ep - stop_loc.bol_pos_last in
+          if
+            stop_line > req_line || (stop_line = req_line && stop_col >= req_col)
+          then ({ handle with pt_request = None }, Int.Set.singleton id)
+          else (handle, Int.Set.empty)
+      in
+      (handle, pt_id)
     | Failed _ -> (handle, Int.Set.empty)
 
   (* trigger pending incremental requests *)
@@ -99,7 +140,10 @@ module Check = struct
     LIO.trace "process_queue" "resuming document checking";
     match Handle.find_opt ~uri with
     | Some handle ->
-      let target = Fleche.Doc.Target.End in
+      let target_of_pt_handle (_, (l, c)) = Fleche.Doc.Target.Position (l, c) in
+      let target =
+        Option.cata target_of_pt_handle Fleche.Doc.Target.End handle.pt_request
+      in
       let doc = Fleche.Doc.check ~ofmt ~target ~doc:handle.doc () in
       let requests = Handle.update_doc_info ~handle ~doc in
       let diags = diags_of_doc doc in
@@ -167,13 +211,15 @@ let change ~uri ~version ~contents =
     let doc = Fleche.Doc.bump_version ~version ~contents doc in
     let diff = Unix.gettimeofday () -. tb in
     LIO.trace "bump file took" (Format.asprintf "%f" diff);
-    let () = Handle.update_doc_version ~doc in
-    Check.schedule ~uri)
+    let invalid_reqs = Handle.update_doc_version ~doc in
+    Check.schedule ~uri;
+    invalid_reqs)
   else
     (* That's a weird case, get got changes without a version bump? Do nothing
        for now *)
-    ()
+    Int.Set.empty
 
 let close = Handle.close
 let find_doc = Handle.find_doc
-let serve_on_completion ~uri ~id = Handle.attach_request ~uri ~id
+let serve_on_completion ~uri ~id = Handle.attach_cp_request ~uri ~id
+let serve_if_point ~uri ~id ~point = Handle.attach_pt_request ~uri ~id ~point

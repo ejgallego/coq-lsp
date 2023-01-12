@@ -17,7 +17,7 @@ interface Goal {
 }
 
 interface GoalRequest {
-  textDocument: TextDocumentIdentifier;
+  textDocument: VersionedTextDocumentIdentifier;
   position: Position;
 }
 interface GoalConfig {
@@ -165,8 +165,8 @@ class GoalView {
     this.styleUri = styleUri;
   }
 
-  update(uri: Uri, position: Position) {
-    this.sendGoalsRequest(uri, position);
+  update(uri: Uri, version: number, position: Position) {
+    this.sendGoalsRequest(uri, version, position);
   }
 
   display(goals: GoalAnswer) {
@@ -174,8 +174,8 @@ class GoalView {
   }
 
   // LSP Protocol extension for Goals
-  sendGoalsRequest(uri: Uri, position: Position) {
-    let doc = { uri: uri.toString() };
+  sendGoalsRequest(uri: Uri, version: number, position: Position) {
+    let doc = { uri: uri.toString(), version };
     let cursor: GoalRequest = { textDocument: doc, position: position };
     const req = new RequestType<GoalRequest, GoalAnswer, void>("proof/goals");
     this.client.sendRequest(req, cursor).then(
@@ -195,8 +195,8 @@ export class GoalPanel {
     this.panel = panel;
     this.view = new GoalView(client, panel.webview, styleUri);
   }
-  update(uri: Uri, position: Position) {
-    this.view.update(uri, position);
+  update(uri: Uri, version: number, position: Position) {
+    this.view.update(uri, version, position);
   }
   dispose() {
     this.panel.dispose();
