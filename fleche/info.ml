@@ -168,7 +168,7 @@ module Make (P : Point) : S with module P := P = struct
   let pr_goal st =
     let ppx env sigma x =
       let { Coq.Protect.E.r; feedback } =
-        Coq.Print.pr_ltype_env ~goal_concl_style:true env sigma x
+        Coq.Print.pr_letype_env ~goal_concl_style:true env sigma x
       in
       Io.Log.feedback feedback;
       match r with

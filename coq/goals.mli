@@ -42,7 +42,7 @@ type 'a goals =
 
 (** Stm-independent goal processor *)
 val process_goal_gen :
-     (Environ.env -> Evd.evar_map -> Constr.t -> 'a)
+     (Environ.env -> Evd.evar_map -> EConstr.t -> 'a)
   -> Evd.evar_map
   -> Evar.t
   -> 'a reified_goal
