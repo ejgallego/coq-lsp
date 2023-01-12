@@ -109,7 +109,7 @@ let goals ~doc ~point =
   let open Fleche in
   let goals = Info.LC.goals ~doc ~point goals_mode in
   let node = Info.LC.node ~doc ~point Exact in
-  let messages = Option.map (fun node -> node.Doc.Node.messages) node in
+  let messages = Option.map Doc.Node.messages node in
   let error = Option.cata mk_error [] node in
   `Assoc
     ([ ( "textDocument"

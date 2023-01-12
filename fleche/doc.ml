@@ -112,7 +112,7 @@ end
 module DDebug = struct
   let parsed_sentence ~ast =
     let loc = Coq.Ast.loc ast |> Option.get in
-    let line = "[l: " ^ string_of_int loc.Loc.line_nb ^ "] " in
+    let line = "[l: " ^ string_of_int (loc.Loc.line_nb - 1) ^ "] " in
     Io.Log.trace "coq"
       ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast))
 
@@ -120,7 +120,7 @@ module DDebug = struct
     Io.Log.trace "check"
       Format.(
         asprintf "resuming [v: %d], from: %d l: %d" version last_tok.Loc.ep
-          last_tok.Loc.line_nb_last)
+          (last_tok.Loc.line_nb_last - 1))
 end
 
 (* [node list] is a very crude form of a meta-data map "loc -> data" , where for
@@ -354,7 +354,7 @@ let interp_and_info ~parsing_time ~st ast =
 type parse_action =
   | EOF of Completion.t (* completed *)
   | Skip of Loc.t * Loc.t (* span of the skipped sentence + last valid token *)
-  | Process of Coq.Ast.t (* ast to process *)
+  | Process of Coq.Ast.t (* success! *)
 
 (* Returns parse_action, diags, parsing_time *)
 let parse_action ~st last_tok doc_handle =
@@ -386,6 +386,7 @@ let parse_action ~st last_tok doc_handle =
       let span_loc = Util.build_span start_loc last_tok in
       (Skip (span_loc, last_tok), parse_diags, feedback, time))
 
+(* Result of node-building action *)
 type document_action =
   | Stop of Completion.t * Node.t
   | Continue of
@@ -400,7 +401,20 @@ let unparseable_node ~loc ~parsing_diags ~parsing_feedback ~state =
   let diags = fb_diags @ parsing_diags in
   { Node.loc; ast = None; diags; messages; state; memo_info = "" }
 
-let parsed_node ~loc ~ast ~diags ~messages ~state ~memo_info =
+let assemble_diags ~loc ~parsing_diags ~parsing_feedback ~diags ~feedback =
+  let parsing_fb_diags, parsing_messages =
+    Util.diags_of_feedback ~loc parsing_feedback
+  in
+  let fb_diags, fb_messages = Util.diags_of_feedback ~loc feedback in
+  let diags = parsing_diags @ parsing_fb_diags @ fb_diags @ diags in
+  let messages = parsing_messages @ fb_messages in
+  (diags, messages)
+
+let parsed_node ~loc ~ast ~state ~parsing_diags ~parsing_feedback ~diags
+    ~feedback ~memo_info =
+  let diags, messages =
+    assemble_diags ~loc ~parsing_diags ~parsing_feedback ~diags ~feedback
+  in
   { Node.loc; ast = Some ast; diags; messages; state; memo_info }
 
 let maybe_ok_diagnostics ~loc =
@@ -409,42 +423,33 @@ let maybe_ok_diagnostics ~loc =
     [ ok_diag ]
   else []
 
-let node_of_coq_result ~feedback ~parsing_feedback ~ast ~doc ~st ~memo_info
-    last_tok res =
+let strategy_of_coq_err ~node ~state ~last_tok = function
+  | Coq.Protect.Error.Anomaly _ -> Stop (Failed last_tok, node)
+  | User _ -> Continue { state; last_tok; node }
+
+let node_of_coq_result ~doc ~parsing_diags ~parsing_feedback ~ast ~st ~feedback
+    ~memo_info last_tok res =
   let ast_loc = Coq.Ast.loc ast |> Option.get in
   match res with
   | Ok { Coq.Interp.Info.res = state } ->
-    let parsing_diags, parsing_messages =
-      Util.diags_of_feedback ~loc:ast_loc parsing_feedback
-    in
-    let fb_diags, fb_messages = Util.diags_of_feedback ~loc:ast_loc feedback in
     let ok_diags = maybe_ok_diagnostics ~loc:ast_loc in
-    let diags = parsing_diags @ fb_diags @ ok_diags in
-    let messages = parsing_messages @ fb_messages in
     let node =
-      parsed_node ~loc:ast_loc ~ast ~diags ~messages ~state ~memo_info
+      parsed_node ~loc:ast_loc ~ast ~state ~parsing_diags ~parsing_feedback
+        ~diags:ok_diags ~feedback ~memo_info
     in
     Continue { state; last_tok; node }
   | Error (Coq.Protect.Error.Anomaly (err_loc, msg) as coq_err)
-  | Error (User (err_loc, msg) as coq_err) -> (
+  | Error (User (err_loc, msg) as coq_err) ->
     let err_loc = Option.default ast_loc err_loc in
     let err_diags = [ Util.mk_error_diagnostic ~loc:err_loc ~msg ~ast ] in
-    let parsing_diags, parsing_messages =
-      Util.diags_of_feedback ~loc:ast_loc parsing_feedback
-    in
-    let fb_diags, fb_messages = Util.diags_of_feedback ~loc:err_loc feedback in
-    let diags = parsing_diags @ fb_diags @ err_diags in
-    let messages = parsing_messages @ fb_messages in
     let recovery_st = state_recovery_heuristic doc st ast in
     let node =
-      parsed_node ~loc:ast_loc ~ast ~diags ~messages ~state:recovery_st
-        ~memo_info
+      parsed_node ~loc:ast_loc ~ast ~state:recovery_st ~parsing_diags
+        ~parsing_feedback ~diags:err_diags ~feedback ~memo_info
     in
-    match coq_err with
-    | Anomaly _ -> Stop (Failed last_tok, node)
-    | User _ -> Continue { state = recovery_st; last_tok; node })
+    strategy_of_coq_err ~node ~state:recovery_st ~last_tok coq_err
 
-(* *)
+(* Build a document node, possibly executing *)
 let document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
     last_tok doc_handle action =
   match action with
@@ -474,33 +479,53 @@ let document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
       (* The evaluation by Coq fully completed, then we can resume checking from
          this point then, hence the new last valid token last_tok_new *)
       let last_tok_new = Coq.Parsing.Parsable.loc doc_handle in
-      node_of_coq_result ~doc ~ast ~st ~parsing_feedback ~feedback ~memo_info
-        last_tok_new res)
+      node_of_coq_result ~doc ~ast ~st ~parsing_diags ~parsing_feedback
+        ~feedback ~memo_info last_tok_new res)
+
+module Target = struct
+  type t =
+    | End
+    | Position of int * int
+end
+
+let beyond_target pos target =
+  match target with
+  | Target.End -> false
+  | Position (cut_line, cut_col) ->
+    (* This needs careful thinking as to help with the show goals postponement
+       case. *)
+    let pos_line = pos.Loc.line_nb_last - 1 in
+    let pos_col = Loc.(pos.ep - pos.bol_pos_last) in
+    pos_line > cut_line || (pos_line = cut_line && pos_col > cut_col)
 
 (* main interpretation loop *)
-let process_and_parse ~ofmt ?cutpoint:_ ~uri ~version doc last_tok doc_handle =
+let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
   let rec stm doc st last_tok =
     (* Reporting of progress and diagnostics (if dirty) *)
     let doc = send_eager_diagnostics ~ofmt ~uri ~version ~doc in
     report_progress ~ofmt ~doc last_tok;
     if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
-    (* Parsing *)
-    let action, parsing_diags, parsing_feedback, parsing_time =
-      parse_action ~st last_tok doc_handle
-    in
-    (* Execution *)
-    let action =
-      document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
-        last_tok doc_handle action
-    in
-    match action with
-    | Interrupted last_tok -> set_completion ~completed:(Stopped last_tok) doc
-    | Stop (completed, node) ->
-      let doc = add_node ~node doc in
+    if beyond_target last_tok target then
+      let completed = Completion.Stopped last_tok in
       set_completion ~completed doc
-    | Continue { state; last_tok; node } ->
-      let doc = add_node ~node doc in
-      stm doc state last_tok
+    else
+      (* Parsing *)
+      let action, parsing_diags, parsing_feedback, parsing_time =
+        parse_action ~st last_tok doc_handle
+      in
+      (* Execution *)
+      let action =
+        document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
+          last_tok doc_handle action
+      in
+      match action with
+      | Interrupted last_tok -> set_completion ~completed:(Stopped last_tok) doc
+      | Stop (completed, node) ->
+        let doc = add_node ~node doc in
+        set_completion ~completed doc
+      | Continue { state; last_tok; node } ->
+        let doc = add_node ~node doc in
+        stm doc state last_tok
   in
   (* Note that nodes and diags in reversed order here *)
   (match doc.nodes with
@@ -512,7 +537,19 @@ let process_and_parse ~ofmt ?cutpoint:_ ~uri ~version doc last_tok doc_handle =
   in
   stm doc st last_tok
 
-let check ~ofmt ?cutpoint ~doc () =
+let log_doc_completion (completed : Completion.t) =
+  let timestamp = Unix.gettimeofday () in
+  let loc, status =
+    match completed with
+    | Yes loc -> (loc, "fully checked")
+    | Stopped loc -> (loc, "stopped")
+    | Failed loc -> (loc, "failed")
+  in
+  Format.asprintf "done [%.2f]: document %s with pos %s" timestamp status
+    (Coq.Ast.pr_loc loc)
+  |> Io.Log.trace "check"
+
+let check ~ofmt ~target ~doc () =
   match doc.completed with
   | Yes _ ->
     Io.Log.trace "check" "resuming, completed=yes, nothing to do";
@@ -541,22 +578,11 @@ let check ~ofmt ?cutpoint ~doc () =
       { doc with contents = processed_content; nodes = List.rev doc.nodes }
     in
     let doc =
-      process_and_parse ~ofmt ?cutpoint ~uri ~version doc last_tok handle
+      process_and_parse ~ofmt ~target ~uri ~version doc last_tok handle
     in
     (* Set the document to "finished" mode: Restore the original contents,
        reverse the accumulators *)
     let doc = { doc with nodes = List.rev doc.nodes; contents } in
-    let end_msg =
-      let timestamp = Unix.gettimeofday () in
-      let loc, status =
-        match doc.completed with
-        | Yes loc -> (loc, "fully checked")
-        | Stopped loc -> (loc, "stopped")
-        | Failed loc -> (loc, "failed")
-      in
-      Format.asprintf "done [%.2f]: document %s with pos %s" timestamp status
-        (Coq.Ast.pr_loc loc)
-    in
-    Io.Log.trace "check" end_msg;
+    log_doc_completion doc.completed;
     Util.print_stats ();
     doc

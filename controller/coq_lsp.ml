@@ -179,8 +179,8 @@ let do_position_request ~params ~handler =
     match doc.completed with
     | Yes _ -> true
     | Failed loc | Stopped loc ->
-      line < loc.line_nb_last
-      || (line = loc.line_nb_last && col <= loc.ep - loc.bol_pos_last)
+      let proc_line = loc.line_nb_last - 1 in
+      line < proc_line || (line = proc_line && col < loc.ep - loc.bol_pos_last)
   in
   if in_range then RResult.Ok (handler ~doc ~point)
   else
