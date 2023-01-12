@@ -167,7 +167,14 @@ module Make (P : Point) : S with module P := P = struct
 
   let pr_goal st =
     let ppx env sigma x =
-      Coq.Print.pr_ltype_env ~goal_concl_style:true env sigma x
+      let { Coq.Protect.E.r; feedback } =
+        Coq.Print.pr_ltype_env ~goal_concl_style:true env sigma x
+      in
+      Io.Log.feedback feedback;
+      match r with
+      | Coq.Protect.R.Completed (Ok pr) -> pr
+      | Coq.Protect.R.Completed (Error _pr) -> Pp.str "printer failed!"
+      | Interrupted -> Pp.str "printer interrupted!"
     in
     let lemmas = Coq.State.lemmas ~st in
     Option.cata (reify_goals ppx) None lemmas
@@ -182,8 +189,13 @@ module Make (P : Point) : S with module P := P = struct
 
   let in_state ~st ~f node =
     match Coq.State.in_state ~st ~f node with
-    | Coq.Protect.R.Completed (Result.Ok res) -> res
-    | Coq.Protect.R.Completed (Result.Error _) | Coq.Protect.R.Interrupted ->
+    | { r = Coq.Protect.R.Completed (Result.Ok res); feedback } ->
+      Io.Log.feedback feedback;
+      res
+    | { r = Coq.Protect.R.Completed (Result.Error _) | Coq.Protect.R.Interrupted
+      ; feedback
+      } ->
+      Io.Log.feedback feedback;
       None
 
   let goals ~doc ~point approx =

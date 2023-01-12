@@ -49,7 +49,6 @@ module State = struct
   type t =
     { root_state : Coq.State.t
     ; workspace : Coq.Workspace.t
-    ; fb_queue : Coq.Message.t list ref
     }
 end
 
@@ -368,7 +367,7 @@ let dispatch_or_resume_check ofmt ~state =
   match Queue.peek_opt request_queue with
   | None ->
     Control.interrupt := false;
-    let ready = Check.check_or_yield ofmt ~fb_queue:state.State.fb_queue in
+    let ready = Check.check_or_yield ~ofmt in
     serve_postponed_requests ofmt ready
   | Some com ->
     (* TODO: optimize the queue? *)
@@ -393,15 +392,16 @@ let process_input (com : LSP.Message.t) =
   Control.interrupt := true
 
 (* Main loop *)
-let lsp_cb oc =
+let lsp_cb =
   Fleche.Io.CallBack.
     { trace = LIO.trace
     ; send_diagnostics =
-        (fun ~uri ~version diags ->
-          Lsp_util.lsp_of_diags ~uri ~version diags |> Lsp.Io.send_json oc)
+        (fun ~ofmt ~uri ~version diags ->
+          Lsp_util.lsp_of_diags ~uri ~version diags |> Lsp.Io.send_json ofmt)
     ; send_fileProgress =
-        (fun ~uri ~version progress ->
-          Lsp_util.lsp_of_progress ~uri ~version progress |> Lsp.Io.send_json oc)
+        (fun ~ofmt ~uri ~version progress ->
+          Lsp_util.lsp_of_progress ~uri ~version progress
+          |> Lsp.Io.send_json ofmt)
     }
 
 let lvl_to_severity (lvl : Feedback.level) =
@@ -416,26 +416,22 @@ let add_message lvl loc msg q =
   let lvl = lvl_to_severity lvl in
   q := (loc, lvl, msg) :: !q
 
-let mk_fb_handler () =
-  let q = ref [] in
-  ( (fun Feedback.{ contents; _ } ->
-      match contents with
-      | Message (((Error | Warning | Notice) as lvl), loc, msg) ->
-        add_message lvl loc msg q
-      | Message ((Info as lvl), loc, msg) ->
-        if !Fleche.Config.v.show_coq_info_messages then
-          add_message lvl loc msg q
-        else ()
-      | Message (Debug, _loc, _msg) -> ()
-      | _ -> ())
-  , q )
+let mk_fb_handler q Feedback.{ contents; _ } =
+  match contents with
+  | Message (((Error | Warning | Notice) as lvl), loc, msg) ->
+    add_message lvl loc msg q
+  | Message ((Info as lvl), loc, msg) ->
+    if !Fleche.Config.v.show_coq_info_messages then add_message lvl loc msg q
+    else ()
+  | Message (Debug, _loc, _msg) -> ()
+  | _ -> ()
 
-let coq_init bt =
-  let fb_handler, fb_queue = mk_fb_handler () in
+let coq_init ~fb_queue ~bt =
+  let fb_handler = mk_fb_handler fb_queue in
   let debug = bt || Fleche.Debug.backtraces in
   let load_module = Dynlink.loadfile in
   let load_plugin = Coq.Loader.plugin_handler None in
-  (Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin }), fb_queue)
+  Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin })
 
 let lsp_main bt std coqlib vo_load_path ml_include_path =
   LSP.std_protocol := std;
@@ -446,13 +442,14 @@ let lsp_main bt std coqlib vo_load_path ml_include_path =
 
   (* Set log channel *)
   LIO.set_log_channel oc;
-  Fleche.Io.CallBack.set (lsp_cb oc);
+  Fleche.Io.CallBack.set lsp_cb;
 
   (* IMPORTANT: LSP spec forbids any message from server to client before
      initialize is received *)
 
   (* Core Coq initialization *)
-  let root_state, fb_queue = coq_init bt in
+  let fb_queue = Coq.Protect.fb_queue in
+  let root_state = coq_init ~fb_queue ~bt in
   let cmdline =
     { Coq.Workspace.CmdLine.coqlib; vo_load_path; ml_include_path }
   in
@@ -470,7 +467,7 @@ let lsp_main bt std coqlib vo_load_path ml_include_path =
     let workspace = lsp_init_loop ic oc ~cmdline in
 
     (* Core LSP loop context *)
-    let state = { State.root_state; workspace; fb_queue } in
+    let state = { State.root_state; workspace } in
 
     (* Read workspace state (noop for now) *)
     Cache.read_from_disk ();

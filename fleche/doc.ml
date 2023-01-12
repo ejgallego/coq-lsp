@@ -7,10 +7,48 @@
 (* Status: Experimental                                                 *)
 (************************************************************************)
 
-let hd_opt ~default l =
-  match l with
-  | [] -> default
-  | h :: _ -> h
+(* Should be moved to the right place *)
+module Util = struct
+  let hd_opt ~default l =
+    match l with
+    | [] -> default
+    | h :: _ -> h
+
+  let mk_diag ?(extra = []) range severity message =
+    let range = Types.to_range range in
+    let message = Pp.string_of_ppcmds message in
+    Types.Diagnostic.{ range; severity; message; extra }
+
+  (* ast-dependent error diagnostic generation *)
+  let mk_error_diagnostic ~loc ~msg ~ast =
+    match (Coq.Ast.to_coq ast).v with
+    | Vernacexpr.{ expr = VernacRequire (prefix, _export, module_refs); _ } ->
+      let refs = List.map fst module_refs in
+      let extra = [ Types.Diagnostic.Extra.FailedRequire { prefix; refs } ] in
+      mk_diag ~extra loc 1 msg
+    | _ -> mk_diag loc 1 msg
+
+  let feed_to_diag ~loc (range, severity, message) =
+    let range = Option.default loc range in
+    mk_diag range severity message
+
+  let diags_of_feedback ~loc fbs =
+    let diags, messages = List.partition (fun (_, lvl, _) -> lvl < 3) fbs in
+    let diags =
+      if !Config.v.show_notices_as_diagnostics then
+        diags @ List.filter (fun (_, lvl, _) -> lvl = 3) fbs
+      else diags
+    in
+    (List.map (feed_to_diag ~loc) diags, messages)
+
+  let build_span start_loc end_loc =
+    Loc.
+      { start_loc with
+        line_nb_last = end_loc.line_nb_last
+      ; bol_pos_last = end_loc.bol_pos_last
+      ; ep = end_loc.ep
+      }
+end
 
 (* [node list] is a very crude form of a meta-data map "loc -> data" , where for
    now [data] is only the goals. *)
@@ -65,20 +103,30 @@ let init_loc ~uri = Loc.initial (InFile { dirpath = None; file = uri })
 
 let get_last_text text =
   let lines = CString.split_on_char '\n' text in
-  let last_line = hd_opt ~default:"" (List.rev lines) in
+  let last_line = Util.hd_opt ~default:"" (List.rev lines) in
   (List.length lines, String.length last_line, String.length text)
 
+let process_init_feedback loc state feedback =
+  if not (CList.is_empty feedback) then
+    let diags, messages = Util.diags_of_feedback ~loc feedback in
+    [ { Node.loc; ast = None; state; diags; messages; memo_info = "" } ]
+  else []
+
 let create ~state ~workspace ~uri ~version ~contents =
-  Coq.Protect.R.map (mk_doc state workspace) ~f:(fun root ->
+  let { Coq.Protect.E.r; feedback } = mk_doc state workspace in
+  Coq.Protect.R.map r ~f:(fun root ->
+      let init_loc = init_loc ~uri in
+      let nodes = process_init_feedback init_loc root feedback in
+      let diags_dirty = not (CList.is_empty nodes) in
       let end_loc = get_last_text contents in
       { uri
       ; contents
       ; end_loc
       ; version
       ; root
-      ; nodes = []
-      ; diags_dirty = false
-      ; completed = Stopped (init_loc ~uri)
+      ; nodes
+      ; diags_dirty
+      ; completed = Stopped init_loc
       })
 
 let recover_up_to_offset doc offset =
@@ -147,13 +195,13 @@ let add_node ~node doc =
 
 let concat_diags doc = List.concat_map (fun node -> node.Node.diags) doc.nodes
 
-let send_eager_diagnostics ~uri ~version ~doc =
+let send_eager_diagnostics ~ofmt ~uri ~version ~doc =
   (* this is too noisy *)
   (* let proc_diag = mk_diag loc 3 (Pp.str "Processing") in *)
   (* Io.Report.diagnostics ~uri ~version (proc_diag :: doc.diags)); *)
   if doc.diags_dirty && !Config.v.eager_diagnostics then (
     let diags = concat_diags doc in
-    Io.Report.diagnostics ~uri ~version diags;
+    Io.Report.diagnostics ~ofmt ~uri ~version diags;
     { doc with diags_dirty = false })
   else doc
 
@@ -247,46 +295,16 @@ let debug_parsed_sentence ~ast =
   Io.Log.trace "coq"
     ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast))
 
-(* Make each fb a diag *)
-let _pp_located fmt (_loc, pp) = Pp.pp_with fmt pp
-
 let pp_words fmt w =
   if w < 1024.0 then Format.fprintf fmt "%.0f  w" w
   else if w < 1024.0 *. 1024.0 then Format.fprintf fmt "%.2f Kw" (w /. 1024.0)
   else Format.fprintf fmt "%.2f Mw" (w /. (1024.0 *. 1024.0))
 
-let mk_diag ?(extra = []) range severity message =
-  let range = Types.to_range range in
-  let message = Pp.string_of_ppcmds message in
-  Types.Diagnostic.{ range; severity; message; extra }
-
-(* modular error diagnostic generation *)
-let mk_error_diagnostic ~loc ~msg ~ast =
-  match (Coq.Ast.to_coq ast).v with
-  | Vernacexpr.{ expr = VernacRequire (prefix, _export, module_refs); _ } ->
-    let refs = List.map fst module_refs in
-    let extra = [ Types.Diagnostic.Extra.FailedRequire { prefix; refs } ] in
-    mk_diag ~extra loc 1 msg
-  | _ -> mk_diag loc 1 msg
-
-let feed_to_diag ~loc (range, severity, message) =
-  let range = Option.default loc range in
-  mk_diag range severity message
-
-let process_feedback ~loc fbs =
-  let diags, messages = List.partition (fun (_, lvl, _) -> lvl < 3) fbs in
-  let diags =
-    if !Config.v.show_notices_as_diagnostics then
-      diags @ List.filter (fun (_, lvl, _) -> lvl = 3) fbs
-    else diags
-  in
-  (List.map (feed_to_diag ~loc) diags, messages)
-
-let interp_and_info ~parsing_time ~st ~fb_queue ast =
+let interp_and_info ~parsing_time ~st ast =
   let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
   (* memo memory stats are disabled: slow and misleading *)
   let { Memo.Stats.res; cache_hit; memory = _; time } =
-    Memo.interp_command ~st ~fb_queue ast
+    Memo.interp_command ~st ast
   in
   let cptime = Stats.get ~kind:Stats.Kind.Parsing in
   let cetime = Stats.get ~kind:Stats.Kind.Exec in
@@ -302,46 +320,40 @@ let interp_and_info ~parsing_time ~st ~fb_queue ast =
   in
   (res, memo_info ^ "\n___\n" ^ mem_info)
 
-let build_span start_loc end_loc =
-  Loc.
-    { start_loc with
-      line_nb_last = end_loc.line_nb_last
-    ; bol_pos_last = end_loc.bol_pos_last
-    ; ep = end_loc.ep
-    }
-
 type parse_action =
   | EOF of Completion.t (* completed *)
   | Skip of Loc.t * Loc.t (* span of the skipped sentence + last valid token *)
   | Process of Coq.Ast.t (* ast to process *)
 
+(* Returns parse_action, diags, parsing_time *)
 let parse_action ~st last_tok doc_handle =
   let start_loc = Pcoq.Parsable.loc doc_handle |> CLexer.after in
-  match parse_stm ~st doc_handle with
-  | Coq.Protect.R.Interrupted, time -> (EOF (Stopped last_tok), [], time)
-  | Coq.Protect.R.Completed res, time -> (
+  let { Coq.Protect.E.r; feedback }, time = parse_stm ~st doc_handle in
+  match r with
+  | Coq.Protect.R.Interrupted -> (EOF (Stopped last_tok), [], feedback, time)
+  | Coq.Protect.R.Completed res -> (
     match res with
     | Ok None ->
       (* We actually need to fix Coq to return the location of the true file
          EOF, the below trick doesn't work. That will involved updating the type
          of `main_entry` *)
       let last_tok = Pcoq.Parsable.loc doc_handle in
-      (EOF (Yes last_tok), [], time)
+      (EOF (Yes last_tok), [], feedback, time)
     | Ok (Some ast) ->
       let () = if Debug.parsing then debug_parsed_sentence ~ast in
-      (Process ast, [], time)
+      (Process ast, [], feedback, time)
     | Error (Anomaly (_, msg)) | Error (User (None, msg)) ->
       (* We don't have a better altenative :(, usually missing error loc here
          means an anomaly, so we stop *)
       let err_loc = last_tok in
-      let diags = [ mk_diag err_loc 1 msg ] in
-      (EOF (Failed last_tok), diags, time)
+      let parse_diags = [ Util.mk_diag err_loc 1 msg ] in
+      (EOF (Failed last_tok), parse_diags, feedback, time)
     | Error (User (Some err_loc, msg)) ->
-      let diags = [ mk_diag err_loc 1 msg ] in
+      let parse_diags = [ Util.mk_diag err_loc 1 msg ] in
       discard_to_dot doc_handle;
       let last_tok = Pcoq.Parsable.loc doc_handle in
-      let span_loc = build_span start_loc last_tok in
-      (Skip (span_loc, last_tok), diags, time))
+      let span_loc = Util.build_span start_loc last_tok in
+      (Skip (span_loc, last_tok), parse_diags, feedback, time))
 
 type document_action =
   | Stop of Completion.t * Node.t
@@ -352,25 +364,32 @@ type document_action =
       }
   | Interrupted of Loc.t
 
-let unparseable_node ~loc ~diags ~state =
-  { Node.loc; ast = None; diags; messages = []; state; memo_info = "" }
+let unparseable_node ~loc ~parsing_diags ~parsing_feedback ~state =
+  let fb_diags, messages = Util.diags_of_feedback ~loc parsing_feedback in
+  let diags = fb_diags @ parsing_diags in
+  { Node.loc; ast = None; diags; messages; state; memo_info = "" }
 
 let parsed_node ~loc ~ast ~diags ~messages ~state ~memo_info =
   { Node.loc; ast = Some ast; diags; messages; state; memo_info }
 
 let maybe_ok_diagnostics ~loc =
   if !Config.v.ok_diagnostics then
-    let ok_diag = mk_diag loc 3 (Pp.str "OK") in
+    let ok_diag = Util.mk_diag loc 3 (Pp.str "OK") in
     [ ok_diag ]
   else []
 
-let node_of_coq_result ~fb_queue ~parsing_diags ~ast ~ast_loc ~doc ~st
-    ~memo_info last_tok res =
+let node_of_coq_result ~feedback ~parsing_feedback ~ast ~doc ~st ~memo_info
+    last_tok res =
+  let ast_loc = Coq.Ast.loc ast |> Option.get in
   match res with
-  | Ok { Coq.Interp.Info.res = state; feedback } ->
-    let diags = maybe_ok_diagnostics ~loc:ast_loc in
-    let fb_diags, messages = process_feedback ~loc:ast_loc feedback in
-    let diags = parsing_diags @ fb_diags @ diags in
+  | Ok { Coq.Interp.Info.res = state } ->
+    let parsing_diags, parsing_messages =
+      Util.diags_of_feedback ~loc:ast_loc parsing_feedback
+    in
+    let fb_diags, fb_messages = Util.diags_of_feedback ~loc:ast_loc feedback in
+    let ok_diags = maybe_ok_diagnostics ~loc:ast_loc in
+    let diags = parsing_diags @ fb_diags @ ok_diags in
+    let messages = parsing_messages @ fb_messages in
     let node =
       parsed_node ~loc:ast_loc ~ast ~diags ~messages ~state ~memo_info
     in
@@ -378,13 +397,13 @@ let node_of_coq_result ~fb_queue ~parsing_diags ~ast ~ast_loc ~doc ~st
   | Error (Coq.Protect.Error.Anomaly (err_loc, msg) as coq_err)
   | Error (User (err_loc, msg) as coq_err) -> (
     let err_loc = Option.default ast_loc err_loc in
-    let diags = [ mk_error_diagnostic ~loc:err_loc ~msg ~ast ] in
-    (* FB should be handled by Coq.Protect.eval XXX *)
-    let fb_diags, messages =
-      List.rev !fb_queue |> process_feedback ~loc:err_loc
+    let err_diags = [ Util.mk_error_diagnostic ~loc:err_loc ~msg ~ast ] in
+    let parsing_diags, parsing_messages =
+      Util.diags_of_feedback ~loc:ast_loc parsing_feedback
     in
-    fb_queue := [];
-    let diags = parsing_diags @ fb_diags @ diags in
+    let fb_diags, fb_messages = Util.diags_of_feedback ~loc:err_loc feedback in
+    let diags = parsing_diags @ fb_diags @ err_diags in
+    let messages = parsing_messages @ fb_messages in
     let recovery_st = state_recovery_heuristic doc st ast in
     let node =
       parsed_node ~loc:ast_loc ~ast ~diags ~messages ~state:recovery_st
@@ -395,24 +414,29 @@ let node_of_coq_result ~fb_queue ~parsing_diags ~ast ~ast_loc ~doc ~st
     | User _ -> Continue { state = recovery_st; last_tok; node })
 
 (* *)
-let document_action ~fb_queue ~st ~parsing_diags ~parsing_time ~doc last_tok
-    doc_handle action =
+let document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
+    last_tok doc_handle action =
   match action with
   (* End of file *)
   | EOF completed ->
     let loc = Completion.loc completed in
-    let node = unparseable_node ~loc ~diags:parsing_diags ~state:st in
+    let node =
+      unparseable_node ~loc ~parsing_diags ~parsing_feedback ~state:st
+    in
     Stop (completed, node)
   (* Parsing error *)
   | Skip (span_loc, last_tok) ->
-    let node = unparseable_node ~loc:span_loc ~diags:parsing_diags ~state:st in
+    let node =
+      unparseable_node ~loc:span_loc ~parsing_diags ~parsing_feedback ~state:st
+    in
     Continue { state = st; last_tok; node }
   (* We interpret the command now *)
   | Process ast -> (
-    let ast_loc = Coq.Ast.loc ast |> Option.get in
     (* We register pre-interp for now *)
-    let res, memo_info = interp_and_info ~parsing_time ~st ~fb_queue ast in
-    match res with
+    let { Coq.Protect.E.r; feedback }, memo_info =
+      interp_and_info ~parsing_time ~st ast
+    in
+    match r with
     | Coq.Protect.R.Interrupted ->
       (* Exit *)
       Interrupted last_tok
@@ -420,24 +444,23 @@ let document_action ~fb_queue ~st ~parsing_diags ~parsing_time ~doc last_tok
       (* The evaluation by Coq fully completed, then we can resume checking from
          this point then, hence the new last valid token last_tok_new *)
       let last_tok_new = Pcoq.Parsable.loc doc_handle in
-      node_of_coq_result ~fb_queue ~parsing_diags ~ast ~ast_loc ~doc ~st
-        ~memo_info last_tok_new res)
+      node_of_coq_result ~doc ~ast ~st ~parsing_feedback ~feedback ~memo_info
+        last_tok_new res)
 
 (* XXX: Imperative problem *)
-let process_and_parse ?cutpoint:_ ~uri ~version ~fb_queue doc last_tok
-    doc_handle =
+let process_and_parse ~ofmt ?cutpoint:_ ~uri ~version doc last_tok doc_handle =
   let rec stm doc st last_tok =
-    let doc = send_eager_diagnostics ~uri ~version ~doc in
-    report_progress ~doc last_tok;
+    let doc = send_eager_diagnostics ~ofmt ~uri ~version ~doc in
+    report_progress ~ofmt ~doc last_tok;
     if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
     (* Parsing *)
-    let action, parsing_diags, parsing_time =
+    let action, parsing_diags, parsing_feedback, parsing_time =
       parse_action ~st last_tok doc_handle
     in
     (* Execution *)
     let action =
-      document_action ~fb_queue ~st ~parsing_diags ~parsing_time ~doc last_tok
-        doc_handle action
+      document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
+        last_tok doc_handle action
     in
     match action with
     | Interrupted last_tok -> set_completion ~completed:(Stopped last_tok) doc
@@ -453,7 +476,7 @@ let process_and_parse ?cutpoint:_ ~uri ~version ~fb_queue doc last_tok
   | [] -> ()
   | n :: _ -> Io.Log.trace "resume" ("last node :" ^ Coq.Ast.pr_loc n.loc));
   let st =
-    hd_opt ~default:doc.root
+    Util.hd_opt ~default:doc.root
       (List.map (fun { Node.state; _ } -> state) doc.nodes)
   in
   stm doc st last_tok
@@ -503,7 +526,7 @@ let safe_sub s pos len =
     s)
   else String.sub s pos len
 
-let check ~ofmt:_ ~fb_queue ?cutpoint ~doc () =
+let check ~ofmt ?cutpoint ~doc () =
   match doc.completed with
   | Yes _ ->
     Io.Log.trace "check" "resuming, completed=yes, nothing to do";
@@ -532,7 +555,7 @@ let check ~ofmt:_ ~fb_queue ?cutpoint ~doc () =
       { doc with contents = processed_content; nodes = List.rev doc.nodes }
     in
     let doc =
-      process_and_parse ?cutpoint ~uri ~version ~fb_queue doc last_tok handle
+      process_and_parse ~ofmt ?cutpoint ~uri ~version doc last_tok handle
     in
     (* Set the document to "finished" mode: Restore the original contents,
        reverse the accumulators *)

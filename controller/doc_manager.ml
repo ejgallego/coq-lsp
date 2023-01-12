@@ -95,11 +95,11 @@ module Check = struct
     | Stopped _ -> false
 
   (* Notification handling; reply is optional / asynchronous *)
-  let check ofmt ~fb_queue ~uri =
+  let check ofmt ~uri =
     LIO.trace "process_queue" "resuming document checking";
     match Handle.find_opt ~uri with
     | Some handle ->
-      let doc = Fleche.Doc.check ~ofmt ~doc:handle.doc ~fb_queue () in
+      let doc = Fleche.Doc.check ~ofmt ~doc:handle.doc () in
       let requests = Handle.update_doc_info ~handle ~doc in
       let diags = diags_of_doc doc in
       let diags =
@@ -113,29 +113,34 @@ module Check = struct
       LIO.trace "Check.check" ("file " ^ uri ^ " not available");
       Int.Set.empty
 
-  let check_or_yield ofmt ~fb_queue =
+  let check_or_yield ~ofmt =
     match !pending with
     | None ->
       Thread.delay 0.1;
       Int.Set.empty
-    | Some uri -> check ofmt ~fb_queue ~uri
+    | Some uri -> check ofmt ~uri
 
   let schedule ~uri = pending := Some uri
 end
 
 let create ~root_state ~workspace ~uri ~contents ~version =
-  match
+  let r =
     Fleche.Doc.create ~state:root_state ~workspace ~uri ~contents ~version
-  with
-  | Coq.Protect.R.Completed (Result.Ok doc) ->
+  in
+  match r with
+  | Completed (Result.Ok doc) ->
     Handle.create ~uri ~doc;
     Check.schedule ~uri
-  (* Maybe send some diagnostics in this case? *)
-  | Coq.Protect.R.Completed (Result.Error (Anomaly (_, msg)))
-  | Coq.Protect.R.Completed (Result.Error (User (_, msg))) ->
-    let msg = Pp.string_of_ppcmds msg in
-    LIO.trace "Fleche.Doc.create" ("internal error" ^ msg)
-  | Coq.Protect.R.Interrupted -> ()
+  | Completed (Result.Error (Anomaly (_, msg)))
+  | Completed (Result.Error (User (_, msg))) ->
+    (* For now we inform the user of the problem, we could be finer and create a
+       ghost node for the implicit import, but we will phase that out in Coq
+       upstream at some point. *)
+    let message =
+      Format.asprintf "Fleche.Doc.create, internal error: @[%a@]" Pp.pp_with msg
+    in
+    LIO.logMessage ~lvl:1 ~message
+  | Interrupted -> ()
 
 (* Can't wait for the day this goes away *)
 let tainted = ref false

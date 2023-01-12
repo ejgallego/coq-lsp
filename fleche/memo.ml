@@ -25,16 +25,6 @@ module VernacInput = struct
     else false
 
   let hash (v, st) = Hashtbl.hash (Coq.Ast.hash v, st)
-
-  let marshal_out oc (v, st) =
-    Coq.Ast.marshal_out oc v;
-    Coq.State.marshal_out oc st;
-    ()
-
-  let marshal_in ic =
-    let v = Coq.Ast.marshal_in ic in
-    let st = Coq.State.marshal_in ic in
-    (v, st)
 end
 
 module CacheStats = struct
@@ -67,15 +57,6 @@ module HC = Hashtbl.Make (VernacInput)
 module Result = struct
   (* We store the location as to compute an offset for cached results *)
   type t = Loc.t * Coq.State.t Coq.Interp.interp_result
-
-  (* XXX *)
-  let marshal_in ic : t =
-    let loc = Marshal.from_channel ic in
-    (loc, Coq.Interp.marshal_in Coq.State.marshal_in ic)
-
-  let marshal_out oc (loc, t) =
-    Marshal.to_channel oc loc [];
-    Coq.Interp.marshal_out Coq.State.marshal_out oc t
 end
 
 type cache = Result.t HC.t
@@ -120,9 +101,9 @@ let loc_apply_offset
 let adjust_offset ~stm_loc ~cached_loc res =
   let offset = loc_offset cached_loc stm_loc in
   let f = loc_apply_offset offset in
-  Coq.Protect.R.map_loc ~f res
+  Coq.Protect.E.map_loc ~f res
 
-let interp_command ~st ~fb_queue stm : _ Stats.t =
+let interp_command ~st stm : _ Stats.t =
   let stm_loc = Coq.Ast.loc stm |> Option.get in
   match in_cache st stm with
   | Some (cached_loc, res), time ->
@@ -134,16 +115,13 @@ let interp_command ~st ~fb_queue stm : _ Stats.t =
     if Debug.cache then Io.Log.trace "memo" "cache miss";
     CacheStats.miss ();
     let kind = CS.Kind.Exec in
-    let res, time_interp =
-      CS.record ~kind ~f:(Coq.Interp.interp ~st ~fb_queue) stm
-    in
+    let res, time_interp = CS.record ~kind ~f:(Coq.Interp.interp ~st) stm in
     let time = time_hash +. time_interp in
-    match res with
-    | Coq.Protect.R.Interrupted as res ->
+    match res.r with
+    | Coq.Protect.R.Interrupted ->
       (* Don't cache interruptions *)
-      fb_queue := [];
       Stats.make ~time res
-    | Coq.Protect.R.Completed _ as res ->
+    | Coq.Protect.R.Completed _ ->
       let () = HC.add !cache (stm, st) (stm_loc, res) in
       let time = time_hash +. time_interp in
       Stats.make ~time res)
@@ -162,23 +140,23 @@ let interp_admitted ~st =
 
 let mem_stats () = Obj.reachable_words (Obj.magic cache)
 
-let _hashtbl_out oc t =
-  Marshal.to_channel oc (HC.length t) [];
-  HC.iter
-    (fun vi res ->
-      VernacInput.marshal_out oc vi;
-      Result.marshal_out oc res)
-    t
+(* let _hashtbl_out oc t = () *)
+(* Marshal.to_channel oc (HC.length t) []; *)
+(* HC.iter *)
+(*   (fun vi res -> *)
+(*     VernacInput.marshal_out oc vi; *)
+(*     Result.marshal_out oc res) *)
+(*   t *)
 
-let _hashtbl_in ic =
-  let ht = HC.create 1000 in
-  let count : int = Marshal.from_channel ic in
-  for _i = 0 to count - 1 do
-    let vi = VernacInput.marshal_in ic in
-    let res = Result.marshal_in ic in
-    HC.add ht vi res
-  done;
-  ht
+(* let _hashtbl_in ic = *)
+(*   let ht = HC.create 1000 in *)
+(*   let count : int = Marshal.from_channel ic in *)
+(*   for _i = 0 to count - 1 do *)
+(*     let vi = VernacInput.marshal_in ic in *)
+(*     let res = Result.marshal_in ic in *)
+(*     HC.add ht vi res *)
+(*   done; *)
+(*   ht *)
 
 let load_from_disk ~file =
   let ic = open_in_bin file in

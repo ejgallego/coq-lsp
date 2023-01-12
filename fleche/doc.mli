@@ -67,10 +67,4 @@ val bump_version : version:int -> contents:string -> t -> t
 
 (** [check ofmt ~fb_queue ?cutpoint ~doc] if set, [cutpoint] will have Flèche
     stop after the point specified there has been reached. *)
-val check :
-     ofmt:Format.formatter
-  -> fb_queue:Coq.Message.t list ref
-  -> ?cutpoint:int * int
-  -> doc:t
-  -> unit
-  -> t
+val check : ofmt:Format.formatter -> ?cutpoint:int * int -> doc:t -> unit -> t

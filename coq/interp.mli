@@ -16,18 +16,9 @@
 (************************************************************************)
 
 module Info : sig
-  type 'a t =
-    { res : 'a
-    ; feedback : Message.t list
-    }
+  type 'a t = { res : 'a }
 end
 
-type 'a interp_result = 'a Info.t Protect.R.t
+type 'a interp_result = 'a Info.t Protect.E.t
 
-val interp :
-  st:State.t -> fb_queue:Message.t list ref -> Ast.t -> State.t interp_result
-
-val marshal_in : (in_channel -> 'a) -> in_channel -> 'a interp_result
-
-val marshal_out :
-  (out_channel -> 'a -> unit) -> out_channel -> 'a interp_result -> unit
+val interp : st:State.t -> Ast.t -> State.t interp_result

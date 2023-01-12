@@ -13,7 +13,7 @@ val lemmas : st:t -> Vernacstate.LemmaStack.t option
 
 (** Execute a command in state [st]. Unfortunately this can produce anomalies as
     Coq state setting is imperative, so we need to wrap it in protect. *)
-val in_state : st:t -> f:('a -> 'b) -> 'a -> 'b Protect.R.t
+val in_state : st:t -> f:('a -> 'b) -> 'a -> 'b Protect.E.t
 
 (** Drop the proofs from the state *)
 val drop_proofs : st:t -> t
