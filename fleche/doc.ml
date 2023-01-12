@@ -48,6 +48,79 @@ module Util = struct
       ; bol_pos_last = end_loc.bol_pos_last
       ; ep = end_loc.ep
       }
+
+  let print_stats () =
+    (if !Config.v.mem_stats then
+     let size = Memo.mem_stats () in
+     Io.Log.trace "stats" (string_of_int size));
+
+    Io.Log.trace "cache" (Stats.dump ());
+    Io.Log.trace "cache" (Memo.CacheStats.stats ());
+    (* this requires patches to Coq *)
+    (* Io.Log.error "coq parsing" (Cstats.dump ()); *)
+    (* Cstats.reset (); *)
+    Memo.CacheStats.reset ();
+    Stats.reset ()
+
+  let gen l = String.make (String.length l) ' '
+
+  let rec md_map_lines coq l =
+    match l with
+    | [] -> []
+    | l :: ls ->
+      if String.equal "```" l then gen l :: md_map_lines (not coq) ls
+      else (if coq then l else gen l) :: md_map_lines coq ls
+
+  let markdown_process text =
+    let lines = String.split_on_char '\n' text in
+    let lines = md_map_lines false lines in
+    String.concat "\n" lines
+
+  let process_contents ~uri ~contents =
+    let ext = Filename.extension uri in
+    let is_markdown = String.equal ext ".mv" in
+    if is_markdown then markdown_process contents else contents
+
+  let safe_sub s pos len =
+    if pos < 0 || len < 0 || pos > String.length s - len then (
+      Io.Log.trace "string_sub"
+        (Format.asprintf "error for pos: %d len: %d str: %s" pos len s);
+      s)
+    else String.sub s pos len
+
+  let pp_words fmt w =
+    if w < 1024.0 then Format.fprintf fmt "%.0f  w" w
+    else if w < 1024.0 *. 1024.0 then Format.fprintf fmt "%.2f Kw" (w /. 1024.0)
+    else Format.fprintf fmt "%.2f Mw" (w /. (1024.0 *. 1024.0))
+
+  let memo_info ~cache_hit ~parsing_time ~time ~mw_prev =
+    let cptime = Stats.get ~kind:Stats.Kind.Parsing in
+    let cetime = Stats.get ~kind:Stats.Kind.Exec in
+    let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in
+    let memo_info =
+      Format.asprintf
+        "Cache Hit: %b | Parse (s/c): %.4f / %.2f | Exec (s/c): %.4f / %.2f"
+        cache_hit parsing_time cptime time cetime
+    in
+    let mem_info =
+      Format.asprintf "major words: %a | diff %a" pp_words mw_after pp_words
+        (mw_after -. mw_prev)
+    in
+    memo_info ^ "\n___\n" ^ mem_info
+end
+
+module DDebug = struct
+  let parsed_sentence ~ast =
+    let loc = Coq.Ast.loc ast |> Option.get in
+    let line = "[l: " ^ string_of_int loc.Loc.line_nb ^ "] " in
+    Io.Log.trace "coq"
+      ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast))
+
+  let resume last_tok =
+    Io.Log.trace "check"
+      Format.(
+        asprintf "resuming, from: %d l: %d" last_tok.Loc.ep
+          last_tok.Loc.line_nb_last)
 end
 
 (* [node list] is a very crude form of a meta-data map "loc -> data" , where for
@@ -289,36 +362,14 @@ let state_recovery_heuristic doc st v =
     st
   | _ -> st
 
-let debug_parsed_sentence ~ast =
-  let loc = Coq.Ast.loc ast |> Option.get in
-  let line = "[l: " ^ string_of_int loc.Loc.line_nb ^ "] " in
-  Io.Log.trace "coq"
-    ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast))
-
-let pp_words fmt w =
-  if w < 1024.0 then Format.fprintf fmt "%.0f  w" w
-  else if w < 1024.0 *. 1024.0 then Format.fprintf fmt "%.2f Kw" (w /. 1024.0)
-  else Format.fprintf fmt "%.2f Mw" (w /. (1024.0 *. 1024.0))
-
 let interp_and_info ~parsing_time ~st ast =
   let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
   (* memo memory stats are disabled: slow and misleading *)
   let { Memo.Stats.res; cache_hit; memory = _; time } =
     Memo.interp_command ~st ast
   in
-  let cptime = Stats.get ~kind:Stats.Kind.Parsing in
-  let cetime = Stats.get ~kind:Stats.Kind.Exec in
-  let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in
-  let memo_info =
-    Format.asprintf
-      "Cache Hit: %b | Parse (s/c): %.4f / %.2f | Exec (s/c): %.4f / %.2f"
-      cache_hit parsing_time cptime time cetime
-  in
-  let mem_info =
-    Format.asprintf "major words: %a | diff %a" pp_words mw_after pp_words
-      (mw_after -. mw_prev)
-  in
-  (res, memo_info ^ "\n___\n" ^ mem_info)
+  let memo_info = Util.memo_info ~cache_hit ~parsing_time ~time ~mw_prev in
+  (res, memo_info)
 
 type parse_action =
   | EOF of Completion.t (* completed *)
@@ -340,7 +391,7 @@ let parse_action ~st last_tok doc_handle =
       let last_tok = Pcoq.Parsable.loc doc_handle in
       (EOF (Yes last_tok), [], feedback, time)
     | Ok (Some ast) ->
-      let () = if Debug.parsing then debug_parsed_sentence ~ast in
+      let () = if Debug.parsing then DDebug.parsed_sentence ~ast in
       (Process ast, [], feedback, time)
     | Error (Anomaly (_, msg)) | Error (User (None, msg)) ->
       (* We don't have a better altenative :(, usually missing error loc here
@@ -430,9 +481,8 @@ let document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
       unparseable_node ~loc:span_loc ~parsing_diags ~parsing_feedback ~state:st
     in
     Continue { state = st; last_tok; node }
-  (* We interpret the command now *)
+  (* We can interpret the command now *)
   | Process ast -> (
-    (* We register pre-interp for now *)
     let { Coq.Protect.E.r; feedback }, memo_info =
       interp_and_info ~parsing_time ~st ast
     in
@@ -447,9 +497,10 @@ let document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
       node_of_coq_result ~doc ~ast ~st ~parsing_feedback ~feedback ~memo_info
         last_tok_new res)
 
-(* XXX: Imperative problem *)
+(* main interpretation loop *)
 let process_and_parse ~ofmt ?cutpoint:_ ~uri ~version doc last_tok doc_handle =
   let rec stm doc st last_tok =
+    (* Reporting of progress and diagnostics (if dirty) *)
     let doc = send_eager_diagnostics ~ofmt ~uri ~version ~doc in
     report_progress ~ofmt ~doc last_tok;
     if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
@@ -481,51 +532,6 @@ let process_and_parse ~ofmt ?cutpoint:_ ~uri ~version doc last_tok doc_handle =
   in
   stm doc st last_tok
 
-let print_stats () =
-  (if !Config.v.mem_stats then
-   let size = Memo.mem_stats () in
-   Io.Log.trace "stats" (string_of_int size));
-
-  Io.Log.trace "cache" (Stats.dump ());
-  Io.Log.trace "cache" (Memo.CacheStats.stats ());
-  (* this requires patches to Coq *)
-  (* Io.Log.error "coq parsing" (Cstats.dump ()); *)
-  (* Cstats.reset (); *)
-  Memo.CacheStats.reset ();
-  Stats.reset ()
-
-let gen l = String.make (String.length l) ' '
-
-let rec md_map_lines coq l =
-  match l with
-  | [] -> []
-  | l :: ls ->
-    if String.equal "```" l then gen l :: md_map_lines (not coq) ls
-    else (if coq then l else gen l) :: md_map_lines coq ls
-
-let markdown_process text =
-  let lines = String.split_on_char '\n' text in
-  let lines = md_map_lines false lines in
-  String.concat "\n" lines
-
-let process_contents ~uri ~contents =
-  let ext = Filename.extension uri in
-  let is_markdown = String.equal ext ".mv" in
-  if is_markdown then markdown_process contents else contents
-
-let log_resume last_tok =
-  Io.Log.trace "check"
-    Format.(
-      asprintf "resuming, from: %d l: %d" last_tok.Loc.ep
-        last_tok.Loc.line_nb_last)
-
-let safe_sub s pos len =
-  if pos < 0 || len < 0 || pos > String.length s - len then (
-    Io.Log.trace "string_sub"
-      (Format.asprintf "error for pos: %d len: %d str: %s" pos len s);
-    s)
-  else String.sub s pos len
-
 let check ~ofmt ?cutpoint ~doc () =
   match doc.completed with
   | Yes _ ->
@@ -535,15 +541,15 @@ let check ~ofmt ?cutpoint ~doc () =
     Io.Log.trace "check" "can't resume, failed=yes, nothing to do";
     doc
   | Stopped last_tok ->
-    log_resume last_tok;
+    DDebug.resume last_tok;
     let uri, version, contents = (doc.uri, doc.version, doc.contents) in
     (* Process markdown *)
-    let processed_content = process_contents ~uri ~contents in
+    let processed_content = Util.process_contents ~uri ~contents in
     (* Compute resume point, basically [CLexer.after] + stream setup *)
     let resume_loc = CLexer.after last_tok in
     let offset = resume_loc.bp in
     let processed_content =
-      safe_sub processed_content offset
+      Util.safe_sub processed_content offset
         (String.length processed_content - offset)
     in
     let handle =
@@ -572,5 +578,5 @@ let check ~ofmt ?cutpoint ~doc () =
         (Coq.Ast.pr_loc loc)
     in
     Io.Log.trace "check" end_msg;
-    print_stats ();
+    Util.print_stats ();
     doc
