@@ -83,3 +83,8 @@ submodules-deinit:
 .PHONY: extension
 extension:
 	cd editor/code && npm i && npm run compile
+
+# Run prettier
+.PHONY: ts-fmt
+ts-fmt:
+	cd editor/code && npx prettier -w .

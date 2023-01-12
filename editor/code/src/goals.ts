@@ -20,11 +20,18 @@ interface GoalRequest {
   textDocument: TextDocumentIdentifier;
   position: Position;
 }
+interface GoalConfig {
+  goals: Goal[];
+  stack: undefined;
+  bullet?: string;
+  shelf: Goal[];
+  given_up: Goal[];
+}
 
 interface GoalAnswer {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
-  goals: Goal[];
+  goals?: GoalConfig;
   messages: string[];
   error?: string;
 }
@@ -46,11 +53,16 @@ function htmlOfHyp(hyp: Hyp) {
   return `<div class="hypothesis"> ${hypBody} </div>`;
 }
 
-function detailsOfList(elems: any[], summary: string, inner: string) {
-  let detailsStatus = elems.length == 0 ? "closed" : "open";
+function detailsOfList(
+  open: boolean,
+  elems: any[],
+  summary: string,
+  inner: string
+) {
+  let detailsStatus = elems.length > 0 && open ? "open" : "closed";
   return `
     <details ${detailsStatus}>
-        <summary>${summary} (${elems.length})</summary>
+        <summary>${summary} [${elems.length}]</summary>
         <div style="margin-left: 1ex;"> ${inner} </div>
     </details>`;
 }
@@ -74,21 +86,42 @@ function htmlOfGoals(goals: Goal[]) {
   else return goals.map(htmlOfGoal).join(" ");
 }
 
+function detailsOfGoalList(open: boolean, name: string, goals: Goal[]) {
+  let goalsInner: string = htmlOfGoals(goals);
+  return detailsOfList(open, goals, name, goalsInner);
+}
+
+function buildGoalsContent(g: GoalConfig) {
+  let goalsBody = detailsOfGoalList(true, "Goals", g.goals);
+  let shelfBody =
+    g.shelf.length > 0 ? detailsOfGoalList(false, "Shelf", g.shelf) : "";
+  let givenBody =
+    g.given_up.length > 0
+      ? detailsOfGoalList(false, "Given Up", g.given_up)
+      : "";
+  return `
+      ${goalsBody}
+      <div style="margin-left: 0.5ex">
+        ${shelfBody}
+        ${givenBody}
+      </div>`;
+}
+
 // Returns the HTML code of the panel and the inset ccontent
-function buildGoalsContent(goals: GoalAnswer, styleUri: Uri) {
+function buildInfoContent(goals: GoalAnswer, styleUri: Uri) {
   // get the HTML code of goals environment
   let vsUri = Uri.parse(goals.textDocument.uri);
   let uriBase = basename(vsUri.path);
-  let goalsInner: string = htmlOfGoals(goals.goals);
-  let goalsBody = detailsOfList(goals.goals, "Goals", goalsInner);
+  let goalsBody = goals.goals ? buildGoalsContent(goals.goals) : "";
   let messageBody = detailsOfList(
+    true,
     goals.messages,
     "Messages",
     goals.messages.map(htmlOfCoqBlock).join(" ")
   );
 
   let errorBody = goals.error
-    ? detailsOfList([0], "Error Browser", htmlOfCoqBlock(goals.error))
+    ? detailsOfList(true, [0], "Error Browser", htmlOfCoqBlock(goals.error))
     : "";
 
   // Use #FA8072 color too?
@@ -104,7 +137,7 @@ function buildGoalsContent(goals: GoalAnswer, styleUri: Uri) {
     <body>
         <details open>
             <summary>${uriBase}:${goals.position.line}:${goals.position.character}</summary>
-            <div class="goals_env" style="margin-left: 1ex; margin-bottom: 1ex;">
+            <div class="goals_env" style="margin-left: 1ex; margin-top: 1ex; margin-bottom: 1ex;">
                 ${goalsBody}
             </div>
             <div style="margin-left: 1ex; margin-bottom: 1ex;">
@@ -134,7 +167,7 @@ class GoalView {
   }
 
   display(goals: GoalAnswer) {
-    this.view.html = buildGoalsContent(goals, this.styleUri);
+    this.view.html = buildInfoContent(goals, this.styleUri);
   }
 
   // LSP Protocol extension for Goals
