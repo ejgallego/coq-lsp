@@ -19,8 +19,7 @@ type document_request = uri:string -> doc:Fleche.Doc.t -> Yojson.Safe.t
 type position_request = doc:Fleche.Doc.t -> point:int * int -> Yojson.Safe.t
 
 module Util = struct
-  let asts_of_doc doc =
-    List.filter_map (fun v -> v.Fleche.Doc.ast) doc.Fleche.Doc.nodes
+  let asts_of_doc doc = List.filter_map Fleche.Doc.Node.ast doc.Fleche.Doc.nodes
 end
 
 let mk_syminfo file (name, _path, kind, pos) : Yojson.Safe.t =
@@ -88,7 +87,9 @@ let mk_messages = Option.cata mk_messages []
 let mk_error node =
   let open Fleche in
   let open Fleche.Types in
-  match List.filter (fun d -> d.Diagnostic.severity < 2) node.Doc.diags with
+  match
+    List.filter (fun d -> d.Diagnostic.severity < 2) node.Doc.Node.diags
+  with
   | [] -> []
   | e :: _ -> [ ("error", `String e.Diagnostic.message) ]
 
@@ -100,7 +101,7 @@ let goals ~doc ~point =
   let open Fleche in
   let goals = Info.LC.goals ~doc ~point goals_mode in
   let node = Info.LC.node ~doc ~point Exact in
-  let messages = Option.map (fun node -> node.Doc.messages) node in
+  let messages = Option.map (fun node -> node.Doc.Node.messages) node in
   let error = Option.cata mk_error [] node in
   `Assoc
     ([ ( "textDocument"
