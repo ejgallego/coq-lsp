@@ -78,8 +78,16 @@ let mk_goal { Coq.Goals.info = _; ty; hyps } : Yojson.Safe.t =
   let ty = Pp.string_of_ppcmds ty in
   `Assoc [ ("ty", `String ty); ("hyps", `List (List.map mk_hyp hyps)) ]
 
-let mk_goals { Coq.Goals.goals; _ } = List.map mk_goal goals
-let mk_goals = Option.cata mk_goals []
+let mk_goals { Coq.Goals.goals; stack = _; bullet = _; shelf; given_up } =
+  `Assoc
+    [ ("goals", `List (List.map mk_goal goals))
+    ; ("stack", `Null)
+    ; ("bullet", `Null)
+    ; ("shelf", `List (List.map mk_goal shelf))
+    ; ("given_up", `List (List.map mk_goal given_up))
+    ]
+
+let mk_goals = Option.cata mk_goals `Null
 let mk_message (_loc, _lvl, msg) = `String (Pp.string_of_ppcmds msg)
 let mk_messages m = List.map mk_message m
 let mk_messages = Option.cata mk_messages []
@@ -109,7 +117,7 @@ let goals ~doc ~point =
      ; ( "position"
        , `Assoc [ ("line", `Int (fst point)); ("character", `Int (snd point)) ]
        )
-     ; ("goals", `List (mk_goals goals))
+     ; ("goals", mk_goals goals)
      ; ("messages", `List (mk_messages messages))
      ]
     @ error)

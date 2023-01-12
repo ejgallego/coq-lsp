@@ -11,10 +11,12 @@
    (@ejgallego, @jesyspa, #170, fixes #163)
  - `coq-lsp` will now warn the user when two files have been opened
    simultaneously and the parser may go into a broken state :/
-   (@ejgallego #169)
+   (@ejgallego, #169)
  - Implement request postponement and cancellation. Thus
    `documentSymbols` will now be postponed until the document is
-   ready, (@ejgallego #141, #146, fixes #124)
+   ready, (@ejgallego, #141, #146, fixes #124)
+ - Protocol and VS Code interfaces now support shelved and given_up
+   goals (@ejgallego, #175)
 
 # coq-lsp 0.1.2: Message
 ------------------------
