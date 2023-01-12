@@ -16,49 +16,17 @@
 (************************************************************************)
 
 module Info = struct
-  type 'a t =
-    { res : 'a
-    ; feedback : Message.t list
-    }
+  type 'a t = { res : 'a }
 end
 
-let get_feedback fb_queue =
-  let res = !fb_queue in
-  fb_queue := [];
-  res
-
-type 'a interp_result = 'a Info.t Protect.R.t
+type 'a interp_result = 'a Info.t Protect.E.t
 
 let coq_interp ~st cmd =
   let st = State.to_coq st in
   let cmd = Ast.to_coq cmd in
   Vernacinterp.interp ~st cmd |> State.of_coq
 
-let interp ~st ~fb_queue cmd =
+let interp ~st cmd =
   Protect.eval cmd ~f:(fun cmd ->
       let res = coq_interp ~st cmd in
-      (* It is safe to call the printer here as the state is guaranteed to be
-         the right one after `coq_interp`, but beware! *)
-      let feedback = List.rev @@ get_feedback fb_queue in
-      { Info.res; feedback })
-
-let marshal_out f oc res =
-  match res with
-  | Protect.R.Interrupted -> ()
-  | Protect.R.Completed res -> (
-    match res with
-    | Ok res ->
-      Marshal.to_channel oc 0 [];
-      f oc res.Info.res
-    | Error _err ->
-      Marshal.to_channel oc 1 [];
-      (* Marshal.to_channel oc loc []; *)
-      (* Marshal.to_channel oc msg []; *)
-      ())
-
-(* Needs to be implemeted by Protect.marshal_in *)
-let marshal_in _f _ic = Obj.magic 0
-(* let tag : int = Marshal.from_channel ic in if tag = 0 then let res = f ic in
-   Protect.R.Completed (Ok { Info.res; feedback = [] }) else let loc : Loc.t
-   option = Marshal.from_channel ic in let msg : Pp.t = Marshal.from_channel ic
-   in Protect.R.Completed (Error (User (loc, msg))) *)
+      { Info.res })

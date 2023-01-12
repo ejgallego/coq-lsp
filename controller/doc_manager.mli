@@ -19,8 +19,7 @@ module Check : sig
   (** Check a document, or yield if there is none pending; it will send progress
       and diagnostics notifications to [ofmt]. Will return the list of requests
       that are ready to execute. *)
-  val check_or_yield :
-    Format.formatter -> fb_queue:Coq.Message.t list ref -> Int.Set.t
+  val check_or_yield : ofmt:Format.formatter -> Int.Set.t
 end
 
 (** Create a document *)

@@ -18,17 +18,26 @@
 
 (* [node list] is a very crude form of a meta-data map "loc -> data" , where for
    now [data] is only the goals. *)
-type node =
-  { loc : Loc.t
-  ; ast : Coq.Ast.t option  (** Ast of node *)
-  ; state : Coq.State.t  (** (Full) State of node *)
-  ; diags : Types.Diagnostic.t list  (** Diagnostics associated to the node *)
-  ; messages : Coq.Message.t list
-  ; memo_info : string
-  }
+module Node : sig
+  type t = private
+    { loc : Loc.t
+    ; ast : Coq.Ast.t option  (** Ast of node *)
+    ; state : Coq.State.t  (** (Full) State of node *)
+    ; diags : Types.Diagnostic.t list  (** Diagnostics associated to the node *)
+    ; messages : Coq.Message.t list
+    ; memo_info : string
+    }
+
+  val loc : t -> Loc.t
+  val ast : t -> Coq.Ast.t option
+  val state : t -> Coq.State.t
+  val diags : t -> Types.Diagnostic.t list
+  val messages : t -> Coq.Message.t list
+  val memo_info : t -> string
+end
 
 module Completion : sig
-  type t =
+  type t = private
     | Yes of Loc.t  (** Location of the last token in the document *)
     | Stopped of Loc.t  (** Location of the last valid token *)
     | Failed of Loc.t  (** Critical failure, like an anomaly *)
@@ -40,7 +49,7 @@ type t = private
   ; contents : string
   ; end_loc : int * int * int
   ; root : Coq.State.t
-  ; nodes : node list
+  ; nodes : Node.t list
   ; diags_dirty : bool
   ; completed : Completion.t
   }
@@ -56,5 +65,6 @@ val create :
 
 val bump_version : version:int -> contents:string -> t -> t
 
-val check :
-  ofmt:Format.formatter -> doc:t -> fb_queue:Coq.Message.t list ref -> t
+(** [check ofmt ~fb_queue ?cutpoint ~doc] if set, [cutpoint] will have Flèche
+    stop after the point specified there has been reached. *)
+val check : ofmt:Format.formatter -> ?cutpoint:int * int -> doc:t -> unit -> t

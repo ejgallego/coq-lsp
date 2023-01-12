@@ -113,7 +113,7 @@ module type S = sig
 
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
 
-  val node : (approx, Doc.node) query
+  val node : (approx, Doc.Node.t) query
   val loc : (approx, Loc.t) query
   val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
@@ -133,7 +133,7 @@ module Make (P : Point) : S with module P := P = struct
       match l with
       | [] -> prev
       | node :: xs -> (
-        let loc = node.Doc.loc in
+        let loc = node.Doc.Node.loc in
         match approx with
         | Exact -> if P.in_range ~loc point then Some node else find None xs
         | PrevIfEmpty ->
@@ -167,35 +167,48 @@ module Make (P : Point) : S with module P := P = struct
 
   let pr_goal st =
     let ppx env sigma x =
-      (* It is conveneint to optimize the Pp.t type, see [Jscoq_util.pp_opt] *)
-      Coq.Print.pr_ltype_env ~goal_concl_style:true env sigma x
+      let { Coq.Protect.E.r; feedback } =
+        Coq.Print.pr_ltype_env ~goal_concl_style:true env sigma x
+      in
+      Io.Log.feedback feedback;
+      match r with
+      | Coq.Protect.R.Completed (Ok pr) -> pr
+      | Coq.Protect.R.Completed (Error _pr) -> Pp.str "printer failed!"
+      | Interrupted -> Pp.str "printer interrupted!"
     in
     let lemmas = Coq.State.lemmas ~st in
     Option.cata (reify_goals ppx) None lemmas
 
   let loc ~doc ~point approx =
     let node = find ~doc ~point approx in
-    Option.map (fun node -> node.Doc.loc) node
+    Option.map Doc.Node.loc node
 
   let ast ~doc ~point approx =
     let node = find ~doc ~point approx in
-    Option.bind node (fun node -> node.Doc.ast)
+    Option.bind node Doc.Node.ast
 
   let in_state ~st ~f node =
     match Coq.State.in_state ~st ~f node with
-    | Coq.Protect.R.Completed (Result.Ok res) -> res
-    | Coq.Protect.R.Completed (Result.Error _) | Coq.Protect.R.Interrupted ->
+    | { r = Coq.Protect.R.Completed (Result.Ok res); feedback } ->
+      Io.Log.feedback feedback;
+      res
+    | { r = Coq.Protect.R.Completed (Result.Error _) | Coq.Protect.R.Interrupted
+      ; feedback
+      } ->
+      Io.Log.feedback feedback;
       None
 
   let goals ~doc ~point approx =
     find ~doc ~point approx
-    |> obind (fun node -> in_state ~st:node.Doc.state ~f:pr_goal node.Doc.state)
+    |> obind (fun node ->
+           let st = node.Doc.Node.state in
+           in_state ~st ~f:pr_goal st)
 
   let messages ~doc ~point approx =
-    find ~doc ~point approx |> Option.map (fun node -> node.Doc.messages)
+    find ~doc ~point approx |> Option.map Doc.Node.messages
 
   let info ~doc ~point approx =
-    find ~doc ~point approx |> Option.map (fun node -> node.Doc.memo_info)
+    find ~doc ~point approx |> Option.map Doc.Node.memo_info
 
   (* XXX: This belongs in Coq *)
   let pr_extref gr =
@@ -210,7 +223,7 @@ module Make (P : Point) : S with module P := P = struct
   let completion ~doc ~point prefix =
     find ~doc ~point Exact
     |> obind (fun node ->
-           in_state ~st:node.Doc.state prefix ~f:(fun prefix ->
+           in_state ~st:node.Doc.Node.state prefix ~f:(fun prefix ->
                to_qualid prefix
                |> obind (fun p ->
                       Nametab.completion_canditates p
