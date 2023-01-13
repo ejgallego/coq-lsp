@@ -124,6 +124,9 @@ function buildInfoContent(goals: GoalAnswer, styleUri: Uri) {
     ? detailsOfList(true, [0], "Error Browser", htmlOfCoqBlock(goals.error))
     : "";
 
+  let line = goals.position.line + 1;
+  let character = goals.position.character + 1;
+
   // Use #FA8072 color too?
   return `
     <!DOCTYPE html>
@@ -136,7 +139,7 @@ function buildInfoContent(goals: GoalAnswer, styleUri: Uri) {
     </head>
     <body>
         <details open>
-            <summary>${uriBase}:${goals.position.line+1}:${goals.position.character+1}</summary>
+            <summary>${uriBase}:${line}:${character}</summary>
             <div class="goals_env" style="margin-left: 1ex; margin-top: 1ex; margin-bottom: 1ex;">
                 ${goalsBody}
             </div>
