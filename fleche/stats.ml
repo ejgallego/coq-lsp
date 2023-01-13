@@ -26,6 +26,12 @@ let restore (h, p, e) =
   Hashtbl.replace stats Kind.Parsing p;
   Hashtbl.replace stats Kind.Exec e
 
+let get_f (h, p, e) ~kind =
+  match kind with
+  | Kind.Hashing -> h
+  | Parsing -> p
+  | Exec -> e
+
 let bump kind time =
   let acc = find kind in
   Hashtbl.replace stats kind (acc +. time)

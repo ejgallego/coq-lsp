@@ -113,16 +113,30 @@ end
    now [data] is only the goals. *)
 module Node = struct
   module Info = struct
-    type t = string
+    type t =
+      { cache_hit : bool
+      ; parsing_time : float
+      ; time : float option
+      ; mw_prev : float
+      ; mw_after : float
+      }
 
-    let make ~cache_hit ~parsing_time ~time ~mw_prev =
-      let cptime = Stats.get ~kind:Stats.Kind.Parsing in
-      let cetime = Stats.get ~kind:Stats.Kind.Exec in
-      let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in
+    let make ?(cache_hit = false) ~parsing_time ?time ~mw_prev ~mw_after () =
+      { cache_hit; parsing_time; time; mw_prev; mw_after }
+
+    (* let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in *)
+
+    let pp_time fmt = function
+      | None -> Format.fprintf fmt "N/A"
+      | Some time -> Format.fprintf fmt "%.4f" time
+
+    let print ~stats { cache_hit; parsing_time; time; mw_prev; mw_after } =
+      let cptime = Stats.get_f stats ~kind:Stats.Kind.Parsing in
+      let cetime = Stats.get_f stats ~kind:Stats.Kind.Exec in
       let memo_info =
         Format.asprintf
-          "Cache Hit: %b | Parse (s/c): %.4f / %.2f | Exec (s/c): %.4f / %.2f"
-          cache_hit parsing_time cptime time cetime
+          "Cache Hit: %b | Parse (s/c): %.4f / %.2f | Exec (s/c): %a / %.2f"
+          cache_hit parsing_time cptime pp_time time cetime
       in
       let mem_info =
         Format.asprintf "major words: %a | diff %a" Util.pp_words mw_after
@@ -192,7 +206,10 @@ let get_last_text text =
 let process_init_feedback loc state feedback =
   if not (CList.is_empty feedback) then
     let diags, messages = Util.diags_of_feedback ~loc feedback in
-    [ { Node.loc; ast = None; state; diags; messages; info = "" } ]
+    let parsing_time = 0.0 in
+    let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
+    let info = Node.Info.make ~parsing_time ~mw_prev ~mw_after:mw_prev () in
+    [ { Node.loc; ast = None; state; diags; messages; info } ]
   else []
 
 let create ~state ~workspace ~uri ~version ~contents =
@@ -355,7 +372,10 @@ let interp_and_info ~parsing_time ~st ast =
   let { Memo.Stats.res; cache_hit; memory = _; time } =
     Memo.interp_command ~st ast
   in
-  let info = Node.Info.make ~cache_hit ~parsing_time ~time ~mw_prev in
+  let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in
+  let info =
+    Node.Info.make ~cache_hit ~parsing_time ~time ~mw_prev ~mw_after ()
+  in
   (res, info)
 
 type parse_action =
@@ -403,10 +423,13 @@ type document_action =
       }
   | Interrupted of Loc.t
 
-let unparseable_node ~loc ~parsing_diags ~parsing_feedback ~state =
+let unparseable_node ~loc ~parsing_diags ~parsing_feedback ~state ~parsing_time
+    =
   let fb_diags, messages = Util.diags_of_feedback ~loc parsing_feedback in
   let diags = fb_diags @ parsing_diags in
-  { Node.loc; ast = None; diags; messages; state; info = "" }
+  let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
+  let info = Node.Info.make ~parsing_time ~mw_prev ~mw_after:mw_prev () in
+  { Node.loc; ast = None; diags; messages; state; info }
 
 let assemble_diags ~loc ~parsing_diags ~parsing_feedback ~diags ~feedback =
   let parsing_fb_diags, parsing_messages =
@@ -465,12 +488,14 @@ let document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
     let loc = Completion.loc completed in
     let node =
       unparseable_node ~loc ~parsing_diags ~parsing_feedback ~state:st
+        ~parsing_time
     in
     Stop (completed, node)
   (* Parsing error *)
   | Skip (span_loc, last_tok) ->
     let node =
       unparseable_node ~loc:span_loc ~parsing_diags ~parsing_feedback ~state:st
+        ~parsing_time
     in
     Continue { state = st; last_tok; node }
   (* We can interpret the command now *)

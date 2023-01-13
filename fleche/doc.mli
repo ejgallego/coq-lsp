@@ -18,7 +18,15 @@
 
 module Node : sig
   module Info : sig
-    type t = string
+    type t = private
+      { cache_hit : bool
+      ; parsing_time : float
+      ; time : float option
+      ; mw_prev : float
+      ; mw_after : float
+      }
+
+    val print : stats:Stats.t -> t -> string
   end
 
   type t = private
@@ -35,7 +43,7 @@ module Node : sig
   val state : t -> Coq.State.t
   val diags : t -> Types.Diagnostic.t list
   val messages : t -> Coq.Message.t list
-  val info : t -> string
+  val info : t -> Info.t
 end
 
 module Completion : sig

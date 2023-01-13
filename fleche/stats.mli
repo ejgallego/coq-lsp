@@ -15,3 +15,4 @@ type t
 
 val dump : unit -> t
 val restore : t -> unit
+val get_f : t -> kind:Kind.t -> float
