@@ -189,7 +189,7 @@ module Make (P : Point) : S with module P := P = struct
     find ~doc ~point approx |> Option.map Doc.Node.messages
 
   let info ~doc ~point approx =
-    find ~doc ~point approx |> Option.map Doc.Node.memo_info
+    find ~doc ~point approx |> Option.map Doc.Node.info
 
   (* XXX: This belongs in Coq *)
   let pr_extref gr =
