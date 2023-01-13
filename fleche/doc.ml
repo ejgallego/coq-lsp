@@ -116,10 +116,10 @@ module DDebug = struct
     Io.Log.trace "coq"
       ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast))
 
-  let resume last_tok =
+  let resume last_tok version =
     Io.Log.trace "check"
       Format.(
-        asprintf "resuming, from: %d l: %d" last_tok.Loc.ep
+        asprintf "resuming [v: %d], from: %d l: %d" version last_tok.Loc.ep
           last_tok.Loc.line_nb_last)
 end
 
@@ -541,7 +541,7 @@ let check ~ofmt ?cutpoint ~doc () =
     Io.Log.trace "check" "can't resume, failed=yes, nothing to do";
     doc
   | Stopped last_tok ->
-    DDebug.resume last_tok;
+    DDebug.resume last_tok doc.version;
     let uri, version, contents = (doc.uri, doc.version, doc.contents) in
     (* Process markdown *)
     let processed_content = Util.process_contents ~uri ~contents in
