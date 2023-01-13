@@ -75,11 +75,14 @@ let mode ~st =
     st.Vernacstate.lemmas
 
 let parsing ~st = st.Vernacstate.parsing
-let lemmas ~st = st.Vernacstate.lemmas
 
-let in_state ~st ~f a =
-  Vernacstate.unfreeze_interp_state st;
-  f a
+module Proof = struct
+  type t = Vernacstate.LemmaStack.t
+
+  let to_coq x = x
+end
+
+let lemmas ~st = st.Vernacstate.lemmas
 
 let drop_proofs ~st =
   let open Vernacstate in
@@ -87,6 +90,13 @@ let drop_proofs ~st =
     lemmas =
       Option.cata (fun s -> snd @@ Vernacstate.LemmaStack.pop s) None st.lemmas
   }
+
+let in_state ~st ~f a =
+  let f a =
+    Vernacstate.unfreeze_interp_state st;
+    f a
+  in
+  Protect.eval ~f a
 
 let admit ~st =
   let () = Vernacstate.unfreeze_interp_state st in
@@ -99,3 +109,7 @@ let admit ~st =
     let program = NeList.map_head (fun _ -> pm) st.Vernacstate.program in
     let st = Vernacstate.freeze_interp_state ~marshallable:false in
     { st with lemmas; program }
+
+(* TODO: implement protect once error recovery supports a failing recovery
+   execution *)
+(* let admit ~st = Protect.eval ~f:(admit ~st) () *)

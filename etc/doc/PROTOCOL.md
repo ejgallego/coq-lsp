@@ -68,19 +68,29 @@ interface GoalRequest {
 Answer to the request is a `Goal[]` object, where
 ```typescript
 interface Hyp {
-    names: string;
-    ty: string;
+  names: string;
+  ty: string;
 }
 
 interface Goal {
-    ty: string;
-    hyps: Hyp[];
+  ty: string;
+  hyps: Hyp[];
+}
+
+interface GoalConfig {
+  goals : Goal[];
+  stack : undefined;
+  bullet ?: string;
+  shelf : Goal[];
+  given_up : Goal[];
 }
 
 interface GoalAnswer {
-    textDocument: VersionedTextDocumentIdentifier;
-    position: Position;
-    goals : Goal[];
+  textDocument: VersionedTextDocumentIdentifier;
+  position: Position;
+  goals?: GoalConfig;
+  messages: string[];
+  error?: string;
 }
 
 ```
@@ -91,6 +101,8 @@ which can be then rendered by the client in way that is desired.
 
 #### Changelog
 
+- v4: send full goal configuration with shelf, given_up
+- v3: include messages and optional error in the request response
 - v2: include position and document in the request response
 - v1: initial version, imported from lambdapi-lsp
 

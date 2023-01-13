@@ -1,5 +1,5 @@
-# coq-lsp 0.1.2:
-----------------
+# coq-lsp 0.1.2: Message
+------------------------
 
 - Requires coq-lsp server 0.1.2, see full changelog at
   https://github.com/ejgallego/coq-lsp/releases/tag/0.1.2
@@ -7,6 +7,7 @@
 - The Coq LSP server output window will now show trace information
 - Coq Info Panel will now show messages coming from commands such as
   `About` or `Search`
+- Coq Info Panel will now show detailed error information.
 
 # coq-lsp 0.1.1: Location
 -------------------------

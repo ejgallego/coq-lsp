@@ -1,10 +1,6 @@
 COQ_BUILD_CONTEXT=../_build/default/coq
 
-PKG_SET= \
-vendor/coq/coq-core.install \
-vendor/coq/coq-stdlib.install \
-vendor/coq-serapi/coq-serapi.install \
-coq-lsp.install
+PKG_SET=coq-lsp.install
 
 # Get the ocamlformat version from the .ocamlformat file
 OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
@@ -15,7 +11,7 @@ $(OCAMLFORMAT) \
 ocaml-lsp-server
 
 .PHONY: build
-build: coq_boot
+build:
 	dune build $(DUNEOPT) $(PKG_SET)
 
 .PHONY: check
@@ -83,3 +79,11 @@ submodules-deinit:
 .PHONY: extension
 extension:
 	cd editor/code && npm i && npm run compile
+
+# Run prettier
+.PHONY: ts-fmt
+ts-fmt:
+	cd editor/code && npx prettier -w .
+
+.PHONY: make-fmt
+make-fmt: build fmt

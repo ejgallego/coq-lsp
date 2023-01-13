@@ -2,7 +2,7 @@
   "name": "coq-lsp",
   "displayName": "coq-lsp",
   "description": "Coq LSP provides native vsCode support for checking Coq proof documents",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "contributors": [
     "Emilio Jesús Gallego Arias <e@x80.org>",
     "Ali Caglayan <alizter@gmail.com>",
@@ -131,17 +131,19 @@
           },
           "coq-lsp.show_goals_on": {
             "type": "number",
-            "default": 1,
+            "default": 3,
             "description": "When to show goals and information about the current cursor",
             "enum": [
               0,
               1,
-              2
+              2,
+              3
             ],
             "enumItemLabels": [
               "Don't follow cursor",
               "Show on click",
-              "Show on click and on cursor movement"
+              "Show on click and on cursor movement",
+              "Show on click, cursor, and command movement"
             ]
           },
           "coq-lsp.admit_on_bad_qed": {

@@ -17,6 +17,21 @@ end
 let stats = Hashtbl.create 1000
 let find kind = Hashtbl.find_opt stats kind |> Option.default 0.0
 
+type t = float * float * float
+
+let dump () = (find Kind.Hashing, find Kind.Parsing, find Kind.Exec)
+
+let restore (h, p, e) =
+  Hashtbl.replace stats Kind.Hashing h;
+  Hashtbl.replace stats Kind.Parsing p;
+  Hashtbl.replace stats Kind.Exec e
+
+let get_f (h, p, e) ~kind =
+  match kind with
+  | Kind.Hashing -> h
+  | Parsing -> p
+  | Exec -> e
+
 let bump kind time =
   let acc = find kind in
   Hashtbl.replace stats kind (acc +. time)
@@ -34,7 +49,7 @@ let record ~kind ~f x =
 
 let get ~kind = find kind
 
-let dump () =
+let to_string () =
   Format.asprintf "hashing: %f | parsing: %f | exec: %f" (find Kind.Hashing)
     (find Kind.Parsing) (find Kind.Exec)
 

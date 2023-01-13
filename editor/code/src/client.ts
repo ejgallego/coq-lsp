@@ -25,6 +25,7 @@ enum ShowGoalsOnCursorChange {
   Never = 0,
   OnMouse = 1,
   OnMouseAndKeyboard = 2,
+  OnMouseKeyboardCommand = 3,
 }
 
 interface CoqLspServerConfig {
@@ -154,9 +155,10 @@ export function activate(context: ExtensionContext): void {
   const goals = (editor: TextEditor) => {
     checkPanelAlive();
     let uri = editor.document.uri;
+    let version = editor.document.version;
     let position = editor.selection.active;
     if (goalPanel) {
-      goalPanel.update(uri, position);
+      goalPanel.update(uri, version, position);
     }
   };
 
@@ -164,13 +166,18 @@ export function activate(context: ExtensionContext): void {
     (evt: vscode.TextEditorSelectionChangeEvent) => {
       if (evt.textEditor.document.languageId != "coq") return;
 
-      const show =
-        (evt.kind == vscode.TextEditorSelectionChangeKind.Keyboard &&
-          config.show_goals_on == ShowGoalsOnCursorChange.OnMouseAndKeyboard) ||
-        (evt.kind == vscode.TextEditorSelectionChangeKind.Mouse &&
-          (config.show_goals_on == ShowGoalsOnCursorChange.OnMouse ||
-            config.show_goals_on ==
-              ShowGoalsOnCursorChange.OnMouseAndKeyboard));
+      const kind =
+        evt.kind == vscode.TextEditorSelectionChangeKind.Mouse
+          ? 1
+          : evt.kind == vscode.TextEditorSelectionChangeKind.Keyboard
+          ? 2
+          : evt.kind
+          ? evt.kind
+          : 3;
+      // When evt.kind is null, it often means it was due to an
+      // edit, we want to re-trigger in that case
+
+      const show = kind <= config.show_goals_on;
 
       if (show) {
         goals(evt.textEditor);

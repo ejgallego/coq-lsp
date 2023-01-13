@@ -8,17 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+type t = string
+
 (************************************************************************)
-(* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
-(* Written by: Emilio J. Gallego Arias                                  *)
+(*                        UPDATE VERSION HERE                           *)
+let server = "0.1.3"
+(*                        UPDATE VERSION HERE                           *)
 (************************************************************************)
-
-module Info : sig
-  type 'a t = { res : 'a }
-end
-
-type 'a interp_result = 'a Info.t Protect.E.t
-
-val interp : st:State.t -> Ast.t -> State.t interp_result
