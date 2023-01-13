@@ -54,7 +54,7 @@ module Util = struct
      let size = Memo.mem_stats () in
      Io.Log.trace "stats" (string_of_int size));
 
-    Io.Log.trace "cache" (Stats.dump ());
+    Io.Log.trace "cache" (Stats.to_string ());
     Io.Log.trace "cache" (Memo.CacheStats.stats ());
     (* this requires patches to Coq *)
     (* Io.Log.error "coq parsing" (Cstats.dump ()); *)
@@ -166,6 +166,7 @@ type t =
   ; nodes : Node.t list
   ; diags_dirty : bool  (** Used to optimize `eager_diagnostics` *)
   ; completed : Completion.t
+  ; stats : Stats.t  (** Info about cumulative stats *)
   }
 
 let mk_doc root_state workspace =
@@ -193,6 +194,8 @@ let process_init_feedback loc state feedback =
 let create ~state ~workspace ~uri ~version ~contents =
   let { Coq.Protect.E.r; feedback } = mk_doc state workspace in
   Coq.Protect.R.map r ~f:(fun root ->
+      Stats.reset ();
+      let stats = Stats.dump () in
       let init_loc = init_loc ~uri in
       let nodes = process_init_feedback init_loc root feedback in
       let diags_dirty = not (CList.is_empty nodes) in
@@ -205,6 +208,7 @@ let create ~state ~workspace ~uri ~version ~contents =
       ; nodes
       ; diags_dirty
       ; completed = Stopped init_loc
+      ; stats
       })
 
 let recover_up_to_offset doc offset =
@@ -284,6 +288,7 @@ let send_eager_diagnostics ~ofmt ~uri ~version ~doc =
   else doc
 
 let set_completion ~completed doc = { doc with completed }
+let set_stats ~stats doc = { doc with stats }
 
 (* We approximate the remnants of the document. It would be easier if instead of
    reporting what is missing, we would report what is done, but for now we are
@@ -538,7 +543,10 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
         let doc = add_node ~node doc in
         stm doc state last_tok
   in
-  (* Note that nodes and diags are expected in reversed order here *)
+  (* Set the document to "internal" mode, stm expects the node list to be in
+     reveresed order *)
+  let doc = { doc with nodes = List.rev doc.nodes } in
+  (* Note that nodes and diags in reversed order here *)
   (match doc.nodes with
   | [] -> ()
   | n :: _ -> Io.Log.trace "resume" ("last node :" ^ Coq.Ast.pr_loc n.loc));
@@ -546,7 +554,13 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
     Util.hd_opt ~default:doc.root
       (List.map (fun { Node.state; _ } -> state) doc.nodes)
   in
-  stm doc st last_tok
+  Stats.restore doc.stats;
+  let doc = stm doc st last_tok in
+  let stats = Stats.dump () in
+  let doc = set_stats ~stats doc in
+  (* Set the document to "finished" mode: reverse the node list *)
+  let doc = { doc with nodes = List.rev doc.nodes } in
+  doc
 
 let log_doc_completion (completed : Completion.t) =
   let timestamp = Unix.gettimeofday () in
@@ -578,16 +592,13 @@ let resume_check ~ofmt ~last_tok ~doc ~target =
       Coq.Parsing.Parsable.make ~loc:resume_loc
         Gramlib.Stream.(of_string ~offset processed_content)
     in
-    (* Set the document to "internal" mode *)
-    let doc =
-      { doc with contents = processed_content; nodes = List.rev doc.nodes }
-    in
+    (* Set the content to the padded version if neccesary *)
+    let doc = { doc with contents = processed_content } in
     let doc =
       process_and_parse ~ofmt ~target ~uri ~version doc last_tok handle
     in
-    (* Set the document to "finished" mode: Restore the original contents,
-       reverse the accumulators *)
-    { doc with nodes = List.rev doc.nodes; contents }
+    (* Restore the original contents *)
+    { doc with contents }
 
 let check ~ofmt ~target ~doc () =
   match doc.completed with

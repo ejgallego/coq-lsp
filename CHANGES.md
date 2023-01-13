@@ -22,6 +22,7 @@
    while I type" experience. Client default has been changed to "show
    goals on mouse, click, typing, and cursor movement) (@ejgallego,
    #177, #179)
+ - Store stats per document (@ejgallego, #180, fixes #173)
 
 # coq-lsp 0.1.2: Message
 ------------------------

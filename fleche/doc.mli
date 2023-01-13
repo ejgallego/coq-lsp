@@ -53,6 +53,7 @@ type t = private
   ; nodes : Node.t list
   ; diags_dirty : bool
   ; completed : Completion.t
+  ; stats : Stats.t  (** Info about cumulative stats *)
   }
 
 (** Note, [create] calls Coq but it is not cached in the Memo.t table *)
