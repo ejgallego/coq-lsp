@@ -99,7 +99,8 @@ module Check = struct
     LIO.trace "process_queue" "resuming document checking";
     match Handle.find_opt ~uri with
     | Some handle ->
-      let doc = Fleche.Doc.check ~ofmt ~doc:handle.doc () in
+      let target = Fleche.Doc.Target.End in
+      let doc = Fleche.Doc.check ~ofmt ~target ~doc:handle.doc () in
       let requests = Handle.update_doc_info ~handle ~doc in
       let diags = diags_of_doc doc in
       let diags =

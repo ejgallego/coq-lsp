@@ -16,8 +16,6 @@
 (* Status: Experimental                                                 *)
 (************************************************************************)
 
-(* [node list] is a very crude form of a meta-data map "loc -> data" , where for
-   now [data] is only the goals. *)
 module Node : sig
   type t = private
     { loc : Loc.t
@@ -43,6 +41,9 @@ module Completion : sig
     | Failed of Loc.t  (** Critical failure, like an anomaly *)
 end
 
+(** A Flèche document is basically a [node list], which is a crude form of a
+    meta-data map [Loc.t -> data], where for now [data] is the contents of
+    [Node.t]. *)
 type t = private
   { uri : string
   ; version : int
@@ -54,7 +55,7 @@ type t = private
   ; completed : Completion.t
   }
 
-(** Note, [create] is not cached in the Memo.t table *)
+(** Note, [create] calls Coq but it is not cached in the Memo.t table *)
 val create :
      state:Coq.State.t
   -> workspace:Coq.Workspace.t
@@ -63,8 +64,17 @@ val create :
   -> contents:string
   -> t Coq.Protect.R.t
 
+(** Update the contents of a document, updating the right structures for
+    incremental checking. *)
 val bump_version : version:int -> contents:string -> t -> t
+
+(** Checking targets, this specifies what we expect check to reach *)
+module Target : sig
+  type t =
+    | End
+    | Position of int * int
+end
 
 (** [check ofmt ~fb_queue ?cutpoint ~doc] if set, [cutpoint] will have Flèche
     stop after the point specified there has been reached. *)
-val check : ofmt:Format.formatter -> ?cutpoint:int * int -> doc:t -> unit -> t
+val check : ofmt:Format.formatter -> target:Target.t -> doc:t -> unit -> t
