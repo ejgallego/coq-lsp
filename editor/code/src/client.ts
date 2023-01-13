@@ -11,6 +11,7 @@ import {
   StatusBarItem,
   ThemeColor,
   WorkspaceConfiguration,
+  Disposable,
 } from "vscode";
 
 import {
@@ -28,16 +29,25 @@ import {
 import { CoqLspClientConfig, CoqLspServerConfig } from "./config";
 import { InfoPanel } from "./goals";
 import { FileProgressManager } from "./progress";
+import { coqPerfData, PerfDataView } from "./perf";
 
 let config: CoqLspClientConfig;
 let client: BaseLanguageClient;
+
 // Lifetime of the info panel == extension lifetime.
 let infoPanel: InfoPanel;
+
 // Lifetime of the fileProgress setup == client lifetime
 let fileProgress: FileProgressManager;
+
 // Status Bar Button
 let lspStatusItem: StatusBarItem;
 
+// Lifetime of the perf data setup == client lifetime for the hook, extension for the webview
+let perfDataView: PerfDataView;
+let perfDataHook: Disposable;
+
+// Client Factory types
 export type ClientFactoryType = (
   context: ExtensionContext,
   clientOptions: LanguageClientOptions,
@@ -71,6 +81,7 @@ export function activateCoqLSP(
       );
     }
   }
+
   // Hide .vo, .aux files, etc...
   let activationConfig = workspace.getConfiguration();
   let updateIgnores = activationConfig.get("coq-lsp.updateIgnores") ?? true;
@@ -93,6 +104,7 @@ export function activateCoqLSP(
         .then(() => {
           infoPanel.dispose();
           fileProgress.dispose();
+          perfDataHook.dispose();
         });
     }
   };
@@ -123,6 +135,9 @@ export function activateCoqLSP(
     let cP = new Promise<BaseLanguageClient>((resolve) => {
       client = clientFactory(context, clientOptions, wsConfig);
       fileProgress = new FileProgressManager(client);
+      perfDataHook = client.onNotification(coqPerfData, (data) => {
+        perfDataView.update(data);
+      });
       resolve(client);
     });
 
@@ -255,7 +270,7 @@ export function activateCoqLSP(
       0
     );
     lspStatusItem.command = "coq-lsp.toggle";
-    lspStatusItem.text = "coq-lsp";
+    lspStatusItem.text = "coq-lsp (activating)";
     lspStatusItem.show();
     context.subscriptions.push(lspStatusItem);
   };
@@ -284,8 +299,12 @@ export function activateCoqLSP(
     lspStatusItem.tooltip = `coq-lsp couldn't start: ${emsg} Click to retry.`;
   };
 
+  perfDataView = new PerfDataView(context.extensionUri);
+  context.subscriptions.push(perfDataView);
+
   coqCommand("stop", stop);
   coqCommand("start", start);
+
   coqCommand("restart", restart);
   coqCommand("toggle", toggle);
 

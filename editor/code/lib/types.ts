@@ -108,3 +108,14 @@ export interface FlecheDocument {
 export interface FlecheSaveParams {
   textDocument: VersionedTextDocumentIdentifier;
 }
+
+export interface SentencePerfParams {
+  loc: Loc;
+  time: number;
+  mem: number;
+}
+
+export interface DocumentPerfParams {
+  summary: string;
+  timings: SentencePerfParams[];
+}
