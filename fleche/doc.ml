@@ -315,26 +315,6 @@ let parse_stm ~st ps =
   let f ps = Coq.Parsing.parse ~st ps in
   Stats.record ~kind:Stats.Kind.Parsing ~f ps
 
-(* Read the input stream until a dot or a "end of proof" token is encountered *)
-let parse_to_terminator : unit Pcoq.Entry.t =
-  (* type 'a parser_fun = { parser_fun : te LStream.t -> 'a } *)
-  let rec dot st =
-    match Gramlib.LStream.next st with
-    | Tok.KEYWORD ("." | "..." | "Qed" | "Defined" | "Admitted") | Tok.BULLET _
-      -> ()
-    | Tok.EOI -> ()
-    | _ -> dot st
-  in
-  Pcoq.Entry.of_parser "Coqtoplevel.dot" { parser_fun = dot }
-
-(* If an error occurred while parsing, we try to read the input until a dot
-   token is encountered. We assume that when a lexer error occurs, at least one
-   char was eaten *)
-let rec discard_to_dot ps =
-  try Pcoq.Entry.parse parse_to_terminator ps with
-  | CLexer.Error.E _ -> discard_to_dot ps
-  | e when CErrors.noncritical e -> ()
-
 let rec find_recovery_for_failed_qed ~default nodes =
   match nodes with
   | [] -> (default, None)
@@ -378,7 +358,7 @@ type parse_action =
 
 (* Returns parse_action, diags, parsing_time *)
 let parse_action ~st last_tok doc_handle =
-  let start_loc = Pcoq.Parsable.loc doc_handle |> CLexer.after in
+  let start_loc = Coq.Parsing.Parsable.loc doc_handle |> CLexer.after in
   let { Coq.Protect.E.r; feedback }, time = parse_stm ~st doc_handle in
   match r with
   | Coq.Protect.R.Interrupted -> (EOF (Stopped last_tok), [], feedback, time)
@@ -388,7 +368,7 @@ let parse_action ~st last_tok doc_handle =
       (* We actually need to fix Coq to return the location of the true file
          EOF, the below trick doesn't work. That will involved updating the type
          of `main_entry` *)
-      let last_tok = Pcoq.Parsable.loc doc_handle in
+      let last_tok = Coq.Parsing.Parsable.loc doc_handle in
       (EOF (Yes last_tok), [], feedback, time)
     | Ok (Some ast) ->
       let () = if Debug.parsing then DDebug.parsed_sentence ~ast in
@@ -401,8 +381,8 @@ let parse_action ~st last_tok doc_handle =
       (EOF (Failed last_tok), parse_diags, feedback, time)
     | Error (User (Some err_loc, msg)) ->
       let parse_diags = [ Util.mk_diag err_loc 1 msg ] in
-      discard_to_dot doc_handle;
-      let last_tok = Pcoq.Parsable.loc doc_handle in
+      Coq.Parsing.discard_to_dot doc_handle;
+      let last_tok = Coq.Parsing.Parsable.loc doc_handle in
       let span_loc = Util.build_span start_loc last_tok in
       (Skip (span_loc, last_tok), parse_diags, feedback, time))
 
@@ -493,7 +473,7 @@ let document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
     | Coq.Protect.R.Completed res ->
       (* The evaluation by Coq fully completed, then we can resume checking from
          this point then, hence the new last valid token last_tok_new *)
-      let last_tok_new = Pcoq.Parsable.loc doc_handle in
+      let last_tok_new = Coq.Parsing.Parsable.loc doc_handle in
       node_of_coq_result ~doc ~ast ~st ~parsing_feedback ~feedback ~memo_info
         last_tok_new res)
 
@@ -553,7 +533,7 @@ let check ~ofmt ?cutpoint ~doc () =
         (String.length processed_content - offset)
     in
     let handle =
-      Pcoq.Parsable.make ~loc:resume_loc
+      Coq.Parsing.Parsable.make ~loc:resume_loc
         Gramlib.Stream.(of_string ~offset processed_content)
     in
     (* Set the document to "internal" mode *)

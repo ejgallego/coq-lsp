@@ -146,25 +146,6 @@ module Make (P : Point) : S with module P := P = struct
 
   let node = find
 
-  let if_not_empty (pp : Pp.t) =
-    if Pp.(repr pp = Ppcmd_empty) then None else Some pp
-
-  let reify_goals ppx lemmas =
-    let open Coq.Goals in
-    let proof =
-      Vernacstate.LemmaStack.with_top lemmas ~f:(fun pstate ->
-          Declare.Proof.get pstate)
-    in
-    let { Proof.goals; stack; sigma; _ } = Proof.data proof in
-    let ppx = List.map (Coq.Goals.process_goal_gen ppx sigma) in
-    Some
-      { goals = ppx goals
-      ; stack = List.map (fun (g1, g2) -> (ppx g1, ppx g2)) stack
-      ; bullet = if_not_empty @@ Proof_bullet.suggest proof
-      ; shelf = Evd.shelf sigma |> ppx
-      ; given_up = Evd.given_up sigma |> Evar.Set.elements |> ppx
-      }
-
   let pr_goal st =
     let ppx env sigma x =
       let { Coq.Protect.E.r; feedback } =
@@ -177,7 +158,7 @@ module Make (P : Point) : S with module P := P = struct
       | Interrupted -> Pp.str "printer interrupted!"
     in
     let lemmas = Coq.State.lemmas ~st in
-    Option.cata (reify_goals ppx) None lemmas
+    Option.map (Coq.Goals.reify ~ppx) lemmas
 
   let loc ~doc ~point approx =
     let node = find ~doc ~point approx in

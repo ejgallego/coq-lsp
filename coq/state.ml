@@ -75,6 +75,13 @@ let mode ~st =
     st.Vernacstate.lemmas
 
 let parsing ~st = st.Vernacstate.parsing
+
+module Proof = struct
+  type t = Vernacstate.LemmaStack.t
+
+  let to_coq x = x
+end
+
 let lemmas ~st = st.Vernacstate.lemmas
 
 let drop_proofs ~st =
