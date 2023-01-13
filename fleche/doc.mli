@@ -48,7 +48,7 @@ type t = private
   { uri : string
   ; version : int
   ; contents : string
-  ; end_loc : int * int * int
+  ; end_loc : Types.Point.t
   ; root : Coq.State.t
   ; nodes : Node.t list
   ; diags_dirty : bool

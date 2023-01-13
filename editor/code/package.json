@@ -131,7 +131,7 @@
           },
           "coq-lsp.show_goals_on": {
             "type": "number",
-            "default": 1,
+            "default": 3,
             "description": "When to show goals and information about the current cursor",
             "enum": [
               0,

@@ -36,6 +36,7 @@ let option_default x d =
   | Some x -> x
 
 let ostring_field name dict = Option.map U.to_string (List.assoc_opt name dict)
+let oint_field name dict = Option.map U.to_int (List.assoc_opt name dict)
 
 let odict_field name dict =
   option_default
@@ -58,9 +59,15 @@ module Check = Doc_manager.Check
 
 module PendingRequest = struct
   type t =
-    { uri : string
-    ; handler : uri:string -> doc:Fleche.Doc.t -> J.t
-    }
+    | DocRequest of
+        { uri : string
+        ; handler : doc:Fleche.Doc.t -> J.t
+        }
+    | PosRequest of
+        { uri : string
+        ; point : int * int
+        ; handler : doc:Fleche.Doc.t -> point:int * int -> J.t
+        }
 end
 
 module RResult = struct
@@ -125,6 +132,41 @@ let do_initialize ~params =
     ]
   |> RResult.ok
 
+let rtable : (int, PendingRequest.t) Hashtbl.t = Hashtbl.create 673
+
+let rec answer_request ~ofmt ~id result =
+  match result with
+  | RResult.Ok result -> LSP.mk_reply ~id ~result |> LIO.send_json ofmt
+  | Error (code, message) ->
+    LSP.mk_request_error ~id ~code ~message |> LIO.send_json ofmt
+  | Postpone (DocRequest { uri; _ } as pr) ->
+    if Fleche.Debug.request_delay then
+      LIO.trace "request" ("postponing rq : " ^ string_of_int id);
+    Doc_manager.serve_on_completion ~uri ~id;
+    Hashtbl.add rtable id pr
+  | Postpone (PosRequest { uri; point; _ } as pr) ->
+    if Fleche.Debug.request_delay then
+      LIO.trace "request" ("postponing rq : " ^ string_of_int id);
+    (* This will go away once we have a proper location request queue in
+       Doc_manager *)
+    (match Doc_manager.serve_if_point ~uri ~id ~point with
+    | None -> ()
+    | Some id_to_cancel ->
+      (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
+      let code = -32802 in
+      let message = "Request got old in server" in
+      answer_request ~ofmt ~id:id_to_cancel (Error (code, message)));
+    Hashtbl.add rtable id pr
+
+let cancel_rq ~ofmt ~code ~message id =
+  match Hashtbl.find_opt rtable id with
+  | None ->
+    (* Request already served or cancelled *)
+    ()
+  | Some _ ->
+    Hashtbl.remove rtable id;
+    answer_request ~ofmt ~id (Error (code, message))
+
 let do_shutdown ~params:_ = RResult.Ok `Null
 
 let do_open ~state params =
@@ -137,7 +179,7 @@ let do_open ~state params =
   let root_state, workspace = State.(state.root_state, state.workspace) in
   Doc_manager.create ~root_state ~workspace ~uri ~contents ~version
 
-let do_change params =
+let do_change ~ofmt params =
   let document = dict_field "textDocument" params in
   let uri, version =
     (string_field "uri" document, int_field "version" document)
@@ -153,9 +195,12 @@ let do_change params =
     ()
   | change :: _ ->
     let contents = string_field "text" change in
-    Doc_manager.change ~uri ~version ~contents
+    let invalid_rq = Doc_manager.change ~uri ~version ~contents in
+    let code = -32802 in
+    let message = "Request got old in server" in
+    Int.Set.iter (cancel_rq ~ofmt ~code ~message) invalid_rq
 
-let do_close _ofmt params =
+let do_close ~ofmt:_ params =
   let document = dict_field "textDocument" params in
   let uri = string_field "uri" document in
   Doc_manager.close ~uri
@@ -171,10 +216,17 @@ let get_position params =
   let line, character = (int_field "line" pos, int_field "character" pos) in
   (line, character)
 
-let do_position_request ~params ~handler =
-  let _uri, doc = get_textDocument params in
+let do_position_request ~postpone ~params ~handler =
+  let uri, doc = get_textDocument params in
+  let version = dict_field "textDocument" params |> oint_field "version" in
   let point = get_position params in
   let line, col = point in
+  (* XXX: The logic here is shared by the wake-up code in Doc_manager, it should
+     be refactored, and in fact it should be the Doc_manager (which manages the
+     request wake-up queue) who should take this decision.
+
+     Actually the owner of the doc ready data is Fleche.Doc, but for now we
+     approximate that until we can chat directly with Flèche *)
   let in_range =
     match doc.completed with
     | Yes _ -> true
@@ -182,23 +234,31 @@ let do_position_request ~params ~handler =
       let proc_line = loc.line_nb_last - 1 in
       line < proc_line || (line = proc_line && col < loc.ep - loc.bol_pos_last)
   in
+  let in_range =
+    match version with
+    | None -> in_range
+    | Some version -> doc.version >= version && in_range
+  in
   if in_range then RResult.Ok (handler ~doc ~point)
+  else if postpone then Postpone (PosRequest { uri; point; handler })
   else
-    (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
     let code = -32802 in
     let message = "Document is not ready" in
-    RResult.Error (code, message)
+    Error (code, message)
 
-let do_hover = do_position_request ~handler:Requests.hover
-let do_goals = do_position_request ~handler:Requests.goals
-let do_completion = do_position_request ~handler:Requests.completion
+let do_hover = do_position_request ~postpone:false ~handler:Requests.hover
+let do_goals = do_position_request ~postpone:true ~handler:Requests.goals
+
+let do_completion =
+  do_position_request ~postpone:false ~handler:Requests.completion
 
 (* Requires the full document to be processed *)
 let do_document_request ~params ~handler =
   let uri, doc = get_textDocument params in
   match doc.completed with
-  | Yes _ -> RResult.Ok (handler ~uri ~doc)
-  | Stopped _ | Failed _ -> Postpone { uri; handler }
+  | Yes _ -> RResult.Ok (handler ~doc)
+  | Stopped _ | Failed _ ->
+    Postpone (PendingRequest.DocRequest { uri; handler })
 
 let do_symbols = do_document_request ~handler:Requests.symbols
 
@@ -218,43 +278,36 @@ let rec read_request ic =
     LIO.trace "read_request" ("error: " ^ msg);
     read_request ic
 
-let rtable : (int, PendingRequest.t) Hashtbl.t = Hashtbl.create 673
-
-let answer_request ofmt ~id result =
-  match result with
-  | RResult.Ok result -> LSP.mk_reply ~id ~result |> LIO.send_json ofmt
-  | Error (code, message) ->
-    LSP.mk_request_error ~id ~code ~message |> LIO.send_json ofmt
-  | Postpone ({ uri; _ } as pr) ->
-    Doc_manager.serve_on_completion ~uri ~id;
-    Hashtbl.add rtable id pr
-
-let do_cancel ofmt ~params =
+let do_cancel ~ofmt ~params =
   let id = int_field "id" params in
-  match Hashtbl.find_opt rtable id with
-  | None ->
-    (* Request is not pending *)
-    ()
-  | Some _ ->
-    Hashtbl.remove rtable id;
-    answer_request ofmt ~id (Error (-32800, "Cancelled by client"))
+  let code = -32800 in
+  let message = "Cancelled by client" in
+  cancel_rq ~ofmt ~code ~message id
 
 let serve_postponed_request id =
   match Hashtbl.find_opt rtable id with
   | None ->
-    LIO.trace "can't serve cancelled request: " (string_of_int id);
+    LIO.trace "can't wake up cancelled request: " (string_of_int id);
     None
-  | Some { uri; handler } ->
-    LIO.trace "serving rq: " (string_of_int id ^ " uri: " ^ uri);
+  | Some (DocRequest { uri; handler }) ->
+    if Fleche.Debug.request_delay then
+      LIO.trace "wake up doc rq: " (string_of_int id);
     Hashtbl.remove rtable id;
     let doc = Doc_manager.find_doc ~uri in
-    Some (RResult.Ok (handler ~uri ~doc))
+    Some (RResult.Ok (handler ~doc))
+  | Some (PosRequest { uri; point; handler }) ->
+    if Fleche.Debug.request_delay then
+      LIO.trace "wake up pos rq: "
+        (Format.asprintf "%d | pos: (%d,%d)" id (fst point) (snd point));
+    Hashtbl.remove rtable id;
+    let doc = Doc_manager.find_doc ~uri in
+    Some (RResult.Ok (handler ~point ~doc))
 
-let serve_postponed_request ofmt id =
-  serve_postponed_request id |> Option.iter (answer_request ofmt ~id)
+let serve_postponed_request ~ofmt id =
+  serve_postponed_request id |> Option.iter (answer_request ~ofmt ~id)
 
-let serve_postponed_requests ofmt rl =
-  Int.Set.iter (serve_postponed_request ofmt) rl
+let serve_postponed_requests ~ofmt rl =
+  Int.Set.iter (serve_postponed_request ~ofmt) rl
 
 (***********************************************************************)
 
@@ -272,7 +325,7 @@ let rec lsp_init_loop ic ofmt ~cmdline : Coq.Workspace.t =
     (* At this point logging is allowed per LSP spec *)
     LIO.logMessage ~lvl:3 ~message:"Initializing server";
     let result = do_initialize ~params in
-    answer_request ofmt ~id result;
+    answer_request ~ofmt ~id result;
     LIO.logMessage ~lvl:3 ~message:"Server initialized";
     (* Workspace initialization *)
     let workspace = Coq.Workspace.guess ~cmdline in
@@ -297,11 +350,11 @@ let dispatch_notification ofmt ~state ~method_ ~params =
   | "$/setTrace" -> do_trace params
   (* Document lifetime *)
   | "textDocument/didOpen" -> do_open ~state params
-  | "textDocument/didChange" -> do_change params
-  | "textDocument/didClose" -> do_close ofmt params
+  | "textDocument/didChange" -> do_change ~ofmt params
+  | "textDocument/didClose" -> do_close ~ofmt params
   | "textDocument/didSave" -> Cache.save_to_disk ()
   (* Cancel Request *)
-  | "$/cancelRequest" -> do_cancel ofmt ~params
+  | "$/cancelRequest" -> do_cancel ~ofmt ~params
   (* NOOPs *)
   | "initialized" -> ()
   (* Generic handler *)
@@ -327,7 +380,7 @@ let dispatch_request ~method_ ~params =
     Error (-32601, "method not found")
 
 let dispatch_request ofmt ~id ~method_ ~params =
-  dispatch_request ~method_ ~params |> answer_request ofmt ~id
+  dispatch_request ~method_ ~params |> answer_request ~ofmt ~id
 
 let dispatch_message ofmt ~state (com : LSP.Message.t) =
   match com with
@@ -371,7 +424,7 @@ let dispatch_or_resume_check ofmt ~state =
   | None ->
     Control.interrupt := false;
     let ready = Check.check_or_yield ~ofmt in
-    serve_postponed_requests ofmt ready
+    serve_postponed_requests ~ofmt ready
   | Some com ->
     (* TODO: optimize the queue? *)
     ignore (Queue.pop request_queue);
