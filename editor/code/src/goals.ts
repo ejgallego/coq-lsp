@@ -136,7 +136,7 @@ function buildInfoContent(goals: GoalAnswer, styleUri: Uri) {
     </head>
     <body>
         <details open>
-            <summary>${uriBase}:${goals.position.line}:${goals.position.character}</summary>
+            <summary>${uriBase}:${goals.position.line+1}:${goals.position.character+1}</summary>
             <div class="goals_env" style="margin-left: 1ex; margin-top: 1ex; margin-bottom: 1ex;">
                 ${goalsBody}
             </div>
