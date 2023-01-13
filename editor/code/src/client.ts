@@ -172,7 +172,10 @@ export function activate(context: ExtensionContext): void {
           ? 2
           : evt.kind
           ? evt.kind
-          : 1000;
+          : 3;
+      // When evt.kind is null, it often means it was due to an
+      // edit, we want to re-trigger in that case
+
       const show = kind <= config.show_goals_on;
 
       if (show) {
