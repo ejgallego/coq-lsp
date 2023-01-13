@@ -144,10 +144,13 @@ let do_change params =
   in
   let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
   match changes with
-  | [] -> ()
+  | [] ->
+    LIO.trace "do_change" "no change in changes? ignoring";
+    ()
   | _ :: _ :: _ ->
-    LIO.trace "do_change" "more than one change unsupported due to sync method";
-    assert false
+    LIO.trace "do_change"
+      "more than one change unsupported due to sync method, ignoring";
+    ()
   | change :: _ ->
     let contents = string_field "text" change in
     Doc_manager.change ~uri ~version ~contents

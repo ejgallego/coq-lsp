@@ -88,3 +88,6 @@ extension:
 .PHONY: ts-fmt
 ts-fmt:
 	cd editor/code && npx prettier -w .
+
+.PHONY: make-fmt
+make-fmt: build fmt
