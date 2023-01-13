@@ -11,14 +11,15 @@
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module Info : sig
-  type 'a t = { res : 'a }
-end
+val lsp_of_diags :
+  uri:string -> version:int -> Fleche.Types.Diagnostic.t list -> Yojson.Safe.t
 
-type 'a interp_result = 'a Info.t Protect.E.t
-
-val interp : st:State.t -> Ast.t -> State.t interp_result
+val lsp_of_progress :
+     uri:string
+  -> version:int
+  -> (Fleche.Types.Range.t * int) list
+  -> Yojson.Safe.t

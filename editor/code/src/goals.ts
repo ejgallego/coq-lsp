@@ -17,14 +17,21 @@ interface Goal {
 }
 
 interface GoalRequest {
-  textDocument: TextDocumentIdentifier;
+  textDocument: VersionedTextDocumentIdentifier;
   position: Position;
+}
+interface GoalConfig {
+  goals: Goal[];
+  stack: undefined;
+  bullet?: string;
+  shelf: Goal[];
+  given_up: Goal[];
 }
 
 interface GoalAnswer {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
-  goals: Goal[];
+  goals?: GoalConfig;
   messages: string[];
   error?: string;
 }
@@ -46,11 +53,16 @@ function htmlOfHyp(hyp: Hyp) {
   return `<div class="hypothesis"> ${hypBody} </div>`;
 }
 
-function detailsOfList(elems: any[], summary: string, inner: string) {
-  let detailsStatus = elems.length == 0 ? "closed" : "open";
+function detailsOfList(
+  open: boolean,
+  elems: any[],
+  summary: string,
+  inner: string
+) {
+  let detailsStatus = elems.length > 0 && open ? "open" : "closed";
   return `
     <details ${detailsStatus}>
-        <summary>${summary} (${elems.length})</summary>
+        <summary>${summary} [${elems.length}]</summary>
         <div style="margin-left: 1ex;"> ${inner} </div>
     </details>`;
 }
@@ -74,22 +86,46 @@ function htmlOfGoals(goals: Goal[]) {
   else return goals.map(htmlOfGoal).join(" ");
 }
 
+function detailsOfGoalList(open: boolean, name: string, goals: Goal[]) {
+  let goalsInner: string = htmlOfGoals(goals);
+  return detailsOfList(open, goals, name, goalsInner);
+}
+
+function buildGoalsContent(g: GoalConfig) {
+  let goalsBody = detailsOfGoalList(true, "Goals", g.goals);
+  let shelfBody =
+    g.shelf.length > 0 ? detailsOfGoalList(false, "Shelf", g.shelf) : "";
+  let givenBody =
+    g.given_up.length > 0
+      ? detailsOfGoalList(false, "Given Up", g.given_up)
+      : "";
+  return `
+      ${goalsBody}
+      <div style="margin-left: 0.5ex">
+        ${shelfBody}
+        ${givenBody}
+      </div>`;
+}
+
 // Returns the HTML code of the panel and the inset ccontent
-function buildGoalsContent(goals: GoalAnswer, styleUri: Uri) {
+function buildInfoContent(goals: GoalAnswer, styleUri: Uri) {
   // get the HTML code of goals environment
   let vsUri = Uri.parse(goals.textDocument.uri);
   let uriBase = basename(vsUri.path);
-  let goalsInner: string = htmlOfGoals(goals.goals);
-  let goalsBody = detailsOfList(goals.goals, "Goals", goalsInner);
+  let goalsBody = goals.goals ? buildGoalsContent(goals.goals) : "";
   let messageBody = detailsOfList(
+    true,
     goals.messages,
     "Messages",
     goals.messages.map(htmlOfCoqBlock).join(" ")
   );
 
   let errorBody = goals.error
-    ? detailsOfList([0], "Error Browser", htmlOfCoqBlock(goals.error))
+    ? detailsOfList(true, [0], "Error Browser", htmlOfCoqBlock(goals.error))
     : "";
+
+  let line = goals.position.line + 1;
+  let character = goals.position.character + 1;
 
   // Use #FA8072 color too?
   return `
@@ -103,8 +139,8 @@ function buildGoalsContent(goals: GoalAnswer, styleUri: Uri) {
     </head>
     <body>
         <details open>
-            <summary>${uriBase}:${goals.position.line}:${goals.position.character}</summary>
-            <div class="goals_env" style="margin-left: 1ex; margin-bottom: 1ex;">
+            <summary>${uriBase}:${line}:${character}</summary>
+            <div class="goals_env" style="margin-left: 1ex; margin-top: 1ex; margin-bottom: 1ex;">
                 ${goalsBody}
             </div>
             <div style="margin-left: 1ex; margin-bottom: 1ex;">
@@ -129,17 +165,17 @@ class GoalView {
     this.styleUri = styleUri;
   }
 
-  update(uri: Uri, position: Position) {
-    this.sendGoalsRequest(uri, position);
+  update(uri: Uri, version: number, position: Position) {
+    this.sendGoalsRequest(uri, version, position);
   }
 
   display(goals: GoalAnswer) {
-    this.view.html = buildGoalsContent(goals, this.styleUri);
+    this.view.html = buildInfoContent(goals, this.styleUri);
   }
 
   // LSP Protocol extension for Goals
-  sendGoalsRequest(uri: Uri, position: Position) {
-    let doc = { uri: uri.toString() };
+  sendGoalsRequest(uri: Uri, version: number, position: Position) {
+    let doc = { uri: uri.toString(), version };
     let cursor: GoalRequest = { textDocument: doc, position: position };
     const req = new RequestType<GoalRequest, GoalAnswer, void>("proof/goals");
     this.client.sendRequest(req, cursor).then(
@@ -159,8 +195,8 @@ export class GoalPanel {
     this.panel = panel;
     this.view = new GoalView(client, panel.webview, styleUri);
   }
-  update(uri: Uri, position: Position) {
-    this.view.update(uri, position);
+  update(uri: Uri, version: number, position: Position) {
+    this.view.update(uri, version, position);
   }
   dispose() {
     this.panel.dispose();

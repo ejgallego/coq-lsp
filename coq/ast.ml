@@ -86,6 +86,6 @@ let pr_loc ?(print_file = false) loc =
     else "loc"
   in
   Format.asprintf "%s: line: %d, col: %d -- line: %d, col: %d / {%d-%d}" file
-    loc.line_nb (loc.bp - loc.bol_pos) loc.line_nb_last
+    (loc.line_nb - 1) (loc.bp - loc.bol_pos) (loc.line_nb_last - 1)
     (loc.ep - loc.bol_pos_last)
     loc.bp loc.ep

@@ -8,17 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(************************************************************************)
-(* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
-(* Written by: Emilio J. Gallego Arias                                  *)
-(************************************************************************)
+(** The type of LSP server versions. *)
+type t = string
 
-module Info : sig
-  type 'a t = { res : 'a }
-end
-
-type 'a interp_result = 'a Info.t Protect.E.t
-
-val interp : st:State.t -> Ast.t -> State.t interp_result
+(** The current version of the LSP server. Please update when doing a release. *)
+val server : t

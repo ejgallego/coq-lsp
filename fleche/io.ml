@@ -2,15 +2,23 @@ module CallBack = struct
   type t =
     { trace : string -> ?extra:string -> string -> unit
     ; send_diagnostics :
-        uri:string -> version:int -> Types.Diagnostic.t list -> unit
+           ofmt:Format.formatter
+        -> uri:string
+        -> version:int
+        -> Types.Diagnostic.t list
+        -> unit
     ; send_fileProgress :
-        uri:string -> version:int -> (Types.Range.t * int) list -> unit
+           ofmt:Format.formatter
+        -> uri:string
+        -> version:int
+        -> (Types.Range.t * int) list
+        -> unit
     }
 
   let default =
     { trace = (fun _ ?extra:_ _ -> ())
-    ; send_diagnostics = (fun ~uri:_ ~version:_ _ -> ())
-    ; send_fileProgress = (fun ~uri:_ ~version:_ _ -> ())
+    ; send_diagnostics = (fun ~ofmt:_ ~uri:_ ~version:_ _ -> ())
+    ; send_fileProgress = (fun ~ofmt:_ ~uri:_ ~version:_ _ -> ())
     }
 
   let cb = ref default
@@ -19,12 +27,19 @@ end
 
 module Log = struct
   let trace d ?extra m = !CallBack.cb.trace d ?extra m
+
+  let feedback feedback =
+    if not (CList.is_empty feedback) then
+      (* Put feedbacks content here? *)
+      let extra = None in
+      !CallBack.cb.trace "feedback" ?extra
+        "feedback received in non-user facing place"
 end
 
 module Report = struct
-  let diagnostics ~uri ~version d =
-    !CallBack.cb.send_diagnostics ~uri ~version d
+  let diagnostics ~ofmt ~uri ~version d =
+    !CallBack.cb.send_diagnostics ~ofmt ~uri ~version d
 
-  let fileProgress ~uri ~version d =
-    !CallBack.cb.send_fileProgress ~uri ~version d
+  let fileProgress ~ofmt ~uri ~version d =
+    !CallBack.cb.send_fileProgress ~ofmt ~uri ~version d
 end

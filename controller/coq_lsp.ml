@@ -11,7 +11,7 @@
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
@@ -25,11 +25,6 @@ let list_field name dict = U.to_list List.(assoc name dict)
 let string_field name dict = U.to_string List.(assoc name dict)
 
 (* Conditionals *)
-let _option_empty x =
-  match x with
-  | None -> true
-  | Some _ -> false
-
 let option_cata f d x =
   match x with
   | None -> d
@@ -40,8 +35,8 @@ let option_default x d =
   | None -> d
   | Some x -> x
 
-let oint_field name dict = option_cata U.to_int 0 List.(assoc_opt name dict)
 let ostring_field name dict = Option.map U.to_string (List.assoc_opt name dict)
+let oint_field name dict = Option.map U.to_int (List.assoc_opt name dict)
 
 let odict_field name dict =
   option_default
@@ -55,37 +50,62 @@ module State = struct
   type t =
     { root_state : Coq.State.t
     ; workspace : Coq.Workspace.t
-    ; fb_queue : Coq.Message.t list ref
     }
 end
 
 module LIO = Lsp.Io
 module LSP = Lsp.Base
+module Check = Doc_manager.Check
+
+module PendingRequest = struct
+  type t =
+    | DocRequest of
+        { uri : string
+        ; handler : doc:Fleche.Doc.t -> J.t
+        }
+    | PosRequest of
+        { uri : string
+        ; point : int * int
+        ; handler : doc:Fleche.Doc.t -> point:int * int -> J.t
+        }
+end
+
+module RResult = struct
+  type t =
+    | Ok of Yojson.Safe.t
+    | Error of int * string
+    | Postpone of PendingRequest.t
+
+  let ok x = Ok x
+end
 
 (* Request Handling: The client expects a reply *)
 module CoqLspOption = struct
   type t = [%import: Fleche.Config.t] [@@deriving yojson]
 end
 
-let do_client_options coq_lsp_options =
+let do_client_options coq_lsp_options : unit =
   LIO.trace "init" "custom client options:";
   LIO.trace_object "init" (`Assoc coq_lsp_options);
   match CoqLspOption.of_yojson (`Assoc coq_lsp_options) with
   | Ok v -> Fleche.Config.v := v
   | Error msg -> LIO.trace "CoqLspOption.of_yojson error: " msg
 
-let check_client_version version : unit =
-  LIO.trace "version" version;
-  match version with
-  | "any" | "0.1.2" -> ()
-  | v ->
-    let message = Format.asprintf "Incorrect version: %s , expected 0.1.2" v in
+let check_client_version client_version : unit =
+  LIO.trace "client_version" client_version;
+  if String.(equal client_version "any" || equal client_version Version.server)
+  then () (* Version OK *)
+  else
+    let message =
+      Format.asprintf "Incorrect client version: %s , expected %s."
+        client_version Version.server
+    in
     LIO.logMessage ~lvl:1 ~message
 
-let do_initialize ofmt ~id params =
+let do_initialize ~params =
   let trace =
     ostring_field "trace" params
-    |> option_cata LIO.TraceValue.parse LIO.TraceValue.Off
+    |> option_cata LIO.TraceValue.of_string LIO.TraceValue.Off
   in
   LIO.set_trace_value trace;
   let coq_lsp_options = odict_field "initializationOptions" params in
@@ -102,119 +122,52 @@ let do_initialize ofmt ~id params =
     ; ("codeActionProvider", `Bool false)
     ]
   in
-  let msg =
-    LSP.mk_reply ~id
-      ~result:
-        (`Assoc
-          [ ("capabilities", `Assoc capabilities)
-          ; ( "serverInfo"
-            , `Assoc
-                [ ("name", `String "coq-lsp (C) Inria 2022")
-                ; ("version", `String "0.1+alpha")
-                ] )
-          ])
-  in
-  LIO.send_json ofmt msg
-
-let do_shutdown ofmt ~id =
-  let msg = LSP.mk_reply ~id ~result:`Null in
-  LIO.send_json ofmt msg
-
-(* XXX: We need to handle this better *)
-exception AbortRequest
-
-(* Handler for document *)
-module DocHandle = struct
-  type t =
-    { doc : Fleche.Doc.t
-    ; requests : unit (* placeholder for requests attached to a document *)
-    }
-
-  let doc_table : (string, t) Hashtbl.t = Hashtbl.create 39
-
-  let create ~uri ~doc =
-    (match Hashtbl.find_opt doc_table uri with
-    | None -> ()
-    | Some _ ->
-      LIO.trace "do_open" ("file " ^ uri ^ " not properly closed by client"));
-    Hashtbl.add doc_table uri { doc; requests = () }
-
-  let close ~uri = Hashtbl.remove doc_table uri
-
-  let find ~uri =
-    match Hashtbl.find_opt doc_table uri with
-    | Some h -> h
-    | None ->
-      LIO.trace "DocHandle.find" ("file " ^ uri ^ " not available");
-      raise AbortRequest
-
-  let find_opt ~uri = Hashtbl.find_opt doc_table uri
-  let find_doc ~uri = (find ~uri).doc
-
-  let _update ~handle ~(doc : Fleche.Doc.t) =
-    Hashtbl.replace doc_table doc.uri { handle with doc }
-
-  (* Clear requests *)
-  let update_doc_version ~(doc : Fleche.Doc.t) =
-    Hashtbl.replace doc_table doc.uri { doc; requests = () }
-
-  (* trigger pending incremental requests *)
-  let update_doc_info ~handle ~(doc : Fleche.Doc.t) =
-    Hashtbl.replace doc_table doc.uri { handle with doc }
-end
-
-let lsp_of_diags ~uri ~version diags =
-  List.map
-    (fun { Fleche.Types.Diagnostic.range; severity; message; extra = _ } ->
-      (range, severity, message, None))
-    diags
-  |> LSP.mk_diagnostics ~uri ~version
-
-let lsp_of_progress ~uri ~version progress =
-  let progress =
-    List.map
-      (fun (range, kind) ->
-        `Assoc [ ("range", LSP.mk_range range); ("kind", `Int kind) ])
-      progress
-  in
-  let params =
-    [ ( "textDocument"
-      , `Assoc [ ("uri", `String uri); ("version", `Int version) ] )
-    ; ("processing", `List progress)
+  `Assoc
+    [ ("capabilities", `Assoc capabilities)
+    ; ( "serverInfo"
+      , `Assoc
+          [ ("name", `String "coq-lsp (C) Inria 2023")
+          ; ("version", `String Version.server)
+          ] )
     ]
-  in
-  LSP.mk_notification ~method_:"$/coq/fileProgress" ~params
+  |> RResult.ok
 
-let asts_of_doc doc =
-  List.filter_map (fun v -> v.Fleche.Doc.ast) doc.Fleche.Doc.nodes
+let rtable : (int, PendingRequest.t) Hashtbl.t = Hashtbl.create 673
 
-let diags_of_doc doc =
-  List.concat_map (fun node -> node.Fleche.Doc.diags) doc.Fleche.Doc.nodes
+let rec answer_request ~ofmt ~id result =
+  match result with
+  | RResult.Ok result -> LSP.mk_reply ~id ~result |> LIO.send_json ofmt
+  | Error (code, message) ->
+    LSP.mk_request_error ~id ~code ~message |> LIO.send_json ofmt
+  | Postpone (DocRequest { uri; _ } as pr) ->
+    if Fleche.Debug.request_delay then
+      LIO.trace "request" ("postponing rq : " ^ string_of_int id);
+    Doc_manager.serve_on_completion ~uri ~id;
+    Hashtbl.add rtable id pr
+  | Postpone (PosRequest { uri; point; _ } as pr) ->
+    if Fleche.Debug.request_delay then
+      LIO.trace "request" ("postponing rq : " ^ string_of_int id);
+    (* This will go away once we have a proper location request queue in
+       Doc_manager *)
+    (match Doc_manager.serve_if_point ~uri ~id ~point with
+    | None -> ()
+    | Some id_to_cancel ->
+      (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
+      let code = -32802 in
+      let message = "Request got old in server" in
+      answer_request ~ofmt ~id:id_to_cancel (Error (code, message)));
+    Hashtbl.add rtable id pr
 
-module Check = struct
-  let pending = ref None
+let cancel_rq ~ofmt ~code ~message id =
+  match Hashtbl.find_opt rtable id with
+  | None ->
+    (* Request already served or cancelled *)
+    ()
+  | Some _ ->
+    Hashtbl.remove rtable id;
+    answer_request ~ofmt ~id (Error (code, message))
 
-  (* Notification handling; reply is optional / asynchronous *)
-  let do_check ofmt ~fb_queue ~uri =
-    match DocHandle.find_opt ~uri with
-    | Some handle ->
-      let doc = Fleche.Doc.check ~ofmt ~doc:handle.doc ~fb_queue in
-      DocHandle.update_doc_info ~handle ~doc;
-      let diags = diags_of_doc doc in
-      let diags = lsp_of_diags ~uri:doc.uri ~version:doc.version diags in
-      LIO.send_json ofmt @@ diags
-    | None ->
-      LIO.trace "Check.do_check" ("file " ^ uri ^ " not available");
-      ()
-
-  let completed uri =
-    let doc = DocHandle.find_doc ~uri in
-    match doc.completed with
-    | Yes _ -> true
-    | _ -> false
-
-  let schedule ~uri = pending := Some uri
-end
+let do_shutdown ~params:_ = RResult.Ok `Null
 
 let do_open ~state params =
   let document = dict_field "textDocument" params in
@@ -224,56 +177,38 @@ let do_open ~state params =
     , string_field "text" document )
   in
   let root_state, workspace = State.(state.root_state, state.workspace) in
-  try
-    let doc =
-      Fleche.Doc.create ~state:root_state ~workspace ~uri ~contents ~version
-    in
-    DocHandle.create ~uri ~doc;
-    Check.schedule ~uri
-  with
-  (* Fleche.Doc.create failed due to some Coq Internal Error, we need to use
-     Coq.Protect on that call *)
-  | exn ->
-    let iexn = Exninfo.capture exn in
-    LIO.trace "Fleche.Doc.create" "internal error";
-    Exninfo.iraise iexn
+  Doc_manager.create ~root_state ~workspace ~uri ~contents ~version
 
-let do_change params =
+let do_change ~ofmt params =
   let document = dict_field "textDocument" params in
   let uri, version =
     (string_field "uri" document, int_field "version" document)
   in
   let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
   match changes with
-  | [] -> ()
+  | [] ->
+    LIO.trace "do_change" "no change in changes? ignoring";
+    ()
   | _ :: _ :: _ ->
-    LIO.trace "do_change" "more than one change unsupported due to sync method";
-    assert false
+    LIO.trace "do_change"
+      "more than one change unsupported due to sync method, ignoring";
+    ()
   | change :: _ ->
     let contents = string_field "text" change in
-    let doc = DocHandle.find_doc ~uri in
-    if version > doc.version then (
-      LIO.trace "bump file" (uri ^ " / version: " ^ string_of_int version);
-      let tb = Unix.gettimeofday () in
-      let doc = Fleche.Doc.bump_version ~version ~contents doc in
-      let diff = Unix.gettimeofday () -. tb in
-      LIO.trace "bump file took" (Format.asprintf "%f" diff);
-      let () = DocHandle.update_doc_version ~doc in
-      Check.schedule ~uri)
-    else
-      (* That's a weird case, get got changes without a version bump? Do nothing
-         for now *)
-      ()
+    let invalid_rq = Doc_manager.change ~uri ~version ~contents in
+    let code = -32802 in
+    let message = "Request got old in server" in
+    Int.Set.iter (cancel_rq ~ofmt ~code ~message) invalid_rq
 
-let do_close _ofmt params =
+let do_close ~ofmt:_ params =
   let document = dict_field "textDocument" params in
   let uri = string_field "uri" document in
-  DocHandle.close ~uri
+  Doc_manager.close ~uri
 
 let get_textDocument params =
   let document = dict_field "textDocument" params in
   let uri = string_field "uri" document in
-  let doc = DocHandle.find_doc ~uri in
+  let doc = Doc_manager.find_doc ~uri in
   (uri, doc)
 
 let get_position params =
@@ -281,178 +216,230 @@ let get_position params =
   let line, character = (int_field "line" pos, int_field "character" pos) in
   (line, character)
 
-let mk_syminfo file (name, _path, kind, pos) : J.t =
-  `Assoc
-    [ ("name", `String name)
-    ; ("kind", `Int kind)
-    ; (* function *)
-      ( "location"
-      , `Assoc
-          [ ("uri", `String file)
-          ; ("range", LSP.mk_range Fleche.Types.(to_range pos))
-          ] )
-    ]
-
-let _kind_of_type _tm = 13
-(* let open Terms in let open Timed in let is_undef = option_empty !(tm.sym_def)
-   && List.length !(tm.sym_rules) = 0 in match !(tm.sym_type) with | Vari _ ->
-   13 (* Variable *) | Type | Kind | Symb _ | _ when is_undef -> 14 (* Constant
-   *) | _ -> 12 (* Function *) *)
-
-let do_symbols ofmt ~id params =
+let do_position_request ~postpone ~params ~handler =
   let uri, doc = get_textDocument params in
-  match doc.completed with
-  | Yes _ ->
-    let f loc id = mk_syminfo uri (Names.Id.to_string id, "", 12, loc) in
-    let ast = asts_of_doc doc in
-    let slist = Coq.Ast.grab_definitions f ast in
-    let msg = LSP.mk_reply ~id ~result:(`List slist) in
-    LIO.send_json ofmt msg
-  | Stopped _ ->
-    (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
-    let code = -32802 in
-    let message = "Document is not ready" in
-    LSP.mk_request_error ~id ~code ~message |> LIO.send_json ofmt
-
-let do_position_request ofmt ~id params ~handler =
-  let _uri, doc = get_textDocument params in
+  let version = dict_field "textDocument" params |> oint_field "version" in
   let point = get_position params in
   let line, col = point in
+  (* XXX: The logic here is shared by the wake-up code in Doc_manager, it should
+     be refactored, and in fact it should be the Doc_manager (which manages the
+     request wake-up queue) who should take this decision.
+
+     Actually the owner of the doc ready data is Fleche.Doc, but for now we
+     approximate that until we can chat directly with Flèche *)
   let in_range =
     match doc.completed with
     | Yes _ -> true
-    | Stopped loc ->
-      line < loc.line_nb_last
-      || (line = loc.line_nb_last && col <= loc.ep - loc.bol_pos_last)
+    | Failed loc | Stopped loc ->
+      let proc_line = loc.line_nb_last - 1 in
+      line < proc_line || (line = proc_line && col < loc.ep - loc.bol_pos_last)
   in
-  if in_range then
-    let result = handler ~doc ~point in
-    LSP.mk_reply ~id ~result |> LIO.send_json ofmt
+  let in_range =
+    match version with
+    | None -> in_range
+    | Some version -> doc.version >= version && in_range
+  in
+  if in_range then RResult.Ok (handler ~doc ~point)
+  else if postpone then Postpone (PosRequest { uri; point; handler })
   else
-    (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
     let code = -32802 in
     let message = "Document is not ready" in
-    LSP.mk_request_error ~id ~code ~message |> LIO.send_json ofmt
+    Error (code, message)
 
-let hover_handler ~doc ~point =
-  let show_loc_info = true in
-  let loc_span = Fleche.Info.LC.loc ~doc ~point Exact in
-  let loc_string =
-    Option.map Coq.Ast.pr_loc loc_span |> Option.default "no ast"
-  in
-  let info_string =
-    Fleche.Info.LC.info ~doc ~point Exact |> Option.default "no info"
-  in
-  let hover_string =
-    if show_loc_info then loc_string ^ "\n___\n" ^ info_string else info_string
-  in
-  `Assoc
-    ([ ( "contents"
-       , `Assoc
-           [ ("kind", `String "markdown"); ("value", `String hover_string) ] )
-     ]
-    @ Option.cata
-        (fun loc -> [ ("range", LSP.mk_range (Fleche.Types.to_range loc)) ])
-        [] loc_span)
+let do_hover = do_position_request ~postpone:false ~handler:Requests.hover
+let do_goals = do_position_request ~postpone:true ~handler:Requests.goals
 
-let do_hover ofmt = do_position_request ofmt ~handler:hover_handler
+let do_completion =
+  do_position_request ~postpone:false ~handler:Requests.completion
+
+(* Requires the full document to be processed *)
+let do_document_request ~params ~handler =
+  let uri, doc = get_textDocument params in
+  match doc.completed with
+  | Yes _ -> RResult.Ok (handler ~doc)
+  | Stopped _ | Failed _ ->
+    Postpone (PendingRequest.DocRequest { uri; handler })
+
+let do_symbols = do_document_request ~handler:Requests.symbols
 
 let do_trace params =
   let trace = string_field "value" params in
-  LIO.set_trace_value (LIO.TraceValue.parse trace)
+  LIO.set_trace_value (LIO.TraceValue.of_string trace)
 
-(* Replace by ppx when we can print goals properly in the client *)
-let mk_hyp { Coq.Goals.names; def = _; ty } : Yojson.Safe.t =
-  let names = List.map (fun id -> `String (Names.Id.to_string id)) names in
-  let ty = Pp.string_of_ppcmds ty in
-  `Assoc [ ("names", `List names); ("ty", `String ty) ]
+(***********************************************************************)
 
-let mk_goal { Coq.Goals.info = _; ty; hyps } : Yojson.Safe.t =
-  let ty = Pp.string_of_ppcmds ty in
-  `Assoc [ ("ty", `String ty); ("hyps", `List (List.map mk_hyp hyps)) ]
+(** Misc helpers *)
+let rec read_request ic =
+  let com = LIO.read_request ic in
+  if Fleche.Debug.read then LIO.trace_object "read" com;
+  match LSP.Message.from_yojson com with
+  | Ok msg -> msg
+  | Error msg ->
+    LIO.trace "read_request" ("error: " ^ msg);
+    read_request ic
 
-let mk_goals { Coq.Goals.goals; _ } = List.map mk_goal goals
-let mk_goals = Option.cata mk_goals []
-let mk_message (_loc, _lvl, msg) = `String (Pp.string_of_ppcmds msg)
-let mk_messages m = List.map mk_message m
-let mk_messages = Option.cata mk_messages []
+let do_cancel ~ofmt ~params =
+  let id = int_field "id" params in
+  let code = -32800 in
+  let message = "Cancelled by client" in
+  cancel_rq ~ofmt ~code ~message id
 
-let mk_error node =
-  let open Fleche in
-  let open Fleche.Types in
-  match List.filter (fun d -> d.Diagnostic.severity < 2) node.Doc.diags with
-  | [] -> []
-  | e :: _ -> [ ("error", `String e.Diagnostic.message) ]
+let serve_postponed_request id =
+  match Hashtbl.find_opt rtable id with
+  | None ->
+    LIO.trace "can't wake up cancelled request: " (string_of_int id);
+    None
+  | Some (DocRequest { uri; handler }) ->
+    if Fleche.Debug.request_delay then
+      LIO.trace "wake up doc rq: " (string_of_int id);
+    Hashtbl.remove rtable id;
+    let doc = Doc_manager.find_doc ~uri in
+    Some (RResult.Ok (handler ~doc))
+  | Some (PosRequest { uri; point; handler }) ->
+    if Fleche.Debug.request_delay then
+      LIO.trace "wake up pos rq: "
+        (Format.asprintf "%d | pos: (%d,%d)" id (fst point) (snd point));
+    Hashtbl.remove rtable id;
+    let doc = Doc_manager.find_doc ~uri in
+    Some (RResult.Ok (handler ~point ~doc))
 
-let goals_mode =
-  if !Fleche.Config.v.goal_after_tactic then Fleche.Info.PrevIfEmpty
-  else Fleche.Info.Prev
+let serve_postponed_request ~ofmt id =
+  serve_postponed_request id |> Option.iter (answer_request ~ofmt ~id)
 
-let goals_handler ~doc ~point =
-  let open Fleche in
-  let goals = Info.LC.goals ~doc ~point goals_mode in
-  let node = Info.LC.node ~doc ~point Exact in
-  let messages = Option.map (fun node -> node.Doc.messages) node in
-  let error = Option.cata mk_error [] node in
-  `Assoc
-    ([ ( "textDocument"
-       , `Assoc [ ("uri", `String doc.uri); ("version", `Int doc.version) ] )
-     ; ( "position"
-       , `Assoc [ ("line", `Int (fst point)); ("character", `Int (snd point)) ]
-       )
-     ; ("goals", `List (mk_goals goals))
-     ; ("messages", `List (mk_messages messages))
-     ]
-    @ error)
+let serve_postponed_requests ~ofmt rl =
+  Int.Set.iter (serve_postponed_request ~ofmt) rl
 
-let do_goals ofmt = do_position_request ofmt ~handler:goals_handler
+(***********************************************************************)
 
-let completion_handler ~doc ~point:_ =
-  let f _loc id = `Assoc [ ("label", `String Names.Id.(to_string id)) ] in
-  let ast = asts_of_doc doc in
-  let clist = Coq.Ast.grab_definitions f ast in
-  `List clist
+(** LSP Init routine *)
+exception Lsp_exit
 
-let do_completion ofmt = do_position_request ofmt ~handler:completion_handler
-let memo_cache_file = ".coq-lsp.cache"
+let log_workspace w =
+  let message, extra = Coq.Workspace.describe w in
+  LIO.trace "workspace" "initialized" ~extra;
+  LIO.logMessage ~lvl:3 ~message
 
-let memo_save_to_disk () =
-  try
-    Fleche.Memo.save_to_disk ~file:memo_cache_file;
-    LIO.trace "memo" "cache saved to disk"
-  with exn ->
-    LIO.trace "memo" (Printexc.to_string exn);
-    Sys.remove memo_cache_file;
-    ()
+let rec lsp_init_loop ic ofmt ~cmdline : Coq.Workspace.t =
+  match read_request ic with
+  | LSP.Message.Request { method_ = "initialize"; id; params } ->
+    (* At this point logging is allowed per LSP spec *)
+    LIO.logMessage ~lvl:3 ~message:"Initializing server";
+    let result = do_initialize ~params in
+    answer_request ~ofmt ~id result;
+    LIO.logMessage ~lvl:3 ~message:"Server initialized";
+    (* Workspace initialization *)
+    let workspace = Coq.Workspace.guess ~cmdline in
+    log_workspace workspace;
+    workspace
+  | LSP.Message.Request { id; _ } ->
+    (* per spec *)
+    LSP.mk_request_error ~id ~code:(-32002) ~message:"server not initialized"
+    |> LIO.send_json ofmt;
+    lsp_init_loop ic ofmt ~cmdline
+  | LSP.Message.Notification { method_ = "exit"; params = _ } -> raise Lsp_exit
+  | LSP.Message.Notification _ ->
+    (* We can't log before getting the initialize message *)
+    lsp_init_loop ic ofmt ~cmdline
 
-(* We disable it for now, see todo.org for more information *)
-let memo_save_to_disk () = if false then memo_save_to_disk ()
+(** Dispatching *)
+let dispatch_notification ofmt ~state ~method_ ~params =
+  match method_ with
+  (* Lifecycle *)
+  | "exit" -> raise Lsp_exit
+  (* setTrace *)
+  | "$/setTrace" -> do_trace params
+  (* Document lifetime *)
+  | "textDocument/didOpen" -> do_open ~state params
+  | "textDocument/didChange" -> do_change ~ofmt params
+  | "textDocument/didClose" -> do_close ~ofmt params
+  | "textDocument/didSave" -> Cache.save_to_disk ()
+  (* Cancel Request *)
+  | "$/cancelRequest" -> do_cancel ~ofmt ~params
+  (* NOOPs *)
+  | "initialized" -> ()
+  (* Generic handler *)
+  | msg -> LIO.trace "no_handler" msg
 
-let memo_read_from_disk () =
-  try
-    if Sys.file_exists memo_cache_file then (
-      LIO.trace "memo" "trying to load cache file";
-      Fleche.Memo.load_from_disk ~file:memo_cache_file;
-      LIO.trace "memo" "cache file loaded")
-    else LIO.trace "memo" "cache file not present"
-  with exn ->
-    LIO.trace "memo" ("loading cache failed: " ^ Printexc.to_string exn);
-    Sys.remove memo_cache_file;
-    ()
+let dispatch_request ~method_ ~params =
+  match method_ with
+  (* Lifecyle *)
+  | "initialize" ->
+    LIO.trace "dispatch_request" "duplicate initialize request! Rejecting";
+    (* XXX what's the error code here *)
+    RResult.Error (-32600, "Invalid Request: server already initialized")
+  | "shutdown" -> do_shutdown ~params
+  (* Symbols and info about the document *)
+  | "textDocument/completion" -> do_completion ~params
+  | "textDocument/documentSymbol" -> do_symbols ~params
+  | "textDocument/hover" -> do_hover ~params
+  (* Proof-specific stuff *)
+  | "proof/goals" -> do_goals ~params
+  (* Generic handler *)
+  | msg ->
+    LIO.trace "no_handler" msg;
+    Error (-32601, "method not found")
 
-let memo_read_from_disk () = if false then memo_read_from_disk ()
+let dispatch_request ofmt ~id ~method_ ~params =
+  dispatch_request ~method_ ~params |> answer_request ~ofmt ~id
 
-(* The rule is: we keep the latest change check notification in the variable; it
-   is only served when the rest of requests are served.
+let dispatch_message ofmt ~state (com : LSP.Message.t) =
+  match com with
+  | Notification { method_; params } ->
+    dispatch_notification ofmt ~state ~method_ ~params
+  | Request { id; method_; params } ->
+    dispatch_request ofmt ~id ~method_ ~params
+
+let dispatch_message ofmt ~state com =
+  try dispatch_message ofmt ~state com with
+  | U.Type_error (msg, obj) -> LIO.trace_object msg obj
+  | Lsp_exit -> raise Lsp_exit
+  | Doc_manager.AbortRequest ->
+    () (* XXX: Separate requests from notifications, handle this better *)
+  | exn ->
+    (* Note: We should never arrive here from Coq, as every call to Coq should
+       be wrapper in Coq.Protect. So hitting this codepath, is effectively a
+       coq-lsp internal error and should be fixed *)
+    let bt = Printexc.get_backtrace () in
+    let iexn = Exninfo.capture exn in
+    LIO.trace "process_queue"
+      (if Printexc.backtrace_status () then "bt=true" else "bt=false");
+    let method_name = LSP.Message.method_ com in
+    LIO.trace "process_queue" ("exn in method: " ^ method_name);
+    LIO.trace "process_queue" (Printexc.to_string exn);
+    LIO.trace "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
+    LIO.trace "BT" bt
+
+(***********************************************************************)
+(* The queue strategy is: we keep pending document checks in Doc_manager, they
+   are only resumed when the rest of requests in the queue are served.
 
    Note that we should add a method to detect stale requests; maybe cancel them
-   when a new edit comes.
+   when a new edit comes. *)
 
-   Also, this should eventually become a queue, instead of a single
-   change_pending setup. *)
+(** Main event queue *)
 let request_queue = Queue.create ()
 
-let process_input (com : J.t) =
+let dispatch_or_resume_check ofmt ~state =
+  match Queue.peek_opt request_queue with
+  | None ->
+    Control.interrupt := false;
+    let ready = Check.check_or_yield ~ofmt in
+    serve_postponed_requests ~ofmt ready
+  | Some com ->
+    (* TODO: optimize the queue? *)
+    ignore (Queue.pop request_queue);
+    LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
+    (* We let Coq work normally now *)
+    Control.interrupt := false;
+    dispatch_message ofmt ~state com
+
+let rec process_queue ofmt ~state =
+  if Fleche.Debug.sched_wakeup then
+    LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
+  dispatch_or_resume_check ofmt ~state;
+  process_queue ofmt ~state
+
+let process_input (com : LSP.Message.t) =
   if Fleche.Debug.sched_wakeup then
     LIO.trace "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   (* TODO: this is the place to cancel pending requests that are invalid, and in
@@ -460,86 +447,17 @@ let process_input (com : J.t) =
   Queue.push com request_queue;
   Control.interrupt := true
 
-exception Lsp_exit
-
-(* XXX: We could split requests and notifications but with the OCaml theading
-   model there is not a lot of difference yet; something to think for the
-   future. *)
-let dispatch_message ofmt ~state dict =
-  let id = oint_field "id" dict in
-  let params = odict_field "params" dict in
-  match string_field "method" dict with
-  (* Requests *)
-  | "initialize" -> do_initialize ofmt ~id params
-  | "shutdown" -> do_shutdown ofmt ~id
-  (* Symbols and info about the document *)
-  | "textDocument/completion" -> do_completion ofmt ~id params
-  | "textDocument/documentSymbol" -> do_symbols ofmt ~id params
-  | "textDocument/hover" -> do_hover ofmt ~id params
-  (* setTrace *)
-  | "$/setTrace" -> do_trace params
-  (* Proof-specific stuff *)
-  | "proof/goals" -> do_goals ofmt ~id params
-  (* Notifications *)
-  | "textDocument/didOpen" -> do_open ~state params
-  | "textDocument/didChange" -> do_change params
-  | "textDocument/didClose" -> do_close ofmt params
-  | "textDocument/didSave" -> memo_save_to_disk ()
-  | "exit" -> raise Lsp_exit
-  (* NOOPs *)
-  | "initialized" | "workspace/didChangeWatchedFiles" -> ()
-  | msg -> LIO.trace "no_handler" msg
-
-let dispatch_message ofmt ~state dict =
-  try dispatch_message ofmt ~state dict with
-  | U.Type_error (msg, obj) -> LIO.trace_object msg obj
-  | Lsp_exit -> raise Lsp_exit
-  | AbortRequest ->
-    () (* XXX: Separate requests from notifications, handle this better *)
-  | exn ->
-    let bt = Printexc.get_backtrace () in
-    let iexn = Exninfo.capture exn in
-    LIO.trace "process_queue"
-      (if Printexc.backtrace_status () then "bt=true" else "bt=false");
-    let method_name = string_field "method" dict in
-    LIO.trace "process_queue" ("exn in method: " ^ method_name);
-    LIO.trace "process_queue" (Printexc.to_string exn);
-    LIO.trace "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
-    LIO.trace "BT" bt
-
-let rec process_queue ofmt ~state =
-  if Fleche.Debug.sched_wakeup then
-    LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
-  (match Queue.peek_opt request_queue with
-  | None -> (
-    match !Check.pending with
-    | Some uri ->
-      LIO.trace "process_queue" "resuming document checking";
-      Control.interrupt := false;
-      Check.do_check ofmt ~fb_queue:state.State.fb_queue ~uri;
-      (* Only if completed! *)
-      if Check.completed uri then Check.pending := None
-    | None -> Thread.delay 0.1)
-  | Some com ->
-    (* TODO we should optimize the queue *)
-    ignore (Queue.pop request_queue);
-    let dict = U.to_assoc com in
-    let m = string_field "method" dict in
-    LIO.trace "process_queue" ("Serving Request: " ^ m);
-    (* We let Coq work normally now *)
-    Control.interrupt := false;
-    dispatch_message ofmt ~state dict);
-  process_queue ofmt ~state
-
-let lsp_cb oc =
+(* Main loop *)
+let lsp_cb =
   Fleche.Io.CallBack.
     { trace = LIO.trace
     ; send_diagnostics =
-        (fun ~uri ~version diags ->
-          lsp_of_diags ~uri ~version diags |> Lsp.Io.send_json oc)
+        (fun ~ofmt ~uri ~version diags ->
+          Lsp_util.lsp_of_diags ~uri ~version diags |> Lsp.Io.send_json ofmt)
     ; send_fileProgress =
-        (fun ~uri ~version progress ->
-          lsp_of_progress ~uri ~version progress |> Lsp.Io.send_json oc)
+        (fun ~ofmt ~uri ~version progress ->
+          Lsp_util.lsp_of_progress ~uri ~version progress
+          |> Lsp.Io.send_json ofmt)
     }
 
 let lvl_to_severity (lvl : Feedback.level) =
@@ -554,67 +472,66 @@ let add_message lvl loc msg q =
   let lvl = lvl_to_severity lvl in
   q := (loc, lvl, msg) :: !q
 
-let mk_fb_handler () =
-  let q = ref [] in
-  ( (fun Feedback.{ contents; _ } ->
-      match contents with
-      | Message (((Error | Warning | Notice) as lvl), loc, msg) ->
-        add_message lvl loc msg q
-      | Message ((Info as lvl), loc, msg) ->
-        if !Fleche.Config.v.show_coq_info_messages then
-          add_message lvl loc msg q
-        else ()
-      | Message (Debug, _loc, _msg) -> ()
-      | _ -> ())
-  , q )
+let mk_fb_handler q Feedback.{ contents; _ } =
+  match contents with
+  | Message (((Error | Warning | Notice) as lvl), loc, msg) ->
+    add_message lvl loc msg q
+  | Message ((Info as lvl), loc, msg) ->
+    if !Fleche.Config.v.show_coq_info_messages then add_message lvl loc msg q
+    else ()
+  | Message (Debug, _loc, _msg) -> ()
+  | _ -> ()
 
-let log_workspace w =
-  let message = Coq.Workspace.describe w in
-  LIO.logMessage ~lvl:3 ~message
-
-let lsp_main bt std coqlib vo_load_path ml_include_path =
-  LSP.std_protocol := std;
-  Exninfo.record_backtrace true;
-
-  let oc = F.std_formatter in
-
-  (* Send a log message *)
-  LIO.set_log_channel oc;
-  LIO.logMessage ~lvl:3 ~message:"Server started";
-
-  Fleche.Io.CallBack.set (lsp_cb oc);
-
-  (* Core Coq initialization *)
-  let fb_handler, fb_queue = mk_fb_handler () in
+let coq_init ~fb_queue ~bt =
+  let fb_handler = mk_fb_handler fb_queue in
   let debug = bt || Fleche.Debug.backtraces in
   let load_module = Dynlink.loadfile in
   let load_plugin = Coq.Loader.plugin_handler None in
-  let root_state =
-    Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin })
-  in
+  Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin })
 
-  (* Workspace initialization *)
+let lsp_main bt std coqlib vo_load_path ml_include_path =
+  LSP.std_protocol := std;
+
+  (* We output to stdout *)
+  let ic = stdin in
+  let oc = F.std_formatter in
+
+  (* Set log channel *)
+  LIO.set_log_channel oc;
+  Fleche.Io.CallBack.set lsp_cb;
+
+  (* IMPORTANT: LSP spec forbids any message from server to client before
+     initialize is received *)
+
+  (* Core Coq initialization *)
+  let fb_queue = Coq.Protect.fb_queue in
+  let root_state = coq_init ~fb_queue ~bt in
   let cmdline =
     { Coq.Workspace.CmdLine.coqlib; vo_load_path; ml_include_path }
   in
-  let workspace = Coq.Workspace.guess ~cmdline in
-  log_workspace workspace;
 
-  (* Core LSP loop context *)
-  let state = { State.root_state; workspace; fb_queue } in
-
-  memo_read_from_disk ();
-
-  let (_ : Thread.t) = Thread.create (fun () -> process_queue oc ~state) () in
-
-  let rec loop () =
-    (* XXX: Implement a queue, compact *)
-    let com = LIO.read_request stdin in
-    if Fleche.Debug.read then LIO.trace_object "read" com;
-    process_input com;
-    loop ()
+  (* Read JSON-RPC messages and push them to the queue *)
+  let rec read_loop () =
+    let msg = read_request ic in
+    process_input msg;
+    read_loop ()
   in
-  try loop () with
+
+  (* Input/output will happen now *)
+  try
+    (* LSP Server server initialization *)
+    let workspace = lsp_init_loop ic oc ~cmdline in
+
+    (* Core LSP loop context *)
+    let state = { State.root_state; workspace } in
+
+    (* Read workspace state (noop for now) *)
+    Cache.read_from_disk ();
+
+    let (_ : Thread.t) = Thread.create (fun () -> process_queue oc ~state) () in
+
+    read_loop ()
+  with
   | (LIO.ReadError "EOF" | Lsp_exit) as exn ->
     let message =
       "server exiting"
@@ -701,7 +618,7 @@ let lsp_cmd : unit Cmd.t =
   let vo_load_path = term_append [ rload_path; load_path ] in
   Cmd.(
     v
-      (Cmd.info "coq-lsp" ~version:"0.01" ~doc ~man)
+      (Cmd.info "coq-lsp" ~version:Version.server ~doc ~man)
       Term.(const lsp_main $ bt $ std $ coqlib $ vo_load_path $ ml_include_path))
 
 let main () =

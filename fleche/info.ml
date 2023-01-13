@@ -113,12 +113,12 @@ module type S = sig
 
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
 
-  val node : (approx, Doc.node) query
+  val node : (approx, Doc.Node.t) query
   val loc : (approx, Loc.t) query
   val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
   val messages : (approx, Coq.Message.t list) query
-  val info : (approx, string) query
+  val info : (approx, Doc.Node.Info.t) query
   val completion : (string, string list) query
 end
 
@@ -133,7 +133,7 @@ module Make (P : Point) : S with module P := P = struct
       match l with
       | [] -> prev
       | node :: xs -> (
-        let loc = node.Doc.loc in
+        let loc = node.Doc.Node.loc in
         match approx with
         | Exact -> if P.in_range ~loc point then Some node else find None xs
         | PrevIfEmpty ->
@@ -146,51 +146,50 @@ module Make (P : Point) : S with module P := P = struct
 
   let node = find
 
-  let if_not_empty (pp : Pp.t) =
-    if Pp.(repr pp = Ppcmd_empty) then None else Some pp
-
-  let reify_goals ppx lemmas =
-    let open Coq.Goals in
-    let proof =
-      Vernacstate.LemmaStack.with_top lemmas ~f:(fun pstate ->
-          Declare.Proof.get pstate)
-    in
-    let { Proof.goals; stack; sigma; _ } = Proof.data proof in
-    let ppx = List.map (Coq.Goals.process_goal_gen ppx sigma) in
-    Some
-      { goals = ppx goals
-      ; stack = List.map (fun (g1, g2) -> (ppx g1, ppx g2)) stack
-      ; bullet = if_not_empty @@ Proof_bullet.suggest proof
-      ; shelf = Evd.shelf sigma |> ppx
-      ; given_up = Evd.given_up sigma |> Evar.Set.elements |> ppx
-      }
-
   let pr_goal st =
     let ppx env sigma x =
-      (* It is conveneint to optimize the Pp.t type, see [Jscoq_util.pp_opt] *)
-      Printer.pr_ltype_env ~goal_concl_style:true env sigma x
+      let { Coq.Protect.E.r; feedback } =
+        Coq.Print.pr_letype_env ~goal_concl_style:true env sigma x
+      in
+      Io.Log.feedback feedback;
+      match r with
+      | Coq.Protect.R.Completed (Ok pr) -> pr
+      | Coq.Protect.R.Completed (Error _pr) -> Pp.str "printer failed!"
+      | Interrupted -> Pp.str "printer interrupted!"
     in
     let lemmas = Coq.State.lemmas ~st in
-    Option.cata (reify_goals ppx) None lemmas
+    Option.map (Coq.Goals.reify ~ppx) lemmas
 
   let loc ~doc ~point approx =
     let node = find ~doc ~point approx in
-    Option.map (fun node -> node.Doc.loc) node
+    Option.map Doc.Node.loc node
 
   let ast ~doc ~point approx =
     let node = find ~doc ~point approx in
-    Option.bind node (fun node -> node.Doc.ast)
+    Option.bind node Doc.Node.ast
+
+  let in_state ~st ~f node =
+    match Coq.State.in_state ~st ~f node with
+    | { r = Coq.Protect.R.Completed (Result.Ok res); feedback } ->
+      Io.Log.feedback feedback;
+      res
+    | { r = Coq.Protect.R.Completed (Result.Error _) | Coq.Protect.R.Interrupted
+      ; feedback
+      } ->
+      Io.Log.feedback feedback;
+      None
 
   let goals ~doc ~point approx =
     find ~doc ~point approx
     |> obind (fun node ->
-           Coq.State.in_state ~st:node.Doc.state ~f:pr_goal node.Doc.state)
+           let st = node.Doc.Node.state in
+           in_state ~st ~f:pr_goal st)
 
   let messages ~doc ~point approx =
-    find ~doc ~point approx |> Option.map (fun node -> node.Doc.messages)
+    find ~doc ~point approx |> Option.map Doc.Node.messages
 
   let info ~doc ~point approx =
-    find ~doc ~point approx |> Option.map (fun node -> node.Doc.memo_info)
+    find ~doc ~point approx |> Option.map Doc.Node.info
 
   (* XXX: This belongs in Coq *)
   let pr_extref gr =
@@ -205,7 +204,7 @@ module Make (P : Point) : S with module P := P = struct
   let completion ~doc ~point prefix =
     find ~doc ~point Exact
     |> obind (fun node ->
-           Coq.State.in_state ~st:node.Doc.state prefix ~f:(fun prefix ->
+           in_state ~st:node.Doc.Node.state prefix ~f:(fun prefix ->
                to_qualid prefix
                |> obind (fun p ->
                       Nametab.completion_canditates p

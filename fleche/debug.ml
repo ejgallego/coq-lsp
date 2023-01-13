@@ -22,3 +22,6 @@ let backtraces = false || all
 
 (* Sched wakeup *)
 let sched_wakeup = false || all
+
+(* Request event queue *)
+let request_delay = true || all

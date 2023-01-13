@@ -33,4 +33,4 @@ val doc_init :
      root_state:State.t
   -> workspace:Workspace.t
   -> libname:Names.DirPath.t
-  -> State.t
+  -> State.t Protect.E.t

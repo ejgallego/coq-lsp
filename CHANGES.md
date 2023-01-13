@@ -1,3 +1,29 @@
+# coq-lsp 0.1.3: Event
+----------------------
+
+ - Much improved handling of Coq fatal errors, the server is now
+   hardened against them (@ejgallego, #155, #157, #160, fixes #91)
+ - `coq-lsp` now follows the LSP specification regarding
+   initialization strictly (@ejgallego, #168)
+ - New setting for goals to be updated when the selection changes due
+   to a command; this makes VsCodeVim cursor tracking work; thanks to
+   Cactus (Anton) Golov for detailed bug reporting and testing
+   (@ejgallego, @jesyspa, #170, fixes #163)
+ - `coq-lsp` will now warn the user when two files have been opened
+   simultaneously and the parser may go into a broken state :/
+   (@ejgallego, #169)
+ - Implement request postponement and cancellation. Thus
+   `documentSymbols` will now be postponed until the document is
+   ready, (@ejgallego, #141, #146, fixes #124)
+ - Protocol and VS Code interfaces now support shelved and given_up
+   goals (@ejgallego, #175)
+ - Allow to postpone requests to wait for data to become available on
+   document points; this is implemented to provide a nicer "show goals
+   while I type" experience. Client default has been changed to "show
+   goals on mouse, click, typing, and cursor movement) (@ejgallego,
+   #177, #179)
+ - Store stats per document (@ejgallego, #180, fixes #173)
+
 # coq-lsp 0.1.2: Message
 ------------------------
 

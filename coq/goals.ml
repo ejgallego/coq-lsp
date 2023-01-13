@@ -50,6 +50,7 @@ type cdcl = Constr.compacted_declaration
 
 let to_tuple ppx : cdcl -> 'pc hyp =
   let open CDC in
+  let ppx t = ppx (EConstr.of_constr t) in
   function
   | LocalAssum (idl, tm) ->
     { names = List.map Context.binder_name idl; def = None; ty = ppx tm }
@@ -60,16 +61,15 @@ let to_tuple ppx : cdcl -> 'pc hyp =
     }
 
 (** gets a hypothesis *)
-let get_hyp (ppx : Constr.t -> 'pc) (_sigma : Evd.evar_map) (hdecl : cdcl) :
+let get_hyp (ppx : EConstr.t -> 'pc) (_sigma : Evd.evar_map) (hdecl : cdcl) :
     'pc hyp =
   to_tuple ppx hdecl
 
 (** gets the constr associated to the type of the current goal *)
-let get_goal_type (ppx : Constr.t -> 'pc) (sigma : Evd.evar_map) (g : Evar.t) :
+let get_goal_type (ppx : EConstr.t -> 'pc) (sigma : Evd.evar_map) (g : Evar.t) :
     _ =
-  ppx
-  @@ EConstr.to_constr ~abort_on_undefined_evars:false sigma
-       Evd.(evar_concl (find sigma g))
+  let evi = Evd.find sigma g in
+  ppx Evd.(evar_concl evi)
 
 let build_info sigma g = { evar = g; name = Evd.evar_ident g sigma }
 
@@ -86,30 +86,20 @@ let process_goal_gen ppx sigma g : 'a reified_goal =
   let info = build_info sigma g in
   { info; ty = get_goal_type ppx sigma g; hyps }
 
-(* let if_not_empty (pp : Pp.t) = if Pp.(repr pp = Ppcmd_empty) then None else
-   Some pp *)
+let if_not_empty (pp : Pp.t) =
+  if Pp.(repr pp = Ppcmd_empty) then None else Some pp
 
-let pr_hyp (h : _ hyp) =
-  let { names; ty; def = _ } = h in
-  Pp.(prlist Names.Id.print names ++ str " : " ++ ty)
-
-let pr_hyps hyps =
-  Pp.(
-    pr_vertical_list pr_hyp hyps
-    ++ fnl ()
-    ++ str "============================================"
-    ++ fnl ())
-
-let pr_goal ~hyps (g : _ reified_goal) =
-  let hyps = if hyps then pr_hyps g.hyps else Pp.mt () in
-  Pp.(hyps ++ g.ty)
-
-let pp_goals (g : _ goals) =
-  let { goals; stack = _; bullet = _; shelf = _; given_up = _ } = g in
-  match goals with
-  | [] -> Pp.str "No goals left"
-  | g :: gs ->
-    Pp.(
-      v 0 (pr_goal ~hyps:true g)
-      ++ cut ()
-      ++ prlist_with_sep cut (pr_goal ~hyps:false) gs)
+let reify ~ppx lemmas =
+  let lemmas = State.Proof.to_coq lemmas in
+  let proof =
+    Vernacstate.LemmaStack.with_top lemmas ~f:(fun pstate ->
+        Declare.Proof.get pstate)
+  in
+  let { Proof.goals; stack; sigma; _ } = Proof.data proof in
+  let ppx = List.map (process_goal_gen ppx sigma) in
+  { goals = ppx goals
+  ; stack = List.map (fun (g1, g2) -> (ppx g1, ppx g2)) stack
+  ; bullet = if_not_empty @@ Proof_bullet.suggest proof
+  ; shelf = Evd.shelf sigma |> ppx
+  ; given_up = Evd.given_up sigma |> Evar.Set.elements |> ppx
+  }

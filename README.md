@@ -37,6 +37,9 @@ See our [list of frequently-asked questions](./etc/FAQ.md).
   `Ctrl+Shift+P` will give you access to the `coq-lsp.restart` command.
 - In VSCode, the "Output" window will have a "Coq LSP Server Events"
   channel which should contain some important information.
+- As of today, `coq-lsp` may have trouble when more than one file is open at
+  the same time, this is a problem upstream. For now, you are advised to
+  work on a single file if this problem appears.
 
 ## Features
 
@@ -56,7 +59,7 @@ should not, please file a bug!
 
 ### Smart, Cache-aware Error recovery
 
-`coq-lsp` won't stop checking on errors, but support (and encourages) working
+`coq-lsp` won't stop checking on errors, but supports (and encourages) working
 with proof documents that are only partially working. Moreover, error recovery
 integrates with the incremental cache, and will recognize proof structure.
 
@@ -255,6 +258,10 @@ Work on this server has been made possible thanks to many discussions,
 inspirations, and sharing of ideas from colleagues. In particular, we'd like to
 thank Rudi Grinberg, Andrey Mokhov, Clément Pit-Claudel, and Makarius Wenzel
 for their help and advice.
+
+As noted above, the original implementation was based on the Lambdapi LSP
+server, thanks to all our collaborators in that project!
+
 
 <!-- Local Variables: -->
 <!-- mode: Markdown -->

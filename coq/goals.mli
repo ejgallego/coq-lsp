@@ -40,13 +40,10 @@ type 'a goals =
   ; given_up : 'a list
   }
 
-(** Stm-independent goal processor *)
-val process_goal_gen :
-     (Environ.env -> Evd.evar_map -> Constr.t -> 'a)
-  -> Evd.evar_map
-  -> Evar.t
-  -> 'a reified_goal
-
 type reified_pp = Pp.t reified_goal goals
 
-val pp_goals : reified_pp -> Pp.t
+(** Stm-independent goal processor *)
+val reify :
+     ppx:(Environ.env -> Evd.evar_map -> EConstr.t -> 'a)
+  -> State.Proof.t
+  -> 'a reified_goal goals
