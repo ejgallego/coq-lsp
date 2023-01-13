@@ -17,13 +17,25 @@
 (************************************************************************)
 
 module Node : sig
+  module Info : sig
+    type t = private
+      { cache_hit : bool
+      ; parsing_time : float
+      ; time : float option
+      ; mw_prev : float
+      ; mw_after : float
+      }
+
+    val print : stats:Stats.t -> t -> string
+  end
+
   type t = private
     { loc : Loc.t
     ; ast : Coq.Ast.t option  (** Ast of node *)
     ; state : Coq.State.t  (** (Full) State of node *)
     ; diags : Types.Diagnostic.t list  (** Diagnostics associated to the node *)
     ; messages : Coq.Message.t list
-    ; memo_info : string
+    ; info : Info.t
     }
 
   val loc : t -> Loc.t
@@ -31,7 +43,7 @@ module Node : sig
   val state : t -> Coq.State.t
   val diags : t -> Types.Diagnostic.t list
   val messages : t -> Coq.Message.t list
-  val memo_info : t -> string
+  val info : t -> Info.t
 end
 
 module Completion : sig
@@ -53,6 +65,7 @@ type t = private
   ; nodes : Node.t list
   ; diags_dirty : bool
   ; completed : Completion.t
+  ; stats : Stats.t  (** Info about cumulative document stats *)
   }
 
 (** Note, [create] calls Coq but it is not cached in the Memo.t table *)

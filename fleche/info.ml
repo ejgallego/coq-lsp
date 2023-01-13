@@ -118,7 +118,7 @@ module type S = sig
   val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
   val messages : (approx, Coq.Message.t list) query
-  val info : (approx, string) query
+  val info : (approx, Doc.Node.Info.t) query
   val completion : (string, string list) query
 end
 
@@ -189,7 +189,7 @@ module Make (P : Point) : S with module P := P = struct
     find ~doc ~point approx |> Option.map Doc.Node.messages
 
   let info ~doc ~point approx =
-    find ~doc ~point approx |> Option.map Doc.Node.memo_info
+    find ~doc ~point approx |> Option.map Doc.Node.info
 
   (* XXX: This belongs in Coq *)
   let pr_extref gr =

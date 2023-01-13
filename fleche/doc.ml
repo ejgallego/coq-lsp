@@ -54,7 +54,7 @@ module Util = struct
      let size = Memo.mem_stats () in
      Io.Log.trace "stats" (string_of_int size));
 
-    Io.Log.trace "cache" (Stats.dump ());
+    Io.Log.trace "cache" (Stats.to_string ());
     Io.Log.trace "cache" (Memo.CacheStats.stats ());
     (* this requires patches to Coq *)
     (* Io.Log.error "coq parsing" (Cstats.dump ()); *)
@@ -93,21 +93,6 @@ module Util = struct
     if w < 1024.0 then Format.fprintf fmt "%.0f  w" w
     else if w < 1024.0 *. 1024.0 then Format.fprintf fmt "%.2f Kw" (w /. 1024.0)
     else Format.fprintf fmt "%.2f Mw" (w /. (1024.0 *. 1024.0))
-
-  let memo_info ~cache_hit ~parsing_time ~time ~mw_prev =
-    let cptime = Stats.get ~kind:Stats.Kind.Parsing in
-    let cetime = Stats.get ~kind:Stats.Kind.Exec in
-    let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in
-    let memo_info =
-      Format.asprintf
-        "Cache Hit: %b | Parse (s/c): %.4f / %.2f | Exec (s/c): %.4f / %.2f"
-        cache_hit parsing_time cptime time cetime
-    in
-    let mem_info =
-      Format.asprintf "major words: %a | diff %a" pp_words mw_after pp_words
-        (mw_after -. mw_prev)
-    in
-    memo_info ^ "\n___\n" ^ mem_info
 end
 
 module DDebug = struct
@@ -127,13 +112,46 @@ end
 (* [node list] is a very crude form of a meta-data map "loc -> data" , where for
    now [data] is only the goals. *)
 module Node = struct
+  module Info = struct
+    type t =
+      { cache_hit : bool
+      ; parsing_time : float
+      ; time : float option
+      ; mw_prev : float
+      ; mw_after : float
+      }
+
+    let make ?(cache_hit = false) ~parsing_time ?time ~mw_prev ~mw_after () =
+      { cache_hit; parsing_time; time; mw_prev; mw_after }
+
+    (* let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in *)
+
+    let pp_time fmt = function
+      | None -> Format.fprintf fmt "N/A"
+      | Some time -> Format.fprintf fmt "%.4f" time
+
+    let print ~stats { cache_hit; parsing_time; time; mw_prev; mw_after } =
+      let cptime = Stats.get_f stats ~kind:Stats.Kind.Parsing in
+      let cetime = Stats.get_f stats ~kind:Stats.Kind.Exec in
+      let memo_info =
+        Format.asprintf
+          "Cache Hit: %b | Parse (s/c): %.4f / %.2f | Exec (s/c): %a / %.2f"
+          cache_hit parsing_time cptime pp_time time cetime
+      in
+      let mem_info =
+        Format.asprintf "major words: %a | diff %a" Util.pp_words mw_after
+          Util.pp_words (mw_after -. mw_prev)
+      in
+      memo_info ^ "\n___\n" ^ mem_info
+  end
+
   type t =
     { loc : Loc.t
     ; ast : Coq.Ast.t option  (** Ast of node *)
     ; state : Coq.State.t  (** (Full) State of node *)
     ; diags : Types.Diagnostic.t list
     ; messages : Coq.Message.t list
-    ; memo_info : string
+    ; info : Info.t
     }
 
   let loc { loc; _ } = loc
@@ -141,7 +159,7 @@ module Node = struct
   let state { state; _ } = state
   let diags { diags; _ } = diags
   let messages { messages; _ } = messages
-  let memo_info { memo_info; _ } = memo_info
+  let info { info; _ } = info
 end
 
 module Completion = struct
@@ -166,6 +184,7 @@ type t =
   ; nodes : Node.t list
   ; diags_dirty : bool  (** Used to optimize `eager_diagnostics` *)
   ; completed : Completion.t
+  ; stats : Stats.t  (** Info about cumulative stats *)
   }
 
 let mk_doc root_state workspace =
@@ -187,12 +206,17 @@ let get_last_text text =
 let process_init_feedback loc state feedback =
   if not (CList.is_empty feedback) then
     let diags, messages = Util.diags_of_feedback ~loc feedback in
-    [ { Node.loc; ast = None; state; diags; messages; memo_info = "" } ]
+    let parsing_time = 0.0 in
+    let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
+    let info = Node.Info.make ~parsing_time ~mw_prev ~mw_after:mw_prev () in
+    [ { Node.loc; ast = None; state; diags; messages; info } ]
   else []
 
 let create ~state ~workspace ~uri ~version ~contents =
   let { Coq.Protect.E.r; feedback } = mk_doc state workspace in
   Coq.Protect.R.map r ~f:(fun root ->
+      Stats.reset ();
+      let stats = Stats.dump () in
       let init_loc = init_loc ~uri in
       let nodes = process_init_feedback init_loc root feedback in
       let diags_dirty = not (CList.is_empty nodes) in
@@ -205,6 +229,7 @@ let create ~state ~workspace ~uri ~version ~contents =
       ; nodes
       ; diags_dirty
       ; completed = Stopped init_loc
+      ; stats
       })
 
 let recover_up_to_offset doc offset =
@@ -284,6 +309,7 @@ let send_eager_diagnostics ~ofmt ~uri ~version ~doc =
   else doc
 
 let set_completion ~completed doc = { doc with completed }
+let set_stats ~stats doc = { doc with stats }
 
 (* We approximate the remnants of the document. It would be easier if instead of
    reporting what is missing, we would report what is done, but for now we are
@@ -346,8 +372,11 @@ let interp_and_info ~parsing_time ~st ast =
   let { Memo.Stats.res; cache_hit; memory = _; time } =
     Memo.interp_command ~st ast
   in
-  let memo_info = Util.memo_info ~cache_hit ~parsing_time ~time ~mw_prev in
-  (res, memo_info)
+  let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in
+  let info =
+    Node.Info.make ~cache_hit ~parsing_time ~time ~mw_prev ~mw_after ()
+  in
+  (res, info)
 
 type parse_action =
   | EOF of Completion.t (* completed *)
@@ -394,10 +423,13 @@ type document_action =
       }
   | Interrupted of Loc.t
 
-let unparseable_node ~loc ~parsing_diags ~parsing_feedback ~state =
+let unparseable_node ~loc ~parsing_diags ~parsing_feedback ~state ~parsing_time
+    =
   let fb_diags, messages = Util.diags_of_feedback ~loc parsing_feedback in
   let diags = fb_diags @ parsing_diags in
-  { Node.loc; ast = None; diags; messages; state; memo_info = "" }
+  let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
+  let info = Node.Info.make ~parsing_time ~mw_prev ~mw_after:mw_prev () in
+  { Node.loc; ast = None; diags; messages; state; info }
 
 let assemble_diags ~loc ~parsing_diags ~parsing_feedback ~diags ~feedback =
   let parsing_fb_diags, parsing_messages =
@@ -409,11 +441,11 @@ let assemble_diags ~loc ~parsing_diags ~parsing_feedback ~diags ~feedback =
   (diags, messages)
 
 let parsed_node ~loc ~ast ~state ~parsing_diags ~parsing_feedback ~diags
-    ~feedback ~memo_info =
+    ~feedback ~info =
   let diags, messages =
     assemble_diags ~loc ~parsing_diags ~parsing_feedback ~diags ~feedback
   in
-  { Node.loc; ast = Some ast; diags; messages; state; memo_info }
+  { Node.loc; ast = Some ast; diags; messages; state; info }
 
 let maybe_ok_diagnostics ~loc =
   if !Config.v.ok_diagnostics then
@@ -426,14 +458,14 @@ let strategy_of_coq_err ~node ~state ~last_tok = function
   | User _ -> Continue { state; last_tok; node }
 
 let node_of_coq_result ~doc ~parsing_diags ~parsing_feedback ~ast ~st ~feedback
-    ~memo_info last_tok res =
+    ~info last_tok res =
   let ast_loc = Coq.Ast.loc ast |> Option.get in
   match res with
   | Ok { Coq.Interp.Info.res = state } ->
     let ok_diags = maybe_ok_diagnostics ~loc:ast_loc in
     let node =
       parsed_node ~loc:ast_loc ~ast ~state ~parsing_diags ~parsing_feedback
-        ~diags:ok_diags ~feedback ~memo_info
+        ~diags:ok_diags ~feedback ~info
     in
     Continue { state; last_tok; node }
   | Error (Coq.Protect.Error.Anomaly (err_loc, msg) as coq_err)
@@ -443,7 +475,7 @@ let node_of_coq_result ~doc ~parsing_diags ~parsing_feedback ~ast ~st ~feedback
     let recovery_st = state_recovery_heuristic doc st ast in
     let node =
       parsed_node ~loc:ast_loc ~ast ~state:recovery_st ~parsing_diags
-        ~parsing_feedback ~diags:err_diags ~feedback ~memo_info
+        ~parsing_feedback ~diags:err_diags ~feedback ~info
     in
     strategy_of_coq_err ~node ~state:recovery_st ~last_tok coq_err
 
@@ -456,17 +488,19 @@ let document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
     let loc = Completion.loc completed in
     let node =
       unparseable_node ~loc ~parsing_diags ~parsing_feedback ~state:st
+        ~parsing_time
     in
     Stop (completed, node)
   (* Parsing error *)
   | Skip (span_loc, last_tok) ->
     let node =
       unparseable_node ~loc:span_loc ~parsing_diags ~parsing_feedback ~state:st
+        ~parsing_time
     in
     Continue { state = st; last_tok; node }
   (* We can interpret the command now *)
   | Process ast -> (
-    let { Coq.Protect.E.r; feedback }, memo_info =
+    let { Coq.Protect.E.r; feedback }, info =
       interp_and_info ~parsing_time ~st ast
     in
     match r with
@@ -478,7 +512,7 @@ let document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
          this point then, hence the new last valid token last_tok_new *)
       let last_tok_new = Coq.Parsing.Parsable.loc doc_handle in
       node_of_coq_result ~doc ~ast ~st ~parsing_diags ~parsing_feedback
-        ~feedback ~memo_info last_tok_new res)
+        ~feedback ~info last_tok_new res)
 
 module Target = struct
   type t =
@@ -538,7 +572,10 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
         let doc = add_node ~node doc in
         stm doc state last_tok
   in
-  (* Note that nodes and diags are expected in reversed order here *)
+  (* Set the document to "internal" mode, stm expects the node list to be in
+     reveresed order *)
+  let doc = { doc with nodes = List.rev doc.nodes } in
+  (* Note that nodes and diags in reversed order here *)
   (match doc.nodes with
   | [] -> ()
   | n :: _ -> Io.Log.trace "resume" ("last node :" ^ Coq.Ast.pr_loc n.loc));
@@ -546,7 +583,13 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
     Util.hd_opt ~default:doc.root
       (List.map (fun { Node.state; _ } -> state) doc.nodes)
   in
-  stm doc st last_tok
+  Stats.restore doc.stats;
+  let doc = stm doc st last_tok in
+  let stats = Stats.dump () in
+  let doc = set_stats ~stats doc in
+  (* Set the document to "finished" mode: reverse the node list *)
+  let doc = { doc with nodes = List.rev doc.nodes } in
+  doc
 
 let log_doc_completion (completed : Completion.t) =
   let timestamp = Unix.gettimeofday () in
@@ -578,16 +621,13 @@ let resume_check ~ofmt ~last_tok ~doc ~target =
       Coq.Parsing.Parsable.make ~loc:resume_loc
         Gramlib.Stream.(of_string ~offset processed_content)
     in
-    (* Set the document to "internal" mode *)
-    let doc =
-      { doc with contents = processed_content; nodes = List.rev doc.nodes }
-    in
+    (* Set the content to the padded version if neccesary *)
+    let doc = { doc with contents = processed_content } in
     let doc =
       process_and_parse ~ofmt ~target ~uri ~version doc last_tok handle
     in
-    (* Set the document to "finished" mode: Restore the original contents,
-       reverse the accumulators *)
-    { doc with nodes = List.rev doc.nodes; contents }
+    (* Restore the original contents *)
+    { doc with contents }
 
 let check ~ofmt ~target ~doc () =
   match doc.completed with

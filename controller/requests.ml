@@ -53,8 +53,11 @@ let hover ~doc ~point =
   let loc_string =
     Option.map Coq.Ast.pr_loc loc_span |> Option.default "no ast"
   in
+  let stats = doc.stats in
   let info_string =
-    Fleche.Info.LC.info ~doc ~point Exact |> Option.default "no info"
+    Fleche.Info.LC.info ~doc ~point Exact
+    |> Option.map (Fleche.Doc.Node.Info.print ~stats)
+    |> Option.default "no info"
   in
   let hover_string =
     if show_loc_info then loc_string ^ "\n___\n" ^ info_string else info_string
