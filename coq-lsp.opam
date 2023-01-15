@@ -27,7 +27,7 @@ depends: [
 
   # Not yet required, install Coq deps instead
   "coq"            {         >= "8.16.0" & < "8.17" }
-  "coq-serapi"     {         >= "8.16.2" & < "8.17" }
+  "coq-serapi"     {         >= "8.16.0+0.16.2" & < "8.17" }
   "camlp-streams"  {         >= "5.0"               }
 ]
 
