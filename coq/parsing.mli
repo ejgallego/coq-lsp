@@ -1,7 +1,7 @@
 module Parsable : sig
   type t
 
-  val make : ?loc:Loc.t -> char Gramlib.Stream.t -> t
+  val make : ?loc:Loc.t -> (unit, char) Gramlib.Stream.t -> t
   val loc : t -> Loc.t
 end
 
