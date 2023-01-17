@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "strict": true,
+    "rootDir": ".",
+    "outDir": "out",
+    "composite": true
+  }
+}
