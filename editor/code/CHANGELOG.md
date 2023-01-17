@@ -1,3 +1,13 @@
+# coq-lsp 0.1.3: Event
+----------------------
+
+- Requires coq-lsp server 0.1.3, see full changelog at
+  https://github.com/ejgallego/coq-lsp/releases/tag/0.1.3
+- Default "show goals" setting is now on cursor movement, thanks to
+  upgrade server request serving this is no viable.
+- VsCodeVim should work with coq-lsp goal following now (be sure to
+  pick the "Command" option in settings)
+
 # coq-lsp 0.1.2: Message
 ------------------------
 
