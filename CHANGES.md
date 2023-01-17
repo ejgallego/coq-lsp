@@ -1,3 +1,8 @@
+# coq-lsp 0.1.4:
+----------------------
+
+ - Support for OCaml 4.11 (@ejgallego, #184)
+
 # coq-lsp 0.1.3: Event
 ----------------------
 
