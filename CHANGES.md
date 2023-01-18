@@ -22,6 +22,10 @@
  - InfoView is not written in React (@ejgallego, #223)
  - `debug` option in the client / protocol that will enable Coq's backtraces
    (@Alizter, @ejgallego, #217, #248)
+ - Full document stats are now correctly computed on checking
+   resumption, still cached sentences will display the cached timing
+   tho (@ejgallego, #257)
+ - Set Coq library name correctly (@ejgallego, #260)
 
 # coq-lsp 0.1.3: Event
 ----------------------

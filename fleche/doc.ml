@@ -222,10 +222,8 @@ type t =
   ; completed : Completion.t
   }
 
-let mk_doc root_state workspace =
-  (* XXX This shouldn't be foo *)
-  let libname = Names.(DirPath.make [ Id.of_string "foo" ]) in
-  Coq.Init.doc_init ~root_state ~workspace ~libname
+let mk_doc root_state workspace uri =
+  Coq.Init.doc_init ~root_state ~workspace ~uri
 
 let init_fname ~uri = Loc.InFile { dirpath = None; file = uri }
 let init_loc ~uri = Loc.initial (init_fname ~uri)
@@ -243,7 +241,7 @@ let process_init_feedback ~stats range state messages =
 
 let create ~state ~workspace ~uri ~version ~contents =
   let () = Stats.reset () in
-  let { Coq.Protect.E.r; feedback } = mk_doc state workspace in
+  let { Coq.Protect.E.r; feedback } = mk_doc state workspace uri in
   Coq.Protect.R.map r ~f:(fun root ->
       let init_loc = init_loc ~uri in
       let contents = Contents.make ~uri ~raw:contents in

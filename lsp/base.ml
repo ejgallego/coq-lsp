@@ -19,11 +19,6 @@
 (* This file contains some coq-specific commands, we should instead
    functorialize it so we can share with other OCaml-specific tools *)
 
-(* Ad-hoc parsing for file:///foo... *)
-let _parse_uri str =
-  let l = String.length str - 7 in
-  String.(sub str 7 l)
-
 module J = Yojson.Safe
 module U = Yojson.Safe.Util
 
