@@ -2,7 +2,7 @@
 ----------------------
 
  - Support for OCaml 4.11 (@ejgallego, #184)
- - The keybinding alt+enter in VSCode is now correctly scope
+ - The keybinding alt+enter in VSCode is now correctly scoped
    (@artagnon, #188)
 
 # coq-lsp 0.1.3: Event
