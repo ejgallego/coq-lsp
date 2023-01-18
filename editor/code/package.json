@@ -70,7 +70,7 @@
         "command": "coq-lsp.goals",
         "key": "alt+enter",
         "mac": "meta+enter",
-        "when": "editorFocus"
+        "when": "editorTextFocus && editorLangId == coq"
       }
     ],
     "configuration": [
