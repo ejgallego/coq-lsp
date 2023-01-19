@@ -48,6 +48,12 @@ module LineCol : Point with type t = int * int = struct
   let to_string (l, c) = "(" ^ string_of_int l ^ "," ^ string_of_int c ^ ")"
   let debug_in_range = false
 
+  let debug_in_range hdr line col line1 col1 line2 col2 =
+    if debug_in_range then
+      Io.Log.trace hdr
+        (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1 line2
+           col2)
+
   let in_range ?range (line, col) =
     (* Coq starts at 1, lsp at 0 *)
     match range with
@@ -57,10 +63,7 @@ module LineCol : Point with type t = int * int = struct
       let col1 = r.start.character in
       let line2 = r.end_.line in
       let col2 = r.end_.character in
-      if debug_in_range then
-        Io.Log.trace "in_range"
-          (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1
-             line2 col2);
+      debug_in_range "in_range" line col line1 col1 line2 col2;
       (line1 < line && line < line2)
       ||
       if line1 = line && line2 = line then col1 <= col && col < col2
@@ -74,10 +77,7 @@ module LineCol : Point with type t = int * int = struct
       let col1 = r.start.character in
       let line2 = r.end_.line in
       let col2 = r.end_.character in
-      if debug_in_range then
-        Io.Log.trace "gt_range"
-          (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1
-             line2 col2);
+      debug_in_range "gt_range" line col line1 col1 line2 col2;
       line < line1 || (line = line1 && col < col1)
 end
 
