@@ -61,12 +61,12 @@ module PendingRequest = struct
   type t =
     | DocRequest of
         { uri : string
-        ; handler : doc:Fleche.Doc.t -> J.t
+        ; handler : Requests.document_request
         }
     | PosRequest of
         { uri : string
         ; point : int * int
-        ; handler : doc:Fleche.Doc.t -> point:int * int -> J.t
+        ; handler : Requests.position_request
         }
 end
 
@@ -112,8 +112,9 @@ let do_initialize ~params =
   do_client_options coq_lsp_options;
   check_client_version !Fleche.Config.v.client_version;
   let client_capabilities = odict_field "capabilities" params in
-  LIO.trace "init" "client capabilities:";
-  LIO.trace_object "init" (`Assoc client_capabilities);
+  if Fleche.Debug.lsp_init then (
+    LIO.trace "init" "client capabilities:";
+    LIO.trace_object "init" (`Assoc client_capabilities));
   let capabilities =
     [ ("textDocumentSync", `Int 1)
     ; ("documentSymbolProvider", `Bool true)
@@ -231,8 +232,8 @@ let do_position_request ~postpone ~params ~handler =
     match doc.completed with
     | Yes _ -> true
     | Failed loc | Stopped loc ->
-      let proc_line = loc.line_nb_last - 1 in
-      line < proc_line || (line = proc_line && col < loc.ep - loc.bol_pos_last)
+      let proc_line = loc.end_.line in
+      line < proc_line || (line = proc_line && col < loc.end_.character)
   in
   let in_range =
     match version with
@@ -255,8 +256,9 @@ let do_completion =
 (* Requires the full document to be processed *)
 let do_document_request ~params ~handler =
   let uri, doc = get_textDocument params in
+  let lines = doc.contents.lines in
   match doc.completed with
-  | Yes _ -> RResult.Ok (handler ~doc)
+  | Yes _ -> RResult.Ok (handler ~lines ~doc)
   | Stopped _ | Failed _ ->
     Postpone (PendingRequest.DocRequest { uri; handler })
 
@@ -294,7 +296,8 @@ let serve_postponed_request id =
       LIO.trace "wake up doc rq: " (string_of_int id);
     Hashtbl.remove rtable id;
     let doc = Doc_manager.find_doc ~uri in
-    Some (RResult.Ok (handler ~doc))
+    let lines = doc.contents.lines in
+    Some (RResult.Ok (handler ~lines ~doc))
   | Some (PosRequest { uri; point; handler }) ->
     if Fleche.Debug.request_delay then
       LIO.trace "wake up pos rq: "

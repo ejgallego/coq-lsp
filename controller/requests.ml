@@ -15,43 +15,42 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type document_request = doc:Fleche.Doc.t -> Yojson.Safe.t
+type document_request =
+  lines:string Array.t -> doc:Fleche.Doc.t -> Yojson.Safe.t
+
 type position_request = doc:Fleche.Doc.t -> point:int * int -> Yojson.Safe.t
 
 module Util = struct
   let asts_of_doc doc = List.filter_map Fleche.Doc.Node.ast doc.Fleche.Doc.nodes
 end
 
-let mk_syminfo file (name, _path, kind, pos) : Yojson.Safe.t =
+let mk_syminfo file (name, _path, kind, range) : Yojson.Safe.t =
   `Assoc
     [ ("name", `String name)
     ; ("kind", `Int kind)
     ; (* function *)
       ( "location"
-      , `Assoc
-          [ ("uri", `String file)
-          ; ("range", Lsp.Base.mk_range Fleche.Types.(to_range pos))
-          ] )
+      , `Assoc [ ("uri", `String file); ("range", Lsp.Base.mk_range range) ] )
     ]
 
-let _kind_of_type _tm = 13
-(* let open Terms in let open Timed in let is_undef = option_empty !(tm.sym_def)
-   && List.length !(tm.sym_rules) = 0 in match !(tm.sym_type) with | Vari _ ->
-   13 (* Variable *) | Type | Kind | Symb _ | _ when is_undef -> 14 (* Constant
-   *) | _ -> 12 (* Function *) *)
-
-let symbols ~(doc : Fleche.Doc.t) =
+let symbols ~lines ~(doc : Fleche.Doc.t) =
   let uri = doc.uri in
-  let f loc id = mk_syminfo uri (Names.Id.to_string id, "", 12, loc) in
+  let f loc id =
+    let range = Fleche.Coq_utils.to_range ~lines loc in
+    mk_syminfo uri (Names.Id.to_string id, "", 12, range)
+  in
   let ast = Util.asts_of_doc doc in
   let slist = Coq.Ast.grab_definitions f ast in
   `List slist
 
 let hover ~doc ~point =
   let show_loc_info = true in
-  let loc_span = Fleche.Info.LC.loc ~doc ~point Exact in
-  let loc_string =
-    Option.map Coq.Ast.pr_loc loc_span |> Option.default "no ast"
+  let range_span = Fleche.Info.LC.range ~doc ~point Exact in
+  let range_string =
+    let none fmt () = Format.fprintf fmt "no ast" in
+    Format.asprintf "%a"
+      (Format.pp_print_option ~none Fleche.Types.Range.pp)
+      range_span
   in
   let stats = doc.stats in
   let info_string =
@@ -60,7 +59,8 @@ let hover ~doc ~point =
     |> Option.default "no info"
   in
   let hover_string =
-    if show_loc_info then loc_string ^ "\n___\n" ^ info_string else info_string
+    if show_loc_info then range_string ^ "\n___\n" ^ info_string
+    else info_string
   in
   `Assoc
     ([ ( "contents"
@@ -68,9 +68,8 @@ let hover ~doc ~point =
            [ ("kind", `String "markdown"); ("value", `String hover_string) ] )
      ]
     @ Option.cata
-        (fun loc ->
-          [ ("range", Lsp.Base.mk_range (Fleche.Types.to_range loc)) ])
-        [] loc_span)
+        (fun range -> [ ("range", Lsp.Base.mk_range range) ])
+        [] range_span)
 
 (* Replace by ppx when we can print goals properly in the client *)
 let mk_hyp { Coq.Goals.names; def = _; ty } : Yojson.Safe.t =

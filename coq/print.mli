@@ -3,4 +3,4 @@ val pr_letype_env :
   -> Environ.env
   -> Evd.evar_map
   -> EConstr.t
-  -> Pp.t Protect.E.t
+  -> (Pp.t, Loc.t) Protect.E.t

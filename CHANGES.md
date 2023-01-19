@@ -1,9 +1,10 @@
-# coq-lsp 0.1.4:
-----------------------
+# coq-lsp 0.1.4: View
+---------------------
 
  - Support for OCaml 4.11 (@ejgallego, #184)
  - The keybinding alt+enter in VSCode is now correctly scoped
    (@artagnon, #188)
+ - Support Unicode files (@ejgallego, #200, fixes #193, fixes #197)
 
 # coq-lsp 0.1.3: Event
 ----------------------

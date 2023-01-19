@@ -106,8 +106,8 @@ module Handle = struct
         | None -> (handle, Int.Set.empty)
         | Some (id, (req_line, req_col)) ->
           (* XXX: Same code than in doc.ml *)
-          let stop_line = stop_loc.line_nb_last - 1 in
-          let stop_col = stop_loc.ep - stop_loc.bol_pos_last in
+          let stop_line = stop_loc.end_.line in
+          let stop_col = stop_loc.end_.character in
           if
             stop_line > req_line || (stop_line = req_line && stop_col >= req_col)
           then ({ handle with pt_request = None }, Int.Set.singleton id)

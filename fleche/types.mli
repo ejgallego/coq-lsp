@@ -25,6 +25,8 @@ module Point : sig
     ; character : int
     ; offset : int
     }
+
+  val pp : Format.formatter -> t -> unit
 end
 
 module Range : sig
@@ -32,6 +34,9 @@ module Range : sig
     { start : Point.t
     ; end_ : Point.t
     }
+
+  val pp : Format.formatter -> t -> unit
+  val to_string : t -> string
 end
 
 module Diagnostic : sig
@@ -50,8 +55,3 @@ module Diagnostic : sig
     ; extra : Extra.t list
     }
 end
-
-(** XXX specific to Coq *)
-val to_range : Loc.t -> Range.t
-
-val to_orange : Loc.t option -> Range.t option

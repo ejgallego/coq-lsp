@@ -24,7 +24,7 @@ module Log : sig
   val trace : string -> ?extra:string -> string -> unit
 
   (** For unexpected feedback *)
-  val feedback : Coq.Message.t list -> unit
+  val feedback : Loc.t Coq.Message.t list -> unit
 end
 
 module Report : sig

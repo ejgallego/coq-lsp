@@ -29,20 +29,24 @@ module Node : sig
     val print : stats:Stats.t -> t -> string
   end
 
+  module Message : sig
+    type t = Types.Range.t option * int * Pp.t
+  end
+
   type t = private
-    { loc : Loc.t
+    { range : Types.Range.t
     ; ast : Coq.Ast.t option  (** Ast of node *)
     ; state : Coq.State.t  (** (Full) State of node *)
     ; diags : Types.Diagnostic.t list  (** Diagnostics associated to the node *)
-    ; messages : Coq.Message.t list
+    ; messages : Message.t list
     ; info : Info.t
     }
 
-  val loc : t -> Loc.t
+  val range : t -> Types.Range.t
   val ast : t -> Coq.Ast.t option
   val state : t -> Coq.State.t
   val diags : t -> Types.Diagnostic.t list
-  val messages : t -> Coq.Message.t list
+  val messages : t -> Message.t list
   val info : t -> Info.t
 end
 
@@ -60,9 +64,9 @@ end
 
 module Completion : sig
   type t = private
-    | Yes of Loc.t  (** Location of the last token in the document *)
-    | Stopped of Loc.t  (** Location of the last valid token *)
-    | Failed of Loc.t  (** Critical failure, like an anomaly *)
+    | Yes of Types.Range.t  (** Location of the last token in the document *)
+    | Stopped of Types.Range.t  (** Location of the last valid token *)
+    | Failed of Types.Range.t  (** Critical failure, like an anomaly *)
 end
 
 (** A Flèche document is basically a [node list], which is a crude form of a
@@ -86,7 +90,7 @@ val create :
   -> uri:string
   -> version:int
   -> contents:string
-  -> t Coq.Protect.R.t
+  -> (t, Loc.t) Coq.Protect.R.t
 
 (** Update the contents of a document, updating the right structures for
     incremental checking. *)
