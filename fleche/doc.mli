@@ -46,6 +46,18 @@ module Node : sig
   val info : t -> Info.t
 end
 
+module Contents : sig
+  type t = private
+    { raw : string  (** That's the original, unprocessed document text *)
+    ; text : string
+          (** That's the text to be sent to the prover, already processed,
+              encoded in UTF-8 *)
+    ; last : Types.Point.t
+          (** Last point of [text], you can derive n_lines from here *)
+    ; lines : string Array.t  (** [text] split in lines *)
+    }
+end
+
 module Completion : sig
   type t = private
     | Yes of Loc.t  (** Location of the last token in the document *)
@@ -59,8 +71,7 @@ end
 type t = private
   { uri : string
   ; version : int
-  ; contents : string
-  ; end_loc : Types.Point.t
+  ; contents : Contents.t
   ; root : Coq.State.t
   ; nodes : Node.t list
   ; diags_dirty : bool
