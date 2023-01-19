@@ -6,7 +6,8 @@
     "moduleResolution": "NodeNext",
     "allowJs": true,
     "isolatedModules": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "noEmit": true
   },
   "include": ["**/*.ts", "../lib/**/*"]
 }

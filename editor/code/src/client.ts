@@ -67,8 +67,6 @@ export function panelFactory(context: ExtensionContext) {
 }
 
 export function activate(context: ExtensionContext): void {
-  window.showInformationMessage("Coq LSP Extension: Going to activate!");
-
   function coqCommand(command: string, fn: () => void) {
     let disposable = commands.registerCommand("coq-lsp." + command, fn);
     context.subscriptions.push(disposable);
@@ -200,6 +198,7 @@ export function activate(context: ExtensionContext): void {
   coqEditorCommand("goals", goals);
 
   restart();
+  window.showInformationMessage("Coq LSP Extension: Activated!");
 }
 
 export function deactivate(): Thenable<void> | undefined {

@@ -3,7 +3,7 @@
   "compilerOptions": {
     "module": "CommonJS",
     "target": "ESNext",
-    "noEmit": true
+    "allowSyntheticDefaultImports": true
   },
-  "include": ["**/*.ts", "../lib/**/*.ts"]
+  "include": ["**/*.ts"]
 }
