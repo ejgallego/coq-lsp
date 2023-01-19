@@ -56,8 +56,8 @@ module Util = struct
     Io.Log.trace "cache" (Stats.to_string ());
     Io.Log.trace "cache" (Memo.CacheStats.stats ());
     (* this requires patches to Coq *)
-    (* Io.Log.error "coq parsing" (Cstats.dump ()); *)
-    (* Cstats.reset (); *)
+    (* Io.Log.error "coq parsing" (CoqParsingStats.dump ()); *)
+    (* CoqParsingStats.reset (); *)
     Memo.CacheStats.reset ();
     Stats.reset ()
 
@@ -122,8 +122,6 @@ module Node = struct
 
     let make ?(cache_hit = false) ~parsing_time ?time ~mw_prev ~mw_after () =
       { cache_hit; parsing_time; time; mw_prev; mw_after }
-
-    (* let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in *)
 
     let pp_time fmt = function
       | None -> Format.fprintf fmt "N/A"
