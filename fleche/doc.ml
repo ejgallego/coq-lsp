@@ -162,6 +162,37 @@ module Node = struct
   let info { info; _ } = info
 end
 
+module Contents = struct
+  type t =
+    { raw : string  (** That's the original, unprocessed document text *)
+    ; text : string
+          (** That's the text to be sent to the prover, already processed,
+              encoded in UTF-8 *)
+    ; last : Types.Point.t
+          (** Last point of [text], you can derive n_lines from here *)
+    ; lines : string Array.t  (** [text] split in lines *)
+    }
+
+  let get_last_text text =
+    let lines = CString.split_on_char '\n' text |> Array.of_list in
+    let n_lines = Array.length lines in
+    let last_line = if n_lines < 1 then "" else Array.get lines (n_lines - 1) in
+    (* let character = Types.char_of_byte ~line:last_line ~byte:(String.length
+       last_line) in *)
+    let character = String.length last_line in
+    ( Types.Point.
+        { line = Array.length lines - 1
+        ; character
+        ; offset = String.length text
+        }
+    , lines )
+
+  let make ~uri ~raw =
+    let text = Util.process_contents ~uri ~contents:raw in
+    let last, lines = get_last_text text in
+    { raw; text; last; lines }
+end
+
 module Completion = struct
   type t =
     | Yes of Loc.t  (** Location of the last token in the document *)
@@ -178,8 +209,7 @@ end
 type t =
   { uri : string
   ; version : int
-  ; contents : string
-  ; end_loc : Types.Point.t
+  ; contents : Contents.t
   ; root : Coq.State.t
   ; nodes : Node.t list
   ; diags_dirty : bool  (** Used to optimize `eager_diagnostics` *)
@@ -193,15 +223,6 @@ let mk_doc root_state workspace =
   Coq.Init.doc_init ~root_state ~workspace ~libname
 
 let init_loc ~uri = Loc.initial (InFile { dirpath = None; file = uri })
-
-let get_last_text text =
-  let lines = CString.split_on_char '\n' text in
-  let last_line = Util.hd_opt ~default:"" (List.rev lines) in
-  Types.Point.
-    { line = List.length lines - 1
-    ; character = String.length last_line
-    ; offset = String.length text
-    }
 
 let process_init_feedback loc state feedback =
   if not (CList.is_empty feedback) then
@@ -220,10 +241,9 @@ let create ~state ~workspace ~uri ~version ~contents =
       let init_loc = init_loc ~uri in
       let nodes = process_init_feedback init_loc root feedback in
       let diags_dirty = not (CList.is_empty nodes) in
-      let end_loc = get_last_text contents in
+      let contents = Contents.make ~uri ~raw:contents in
       { uri
       ; contents
-      ; end_loc
       ; version
       ; root
       ; nodes
@@ -248,36 +268,36 @@ let recover_up_to_offset doc offset =
   let loc = init_loc ~uri:doc.uri in
   find [] loc doc.nodes
 
-let compute_common_prefix ~contents doc =
-  let s1 = doc.contents in
-  let l1 = String.length s1 in
-  let s2 = contents in
-  let l2 = String.length s2 in
+let compute_common_prefix ~contents (prev : t) =
+  let s1 = prev.contents.raw in
+  let l1 = prev.contents.last.offset in
+  let s2 = contents.Contents.raw in
+  let l2 = contents.last.offset in
   let rec match_or_stop i =
     if i = l1 || i = l2 then i
     else if Char.equal s1.[i] s2.[i] then match_or_stop (i + 1)
     else i
   in
   let common_idx = match_or_stop 0 in
-  let nodes, loc = recover_up_to_offset doc common_idx in
+  let nodes, loc = recover_up_to_offset prev common_idx in
   Io.Log.trace "prefix" ("resuming from " ^ Coq.Ast.pr_loc loc);
   let completed = Completion.Stopped loc in
   (nodes, completed)
 
-let bump_version ~version ~contents ~end_loc doc =
+let bump_version ~version ~contents doc =
   (* When a new document, we resume checking from a common prefix *)
   let nodes, completed = compute_common_prefix ~contents doc in
+  (* uri, root, and stats remain the same, maybe stats should not *)
   { doc with
     version
   ; nodes
   ; contents
-  ; end_loc
   ; diags_dirty = true (* EJGA: Is it worth to optimize this? *)
   ; completed
   }
 
 let bump_version ~version ~contents doc =
-  let end_loc = get_last_text contents in
+  let contents = Contents.make ~uri:doc.uri ~raw:contents in
   match doc.completed with
   (* We can do better, but we need to handle the case where the anomaly is when
      restoring / executing the first sentence *)
@@ -286,11 +306,10 @@ let bump_version ~version ~contents doc =
       version
     ; nodes = []
     ; contents
-    ; end_loc
     ; diags_dirty = true
     ; completed = Stopped (init_loc ~uri:doc.uri)
     }
-  | Stopped _ | Yes _ -> bump_version ~version ~contents ~end_loc doc
+  | Stopped _ | Yes _ -> bump_version ~version ~contents doc
 
 let add_node ~node doc =
   let diags_dirty = if node.Node.diags <> [] then true else doc.diags_dirty in
@@ -329,7 +348,7 @@ let compute_progress end_ last_done =
   (range, 1)
 
 let report_progress ~doc last_tok =
-  let progress = compute_progress doc.end_loc last_tok in
+  let progress = compute_progress doc.contents.last last_tok in
   Io.Report.fileProgress ~uri:doc.uri ~version:doc.version [ progress ]
 
 (* XXX: Save on close? *)
@@ -549,7 +568,8 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
       let () = log_beyond_target last_tok target in
       (* We set to Completed.Yes when we have reached the EOI *)
       let completed =
-        if last_tok.Loc.ep >= doc.end_loc.offset then Completion.Yes last_tok
+        if last_tok.Loc.ep >= doc.contents.last.offset then
+          Completion.Yes last_tok
         else Completion.Stopped last_tok
       in
       set_completion ~completed doc
@@ -605,13 +625,11 @@ let log_doc_completion (completed : Completion.t) =
 
 let resume_check ~ofmt ~last_tok ~doc ~target =
   let uri, version, contents = (doc.uri, doc.version, doc.contents) in
-  (* Process markdown *)
-  let processed_content = Util.process_contents ~uri ~contents in
   (* Compute resume point, basically [CLexer.after] + stream setup *)
   let resume_loc = CLexer.after last_tok in
   let offset = resume_loc.bp in
-  let pcontent_len = String.length processed_content in
-  match Util.safe_sub processed_content offset (pcontent_len - offset) with
+  let pcontent_len = contents.last.offset in
+  match Util.safe_sub contents.text offset (pcontent_len - offset) with
   | None ->
     (* Guard against internal tricky eof errors *)
     let completed = Completion.Failed last_tok in
@@ -621,13 +639,7 @@ let resume_check ~ofmt ~last_tok ~doc ~target =
       Coq.Parsing.Parsable.make ~loc:resume_loc
         Gramlib.Stream.(of_string ~offset processed_content)
     in
-    (* Set the content to the padded version if neccesary *)
-    let doc = { doc with contents = processed_content } in
-    let doc =
-      process_and_parse ~ofmt ~target ~uri ~version doc last_tok handle
-    in
-    (* Restore the original contents *)
-    { doc with contents }
+    process_and_parse ~ofmt ~target ~uri ~version doc last_tok handle
 
 let check ~ofmt ~target ~doc () =
   match doc.completed with

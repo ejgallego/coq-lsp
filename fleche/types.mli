@@ -15,6 +15,10 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+(** ATTENTION: [character] is a Unicode caracter position, thus from Coq that
+    usually requires conversion, as it will report the column offset in bytes.
+    But [offset] is in bytes for now, as our downstream clients prefer this
+    format. *)
 module Point : sig
   type t =
     { line : int
