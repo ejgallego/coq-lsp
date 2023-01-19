@@ -243,8 +243,7 @@ let process_init_feedback range state messages =
 let create ~state ~workspace ~uri ~version ~contents =
   let { Coq.Protect.E.r; feedback } = mk_doc state workspace in
   Coq.Protect.R.map r ~f:(fun root ->
-      Stats.reset ();
-      let stats = Stats.dump () in
+      let stats = Stats.zero () in
       let init_loc = init_loc ~uri in
       let contents = Contents.make ~uri ~raw:contents in
       let lines = contents.lines in
