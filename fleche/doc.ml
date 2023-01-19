@@ -562,17 +562,15 @@ module Target = struct
     | Position of int * int
 end
 
-let beyond_target (pos : Types.Range.t) target =
+let reached ~(range : Types.Range.t) (line, col) =
+  let reached_line = range.end_.line in
+  let reached_col = range.end_.character in
+  line < reached_line || (line = reached_line && col <= reached_col)
+
+let beyond_target (range : Types.Range.t) target =
   match target with
   | Target.End -> false
-  | Position (cut_line, cut_col) ->
-    (* This needs careful thinking as to help with the show goals postponement
-       case. *)
-    (* let pos_line = pos.line_nb_last - 1 in *)
-    (* let pos_col = pos.ep - pos.bol_pos_last in *)
-    let pos_line = pos.end_.line in
-    let pos_col = pos.end_.character in
-    pos_line > cut_line || (pos_line = cut_line && pos_col > cut_col)
+  | Position (cut_line, cut_col) -> reached ~range (cut_line, cut_col)
 
 let pr_target = function
   | Target.End -> "end"

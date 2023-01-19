@@ -127,7 +127,7 @@ let do_initialize ~params =
     [ ("capabilities", `Assoc capabilities)
     ; ( "serverInfo"
       , `Assoc
-          [ ("name", `String "coq-lsp (C) Inria 2023")
+          [ ("name", `String "coq-lsp (C) Inria 2022-2023")
           ; ("version", `String Version.server)
           ] )
     ]
@@ -231,9 +231,7 @@ let do_position_request ~postpone ~params ~handler =
   let in_range =
     match doc.completed with
     | Yes _ -> true
-    | Failed loc | Stopped loc ->
-      let proc_line = loc.end_.line in
-      line < proc_line || (line = proc_line && col < loc.end_.character)
+    | Failed range | Stopped range -> Fleche.Doc.reached ~range (line, col)
   in
   let in_range =
     match version with
