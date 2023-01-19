@@ -4,6 +4,7 @@
     "strict": true,
     "rootDir": ".",
     "outDir": "out",
-    "composite": true
+    "composite": true,
+    "noEmit": true
   }
 }

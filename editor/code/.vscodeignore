@@ -1,4 +1,8 @@
-**/*~
 **/*.ts
-**/tsconfig.json
-node_modules
+.prettierignore
+.gitignore
+esbuild.mjs
+.vscode/
+node_modules/
+**/tsconfig*.json
+view/media/
