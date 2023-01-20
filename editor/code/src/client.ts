@@ -47,14 +47,23 @@ let client: LanguageClient;
 let goalPanel: GoalPanel | null;
 
 export function panelFactory(context: ExtensionContext) {
-  let panel = window.createWebviewPanel("goals", "Goals", ViewColumn.Two, {});
+  let webviewOpts: vscode.WebviewOptions = { enableScripts: true };
+  let panel = window.createWebviewPanel(
+    "goals",
+    "Goals",
+    ViewColumn.Two,
+    webviewOpts
+  );
   panel.onDidDispose(() => {
     goalPanel = null;
   });
   const styleUri = panel.webview.asWebviewUri(
-    Uri.joinPath(context.extensionUri, "media", "styles.css")
+    Uri.joinPath(context.extensionUri, "view", "out", "index.css")
   );
-  return new GoalPanel(client, panel, styleUri);
+  const scriptUri = panel.webview.asWebviewUri(
+    Uri.joinPath(context.extensionUri, "view", "out", "index.js")
+  );
+  return new GoalPanel(client, panel, styleUri, scriptUri);
 }
 
 export function activate(context: ExtensionContext): void {

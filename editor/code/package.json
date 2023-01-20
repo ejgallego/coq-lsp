@@ -158,6 +158,7 @@
   "devDependencies": {
     "@types/node": "^16.11.7",
     "@types/throttle-debounce": "^5.0.0",
+    "@types/vscode-webview": "^1.57.1",
     "@types/vscode": "^1.73.0",
     "esbuild": "^0.16.13",
     "prettier": "^2.8.1",
@@ -169,12 +170,10 @@
   },
   "main": "./out/src/client.js",
   "scripts": {
-    "vscode:prepublish": "npm run esbuild-base -- --minify",
-    "esbuild-base": "esbuild ./src/client.ts --bundle --outfile=out/src/client.js --external:vscode --format=cjs --platform=node",
-    "esbuild": "npm run esbuild-base -- --sourcemap",
-    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
-    "compile": "tsc -p ./",
-    "test-compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "vscode:prepublish": "npm run typecheck && npm run esbuild -- --minify",
+    "esbuild": "node esbuild.mjs",
+    "typecheck": "tsc -b",
+    "compile": "npm run esbuild",
+    "watch": "npm run esbuild --"
   }
 }

@@ -2,9 +2,12 @@
 ---------------------
 
  - Support for OCaml 4.11 (@ejgallego, #184)
- - The keybinding alt+enter in VSCode is now correctly scoped
-   (@artagnon, #188)
+ - The keybinding alt+enter in VSCode is now correctly scoped to be
+   only active on Coq files (@artagnon, #188)
  - Support Unicode files (@ejgallego, #200, fixes #193, fixes #197)
+ - The info view is now script enabled and does client-side
+   rendering. It is also now bundled with esbuild as part of the build
+   process (@artagnon, @ejgallego, #171)
 
 # coq-lsp 0.1.3: Event
 ----------------------
