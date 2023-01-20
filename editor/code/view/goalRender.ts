@@ -85,13 +85,13 @@ export function buildInfoContent(goals: GoalAnswer) {
   let errorBody = goals.error
     ? detailsOfList(true, [0], "Error Browser", htmlOfCoqBlock(goals.error))
     : "";
-
+  let uri = goals.textDocument.uri.split("/").at(-1);
   let line = goals.position.line + 1;
   let character = goals.position.character + 1;
 
   // Use #FA8072 color too?
   return `<details open>
-            <summary>${goals.textDocument.uri}:${line}:${character}</summary>
+            <summary>${uri}:${line}:${character}</summary>
             <div class="goals_env" style="margin-left: 1ex; margin-top: 1ex; margin-bottom: 1ex;">
               ${goalsBody}
             </div>
