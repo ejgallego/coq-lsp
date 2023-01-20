@@ -6,6 +6,7 @@ esbuild
   .build({
     entryPoints: ["./src/client.ts"],
     bundle: true,
+    sourcemap: true,
     format: "cjs",
     platform: "node",
     external: ["vscode"],
@@ -17,6 +18,7 @@ esbuild
   .build({
     entryPoints: ["./view/infoview.ts"],
     bundle: true,
+    sourcemap: "inline",
     platform: "browser",
     outfile: "view/out/index.js",
   })

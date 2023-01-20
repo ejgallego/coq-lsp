@@ -170,9 +170,10 @@
   },
   "main": "./out/src/client.js",
   "scripts": {
-    "vscode:prepublish": "npm run esbuild -- --minify",
+    "vscode:prepublish": "npm run typecheck && npm run esbuild -- --minify",
     "esbuild": "node esbuild.mjs",
-    "compile": "tsc -b && npm run esbuild -- --sourcemap",
-    "watch": "tsc -b && npm run esbuild -- --sourcemap --watch"
+    "typecheck": "tsc -b",
+    "compile": "npm run esbuild",
+    "watch": "npm run esbuild --"
   }
 }
