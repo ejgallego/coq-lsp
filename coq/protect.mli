@@ -4,40 +4,42 @@
 
     As of today this includes feedback and exceptions. *)
 module Error : sig
-  type payload = Loc.t option * Pp.t
+  type 'l payload = 'l option * Pp.t
 
-  type t = private
-    | User of payload
-    | Anomaly of payload
+  type 'l t = private
+    | User of 'l payload
+    | Anomaly of 'l payload
 end
 
 module R : sig
-  type 'a t = private
-    | Completed of ('a, Error.t) result
+  type ('a, 'l) t = private
+    | Completed of ('a, 'l Error.t) result
     | Interrupted (* signal sent, eval didn't complete *)
 
-  val map : f:('a -> 'b) -> 'a t -> 'b t
-  val map_error : f:(Error.payload -> Error.payload) -> 'a t -> 'a t
+  val map : f:('a -> 'b) -> ('a, 'l) t -> ('b, 'l) t
+
+  val map_error :
+    f:('l Error.payload -> 'm Error.payload) -> ('a, 'l) t -> ('a, 'm) t
 
   (** Update the loc stored in the result, this is used by our cache-aware
       location *)
-  val map_loc : f:(Loc.t -> Loc.t) -> 'a t -> 'a t
+  val map_loc : f:('l -> 'm) -> ('a, 'l) t -> ('a, 'm) t
 end
 
 module E : sig
-  type 'a t =
-    { r : 'a R.t
-    ; feedback : Message.t list
+  type ('a, 'l) t =
+    { r : ('a, 'l) R.t
+    ; feedback : 'l Message.t list
     }
 
-  val map : f:('a -> 'b) -> 'a t -> 'b t
-  val map_loc : f:(Loc.t -> Loc.t) -> 'a t -> 'a t
+  val map : f:('a -> 'b) -> ('a, 'l) t -> ('b, 'l) t
+  val map_loc : f:('l -> 'm) -> ('a, 'l) t -> ('a, 'm) t
 end
 
 (** Must be hooked to allow [Protect] to capture the feedback. *)
-val fb_queue : Message.t list ref
+val fb_queue : Loc.t Message.t list ref
 
 (** Eval a function and reify the exceptions. Note [f] _must_ be pure, as in
     case of anomaly [f] may be re-executed with debug options. Beware, not
     thread-safe! *)
-val eval : f:('i -> 'o) -> 'i -> 'o E.t
+val eval : f:('i -> 'o) -> 'i -> ('o, Loc.t) E.t

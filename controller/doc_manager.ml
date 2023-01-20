@@ -100,17 +100,13 @@ module Handle = struct
       let pt_request = None in
       let cp_requests = Int.Set.empty in
       ({ handle with cp_requests; pt_request }, wake_up)
-    | Stopped stop_loc ->
+    | Stopped range ->
       let handle, pt_id =
         match handle.pt_request with
         | None -> (handle, Int.Set.empty)
         | Some (id, (req_line, req_col)) ->
-          (* XXX: Same code than in doc.ml *)
-          let stop_line = stop_loc.line_nb_last - 1 in
-          let stop_col = stop_loc.ep - stop_loc.bol_pos_last in
-          if
-            stop_line > req_line || (stop_line = req_line && stop_col >= req_col)
-          then ({ handle with pt_request = None }, Int.Set.singleton id)
+          if Fleche.Doc.reached ~range (req_line, req_col) then
+            ({ handle with pt_request = None }, Int.Set.singleton id)
           else (handle, Int.Set.empty)
       in
       (handle, pt_id)

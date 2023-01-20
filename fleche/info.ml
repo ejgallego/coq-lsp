@@ -18,8 +18,8 @@
 module type Point = sig
   type t
 
-  val in_range : ?loc:Loc.t -> t -> bool
-  val gt_range : ?loc:Loc.t -> t -> bool
+  val in_range : ?range:Types.Range.t -> t -> bool
+  val gt_range : ?range:Types.Range.t -> t -> bool
 
   type offset_table = string
 
@@ -48,38 +48,36 @@ module LineCol : Point with type t = int * int = struct
   let to_string (l, c) = "(" ^ string_of_int l ^ "," ^ string_of_int c ^ ")"
   let debug_in_range = false
 
-  let in_range ?loc (line, col) =
+  let debug_in_range hdr line col line1 col1 line2 col2 =
+    if debug_in_range then
+      Io.Log.trace hdr
+        (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1 line2
+           col2)
+
+  let in_range ?range (line, col) =
     (* Coq starts at 1, lsp at 0 *)
-    match loc with
+    match range with
     | None -> false
-    | Some loc ->
-      let r = Types.to_range loc in
-      let line1 = r.start.line in
+    | Some r ->
+      let line1 = r.Types.Range.start.line in
       let col1 = r.start.character in
       let line2 = r.end_.line in
       let col2 = r.end_.character in
-      if debug_in_range then
-        Io.Log.trace "in_range"
-          (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1
-             line2 col2);
+      debug_in_range "in_range" line col line1 col1 line2 col2;
       (line1 < line && line < line2)
       ||
       if line1 = line && line2 = line then col1 <= col && col < col2
       else (line1 = line && col1 <= col) || (line2 = line && col < col2)
 
-  let gt_range ?loc (line, col) =
-    match loc with
+  let gt_range ?range (line, col) =
+    match range with
     | None -> false
-    | Some loc ->
-      let r = Types.to_range loc in
-      let line1 = r.start.line in
+    | Some r ->
+      let line1 = r.Types.Range.start.line in
       let col1 = r.start.character in
       let line2 = r.end_.line in
       let col2 = r.end_.character in
-      if debug_in_range then
-        Io.Log.trace "gt_range"
-          (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1
-             line2 col2);
+      debug_in_range "gt_range" line col line1 col1 line2 col2;
       line < line1 || (line = line1 && col < col1)
 end
 
@@ -87,15 +85,17 @@ module Offset : Point with type t = int = struct
   type t = int
   type offset_table = string
 
-  let in_range ?loc point =
-    match loc with
+  let in_range ?range point =
+    match range with
     | None -> false
-    | Some loc -> loc.Loc.bp <= point && point < loc.ep
+    | Some range ->
+      range.Types.Range.start.offset <= point
+      && point < range.Types.Range.end_.offset
 
-  let gt_range ?loc point =
-    match loc with
+  let gt_range ?range point =
+    match range with
     | None -> false
-    | Some loc -> point < loc.Loc.bp
+    | Some range -> point < range.Types.Range.start.offset
 
   let to_offset off _ = off
   let to_string off = string_of_int off
@@ -114,10 +114,10 @@ module type S = sig
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
 
   val node : (approx, Doc.Node.t) query
-  val loc : (approx, Loc.t) query
+  val range : (approx, Types.Range.t) query
   val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
-  val messages : (approx, Coq.Message.t list) query
+  val messages : (approx, Doc.Node.Message.t list) query
   val info : (approx, Doc.Node.Info.t) query
   val completion : (string, string list) query
 end
@@ -133,13 +133,13 @@ module Make (P : Point) : S with module P := P = struct
       match l with
       | [] -> prev
       | node :: xs -> (
-        let loc = node.Doc.Node.loc in
+        let range = node.Doc.Node.range in
         match approx with
-        | Exact -> if P.in_range ~loc point then Some node else find None xs
+        | Exact -> if P.in_range ~range point then Some node else find None xs
         | PrevIfEmpty ->
-          if P.gt_range ~loc point then prev else find (Some node) xs
+          if P.gt_range ~range point then prev else find (Some node) xs
         | Prev ->
-          if P.gt_range ~loc point || P.in_range ~loc point then prev
+          if P.gt_range ~range point || P.in_range ~range point then prev
           else find (Some node) xs)
     in
     find None doc.Doc.nodes
@@ -160,9 +160,9 @@ module Make (P : Point) : S with module P := P = struct
     let lemmas = Coq.State.lemmas ~st in
     Option.map (Coq.Goals.reify ~ppx) lemmas
 
-  let loc ~doc ~point approx =
+  let range ~doc ~point approx =
     let node = find ~doc ~point approx in
-    Option.map Doc.Node.loc node
+    Option.map Doc.Node.range node
 
   let ast ~doc ~point approx =
     let node = find ~doc ~point approx in

@@ -76,7 +76,7 @@ let grab_definitions f nodes =
 let marshal_in ic : t = Marshal.from_channel ic
 let marshal_out oc v = Marshal.to_channel oc v []
 
-let pr_loc ?(print_file = false) loc =
+let pp_loc ?(print_file = false) fmt loc =
   let open Loc in
   let file =
     if print_file then
@@ -85,7 +85,10 @@ let pr_loc ?(print_file = false) loc =
       | InFile { file; _ } -> "File \"" ^ file ^ "\""
     else "loc"
   in
-  Format.asprintf "%s: line: %d, col: %d -- line: %d, col: %d / {%d-%d}" file
+  Format.fprintf fmt "%s: line: %d, col: %d -- line: %d, col: %d / {%d-%d}" file
     (loc.line_nb - 1) (loc.bp - loc.bol_pos) (loc.line_nb_last - 1)
     (loc.ep - loc.bol_pos_last)
     loc.bp loc.ep
+
+let loc_to_string ?print_file loc =
+  Format.asprintf "%a" (pp_loc ?print_file) loc

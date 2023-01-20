@@ -19,7 +19,7 @@ module Info = struct
   type 'a t = { res : 'a }
 end
 
-type 'a interp_result = 'a Info.t Protect.E.t
+type 'a interp_result = ('a Info.t, Loc.t) Protect.E.t
 
 let coq_interp ~st cmd =
   let st = State.to_coq st in
