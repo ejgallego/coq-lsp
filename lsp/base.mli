@@ -53,5 +53,3 @@ val mk_diagnostics :
   -> version:int
   -> (Fleche.Types.Range.t * int * string * unit option) list
   -> Yojson.Safe.t
-
-val std_protocol : bool ref

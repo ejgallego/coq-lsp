@@ -99,9 +99,7 @@
             "items": {
               "type": "string"
             },
-            "default": [
-              "--std"
-            ],
+            "default": [],
             "description": "Arguments to the coq-lsp server"
           },
           "coq-lsp.eager_diagnostics": {
