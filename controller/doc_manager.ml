@@ -105,7 +105,7 @@ module Handle = struct
         match handle.pt_request with
         | None -> (handle, Int.Set.empty)
         | Some (id, (req_line, req_col)) ->
-          if Fleche.Doc.reached ~range (req_line, req_col) then
+          if Fleche.Doc.Target.reached ~range (req_line, req_col) then
             ({ handle with pt_request = None }, Int.Set.singleton id)
           else (handle, Int.Set.empty)
       in

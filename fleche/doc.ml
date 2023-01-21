@@ -557,17 +557,17 @@ module Target = struct
   type t =
     | End
     | Position of int * int
-end
 
-let reached ~(range : Types.Range.t) (line, col) =
-  let reached_line = range.end_.line in
-  let reached_col = range.end_.character in
-  line < reached_line || (line = reached_line && col <= reached_col)
+  let reached ~(range : Types.Range.t) (line, col) =
+    let reached_line = range.end_.line in
+    let reached_col = range.end_.character in
+    line < reached_line || (line = reached_line && col <= reached_col)
+end
 
 let beyond_target (range : Types.Range.t) target =
   match target with
   | Target.End -> false
-  | Position (cut_line, cut_col) -> reached ~range (cut_line, cut_col)
+  | Position (cut_line, cut_col) -> Target.reached ~range (cut_line, cut_col)
 
 let pr_target = function
   | Target.End -> "end"
