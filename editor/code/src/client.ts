@@ -58,10 +58,10 @@ export function panelFactory(context: ExtensionContext) {
     goalPanel = null;
   });
   const styleUri = panel.webview.asWebviewUri(
-    Uri.joinPath(context.extensionUri, "view", "out", "index.css")
+    Uri.joinPath(context.extensionUri, "out", "view", "index.css")
   );
   const scriptUri = panel.webview.asWebviewUri(
-    Uri.joinPath(context.extensionUri, "view", "out", "index.js")
+    Uri.joinPath(context.extensionUri, "out", "view", "index.js")
   );
   return new GoalPanel(client, panel, styleUri, scriptUri);
 }
