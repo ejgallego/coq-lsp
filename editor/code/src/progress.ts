@@ -1,5 +1,5 @@
 import { throttle } from "throttle-debounce";
-import { Disposable, Range, window, TextEditorDecorationType } from "vscode";
+import { Disposable, Range, window, OverviewRulerLane } from "vscode";
 import {
   NotificationType,
   VersionedTextDocumentIdentifier,
@@ -33,18 +33,22 @@ const coqFileProgress = new NotificationType<CoqFileProgressParams>(
   "$/coq/fileProgress"
 );
 
+// Create decoration for fileProgress
+const progressDecoration = window.createTextEditorDecorationType({
+  overviewRulerColor: "rgba(255,165,0,0.5)",
+  overviewRulerLane: OverviewRulerLane.Left,
+});
+
 export class FileProgressManager {
   private fileProgress: Disposable;
-  private decoration: TextEditorDecorationType;
 
-  constructor(client: LanguageClient, decoration: TextEditorDecorationType) {
+  constructor(client: LanguageClient) {
     this.fileProgress = client.onNotification(coqFileProgress, (params) => {
       let ranges = params.processing
         .map((fp) => client.protocol2CodeConverter.asRange(fp.range))
         .filter((r) => !r.isEmpty);
       this.updateDecos(params.textDocument.uri, ranges);
     });
-    this.decoration = decoration;
   }
   dispose() {
     this.fileProgress.dispose();
@@ -53,14 +57,14 @@ export class FileProgressManager {
   private updateDecos = throttle(200, (uri: string, ranges: Range[]) => {
     for (const editor of window.visibleTextEditors) {
       if (editor.document.uri.toString() == uri) {
-        editor.setDecorations(this.decoration, ranges);
+        editor.setDecorations(progressDecoration, ranges);
       }
     }
   });
   private cleanDecos() {
     for (const editor of window.visibleTextEditors) {
       if (editor.document.languageId === "coq") {
-        editor.setDecorations(this.decoration, []);
+        editor.setDecorations(progressDecoration, []);
       }
     }
   }

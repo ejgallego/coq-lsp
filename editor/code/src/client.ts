@@ -5,7 +5,6 @@ import {
   ExtensionContext,
   workspace,
   TextEditor,
-  OverviewRulerLane,
   TextEditorSelectionChangeEvent,
   TextEditorSelectionChangeKind,
 } from "vscode";
@@ -88,16 +87,10 @@ export function activate(context: ExtensionContext): void {
     );
     client.start();
 
-    fileProgress = new FileProgressManager(client, progressDecoration);
+    fileProgress = new FileProgressManager(client);
   };
 
-  // Main extension routine start:
-
-  // Create decoration for fileProgress
-  const progressDecoration = window.createTextEditorDecorationType({
-    overviewRulerColor: "rgba(255,165,0,0.5)",
-    overviewRulerLane: OverviewRulerLane.Left,
-  });
+  // Start of extension activation:
 
   // Check VSCoq is not installed
   checkForVSCoq();
