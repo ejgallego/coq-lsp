@@ -16,29 +16,9 @@ import {
   RevealOutputChannelOn,
 } from "vscode-languageclient/node";
 
+import { CoqLspClientConfig, CoqLspServerConfig } from "./config";
 import { InfoPanel } from "./goals";
 import { FileProgressManager } from "./progress";
-
-enum ShowGoalsOnCursorChange {
-  Never = 0,
-  OnMouse = 1,
-  OnMouseAndKeyboard = 2,
-  OnMouseKeyboardCommand = 3,
-}
-
-interface CoqLspServerConfig {
-  client_version: string;
-  eager_diagnostics: boolean;
-  ok_diagnostics: boolean;
-  goal_after_tactic: boolean;
-  show_coq_info_messages: boolean;
-  show_notices_as_diagnostics: boolean;
-  admit_on_bad_qed: boolean;
-}
-
-interface CoqLspClientConfig {
-  show_goals_on: ShowGoalsOnCursorChange;
-}
 
 let config: CoqLspClientConfig;
 let client: LanguageClient;
@@ -79,19 +59,14 @@ export function activate(context: ExtensionContext): void {
       fileProgress.dispose();
     }
 
-    // EJGA: didn't find a way to make CoqLspConfig a subclass of WorkspaceConfiguration
-    // despite that class being open. Would be nice to avoid this copy indeed.
     const wsConfig = workspace.getConfiguration("coq-lsp");
-    config = { show_goals_on: wsConfig.show_goals_on };
-    const initializationOptions: CoqLspServerConfig = {
-      client_version: context.extension.packageJSON.version,
-      eager_diagnostics: wsConfig.eager_diagnostics,
-      ok_diagnostics: wsConfig.ok_diagnostics,
-      goal_after_tactic: wsConfig.goal_after_tactic,
-      show_coq_info_messages: wsConfig.show_coq_info_messages,
-      show_notices_as_diagnostics: wsConfig.show_notices_as_diagnostics,
-      admit_on_bad_qed: wsConfig.admit_on_bad_qed,
-    };
+    config = CoqLspClientConfig.create(wsConfig);
+
+    let client_version = context.extension.packageJSON.version;
+    const initializationOptions = CoqLspServerConfig.create(
+      client_version,
+      wsConfig
+    );
 
     const clientOptions: LanguageClientOptions = {
       documentSelector: [{ scheme: "file", language: "coq" }],
