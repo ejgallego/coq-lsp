@@ -19,13 +19,15 @@ let watchConfig = (entry) => {
 
 let watch = process.argv.includes("--watch") ? watchConfig : (entry) => false;
 let minify = process.argv.includes("--minify");
-let sourcemap = !process.argv.includes("--sourcemap=no");
+let disable_sourcemap = process.argv.includes("--sourcemap=no");
+let sourcemap_client = disable_sourcemap ? null : { sourcemap: true };
+let sourcemap_view = disable_sourcemap ? null : { sourcemap: "inline" };
 
 esbuild
   .build({
     entryPoints: ["./src/client.ts"],
     bundle: true,
-    sourcemap: true && sourcemap,
+    ...sourcemap_client,
     format: "cjs",
     platform: "node",
     external: ["vscode"],
@@ -42,7 +44,7 @@ esbuild
   .build({
     entryPoints: ["./view/infoview.ts"],
     bundle: true,
-    sourcemap: "inline" && sourcemap,
+    ...sourcemap_view,
     platform: "browser",
     outfile: "out/view/index.js",
     minify,
