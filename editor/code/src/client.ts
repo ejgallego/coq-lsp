@@ -4,13 +4,10 @@ import {
   extensions,
   ExtensionContext,
   workspace,
-  ViewColumn,
-  Uri,
   TextEditor,
   OverviewRulerLane,
   TextEditorSelectionChangeEvent,
   TextEditorSelectionChangeKind,
-  WebviewOptions,
 } from "vscode";
 import {
   LanguageClient,
@@ -19,7 +16,7 @@ import {
   RevealOutputChannelOn,
 } from "vscode-languageclient/node";
 
-import { GoalPanel } from "./goals";
+import { InfoPanel } from "./goals";
 import { FileProgressManager } from "./progress";
 
 enum ShowGoalsOnCursorChange {
@@ -45,28 +42,10 @@ interface CoqLspClientConfig {
 
 let config: CoqLspClientConfig;
 let client: LanguageClient;
-let goalPanel: GoalPanel | null;
+// Lifetime of the info panel == extension lifetime.
+let infoPanel: InfoPanel;
+// Lifetime of the fileProgress setup == client lifetime
 let fileProgress: FileProgressManager;
-
-export function panelFactory(context: ExtensionContext) {
-  let webviewOpts: WebviewOptions = { enableScripts: true };
-  let panel = window.createWebviewPanel(
-    "goals",
-    "Goals",
-    ViewColumn.Two,
-    webviewOpts
-  );
-  panel.onDidDispose(() => {
-    goalPanel = null;
-  });
-  const styleUri = panel.webview.asWebviewUri(
-    Uri.joinPath(context.extensionUri, "out", "view", "index.css")
-  );
-  const scriptUri = panel.webview.asWebviewUri(
-    Uri.joinPath(context.extensionUri, "out", "view", "index.js")
-  );
-  return new GoalPanel(client, panel, styleUri, scriptUri);
-}
 
 export function activate(context: ExtensionContext): void {
   window.showInformationMessage("Coq LSP Extension: Going to activate!");
@@ -93,15 +72,11 @@ export function activate(context: ExtensionContext): void {
     }
   }
 
-  checkForVSCoq();
-
   const restart = () => {
     if (client) {
       client.stop();
-      if (goalPanel) goalPanel.dispose();
-      if (fileProgress) {
-        fileProgress.dispose();
-      }
+      infoPanel.dispose();
+      fileProgress.dispose();
     }
 
     // EJGA: didn't find a way to make CoqLspConfig a subclass of WorkspaceConfiguration
@@ -139,33 +114,31 @@ export function activate(context: ExtensionContext): void {
     client.start();
 
     fileProgress = new FileProgressManager(client, progressDecoration);
-
-    // XXX: Fix this mess with the lifetime of the panel
-    goalPanel = panelFactory(context);
   };
 
+  // Main extension routine start:
+
+  // Create decoration for fileProgress
   const progressDecoration = window.createTextEditorDecorationType({
     overviewRulerColor: "rgba(255,165,0,0.5)",
     overviewRulerLane: OverviewRulerLane.Left,
   });
 
-  const checkPanelAlive = () => {
-    if (!goalPanel) {
-      goalPanel = panelFactory(context);
-    }
-  };
+  // Check VSCoq is not installed
+  checkForVSCoq();
+
+  // InfoPanel setup.
+  infoPanel = new InfoPanel(context.extensionUri);
+  context.subscriptions.push(infoPanel);
 
   const goals = (editor: TextEditor) => {
-    checkPanelAlive();
     let uri = editor.document.uri;
     let version = editor.document.version;
     let position = editor.selection.active;
-    if (goalPanel) {
-      goalPanel.update(uri, version, position);
-    }
+    infoPanel.updateFromServer(client, uri, version, position);
   };
 
-  let disposable = window.onDidChangeTextEditorSelection(
+  let goalsHook = window.onDidChangeTextEditorSelection(
     (evt: TextEditorSelectionChangeEvent) => {
       if (evt.textEditor.document.languageId != "coq") return;
 
@@ -188,7 +161,7 @@ export function activate(context: ExtensionContext): void {
     }
   );
 
-  context.subscriptions.push(disposable);
+  context.subscriptions.push(goalsHook);
 
   coqCommand("restart", restart);
   coqEditorCommand("goals", goals);

@@ -1,7 +1,4 @@
-import {
-  TextDocumentIdentifier,
-  VersionedTextDocumentIdentifier,
-} from "vscode-languageclient";
+import { VersionedTextDocumentIdentifier } from "vscode-languageclient";
 import { Position } from "vscode";
 
 export interface Hyp {
@@ -15,7 +12,7 @@ export interface Goal {
 }
 
 export interface GoalRequest {
-  textDocument: TextDocumentIdentifier;
+  textDocument: VersionedTextDocumentIdentifier;
   position: Position;
 }
 
