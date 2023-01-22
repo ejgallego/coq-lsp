@@ -45,6 +45,7 @@ interface CoqLspClientConfig {
 let config: CoqLspClientConfig;
 let client: LanguageClient;
 let goalPanel: GoalPanel | null;
+let fileProgress: vscode.Disposable | null;
 
 export function panelFactory(context: ExtensionContext) {
   let webviewOpts: vscode.WebviewOptions = { enableScripts: true };
@@ -84,6 +85,10 @@ export function activate(context: ExtensionContext): void {
     if (client) {
       client.stop();
       if (goalPanel) goalPanel.dispose();
+      if (fileProgress) {
+        fileProgress.dispose();
+        cleanDecos();
+      }
     }
 
     // EJGA: didn't find a way to make CoqLspConfig a subclass of WorkspaceConfiguration
@@ -120,7 +125,7 @@ export function activate(context: ExtensionContext): void {
     );
     client.start();
 
-    client.onNotification(coqFileProgress, (params) => {
+    fileProgress = client.onNotification(coqFileProgress, (params) => {
       let ranges = params.processing
         .map((fp) => rangeProto2Code(fp.range))
         .filter((r) => !r.isEmpty);
@@ -146,6 +151,14 @@ export function activate(context: ExtensionContext): void {
       }
     }
   );
+
+  const cleanDecos = function () {
+    for (const editor of window.visibleTextEditors) {
+      if (editor.document.languageId === "coq") {
+        editor.setDecorations(progressDecoration, []);
+      }
+    }
+  };
 
   const rangeProto2Code = function (r: Range) {
     return new vscode.Range(
