@@ -6,3 +6,4 @@ esbuild.mjs
 node_modules/
 **/tsconfig*.json
 view/media/
+**/*.tsbuildinfo
