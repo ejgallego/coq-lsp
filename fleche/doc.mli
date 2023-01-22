@@ -101,11 +101,12 @@ module Target : sig
   type t =
     | End
     | Position of int * int
+
+  (** [reached ~range (line,col)] checks if [(line,col)] are before [range]'s
+      end. *)
+  val reached : range:Types.Range.t -> int * int -> bool
 end
 
 (** [check ofmt ~fb_queue ?cutpoint ~doc] if set, [cutpoint] will have Flèche
     stop after the point specified there has been reached. *)
 val check : ofmt:Format.formatter -> target:Target.t -> doc:t -> unit -> t
-
-(** Helper used to determine wakeup / postponement condictions wrt targets *)
-val reached : range:Types.Range.t -> int * int -> bool
