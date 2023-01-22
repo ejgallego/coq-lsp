@@ -75,8 +75,62 @@
     ],
     "configuration": [
       {
+        "title": "Diagnostics",
         "type": "object",
-        "title": "Coq LSP configuration",
+        "properties": {
+          "coq-lsp.eager_diagnostics": {
+            "type": "boolean",
+            "default": true,
+            "description": "Send diagnostics as document is processed; if false, diagnostics are only sent when Coq finishes processing the file"
+          },
+          "coq-lsp.ok_diagnostics": {
+            "type": "boolean",
+            "default": false,
+            "description": "Send a diagnostic for sentences that are Ok; this can choke vsCode easily due to too many diagnostics"
+          },
+          "coq-lsp.show_coq_info_messages": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show Coq's \"Info\" messages as diagnostics, such as 'foo has been defined.' and miscellaneous operational messages."
+          },
+          "coq-lsp.show_notices_as_diagnostics": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show Coq's \"Notice\" messages as diagnostics, such as `About` and `Search` output."
+          }
+        }
+      },
+      {
+        "title": "Goals and Info Panel",
+        "type": "object",
+        "properties": {
+          "coq-lsp.goal_after_tactic": {
+            "type": "boolean",
+            "default": false,
+            "description": "When showing goals and the cursor is in a tactic, if false, show goals before executing the tactic, if true, show goals after"
+          },
+          "coq-lsp.show_goals_on": {
+            "type": "number",
+            "default": 3,
+            "description": "When to show goals and information about the current cursor",
+            "enum": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "enumItemLabels": [
+              "Don't follow cursor",
+              "Show on click",
+              "Show on click and on cursor movement",
+              "Show on click, cursor, and command movement"
+            ]
+          }
+        }
+      },
+      {
+        "title": "Language Server Binary",
+        "type": "object",
         "properties": {
           "coq-lsp.trace.server": {
             "scope": "window",
@@ -101,49 +155,13 @@
             },
             "default": [],
             "description": "Arguments to the coq-lsp server"
-          },
-          "coq-lsp.eager_diagnostics": {
-            "type": "boolean",
-            "default": true,
-            "description": "Send diagnostics as document is processed; if false, diagnostics are only sent when Coq finishes processing the file"
-          },
-          "coq-lsp.ok_diagnostics": {
-            "type": "boolean",
-            "default": false,
-            "description": "Send a diagnostic for sentences that are Ok; this can choke vsCode easily due to too many diagnostics"
-          },
-          "coq-lsp.goal_after_tactic": {
-            "type": "boolean",
-            "default": false,
-            "description": "When showing goals and the cursor is in a tactic, if false, show goals before executing the tactic, if true, show goals after"
-          },
-          "coq-lsp.show_coq_info_messages": {
-            "type": "boolean",
-            "default": false,
-            "description": "Show Coq's \"Info\" messages as diagnostics, such as 'foo has been defined.' and miscellaneous operational messages."
-          },
-          "coq-lsp.show_notices_as_diagnostics": {
-            "type": "boolean",
-            "default": false,
-            "description": "Show Coq's \"Notice\" messages as diagnostics, such as `About` and `Search` output."
-          },
-          "coq-lsp.show_goals_on": {
-            "type": "number",
-            "default": 3,
-            "description": "When to show goals and information about the current cursor",
-            "enum": [
-              0,
-              1,
-              2,
-              3
-            ],
-            "enumItemLabels": [
-              "Don't follow cursor",
-              "Show on click",
-              "Show on click and on cursor movement",
-              "Show on click, cursor, and command movement"
-            ]
-          },
+          }
+        }
+      },
+      {
+        "title": "Proof Checking",
+        "type": "object",
+        "properties": {
           "coq-lsp.admit_on_bad_qed": {
             "type": "boolean",
             "default": true,
