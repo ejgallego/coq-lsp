@@ -82,7 +82,7 @@ submodules-deinit:
 # Build the vscode extension
 .PHONY: extension
 extension:
-	cd editor/code && npm i && npm run compile
+	cd editor/code && npm i && npm run vscode:prepublish
 
 # Run prettier
 .PHONY: ts-fmt
