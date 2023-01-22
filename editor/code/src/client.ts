@@ -80,6 +80,19 @@ export function activate(context: ExtensionContext): void {
     );
     context.subscriptions.push(disposable);
   }
+  function checkForVSCoq() {
+    let vscoq = vscode.extensions.getExtension("maximedenes.vscoq");
+    if (vscoq?.isActive) {
+      window.showErrorMessage(
+        "Coq LSP Extension: VSCoq extension has been detected, you need to deactivate it for coq-lsp to work properly.",
+        { modal: false, detail: "thanks for your understanding" },
+        { title: "Understood" }
+      );
+    }
+  }
+
+  checkForVSCoq();
+
   const restart = () => {
     if (client) {
       client.stop();
