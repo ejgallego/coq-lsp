@@ -1,4 +1,3 @@
-import { throttle } from "throttle-debounce";
 import {
   window,
   commands,
@@ -8,18 +7,19 @@ import {
   Uri,
   TextEditor,
   OverviewRulerLane,
-  WorkspaceConfiguration,
+  TextEditorSelectionChangeEvent,
+  TextEditorSelectionChangeKind,
+  WebviewOptions,
 } from "vscode";
-import * as vscode from "vscode";
-import { Range } from "vscode-languageclient";
 import {
   LanguageClient,
   ServerOptions,
   LanguageClientOptions,
   RevealOutputChannelOn,
 } from "vscode-languageclient/node";
+
 import { GoalPanel } from "./goals";
-import { coqFileProgress } from "./progress";
+import { FileProgressManager } from "./progress";
 
 enum ShowGoalsOnCursorChange {
   Never = 0,
@@ -45,9 +45,10 @@ interface CoqLspClientConfig {
 let config: CoqLspClientConfig;
 let client: LanguageClient;
 let goalPanel: GoalPanel | null;
+let fileProgress: FileProgressManager;
 
 export function panelFactory(context: ExtensionContext) {
-  let webviewOpts: vscode.WebviewOptions = { enableScripts: true };
+  let webviewOpts: WebviewOptions = { enableScripts: true };
   let panel = window.createWebviewPanel(
     "goals",
     "Goals",
@@ -97,6 +98,9 @@ export function activate(context: ExtensionContext): void {
     if (client) {
       client.stop();
       if (goalPanel) goalPanel.dispose();
+      if (fileProgress) {
+        fileProgress.dispose();
+      }
     }
 
     // EJGA: didn't find a way to make CoqLspConfig a subclass of WorkspaceConfiguration
@@ -133,12 +137,7 @@ export function activate(context: ExtensionContext): void {
     );
     client.start();
 
-    client.onNotification(coqFileProgress, (params) => {
-      let ranges = params.processing
-        .map((fp) => rangeProto2Code(fp.range))
-        .filter((r) => !r.isEmpty);
-      updateDecos(params.textDocument.uri, ranges);
-    });
+    fileProgress = new FileProgressManager(client, progressDecoration);
 
     // XXX: Fix this mess with the lifetime of the panel
     goalPanel = panelFactory(context);
@@ -149,25 +148,6 @@ export function activate(context: ExtensionContext): void {
     overviewRulerLane: OverviewRulerLane.Left,
   });
 
-  const updateDecos = throttle(
-    200,
-    function (uri: string, ranges: vscode.Range[]) {
-      for (const editor of window.visibleTextEditors) {
-        if (editor.document.uri.toString() == uri) {
-          editor.setDecorations(progressDecoration, ranges);
-        }
-      }
-    }
-  );
-
-  const rangeProto2Code = function (r: Range) {
-    return new vscode.Range(
-      r.start.line,
-      r.start.character,
-      r.end.line,
-      r.end.character
-    );
-  };
   const checkPanelAlive = () => {
     if (!goalPanel) {
       goalPanel = panelFactory(context);
@@ -185,13 +165,13 @@ export function activate(context: ExtensionContext): void {
   };
 
   let disposable = window.onDidChangeTextEditorSelection(
-    (evt: vscode.TextEditorSelectionChangeEvent) => {
+    (evt: TextEditorSelectionChangeEvent) => {
       if (evt.textEditor.document.languageId != "coq") return;
 
       const kind =
-        evt.kind == vscode.TextEditorSelectionChangeKind.Mouse
+        evt.kind == TextEditorSelectionChangeKind.Mouse
           ? 1
-          : evt.kind == vscode.TextEditorSelectionChangeKind.Keyboard
+          : evt.kind == TextEditorSelectionChangeKind.Keyboard
           ? 2
           : evt.kind
           ? evt.kind

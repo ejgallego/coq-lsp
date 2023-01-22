@@ -1,9 +1,10 @@
+import { throttle } from "throttle-debounce";
+import { Disposable, Range, window, TextEditorDecorationType } from "vscode";
 import {
   NotificationType,
-  NotificationType1,
   VersionedTextDocumentIdentifier,
-  Range,
 } from "vscode-languageclient";
+import { LanguageClient } from "vscode-languageclient/node";
 
 enum CoqFileProgressKind {
   Processing = 1,
@@ -17,7 +18,7 @@ interface CoqFileProgressProcessingInfo {
   kind?: CoqFileProgressKind;
 }
 
-export interface CoqFileProgressParams {
+interface CoqFileProgressParams {
   /** The text document to which this progress notification applies. */
   textDocument: VersionedTextDocumentIdentifier;
 
@@ -28,6 +29,39 @@ export interface CoqFileProgressParams {
   processing: CoqFileProgressProcessingInfo[];
 }
 
-export const coqFileProgress = new NotificationType<CoqFileProgressParams>(
+const coqFileProgress = new NotificationType<CoqFileProgressParams>(
   "$/coq/fileProgress"
 );
+
+export class FileProgressManager {
+  private fileProgress: Disposable;
+  private decoration: TextEditorDecorationType;
+
+  constructor(client: LanguageClient, decoration: TextEditorDecorationType) {
+    this.fileProgress = client.onNotification(coqFileProgress, (params) => {
+      let ranges = params.processing
+        .map((fp) => client.protocol2CodeConverter.asRange(fp.range))
+        .filter((r) => !r.isEmpty);
+      this.updateDecos(params.textDocument.uri, ranges);
+    });
+    this.decoration = decoration;
+  }
+  dispose() {
+    this.fileProgress.dispose();
+    this.cleanDecos();
+  }
+  private updateDecos = throttle(200, (uri: string, ranges: Range[]) => {
+    for (const editor of window.visibleTextEditors) {
+      if (editor.document.uri.toString() == uri) {
+        editor.setDecorations(this.decoration, ranges);
+      }
+    }
+  });
+  private cleanDecos() {
+    for (const editor of window.visibleTextEditors) {
+      if (editor.document.languageId === "coq") {
+        editor.setDecorations(this.decoration, []);
+      }
+    }
+  }
+}
