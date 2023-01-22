@@ -11,6 +11,7 @@
  - The no-op `--std` argument to the `coq-lsp` binary has been
    removed, beware of your setup in the extension settings
    (@ejgallego, #208)
+ - Settings for the VSCode extension are now categorized (@Alizter, #212)
 
 # coq-lsp 0.1.3: Event
 ----------------------
