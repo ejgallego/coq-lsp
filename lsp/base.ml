@@ -19,10 +19,6 @@
 (* This file contains some coq-specific commands, we should instead
    functorialize it so we can share with other OCaml-specific tools *)
 
-(* Whether to send extended lsp messages *)
-let std_protocol = ref true
-let _mk_extra l = if !std_protocol then [] else l
-
 (* Ad-hoc parsing for file:///foo... *)
 let _parse_uri str =
   let l = String.length str - 7 in

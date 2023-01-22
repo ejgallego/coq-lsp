@@ -8,6 +8,9 @@
  - The info view is now script enabled and does client-side
    rendering. It is also now bundled with esbuild as part of the build
    process (@artagnon, @ejgallego, #171)
+ - The no-op `--std` argument to the `coq-lsp` binary has been
+   removed, beware of your setup in the extension settings
+   (@ejgallego, #208)
 
 # coq-lsp 0.1.3: Event
 ----------------------

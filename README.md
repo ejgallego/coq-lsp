@@ -204,9 +204,10 @@ Studio Code.
 
 ### Emacs
 
-You can use this mode with [eglot](https://joaotavora.github.io/eglot/) with
-`$path_to_server --std`. Note that `--std` is needed otherwise eglot may choke
-due to extra messages.
+You can use this mode with [eglot](https://joaotavora.github.io/eglot/).
+
+Note that `eglot` used to choke due to extra notifications that `coq-lsp` may
+send, please open an issue if that's the case.
 
 ### Roadmap
 

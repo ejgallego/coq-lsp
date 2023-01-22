@@ -141,10 +141,10 @@ let do_initialize ~params =
 let rtable : (int, PendingRequest.t) Hashtbl.t = Hashtbl.create 673
 
 let answer_request ~ofmt ~id result =
-  match result with
-  | Result.Ok result -> LSP.mk_reply ~id ~result |> LIO.send_json ofmt
-  | Error (code, message) ->
-    LSP.mk_request_error ~id ~code ~message |> LIO.send_json ofmt
+  (match result with
+  | Result.Ok result -> LSP.mk_reply ~id ~result
+  | Error (code, message) -> LSP.mk_request_error ~id ~code ~message)
+  |> LIO.send_json ofmt
 
 let postpone_request ~ofmt ~id (pr : PendingRequest.t) =
   match pr with
@@ -359,7 +359,7 @@ let rec lsp_init_loop ic ofmt ~cmdline : Coq.Workspace.t =
     lsp_init_loop ic ofmt ~cmdline
 
 (** Dispatching *)
-let dispatch_notification ofmt ~state ~method_ ~params =
+let dispatch_notification ofmt ~state ~method_ ~params : unit =
   match method_ with
   (* Lifecycle *)
   | "exit" -> raise Lsp_exit
@@ -377,7 +377,7 @@ let dispatch_notification ofmt ~state ~method_ ~params =
   (* Generic handler *)
   | msg -> LIO.trace "no_handler" msg
 
-let dispatch_request ~method_ ~params =
+let dispatch_request ~method_ ~params : RAction.t =
   match method_ with
   (* Lifecyle *)
   | "initialize" ->
@@ -439,11 +439,14 @@ let request_queue = Queue.create ()
 let dispatch_or_resume_check ofmt ~state =
   match Queue.peek_opt request_queue with
   | None ->
+    (* This is where we make progress on document checking; kind of IDLE
+       workqueue. *)
     Control.interrupt := false;
     let ready = Check.check_or_yield ~ofmt in
     serve_postponed_requests ~ofmt ready
   | Some com ->
-    (* TODO: optimize the queue? *)
+    (* TODO: optimize the queue? EJGA: I've found that VS Code as a client keeps
+       the queue tidy by itself, so this works fine as now *)
     ignore (Queue.pop request_queue);
     LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
     (* We let Coq work normally now *)
@@ -506,14 +509,12 @@ let coq_init ~fb_queue ~bt =
   let load_plugin = Coq.Loader.plugin_handler None in
   Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin })
 
-let lsp_main bt std coqlib vo_load_path ml_include_path =
-  LSP.std_protocol := std;
-
+let lsp_main bt coqlib vo_load_path ml_include_path =
   (* We output to stdout *)
   let ic = stdin in
   let oc = F.std_formatter in
 
-  (* Set log channel *)
+  (* Set log channels *)
   LIO.set_log_channel oc;
   Fleche.Io.CallBack.set lsp_cb;
 
@@ -567,10 +568,6 @@ let lsp_main bt std coqlib vo_load_path ml_include_path =
 
 (* Arguments handling *)
 open Cmdliner
-
-let std =
-  let doc = "Restrict to standard LSP protocol" in
-  Arg.(value & flag & info [ "std" ] ~doc)
 
 let bt =
   let doc = "Enable backtraces" in
@@ -636,7 +633,7 @@ let lsp_cmd : unit Cmd.t =
   Cmd.(
     v
       (Cmd.info "coq-lsp" ~version:Version.server ~doc ~man)
-      Term.(const lsp_main $ bt $ std $ coqlib $ vo_load_path $ ml_include_path))
+      Term.(const lsp_main $ bt $ coqlib $ vo_load_path $ ml_include_path))
 
 let main () =
   let ecode = Cmd.eval lsp_cmd in
