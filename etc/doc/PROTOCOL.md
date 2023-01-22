@@ -60,7 +60,7 @@ that none of them are stable yet:
 In order to display proof goals, `coq-lsp` supports the `proof/goals` request, parameters are:
 ```typescript
 interface GoalRequest {
-    textDocument: TextDocumentIdentifier;
+    textDocument: VersionedTextDocumentIdentifier;
     position: Position;
 }
 ```
