@@ -1,38 +1,87 @@
+module Debug = struct
+  type t =
+    { cache : bool
+    ; send : bool
+    ; read : bool
+    ; lsp_init : bool
+    ; parsing : bool
+    ; scan : bool
+    ; backtraces : bool
+    ; unicode : bool
+    ; sched_wakeup : bool
+    ; request_delay : bool
+    ; mem_stats : bool
+    ; gc_quick_stats : bool
+    }
+
+  let all =
+    { cache = true
+    ; send = true
+    ; read = true
+    ; lsp_init = true
+    ; parsing = true
+    ; scan = true
+    ; backtraces = true
+    ; unicode = true
+    ; sched_wakeup = true
+    ; request_delay = true
+    ; mem_stats = true
+    ; gc_quick_stats = true
+    }
+
+  let none =
+    { cache = false
+    ; send = false
+    ; read = false
+    ; lsp_init = false
+    ; parsing = false
+    ; scan = false
+    ; backtraces = false
+    ; unicode = false
+    ; sched_wakeup = false
+    ; request_delay = false
+    ; mem_stats = false
+    ; gc_quick_stats = false
+    }
+
+  let lsp =
+    { cache = false
+    ; send = true
+    ; read = true
+    ; lsp_init = true
+    ; parsing = false
+    ; scan = false
+    ; backtraces = false
+    ; unicode = false
+    ; sched_wakeup = false
+    ; request_delay = false
+    ; mem_stats = false
+    ; gc_quick_stats = true
+    }
+end
+
 type t =
-  { mem_stats : bool [@default false]
-        (** [mem_stats] Call [Obj.reachable_words] for every sentence. This is
-            very slow and not very useful, so disabled by default *)
-  ; gc_quick_stats : bool [@default true]
-        (** [gc_quick_stats] Show the diff of [Gc.quick_stats] data for each
-            sentence *)
-  ; client_version : string [@default "any"]
-  ; eager_diagnostics : bool [@default true]
-        (** [eager_diagnostics] Send (full) diagnostics after processing each *)
-  ; ok_diagnostics : bool [@default false]  (** Show diagnostic for OK lines *)
-  ; goal_after_tactic : bool [@default false]
-        (** When showing goals and the cursor is in a tactic, if false, show
-            goals before executing the tactic, if true, show goals after *)
-  ; show_coq_info_messages : bool [@default false]
-        (** Show `msg_info` messages in diagnostics *)
-  ; show_notices_as_diagnostics : bool [@default false]
-        (** Show `msg_notice` messages in diagnostics *)
-  ; admit_on_bad_qed : bool [@default true]
-        (** [admit_on_bad_qed] There are two possible error recovery strategies
-            when a [Qed] fails: one is not to add the constant to the state, the
-            other one is admit it. We find the second behavior more useful, but
-            YMMV. *)
+  { client_version : string
+  ; eager_diagnostics : bool
+  ; ok_diagnostics : bool
+  ; goal_after_tactic : bool
+  ; show_coq_info_messages : bool
+  ; show_notices_as_diagnostics : bool
+  ; admit_on_bad_qed : bool
+  ; debug : Debug.t
   }
 
 let default =
-  { mem_stats = false
-  ; gc_quick_stats = true
-  ; client_version = "any"
+  { client_version = "any"
   ; eager_diagnostics = true
   ; ok_diagnostics = false
   ; goal_after_tactic = false
   ; show_coq_info_messages = false
   ; show_notices_as_diagnostics = false
   ; admit_on_bad_qed = true
+  ; debug = Debug.none
   }
 
 let v = ref default
+let debug_all () = v := { !v with debug = Debug.all }
+let debug_lsp () = v := { !v with debug = Debug.lsp }

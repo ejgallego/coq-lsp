@@ -55,10 +55,10 @@ let find_char line byte =
   if String.length line <= byte then length line else f 0 0
 
 let char_of_byte ~line ~byte =
-  if Debug.unicode then
+  if !Config.v.debug.unicode then
     Io.Log.trace "get_last_text"
       (Format.asprintf "str: '%s' | byte: %d" line byte);
   let res = find_char line byte in
-  if Debug.unicode then
+  if !Config.v.debug.unicode then
     Io.Log.trace "get_last_text" (Format.asprintf "char: %d" res);
   res

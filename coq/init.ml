@@ -24,7 +24,6 @@ type coq_opts =
   ; load_module : string -> unit  (** callback to load cma/cmo files *)
   ; load_plugin : Mltop.PluginSpec.t -> unit
         (** callback to load findlib packages *)
-  ; debug : bool  (** Enable Coq Debug mode *)
   }
 
 let coq_init opts =
@@ -32,8 +31,6 @@ let coq_init opts =
   Lib.init ();
   Global.set_impredicative_set false;
   Global.set_native_compiler false;
-
-  if opts.debug then CDebug.set_flags "backtrace";
 
   (**************************************************************************)
   (* Feedback setup                                                         *)

@@ -49,7 +49,7 @@ module Util = struct
       }
 
   let print_stats () =
-    (if !Config.v.mem_stats then
+    (if !Config.v.debug.mem_stats then
      let size = Memo.mem_stats () in
      Io.Log.trace "stats" (string_of_int size));
 
@@ -268,7 +268,7 @@ let recover_up_to_offset ~init_range doc offset =
     match nodes with
     | [] -> (List.rev acc_nodes, acc_range)
     | n :: ns ->
-      if Debug.scan then
+      if !Config.v.debug.scan then
         Io.Log.trace "scan"
           (Format.asprintf "consider node at %a" Types.Range.pp n.Node.range);
       if n.range.end_.offset >= offset then (List.rev acc_nodes, acc_range)
@@ -430,7 +430,7 @@ let parse_action ~lines ~st last_tok doc_handle =
       let last_tok = Coq_utils.to_range ~lines last_tok in
       (EOF (Yes last_tok), [], feedback, time)
     | Ok (Some ast) ->
-      let () = if Debug.parsing then DDebug.parsed_sentence ~ast in
+      let () = if !Config.v.debug.parsing then DDebug.parsed_sentence ~ast in
       (Process ast, [], feedback, time)
     | Error (Anomaly (_, msg)) | Error (User (None, msg)) ->
       (* We don't have a better altenative :(, usually missing error loc here
@@ -584,7 +584,7 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
     (* Reporting of progress and diagnostics (if dirty) *)
     let doc = send_eager_diagnostics ~ofmt ~uri ~version ~doc in
     report_progress ~ofmt ~doc last_tok;
-    if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
+    if !Config.v.debug.parsing then Io.Log.trace "coq" "parsing sentence";
     if beyond_target last_tok target then
       let () = log_beyond_target last_tok target in
       (* We set to Completed.Yes when we have reached the EOI *)
@@ -649,7 +649,7 @@ let loc_after ~lines ~uri (r : Types.Range.t) =
   let line_nb_last = r.end_.line + 1 in
   let end_index =
     let line = Array.get lines r.end_.line in
-    if Debug.unicode then
+    if !Config.v.debug.unicode then
       Io.Log.trace "loc_after"
         (Format.asprintf "str: '%s' | char: %d" line r.end_.character);
     Utf8.byte_of_char ~line ~char:r.end_.character

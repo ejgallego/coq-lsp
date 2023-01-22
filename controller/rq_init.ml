@@ -21,6 +21,10 @@ let odict_field name dict =
 
 (* Request Handling: The client expects a reply *)
 module CoqLspOption = struct
+  module Debug = struct
+    type t = [%import: Fleche.Config.Debug.t] [@@deriving yojson]
+  end
+
   type t = [%import: Fleche.Config.t] [@@deriving yojson]
 end
 
@@ -52,7 +56,7 @@ let do_initialize ~params =
   do_client_options coq_lsp_options;
   check_client_version !Fleche.Config.v.client_version;
   let client_capabilities = odict_field "capabilities" params in
-  if Fleche.Debug.lsp_init then (
+  if !Fleche.Config.v.debug.lsp_init then (
     LIO.trace "init" "client capabilities:";
     LIO.trace_object "init" (`Assoc client_capabilities));
   let capabilities =

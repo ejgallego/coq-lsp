@@ -17,6 +17,9 @@
    (@ejgallego, #237)
  - In `_CoqProject`, `-impredicative-set` is now parsed correctly
    (@artagnon, #241)
+ - Debug flags are now configurable in the VSCode extension
+   (@Alizter, #217)
+ - The -bt flag has been removed. (Alizter, #217)
 
 # coq-lsp 0.1.3: Event
 ----------------------

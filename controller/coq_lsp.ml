@@ -90,7 +90,7 @@ module Rq = struct
   let _rtable : (int, PendingRequest.t) Hashtbl.t = Hashtbl.create 673
 
   let postpone ~id (pr : PendingRequest.t) =
-    if Fleche.Debug.request_delay then
+    if !Fleche.Config.v.debug.request_delay then
       LIO.trace "request" ("postponing rq : " ^ string_of_int id);
     PendingRequest.postpone ~id pr;
     Hashtbl.add _rtable id pr
@@ -114,7 +114,7 @@ module Rq = struct
     consume_ ~ofmt ~f id
 
   let debug_wakeup id pr =
-    if Fleche.Debug.request_delay then
+    if !Fleche.Config.v.debug.request_delay then
       LIO.trace "[wake up]"
         (Format.asprintf "rq: %d | %a" id PendingRequest.data pr)
 
@@ -255,7 +255,7 @@ let do_cancel ~ofmt ~params =
 (** Misc helpers *)
 let rec read_request ic =
   let com = LIO.read_request ic in
-  if Fleche.Debug.read then LIO.trace_object "read" com;
+  if !Fleche.Config.v.debug.read then LIO.trace_object "read" com;
   match LSP.Message.from_yojson com with
   | Ok msg -> msg
   | Error msg ->
@@ -401,13 +401,13 @@ let dispatch_or_resume_check ~ofmt ~state =
     LIO.trace "print_bt  [OCaml]" bt
 
 let rec process_queue ofmt ~state =
-  if Fleche.Debug.sched_wakeup then
+  if !Fleche.Config.v.debug.sched_wakeup then
     LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   dispatch_or_resume_check ~ofmt ~state;
   process_queue ofmt ~state
 
 let process_input (com : LSP.Message.t) =
-  if Fleche.Debug.sched_wakeup then
+  if !Fleche.Config.v.debug.sched_wakeup then
     LIO.trace "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   (* TODO: this is the place to cancel pending requests that are invalid, and in
      general, to perform queue optimizations *)
@@ -449,14 +449,13 @@ let mk_fb_handler q Feedback.{ contents; _ } =
   | Message (Debug, _loc, _msg) -> ()
   | _ -> ()
 
-let coq_init ~fb_queue ~bt =
+let coq_init ~fb_queue =
   let fb_handler = mk_fb_handler fb_queue in
-  let debug = bt || Fleche.Debug.backtraces in
   let load_module = Dynlink.loadfile in
   let load_plugin = Coq.Loader.plugin_handler None in
-  Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin })
+  Coq.Init.(coq_init { fb_handler; load_module; load_plugin })
 
-let lsp_main bt coqlib vo_load_path ml_include_path =
+let lsp_main coqlib vo_load_path ml_include_path =
   (* We output to stdout *)
   let ic = stdin in
   let oc = F.std_formatter in
@@ -470,13 +469,14 @@ let lsp_main bt coqlib vo_load_path ml_include_path =
 
   (* Core Coq initialization *)
   let fb_queue = Coq.Protect.fb_queue in
-  let root_state = coq_init ~fb_queue ~bt in
+  let root_state = coq_init ~fb_queue in
   let cmdline =
     { Coq.Workspace.CmdLine.coqlib; vo_load_path; ml_include_path }
   in
 
   (* Read JSON-RPC messages and push them to the queue *)
   let rec read_loop () =
+    Exninfo.record_backtrace !Fleche.Config.v.debug.backtraces;
     let msg = read_request ic in
     process_input msg;
     read_loop ()
@@ -515,10 +515,6 @@ let lsp_main bt coqlib vo_load_path ml_include_path =
 
 (* Arguments handling *)
 open Cmdliner
-
-let bt =
-  let doc = "Enable backtraces" in
-  Cmdliner.Arg.(value & flag & info [ "bt" ] ~doc)
 
 let coq_lp_conv ~implicit (unix_path, lp) =
   { Loadpath.coq_path = Libnames.dirpath_of_string lp
@@ -580,7 +576,7 @@ let lsp_cmd : unit Cmd.t =
   Cmd.(
     v
       (Cmd.info "coq-lsp" ~version:Version.server ~doc ~man)
-      Term.(const lsp_main $ bt $ coqlib $ vo_load_path $ ml_include_path))
+      Term.(const lsp_main $ coqlib $ vo_load_path $ ml_include_path))
 
 let main () =
   let ecode = Cmd.eval lsp_cmd in

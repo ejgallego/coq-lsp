@@ -24,7 +24,6 @@ type coq_opts =
   ; load_module : string -> unit  (** callback to load cma/cmo files *)
   ; load_plugin : Mltop.PluginSpec.t -> unit
         (** callback to load findlib packages *)
-  ; debug : bool  (** Enable Coq Debug mode *)
   }
 
 val coq_init : coq_opts -> State.t
