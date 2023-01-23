@@ -29,7 +29,7 @@ module Handle = struct
              later on we may want to store a more interesting type, for example
              "wake up when a location is reached", or always to continue the
              streaming *)
-    ; pt_request : (int * (int * int)) option (* id, point *)
+    ; pt_request : (int * (int * int)) list (* id, point *)
     }
 
   let doc_table : (string, t) Hashtbl.t = Hashtbl.create 39
@@ -40,7 +40,7 @@ module Handle = struct
     | Some _ ->
       LIO.trace "do_open" ("file " ^ uri ^ " not properly closed by client"));
     Hashtbl.add doc_table uri
-      { doc; cp_requests = Int.Set.empty; pt_request = None }
+      { doc; cp_requests = Int.Set.empty; pt_request = [] }
 
   let close ~uri = Hashtbl.remove doc_table uri
 
@@ -57,17 +57,18 @@ module Handle = struct
   let _update_doc ~handle ~(doc : Fleche.Doc.t) =
     Hashtbl.replace doc_table doc.uri { handle with doc }
 
+  let pt_ids l = List.map (fun (id, _) -> id) l |> Int.Set.of_list
+
   (* Clear requests *)
   let update_doc_version ~(doc : Fleche.Doc.t) =
     let invalid_reqs =
       match Hashtbl.find_opt doc_table doc.uri with
       | None -> Int.Set.empty
-      | Some { cp_requests; pt_request = Some pt_id; _ } ->
-        Int.Set.add (fst pt_id) cp_requests
-      | Some { cp_requests; pt_request = None; _ } -> cp_requests
+      | Some { cp_requests; pt_request; _ } ->
+        Int.Set.union cp_requests (pt_ids pt_request)
     in
     Hashtbl.replace doc_table doc.uri
-      { doc; cp_requests = Int.Set.empty; pt_request = None };
+      { doc; cp_requests = Int.Set.empty; pt_request = [] };
     invalid_reqs
 
   let attach_cp_request ~uri ~id =
@@ -77,13 +78,21 @@ module Handle = struct
       Hashtbl.replace doc_table uri { doc; cp_requests; pt_request }
     | None -> ()
 
+  (* This needs to be insertion sort! *)
+  let pt_insert x xs =
+    let above candidate elem =
+      let lc, cc = candidate in
+      let lx, cx = elem in
+      lc > lx || (lc = lx && cc > cx)
+    in
+    CList.insert above x xs
+
   let attach_pt_request ~uri ~id ~point =
     match Hashtbl.find_opt doc_table uri with
-    | Some { doc; cp_requests; pt_request = old_request } ->
-      let pt_request = Some (id, point) in
-      Hashtbl.replace doc_table uri { doc; cp_requests; pt_request };
-      Option.map (fun (id, _) -> id) old_request
-    | None -> None
+    | Some { doc; cp_requests; pt_request } ->
+      let pt_request = pt_insert (id, point) pt_request in
+      Hashtbl.replace doc_table uri { doc; cp_requests; pt_request }
+    | None -> ()
 
   (* For now only on completion, I think we want check to return the list of
      requests that can be served / woken up *)
@@ -91,25 +100,19 @@ module Handle = struct
     let handle = { handle with doc } in
     match doc.completed with
     | Yes _ ->
-      let pt_id =
-        match handle.pt_request with
-        | None -> Int.Set.empty
-        | Some (id, _) -> Int.Set.singleton id
-      in
-      let wake_up = Int.Set.union pt_id handle.cp_requests in
-      let pt_request = None in
+      let pt_ids = pt_ids handle.pt_request in
+      let wake_up = Int.Set.union pt_ids handle.cp_requests in
+      let pt_request = [] in
       let cp_requests = Int.Set.empty in
       ({ handle with cp_requests; pt_request }, wake_up)
     | Stopped range ->
-      let handle, pt_id =
-        match handle.pt_request with
-        | None -> (handle, Int.Set.empty)
-        | Some (id, (req_line, req_col)) ->
-          if Fleche.Doc.Target.reached ~range (req_line, req_col) then
-            ({ handle with pt_request = None }, Int.Set.singleton id)
-          else (handle, Int.Set.empty)
+      let fullfilled, delayed =
+        List.partition
+          (fun (_id, point) -> Fleche.Doc.Target.reached ~range point)
+          handle.pt_request
       in
-      (handle, pt_id)
+      let handle = { handle with pt_request = delayed } in
+      (handle, pt_ids fullfilled)
     | Failed _ -> (handle, Int.Set.empty)
 
   (* trigger pending incremental requests *)
@@ -138,7 +141,8 @@ module Check = struct
     | Some handle ->
       let target_of_pt_handle (_, (l, c)) = Fleche.Doc.Target.Position (l, c) in
       let target =
-        Option.cata target_of_pt_handle Fleche.Doc.Target.End handle.pt_request
+        Option.cata target_of_pt_handle Fleche.Doc.Target.End
+          (List.nth_opt handle.pt_request 0)
       in
       let doc = Fleche.Doc.check ~ofmt ~target ~doc:handle.doc () in
       let requests = Handle.update_doc_info ~handle ~doc in
@@ -218,4 +222,4 @@ let change ~uri ~version ~contents =
 let close = Handle.close
 let find_doc = Handle.find_doc
 let serve_on_completion ~uri ~id = Handle.attach_cp_request ~uri ~id
-let serve_if_point ~uri ~id ~point = Handle.attach_pt_request ~uri ~id ~point
+let serve_on_point ~uri ~id ~point = Handle.attach_pt_request ~uri ~id ~point

@@ -73,6 +73,11 @@ module PendingRequest = struct
     | DocRequest { uri = _; handler = _ } -> Format.fprintf fmt "{k:doc}"
     | PosRequest { uri = _; point; handler = _ } ->
       Format.fprintf fmt "{k:pos | l: %d, c: %d}" (fst point) (snd point)
+
+  let postpone ~id pr =
+    match pr with
+    | DocRequest { uri; _ } -> Doc_manager.serve_on_completion ~uri ~id
+    | PosRequest { uri; point; _ } -> Doc_manager.serve_on_point ~uri ~id ~point
 end
 
 module RAction = struct
@@ -146,31 +151,16 @@ let answer_request ~ofmt ~id result =
   | Error (code, message) -> LSP.mk_request_error ~id ~code ~message)
   |> LIO.send_json ofmt
 
-let postpone_request ~ofmt ~id (pr : PendingRequest.t) =
-  match pr with
-  | DocRequest { uri; _ } ->
-    if Fleche.Debug.request_delay then
-      LIO.trace "request" ("postponing rq : " ^ string_of_int id);
-    Doc_manager.serve_on_completion ~uri ~id;
-    Hashtbl.add rtable id pr
-  | PosRequest { uri; point; _ } ->
-    if Fleche.Debug.request_delay then
-      LIO.trace "request" ("postponing rq : " ^ string_of_int id);
-    (* This will go away once we have a proper location request queue in
-       Doc_manager *)
-    (match Doc_manager.serve_if_point ~uri ~id ~point with
-    | None -> ()
-    | Some id_to_cancel ->
-      (* -32802 = RequestFailed | -32803 = ServerCancelled ; *)
-      let code = -32802 in
-      let message = "Request got old in server" in
-      answer_request ~ofmt ~id:id_to_cancel (Error (code, message)));
-    Hashtbl.add rtable id pr
+let postpone_request ~id (pr : PendingRequest.t) =
+  if Fleche.Debug.request_delay then
+    LIO.trace "request" ("postponing rq : " ^ string_of_int id);
+  PendingRequest.postpone ~id pr;
+  Hashtbl.add rtable id pr
 
 let action_request ~ofmt ~id action =
   match action with
   | RAction.ServeNow r -> answer_request ~ofmt ~id r
-  | RAction.Postpone p -> postpone_request ~ofmt ~id p
+  | RAction.Postpone p -> postpone_request ~id p
 
 let cancel_rq ~ofmt ~code ~message id =
   match Hashtbl.find_opt rtable id with
@@ -263,7 +253,7 @@ let do_hover = do_position_request ~postpone:false ~handler:Requests.hover
 let do_goals = do_position_request ~postpone:true ~handler:Requests.goals
 
 let do_completion =
-  do_position_request ~postpone:false ~handler:Requests.completion
+  do_position_request ~postpone:true ~handler:Requests.completion
 
 (* Requires the full document to be processed *)
 let do_document_request ~params ~handler =

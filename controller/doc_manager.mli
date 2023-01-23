@@ -48,4 +48,4 @@ val serve_on_completion : uri:string -> id:int -> unit
 (** Add a request to be served when the document point data is available, for
     now, we allow a single request like that. Maybe returns the id of the
     previous request which should now be cancelled. *)
-val serve_if_point : uri:string -> id:int -> point:int * int -> int option
+val serve_on_point : uri:string -> id:int -> point:int * int -> unit
