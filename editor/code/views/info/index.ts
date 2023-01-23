@@ -1,6 +1,6 @@
 // This is the script that is loaded by Coq's webview
 import { buildInfoContent } from "./goalRender";
-import { GoalAnswer, GoalRequest } from "../lib/types";
+import { GoalAnswer, GoalRequest } from "../../lib/types";
 import { WebviewApi } from "vscode-webview";
 
 import "./media/styles.css";

@@ -1,4 +1,4 @@
-import { Hyp, Goal, GoalAnswer, GoalConfig } from "../lib/types";
+import { Hyp, Goal, GoalAnswer, GoalConfig } from "../../lib/types";
 
 function htmlOfCoqInline(t: string) {
   return `<code>${t}</code>`;

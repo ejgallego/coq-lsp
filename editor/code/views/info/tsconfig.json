@@ -1,5 +1,5 @@
 {
-  "extends": "../tsconfig-base.json",
+  "extends": "../../tsconfig-base.json",
   "compilerOptions": {
     "module": "ESNext",
     "target": "ESNext",
@@ -8,5 +8,5 @@
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["**/*.ts", "../lib/**/*"]
+  "include": ["**/*.ts", "../../lib/**/*"]
 }

@@ -5,6 +5,7 @@
     "rootDir": ".",
     "outDir": "out",
     "composite": true,
-    "noEmit": true
+    "noEmit": true,
+    "skipLibCheck": true
   }
 }

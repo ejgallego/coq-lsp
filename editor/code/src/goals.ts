@@ -38,11 +38,11 @@ export class InfoPanel {
     );
 
     const styleUri = this.panel.webview.asWebviewUri(
-      Uri.joinPath(this.extensionUri, "out", "view", "index.css")
+      Uri.joinPath(this.extensionUri, "out", "views", "info", "index.css")
     );
 
     const scriptUri = this.panel.webview.asWebviewUri(
-      Uri.joinPath(this.extensionUri, "out", "view", "index.js")
+      Uri.joinPath(this.extensionUri, "out", "views", "info", "index.js")
     );
 
     this.panel.webview.html = ` <!DOCTYPE html>
