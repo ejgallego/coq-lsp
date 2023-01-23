@@ -173,16 +173,21 @@
   },
   "devDependencies": {
     "@types/node": "^16.11.7",
+    "@types/react": "^18.0.27",
+    "@types/react-dom": "^18.0.10",
     "@types/throttle-debounce": "^5.0.0",
-    "@types/vscode-webview": "^1.57.1",
     "@types/vscode": "^1.73.0",
+    "@types/vscode-webview": "^1.57.1",
     "esbuild": "^0.16.13",
     "prettier": "^2.8.1",
     "typescript": "^4.9.4"
   },
   "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "throttle-debounce": "^5.0.0",
-    "vscode-languageclient": "^8.0.2"
+    "vscode-languageclient": "^8.0.2",
+    "vscode-languageserver-types": "^3.17.2"
   },
   "main": "./out/src/client.js",
   "scripts": {

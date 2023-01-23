@@ -60,6 +60,6 @@ function viewBuild(file) {
     .catch(() => process.exit(1));
 }
 
-var infoView = viewBuild("./views/info/index.ts");
+var infoView = viewBuild("./views/info/index.tsx");
 
 await Promise.all[(client, infoView)];

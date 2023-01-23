@@ -1,5 +1,7 @@
-import { VersionedTextDocumentIdentifier } from "vscode-languageclient";
-import { Position } from "vscode";
+import {
+  VersionedTextDocumentIdentifier,
+  Position,
+} from "vscode-languageserver-types";
 
 export interface Hyp<Pp> {
   names: Pp;
