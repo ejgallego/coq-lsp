@@ -101,10 +101,10 @@ which can be then rendered by the client in way that is desired.
 
 #### Changelog
 
-- v4: send full goal configuration with shelf, given_up
-- v3: include messages and optional error in the request response
-- v2: include position and document in the request response
-- v1: initial version, imported from lambdapi-lsp
+- v0.1.3: send full goal configuration with shelf, given_up, versioned identifier for document
+- v0.1.2: include messages and optional error in the request response
+- v0.1.1: include position and document in the request response
+- v0.1.0: initial version, imported from lambdapi-lsp
 
 ### File checking progress
 
@@ -141,4 +141,4 @@ interface CoqFileProgressParams {
 
 #### Changelog
 
-- v1: exact copy from Lean protocol (spec under Apache License)
+- v0.1.1: exact copy from Lean protocol (spec under Apache License)
