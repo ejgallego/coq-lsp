@@ -23,7 +23,8 @@ let disable_sourcemap = process.argv.includes("--sourcemap=no");
 let sourcemap_client = disable_sourcemap ? null : { sourcemap: true };
 let sourcemap_view = disable_sourcemap ? null : { sourcemap: "inline" };
 
-esbuild
+// Build of the VS Code extension, for electron (hence cjs + node)
+var client = esbuild
   .build({
     entryPoints: ["./src/client.ts"],
     bundle: true,
@@ -40,17 +41,25 @@ esbuild
   })
   .catch(() => process.exit(1));
 
-esbuild
-  .build({
-    entryPoints: ["./view/infoview.ts"],
-    bundle: true,
-    ...sourcemap_view,
-    platform: "browser",
-    outfile: "out/view/index.js",
-    minify,
-    watch: watch("./view/infoview.ts"),
-  })
-  .then(() => {
-    console.log("[watch] build finished for ./view/infoview.ts");
-  })
-  .catch(() => process.exit(1));
+// Build of the VS Code view, for modern Chrome (webview)
+function viewBuild(file) {
+  return esbuild
+    .build({
+      entryPoints: [file],
+      bundle: true,
+      ...sourcemap_view,
+      platform: "browser",
+      outdir: "out",
+      outbase: ".",
+      minify,
+      watch: watch(file),
+    })
+    .then(() => {
+      console.log(`[watch] build finished for ${file}`);
+    })
+    .catch(() => process.exit(1));
+}
+
+var infoView = viewBuild("./views/info/index.ts");
+
+await Promise.all[(client, infoView)];
