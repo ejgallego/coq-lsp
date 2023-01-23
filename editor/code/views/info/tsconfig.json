@@ -1,12 +1,11 @@
 {
   "extends": "../../tsconfig-base.json",
   "compilerOptions": {
-    "module": "ESNext",
+    "module": "CommonJS",
     "target": "ESNext",
     "moduleResolution": "NodeNext",
-    "allowJs": true,
-    "isolatedModules": true,
-    "allowSyntheticDefaultImports": true
+    "esModuleInterop": true,
+    "jsx": "react-jsx"
   },
-  "include": ["**/*.ts", "../../lib/**/*"]
+  "include": ["**/*.ts", "**/*.tsx", "../../lib/**/*"]
 }
