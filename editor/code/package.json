@@ -1,6 +1,6 @@
 {
   "name": "coq-lsp",
-  "displayName": "coq-lsp",
+  "displayName": "Coq LSP",
   "description": "Coq LSP provides native vsCode support for checking Coq proof documents",
   "version": "0.1.4",
   "contributors": [
