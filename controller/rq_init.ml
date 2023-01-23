@@ -55,8 +55,12 @@ let do_initialize ~params =
     [ ("textDocumentSync", `Int 1)
     ; ("documentSymbolProvider", `Bool true)
     ; ("hoverProvider", `Bool true)
-    ; ("completionProvider", `Assoc [])
     ; ("codeActionProvider", `Bool false)
+    ; ( "completionProvider"
+      , `Assoc
+          [ ("triggerCharacters", `List [ `String "\\" ])
+          ; ("resolveProvider", `Bool false)
+          ] )
     ]
   in
   `Assoc

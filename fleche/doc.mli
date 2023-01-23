@@ -72,6 +72,9 @@ type t = private
   ; completed : Completion.t
   }
 
+(** Return the list of all asts in the doc *)
+val asts : t -> Coq.Ast.t list
+
 (** Note, [create] calls Coq but it is not cached in the Memo.t table *)
 val create :
      state:Coq.State.t

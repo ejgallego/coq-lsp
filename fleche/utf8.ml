@@ -45,7 +45,9 @@ let rec nth_aux s i n = if n = 0 then i else nth_aux s (next s i) (n - 1)
 let nth s n = nth_aux s 0 n
 
 (* end of camomille *)
-let byte_of_char ~line ~char = nth line char
+let byte_of_char ~line ~char =
+  let ll = length line in
+  if ll <= char then ll else nth line char
 
 let find_char line byte =
   let rec f index n_chars =

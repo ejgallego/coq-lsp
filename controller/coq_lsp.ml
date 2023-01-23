@@ -78,6 +78,7 @@ module PendingRequest = struct
       handler ~point ~doc
 end
 
+(* main module with [answer, postpone, cancel, serve] methods *)
 module Rq = struct
   (* Answer a request *)
   let answer ~ofmt ~id result =
@@ -113,14 +114,14 @@ module Rq = struct
     in
     consume_ ~ofmt ~f id
 
-  let debug_wakeup id pr =
+  let debug_serve id pr =
     if Fleche.Debug.request_delay then
-      LIO.trace "[wake up]"
+      LIO.trace "serving"
         (Format.asprintf "rq: %d | %a" id PendingRequest.data pr)
 
   let serve ~ofmt id =
     let f pr =
-      debug_wakeup id pr;
+      debug_serve id pr;
       Result.ok (PendingRequest.serve pr)
     in
     consume_ ~ofmt ~f id
@@ -227,7 +228,7 @@ let do_hover = do_position_request ~postpone:false ~handler:Requests.hover
 let do_goals = do_position_request ~postpone:true ~handler:Requests.goals
 
 let do_completion =
-  do_position_request ~postpone:true ~handler:Requests.completion
+  do_position_request ~postpone:true ~handler:Rq_completion.completion
 
 (* Requires the full document to be processed *)
 let do_document_request ~params ~handler =

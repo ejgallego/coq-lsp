@@ -1,0 +1,792 @@
+{
+  "aleph": {
+    "detail": "ℵ",
+    "documentation": "aleph, hebrew"
+  },
+  "alpha": {
+    "detail": "α",
+    "documentation": "the greek alphabet"
+  },
+  "amalg": {
+    "detail": "⨿",
+    "documentation": "amalgamation or coproduct"
+  },
+  "angle": {
+    "detail": "∠",
+    "documentation": "angle"
+  },
+  "approx": {
+    "detail": "≈",
+    "documentation": "approximately equal"
+  },
+  "ast": {
+    "detail": "∗",
+    "documentation": "asterisk operator"
+  },
+  "asymp": {
+    "detail": "≍",
+    "documentation": "asymptotically equal to"
+  },
+  "beta": {
+    "detail": "β",
+    "documentation": "the greek alphabet"
+  },
+  "bigcap": {
+    "documentation": "big set intersection",
+    "detail": "∩"
+  },
+  "bigcup": {
+    "documentation": "big set union",
+    "detail": "∪"
+  },
+  "bigodot": {
+    "detail": "⨀",
+    "documentation": "n-ary circled dot operator"
+  },
+  "bigoplus": {
+    "detail": "⨁",
+    "documentation": "n-ary circled plus operator"
+  },
+  "bigotimes": {
+    "detail": "⨂",
+    "documentation": "n-ary circled times operator"
+  },
+  "bigsqcup": {
+    "detail": "⨆",
+    "documentation": "n-ary square union operator"
+  },
+  "bigtriangledown": {
+    "detail": "▽",
+    "documentation": "big down open"
+  },
+  "bigtriangleup": {
+    "detail": "△",
+    "documentation": "big up open"
+  },
+  "biguplus": {
+    "detail": "⨄",
+    "documentation": "n-ary union operator with plus"
+  },
+  "bigvee": {
+    "detail": "⋁",
+    "documentation": "logical and operator"
+  },
+  "bigwedge": {
+    "detail": "⋀",
+    "documentation": "logical or operator"
+  },
+  "bot": {
+    "detail": "⊥",
+    "documentation": "Up tack, bottom"
+  },
+  "bullet": {
+    "detail": "∙",
+    "documentation": "Bullet operator"
+  },
+  "cap": {
+    "documentation": "set intersection",
+    "detail": "∩"
+  },
+  "cdots": {
+    "documentation": "centered dots",
+    "detail": "···"
+  },
+  "chi": {
+    "detail": "χ",
+    "documentation": "the greek alphabet"
+  },
+  "circ": {
+    "documentation": "function composition",
+    "detail": "￮"
+  },
+  "clubsuit": {
+    "detail": "♣",
+    "documentation": "club suit symbol"
+  },
+  "cong": {
+    "detail": "≅",
+    "documentation": "congruent with"
+  },
+  "coprod": {
+    "detail": "∐",
+    "documentation": "coproduct operator"
+  },
+  "cup": {
+    "documentation": "set union",
+    "detail": "∪"
+  },
+  "dagger": {
+    "detail": "†",
+    "documentation": "dagger relation"
+  },
+  "dashv": {
+    "detail": "⊣",
+    "documentation": "left tack, non- does no (dash, vertical)"
+  },
+  "ddagger": {
+    "detail": "‡",
+    "documentation": "double dagger relation"
+  },
+  "delta": {
+    "detail": "δ",
+    "documentation": "the greek alphabet"
+  },
+  "Delta": {
+    "detail": "Δ",
+    "documentation": "the greek alphabet"
+  },
+  "diamond": {
+    "detail": "⋄",
+    "documentation": "diamond operator (white diamond)"
+  },
+  "diamondsuit": {
+    "detail": "♢",
+    "documentation": "diamond suit symbol"
+  },
+  "div": {
+    "detail": "∇",
+    "documentation": "divergence"
+  },
+  "doteq": {
+    "detail": "≐",
+    "documentation": "equals, single dot above"
+  },
+  "downarrow": {
+    "detail": "↓",
+    "documentation": "downward arrow"
+  },
+  "Downarrow": {
+    "detail": "⇓",
+    "documentation": "down double arrow"
+  },
+  "ell": {
+    "detail": "ℓ",
+    "documentation": "cursive small l"
+  },
+  "emptyset": {
+    "documentation": "set-theoretic empty set"
+  },
+  "epsilon": {
+    "detail": "ε",
+    "documentation": "the greek alphabet"
+  },
+  "equiv": {
+    "detail": "≡",
+    "documentation": "triple equals"
+  },
+  "eta": {
+    "detail": "η",
+    "documentation": "the greek alphabet"
+  },
+  "exists": {
+    "detail": "∃",
+    "documentation": "the logic symbol"
+  },
+  "flat": {
+    "detail": "♭",
+    "documentation": "musical flat"
+  },
+  "forall": {
+    "detail": "∀",
+    "documentation": "the logic symbol"
+  },
+  "frown": {
+    "detail": "⌢",
+    "documentation": "frown (down curve)"
+  },
+  "gamma": {
+    "detail": "γ",
+    "documentation": "the greek alphabet"
+  },
+  "Gamma": {
+    "detail": "Γ",
+    "documentation": "the greek alphabet"
+  },
+  "gcd": {
+    "documentation": "greatest common divisor"
+  },
+  "ge": {
+    "detail": "≥",
+    "documentation": "greater-than-or-equal"
+  },
+  "geq": {
+    "detail": "≥",
+    "documentation": "greater than or equal"
+  },
+  "gets": {
+    "detail": "←",
+    "documentation": "leftward arrow"
+  },
+  "gg": {
+    "detail": "≫",
+    "documentation": "much greater than"
+  },
+  "heartsuit": {
+    "detail": "♡",
+    "documentation": "heart suit symbol"
+  },
+  "hookleftarrow": {
+    "detail": "↩",
+    "documentation": "left arrow-hooked"
+  },
+  "hookrightarrow": {
+    "detail": "↪",
+    "documentation": "right arrow-hooked"
+  },
+  "Im": {
+    "detail": "ℑ",
+    "documentation": "imaginary part"
+  },
+  "imath": {
+    "detail": "𝚤",
+    "documentation": "mathematical italic small dotless I"
+  },
+  "implies": {
+    "detail": "⇒",
+    "documentation": "implication symbol, aliased to Rightarrow"
+  },
+  "in": {
+    "detail": "∈",
+    "documentation": "the logic symbol"
+  },
+  "infty": {
+    "detail": "∞",
+    "documentation": "infinity symbol"
+  },
+  "int": {
+    "detail": "∫",
+    "documentation": "integra operator"
+  },
+  "iota": {
+    "detail": "ι",
+    "documentation": "the greek alphabet"
+  },
+  "jmath": {
+    "detail": "𝚥",
+    "documentation": "mathematical italic small dotless J"
+  },
+  "kappa": {
+    "detail": "κ",
+    "documentation": "the greek alphabet"
+  },
+  "lambda": {
+    "detail": "λ",
+    "documentation": "the greek alphabet"
+  },
+  "Lambda": {
+    "detail": "Λ",
+    "documentation": "the greek alphabet"
+  },
+  "langle": {
+    "detail": "⟨",
+    "documentation": "left angle braket"
+  },
+  "lbrace": {
+    "detail": "{",
+    "documentation": "left curly bracket"
+  },
+  "lbrack": {
+    "detail": "[",
+    "documentation": "left square bracket"
+  },
+  "lceil": {
+    "detail": "⌈",
+    "documentation": "left ceiling"
+  },
+  "ldots": {
+    "documentation": "ellipses",
+    "detail": "..."
+  },
+  "le": {
+    "detail": "≤",
+    "documentation": "less-than-or-equal"
+  },
+  "leftarrow": {
+    "detail": "←",
+    "documentation": "the logic symbol"
+  },
+  "Leftarrow": {
+    "detail": "⇐",
+    "documentation": "the logic symbol"
+  },
+  "leftharpoondown": {
+    "detail": "↽",
+    "documentation": "left harpoon-down"
+  },
+  "leftharpoonup": {
+    "detail": "↼",
+    "documentation": "left harpoon-up"
+  },
+  "leftrightarrow": {
+    "detail": "⇆",
+    "documentation": "left arrow over right arrow"
+  },
+  "Leftrightarrow": {
+    "detail": "⇔",
+    "documentation": "the logic symbol iff"
+  },
+  "leq": {
+    "detail": "≤",
+    "documentation": "less than or equal"
+  },
+  "lfloor": {
+    "detail": "⌊",
+    "documentation": "left floor"
+  },
+  "lgroup": {
+    "detail": "⟮",
+    "documentation": "mathematical grouped paranthesis"
+  },
+  "ll": {
+    "detail": "≪",
+    "documentation": "much less type 2"
+  },
+  "lmoustache": {
+    "detail": "⎰",
+    "documentation": "upper-right or lower-left curly bracket sign"
+  },
+  "longleftarrow": {
+    "detail": "⟵",
+    "documentation": "long leftwards arrow"
+  },
+  "Longleftarrow": {
+    "detail": "⟸",
+    "documentation": "long leftwards double arrow"
+  },
+  "longleftrightarrow": {
+    "detail": "⟷",
+    "documentation": "long left-right arrow"
+  },
+  "Longleftrightarrow": {
+    "detail": "⟺",
+    "documentation": "long left-right double arrow"
+  },
+  "longmapsto": {
+    "detail": "⟼",
+    "documentation": "long rightwards arrow"
+  },
+  "longrightarrow": {
+    "detail": "⟶",
+    "documentation": "long rightwards arrow"
+  },
+  "Longrightarrow": {
+    "detail": "⟹",
+    "documentation": "long rightwards double arrow"
+  },
+  "mapsto": {
+    "detail": "↦",
+    "documentation": "maps right arrow"
+  },
+  "mid": {
+    "detail": "∣",
+    "documentation": "the logic symbol such that"
+  },
+  "models": {
+    "detail": "⊧",
+    "documentation": "models (ver short double dash)"
+  },
+  "mp": {
+    "detail": "∓",
+    "documentation": "minus-or-plus sign"
+  },
+  "mu": {
+    "detail": "μ",
+    "documentation": "the greek alphabet"
+  },
+  "nabla": {
+    "detail": "∇",
+    "documentation": "nabla, del, hamilton operator"
+  },
+  "natural": {
+    "detail": "♮",
+    "documentation": "music natural"
+  },
+  "nearrow": {
+    "detail": "↗",
+    "documentation": "ne pointing arrow"
+  },
+  "neg": {
+    "detail": "¬",
+    "documentation": "the logic symbol"
+  },
+  "neq": {
+    "detail": "≠",
+    "documentation": "the logic symbol"
+  },
+  "ni": {
+    "detail": "∋",
+    "documentation": "con variant"
+  },
+  "not": {
+    "detail": " ̸",
+    "documentation": "combining long solidus overlay"
+  },
+  "notin": {
+    "detail": "∉",
+    "documentation": "the logic symbol"
+  },
+  "nu": {
+    "detail": "ν",
+    "documentation": "the greek alphabet"
+  },
+  "nwarrow": {
+    "detail": "↖",
+    "documentation": "nw pointing arrow"
+  },
+  "odot": {
+    "detail": "⊙",
+    "documentation": "middle dot in circle"
+  },
+  "oint": {
+    "detail": "∮",
+    "documentation": "contour integral operator"
+  },
+  "omega": {
+    "detail": "ω",
+    "documentation": "the greek alphabet"
+  },
+  "Omega": {
+    "detail": "Ω",
+    "documentation": "the greek alphabet"
+  },
+  "ominus": {
+    "detail": "⊖",
+    "documentation": "minus sign in circle"
+  },
+  "oplus": {
+    "detail": "⊕",
+    "documentation": "plus sign in circle"
+  },
+  "oslash": {
+    "detail": "⊘",
+    "documentation": "solidus in circle"
+  },
+  "otimes": {
+    "detail": "⊗",
+    "documentation": "multiply sign in circle"
+  },
+  "parallel": {
+    "detail": "∥",
+    "documentation": "parallel"
+  },
+  "partial": {
+    "detail": "∂",
+    "documentation": "partial differential (dho)"
+  },
+  "perp": {
+    "detail": "⟂",
+    "documentation": "perpendicular"
+  },
+  "phi": {
+    "detail": "ϕ",
+    "documentation": "the greek alphabet"
+  },
+  "Phi": {
+    "detail": "Φ",
+    "documentation": "the greek alphabet"
+  },
+  "pi": {
+    "detail": "π",
+    "documentation": "the greek alphabet"
+  },
+  "Pi": {
+    "detail": "Π",
+    "documentation": "the greek alphabet"
+  },
+  "pm": {
+    "detail": "±",
+    "documentation": "plus or minus"
+  },
+  "prec": {
+    "detail": "≺",
+    "documentation": "precedes"
+  },
+  "preceq": {
+    "detail": "⪯",
+    "documentation": "precedes above single-line equals sign"
+  },
+  "prime": {
+    "detail": "′",
+    "documentation": "front-tick"
+  },
+  "prod": {
+    "detail": "∏",
+    "documentation": "product"
+  },
+  "propto": {
+    "detail": "∝",
+    "documentation": "is proportional to"
+  },
+  "psi": {
+    "detail": "ψ",
+    "documentation": "the greek alphabet"
+  },
+  "Psi": {
+    "detail": "Ψ",
+    "documentation": "the greek alphabet"
+  },
+  "rangle": {
+    "detail": "⟩",
+    "documentation": "right angled bracket"
+  },
+  "rbrace": {
+    "detail": "}",
+    "documentation": "right curly bracket"
+  },
+  "rbrack": {
+    "detail": "]",
+    "documentation": "right square bracket"
+  },
+  "rceil": {
+    "detail": "⌉",
+    "documentation": "right ceiling"
+  },
+  "Re": {
+    "detail": "ℜ",
+    "documentation": "real part"
+  },
+  "rfloor": {
+    "detail": "⌋",
+    "documentation": "right floor"
+  },
+  "rgroup": {
+    "detail": "⟯",
+    "documentation": "grouped paranthesis"
+  },
+  "rho": {
+    "detail": "ρ",
+    "documentation": "the greek alphabet"
+  },
+  "rightarrow": {
+    "detail": "→",
+    "documentation": "the logic symbol"
+  },
+  "Rightarrow": {
+    "detail": "⇒",
+    "documentation": "the logic symbol"
+  },
+  "rightharpoondown": {
+    "detail": "⇁",
+    "documentation": "right harpoon-down"
+  },
+  "rightharpoonup": {
+    "detail": "⇀",
+    "documentation": "right harpoon-up"
+  },
+  "rightleftharpoons": {
+    "detail": "⇌",
+    "documentation": "right harpoon over left"
+  },
+  "rmoustache": {
+    "detail": "⎱",
+    "documentation": "upper-left or lower-right curly bracket sign"
+  },
+  "searrow": {
+    "detail": "↘",
+    "documentation": "se pointing arrow"
+  },
+  "setminus": {
+    "detail": "∖",
+    "documentation": "the logic symbol"
+  },
+  "sharp": {
+    "detail": "♯",
+    "documentation": "music sharp sign"
+  },
+  "sigma": {
+    "detail": "σ",
+    "documentation": "the greek alphabet"
+  },
+  "Sigma": {
+    "detail": "Σ",
+    "documentation": "the greek alphabet"
+  },
+  "sim": {
+    "detail": "∼",
+    "documentation": "similar tilde operator"
+  },
+  "simeq": {
+    "detail": "≃",
+    "documentation": "similar, equals"
+  },
+  "smile": {
+    "detail": "⌣",
+    "documentation": "smile (up curve)"
+  },
+  "spadesuit": {
+    "detail": "♠",
+    "documentation": "spades suit symbol"
+  },
+  "sqcup": {
+    "detail": "⊔",
+    "documentation": "square union"
+  },
+  "sqsupseteq": {
+    "detail": "⊒",
+    "documentation": "square superset, equals"
+  },
+  "star": {
+    "detail": "⋆",
+    "documentation": "small s filled, low"
+  },
+  "subset": {
+    "detail": "⊂",
+    "documentation": "the logic symbol"
+  },
+  "subseteq": {
+    "detail": "⊆",
+    "documentation": "subset, equals"
+  },
+  "succ": {
+    "detail": "≻",
+    "documentation": "succeeds"
+  },
+  "succeq": {
+    "detail": "⪰",
+    "documentation": "succeeds above single-equals sign"
+  },
+  "sum": {
+    "detail": "∑",
+    "documentation": "sum, similar to Sigma"
+  },
+  "supset": {
+    "detail": "⊃",
+    "documentation": "the logic symbol"
+  },
+  "supseteq": {
+    "detail": "⊇",
+    "documentation": "superset, equals"
+  },
+  "swarrow": {
+    "detail": "↙",
+    "documentation": "sw pointing arrow"
+  },
+  "tau": {
+    "detail": "τ",
+    "documentation": "the greek alphabet"
+  },
+  "theta": {
+    "detail": "θ",
+    "documentation": "the greek alphabet"
+  },
+  "Theta": {
+    "detail": "Θ",
+    "documentation": "the greek alphabet"
+  },
+  "times": {
+    "detail": "×",
+    "documentation": "product"
+  },
+  "to": {
+    "detail": "→",
+    "documentation": "rightward arrow, z notation total function"
+  },
+  "top": {
+    "detail": "⊤",
+    "documentation": "down tack, top"
+  },
+  "triangle": {
+    "detail": "△",
+    "documentation": "big up open"
+  },
+  "triangleleft": {
+    "detail": "◁",
+    "documentation": "(large) left open; z notation domain restriction"
+  },
+  "triangleright": {
+    "detail": "▷",
+    "documentation": "(large) righ open; z notation range restriction"
+  },
+  "uparrow": {
+    "detail": "↑",
+    "documentation": "upward arrow"
+  },
+  "Uparrow": {
+    "detail": "⇑",
+    "documentation": "up double arrow"
+  },
+  "updownarrow": {
+    "detail": "↕",
+    "documentation": "up and down arrow"
+  },
+  "Updownarrow": {
+    "detail": "⇕",
+    "documentation": "up and down double arrow"
+  },
+  "uplus": {
+    "detail": "⊎",
+    "documentation": "plus sign in union"
+  },
+  "upsilon": {
+    "detail": "υ",
+    "documentation": "the greek alphabet"
+  },
+  "Upsilon": {
+    "detail": "Υ",
+    "documentation": "the greek alphabet"
+  },
+  "varepsilon": {
+    "detail": "ε",
+    "documentation": "the greek alphabet"
+  },
+  "varphi": {
+    "detail": "ᵠ",
+    "documentation": "the greek alphabet"
+  },
+  "varpi": {
+    "detail": "𝜛",
+    "documentation": "var phi symbol"
+  },
+  "varrho": {
+    "detail": "𝜚",
+    "documentation": "var rho symbol"
+  },
+  "varsigma": {
+    "detail": "ς",
+    "documentation": "the greek alphabet"
+  },
+  "vartheta": {
+    "detail": "θ",
+    "documentation": "the greek alphabet"
+  },
+  "vdash": {
+    "detail": "⊢",
+    "documentation": "turnstile operator"
+  },
+  "vee": {
+    "documentation": "logic or",
+    "detail": "∨"
+  },
+  "vert": {
+    "detail": "|",
+    "documentation": "vertical bar"
+  },
+  "Vert": {
+    "detail": "‖",
+    "documentation": "double vertical bar"
+  },
+  "wedge": {
+    "detail": "∧",
+    "documentation": "the logic symbol"
+  },
+  "wp": {
+    "detail": "℘",
+    "documentation": "weierstrass p"
+  },
+  "wr": {
+    "detail": "≀",
+    "documentation": "wreath product"
+  },
+  "xi": {
+    "detail": "ξ",
+    "documentation": "the greek alphabet"
+  },
+  "Xi": {
+    "detail": "Ξ",
+    "documentation": "the greek alphabet"
+  },
+  "zeta": {
+    "detail": "ζ",
+    "documentation": "the greek alphabet"
+  }
+}

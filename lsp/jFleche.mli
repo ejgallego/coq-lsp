@@ -87,3 +87,27 @@ module HoverInfo : sig
     }
   [@@deriving yojson]
 end
+
+module LabelDetails : sig
+  type t = { detail : string } [@@deriving yojson]
+end
+
+module TextEditReplace : sig
+  type t =
+    { insert : Types.Range.t
+    ; replace : Types.Range.t
+    ; newText : string
+    }
+  [@@deriving yojson]
+end
+
+module CompletionData : sig
+  type t =
+    { label : string
+    ; insertText : string option
+    ; labelDetails : LabelDetails.t option
+    ; textEdit : TextEditReplace.t option
+    ; commitCharacters : string list option
+    }
+  [@@deriving yojson]
+end

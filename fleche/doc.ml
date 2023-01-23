@@ -225,6 +225,7 @@ type t =
 let mk_doc root_state workspace uri =
   Coq.Init.doc_init ~root_state ~workspace ~uri
 
+let asts doc = List.filter_map Node.ast doc.nodes
 let init_fname ~uri = Loc.InFile { dirpath = None; file = uri }
 let init_loc ~uri = Loc.initial (init_fname ~uri)
 

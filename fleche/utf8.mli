@@ -41,4 +41,5 @@ type index = int
 (** Byte index to UTF-8 character position *)
 val char_of_byte : line:string -> byte:index -> char
 
+(** UTF-8 Char to byte index position *)
 val byte_of_char : line:string -> char:char -> index
