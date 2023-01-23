@@ -399,32 +399,20 @@ let dispatch_request ~method_ ~params : RAction.t =
 let dispatch_request ofmt ~id ~method_ ~params =
   dispatch_request ~method_ ~params |> action_request ~ofmt ~id
 
+let dispatch_request ofmt ~id ~method_ ~params =
+  try dispatch_request ofmt ~id ~method_ ~params
+  with Doc_manager.AbortRequest ->
+    (* -32603 = internal error *)
+    let code = -32603 in
+    let message = "Internal Document Request Queue Error" in
+    cancel_rq ~ofmt ~code ~message id
+
 let dispatch_message ofmt ~state (com : LSP.Message.t) =
   match com with
   | Notification { method_; params } ->
     dispatch_notification ofmt ~state ~method_ ~params
   | Request { id; method_; params } ->
     dispatch_request ofmt ~id ~method_ ~params
-
-let dispatch_message ofmt ~state com =
-  try dispatch_message ofmt ~state com with
-  | U.Type_error (msg, obj) -> LIO.trace_object msg obj
-  | Lsp_exit -> raise Lsp_exit
-  | Doc_manager.AbortRequest ->
-    () (* XXX: Separate requests from notifications, handle this better *)
-  | exn ->
-    (* Note: We should never arrive here from Coq, as every call to Coq should
-       be wrapper in Coq.Protect. So hitting this codepath, is effectively a
-       coq-lsp internal error and should be fixed *)
-    let bt = Printexc.get_backtrace () in
-    let iexn = Exninfo.capture exn in
-    LIO.trace "process_queue"
-      (if Printexc.backtrace_status () then "bt=true" else "bt=false");
-    let method_name = LSP.Message.method_ com in
-    LIO.trace "process_queue" ("exn in method: " ^ method_name);
-    LIO.trace "process_queue" (Printexc.to_string exn);
-    LIO.trace "process_queue" Pp.(string_of_ppcmds CErrors.(iprint iexn));
-    LIO.trace "BT" bt
 
 (***********************************************************************)
 (* The queue strategy is: we keep pending document checks in Doc_manager, they
@@ -436,7 +424,7 @@ let dispatch_message ofmt ~state com =
 (** Main event queue *)
 let request_queue = Queue.create ()
 
-let dispatch_or_resume_check ofmt ~state =
+let dispatch_or_resume_check ~ofmt ~state =
   match Queue.peek_opt request_queue with
   | None ->
     (* This is where we make progress on document checking; kind of IDLE
@@ -453,10 +441,29 @@ let dispatch_or_resume_check ofmt ~state =
     Control.interrupt := false;
     dispatch_message ofmt ~state com
 
+(* Wrapper for the top-level call *)
+let dispatch_or_resume_check ~ofmt ~state =
+  try dispatch_or_resume_check ~ofmt ~state with
+  | U.Type_error (msg, obj) -> LIO.trace_object msg obj
+  | Lsp_exit -> raise Lsp_exit
+  | exn ->
+    (* Note: We should never arrive here from Coq, as every call to Coq should
+       be wrapper in Coq.Protect. So hitting this codepath, is effectively a
+       coq-lsp internal error and should be fixed *)
+    let bt = Printexc.get_backtrace () in
+    let iexn = Exninfo.capture exn in
+    LIO.trace "process_queue"
+      (if Printexc.backtrace_status () then "bt=true" else "bt=false");
+    (* let method_name = LSP.Message.method_ com in *)
+    (* LIO.trace "process_queue" ("exn in method: " ^ method_name); *)
+    LIO.trace "print_exn [OCaml]" (Printexc.to_string exn);
+    LIO.trace "print_exn [Coq  ]" Pp.(string_of_ppcmds CErrors.(iprint iexn));
+    LIO.trace "print_bt  [OCaml]" bt
+
 let rec process_queue ofmt ~state =
   if Fleche.Debug.sched_wakeup then
     LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
-  dispatch_or_resume_check ofmt ~state;
+  dispatch_or_resume_check ~ofmt ~state;
   process_queue ofmt ~state
 
 let process_input (com : LSP.Message.t) =
