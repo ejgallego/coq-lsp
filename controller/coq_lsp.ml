@@ -76,8 +76,8 @@ module PendingRequest = struct
 
   let postpone ~id pr =
     match pr with
-    | DocRequest { uri; _ } -> Doc_manager.serve_on_completion ~uri ~id
-    | PosRequest { uri; point; _ } -> Doc_manager.serve_on_point ~uri ~id ~point
+    | DocRequest { uri; _ } -> Doc_manager.add_on_completion ~uri ~id
+    | PosRequest { uri; point; _ } -> Doc_manager.add_on_point ~uri ~id ~point
 end
 
 module RAction = struct

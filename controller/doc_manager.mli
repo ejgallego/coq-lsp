@@ -43,9 +43,13 @@ exception AbortRequest
 val find_doc : uri:string -> Fleche.Doc.t
 
 (** Add a request to be served when the document is completed *)
-val serve_on_completion : uri:string -> id:int -> unit
+val add_on_completion : uri:string -> id:int -> unit
+
+val remove_on_completion : uri:string -> id:int -> unit
 
 (** Add a request to be served when the document point data is available, for
     now, we allow a single request like that. Maybe returns the id of the
     previous request which should now be cancelled. *)
-val serve_on_point : uri:string -> id:int -> point:int * int -> unit
+val add_on_point : uri:string -> id:int -> point:int * int -> unit
+
+val remove_on_point : uri:string -> id:int -> point:int * int -> unit
