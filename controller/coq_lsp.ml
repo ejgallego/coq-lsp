@@ -78,6 +78,12 @@ module PendingRequest = struct
     match pr with
     | DocRequest { uri; _ } -> Doc_manager.add_on_completion ~uri ~id
     | PosRequest { uri; point; _ } -> Doc_manager.add_on_point ~uri ~id ~point
+
+  let cancel ~id pr =
+    match pr with
+    | DocRequest { uri; _ } -> Doc_manager.remove_on_completion ~uri ~id
+    | PosRequest { uri; point; _ } ->
+      Doc_manager.remove_on_point ~uri ~id ~point
 end
 
 module RAction = struct
@@ -167,7 +173,8 @@ let cancel_rq ~ofmt ~code ~message id =
   | None ->
     (* Request already served or cancelled *)
     ()
-  | Some _ ->
+  | Some pr ->
+    PendingRequest.cancel ~id pr;
     Hashtbl.remove rtable id;
     answer_request ~ofmt ~id (Error (code, message))
 
