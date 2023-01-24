@@ -107,6 +107,6 @@ module Target : sig
   val reached : range:Types.Range.t -> int * int -> bool
 end
 
-(** [check ofmt ~fb_queue ?cutpoint ~doc] if set, [cutpoint] will have Flèche
-    stop after the point specified there has been reached. *)
+(** [check ~ofmt ~target ~doc ()], [target] will have Flèche stop after the
+    point specified there has been reached. *)
 val check : ofmt:Format.formatter -> target:Target.t -> doc:t -> unit -> t
