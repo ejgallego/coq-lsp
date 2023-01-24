@@ -162,7 +162,7 @@ module Check = struct
     | Stopped _ -> false
 
   (* Notification handling; reply is optional / asynchronous *)
-  let check ofmt ~uri =
+  let check ~ofmt ~uri =
     LIO.trace "process_queue" "resuming document checking";
     match Handle.find_opt ~uri with
     | Some handle ->
@@ -177,13 +177,7 @@ module Check = struct
       LIO.trace "Check.check" ("file " ^ uri ^ " not available");
       Int.Set.empty
 
-  let check_or_yield ~ofmt =
-    match !pending with
-    | None ->
-      Thread.delay 0.1;
-      Int.Set.empty
-    | Some uri -> check ofmt ~uri
-
+  let maybe_check ~ofmt = Option.map (fun uri -> check ~ofmt ~uri) !pending
   let schedule ~uri = pending := Some uri
 end
 

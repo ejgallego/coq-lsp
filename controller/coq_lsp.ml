@@ -37,7 +37,6 @@ end
 
 module LIO = Lsp.Io
 module LSP = Lsp.Base
-module Check = Doc_manager.Check
 
 module PendingRequest = struct
   type t =
@@ -361,14 +360,18 @@ let dispatch_message ofmt ~state (com : LSP.Message.t) =
 (** Main event queue *)
 let request_queue = Queue.create ()
 
+let check_or_yield ~ofmt =
+  match Doc_manager.Check.maybe_check ~ofmt with
+  | None -> Thread.delay 0.1
+  | Some ready -> serve_postponed_requests ~ofmt ready
+
 let dispatch_or_resume_check ~ofmt ~state =
   match Queue.peek_opt request_queue with
   | None ->
     (* This is where we make progress on document checking; kind of IDLE
        workqueue. *)
     Control.interrupt := false;
-    let ready = Check.check_or_yield ~ofmt in
-    serve_postponed_requests ~ofmt ready
+    check_or_yield ~ofmt
   | Some com ->
     (* TODO: optimize the queue? EJGA: I've found that VS Code as a client keeps
        the queue tidy by itself, so this works fine as now *)
