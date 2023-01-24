@@ -23,25 +23,7 @@ let int_field name dict = U.to_int List.(assoc name dict)
 let dict_field name dict = U.to_assoc List.(assoc name dict)
 let list_field name dict = U.to_list List.(assoc name dict)
 let string_field name dict = U.to_string List.(assoc name dict)
-
-(* Conditionals *)
-let option_cata f d x =
-  match x with
-  | None -> d
-  | Some x -> f x
-
-let option_default x d =
-  match x with
-  | None -> d
-  | Some x -> x
-
-let ostring_field name dict = Option.map U.to_string (List.assoc_opt name dict)
 let oint_field name dict = Option.map U.to_int (List.assoc_opt name dict)
-
-let odict_field name dict =
-  option_default
-    U.(to_option to_assoc (option_default List.(assoc_opt name dict) `Null))
-    []
 
 (* LSP loop internal state, mainly the stuff needed to create a new document.
    Note that we could [apply] [workspace] to the root_state, but for now we keep
@@ -69,6 +51,7 @@ module PendingRequest = struct
         ; handler : Requests.position_request
         }
 
+  (* Debug printing *)
   let data fmt = function
     | DocRequest { uri = _; handler = _ } -> Format.fprintf fmt "{k:doc}"
     | PosRequest { uri = _; point; handler = _ } ->
@@ -84,6 +67,64 @@ module PendingRequest = struct
     | DocRequest { uri; _ } -> Doc_manager.remove_on_completion ~uri ~id
     | PosRequest { uri; point; _ } ->
       Doc_manager.remove_on_point ~uri ~id ~point
+
+  let serve pr =
+    match pr with
+    | DocRequest { uri; handler } ->
+      let doc = Doc_manager.find_doc ~uri in
+      let lines = doc.contents.lines in
+      handler ~lines ~doc
+    | PosRequest { uri; point; handler } ->
+      let doc = Doc_manager.find_doc ~uri in
+      handler ~point ~doc
+end
+
+module Rq = struct
+  (* Answer a request *)
+  let answer ~ofmt ~id result =
+    (match result with
+    | Result.Ok result -> LSP.mk_reply ~id ~result
+    | Error (code, message) -> LSP.mk_request_error ~id ~code ~message)
+    |> LIO.send_json ofmt
+
+  (* private to the Rq module *)
+  let _rtable : (int, PendingRequest.t) Hashtbl.t = Hashtbl.create 673
+
+  let postpone ~id (pr : PendingRequest.t) =
+    if Fleche.Debug.request_delay then
+      LIO.trace "request" ("postponing rq : " ^ string_of_int id);
+    PendingRequest.postpone ~id pr;
+    Hashtbl.add _rtable id pr
+
+  (* Consumes a request, if alive, it answers mandatorily *)
+  let consume_ ~ofmt ~f id =
+    match Hashtbl.find_opt _rtable id with
+    | Some pr ->
+      Hashtbl.remove _rtable id;
+      f pr |> answer ~ofmt ~id
+    | None ->
+      LIO.trace "can't consume cancelled request: " (string_of_int id);
+      ()
+
+  let cancel ~ofmt ~code ~message id : unit =
+    (* fail the request, do cleanup first *)
+    let f pr =
+      let () = PendingRequest.cancel ~id pr in
+      Error (code, message)
+    in
+    consume_ ~ofmt ~f id
+
+  let debug_wakeup id pr =
+    if Fleche.Debug.request_delay then
+      LIO.trace "[wake up]"
+        (Format.asprintf "rq: %d | %a" id PendingRequest.data pr)
+
+  let serve ~ofmt id =
+    let f pr =
+      debug_wakeup id pr;
+      Result.ok (PendingRequest.serve pr)
+    in
+    consume_ ~ofmt ~f id
 end
 
 module RAction = struct
@@ -95,88 +136,15 @@ module RAction = struct
   let error (code, msg) = ServeNow (Error (code, msg))
 end
 
-(* Request Handling: The client expects a reply *)
-module CoqLspOption = struct
-  type t = [%import: Fleche.Config.t] [@@deriving yojson]
-end
-
-let do_client_options coq_lsp_options : unit =
-  LIO.trace "init" "custom client options:";
-  LIO.trace_object "init" (`Assoc coq_lsp_options);
-  match CoqLspOption.of_yojson (`Assoc coq_lsp_options) with
-  | Ok v -> Fleche.Config.v := v
-  | Error msg -> LIO.trace "CoqLspOption.of_yojson error: " msg
-
-let check_client_version client_version : unit =
-  LIO.trace "client_version" client_version;
-  if String.(equal client_version "any" || equal client_version Version.server)
-  then () (* Version OK *)
-  else
-    let message =
-      Format.asprintf "Incorrect client version: %s , expected %s."
-        client_version Version.server
-    in
-    LIO.logMessage ~lvl:1 ~message
-
-let do_initialize ~params =
-  let trace =
-    ostring_field "trace" params
-    |> option_cata LIO.TraceValue.of_string LIO.TraceValue.Off
-  in
-  LIO.set_trace_value trace;
-  let coq_lsp_options = odict_field "initializationOptions" params in
-  do_client_options coq_lsp_options;
-  check_client_version !Fleche.Config.v.client_version;
-  let client_capabilities = odict_field "capabilities" params in
-  if Fleche.Debug.lsp_init then (
-    LIO.trace "init" "client capabilities:";
-    LIO.trace_object "init" (`Assoc client_capabilities));
-  let capabilities =
-    [ ("textDocumentSync", `Int 1)
-    ; ("documentSymbolProvider", `Bool true)
-    ; ("hoverProvider", `Bool true)
-    ; ("completionProvider", `Assoc [])
-    ; ("codeActionProvider", `Bool false)
-    ]
-  in
-  `Assoc
-    [ ("capabilities", `Assoc capabilities)
-    ; ( "serverInfo"
-      , `Assoc
-          [ ("name", `String "coq-lsp (C) Inria 2022-2023")
-          ; ("version", `String Version.server)
-          ] )
-    ]
-  |> Result.ok
-
-let rtable : (int, PendingRequest.t) Hashtbl.t = Hashtbl.create 673
-
-let answer_request ~ofmt ~id result =
-  (match result with
-  | Result.Ok result -> LSP.mk_reply ~id ~result
-  | Error (code, message) -> LSP.mk_request_error ~id ~code ~message)
-  |> LIO.send_json ofmt
-
-let postpone_request ~id (pr : PendingRequest.t) =
-  if Fleche.Debug.request_delay then
-    LIO.trace "request" ("postponing rq : " ^ string_of_int id);
-  PendingRequest.postpone ~id pr;
-  Hashtbl.add rtable id pr
-
 let action_request ~ofmt ~id action =
   match action with
-  | RAction.ServeNow r -> answer_request ~ofmt ~id r
-  | RAction.Postpone p -> postpone_request ~id p
+  | RAction.ServeNow r -> Rq.answer ~ofmt ~id r
+  | RAction.Postpone p -> Rq.postpone ~id p
 
-let cancel_rq ~ofmt ~code ~message id =
-  match Hashtbl.find_opt rtable id with
-  | None ->
-    (* Request already served or cancelled *)
-    ()
-  | Some pr ->
-    PendingRequest.cancel ~id pr;
-    Hashtbl.remove rtable id;
-    answer_request ~ofmt ~id (Error (code, message))
+let serve_postponed_requests ~ofmt rl = Int.Set.iter (Rq.serve ~ofmt) rl
+
+(***********************************************************************)
+(* Start of protocol handlers *)
 
 let do_shutdown ~params:_ = RAction.ok `Null
 
@@ -209,7 +177,7 @@ let do_change ~ofmt params =
     let invalid_rq = Doc_manager.change ~uri ~version ~contents in
     let code = -32802 in
     let message = "Request got old in server" in
-    Int.Set.iter (cancel_rq ~ofmt ~code ~message) invalid_rq
+    Int.Set.iter (Rq.cancel ~ofmt ~code ~message) invalid_rq
 
 let do_close ~ofmt:_ params =
   let document = dict_field "textDocument" params in
@@ -277,6 +245,12 @@ let do_trace params =
   let trace = string_field "value" params in
   LIO.set_trace_value (LIO.TraceValue.of_string trace)
 
+let do_cancel ~ofmt ~params =
+  let id = int_field "id" params in
+  let code = -32800 in
+  let message = "Cancelled by client" in
+  Rq.cancel ~ofmt ~code ~message id
+
 (***********************************************************************)
 
 (** Misc helpers *)
@@ -288,40 +262,6 @@ let rec read_request ic =
   | Error msg ->
     LIO.trace "read_request" ("error: " ^ msg);
     read_request ic
-
-let do_cancel ~ofmt ~params =
-  let id = int_field "id" params in
-  let code = -32800 in
-  let message = "Cancelled by client" in
-  cancel_rq ~ofmt ~code ~message id
-
-let serve_postponed ~id pr =
-  if Fleche.Debug.request_delay then
-    LIO.trace "[wake up]"
-      (Format.asprintf "rq: %d | %a" id PendingRequest.data pr);
-  match pr with
-  | PendingRequest.DocRequest { uri; handler } ->
-    let doc = Doc_manager.find_doc ~uri in
-    let lines = doc.contents.lines in
-    Some (Result.ok (handler ~lines ~doc))
-  | PosRequest { uri; point; handler } ->
-    let doc = Doc_manager.find_doc ~uri in
-    Some (Result.ok (handler ~point ~doc))
-
-let serve_postponed_request id =
-  match Hashtbl.find_opt rtable id with
-  | None ->
-    LIO.trace "can't wake up cancelled request: " (string_of_int id);
-    None
-  | Some pr ->
-    Hashtbl.remove rtable id;
-    serve_postponed ~id pr
-
-let serve_postponed_request ~ofmt id =
-  serve_postponed_request id |> Option.iter (answer_request ~ofmt ~id)
-
-let serve_postponed_requests ~ofmt rl =
-  Int.Set.iter (serve_postponed_request ~ofmt) rl
 
 (***********************************************************************)
 
@@ -338,8 +278,8 @@ let rec lsp_init_loop ic ofmt ~cmdline : Coq.Workspace.t =
   | LSP.Message.Request { method_ = "initialize"; id; params } ->
     (* At this point logging is allowed per LSP spec *)
     LIO.logMessage ~lvl:3 ~message:"Initializing server";
-    let result = do_initialize ~params in
-    answer_request ~ofmt ~id result;
+    let result = Rq_init.do_initialize ~params |> Result.ok in
+    Rq.answer ~ofmt ~id result;
     LIO.logMessage ~lvl:3 ~message:"Server initialized";
     (* Workspace initialization *)
     let workspace = Coq.Workspace.guess ~cmdline in
@@ -402,7 +342,7 @@ let dispatch_request ofmt ~id ~method_ ~params =
     (* -32603 = internal error *)
     let code = -32603 in
     let message = "Internal Document Request Queue Error" in
-    cancel_rq ~ofmt ~code ~message id
+    Rq.cancel ~ofmt ~code ~message id
 
 let dispatch_message ofmt ~state (com : LSP.Message.t) =
   match com with
