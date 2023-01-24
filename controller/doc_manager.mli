@@ -16,10 +16,10 @@
 (************************************************************************)
 
 module Check : sig
-  (** Check a document, or yield if there is none pending; it will send progress
-      and diagnostics notifications to [ofmt]. Will return the list of requests
-      that are ready to execute. *)
-  val check_or_yield : ofmt:Format.formatter -> Int.Set.t
+  (** Check pending documents, return [None] if there is none pending, or
+      [Some rqs] the list of requests ready to execute after the check. Sends
+      progress and diagnostics notifications to [ofmt]. *)
+  val maybe_check : ofmt:Format.formatter -> Int.Set.t option
 end
 
 (** Create a document *)
