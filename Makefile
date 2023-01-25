@@ -9,6 +9,9 @@ coq-lsp.install
 # Get the ocamlformat version from the .ocamlformat file
 OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
 
+DUNE=dune
+DUNEOPT=--root server
+
 DEV_DEPS= \
 dune \
 $(OCAMLFORMAT) \
@@ -16,42 +19,42 @@ ocaml-lsp-server
 
 .PHONY: build
 build: coq_boot
-	dune build $(DUNEOPT) $(PKG_SET)
+	$(DUNE) build $(DUNEOPT) $(PKG_SET)
 
 .PHONY: check
 check: coq_boot
-	dune build $(DUNEOPT) @check
+	$(DUNE) build $(DUNEOPT) @check
 
 .PHONY: fmt format
 fmt format:
-	dune fmt $(DUNEOPT)
+	$(DUNE) fmt $(DUNEOPT)
 
 .PHONY: watch
 watch: coq_boot
-	dune build -w $(DUNEOPT) $(PKG_SET)
+	$(DUNE) build -w $(DUNEOPT) $(PKG_SET)
 
 .PHONY: build-all
 build-all: coq_boot
-	dune build $(DUNEOPT) @all
+	$(DUNE) build $(DUNEOPT) @all
 
-coq/config/coq_config.ml:
-	cd vendor/coq \
+server/vendor/coq/config/coq_config.ml:
+	cd server/vendor/coq \
 	&& ./configure -no-ask -prefix $(shell pwd)/_build/install/default/ \
 		-native-compiler no \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
 
 .PHONY: coq_boot
-coq_boot: coq/config/coq_config.ml
+coq_boot: server/vendor/coq/config/coq_config.ml
 
 .PHONY: clean
 clean:
-	dune clean
+	$(DUNE) clean
 
 # We first pin lablgtk3 as to avoid problems with parallel make
 .PHONY: opam
 opam:
-	opam pin add coq-lsp . --kind=path -y
+	opam pin add server/coq-lsp . --kind=path -y
 	opam install coq-lsp
 
 # Create local opam switch
@@ -62,7 +65,7 @@ opam-switch:
 # Install opam deps
 .PHONY: opam-deps
 opam-deps:
-	opam install ./coq-lsp.opam -y --deps-only
+	opam install ./server/coq-lsp.opam -y --deps-only
 
 # Install opam deps
 .PHONY: opam-dev-deps
