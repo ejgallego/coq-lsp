@@ -12,6 +12,9 @@
    removed, beware of your setup in the extension settings
    (@ejgallego, #208)
  - Settings for the VSCode extension are now categorized (@Alizter, #212)
+ - `GoalAnswer`s now include the proof "stack" and better hypothesis
+   information, changes are compatible with 0.1.3 `GoalAnswer` version
+   (@ejgallego, #237)
 
 # coq-lsp 0.1.3: Event
 ----------------------

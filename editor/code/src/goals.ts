@@ -13,7 +13,9 @@ import {
 import { LanguageClient } from "vscode-languageclient/node";
 import { GoalRequest, GoalAnswer } from "../lib/types";
 
-const infoReq = new RequestType<GoalRequest, GoalAnswer, void>("proof/goals");
+const infoReq = new RequestType<GoalRequest, GoalAnswer<string>, void>(
+  "proof/goals"
+);
 
 export class InfoPanel {
   private panel: WebviewPanel | null = null;
@@ -81,7 +83,7 @@ export class InfoPanel {
   }
 
   // notify the info panel that we have fresh goals to render
-  requestDisplay(goals: GoalAnswer) {
+  requestDisplay(goals: GoalAnswer<string>) {
     this.postMessage("renderGoals", goals);
   }
 

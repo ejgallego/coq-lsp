@@ -72,22 +72,28 @@ let hover ~doc ~point =
         [] range_span)
 
 (* Replace by ppx when we can print goals properly in the client *)
-let mk_hyp { Coq.Goals.names; def = _; ty } : Yojson.Safe.t =
+let mko f b = Option.cata (fun b -> `String (f b)) `Null b
+
+let mk_hyp { Coq.Goals.names; def; ty } : Yojson.Safe.t =
   let names = List.map (fun id -> `String (Names.Id.to_string id)) names in
+  let def = mko Pp.string_of_ppcmds def in
   let ty = Pp.string_of_ppcmds ty in
-  `Assoc [ ("names", `List names); ("ty", `String ty) ]
+  `Assoc [ ("names", `List names); ("def", def); ("ty", `String ty) ]
 
 let mk_goal { Coq.Goals.info = _; ty; hyps } : Yojson.Safe.t =
   let ty = Pp.string_of_ppcmds ty in
   `Assoc [ ("ty", `String ty); ("hyps", `List (List.map mk_hyp hyps)) ]
 
-let mk_goals { Coq.Goals.goals; stack = _; bullet = _; shelf; given_up } =
+let mkl gs = `List (List.map mk_goal gs)
+let mk_stack (l1, l2) : Yojson.Safe.t = `List [ mkl l1; mkl l2 ]
+
+let mk_goals { Coq.Goals.goals; stack; bullet; shelf; given_up } =
   `Assoc
-    [ ("goals", `List (List.map mk_goal goals))
-    ; ("stack", `Null)
-    ; ("bullet", `Null)
-    ; ("shelf", `List (List.map mk_goal shelf))
-    ; ("given_up", `List (List.map mk_goal given_up))
+    [ ("goals", mkl goals)
+    ; ("stack", `List (List.map mk_stack stack))
+    ; ("bullet", mko Pp.string_of_ppcmds bullet)
+    ; ("shelf", mkl shelf)
+    ; ("given_up", mkl given_up)
     ]
 
 let mk_goals = Option.cata mk_goals `Null
