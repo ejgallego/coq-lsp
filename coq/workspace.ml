@@ -92,7 +92,7 @@ let rec parse_args args init w =
   | [] -> (init, w)
   | "-indices-matter" :: rest ->
     parse_args rest init { w with indices_matter = true }
-  | "-impredicative-nset" :: rest ->
+  | "-impredicative-set" :: rest ->
     parse_args rest init { w with impredicative_set = true }
   | "-noinit" :: rest -> parse_args rest false w
   | _ :: rest ->
