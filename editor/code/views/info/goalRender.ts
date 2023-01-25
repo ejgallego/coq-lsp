@@ -8,7 +8,7 @@ function htmlOfCoqBlock(t: string) {
   return `<pre>${t}</pre>`;
 }
 
-function htmlOfHyp(hyp: Hyp) {
+function htmlOfHyp(hyp: Hyp<string>) {
   let hypBody =
     `<label class="hname">${hyp.names}</label>` +
     `<label class="sep"> : </label>` +
@@ -31,7 +31,7 @@ function detailsOfList(
     </details>`;
 }
 
-function htmlOfGoal(goal: Goal, idx: number) {
+function htmlOfGoal(goal: Goal<string>, idx: number) {
   let hyps = goal.hyps.map(htmlOfHyp).join(" ");
   let goalBody = `<div class="pp_goals"> <span class="goal">${htmlOfCoqBlock(
     goal.ty
@@ -45,17 +45,17 @@ function htmlOfGoal(goal: Goal, idx: number) {
 }
 
 // returns the HTML code of goals environment
-function htmlOfGoals(goals: Goal[]) {
+function htmlOfGoals(goals: Goal<string>[]) {
   if (goals.length == 0) return "No goals";
   else return goals.map(htmlOfGoal).join(" ");
 }
 
-function detailsOfGoalList(open: boolean, name: string, goals: Goal[]) {
+function detailsOfGoalList(open: boolean, name: string, goals: Goal<string>[]) {
   let goalsInner: string = htmlOfGoals(goals);
   return detailsOfList(open, goals, name, goalsInner);
 }
 
-function buildGoalsContent(g: GoalConfig) {
+function buildGoalsContent(g: GoalConfig<string>) {
   let goalsBody = detailsOfGoalList(true, "Goals", g.goals);
   let shelfBody =
     g.shelf.length > 0 ? detailsOfGoalList(false, "Shelf", g.shelf) : "";
@@ -72,7 +72,7 @@ function buildGoalsContent(g: GoalConfig) {
 }
 
 // Returns the HTML code of the panel and the inset ccontent
-export function buildInfoContent(goals: GoalAnswer) {
+export function buildInfoContent(goals: GoalAnswer<string>) {
   // get the HTML code of goals environment
   let goalsBody = goals.goals ? buildGoalsContent(goals.goals) : "";
   let messageBody = detailsOfList(

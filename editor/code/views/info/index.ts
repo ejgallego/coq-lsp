@@ -11,7 +11,7 @@ const vscode: WebviewApi<CoqInfoViewState> = acquireVsCodeApi();
 
 interface CoqMessageEvent extends MessageEvent {}
 
-function doRenderGoals(goals: GoalAnswer) {
+function doRenderGoals(goals: GoalAnswer<string>) {
   let infoContainer = document.getElementById("coq-info-body");
   if (infoContainer) {
     infoContainer.innerHTML = buildInfoContent(goals);

@@ -67,30 +67,31 @@ interface GoalRequest {
 
 Answer to the request is a `Goal[]` object, where
 ```typescript
-interface Hyp {
-  names: string;
-  ty: string;
+interface Hyp<Pp> {
+  names: Pp;
+  def?: Pp;
+  ty: Pp;
 }
 
-interface Goal {
-  ty: string;
-  hyps: Hyp[];
+interface Goal<Pp> {
+  ty: Pp;
+  hyps: Hyp<Pp>[];
 }
 
-interface GoalConfig {
-  goals : Goal[];
-  stack : undefined;
-  bullet ?: string;
-  shelf : Goal[];
-  given_up : Goal[];
+interface GoalConfig<Pp> {
+  goals : Goal<Pp>[];
+  stack : [Goal<Pp>[], Goal<Pp>[]][];
+  bullet ?: Pp;
+  shelf : Goal<Pp>[];
+  given_up : Goal<Pp>[];
 }
 
-interface GoalAnswer {
+interface GoalAnswer<Pp> {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
-  goals?: GoalConfig;
-  messages: string[];
-  error?: string;
+  goals?: GoalConfig<Pp>;
+  messages: Pp[];
+  error?: Pp;
 }
 
 ```
@@ -101,6 +102,7 @@ which can be then rendered by the client in way that is desired.
 
 #### Changelog
 
+- v0.1.4: goal type generic, the `stacks` and `def` fields appear, compatible v0.1.3 clients
 - v0.1.3: send full goal configuration with shelf, given_up, versioned identifier for document
 - v0.1.2: include messages and optional error in the request response
 - v0.1.1: include position and document in the request response
