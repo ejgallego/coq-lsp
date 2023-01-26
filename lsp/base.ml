@@ -33,12 +33,12 @@ let dict_field name dict = U.to_assoc (List.assoc name dict)
 module Message = struct
   type t =
     | Notification of
-        { method_ : string
+        { method_ : string [@key "method"]
         ; params : (string * Yojson.Safe.t) list
         }
     | Request of
         { id : int
-        ; method_ : string
+        ; method_ : string [@key "method"]
         ; params : (string * Yojson.Safe.t) list
         }
 
@@ -80,48 +80,13 @@ let mk_notification ~method_ ~params =
   `Assoc
     [ ("jsonrpc", `String "2.0")
     ; ("method", `String method_)
-    ; ("params", `Assoc params)
+    ; ("params", params)
     ]
 
-(* let json_of_goal g = let pr_hyp (s,(_,t)) = `Assoc ["hname", `String s;
-   "htype", `String (Format.asprintf "%a" Print.pp_term (Bindlib.unbox t))] in
-   let open Proofs in let j_env = List.map pr_hyp g.g_hyps in `Assoc [ "gid",
-   `Int g.g_meta.meta_key ; "hyps", `List j_env ; "type", `String
-   (Format.asprintf "%a" Print.pp_term g.g_type)]
-
-   let json_of_thm thm = let open Proofs in match thm with | None -> `Null |
-   Some thm -> `Assoc [ "goals", `List List.(map json_of_goal thm.t_goals) ] *)
-
-let mk_range { Fleche.Types.Range.start; end_ } : J.t =
-  `Assoc
-    [ ( "start"
-      , `Assoc
-          [ ("line", `Int start.line); ("character", `Int start.character) ] )
-    ; ( "end"
-      , `Assoc [ ("line", `Int end_.line); ("character", `Int end_.character) ]
-      )
-    ]
-
-(* let mk_diagnostic ((p : Pos.pos), (lvl : int), (msg : string), (thm :
-   Proofs.theorem option)) : J.json = *)
-let mk_diagnostic
-    ( (r : Fleche.Types.Range.t)
-    , (lvl : int)
-    , (msg : string)
-    , (_thm : unit option) ) : J.t =
-  (* let goal = json_of_thm thm in *)
-  let range = mk_range r in
-  `Assoc
-    [ (* mk_extra ["goal_info", goal] @ *)
-      ("range", range)
-    ; ("severity", `Int lvl)
-    ; ("message", `String msg)
-    ]
-
-let mk_diagnostics ~uri ~version ld : J.t =
-  mk_notification ~method_:"textDocument/publishDiagnostics"
-    ~params:
-      [ ("uri", `String uri)
-      ; ("version", `Int version)
-      ; ("diagnostics", `List List.(map mk_diagnostic ld))
-      ]
+module VersionedTextDocument = struct
+  type t =
+    { uri : string
+    ; version : int
+    }
+  [@@deriving yojson]
+end

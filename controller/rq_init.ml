@@ -20,14 +20,10 @@ let odict_field name dict =
     []
 
 (* Request Handling: The client expects a reply *)
-module CoqLspOption = struct
-  type t = [%import: Fleche.Config.t] [@@deriving yojson]
-end
-
 let do_client_options coq_lsp_options : unit =
   LIO.trace "init" "custom client options:";
   LIO.trace_object "init" (`Assoc coq_lsp_options);
-  match CoqLspOption.of_yojson (`Assoc coq_lsp_options) with
+  match Lsp.JFleche.Config.of_yojson (`Assoc coq_lsp_options) with
   | Ok v -> Fleche.Config.v := v
   | Error msg -> LIO.trace "CoqLspOption.of_yojson error: " msg
 

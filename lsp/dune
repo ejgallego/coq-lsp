@@ -1,4 +1,6 @@
 (library
  (name lsp)
  (public_name coq-lsp.lsp)
+ (preprocess
+  (staged_pps ppx_import ppx_deriving_yojson))
  (libraries fleche yojson threads))

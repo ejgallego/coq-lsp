@@ -90,7 +90,7 @@ let set_trace_value value = trace_value := value
 
 let logMessage ~lvl ~message =
   let method_ = "window/logMessage" in
-  let params = [ ("type", `Int lvl); ("message", `String message) ] in
+  let params = `Assoc [ ("type", `Int lvl); ("message", `String message) ] in
   let msg = Base.mk_notification ~method_ ~params in
   send_json !oc msg
 
@@ -99,8 +99,8 @@ let logTrace ~message ~extra =
   let params =
     match (!trace_value, extra) with
     | Verbose, Some extra ->
-      [ ("message", `String message); ("verbose", `String extra) ]
-    | _, _ -> [ ("message", `String message) ]
+      `Assoc [ ("message", `String message); ("verbose", `String extra) ]
+    | _, _ -> `Assoc [ ("message", `String message) ]
   in
   Base.mk_notification ~method_ ~params |> send_json !oc
 

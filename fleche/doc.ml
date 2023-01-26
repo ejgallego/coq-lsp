@@ -14,7 +14,7 @@ module Util = struct
     | [] -> default
     | h :: _ -> h
 
-  let mk_diag ?(extra = []) range severity message =
+  let mk_diag ?extra range severity message =
     let message = Pp.string_of_ppcmds message in
     Types.Diagnostic.{ range; severity; message; extra }
 
@@ -23,8 +23,10 @@ module Util = struct
     match (Coq.Ast.to_coq ast).v with
     | Vernacexpr.{ expr = VernacRequire (prefix, _export, module_refs); _ } ->
       let refs = List.map fst module_refs in
-      let extra = [ Types.Diagnostic.Extra.FailedRequire { prefix; refs } ] in
-      mk_diag ~extra range 1 msg
+      let extra =
+        Some [ Types.Diagnostic.Extra.FailedRequire { prefix; refs } ]
+      in
+      mk_diag ?extra range 1 msg
     | _ -> mk_diag range 1 msg
 
   let feed_to_diag ~drange (range, severity, message) =
@@ -353,7 +355,7 @@ let set_stats ~stats doc = { doc with stats }
 let compute_progress end_ (last_done : Types.Range.t) =
   let start = last_done.end_ in
   let range = Types.Range.{ start; end_ } in
-  (range, 1)
+  { Progress.Info.range; kind = 1 }
 
 let report_progress ~doc (last_tok : Types.Range.t) =
   let progress = compute_progress doc.contents.last last_tok in

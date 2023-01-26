@@ -1,8 +1,6 @@
 (executable
  (name coq_lsp)
- (modules version cache requests rq_init lsp_util doc_manager coq_lsp)
+ (modules version cache requests rq_init doc_manager coq_lsp)
  (public_name coq-lsp)
- (preprocess
-  (staged_pps ppx_import ppx_deriving_yojson))
  (link_flags -linkall)
  (libraries threads coq fleche lsp cmdliner))
