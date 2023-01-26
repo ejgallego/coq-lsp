@@ -35,7 +35,7 @@ export class InfoPanel {
     this.panel = window.createWebviewPanel(
       "goals",
       "Goals",
-      ViewColumn.Two,
+      { preserveFocus: true, viewColumn: ViewColumn.Two },
       webviewOpts
     );
 

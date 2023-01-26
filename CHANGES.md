@@ -15,6 +15,8 @@
  - `GoalAnswer`s now include the proof "stack" and better hypothesis
    information, changes are compatible with 0.1.3 `GoalAnswer` version
    (@ejgallego, #237)
+ - Focus is now preserved when the info view pops up (@artagnon, #242,
+   fixes #224)
  - In `_CoqProject`, `-impredicative-set` is now parsed correctly
    (@artagnon, #241)
 
