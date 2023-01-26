@@ -15,6 +15,8 @@
  - `GoalAnswer`s now include the proof "stack" and better hypothesis
    information, changes are compatible with 0.1.3 `GoalAnswer` version
    (@ejgallego, #237)
+ - In `_CoqProject`, `-impredicative-set` is now parsed correctly
+   (@artagnon, #241)
 
 # coq-lsp 0.1.3: Event
 ----------------------
