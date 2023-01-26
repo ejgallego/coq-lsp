@@ -14,7 +14,7 @@ Open Scope N_scope.
 Inductive move := Rm (* right *) | Lm (* left *) | Um (* up *) | Dm (* down *).
 
 (* Remove all the elements a of l such that p a holds *)
-Fixpoint strip {A : Type} (p : A -> bool) l := 
+Fixpoint strip {A : Type} (p : A -> bool) l :=
       match l with
       | nil => l
       | a :: l1 => if p a then strip p l1 else a :: strip p l1
@@ -50,7 +50,7 @@ Definition zeros := icount (N.eqb 0).
 
 (* Replace the n th occurrence of p with v in ligne l *)
 Fixpoint replace n (p : N -> bool) (v : N) l  :=
-  match l with 
+  match l with
   | a :: l1 => if p a then
                  if n =? 0 then v :: l1
                  else a :: replace (n - 1) p v l1
@@ -60,7 +60,7 @@ Fixpoint replace n (p : N -> bool) (v : N) l  :=
 
 (* Replace the n th occurrence of p with v in lignes ll *)
 Fixpoint ireplace n (p : N -> bool) v ll  :=
-  match ll with 
+  match ll with
   | l :: ll1 => let m := count p l in
     if n <? m then (replace n p v l) :: ll1
     else l :: ireplace (n - m) p v ll1
@@ -71,10 +71,10 @@ end.
 Definition iflip (n : nat) := map (@rev N).
 
 (* Rotate the board *)
-Fixpoint irotate (n : nat) ll := 
+Fixpoint irotate (n : nat) ll :=
   match n with
   | O    => nil
-  | S n1 =>  map (hd 0%N) ll :: irotate n1 (map (@tl _) ll) 
+  | S n1 =>  map (hd 0%N) ll :: irotate n1 (map (@tl _) ll)
   end.
 
 (* Iterator *)
@@ -84,7 +84,7 @@ Fixpoint iter {A : Type} n (f : A -> A) a  :=
 (* Make Empty board *)
 Definition make_board n :=
   let l := iter n (cons 0) nil in iter n (cons l) nil.
- 
+
 (* Apply a test on a list *)
 Fixpoint test_list {A: Type} (f : A -> A -> bool) l1 l2 :=
   match l1, l2 with
@@ -99,7 +99,7 @@ Definition eq_board := test_list (test_list N.eqb).
 (* Make a move *)
 Definition make_move n move b :=
    match move with
-  | Lm => icumul n b 
+  | Lm => icumul n b
   | Rm => iflip n (icumul n (iflip n b))
   | Um => irotate n (icumul n (irotate n b))
   | Dm => irotate n (iflip n (icumul n (iflip n (irotate n b))))
@@ -118,7 +118,7 @@ Definition mdiv m n :=
   N.shiftr m (l + 1).
 
 (* Add a number from gl inside b *)
-Definition add_val s (gl : list N) b := 
+Definition add_val s (gl : list N) b :=
       let z := zeros b in
       if z =? 0 then None else
       (* Which empty cell gets the new number *)
@@ -169,14 +169,14 @@ Definition l2s n l :=
 (* Make a line *)
 Definition make_line n :=
     iter n (fun l => "-" ++ l)%string nl.
- 
+
 (* Board to string *)
 Definition b2s n m l :=
   let li := make_line ((m + 1) * n + 1)  in
   (nl ++ fold_right (fun r s => li ++ l2s n r ++ s) li l)%string.
 
 (* Possible result after a game *)
-Inductive result := 
+Inductive result :=
   iresult (*invalid *) | lresult (* lost *) |  wresult (* win *) |
   vresult (_ : N) (_ : list (list N)) (* valid *).
 
@@ -184,7 +184,7 @@ Inductive result :=
 Definition next_board n s gl v m b :=
     let b1 := make_move n m b in
     if eq_board b b1 then iresult
-    else 
+    else
       if is_won v b1 then wresult else
       let z := zeros b1 in
       if z =? 0 then lresult else
@@ -200,7 +200,7 @@ Fixpoint games n d s gl v ms b st :=
     let nb := next_board n s gl v m b in
     match nb with
     | iresult => Invalid_Move
-    | lresult => Lost 
+    | lresult => Lost
     | wresult => Won ms1
     | vresult s1 b1 =>
           games n d s1 gl v ms1 b1 (b2s d n b1)
@@ -213,7 +213,7 @@ games n d s gl v (m :: ms1) b st =
     let nb := next_board n s gl v m b in
     match nb with
     | iresult => Invalid_Move
-    | lresult => Lost 
+    | lresult => Lost
     | wresult => Won ms1
     | vresult s1 b1 =>
           games n d s1 gl v ms1 b1 (b2s d n b1)
@@ -224,7 +224,7 @@ Definition start_game n s gl v ms b :=
       match add_val s gl b with
       | None => Lost
       | Some (s1, b1) =>
-          let d := digit v in 
+          let d := digit v in
           games n d s1 gl v ms b1 (b2s d n b1)
       end.
 
@@ -290,9 +290,9 @@ match goal with
 end ) end.
 
 (* Generic tactic for move *)
-Ltac gen_tac v := 
+Ltac gen_tac v :=
   match goal with
-  |- games ?X1 ?X2 ?X3 ?X4 ?X5 ?X6 ?X7 ?X8 => 
+  |- games ?X1 ?X2 ?X3 ?X4 ?X5 ?X6 ?X7 ?X8 =>
        refine (_ : games X1 X2 X3 X4 X5 (v :: _) X7 X8)
   end.
 
@@ -328,9 +328,9 @@ end.
 
 (* Solving tactic *)
 Ltac solver v :=
-(Rf; STOP ("R" :: v); solver ("R" :: v); fail) || 
-(Df; STOP ("D" :: v); solver ("D" :: v); fail) || 
-(Lf; STOP ("L" :: v); solver ("L" :: v); fail) || 
+(Rf; STOP ("R" :: v); solver ("R" :: v); fail) ||
+(Df; STOP ("D" :: v); solver ("D" :: v); fail) ||
+(Lf; STOP ("L" :: v); solver ("L" :: v); fail) ||
 (Uf; STOP ("U" :: v); solver ("U" :: v); fail).
 
 Ltac solve := solver constr:(@nil string).
@@ -416,6 +416,6 @@ S.
 solve.
 Qed.
 
-(* 
+(*
 Lemma thm3 : forall seed, exists ms, g2048 seed ms.
 *)
