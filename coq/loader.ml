@@ -22,19 +22,19 @@ let list_last l = List.(nth l (length l - 1))
 let map_serlib fl_pkg =
   let supported = match fl_pkg with
     (* Supported by serlib *)             (* directory   *)
-    | "coq-core.plugins.cc"               (* cc  *)
-    | "coq-core.plugins.extraction"       (* extraction  *)
+    (* | "coq-core.plugins.cc"               (\* cc  *\) *)
+    (* | "coq-core.plugins.extraction"       (\* extraction  *\) *)
     | "coq-core.plugins.firstorder"       (* firstorder  *)
     | "coq-core.plugins.funind"           (* funind      *)
     | "coq-core.plugins.ltac"             (* ltac        *)
     | "coq-core.plugins.ltac2"            (* ltac2       *)
-    | "coq-core.plugins.micromega"        (* micromega   *)
+    (* | "coq-core.plugins.micromega"        (\* micromega   *\) *)
     | "coq-core.plugins.ring"             (* ring        *)
     | "coq-core.plugins.ssreflect"        (* ssreflect   *)
     | "coq-core.plugins.ssrmatching"      (* ssrmatching *)
-    | "coq-core.plugins.number_string_notation" (* syntax *)
-    | "coq-core.plugins.tauto"            (* tauto *)
-    | "coq-core.plugins.zify"             (* zify *)
+    (* | "coq-core.plugins.number_string_notation" (\* syntax *\) *)
+    (* | "coq-core.plugins.tauto"            (\* tauto *\) *)
+    (* | "coq-core.plugins.zify"             (\* zify *\) *)
       -> true
     | _ ->
       Feedback.msg_warning Pp.(str "Missing serlib plugin: " ++ str fl_pkg);
