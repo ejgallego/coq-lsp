@@ -24,9 +24,10 @@ type t =
   ; indices_matter : bool
   ; impredicative_set : bool
   ; kind : string
+  ; debug : bool
   }
 
-let default ~implicit ~coqlib ~kind =
+let default ~implicit ~coqlib ~kind ~debug =
   let mk_path prefix = coqlib ^ "/" ^ prefix in
   let mk_lp ~ml ~root ~dir ~implicit =
     { Loadpath.unix_path = mk_path dir
@@ -51,6 +52,7 @@ let default ~implicit ~coqlib ~kind =
   ; indices_matter = false
   ; impredicative_set = false
   ; kind
+  ; debug
   }
 
 let add_loadpaths base ~vo_load_path ~ml_include_path =
@@ -119,7 +121,9 @@ let apply ~libname
     ; indices_matter
     ; impredicative_set
     ; kind = _
+    ; debug
     } =
+  if debug then CDebug.set_flags "backtrace";
   Global.set_indices_matter indices_matter;
   Global.set_impredicative_set impredicative_set;
   List.iter Mltop.add_ml_dir ml_include_path;
@@ -127,7 +131,7 @@ let apply ~libname
   Declaremods.start_library libname;
   load_objs require_libs
 
-let workspace_from_coqproject ~coqlib : t =
+let workspace_from_coqproject ~coqlib ~debug : t =
   (* Io.Log.error "init" "Parsing _CoqProject"; *)
   let open CoqProject_file in
   let to_vo_loadpath f implicit =
@@ -154,7 +158,7 @@ let workspace_from_coqproject ~coqlib : t =
   let args = List.map (fun f -> f.thing) extra_args in
   let implicit = true in
   let kind = Filename.concat (Sys.getcwd ()) "_CoqProject" in
-  let workspace = default ~coqlib ~implicit ~kind in
+  let workspace = default ~coqlib ~implicit ~kind ~debug in
   let init, workspace = parse_args args true workspace in
   let workspace =
     if not init then { workspace with require_libs = [] } else workspace
@@ -169,13 +173,14 @@ module CmdLine = struct
     }
 end
 
-let workspace_from_cmdline { CmdLine.coqlib; vo_load_path; ml_include_path } =
+let workspace_from_cmdline ~debug
+    { CmdLine.coqlib; vo_load_path; ml_include_path } =
   let kind = "Command-line arguments" in
   let implicit = true in
-  let w = default ~implicit ~coqlib ~kind in
+  let w = default ~implicit ~coqlib ~kind ~debug in
   add_loadpaths w ~vo_load_path ~ml_include_path
 
-let guess ~cmdline =
+let guess ~debug ~cmdline =
   if Sys.file_exists "_CoqProject" then
-    workspace_from_coqproject ~coqlib:cmdline.CmdLine.coqlib
-  else workspace_from_cmdline cmdline
+    workspace_from_coqproject ~coqlib:cmdline.CmdLine.coqlib ~debug
+  else workspace_from_cmdline ~debug cmdline

@@ -272,7 +272,7 @@ let log_workspace w =
   LIO.trace "workspace" "initialized" ~extra;
   LIO.logMessage ~lvl:3 ~message
 
-let rec lsp_init_loop ic ofmt ~cmdline : Coq.Workspace.t =
+let rec lsp_init_loop ic ofmt ~cmdline ~debug : Coq.Workspace.t =
   match read_request ic with
   | LSP.Message.Request { method_ = "initialize"; id; params } ->
     (* At this point logging is allowed per LSP spec *)
@@ -281,18 +281,18 @@ let rec lsp_init_loop ic ofmt ~cmdline : Coq.Workspace.t =
     Rq.answer ~ofmt ~id result;
     LIO.logMessage ~lvl:3 ~message:"Server initialized";
     (* Workspace initialization *)
-    let workspace = Coq.Workspace.guess ~cmdline in
+    let workspace = Coq.Workspace.guess ~cmdline ~debug in
     log_workspace workspace;
     workspace
   | LSP.Message.Request { id; _ } ->
     (* per spec *)
     LSP.mk_request_error ~id ~code:(-32002) ~message:"server not initialized"
     |> LIO.send_json ofmt;
-    lsp_init_loop ic ofmt ~cmdline
+    lsp_init_loop ic ofmt ~cmdline ~debug
   | LSP.Message.Notification { method_ = "exit"; params = _ } -> raise Lsp_exit
   | LSP.Message.Notification _ ->
     (* We can't log before getting the initialize message *)
-    lsp_init_loop ic ofmt ~cmdline
+    lsp_init_loop ic ofmt ~cmdline ~debug
 
 (** Dispatching *)
 let dispatch_notification ofmt ~state ~method_ ~params : unit =
@@ -449,9 +449,8 @@ let mk_fb_handler q Feedback.{ contents; _ } =
   | Message (Debug, _loc, _msg) -> ()
   | _ -> ()
 
-let coq_init ~fb_queue ~bt =
+let coq_init ~fb_queue ~debug =
   let fb_handler = mk_fb_handler fb_queue in
-  let debug = bt || Fleche.Debug.backtraces in
   let load_module = Dynlink.loadfile in
   let load_plugin = Coq.Loader.plugin_handler None in
   Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin })
@@ -470,7 +469,9 @@ let lsp_main bt coqlib vo_load_path ml_include_path =
 
   (* Core Coq initialization *)
   let fb_queue = Coq.Protect.fb_queue in
-  let root_state = coq_init ~fb_queue ~bt in
+
+  let debug = bt || Fleche.Debug.backtraces in
+  let root_state = coq_init ~fb_queue ~debug in
   let cmdline =
     { Coq.Workspace.CmdLine.coqlib; vo_load_path; ml_include_path }
   in
@@ -485,7 +486,7 @@ let lsp_main bt coqlib vo_load_path ml_include_path =
   (* Input/output will happen now *)
   try
     (* LSP Server server initialization *)
-    let workspace = lsp_init_loop ic oc ~cmdline in
+    let workspace = lsp_init_loop ic oc ~cmdline ~debug in
 
     (* Core LSP loop context *)
     let state = { State.root_state; workspace } in
