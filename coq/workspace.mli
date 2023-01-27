@@ -23,7 +23,8 @@ type t = private
       (string * string option * Vernacexpr.export_with_cats option) list
   ; indices_matter : bool
   ; impredicative_set : bool
-  ; kind : string  (** How was the workspace built *)
+  ; kind : string  (** How the workspace was built *)
+  ; debug : bool  (** Enable backtraces *)
   }
 
 (** user message, debug extra data *)
@@ -37,7 +38,7 @@ module CmdLine : sig
     }
 end
 
-val guess : cmdline:CmdLine.t -> t
+val guess : debug:bool -> cmdline:CmdLine.t -> t
 
 (** [apply libname w] will prepare Coq for a new file [libname] on workspace [w] *)
 val apply : libname:Names.DirPath.t -> t -> unit
