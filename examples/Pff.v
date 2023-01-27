@@ -12,8 +12,6 @@ Require Export Div2.
 Require Export Even.
 Require Import Psatz.
 
-Ltac omega ::= lia.
-
 (*** was file sTactic.v  ***)
 
 (****************************************************************************
@@ -40,6 +38,7 @@ Ltac Casec name := case name; clear name.
 (* Same as Elim but cleans the elim variable  *)
 
 Ltac Elimc name := elim name; clear name.
+
 (*** was file Faux.v  ***)
 (****************************************************************************
 
@@ -52,16 +51,6 @@ Ltac Elimc name := elim name; clear name.
 
 (*Missing rule for nat *)
 
-
-
-Theorem lt_next : forall n m : nat, n < m -> m = S n \/ S n < m.
-intros n m H'; elim H'; auto with arith.
-Qed.
-
-Theorem le_next : forall n m : nat, n <= m -> m = n \/ S n <= m.
-intros n m H'; case (le_lt_or_eq _ _ H'); auto with arith.
-Qed.
-
 Theorem min_or :
  forall n m : nat, min n m = n /\ n <= m \/ min n m = m /\ m < n.
 intros n; elim n; simpl in |- *; auto with arith.
@@ -69,34 +58,6 @@ intros n' Rec m; case m; simpl in |- *; auto with arith.
 intros m'; elim (Rec m'); intros H'0; case H'0; clear H'0; intros H'0 H'1;
  rewrite H'0; auto with arith.
 Qed.
-
-Theorem minus_inv_lt_aux : forall n m : nat, n - m = 0 -> n - S m = 0.
-intros n; elim n; simpl in |- *; auto with arith.
-intros n0 H' m; case m; auto with arith.
-intros H'0; discriminate.
-Qed.
-
-Theorem minus_inv_lt : forall n m : nat, m <= n -> m - n = 0.
-intros n m H'; elim H'; simpl in |- *; auto with arith.
-intros m0 H'0 H'1; apply minus_inv_lt_aux; auto.
-Qed.
-
-Theorem minus_le : forall m n p q : nat, m <= n -> p <= q -> m - q <= n - p.
-intros m n p q H' H'0.
-case (le_or_lt m q); intros H'1.
-rewrite minus_inv_lt with (1 := H'1); auto with arith.
-apply (fun p n m : nat => plus_le_reg_l n m p) with (p := q).
-rewrite le_plus_minus_r; auto with arith.
-rewrite (le_plus_minus p q); auto.
-rewrite (plus_comm p).
-rewrite plus_assoc_reverse.
-rewrite le_plus_minus_r; auto with arith.
-apply le_trans with (1 := H'); auto with arith.
-apply le_trans with (1 := H'0); auto with arith.
-apply le_trans with (2 := H'); auto with arith.
-Qed.
-
-
 
 (* Properties of Z *)
 
@@ -110,16 +71,16 @@ unfold nat_of_P in |- *; simpl in |- *; auto with arith.
 Qed.
 
 Theorem inj_abs :
- forall x : Z, (0 <= x)%Z -> Z_of_nat (Zabs_nat x) = x.
+ forall x : Z, (0 <= x)%Z -> Z_of_nat (Z.abs_nat x) = x.
 intros x; elim x; auto.
-unfold Zabs_nat in |- *.
+unfold Z.abs_nat in |- *.
 intros p.
 pattern p at 1 3 in |- *;
  rewrite <- (pred_o_P_of_succ_nat_o_nat_of_P_eq_id p).
 generalize (convert_not_O p); case (nat_of_P p); simpl in |- *;
  auto with arith.
 intros H'; case H'; auto.
-intros n H' H'0; rewrite Ppred_succ; auto.
+intros n H' H'0; rewrite Pos.pred_succ; auto.
 intros p H'; contradict H'; auto.
 Qed.
 
@@ -148,20 +109,9 @@ intros H'0; contradict H'; auto with zarith.
 Qed.
 
 
-Theorem Zcompare_EGAL :
- forall p q : Z, (p ?= q)%Z = Datatypes.Eq -> p = q.
-intros p q; case p; case q; simpl in |- *; auto with arith;
- try (intros; discriminate); intros q1 p1.
-intros H1; rewrite (Pcompare_Eq_eq p1 q1); auto.
-unfold Pos.compare.
-generalize (Pcompare_Eq_eq p1 q1);
- case (Pcompare p1 q1 Datatypes.Eq); simpl in |- *;
- intros H H1; try discriminate; rewrite H; auto.
-Qed.
-
 Theorem Zlt_Zopp : forall x y : Z, (x < y)%Z -> (- y < - x)%Z.
 intros x y; case x; case y; simpl in |- *; auto with zarith; intros p p0;
- unfold Zlt in |- *; simpl in |- *; unfold Pos.compare; rewrite <- ZC4;
+ unfold Z.lt in |- *; simpl in |- *; unfold Pos.compare; rewrite <- ZC4;
  auto.
 Qed.
 
@@ -169,29 +119,9 @@ Theorem Zle_Zopp : forall x y : Z, (x <= y)%Z -> (- y <= - x)%Z.
 intros x y H'; case (Zle_lt_or_eq _ _ H'); auto with zarith.
 Qed.
 
-Theorem absolu_INR : forall n : nat, Zabs_nat (Z_of_nat n) = n.
-intros n; case n; simpl in |- *; auto with arith.
-intros n0; rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith.
-Qed.
-
-Theorem Zabs_absolu : forall z : Z, Zabs z = Z_of_nat (Zabs_nat z).
+Theorem Zabs_absolu : forall z : Z, Z.abs z = Z_of_nat (Z.abs_nat z).
 intros z; case z; simpl in |- *; auto; intros p; apply sym_equal;
  apply inject_nat_convert; auto.
-Qed.
-
-
-
-Theorem Zmin_sym : forall m n : Z, Zmin n m = Zmin m n.
-intros m n; unfold Zmin in |- *.
-case n; case m; simpl in |- *; auto; unfold Pos.compare.
-intros p p0; rewrite (ZC4 p p0).
-generalize (Pcompare_Eq_eq p0 p).
-case (Pcompare p0 p Datatypes.Eq); simpl in |- *; auto.
-intros H'; rewrite H'; auto.
-intros p p0; rewrite (ZC4 p p0).
-generalize (Pcompare_Eq_eq p0 p).
-case (Pcompare p0 p Datatypes.Eq); simpl in |- *; auto.
-intros H'; rewrite H'; auto.
 Qed.
 
 Theorem Zpower_nat_O : forall z : Z, Zpower_nat z 0 = Z_of_nat 1.
@@ -202,38 +132,15 @@ Theorem Zpower_nat_1 : forall z : Z, Zpower_nat z 1 = z.
 intros z; unfold Zpower_nat in |- *; simpl in |- *; rewrite Zmult_1_r; auto.
 Qed.
 
-Theorem Zmin_le1 : forall z1 z2 : Z, (z1 <= z2)%Z -> Zmin z1 z2 = z1.
-intros z1 z2; unfold Zle, Zmin in |- *; case (z1 ?= z2)%Z; auto; intros H;
- contradict H; auto.
-Qed.
-
-Theorem Zmin_le2 : forall z1 z2 : Z, (z2 <= z1)%Z -> Zmin z1 z2 = z2.
-intros z1 z2 H; rewrite Zmin_sym; apply Zmin_le1; auto.
-Qed.
-
 Theorem Zmin_Zle :
  forall z1 z2 z3 : Z,
- (z1 <= z2)%Z -> (z1 <= z3)%Z -> (z1 <= Zmin z2 z3)%Z.
-intros z1 z2 z3 H' H'0; unfold Zmin in |- *.
+ (z1 <= z2)%Z -> (z1 <= z3)%Z -> (z1 <= Z.min z2 z3)%Z.
+intros z1 z2 z3 H' H'0; unfold Z.min in |- *.
 case (z2 ?= z3)%Z; auto.
 Qed.
 
-Theorem Zminus_n_predm :
- forall n m : Z, Zsucc (n - m) = (n - Zpred m)%Z.
-intros n m.
-unfold Zpred in |- *; unfold Zsucc in |- *; ring.
-Qed.
-
-Theorem Zopp_Zpred_Zs : forall z : Z, (- Zpred z)%Z = Zsucc (- z).
-intros z; unfold Zpred, Zsucc in |- *; ring.
-Qed.
-
-Theorem Zle_mult_gen :
- forall x y : Z, (0 <= x)%Z -> (0 <= y)%Z -> (0 <= x * y)%Z.
-intros x y H' H'0; case (Zle_lt_or_eq _ _ H').
-intros H'1; rewrite Zmult_comm; apply Zmult_gt_0_le_0_compat; auto;
- apply Zlt_gt; auto.
-intros H'1; rewrite <- H'1; simpl in |- *; auto with zarith.
+Theorem Zopp_Zpred_Zs : forall z : Z, (- Z.pred z)%Z = Z.succ (- z).
+intros z; unfold Z.pred, Z.succ in |- *; ring.
 Qed.
 
 Definition Zmax : forall x_ x_ : Z, Z :=
@@ -247,14 +154,14 @@ Definition Zmax : forall x_ x_ : Z, Z :=
 Theorem ZmaxLe1 : forall z1 z2 : Z, (z1 <= Zmax z1 z2)%Z.
 intros z1 z2; unfold Zmax in |- *; CaseEq (z1 ?= z2)%Z; simpl in |- *;
  auto with zarith.
-unfold Zle in |- *; intros H; rewrite H; red in |- *; intros; discriminate.
+unfold Z.le in |- *; intros H; rewrite H; red in |- *; intros; discriminate.
 rewrite Z.compare_lt_iff; auto with zarith.
 Qed.
 
 Theorem ZmaxSym : forall z1 z2 : Z, Zmax z1 z2 = Zmax z2 z1.
 intros z1 z2; unfold Zmax in |- *; CaseEq (z1 ?= z2)%Z; CaseEq (z2 ?= z1)%Z;
- intros H1 H2; try case (Zcompare_EGAL _ _ H1); auto;
- try case (Zcompare_EGAL _ _ H2); auto; contradict H1.
+ intros H1 H2; try case (Z.compare_eq _ _ H1); auto;
+ try case (Z.compare_eq _ _ H2); auto; contradict H1.
 case (Zcompare.Zcompare_Gt_Lt_antisym z2 z1); auto.
 intros H' H'0; rewrite H'0; auto; red in |- *; intros; discriminate.
 case (Zcompare.Zcompare_Gt_Lt_antisym z1 z2); auto.
@@ -268,27 +175,22 @@ intros z1 z2; rewrite ZmaxSym; apply ZmaxLe1.
 Qed.
 
 Theorem Zeq_Zs :
- forall p q : Z, (p <= q)%Z -> (q < Zsucc p)%Z -> p = q.
+ forall p q : Z, (p <= q)%Z -> (q < Z.succ p)%Z -> p = q.
 intros p q H' H'0; apply Zle_antisym; auto.
 apply Zlt_succ_le; auto.
 Qed.
 
-Theorem Zmin_Zmax : forall z1 z2 : Z, (Zmin z1 z2 <= Zmax z1 z2)%Z.
-intros z1 z2; case (Zle_or_lt z1 z2); unfold Zle, Zlt, Zmin, Zmax in |- *;
+Theorem Zmin_Zmax : forall z1 z2 : Z, (Z.min z1 z2 <= Zmax z1 z2)%Z.
+intros z1 z2; case (Zle_or_lt z1 z2); unfold Z.le, Z.lt, Z.min, Zmax in |- *;
  CaseEq (z1 ?= z2)%Z; auto; intros H1 H2; try rewrite H1;
  try rewrite H2; red in |- *; intros; discriminate.
-Qed.
-
-Theorem Zabs_Zmult :
- forall z1 z2 : Z, Zabs (z1 * z2) = (Zabs z1 * Zabs z2)%Z.
-intros z1 z2; case z1; case z2; simpl in |- *; auto with zarith.
 Qed.
 
 Theorem Zle_Zmult_comp_r :
  forall x y z : Z, (0 <= z)%Z -> (x <= y)%Z -> (x * z <= y * z)%Z.
 intros x y z H' H'0; case (Zle_lt_or_eq _ _ H'); intros Zlt1.
 apply Zmult_gt_0_le_compat_r; auto.
-apply Zlt_gt; auto.
+apply Z.lt_gt; auto.
 rewrite <- Zlt1; repeat rewrite <- Zmult_0_r_reverse; auto with zarith.
 Qed.
 
@@ -298,99 +200,40 @@ intros x y z H' H'0; repeat rewrite (Zmult_comm z);
  apply Zle_Zmult_comp_r; auto.
 Qed.
 
-
 (* Conversions from R <-> Z  <-> N *)
 
-
-
-Theorem Rlt_IZR : forall p q : Z, (p < q)%Z -> (IZR p < IZR q)%R.
-intros p q H; case (Rle_or_lt (IZR q) (IZR p)); auto.
-intros H1; contradict H; apply Zle_not_lt.
-apply le_IZR; auto.
-Qed.
-
-
-Theorem Rle_IZR : forall x y : Z, (x <= y)%Z -> (IZR x <= IZR y)%R.
-intros x y H'.
-case (Zle_lt_or_eq _ _ H'); clear H'; intros H'.
-apply Rlt_le; auto with real.
-now apply Rlt_IZR.
-rewrite <- H'; auto with real.
-Qed.
-
-
-Theorem lt_Rlt : forall n m : nat, (INR n < INR m)%R -> n < m.
-intros n m H'; case (le_or_lt m n); auto; intros H0; contradict H';
- auto with real.
-case (le_lt_or_eq _ _ H0); intros H1; auto with real.
-rewrite H1; apply Rlt_irrefl.
-Qed.
-
-Theorem INR_inv : forall n m : nat, INR n = INR m -> n = m.
-intros n; elim n; auto; try rewrite S_INR.
-intros m; case m; auto.
-intros m' H1; contradict H1; auto.
-rewrite S_INR.
-apply Rlt_dichotomy_converse; left.
-apply Rle_lt_0_plus_1.
-apply pos_INR.
-intros n' H' m; case m.
-intros H'0; contradict H'0; auto.
-rewrite S_INR.
-apply Rlt_dichotomy_converse; right.
-red in |- *; apply Rle_lt_0_plus_1.
-apply pos_INR.
-intros m' H'0.
-rewrite (H' m'); auto.
-repeat rewrite S_INR in H'0.
-apply Rplus_eq_reg_l with (r := 1%R); repeat rewrite (Rplus_comm 1);
- auto with real.
-Qed.
-
-Theorem Rle_INR : forall x y : nat, x <= y -> (INR x <= INR y)%R.
-intros x y H; repeat rewrite INR_IZR_INZ.
-apply Rle_IZR; auto with zarith.
-Qed.
-
-Theorem le_Rle : forall n m : nat, (INR n <= INR m)%R -> n <= m.
-intros n m H'; case H'; auto.
-intros H'0; apply lt_le_weak; apply lt_Rlt; auto.
-intros H'0; rewrite <- (INR_inv _ _ H'0); auto with arith.
-Qed.
-
-
 Theorem absolu_Zs :
- forall z : Z, (0 <= z)%Z -> Zabs_nat (Zsucc z) = S (Zabs_nat z).
+ forall z : Z, (0 <= z)%Z -> Z.abs_nat (Z.succ z) = S (Z.abs_nat z).
 intros z; case z.
 3: intros p H'; contradict H'; auto with zarith.
-replace (Zsucc 0) with (Z_of_nat 1).
-intros H'; rewrite absolu_INR; simpl in |- *; auto.
+replace (Z.succ 0) with (Z_of_nat 1).
+intros H'; rewrite Zabs2Nat.id; simpl in |- *; auto.
 simpl in |- *; auto.
-intros p H'; rewrite <- Zpos_succ_morphism; simpl in |- *; auto with zarith.
+intros p H'; rewrite <- Zpos_succ_morphism; simpl in |- *; lia.
 Qed.
 
 Theorem Zlt_next :
- forall n m : Z, (n < m)%Z -> m = Zsucc n \/ (Zsucc n < m)%Z.
-intros n m H'; case (Zle_lt_or_eq (Zsucc n) m); auto with zarith.
+ forall n m : Z, (n < m)%Z -> m = Z.succ n \/ (Z.succ n < m)%Z.
+intros n m H'; case (Zle_lt_or_eq (Z.succ n) m); auto with zarith.
 Qed.
 
 Theorem Zle_next :
- forall n m : Z, (n <= m)%Z -> m = n \/ (Zsucc n <= m)%Z.
+ forall n m : Z, (n <= m)%Z -> m = n \/ (Z.succ n <= m)%Z.
 intros n m H'; case (Zle_lt_or_eq _ _ H'); auto with zarith.
 Qed.
 
 
 Theorem inj_pred :
- forall n : nat, n <> 0 -> Z_of_nat (pred n) = Zpred (Z_of_nat n).
+ forall n : nat, n <> 0 -> Z_of_nat (pred n) = Z.pred (Z_of_nat n).
 intros n; case n; auto.
 intros H'; contradict H'; auto.
 intros n0 H'; rewrite inj_S; rewrite <- Zpred_succ; auto.
 Qed.
 
-Theorem Zle_abs : forall p : Z, (p <= Z_of_nat (Zabs_nat p))%Z.
+Theorem Zle_abs : forall p : Z, (p <= Z_of_nat (Z.abs_nat p))%Z.
 intros p; case p; simpl in |- *; auto with zarith; intros q;
  rewrite inject_nat_convert with (p := Zpos q);
- auto with zarith.
+ lia.
 Qed.
 
 
@@ -411,22 +254,21 @@ case (Pmult_nat p0 1); simpl in |- *; auto.
 red in |- *; intros H'; discriminate.
 Qed.
 
-Theorem absolu_lt_nz : forall z : Z, z <> 0%Z -> 0 < Zabs_nat z.
+Theorem absolu_lt_nz : forall z : Z, z <> 0%Z -> 0 < Z.abs_nat z.
 intros z; case z; simpl in |- *; auto; try (intros H'; case H'; auto; fail);
  intros p; generalize (NconvertO p); auto with zarith.
 Qed.
 
-Theorem Rledouble : forall r : R, (0 <= r)%R -> (r <= INR 2 * r)%R.
+Theorem Rledouble : forall r : R, (0 <= r)%R -> (r <= 2 * r)%R.
+Proof.
 intros r H'.
-replace (INR 2 * r)%R with (r + r)%R; [ idtac | simpl in |- *; ring ].
-pattern r at 1 in |- *; replace r with (r + 0)%R; [ idtac | ring ].
-apply Rplus_le_compat_l; auto.
+lra.
 Qed.
 
-Theorem Rltdouble : forall r : R, (0 < r)%R -> (r < INR 2 * r)%R.
+Theorem Rltdouble : forall r : R, (0 < r)%R -> (r < 2 * r)%R.
+Proof.
 intros r H'.
-pattern r at 1 in |- *; replace r with (r + 0)%R; try ring.
-replace (INR 2 * r)%R with (r + r)%R; simpl in |- *; try ring; auto with real.
+lra.
 Qed.
 
 
@@ -438,41 +280,28 @@ apply Rlt_trans with (2 := H2); auto.
 rewrite H2; auto with real.
 Qed.
 
-Theorem Zlt_Rlt : forall z1 z2 : Z, (IZR z1 < IZR z2)%R -> (z1 < z2)%Z.
-intros z1 z2 H; case (Zle_or_lt z2 z1); auto.
-intros H1; contradict H; auto with real zarith.
-apply Rle_not_lt, Rle_IZR; auto with real zarith.
-Qed.
-
-Theorem Zle_Rle :
- forall z1 z2 : Z, (IZR z1 <= IZR z2)%R -> (z1 <= z2)%Z.
-intros z1 z2 H; case (Zle_or_lt z1 z2); auto.
-intros H1; contradict H; auto with real zarith.
-apply Rlt_not_le, Rlt_IZR; auto with real zarith.
-Qed.
-
-Theorem Zabs_eq_opp : forall x, (x <= 0)%Z -> Zabs x = (- x)%Z.
+Theorem Zabs_eq_opp : forall x, (x <= 0)%Z -> Z.abs x = (- x)%Z.
 intros x; case x; simpl in |- *; auto.
 intros p H; contradict H; auto with zarith.
 Qed.
 
-Theorem Zabs_Zs : forall z : Z, (Zabs (Zsucc z) <= Zsucc (Zabs z))%Z.
+Theorem Zabs_Zs : forall z : Z, (Z.abs (Z.succ z) <= Z.succ (Z.abs z))%Z.
 intros z; case z; auto.
 simpl in |- *; auto with zarith.
-repeat rewrite Zabs_eq; auto with zarith.
-intros p; rewrite Zabs_eq_opp; auto with zarith.
+repeat rewrite Z.abs_eq; auto with zarith.
+intros p; rewrite Zabs_eq_opp; lia.
 Qed.
 
-Theorem Zle_Zpred : forall x y : Z, (x < y)%Z -> (x <= Zpred y)%Z.
+Theorem Zle_Zpred : forall x y : Z, (x < y)%Z -> (x <= Z.pred y)%Z.
 intros x y H; apply Zlt_succ_le.
 rewrite <- Zsucc_pred; auto.
 Qed.
 
-Theorem Zabs_Zopp : forall z : Z, Zabs (- z) = Zabs z.
+Theorem Zabs_Zopp : forall z : Z, Z.abs (- z) = Z.abs z.
 intros z; case z; simpl in |- *; auto.
 Qed.
 
-Theorem Zle_Zabs : forall z : Z, (z <= Zabs z)%Z.
+Theorem Zle_Zabs : forall z : Z, (z <= Z.abs z)%Z.
 intros z; case z; simpl in |- *; red in |- *; simpl in |- *; auto;
  try (red in |- *; intros; discriminate; fail).
 intros p; elim p; simpl in |- *; auto;
@@ -481,49 +310,13 @@ Qed.
 
 Theorem Zlt_mult_simpl_l :
  forall a b c : Z, (0 < c)%Z -> (c * a < c * b)%Z -> (a < b)%Z.
-intros a b0 c H H0; apply Zgt_lt.
-apply Zmult_gt_reg_r with (p := c); try apply Zlt_gt; auto with zarith.
+intros a b0 c H H0; apply Z.gt_lt.
+apply Zmult_gt_reg_r with (p := c); try apply Z.lt_gt; lia.
 Qed.
+
 (* An equality function on Z that return a bool *)
 
-Fixpoint pos_eq_bool (a b : positive) {struct b} : bool :=
-  match a, b with
-  | xH, xH => true
-  | xI a', xI b' => pos_eq_bool a' b'
-  | xO a', xO b' => pos_eq_bool a' b'
-  | _, _ => false
-  end.
-
-Theorem pos_eq_bool_correct :
- forall p q : positive,
- match pos_eq_bool p q with
- | true => p = q
- | false => p <> q
- end.
-intros p q; generalize p; elim q; simpl in |- *; auto; clear p q.
-intros p Rec q; case q; simpl in |- *;
- try (intros; red in |- *; intros; discriminate; fail).
-intros q'; generalize (Rec q'); case (pos_eq_bool q' p); simpl in |- *; auto.
-intros H1; rewrite H1; auto.
-intros H1; contradict H1; injection H1; auto.
-intros p Rec q; case q; simpl in |- *;
- try (intros; red in |- *; intros; discriminate; fail).
-intros q'; generalize (Rec q'); case (pos_eq_bool q' p); simpl in |- *; auto.
-intros H1; rewrite H1; auto.
-intros H1; contradict H1; injection H1; auto.
-intros q; case q; simpl in |- *;
- try (intros; red in |- *; intros; discriminate; fail);
- auto.
-Qed.
-
-
-Definition Z_eq_bool a b :=
-  match a, b with
-  | Z0, Z0 => true
-  | Zpos a', Zpos b' => pos_eq_bool a' b'
-  | Zneg a', Zneg b' => pos_eq_bool a' b'
-  | _, _ => false
-  end.
+Definition Z_eq_bool := Z.eqb.
 
 Theorem Z_eq_bool_correct :
  forall p q : Z,
@@ -531,92 +324,61 @@ Theorem Z_eq_bool_correct :
  | true => p = q
  | false => p <> q
  end.
-intros p q; case p; case q; simpl in |- *; auto;
- try (intros; red in |- *; intros; discriminate; fail).
-intros p' q'; generalize (pos_eq_bool_correct q' p');
- case (pos_eq_bool q' p'); simpl in |- *; auto.
-intros H1; rewrite H1; auto.
-intros H1; contradict H1; injection H1; auto.
-intros p' q'; generalize (pos_eq_bool_correct q' p');
- case (pos_eq_bool q' p'); simpl in |- *; auto.
-intros H1; rewrite H1; auto.
-intros H1; contradict H1; injection H1; auto.
-Qed.
-
-Theorem Zlt_mult_ZERO :
- forall x y : Z, (0 < x)%Z -> (0 < y)%Z -> (0 < x * y)%Z.
-intros x y; case x; case y; unfold Zlt in |- *; simpl in |- *; auto.
-Qed.
-
-Theorem Zle_Zminus_ZERO :
- forall z1 z2 : Z, (z2 <= z1)%Z -> (0 <= z1 - z2)%Z.
-intros z1 z2; rewrite (Zminus_diag_reverse z2); auto with zarith.
+Proof.
+intros p q.
+unfold Z_eq_bool.
+now case Z.eqb_spec.
 Qed.
 
 Theorem Zle_Zpred_Zpred :
- forall z1 z2 : Z, (z1 <= z2)%Z -> (Zpred z1 <= Zpred z2)%Z.
+ forall z1 z2 : Z, (z1 <= z2)%Z -> (Z.pred z1 <= Z.pred z2)%Z.
 intros z1 z2 H; apply Zsucc_le_reg.
 repeat rewrite <- Zsucc_pred; auto.
 Qed.
 
-Theorem Zle_ZERO_Zabs : forall z : Z, (0 <= Zabs z)%Z.
-intros z; case z; simpl in |- *; auto with zarith.
-Qed.
-
 Theorem Zlt_Zabs_inv1 :
- forall z1 z2 : Z, (Zabs z1 < z2)%Z -> (- z2 < z1)%Z.
+ forall z1 z2 : Z, (Z.abs z1 < z2)%Z -> (- z2 < z1)%Z.
 intros z1 z2 H; case (Zle_or_lt 0 z1); intros H1.
-apply Zlt_le_trans with (- (0))%Z; auto with zarith.
-rewrite <- (Zopp_involutive z1); rewrite <- (Zabs_eq_opp z1);
+apply Z.lt_le_trans with (- (0))%Z; lia.
+rewrite <- (Z.opp_involutive z1); rewrite <- (Zabs_eq_opp z1);
  auto with zarith.
 Qed.
 
-Theorem Zlt_Zabs_inv2 :
- forall z1 z2 : Z, (Zabs z1 < Zabs z2)%Z -> (z1 < Zabs z2)%Z.
-intros z1 z2; case (Zle_or_lt 0 z1); intros H1.
-rewrite Zabs_eq; omega.
-rewrite (Zabs_eq_opp z1); omega.
-Qed.
-
 Theorem Zle_Zabs_inv1 :
- forall z1 z2 : Z, (Zabs z1 <= z2)%Z -> (- z2 <= z1)%Z.
+ forall z1 z2 : Z, (Z.abs z1 <= z2)%Z -> (- z2 <= z1)%Z.
 intros z1 z2 H; case (Zle_or_lt 0 z1); intros H1.
-apply Zle_trans with (- (0))%Z; auto with zarith.
-rewrite <- (Zopp_involutive z1); rewrite <- (Zabs_eq_opp z1);
+apply Z.le_trans with (- (0))%Z; lia.
+rewrite <- (Z.opp_involutive z1); rewrite <- (Zabs_eq_opp z1);
  auto with zarith.
 Qed.
 
 Theorem Zle_Zabs_inv2 :
- forall z1 z2 : Z, (Zabs z1 <= z2)%Z -> (z1 <= z2)%Z.
+ forall z1 z2 : Z, (Z.abs z1 <= z2)%Z -> (z1 <= z2)%Z.
 intros z1 z2 H; case (Zle_or_lt 0 z1); intros H1.
-rewrite <- (Zabs_eq z1); auto.
-apply Zle_trans with (Zabs z1); auto with zarith.
+rewrite <- (Z.abs_eq z1); auto.
+apply Z.le_trans with (Z.abs z1); lia.
 Qed.
 
 Theorem Zlt_Zabs_Zpred :
  forall z1 z2 : Z,
- (Zabs z1 < z2)%Z -> z1 <> Zpred z2 -> (Zabs (Zsucc z1) < z2)%Z.
+ (Z.abs z1 < z2)%Z -> z1 <> Z.pred z2 -> (Z.abs (Z.succ z1) < z2)%Z.
 intros z1 z2 H H0; case (Zle_or_lt 0 z1); intros H1.
-rewrite Zabs_eq; auto with zarith.
-repeat rewrite Zabs_eq_opp; auto with zarith.
+rewrite Z.abs_eq; lia.
+repeat rewrite Zabs_eq_opp; lia.
 Qed.
 
 Theorem Zle_n_Zpred :
- forall z1 z2 : Z, (Zpred z1 <= Zpred z2)%Z -> (z1 <= z2)%Z.
+ forall z1 z2 : Z, (Z.pred z1 <= Z.pred z2)%Z -> (z1 <= z2)%Z.
 intros z1 z2 H; rewrite (Zsucc_pred z1); rewrite (Zsucc_pred z2);
  auto with zarith.
 Qed.
 
-Theorem Zpred_Zopp_Zs : forall z : Z, Zpred (- z) = (- Zsucc z)%Z.
-intros z; unfold Zpred, Zsucc in |- *; ring.
+Theorem Zpred_Zopp_Zs : forall z : Z, Z.pred (- z) = (- Z.succ z)%Z.
+intros z; unfold Z.pred, Z.succ in |- *; ring.
 Qed.
 
 Theorem Zlt_1_O : forall z : Z, (1 <= z)%Z -> (0 < z)%Z.
 intros z H; apply Zsucc_lt_reg; simpl in |- *; auto with zarith.
-Qed.
-
-Theorem Zlt_not_eq : forall p q : Z, (p < q)%Z -> p <> q.
-intros p q H; contradict H; rewrite H; auto with zarith.
 Qed.
 
 Theorem Zlt_not_eq_rev : forall p q : Z, (q < p)%Z -> p <> q.
@@ -624,30 +386,27 @@ intros p q H; contradict H; rewrite H; auto with zarith.
 Qed.
 
 Theorem Zle_Zpred_inv :
- forall z1 z2 : Z, (z1 <= Zpred z2)%Z -> (z1 < z2)%Z.
+ forall z1 z2 : Z, (z1 <= Z.pred z2)%Z -> (z1 < z2)%Z.
 intros z1 z2 H; rewrite (Zsucc_pred z2); auto with zarith.
 Qed.
 
 Theorem Zabs_intro :
- forall (P : Z -> Prop) (z : Z), P (- z)%Z -> P z -> P (Zabs z).
+ forall (P : Z -> Prop) (z : Z), P (- z)%Z -> P z -> P (Z.abs z).
 intros P z; case z; simpl in |- *; auto.
 Qed.
 
 Theorem Zpred_Zle_Zabs_intro :
  forall z1 z2 : Z,
- (- Zpred z2 <= z1)%Z -> (z1 <= Zpred z2)%Z -> (Zabs z1 < z2)%Z.
+ (- Z.pred z2 <= z1)%Z -> (z1 <= Z.pred z2)%Z -> (Z.abs z1 < z2)%Z.
 intros z1 z2 H H0; apply Zle_Zpred_inv.
-apply Zabs_intro with (P := fun x => (x <= Zpred z2)%Z); auto with zarith.
-Qed.
-
-Theorem Zlt_ZERO_Zle_ONE : forall z : Z, (0 < z)%Z -> (1 <= z)%Z.
-intros z H; replace 1%Z with (Zsucc 0); auto with zarith; simpl in |- *; auto.
+apply Zabs_intro with (P := fun x => (x <= Z.pred z2)%Z); auto with zarith.
 Qed.
 
 Theorem Zlt_Zabs_intro :
- forall z1 z2 : Z, (- z2 < z1)%Z -> (z1 < z2)%Z -> (Zabs z1 < z2)%Z.
-intros z1 z2; case z1; case z2; simpl in |- *; auto with zarith.
+ forall z1 z2 : Z, (- z2 < z1)%Z -> (z1 < z2)%Z -> (Z.abs z1 < z2)%Z.
+intros z1 z2; case z1; case z2; simpl in |- *; intros; lia.
 Qed.
+
 (*** was file Digit.v  ***)
 (****************************************************************************
 
@@ -668,8 +427,7 @@ Let nMoreThanOne := Zlt_1_O _ (Zlt_le_weak _ _ nMoreThan1).
 
 
 Theorem Zpower_nat_less : forall q : nat, (0 < Zpower_nat n q)%Z.
-intros q; elim q; simpl in |- *; auto with zarith.
-intros; apply Z.mul_pos_pos; auto with zarith.
+  intros q; elim q; simpl in |- *; [|intros ; apply Z.mul_pos_pos ]; auto with zarith.
 Qed.
 
 
@@ -679,7 +437,7 @@ intros p; rewrite <- (Zmult_1_l (Zpower_nat n p)); replace (S p) with (1 + p);
  [ rewrite Zpower_nat_is_exp | auto with zarith ].
 rewrite Zpower_nat_1; auto with zarith.
 apply Zmult_gt_0_lt_compat_r; auto with zarith.
-apply Zlt_gt; auto with zarith.
+apply Z.lt_gt; auto with zarith.
 apply Zpower_nat_less.
 Qed.
 
@@ -687,7 +445,7 @@ Theorem Zpower_nat_monotone_lt :
  forall p q : nat, p < q -> (Zpower_nat n p < Zpower_nat n q)%Z.
 intros p q H'; elim H'; simpl in |- *; auto.
 apply Zpower_nat_monotone_S.
-intros m H H0; apply Zlt_trans with (1 := H0).
+intros m H H0; apply Z.lt_trans with (1 := H0).
 apply Zpower_nat_monotone_S.
 Qed.
 
@@ -737,8 +495,8 @@ Fixpoint digitAux (v r : Z) (q : positive) {struct q} : nat :=
 Definition digit (q : Z) :=
   match q with
   | Z0 => 0
-  | Zpos q' => digitAux (Zabs q) 1 (xO q')
-  | Zneg q' => digitAux (Zabs q) 1 (xO q')
+  | Zpos q' => digitAux (Z.abs q) 1 (xO q')
+  | Zneg q' => digitAux (Z.abs q) 1 (xO q')
   end.
 
 
@@ -756,7 +514,7 @@ Theorem Zcompare_correct :
  | Datatypes.Lt => (p < q)%Z
  | Datatypes.Eq => p = q
  end.
-intros p q; unfold Zlt in |- *; generalize (Zcompare_EGAL p q);
+intros p q; unfold Z.lt in |- *; generalize (Z.compare_eq p q);
  (CaseEq (p ?= q)%Z; simpl in |- *; auto).
 intros H H0; case (Zcompare_Gt_Lt_antisym p q); auto.
 Qed.
@@ -773,30 +531,30 @@ intros H1; generalize (Rec (n * r)%Z); case (digitAux v (n * r) q').
 intros; rewrite H1; rewrite Zpower_nat_O; auto with zarith.
 intros r'; rewrite digitAux1; auto.
 intros H1; generalize (Rec (n * r)%Z); case (digitAux v (n * r) q').
-intros; rewrite Zpower_nat_O; auto with zarith.
+intros; rewrite Zpower_nat_O; lia.
 intros r'; rewrite digitAux1; auto.
 intros q' Rec r; generalize (Zcompare_correct r v); case (r ?= v)%Z; auto.
 intros H1; generalize (Rec (n * r)%Z); case (digitAux v (n * r) q').
 intros; rewrite H1; rewrite Zpower_nat_O; auto with zarith.
 intros r'; rewrite digitAux1; auto.
 intros H1; generalize (Rec (n * r)%Z); case (digitAux v (n * r) q').
-intros; rewrite Zpower_nat_O; auto with zarith.
+intros; rewrite Zpower_nat_O; lia.
 intros r'; rewrite digitAux1; auto.
 Qed.
 (* digit is correct (first part) *)
 
 Theorem digitLess :
- forall q : Z, q <> 0%Z -> (Zpower_nat n (pred (digit q)) <= Zabs q)%Z.
+ forall q : Z, q <> 0%Z -> (Zpower_nat n (pred (digit q)) <= Z.abs q)%Z.
 intros q; case q.
 intros H; contradict H; auto with zarith.
 intros p H; unfold digit in |- *;
- generalize (digitAuxLess (Zabs (Zpos p)) 1 (xO p));
- case (digitAux (Zabs (Zpos p)) 1 (xO p)); simpl in |- *;
- auto with zarith.
+ generalize (digitAuxLess (Z.abs (Zpos p)) 1 (xO p));
+ case (digitAux (Z.abs (Zpos p)) 1 (xO p)); simpl in |- *;
+ intros; lia.
 intros p H; unfold digit in |- *;
- generalize (digitAuxLess (Zabs (Zneg p)) 1 (xO p));
- case (digitAux (Zabs (Zneg p)) 1 (xO p)); simpl in |- *;
- auto with zarith.
+ generalize (digitAuxLess (Z.abs (Zneg p)) 1 (xO p));
+ case (digitAux (Z.abs (Zneg p)) 1 (xO p)); simpl in |- *;
+ intros; lia.
 Qed.
 
 
@@ -815,24 +573,24 @@ Theorem digitAuxMore :
 intros v r q; generalize r; elim q; clear r q; simpl in |- *.
 intros p Rec r Hr; generalize (Zcompare_correct r v); case (r ?= v)%Z; auto.
 intros H1 H2; rewrite <- H1.
-apply Zle_lt_trans with (Zpower_nat n 0 * r)%Z; auto with zarith arith.
+apply Z.le_lt_trans with (Zpower_nat n 0 * r)%Z; auto with zarith arith.
 rewrite Zpower_nat_O; rewrite Zmult_1_l; auto with zarith.
 apply Zmult_lt_compat_r; auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
 intros H1 H2; rewrite digitAux1.
 apply Rec.
-apply Zlt_mult_ZERO; auto with zarith.
+apply Z.mul_pos_pos; auto with zarith.
 rewrite <- digitAux1; auto.
 rewrite Zpower_nat_O; rewrite Zmult_1_l; auto with zarith.
 intros p Rec r Hr; generalize (Zcompare_correct r v); case (r ?= v)%Z; auto.
 intros H1 H2; rewrite <- H1.
-apply Zle_lt_trans with (Zpower_nat n 0 * r)%Z; auto with zarith arith.
+apply Z.le_lt_trans with (Zpower_nat n 0 * r)%Z; auto with zarith arith.
 rewrite Zpower_nat_O; rewrite Zmult_1_l; auto with zarith.
 apply Zmult_lt_compat_r; auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
 intros H1 H2; rewrite digitAux1.
 apply Rec.
-apply Zlt_mult_ZERO; auto with zarith.
+apply Z.mul_pos_pos; auto with zarith.
 rewrite <- digitAux1; auto.
 rewrite Zpower_nat_O; rewrite Zmult_1_l; auto with zarith.
 auto.
@@ -840,18 +598,18 @@ Qed.
 
 Theorem pos_length_pow :
  forall p : positive, (Zpos p < Zpower_nat n (S (pos_length p)))%Z.
-intros p; elim p; simpl in |- *; auto.
+intros p; elim p; simpl in |- *.
+3: lia.
 intros p0 H; rewrite Zpos_xI.
-apply Zlt_le_trans with (2 * (n * Zpower_nat n (pos_length p0)))%Z;
-auto with zarith.
+apply Z.lt_le_trans with (2 * (n * Zpower_nat n (pos_length p0)))%Z; try lia.
+apply Zmult_le_compat_r; lia.
 intros p0 H; rewrite Zpos_xO.
-apply Zlt_le_trans with (2 * (n * Zpower_nat n (pos_length p0)))%Z;
-auto with zarith.
-auto with zarith.
+apply Z.lt_le_trans with (2 * (n * Zpower_nat n (pos_length p0)))%Z; try lia.
+apply Zmult_le_compat_r; lia.
 Qed.
 (* digit is correct (second part) *)
 
-Theorem digitMore : forall q : Z, (Zabs q < Zpower_nat n (digit q))%Z.
+Theorem digitMore : forall q : Z, (Z.abs q < Zpower_nat n (digit q))%Z.
 intros q; case q.
 easy.
 intros q'; rewrite <- (Zmult_1_r (Zpower_nat n (digit (Zpos q')))).
@@ -869,20 +627,20 @@ Qed.
 
 Theorem digitInv :
  forall (q : Z) (r : nat),
- (Zpower_nat n (pred r) <= Zabs q)%Z ->
- (Zabs q < Zpower_nat n r)%Z -> digit q = r.
+ (Zpower_nat n (pred r) <= Z.abs q)%Z ->
+ (Z.abs q < Zpower_nat n r)%Z -> digit q = r.
 intros q r H' H'0; case (le_or_lt (digit q) r).
 intros H'1; case (le_lt_or_eq _ _ H'1); auto; intros H'2.
-absurd (Zabs q < Zpower_nat n (digit q))%Z; auto with zarith.
+absurd (Z.abs q < Zpower_nat n (digit q))%Z; auto with zarith.
 apply Zle_not_lt; auto with zarith.
-apply Zle_trans with (m := Zpower_nat n (pred r)); auto with zarith.
+apply Z.le_trans with (m := Zpower_nat n (pred r)); auto with zarith.
 apply Zpower_nat_monotone_le.
 generalize H'2; case r; auto with arith.
 apply digitMore.
 intros H'1.
-absurd (Zpower_nat n (pred (digit q)) <= Zabs q)%Z; auto with zarith.
+absurd (Zpower_nat n (pred (digit q)) <= Z.abs q)%Z; auto with zarith.
 apply Zlt_not_le; auto with zarith.
-apply Zlt_le_trans with (m := Zpower_nat n r); auto.
+apply Z.lt_le_trans with (m := Zpower_nat n r); auto.
 apply Zpower_nat_monotone_le.
 generalize H'1; case (digit q); auto with arith.
 apply digitLess; auto with zarith.
@@ -893,14 +651,14 @@ Qed.
 (* digit is monotone *)
 
 Theorem digit_monotone :
- forall p q : Z, (Zabs p <= Zabs q)%Z -> digit p <= digit q.
+ forall p q : Z, (Z.abs p <= Z.abs q)%Z -> digit p <= digit q.
 intros p q H; case (le_or_lt (digit p) (digit q)); auto; intros H1;
  contradict H.
 apply Zlt_not_le.
 cut (p <> 0%Z); [ intros H2 | idtac ].
-apply Zlt_le_trans with (2 := digitLess p H2).
+apply Z.lt_le_trans with (2 := digitLess p H2).
 cut (digit q <= pred (digit p)); [ intros H3 | idtac ].
-apply Zlt_le_trans with (2 := Zpower_nat_monotone_le _ _ H3);
+apply Z.lt_le_trans with (2 := Zpower_nat_monotone_le _ _ H3);
  auto with zarith.
 apply digitMore.
 generalize H1; case (digit p); simpl in |- *; auto with arith.
@@ -927,7 +685,7 @@ intros q r H0.
 apply digitInv.
 replace (pred (digit q + r)) with (pred (digit q) + r).
 rewrite Zpower_nat_is_exp; rewrite Zabs_Zmult;
- rewrite (fun x => Zabs_eq (Zpower_nat n x)); auto with zarith arith.
+ rewrite (fun x => Z.abs_eq (Zpower_nat n x)); auto with zarith arith.
 apply Zmult_le_compat_r.
 apply digitLess; auto with zarith.
 apply Zpower_NR0; auto with zarith.
@@ -935,22 +693,22 @@ apply Zpower_NR0; auto with zarith.
 generalize (digitNotZero _ H0); case (digit q); auto with arith.
 intros H'; contradict H'; auto with arith.
 rewrite Zpower_nat_is_exp; rewrite Zabs_Zmult;
- rewrite (fun x => Zabs_eq (Zpower_nat n x)); auto with zarith arith.
+ rewrite (fun x => Z.abs_eq (Zpower_nat n x)); auto with zarith arith.
 apply Zmult_lt_compat_r.
 apply Zpower_nat_less; auto with zarith.
 apply digitMore; auto with zarith.
 apply Zpower_NR0; auto with zarith.
 Qed.
 
-Theorem digit_abs : forall p : Z, digit (Zabs p) = digit p.
+Theorem digit_abs : forall p : Z, digit (Z.abs p) = digit p.
 intros p; case p; simpl in |- *; auto.
 Qed.
 (* Strict comparison on the number of digits gives comparison on the numbers *)
 
 Theorem digit_anti_monotone_lt :
- (1 < n)%Z -> forall p q : Z, digit p < digit q -> (Zabs p < Zabs q)%Z.
+ (1 < n)%Z -> forall p q : Z, digit p < digit q -> (Z.abs p < Z.abs q)%Z.
 intros H' p q H'0.
-case (Zle_or_lt (Zabs q) (Zabs p)); auto; intros H'1.
+case (Zle_or_lt (Z.abs q) (Z.abs p)); auto; intros H'1.
 contradict H'0.
 case (Zle_lt_or_eq _ _ H'1); intros H'2.
 apply le_not_lt; auto with arith.
@@ -1077,8 +835,8 @@ Qed.
 
 Theorem Zpower_NR1 :
  forall (e : Z) (n : nat), (1 <= e)%Z -> (1 <= Zpower_nat e n)%Z.
-intros e n; elim n; simpl in |- *;
- auto with zarith.
+intros e n; elim n; simpl in |- *.
+auto with zarith.
 intros m H1 H2; rewrite <- (Zmult_1_l 1).
 apply Z.mul_le_mono_nonneg; auto with zarith.
 Qed.
@@ -1098,7 +856,7 @@ Theorem powerRZ_O : forall e : R, powerRZ e 0 = 1%R.
 simpl in |- *; auto.
 Qed.
 
-Theorem powerRZ_1 : forall e : R, powerRZ e (Zsucc 0) = e.
+Theorem powerRZ_1 : forall e : R, powerRZ e (Z.succ 0) = e.
 simpl in |- *; auto with real.
 Qed.
 
@@ -1159,16 +917,17 @@ Qed.
 
 Theorem powerRZ_Zopp :
  forall (e : R) (z : Z), e <> 0%R -> powerRZ e (- z) = (/ powerRZ e z)%R.
-intros e z H; case z; simpl in |- *; auto with real.
-intros p; apply sym_eq; apply Rinv_involutive.
-apply pow_nonzero; auto.
+Proof.
+intros e z H.
+rewrite powerRZ_neg by easy.
+now apply powerRZ_inv.
 Qed.
 
 Theorem powerRZ_Zs :
  forall (e : R) (n : Z),
- e <> 0%R -> powerRZ e (Zsucc n) = (e * powerRZ e n)%R.
+ e <> 0%R -> powerRZ e (Z.succ n) = (e * powerRZ e n)%R.
 intros e n H'0.
-replace (Zsucc n) with (n + Zsucc 0)%Z.
+replace (Z.succ n) with (n + Z.succ 0)%Z.
 rewrite powerRZ_add; auto.
 rewrite powerRZ_1.
 rewrite Rmult_comm; auto.
@@ -1204,7 +963,7 @@ Theorem Rlt_powerRZ :
  forall (e : R) (n m : Z),
  (1 < e)%R -> (n < m)%Z -> (powerRZ e n < powerRZ e m)%R.
 intros e n m; case n; case m; simpl in |- *;
- try (unfold Zlt in |- *; intros; discriminate); auto with real.
+ try (unfold Z.lt in |- *; intros; discriminate); auto with real.
 intros p p0 H' H'0; apply Rlt_pow; auto with real.
 apply nat_of_P_lt_Lt_compare_morphism; auto.
 intros p H' H'0; replace 1%R with (/ 1)%R; auto with real.
@@ -1220,7 +979,7 @@ Qed.
 
 Theorem Zpower_nat_powerRZ_absolu :
  forall n m : Z,
- (0 <= m)%Z -> IZR (Zpower_nat n (Zabs_nat m)) = powerRZ (IZR n) m.
+ (0 <= m)%Z -> IZR (Zpower_nat n (Z.abs_nat m)) = powerRZ (IZR n) m.
 intros n m; case m; simpl in |- *; auto with zarith.
 intros p H'; elim (nat_of_P p); simpl in |- *; auto with zarith.
 intros n0 H'0; rewrite <- H'0; simpl in |- *; auto with zarith.
@@ -1289,7 +1048,7 @@ Qed.
 
   *****************************************************************************
   ******************************************************
-   Module Float.v
+   Module Float.v 				   	
    Inspired by the Diadic of Patrick Loiseleur
   *******************************************************)
 
@@ -1299,8 +1058,8 @@ Hypothesis radixMoreThanOne : (1 < radix)%Z.
 
 Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ radixMoreThanOne).
 
-(* The type float represents the set of numbers who can be written:
-   x = n*b^p with  n and p in Z. (pdic numbers)
+(* The type float represents the set of numbers who can be written:  	
+   x = n*b^p with  n and p in Z. (pdic numbers)				
    n = Fnum and p = Fexp 						*)
 
 Record float : Set := Float {Fnum : Z; Fexp : Z}.
@@ -1313,8 +1072,8 @@ Qed.
 
 Theorem floatDec : forall x y : float, {x = y} + {x <> y}.
 intros x y; case x; case y; intros Fnum2 Fexp2 Fnum1 Fexp1.
-case (Z_eq_dec Fnum1 Fnum2); intros H1.
-case (Z_eq_dec Fexp1 Fexp2); intros H2.
+case (Z.eq_dec Fnum1 Fnum2); intros H1.
+case (Z.eq_dec Fexp1 Fexp2); intros H2.
 left; apply floatEq; auto.
 right; red in |- *; intros H'; contradict H2; inversion H'; auto.
 right; red in |- *; intros H'; contradict H1; inversion H'; auto.
@@ -1325,7 +1084,6 @@ Definition Fzero (x : Z) := Float 0 x.
 Definition is_Fzero (x : float) := Fnum x = 0%Z.
 
 Coercion IZR : Z >-> R.
-Coercion INR : nat >-> R.
 Coercion Z_of_nat : nat >-> Z.
 
 Definition FtoR (x : float) := (Fnum x * powerRZ (IZR radix) (Fexp x))%R.
@@ -1345,8 +1103,8 @@ Theorem LtFnumZERO : forall x : float, (0 < Fnum x)%Z -> (0 < x)%R.
 intros x; case x; unfold FtoR in |- *; simpl in |- *.
 intros Fnum1 Fexp1 H'; replace 0%R with (Fnum1 * 0)%R;
  [ apply Rmult_lt_compat_l | ring ]; auto with real zarith.
-now apply Rlt_IZR.
-now apply powerRZ_lt, Rlt_IZR.
+now apply IZR_lt.
+now apply powerRZ_lt, IZR_lt.
 Qed.
 
 Theorem is_Fzero_rep2 : forall x : float, x = 0%R :>R -> is_Fzero x.
@@ -1355,8 +1113,8 @@ case (Rmult_integral _ _ H'); simpl in |- *; auto.
 case x; simpl in |- *.
 intros Fnum1 Fexp1 H'0; red in |- *; simpl in |- *; auto with real zarith.
 apply eq_IZR_R0; auto.
-intros H'0; contradict H'0; apply powerRZ_NOR; auto with real zarith.
-now apply Rgt_not_eq, Rlt_IZR.
+intros H'0; contradict H'0; apply powerRZ_NOR.
+now apply Rgt_not_eq, IZR_lt.
 Qed.
 
 Theorem NisFzeroComp :
@@ -1372,14 +1130,14 @@ Theorem Rlt_monotony_exp :
  forall (x y : R) (z : Z),
  (x < y)%R -> (x * powerRZ radix z < y * powerRZ radix z)%R.
 intros x y z H'; apply Rmult_lt_compat_r; auto with real zarith.
-now apply powerRZ_lt, Rlt_IZR.
+now apply powerRZ_lt, IZR_lt.
 Qed.
 
 Theorem Rle_monotone_exp :
  forall (x y : R) (z : Z),
  (x <= y)%R -> (x * powerRZ radix z <= y * powerRZ radix z)%R.
 intros x y z H'; apply Rmult_le_compat_r; auto with real zarith.
-now apply powerRZ_le, Rlt_IZR.
+now apply powerRZ_le, IZR_lt.
 Qed.
 
 Theorem Rlt_monotony_contra_exp :
@@ -1387,7 +1145,7 @@ Theorem Rlt_monotony_contra_exp :
  (x * powerRZ radix z < y * powerRZ radix z)%R -> (x < y)%R.
 intros x y z H'; apply Rmult_lt_reg_l with (r := powerRZ radix z);
  auto with real zarith.
-now apply powerRZ_lt, Rlt_IZR.
+now apply powerRZ_lt, IZR_lt.
 repeat rewrite (Rmult_comm (powerRZ radix z)); auto.
 Qed.
 
@@ -1396,7 +1154,7 @@ Theorem Rle_monotony_contra_exp :
  (x * powerRZ radix z <= y * powerRZ radix z)%R -> (x <= y)%R.
 intros x y z H'; apply Rmult_le_reg_l with (r := powerRZ radix z);
  auto with real zarith.
-now apply powerRZ_lt, Rlt_IZR.
+now apply powerRZ_lt, IZR_lt.
 repeat rewrite (Rmult_comm (powerRZ radix z)); auto.
 Qed.
 
@@ -1409,7 +1167,7 @@ apply Rmult_eq_reg_l with (r := powerRZ radix (Fexp p));
  auto with real zarith.
 repeat rewrite (Rmult_comm (powerRZ radix (Fexp p)));
  pattern (Fexp p) at 2 in |- *; rewrite H'0; auto with real zarith.
-now apply Rgt_not_eq, powerRZ_lt, Rlt_IZR.
+now apply Rgt_not_eq, powerRZ_lt, IZR_lt.
 Qed.
 
 Theorem Rlt_Float_Zlt :
@@ -1422,15 +1180,15 @@ Qed.
 (* Properties for floats with 1 as mantissa *)
 
 Theorem oneExp_le :
- forall x y : Z, (x <= y)%Z -> (Float 1%nat x <= Float 1%nat y)%R.
+ forall x y : Z, (x <= y)%Z -> (Float 1 x <= Float 1 y)%R.
 intros x y H'; unfold FtoR in |- *; simpl in |- *.
 repeat rewrite Rmult_1_l; auto with real zarith.
 apply Rle_powerRZ; try replace 1%R with (IZR 1); auto with real zarith zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 Qed.
 
 Theorem oneExp_Zlt :
- forall x y : Z, (Float 1%nat x < Float 1%nat y)%R -> (x < y)%Z.
+ forall x y : Z, (Float 1 x < Float 1 y)%R -> (x < y)%Z.
 intros x y H'; case (Zle_or_lt y x); auto; intros ZH; contradict H'.
 apply Rle_not_lt; apply oneExp_le; auto.
 Qed.
@@ -1451,7 +1209,7 @@ apply Rmult_eq_reg_l with (r := powerRZ radix Fexp1);
  auto.
 apply Rlt_dichotomy_converse; right; auto with real.
 red in |- *; auto with real.
-now apply powerRZ_lt, Rlt_IZR.
+now apply powerRZ_lt, IZR_lt.
 Qed.
 
 Theorem FshiftFdigit :
@@ -1466,15 +1224,15 @@ intros n x; unfold FtoR in |- *; simpl in |- *.
 rewrite mult_IZR.
 rewrite Zpower_nat_Z_powerRZ; auto.
 repeat rewrite Rmult_assoc.
-rewrite <- powerRZ_add; auto with real zarith.
+rewrite <- powerRZ_add.
 rewrite Zplus_minus; auto.
-now apply Rgt_not_eq, Rlt_IZR.
+now apply Rgt_not_eq, IZR_lt.
 Qed.
 
 Theorem FshiftCorrectInv :
  forall x y : float,
  x = y :>R ->
- (Fexp x <= Fexp y)%Z -> Fshift (Zabs_nat (Fexp y - Fexp x)) y = x.
+ (Fexp x <= Fexp y)%Z -> Fshift (Z.abs_nat (Fexp y - Fexp x)) y = x.
 intros x y H' H'0; try apply sameExpEq; auto.
 apply trans_eq with (y := FtoR y); auto.
 apply FshiftCorrect.
@@ -1493,11 +1251,11 @@ Theorem FshiftCorrectSym :
  x = y :>R -> exists n : nat, (exists m : nat, Fshift n x = Fshift m y).
 intros x y H'.
 case (Z_le_gt_dec (Fexp x) (Fexp y)); intros H'1.
-exists 0; exists (Zabs_nat (Fexp y - Fexp x)).
+exists 0; exists (Z.abs_nat (Fexp y - Fexp x)).
 rewrite FshiftO.
 apply sym_equal.
 apply FshiftCorrectInv; auto.
-exists (Zabs_nat (Fexp x - Fexp y)); exists 0.
+exists (Z.abs_nat (Fexp x - Fexp y)); exists 0.
 rewrite FshiftO.
 apply FshiftCorrectInv; auto with zarith.
 Qed.
@@ -1512,22 +1270,22 @@ cut (~ is_Fzero y); [ intros NZy | idtac ].
 case (Zle_or_lt (Fexp x) (Fexp y)); intros Eq1.
 case (Zle_lt_or_eq _ _ Eq1); clear Eq1; intros Eq1.
 absurd
- (Fdigit (Fshift (Zabs_nat (Fexp y - Fexp x)) y) =
-  Fdigit y + Zabs_nat (Fexp y - Fexp x)).
+ (Fdigit (Fshift (Z.abs_nat (Fexp y - Fexp x)) y) =
+  Fdigit y + Z.abs_nat (Fexp y - Fexp x)).
 rewrite FshiftCorrectInv; auto.
 rewrite <- H'1.
 red in |- *; intros H'2.
-absurd (0%Z = (Fexp y - Fexp x)%Z); auto with zarith arith.
+lia.
 apply Zlt_le_weak; auto.
 apply FshiftFdigit; auto.
 apply sameExpEq; auto.
 absurd
- (Fdigit (Fshift (Zabs_nat (Fexp x - Fexp y)) x) =
-  Fdigit x + Zabs_nat (Fexp x - Fexp y)).
+ (Fdigit (Fshift (Z.abs_nat (Fexp x - Fexp y)) x) =
+  Fdigit x + Z.abs_nat (Fexp x - Fexp y)).
 rewrite FshiftCorrectInv; auto.
 rewrite <- H'1.
 red in |- *; intros H'2.
-absurd (0%Z = (Fexp x - Fexp y)%Z); auto with zarith arith.
+lia.
 apply Zlt_le_weak; auto.
 apply FshiftFdigit; auto.
 Qed.
@@ -1562,8 +1320,8 @@ Lemma Fle_Zle :
 intros; unfold Fle, FtoRradix, FtoR in |- *; simpl in |- *; auto.
 case Zle_lt_or_eq with (1 := H); intros H1.
 apply Rlt_le, Rmult_lt_compat_r.
-now apply powerRZ_lt, Rlt_IZR.
-apply Rlt_IZR; easy.
+now apply powerRZ_lt, IZR_lt.
+apply IZR_lt; easy.
 rewrite <- H1; auto with real.
 Qed.
 
@@ -1606,8 +1364,8 @@ Qed.
 Theorem LeFnumZERO : forall x : float, (0 <= Fnum x)%Z -> (0 <= x)%R.
 intros x H'; unfold FtoRradix, FtoR in |- *.
 replace 0%R with (0%Z * 0%Z)%R; auto 6 with real zarith.
-apply Rmult_le_compat; try apply Rle_IZR; auto with real zarith.
-now apply powerRZ_le, Rlt_IZR.
+apply Rmult_le_compat; try apply IZR_le; auto with real zarith.
+now apply powerRZ_le, IZR_lt.
 Qed.
 
 Theorem R0LtFnum : forall p : float, (p < 0)%R -> (Fnum p < 0)%Z.
@@ -1631,8 +1389,8 @@ intros x H'; unfold FtoRradix, FtoR in |- *.
 apply Ropp_le_cancel; rewrite Ropp_0; rewrite <- Ropp_mult_distr_l_reverse.
 replace 0%R with (- 0%Z * 0)%R; try ring.
 apply Rmult_le_compat; try auto with real.
-rewrite <- 2!Ropp_Ropp_IZR; apply Rle_IZR; omega.
-now apply powerRZ_le, Rlt_IZR.
+rewrite <- 2!Ropp_Ropp_IZR; apply IZR_le; lia.
+now apply powerRZ_le, IZR_lt.
 Qed.
 End comparisons.
 
@@ -1655,9 +1413,9 @@ Hypothesis radixNotZero : (0 < radix)%Z.
 
 Definition Fplus (x y : float) :=
   Float
-    (Fnum x * Zpower_nat radix (Zabs_nat (Fexp x - Zmin (Fexp x) (Fexp y))) +
-     Fnum y * Zpower_nat radix (Zabs_nat (Fexp y - Zmin (Fexp x) (Fexp y))))
-    (Zmin (Fexp x) (Fexp y)).
+    (Fnum x * Zpower_nat radix (Z.abs_nat (Fexp x - Z.min (Fexp x) (Fexp y))) +
+     Fnum y * Zpower_nat radix (Z.abs_nat (Fexp y - Z.min (Fexp x) (Fexp y))))
+    (Z.min (Fexp x) (Fexp y)).
 
 Theorem Fplus_correct : forall x y : float, Fplus x y = (x + y)%R :>R.
 intros x y; unfold Fplus, Fshift, FtoRradix, FtoR in |- *; simpl in |- *.
@@ -1668,9 +1426,9 @@ repeat rewrite (Rmult_comm (Fnum x)); repeat rewrite (Rmult_comm (Fnum y)).
 repeat rewrite Zpower_nat_Z_powerRZ; auto.
 repeat rewrite <- Rmult_assoc.
 repeat rewrite <- powerRZ_add; auto with real zarith arith.
-2: now apply Rgt_not_eq, Rlt_IZR.
-2: now apply Rgt_not_eq, Rlt_IZR.
-repeat rewrite inj_abs; auto with real zarith.
+2: now apply Rgt_not_eq, IZR_lt.
+2: now apply Rgt_not_eq, IZR_lt.
+repeat rewrite inj_abs; try lia.
 repeat rewrite Zplus_minus; auto.
 Qed.
 
@@ -1684,7 +1442,7 @@ Qed.
 
 Theorem Fopp_Fopp : forall p : float, Fopp (Fopp p) = p.
 intros p; case p; unfold Fopp in |- *; simpl in |- *; auto.
-intros; rewrite Zopp_involutive; auto.
+intros; rewrite Z.opp_involutive; auto.
 Qed.
 
 Theorem Fdigit_opp : forall x : float, Fdigit radix (Fopp x) = Fdigit radix x.
@@ -1694,7 +1452,7 @@ rewrite <- (digit_abs radix (Fnum x)).
 case (Fnum x); simpl in |- *; auto.
 Qed.
 
-Definition Fabs (x : float) := Float (Zabs (Fnum x)) (Fexp x).
+Definition Fabs (x : float) := Float (Z.abs (Fnum x)) (Fexp x).
 
 Theorem Fabs_correct1 :
  forall x : float, (0 <= FtoR radix x)%R -> Fabs x = x :>R.
@@ -1703,7 +1461,7 @@ intros Fnum1 Fexp1 H'.
 repeat rewrite <- (Rmult_comm (powerRZ radix Fexp1)); apply Rmult_eq_compat_l;
  auto.
 cut (0 <= Fnum1)%Z.
-unfold Zabs, Zle in |- *.
+unfold Z.abs, Z.le in |- *.
 case Fnum1; simpl in |- *; auto.
 intros p H'0; case H'0; auto.
 apply Znot_gt_le; auto.
@@ -1712,8 +1470,8 @@ apply Rgt_not_le; auto.
 rewrite Rmult_comm.
 replace 0%R with (powerRZ radix Fexp1 * 0)%R; auto with real.
 red in |- *; apply Rmult_lt_compat_l; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; easy.
-apply Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; easy.
+apply IZR_lt; lia.
 Qed.
 
 Theorem Fabs_correct2 :
@@ -1733,8 +1491,8 @@ rewrite Rmult_comm.
 replace 0%R with (powerRZ radix Fexp1 * 0)%R; auto with real.
 red in |- *; apply Rmult_lt_compat_l; auto with real arith.
 replace 0%R with (IZR 0); auto with real zarith arith.
-now apply powerRZ_lt, Rlt_IZR.
-apply Rlt_IZR; omega.
+now apply powerRZ_lt, IZR_lt.
+apply IZR_lt; lia.
 Qed.
 
 Theorem Fabs_correct : forall x : float, Fabs x = Rabs x :>R.
@@ -1747,15 +1505,15 @@ apply Rge_le; auto.
 Qed.
 
 Theorem RleFexpFabs :
- forall p : float, p <> 0%R :>R -> (Float 1%nat (Fexp p) <= Fabs p)%R.
+ forall p : float, p <> 0%R :>R -> (Float 1 (Fexp p) <= Fabs p)%R.
+Proof.
 intros p H'.
 unfold FtoRradix, FtoR, Fabs in |- *; simpl in |- *.
 apply Rmult_le_compat_r; auto with real arith.
-now apply powerRZ_le, Rlt_IZR.
+now apply powerRZ_le, IZR_lt.
 rewrite Zabs_absolu.
-replace 1%R with (INR 1); auto with real.
-repeat rewrite <- INR_IZR_INZ; apply Rle_INR; auto.
-cut (Zabs_nat (Fnum p) <> 0); auto with zarith.
+apply IZR_le.
+cut (Z.abs_nat (Fnum p) <> 0); auto with zarith.
 contradict H'.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 replace (Fnum p) with 0%Z; try (simpl;ring).
@@ -1786,7 +1544,7 @@ Qed.
 Theorem Fopp_Fminus : forall p q : float, Fopp (Fminus p q) = Fminus q p.
 intros p q; case p; case q; unfold Fopp, Fminus, Fplus in |- *; simpl in |- *;
  auto.
-intros n1 e1 n2 e2; apply floatEq; simpl in |- *; repeat rewrite (Zmin_sym e1 e2);
+intros n1 e1 n2 e2; apply floatEq; simpl in |- *; repeat rewrite (Z.min_comm e2 e1);
  repeat rewrite Zopp_mult_distr_l_reverse; auto with zarith.
 Qed.
 
@@ -1794,7 +1552,7 @@ Theorem Fopp_Fminus_dist :
  forall p q : float, Fopp (Fminus p q) = Fminus (Fopp p) (Fopp q).
 intros p q; case p; case q; unfold Fopp, Fminus, Fplus in |- *; simpl in |- *;
  auto.
-intros; apply floatEq; simpl in |- *; repeat rewrite (Zmin_sym Fexp0 Fexp);
+intros; apply floatEq; simpl in |- *; repeat rewrite (Z.min_comm Fexp Fexp0);
  repeat rewrite Zopp_mult_distr_l_reverse; auto with zarith.
 Qed.
 
@@ -1808,7 +1566,7 @@ repeat rewrite Rmult_assoc.
 repeat rewrite (Rmult_comm (Fnum y)).
 repeat rewrite <- Rmult_assoc.
 repeat rewrite Zmult_assoc_reverse; auto.
-now apply Rgt_not_eq, Rlt_IZR.
+now apply Rgt_not_eq, IZR_lt.
 Qed.
 
 End operations.
@@ -1837,7 +1595,7 @@ Coercion Z_of_N: N >-> Z.
 Record Fbound : Set := Bound {vNum : positive; dExp : N}.
 
 Definition Fbounded (b : Fbound) (d : float) :=
-  (Zabs (Fnum d) < Zpos (vNum b))%Z /\ (- dExp b <= Fexp d)%Z.
+  (Z.abs (Fnum d) < Zpos (vNum b))%Z /\ (- dExp b <= Fexp d)%Z.
 
 
 Theorem FzeroisZero : forall b : Fbound, Fzero (- dExp b) = 0%R :>R.
@@ -1846,7 +1604,7 @@ Qed.
 
 Theorem FboundedFzero : forall b : Fbound, Fbounded b (Fzero (- dExp b)).
 intros b; repeat (split; simpl in |- *).
-replace 0%Z with (- 0%nat)%Z; [ idtac | simpl in |- *; auto ].
+replace 0%Z with (- 0)%Z; [ idtac | simpl in |- *; auto ].
 apply Zeq_le; auto with arith.
 Qed.
 
@@ -1861,8 +1619,8 @@ Theorem FBoundedScale :
  forall (b : Fbound) (p : float) (n : nat),
  Fbounded b p -> Fbounded b (Float (Fnum p) (Fexp p + n)).
 intros b p n H'; repeat split; simpl in |- *; auto; try apply H'.
-apply Zle_trans with (Fexp p); try apply H'.
-omega.
+apply Z.le_trans with (Fexp p); try apply H'.
+lia.
 Qed.
 
 Theorem FvalScale :
@@ -1871,13 +1629,13 @@ Theorem FvalScale :
 intros b p n; unfold FtoRradix, FtoR in |- *; simpl in |- *.
 rewrite powerRZ_add; auto with real zarith.
 ring.
-now apply Rgt_not_eq, Rlt_IZR.
+now apply Rgt_not_eq, IZR_lt.
 Qed.
 
 Theorem oppBounded :
  forall (b : Fbound) (x : float), Fbounded b x -> Fbounded b (Fopp x).
 intros b x H'; repeat split; simpl in |- *; auto with zarith.
-replace (Zabs (- Fnum x)) with (Zabs (Fnum x)); try apply H'.
+replace (Z.abs (- Fnum x)) with (Z.abs (Fnum x)); try apply H'.
 case (Fnum x); simpl in |- *; auto.
 apply H'.
 Qed.
@@ -1892,7 +1650,7 @@ Qed.
 Theorem absFBounded :
  forall (b : Fbound) (f : float), Fbounded b f -> Fbounded b (Fabs f).
 intros b f H'; repeat split; simpl in |- *; try apply H'.
-replace (Zabs (Zabs (Fnum f))) with (Zabs (Fnum f)); try apply H'.
+replace (Z.abs (Z.abs (Fnum f))) with (Z.abs (Fnum f)); try apply H'.
 case (Fnum f); auto.
 Qed.
 
@@ -1900,40 +1658,40 @@ Theorem FboundedEqExp :
  forall (b : Fbound) (p q : float),
  Fbounded b p -> p = q :>R -> (Fexp p <= Fexp q)%R -> Fbounded b q.
 intros b p q H' H'0 H'1; split.
-apply Zle_lt_trans with (Zabs (Fnum p)); [ idtac | try apply H' ].
+apply Z.le_lt_trans with (Z.abs (Fnum p)); [ idtac | try apply H' ].
 apply
- Zle_trans with (Zabs (Fnum (Fshift radix (Zabs_nat (Fexp q - Fexp p)) q)));
+ Z.le_trans with (Z.abs (Fnum (Fshift radix (Z.abs_nat (Fexp q - Fexp p)) q)));
  auto.
 unfold Fshift in |- *; simpl in |- *; auto.
 rewrite Zabs_Zmult.
-pattern (Zabs (Fnum q)) at 1 in |- *;
- replace (Zabs (Fnum q)) with (Zabs (Fnum q) * 1%nat)%Z;
- [ apply Zle_Zmult_comp_l | auto with zarith ]; auto with zarith.
-rewrite Zabs_eq; simpl in |- *; auto with zarith.
-apply Zpower_NR1; omega.
-apply Zpower_NR0; omega.
+pattern (Z.abs (Fnum q)) at 1 in |- *;
+ replace (Z.abs (Fnum q)) with (Z.abs (Fnum q) * 1)%Z;
+ [ apply Zle_Zmult_comp_l | lia ]; auto with zarith.
+rewrite Z.abs_eq; simpl in |- *; auto with zarith.
+apply Zpower_NR1; lia.
+apply Zpower_NR0; lia.
 cut (Fexp p <= Fexp q)%Z; [ intros E2 | idtac ].
 apply le_IZR; auto.
 apply (Rle_monotony_contra_exp radix) with (z := Fexp p);
  auto with real arith.
 pattern (Fexp p) at 2 in |- *;
- replace (Fexp p) with (Fexp (Fshift radix (Zabs_nat (Fexp q - Fexp p)) q));
+ replace (Fexp p) with (Fexp (Fshift radix (Z.abs_nat (Fexp q - Fexp p)) q));
  auto.
 rewrite <- (fun x => Rabs_pos_eq (powerRZ radix x)); auto with real zarith.
 rewrite <- Rabs_Zabs.
 rewrite <- Rabs_mult.
 change
-  (Rabs (FtoRradix (Fshift radix (Zabs_nat (Fexp q - Fexp p)) q)) <=
-   Zabs (Fnum p) * powerRZ radix (Fexp p))%R in |- *.
+  (Rabs (FtoRradix (Fshift radix (Z.abs_nat (Fexp q - Fexp p)) q)) <=
+   Z.abs (Fnum p) * powerRZ radix (Fexp p))%R in |- *.
 unfold FtoRradix in |- *; rewrite FshiftCorrect; auto.
 fold FtoRradix in |- *; rewrite <- H'0.
 rewrite <- (Fabs_correct radix); auto with real zarith.
-now apply powerRZ_le, Rlt_IZR.
+now apply powerRZ_le, IZR_lt.
 unfold Fshift in |- *; simpl in |- *.
 rewrite inj_abs; [ ring | auto with zarith ].
 now apply le_IZR.
 cut (Fexp p <= Fexp q)%Z; [ intros E2 | apply le_IZR ]; auto.
-apply Zle_trans with (Fexp p); try apply H'; now apply le_IZR.
+apply Z.le_trans with (Fexp p); try apply H'; now apply le_IZR.
 Qed.
 
 Theorem eqExpLess :
@@ -1952,21 +1710,20 @@ Qed.
 Theorem FboundedShiftLess :
  forall (b : Fbound) (f : float) (n m : nat),
  m <= n -> Fbounded b (Fshift radix n f) -> Fbounded b (Fshift radix m f).
+Proof.
 intros b f n m H' H'0; split; auto.
 simpl in |- *; auto.
-apply Zle_lt_trans with (Zabs (Fnum (Fshift radix n f))).
+apply Z.le_lt_trans with (Z.abs (Fnum (Fshift radix n f))).
 simpl in |- *; replace m with (m + 0); auto with arith.
 replace n with (m + (n - m)); auto with arith.
 repeat rewrite Zpower_nat_is_exp.
 repeat rewrite Zabs_Zmult; auto.
 apply Zle_Zmult_comp_l; auto with zarith.
 apply Zle_Zmult_comp_l; auto with zarith.
-repeat rewrite Zabs_eq; auto with zarith.
-apply Zpower_nat_monotone_le; omega.
-apply Zpower_NR0; omega.
-apply Zpower_NR0; omega.
+rewrite 2!Z.abs_eq by (apply Zpower_NR0; lia).
+apply Zpower_nat_monotone_le; lia.
 apply H'0.
-apply Zle_trans with (Fexp (Fshift radix n f)); try apply H'0.
+apply Z.le_trans with (Fexp (Fshift radix n f)); try apply H'0.
 simpl in |- *; unfold Zminus in |- *; auto with zarith.
 Qed.
 
@@ -1978,17 +1735,17 @@ Theorem eqExpMax :
  exists r : float, Fbounded b r /\ r = p :>R /\ (Fexp r <= Fexp q)%Z.
 intros b p q H' H'0 H'1; case (Zle_or_lt (Fexp p) (Fexp q)); intros Rl0.
 exists p; auto.
-cut ((Fexp p - Zabs_nat (Fexp p - Fexp q))%Z = Fexp q);
+cut ((Fexp p - Z.abs_nat (Fexp p - Fexp q))%Z = Fexp q);
  [ intros Eq1 | idtac ].
-exists (Fshift radix (Zabs_nat (Fexp p - Fexp q)) p); split; split; auto.
-apply Zle_lt_trans with (Fnum q); try apply H'0.
-replace (Zabs (Fnum (Fshift radix (Zabs_nat (Fexp p - Fexp q)) p))) with
- (Fnum (Fabs (Fshift radix (Zabs_nat (Fexp p - Fexp q)) p)));
+exists (Fshift radix (Z.abs_nat (Fexp p - Fexp q)) p); split; split; auto.
+apply Z.le_lt_trans with (Fnum q); try apply H'0.
+replace (Z.abs (Fnum (Fshift radix (Z.abs_nat (Fexp p - Fexp q)) p))) with
+ (Fnum (Fabs (Fshift radix (Z.abs_nat (Fexp p - Fexp q)) p)));
  auto.
 apply (Rle_Fexp_eq_Zle radix); auto with arith.
 rewrite Fabs_correct; auto with arith; rewrite FshiftCorrect; auto with arith;
  rewrite <- (Fabs_correct radix); auto with zarith.
-rewrite <- (Zabs_eq (Fnum q)); try apply H'0; auto with zarith.
+rewrite <- (Z.abs_eq (Fnum q)); try apply H'0; auto with zarith.
 apply (LeR0Fnum radix); auto.
 apply Rle_trans with (2 := H'1); auto with real.
 rewrite (Fabs_correct radix); auto with real zarith.
@@ -2003,10 +1760,10 @@ Qed.
 
 Theorem maxFbounded :
  forall (b : Fbound) (z : Z),
- (- dExp b <= z)%Z -> Fbounded b (Float (Zpred (Zpos (vNum b))) z).
+ (- dExp b <= z)%Z -> Fbounded b (Float (Z.pred (Zpos (vNum b))) z).
 intros b z H; split; auto.
-change (Zabs (Zpred (Zpos (vNum b))) < Zpos (vNum b))%Z in |- *.
-rewrite Zabs_eq; auto with zarith.
+change (Z.abs (Z.pred (Zpos (vNum b))) < Zpos (vNum b))%Z in |- *.
+rewrite Z.abs_eq; lia.
 Qed.
 
 Theorem maxMax :
@@ -2015,27 +1772,27 @@ Theorem maxMax :
  (Fexp p <= z)%Z -> (Fabs p < Float (Zpos (vNum b)) z)%R.
 intros b p z H' H'0; unfold FtoRradix in |- *;
  rewrite <-
-  (FshiftCorrect _ radixMoreThanOne (Zabs_nat (z - Fexp p))
+  (FshiftCorrect _ radixMoreThanOne (Z.abs_nat (z - Fexp p))
      (Float (Zpos (vNum b)) z)); unfold Fshift in |- *.
 change
   (FtoR radix (Fabs p) <
    FtoR radix
-     (Float (Zpos (vNum b) * Zpower_nat radix (Zabs_nat (z - Fexp p)))
-        (z - Zabs_nat (z - Fexp p))))%R in |- *.
-replace (z - Zabs_nat (z - Fexp p))%Z with (Fexp p).
+     (Float (Zpos (vNum b) * Zpower_nat radix (Z.abs_nat (z - Fexp p)))
+        (z - Z.abs_nat (z - Fexp p))))%R in |- *.
+replace (z - Z.abs_nat (z - Fexp p))%Z with (Fexp p).
 unfold Fabs, FtoR in |- *.
 change
-  (Zabs (Fnum p) * powerRZ radix (Fexp p) <
-   (Zpos (vNum b) * Zpower_nat radix (Zabs_nat (z - Fexp p)))%Z *
+  (Z.abs (Fnum p) * powerRZ radix (Fexp p) <
+   (Zpos (vNum b) * Zpower_nat radix (Z.abs_nat (z - Fexp p)))%Z *
    powerRZ radix (Fexp p))%R in |- *.
 apply Rmult_lt_compat_r; auto with real zarith.
-now apply powerRZ_lt, Rlt_IZR.
+now apply powerRZ_lt, IZR_lt.
 apply Rlt_le_trans with (IZR (Zpos (vNum b))).
-apply Rlt_IZR, H'.
+apply IZR_lt, H'.
 pattern (Zpos (vNum b)) at 1 in |- *;
  replace (Zpos (vNum b)) with (Zpos (vNum b) * 1)%Z; try ring.
-apply Rle_IZR, Zmult_le_compat_l.
-apply Zpower_NR1; omega.
+apply IZR_le, Zmult_le_compat_l.
+apply Zpower_NR1; lia.
 auto with zarith.
 rewrite inj_abs; auto with zarith; ring.
 Qed.
@@ -2063,13 +1820,13 @@ Theorem SterbenzAux :
  forall x y : float,
  Fbounded b x ->
  Fbounded b y ->
- (y <= x)%R -> (x <= 2%nat * y)%R -> Fbounded b (Fminus radix x y).
+ (y <= x)%R -> (x <= 2 * y)%R -> Fbounded b (Fminus radix x y).
 intros x y H' H'0 H'1 H'2.
 cut (0 <= Fminus radix x y)%R; [ intros Rle1 | idtac ].
 cut (Fminus radix x y <= y)%R; [ intros Rle2 | idtac ].
 case (Zle_or_lt (Fexp x) (Fexp y)); intros Zle1.
 repeat split.
-apply Zle_lt_trans with (Zabs (Fnum x)); try apply H'.
+apply Z.le_lt_trans with (Z.abs (Fnum x)); try apply H'.
 change (Fnum (Fabs (Fminus radix x y)) <= Fnum (Fabs x))%Z in |- *.
 apply Rle_Fexp_eq_Zle with (radix := radix); auto with arith.
 repeat rewrite Fabs_correct.
@@ -2077,54 +1834,55 @@ repeat rewrite Rabs_pos_eq; auto.
 apply Rle_trans with (2 := H'1); auto.
 apply Rle_trans with (2 := H'1); auto.
 apply Rle_trans with (2 := Rle2); auto.
-apply Zlt_trans with (2 := radixMoreThanOne); auto with zarith.
-apply Zlt_trans with (2 := radixMoreThanOne); auto with zarith.
-unfold Fminus in |- *; simpl in |- *; apply Zmin_le1; auto.
-unfold Fminus in |- *; simpl in |- *; rewrite Zmin_le1; try easy.
+apply Z.lt_trans with (2 := radixMoreThanOne); auto with zarith.
+apply Z.lt_trans with (2 := radixMoreThanOne); auto with zarith.
+unfold Fminus in |- *; simpl in |- *; apply Z.min_l; auto.
+unfold Fminus in |- *; simpl in |- *; rewrite Z.min_l; try easy.
 apply H'.
 repeat split.
-apply Zle_lt_trans with (Zabs (Fnum y)); try apply H'0.
+apply Z.le_lt_trans with (Z.abs (Fnum y)); try apply H'0.
 change (Fnum (Fabs (Fminus radix x y)) <= Fnum (Fabs y))%Z in |- *.
 apply Rle_Fexp_eq_Zle with (radix := radix); auto with arith.
 repeat rewrite Fabs_correct.
 repeat rewrite Rabs_pos_eq; auto.
 apply Rle_trans with (2 := Rle2); auto.
-apply Zlt_trans with (2 := radixMoreThanOne); auto with zarith.
-apply Zlt_trans with (2 := radixMoreThanOne); auto with zarith.
-unfold Fminus in |- *; simpl in |- *; apply Zmin_le2; auto with zarith.
-unfold Fminus in |- *; simpl in |- *; rewrite Zmin_le2; try apply H'0;
+apply Z.lt_trans with (2 := radixMoreThanOne); auto with zarith.
+apply Z.lt_trans with (2 := radixMoreThanOne); auto with zarith.
+unfold Fminus in |- *; simpl in |- *; apply Z.min_r; auto with zarith.
+unfold Fminus in |- *; simpl in |- *; rewrite Z.min_r; try apply H'0;
  auto with zarith.
 rewrite (Fminus_correct radix); auto with arith; fold FtoRradix in |- *.
 apply Rplus_le_reg_l with (r := FtoRradix y); auto.
 replace (y + (x - y))%R with (FtoRradix x); [ idtac | ring ].
-replace (y + y)%R with (2%nat * y)%R; [ auto | simpl in |- *; ring ].
-apply Zlt_trans with (2 := radixMoreThanOne); auto with zarith.
+replace (y + y)%R with (2 * y)%R; [ auto | simpl in |- *; ring ].
+apply Z.lt_trans with (2 := radixMoreThanOne); auto with zarith.
 rewrite (Fminus_correct radix); auto with arith; fold FtoRradix in |- *.
 apply Rplus_le_reg_l with (r := FtoRradix y); auto.
 replace (y + (x - y))%R with (FtoRradix x); [ idtac | ring ].
 replace (y + 0)%R with (FtoRradix y); [ auto | simpl in |- *; ring ].
-apply Zlt_trans with (2 := radixMoreThanOne); auto with zarith.
+apply Z.lt_trans with (2 := radixMoreThanOne); auto with zarith.
 Qed.
 
 Theorem Sterbenz :
  forall x y : float,
  Fbounded b x ->
  Fbounded b y ->
- (/ 2%nat * y <= x)%R -> (x <= 2%nat * y)%R -> Fbounded b (Fminus radix x y).
+ (/ 2 * y <= x)%R -> (x <= 2 * y)%R -> Fbounded b (Fminus radix x y).
 intros x y H' H'0 H'1 H'2.
-cut (y <= 2%nat * x)%R; [ intros Le1 | idtac ].
+cut (y <= 2 * x)%R; [ intros Le1 | idtac ].
 case (Rle_or_lt x y); intros Le2; auto.
 apply oppBoundedInv; auto.
 rewrite Fopp_Fminus.
 apply SterbenzAux; auto with real.
 apply SterbenzAux; auto with real.
-apply Rmult_le_reg_l with (r := (/ 2%nat)%R).
+apply Rmult_le_reg_l with (r := (/ 2)%R).
 apply Rinv_0_lt_compat; auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_l; auto with real.
 rewrite Rmult_1_l; auto.
 Qed.
 
 End Fprop.
+
 (*** was file Zenum.v  ***)
 (****************************************************************************
 
@@ -2142,7 +1900,7 @@ Fixpoint mZlist_aux (p : Z) (n : nat) {struct n} :
  list Z :=
   match n with
   | O => p :: nil
-  | S n1 => p :: mZlist_aux (Zsucc p) n1
+  | S n1 => p :: mZlist_aux (Z.succ p) n1
   end.
 
 Theorem mZlist_aux_correct :
@@ -2154,7 +1912,7 @@ intros H' H'0; simpl in |- *; left.
 apply Zle_antisym; auto.
 intros n H' p q H'0 H'1; case (Zle_lt_or_eq _ _ H'0); intros H'2.
 simpl in |- *; right.
-apply H'; auto with zarith.
+apply H'; lia.
 simpl in |- *; auto.
 Qed.
 
@@ -2193,11 +1951,7 @@ intros H'1; rewrite (Zle_antisym r p); auto with datatypes.
 auto with zarith.
 intros p0 H'1; apply mZlist_aux_correct; auto.
 rewrite inject_nat_convert with (1 := H'1); auto with zarith.
-intros p0 H'1; absurd (p <= q)%Z; auto.
-apply Zlt_not_le; auto.
-apply Zlt_O_minus_lt; auto.
-replace (p - q)%Z with (- (q - p))%Z; auto with zarith.
-apply Zle_trans with (m := r); auto.
+intros; lia.
 Qed.
 
 Theorem mZlist_correct_rev1 :
@@ -2276,6 +2030,7 @@ Theorem in_map_inv :
 intros A B f l; elim l; simpl in |- *; auto.
 intros a l0 H' x H'0 H'1; elim H'1; clear H'1; intros H'2; auto.
 Qed.
+
 (*** was file Fnorm.v  ***)
 (****************************************************************************
 
@@ -2297,7 +2052,7 @@ Local Coercion FtoRradix : float >-> R.
 Variable b : Fbound.
 
 Definition Fnormal (p : float) :=
-  Fbounded b p /\ (Zpos (vNum b) <= Zabs (radix * Fnum p))%Z.
+  Fbounded b p /\ (Zpos (vNum b) <= Z.abs (radix * Fnum p))%Z.
 
 Theorem FnormalBounded : forall p : float, Fnormal p -> Fbounded b p.
 intros p H; case H; auto.
@@ -2307,35 +2062,36 @@ Qed.
 Theorem FnormalNotZero : forall p : float, Fnormal p -> ~ is_Fzero p.
 unfold is_Fzero in |- *; intros p H; red in |- *; intros H1.
 case H; rewrite H1.
-replace (Zabs (radix * 0)) with 0%Z; auto with zarith.
+lia.
 Qed.
 
 Theorem FnormalFop : forall p : float, Fnormal p -> Fnormal (Fopp p).
 intros p H; split.
 apply oppBounded; apply H.
-replace (Zabs (radix * Fnum (Fopp p))) with (Zabs (radix * Fnum p));
+replace (Z.abs (radix * Fnum (Fopp p))) with (Z.abs (radix * Fnum p));
  try apply H.
-case p; simpl in |- *; auto with zarith.
+destruct p. simpl.
+now rewrite Z.mul_opp_r, Z.abs_opp.
 Qed.
 
 Theorem FnormalFabs : forall p : float, Fnormal p -> Fnormal (Fabs p).
 intros p; case p; intros a e H; split.
 simpl in |- *; case H; intros H1 H2; simpl in |- *; auto.
 now apply absFBounded.
-simpl; rewrite <- (Zabs_eq radix); auto with zarith.
+simpl; rewrite <- (Z.abs_eq radix); auto with zarith.
 rewrite <- Zabs_Zmult.
-rewrite (fun x => Zabs_eq (Zabs x)); auto with zarith.
+rewrite (fun x => Z.abs_eq (Z.abs x)); auto with zarith.
 apply H.
 Qed.
 
-Definition pPred x := Zpred (Zpos x).
+Definition pPred x := Z.pred (Zpos x).
 
 Theorem maxMax1 :
  forall (p : float) (z : Z),
  Fbounded b p -> (Fexp p <= z)%Z -> (Fabs p <= Float (pPred (vNum b)) z)%R.
 intros p z H H0; unfold FtoRradix in |- *.
 rewrite <-
- (FshiftCorrect _ radixMoreThanOne (Zabs_nat (z - Fexp p))
+ (FshiftCorrect _ radixMoreThanOne (Z.abs_nat (z - Fexp p))
     (Float (pPred (vNum b)) z)).
 unfold FtoR, Fabs in |- *; simpl in |- *; auto with zarith.
 rewrite mult_IZR; rewrite Zpower_nat_Z_powerRZ; auto with zarith.
@@ -2345,20 +2101,20 @@ rewrite Rmult_assoc; rewrite <- powerRZ_add; auto with real zarith.
 replace (z - Fexp p + Fexp p)%Z with z; [ idtac | ring ].
 apply Rle_trans with (pPred (vNum b) * powerRZ radix (Fexp p))%R.
 apply Rle_monotone_exp; auto with zarith; repeat rewrite Rmult_IZR;
- apply Rle_IZR; unfold pPred in |- *; apply Zle_Zpred;
+ apply IZR_le; unfold pPred in |- *; apply Zle_Zpred;
  auto with real zarith.
 apply H.
 apply Rmult_le_compat_l; auto with real zarith.
-apply Rle_IZR; unfold pPred in |- *;
+apply IZR_le; unfold pPred in |- *;
  apply Zle_Zpred; auto with zarith.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
-apply IZR_neq; omega.
+apply IZR_le; lia.
+apply IZR_neq; lia.
 Qed.
 
 Definition Fsubnormal (p : float) :=
   Fbounded b p /\
-  Fexp p = (- dExp b)%Z /\ (Zabs (radix * Fnum p) < Zpos (vNum b))%Z.
+  Fexp p = (- dExp b)%Z /\ (Z.abs (radix * Fnum p) < Zpos (vNum b))%Z.
 
 Theorem FsubnormalFbounded : forall p : float, Fsubnormal p -> Fbounded b p.
 intros p H; case H; auto.
@@ -2382,9 +2138,9 @@ intros p; case p; intros a e H; split; try apply H.
 apply absFBounded, H.
 simpl in |- *; split; try apply H.
 case H; intros H1 (H2, H3); auto.
-rewrite <- (Zabs_eq radix); auto with zarith.
+rewrite <- (Z.abs_eq radix); auto with zarith.
 rewrite <- Zabs_Zmult.
-rewrite (fun x => Zabs_eq (Zabs x)); auto with zarith.
+rewrite (fun x => Z.abs_eq (Z.abs x)); auto with zarith.
 Qed.
 
 Theorem FsubnormalUnique :
@@ -2446,24 +2202,24 @@ Hypothesis pGivesBound : Zpos (vNum b) = Zpower_nat radix precision.
 Theorem FboundNext :
  forall p : float,
  Fbounded b p ->
- exists q : float, Fbounded b q /\ q = Float (Zsucc (Fnum p)) (Fexp p) :>R.
+ exists q : float, Fbounded b q /\ q = Float (Z.succ (Fnum p)) (Fexp p) :>R.
 intros p H'.
-case (Zle_lt_or_eq (Zsucc (Fnum p)) (Zpos (vNum b))).
+case (Zle_lt_or_eq (Z.succ (Fnum p)) (Zpos (vNum b))).
 case (Zle_or_lt 0 (Fnum p)); intros H1.
-rewrite <- (Zabs_eq (Fnum p)); auto with zarith.
+rewrite <- (Z.abs_eq (Fnum p)); auto with zarith.
 generalize (proj1 H'); auto with zarith.
-apply Zle_trans with 0%Z; auto with zarith.
-intros H'0; exists (Float (Zsucc (Fnum p)) (Fexp p)); split; auto.
+apply Z.le_trans with 0%Z; auto with zarith.
+intros H'0; exists (Float (Z.succ (Fnum p)) (Fexp p)); split; auto.
 repeat split; simpl in |- *; try apply H'; auto with zarith.
-case (Zle_or_lt 0 (Fnum p)); intros H1; auto with zarith.
-apply Zlt_trans with (Zabs (Fnum p)); try apply H'; auto with zarith.
+case (Zle_or_lt 0 (Fnum p)); intros H1; try lia.
+apply Z.lt_trans with (Z.abs (Fnum p)); try apply H'; auto with zarith.
 repeat rewrite Zabs_eq_opp; auto with zarith.
 intros H'0;
- exists (Float (Zpower_nat radix (pred precision)) (Zsucc (Fexp p)));
+ exists (Float (Zpower_nat radix (pred precision)) (Z.succ (Fexp p)));
  split; auto.
 repeat split; simpl in |- *; auto with zarith arith.
 rewrite pGivesBound.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
 apply Zpower_NR0; auto with zarith.
 generalize (proj2 H'); auto with zarith.
@@ -2472,7 +2228,7 @@ pattern precision at 2 in |- *; replace precision with (1 + pred precision).
 rewrite Zpower_nat_is_exp.
 rewrite Zpower_nat_1.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
-rewrite powerRZ_Zs; auto with real zarith.
+rewrite powerRZ_Zs.
 rewrite mult_IZR; ring.
 apply IZR_neq; auto with zarith.
 generalize precisionNotZero;
@@ -2480,29 +2236,30 @@ generalize precisionNotZero;
 Qed.
 
 Theorem digitPredVNumiSPrecision :
- digit radix (Zpred (Zpos (vNum b))) = precision.
+ digit radix (Z.pred (Zpos (vNum b))) = precision.
 apply digitInv; auto.
 rewrite pGivesBound.
-rewrite Zabs_eq; auto with zarith.
-apply Zle_Zpred, Zpower_nat_monotone_lt; auto with zarith.
-auto with zarith.
+rewrite Z.abs_eq; try lia.
+apply Zle_Zpred, Zpower_nat_monotone_lt; lia.
+lia.
 Qed.
 
 Theorem digitVNumiSPrecision :
  digit radix (Zpos (vNum b)) = S precision.
 apply digitInv; auto.
 rewrite pGivesBound.
-rewrite Zabs_eq; auto with zarith.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; try lia.
+auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 rewrite pGivesBound; auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
 Qed.
 
 Theorem vNumPrecision :
  forall n : Z,
- digit radix n <= precision -> (Zabs n < Zpos (vNum b))%Z.
+ digit radix n <= precision -> (Z.abs n < Zpos (vNum b))%Z.
 intros n H'.
-rewrite <- (Zabs_eq (Zpos (vNum b))); auto with zarith.
+rewrite <- (Z.abs_eq (Zpos (vNum b))); auto with zarith.
 apply digit_anti_monotone_lt with (n := radix); auto.
 rewrite digitVNumiSPrecision; auto with arith.
 Qed.
@@ -2512,14 +2269,14 @@ Theorem pGivesDigit :
 intros p H; unfold Fdigit in |- *.
 rewrite <- digitPredVNumiSPrecision.
 apply digit_monotone; auto with zarith.
-rewrite (fun x => Zabs_eq (Zpred x)).
+rewrite (fun x => Z.abs_eq (Z.pred x)).
 generalize (proj1 H); auto with zarith.
 apply Zle_Zpred; auto with zarith.
 Qed.
 
 Theorem digitGivesBoundedNum :
  forall p : float,
- Fdigit radix p <= precision -> (Zabs (Fnum p) < Zpos (vNum b))%Z.
+ Fdigit radix p <= precision -> (Z.abs (Fnum p) < Zpos (vNum b))%Z.
 intros p H; apply vNumPrecision; auto.
 Qed.
 
@@ -2531,12 +2288,11 @@ Theorem FboundedMboundPos :
  exists c : float, Fbounded b c /\ c = (m * powerRZ radix z)%R :>R.
 intros z m H' H'0 H'1; case (Zle_lt_or_eq _ _ H'0); intros H'2.
 exists (Float m z); split; auto with zarith.
-repeat split; simpl in |- *; auto with zarith.
-case (FboundNext (Float (Zpred (Zpos (vNum b))) z)).
+repeat split; simpl in |- *; lia.
+case (FboundNext (Float (Z.pred (Zpos (vNum b))) z)).
 split; auto with zarith.
-rewrite Z.abs_eq.
-apply Zle_lt_trans with (Z.pred (Z.pos (vNum b))); auto with zarith.
-apply Zle_Zpred; auto with zarith.
+unfold Fnum.
+lia.
 intros f' (H1, H2); exists f'; split; auto.
 rewrite H2; rewrite pGivesBound.
 unfold FtoRradix, FtoR in |- *; simpl in |- *; auto.
@@ -2545,14 +2301,14 @@ Qed.
 
 Theorem FboundedMbound :
  forall z m : Z,
- (Zabs m <= Zpower_nat radix precision)%Z ->
+ (Z.abs m <= Zpower_nat radix precision)%Z ->
  (- dExp b <= z)%Z ->
  exists c : float, Fbounded b c /\ c = (m * powerRZ radix z)%R :>R.
 intros z m H H0.
 case (Zle_or_lt 0 m); intros H1.
-case (FboundedMboundPos z (Zabs m)); auto; try rewrite Zabs_eq; auto.
+case (FboundedMboundPos z (Z.abs m)); auto; try rewrite Z.abs_eq; auto.
 intros f (H2, H3); exists f; split; auto.
-case (FboundedMboundPos z (Zabs m)); auto; try rewrite Zabs_eq_opp;
+case (FboundedMboundPos z (Z.abs m)); auto; try rewrite Zabs_eq_opp;
  auto with zarith.
 intros f (H2, H3); exists (Fopp f); split.
 apply oppBounded; easy.
@@ -2571,12 +2327,12 @@ unfold Fdigit in |- *.
 replace (S (digit radix (Fnum p))) with (digit radix (Fnum p) + 1).
 rewrite <- digitAdd; auto with zarith.
 apply digit_monotone; try auto.
-rewrite (fun x => Zabs_eq (Zpos x)); auto with zarith.
+rewrite (fun x => Z.abs_eq (Zpos x)); auto with zarith.
 rewrite Zmult_comm; rewrite Zpower_nat_1; auto with zarith.
 apply H.
 destruct H as (H1,H2).
 intros H3; contradict H2; rewrite H3.
-replace (Zabs (radix * 0)) with 0%Z; auto with zarith.
+lia.
 rewrite plus_comm; simpl in |- *; auto.
 Qed.
 
@@ -2603,10 +2359,10 @@ intros H'3; right.
 case (Zle_lt_or_eq _ _ H'3); intros H'4.
 2: split; auto.
 2: apply Rlt_Fexp_eq_Zlt with (radix := radix); auto with zarith.
-absurd (Fnum (Fshift radix (Zabs_nat (Fexp p - Fexp q)) p) < Fnum q)%Z; auto.
+absurd (Fnum (Fshift radix (Z.abs_nat (Fexp p - Fexp q)) p) < Fnum q)%Z; auto.
 2: apply Rlt_Fexp_eq_Zlt with (radix := radix); auto with zarith.
 2: unfold FtoRradix in |- *; rewrite FshiftCorrect; auto.
-2: unfold Fshift in |- *; simpl in |- *; auto with zarith.
+2: unfold Fshift in |- *; simpl in |- *; lia.
 (* 2: replace (Z_of_nat (Zabs_nat (Fexp p - Fexp q))) with (Fexp p - Fexp q)%Z;
     auto with zarith. *)
 (*
@@ -2616,16 +2372,16 @@ absurd (Fnum (Fshift radix (Zabs_nat (Fexp p - Fexp q)) p) < Fnum q)%Z; auto.
 2: intros p0 H'5; discriminate. *)
 red in |- *; intros H'5.
 absurd
- (Fdigit radix (Fshift radix (Zabs_nat (Fexp p - Fexp q)) p) <=
+ (Fdigit radix (Fshift radix (Z.abs_nat (Fexp p - Fexp q)) p) <=
   Fdigit radix q); auto with arith.
 rewrite FshiftFdigit; auto with arith.
 replace (Fdigit radix p) with precision.
-replace (Fdigit radix q) with precision; auto with zarith.
+replace (Fdigit radix q) with precision; try lia.
 now apply sym_equal, FnormalPrecision.
 now apply sym_equal, FnormalPrecision.
 apply FnormalNotZero; auto with arith.
 unfold Fdigit in |- *; apply digit_monotone; auto with arith.
-repeat rewrite Zabs_eq; auto with zarith.
+repeat rewrite Z.abs_eq; auto with zarith.
 apply LeR0Fnum with (radix := radix); auto with zarith.
 apply Rle_trans with (r2 := FtoRradix p); auto with real.
 apply LeR0Fnum with (radix := radix); auto with zarith.
@@ -2636,13 +2392,13 @@ Definition nNormMin := Zpower_nat radix (pred precision).
 
 Theorem nNormPos : (0 < nNormMin)%Z.
 unfold nNormMin in |- *; auto with zarith.
-apply Zpower_nat_less; omega.
+apply Zpower_nat_less; lia.
 Qed.
 
 Theorem digitnNormMin : digit radix nNormMin = precision.
 unfold nNormMin, Fdigit in |- *; simpl in |- *; apply digitInv; try assumption.
-rewrite Zabs_eq; try apply Zpower_NR0; auto with zarith.
-rewrite Zabs_eq; try apply Zpower_NR0; auto with zarith.
+rewrite Z.abs_eq; try apply Zpower_NR0; auto with zarith.
+rewrite Z.abs_eq; try apply Zpower_NR0; auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
 Qed.
 
@@ -2658,7 +2414,7 @@ Definition firstNormalPos := Float nNormMin (- dExp b).
 Theorem firstNormalPosNormal : Fnormal firstNormalPos.
 repeat split; unfold firstNormalPos in |- *; simpl in |- *; auto with zarith.
 rewrite pGivesBound.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 unfold nNormMin in |- *; simpl in |- *.
 apply Zpower_nat_monotone_lt; auto with zarith.
 apply Zlt_le_weak;apply nNormPos.
@@ -2667,21 +2423,21 @@ replace precision with (pred precision + 1).
 rewrite Zpower_nat_is_exp; auto with zarith.
 rewrite Zpower_nat_1; auto with zarith.
 rewrite (fun x => Zmult_comm x radix); unfold nNormMin in |- *;
- auto with zarith.
+ lia.
 lia.
 Qed.
 
 Theorem pNormal_absolu_min :
- forall p : float, Fnormal p -> (nNormMin <= Zabs (Fnum p))%Z.
+ forall p : float, Fnormal p -> (nNormMin <= Z.abs (Fnum p))%Z.
 intros p H; apply Zmult_le_reg_r with (p := radix); auto with zarith.
 unfold nNormMin in |- *.
 pattern radix at 2 in |- *; rewrite <- (Zpower_nat_1 radix).
 rewrite <- Zpower_nat_is_exp; auto with zarith.
 replace (pred precision + 1) with precision.
 rewrite <- pGivesBound.
-rewrite <- (Zabs_eq radix); auto with zarith.
+rewrite <- (Z.abs_eq radix); auto with zarith.
 rewrite <- Zabs_Zmult; rewrite Zmult_comm; apply H.
-omega.
+lia.
 Qed.
 
 Theorem maxMaxBis :
@@ -2689,16 +2445,16 @@ Theorem maxMaxBis :
  Fbounded b p -> (Fexp p < z)%Z -> (Fabs p < Float nNormMin z)%R.
 intros p z H' H'0;
  apply
-  Rlt_le_trans with (FtoR radix (Float (Zpos (vNum b)) (Zpred z))).
+  Rlt_le_trans with (FtoR radix (Float (Zpos (vNum b)) (Z.pred z))).
 unfold FtoRradix in |- *; apply maxMax; auto with zarith;
- unfold Zpred in |- *; auto with zarith.
+ unfold Z.pred in |- *; auto with zarith.
 unfold FtoRradix, FtoR, nNormMin in |- *; simpl in |- *.
-pattern z at 2 in |- *; replace z with (Zsucc (Zpred z));
+pattern z at 2 in |- *; replace z with (Z.succ (Z.pred z));
  [ rewrite powerRZ_Zs; auto with real zarith
- | unfold Zsucc, Zpred in |- *; ring ].
+ | unfold Z.succ, Z.pred in |- *; ring ].
 rewrite <- Rmult_assoc.
 apply Rmult_le_compat_r; auto with real arith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 pattern radix at 2 in |- *; rewrite <- (Zpower_nat_1 radix).
 rewrite <- mult_IZR.
 rewrite <- Zpower_nat_is_exp.
@@ -2706,7 +2462,7 @@ replace (pred precision + 1) with precision.
 rewrite pGivesBound.
 apply Rle_refl.
 auto with zarith.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 Qed.
 
 Theorem FnormalLtFirstNormalPos :
@@ -2720,7 +2476,7 @@ apply Zle_not_lt; apply H'.
 intros H'1; elim H'1; intros H'2 H'3; contradict H'3.
 unfold firstNormalPos in |- *; simpl in |- *.
 apply Zle_not_lt.
-rewrite <- (Zabs_eq (Fnum p)); auto with zarith.
+rewrite <- (Z.abs_eq (Fnum p)); auto with zarith.
 apply pNormal_absolu_min; auto.
 apply LeR0Fnum with (radix := radix); auto with arith.
 Qed.
@@ -2728,31 +2484,31 @@ Qed.
 Theorem FsubnormalDigit :
  forall p : float, Fsubnormal p -> Fdigit radix p < precision.
 intros p H; unfold Fdigit in |- *.
-case (Z_eq_dec (Fnum p) 0); intros Z1.
+case (Z.eq_dec (Fnum p) 0); intros Z1.
 rewrite Z1; simpl in |- *; auto with zarith.
 apply lt_S_n; apply le_lt_n_Sm.
 rewrite <- digitPredVNumiSPrecision.
 replace (S (digit radix (Fnum p))) with (digit radix (Fnum p) + 1).
 rewrite <- digitAdd; auto with zarith.
 apply digit_monotone; try assumption.
-rewrite (fun x => Zabs_eq (Zpred x)); auto with zarith.
+rewrite (fun x => Z.abs_eq (Z.pred x)) by lia.
 rewrite Zmult_comm; rewrite Zpower_nat_1.
-generalize (proj2 (proj2 H)); omega.
+generalize (proj2 (proj2 H)); lia.
 rewrite plus_comm; simpl in |- *; auto.
 Qed.
 
 
 Theorem pSubnormal_absolu_min :
- forall p : float, Fsubnormal p -> (Zabs (Fnum p) < nNormMin)%Z.
+ forall p : float, Fsubnormal p -> (Z.abs (Fnum p) < nNormMin)%Z.
 intros p H'; apply Zlt_mult_simpl_l with (c := radix); auto with zarith.
-replace (radix * Zabs (Fnum p))%Z with (Zabs (radix * Fnum p)).
+replace (radix * Z.abs (Fnum p))%Z with (Z.abs (radix * Fnum p)).
 replace (radix * nNormMin)%Z with (Zpos (vNum b)); try apply H'.
 rewrite pGivesBound.
 replace precision with (1 + pred precision).
 rewrite Zpower_nat_is_exp; auto with zarith; rewrite Zpower_nat_1; auto.
 generalize precisionNotZero; case precision; simpl in |- *; auto.
 intros H; contradict H; auto.
-rewrite Zabs_Zmult; rewrite (Zabs_eq radix); auto with zarith.
+rewrite Zabs_Zmult; rewrite (Z.abs_eq radix); auto with zarith.
 Qed.
 
 Theorem FsubnormalLtFirstNormalPos :
@@ -2762,9 +2518,9 @@ intros p H' H'0; unfold FtoRradix, FtoR, firstNormalPos in |- *;
 replace (Fexp p) with (- dExp b)%Z.
 2: apply sym_equal; case H'; intros H1 H2; case H2; auto.
 apply Rmult_lt_compat_r; auto with real arith.
-apply powerRZ_lt, Rlt_IZR; easy.
-apply Rlt_IZR.
-rewrite <- (Zabs_eq (Fnum p)).
+apply powerRZ_lt, IZR_lt; easy.
+apply IZR_lt.
+rewrite <- (Z.abs_eq (Fnum p)).
 2: apply LeR0Fnum with (radix := radix); auto with zarith.
 apply pSubnormal_absolu_min; auto.
 Qed.
@@ -2799,7 +2555,7 @@ Definition Fnormalize (p : float) :=
   | left _ => Float 0 (- dExp b)
   | right _ =>
       Fshift radix
-        (min (precision - Fdigit radix p) (Zabs_nat (dExp b + Fexp p))) p
+        (min (precision - Fdigit radix p) (Z.abs_nat (dExp b + Fexp p))) p
   end.
 
 Theorem FnormalizeCorrect : forall p : float, Fnormalize p = p :>R.
@@ -2820,15 +2576,14 @@ case (Z_zerop (- Fnum1)); intros H'0; simpl in |- *; auto.
 case H'; replace Fnum1 with (- - Fnum1)%Z; auto with zarith.
 unfold Fopp, Fshift, Fdigit in |- *; simpl in |- *.
 replace (digit radix (- Fnum1)) with (digit radix Fnum1).
-apply floatEq; simpl in |- *; auto with zarith.
+apply floatEq; simpl in |- *; lia.
 case Fnum1; simpl in |- *; auto.
 Qed.
 
 Theorem FnormalizeBounded :
  forall p : float, Fbounded b p -> Fbounded b (Fnormalize p).
 intros p H'; red in |- *; split.
-unfold Fnormalize in |- *; case (Z_zerop (Fnum p)); auto.
-intros H'0; simpl in |- *; auto with zarith.
+unfold Fnormalize in |- *; case (Z_zerop (Fnum p)); try easy.
 intros H'0.
 apply digitGivesBoundedNum; auto.
 rewrite FshiftFdigit; auto.
@@ -2841,7 +2596,7 @@ simpl in |- *; auto with zarith.
 generalize H'; case p; unfold Fbounded, Fnormal, Fdigit in |- *;
  simpl in |- *.
 intros Fnum1 Fexp1 H'0 H'1.
-apply Zle_trans with (m := (Fexp1 - Zabs_nat (dExp b + Fexp1))%Z).
+apply Z.le_trans with (m := (Fexp1 - Z.abs_nat (dExp b + Fexp1))%Z).
 rewrite inj_abs; auto with zarith.
 unfold Zminus in |- *; apply Zplus_le_compat_l; auto.
 apply Zle_Zopp; auto.
@@ -2853,16 +2608,16 @@ Theorem FnormalizeCanonic :
 intros p H'.
 generalize (FnormalizeBounded p H').
 unfold Fnormalize in |- *; case (Z_zerop (Fnum p)); auto.
-intros H'0; right; repeat split; simpl in |- *; auto with zarith.
+intros H'0; right; repeat split; simpl in |- *; lia.
 intros H'1.
-case (min_or (precision - Fdigit radix p) (Zabs_nat (dExp b + Fexp p)));
+case (min_or (precision - Fdigit radix p) (Z.abs_nat (dExp b + Fexp p)));
  intros Min; case Min; clear Min; intros MinR MinL.
 intros H'2; left; split; auto.
 rewrite MinR; unfold Fshift in |- *; simpl in |- *.
 apply
- Zle_trans
+ Z.le_trans
   with
-    (Zabs
+    (Z.abs
        (radix *
         (Zpower_nat radix (pred (Fdigit radix p)) *
          Zpower_nat radix (precision - Fdigit radix p)))).
@@ -2870,8 +2625,7 @@ pattern radix at 1 in |- *; rewrite <- (Zpower_nat_1 radix).
 repeat rewrite <- Zpower_nat_is_exp; auto with zarith.
 replace (1 + (pred (Fdigit radix p) + (precision - Fdigit radix p))) with
  precision; auto.
-rewrite pGivesBound; auto with real.
-rewrite Zabs_eq; auto with zarith.
+rewrite pGivesBound; lia.
 cut (Fdigit radix p <= precision).
 2: now apply pGivesDigit.
 unfold Fdigit in |- *.
@@ -2882,42 +2636,42 @@ intros n H H0; change (precision = S n + (precision - S n)) in |- *.
 apply le_plus_minus; auto.
 repeat rewrite Zabs_Zmult.
 apply Zle_Zmult_comp_l.
-apply Zle_ZERO_Zabs.
+apply Z.abs_nonneg.
 apply Zle_Zmult_comp_r.
-apply Zle_ZERO_Zabs.
-rewrite (fun x => Zabs_eq (Zpower_nat radix x)); auto with zarith.
+apply Z.abs_nonneg.
+rewrite (fun x => Z.abs_eq (Zpower_nat radix x)); auto with zarith.
 unfold Fdigit in |- *; apply digitLess; auto.
-apply Zpower_NR0; omega.
+apply Zpower_NR0; lia.
 intros H'0; right; split; auto; split.
 rewrite MinR; clear MinR; auto.
 cut (- dExp b <= Fexp p)%Z; [ idtac | apply H' ].
 case p; simpl in |- *.
 intros Fnum1 Fexp1 H'2; rewrite inj_abs; auto with zarith.
 rewrite MinR.
-rewrite <- (fun x => Zabs_eq (Zpos x)).
+rewrite <- (fun x => Z.abs_eq (Zpos x)).
 unfold Fshift in |- *; simpl in |- *.
 apply
- Zlt_le_trans
+ Z.lt_le_trans
   with
-    (Zabs
+    (Z.abs
        (radix *
         (Zpower_nat radix (Fdigit radix p) *
-         Zpower_nat radix (Zabs_nat (dExp b + Fexp p))))).
+         Zpower_nat radix (Z.abs_nat (dExp b + Fexp p))))).
 repeat rewrite Zabs_Zmult.
 apply Zmult_gt_0_lt_compat_l.
-apply Zlt_gt; rewrite Zabs_eq; auto with zarith.
+apply Z.lt_gt; rewrite Z.abs_eq; auto with zarith.
 apply Zmult_gt_0_lt_compat_r.
-apply Zlt_gt; rewrite Zabs_eq; auto with zarith.
+apply Z.lt_gt; rewrite Z.abs_eq; auto with zarith.
 now apply Zpower_nat_less.
-apply Zpower_NR0; omega.
-rewrite (fun x => Zabs_eq (Zpower_nat radix x)); auto with zarith.
+apply Zpower_NR0; lia.
+rewrite (fun x => Z.abs_eq (Zpower_nat radix x)); auto with zarith.
 unfold Fdigit in |- *; apply digitMore; auto.
-apply Zpower_NR0; omega.
+apply Zpower_NR0; lia.
 pattern radix at 1 in |- *; rewrite <- (Zpower_nat_1 radix).
 repeat rewrite <- Zpower_nat_is_exp; auto with zarith.
-rewrite Zabs_eq, pGivesBound.
-apply Zpower_nat_monotone_le; omega.
-apply Zpower_NR0; omega.
+rewrite Z.abs_eq, pGivesBound.
+apply Zpower_nat_monotone_le; lia.
+apply Zpower_NR0; lia.
 auto with zarith.
 Qed.
 
@@ -2959,8 +2713,8 @@ apply Zplus_le_reg_l with (- Fexp x)%Z.
 replace (- Fexp x + Fexp x)%Z with (- (0))%Z; try ring.
 replace
  (- Fexp x +
-  (Fexp x - min (precision - Fdigit radix x) (Zabs_nat (dExp b + Fexp x))))%Z
- with (- min (precision - Fdigit radix x) (Zabs_nat (dExp b + Fexp x)))%Z;
+  (Fexp x - min (precision - Fdigit radix x) (Z.abs_nat (dExp b + Fexp x))))%Z
+ with (- min (precision - Fdigit radix x) (Z.abs_nat (dExp b + Fexp x)))%Z;
  try ring.
 apply Zle_Zopp; auto with arith zarith.
 rewrite <- H.
@@ -2979,7 +2733,7 @@ intros H'3 H'4; absurd (p < q)%R; auto.
 apply Rlt_asym.
 apply FsubnormalnormalLtPos; auto.
 apply Rle_trans with (r2 := FtoRradix p); auto with real.
-intros H'3 H'4; case (Z_eq_dec (Fexp q) (- dExp b)); intros H'5.
+intros H'3 H'4; case (Z.eq_dec (Fexp q) (- dExp b)); intros H'5.
 right; split.
 rewrite H'5; case H'4; intros H1 H2; case H2; auto.
 apply Rlt_Fexp_eq_Zlt with (radix := radix); auto with zarith.
@@ -3073,7 +2827,7 @@ Qed.
 Theorem vNumbMoreThanOne : (1 < Zpos (vNum b))%Z.
 replace 1%Z with (Z_of_nat 1); [ idtac | simpl in |- *; auto ].
 rewrite <- (Zpower_nat_O radix); rewrite pGivesBound; auto with zarith.
-apply Zpower_nat_monotone_lt; omega.
+apply Zpower_nat_monotone_lt; lia.
 Qed.
 
 Theorem PosNormMin : Zpos (vNum b) = (radix * nNormMin)%Z.
@@ -3087,16 +2841,16 @@ Theorem FnormalPpred :
  forall x : Z, (- dExp b <= x)%Z -> Fnormal (Float (pPred (vNum b)) x).
 intros x H;
  (cut (0 <= pPred (vNum b))%Z;
-   [ intros Z1 | unfold pPred in |- *; auto with zarith ]).
+   [ intros Z1 | unfold pPred in |- *; lia ]).
 repeat split; simpl in |- *; auto with zarith.
-rewrite (Zabs_eq (pPred (vNum b))).
+rewrite (Z.abs_eq (pPred (vNum b))).
 unfold pPred in |- *; auto with zarith.
-unfold pPred in |- *; rewrite pGivesBound; auto with zarith.
-rewrite Zabs_Zmult; repeat rewrite Zabs_eq; auto with zarith.
-apply Zle_trans with ((1 + 1) * pPred (vNum b))%Z; auto with zarith.
+unfold pPred in |- *; rewrite pGivesBound; lia.
+rewrite Zabs_Zmult; repeat rewrite Z.abs_eq; auto with zarith.
+apply Z.le_trans with ((1 + 1) * pPred (vNum b))%Z; auto with zarith.
 replace ((1 + 1) * pPred (vNum b))%Z with (pPred (vNum b) + pPred (vNum b))%Z;
  auto with zarith.
-replace (Zpos (vNum b)) with (1 + Zpred (Zpos (vNum b)))%Z;
+replace (Zpos (vNum b)) with (1 + Z.pred (Zpos (vNum b)))%Z;
  unfold pPred in |- *; auto with zarith.
 apply Zplus_le_compat_r; apply Zle_Zpred.
 apply vNumbMoreThanOne.
@@ -3112,12 +2866,12 @@ Theorem FnormalNnormMin :
  forall x : Z, (- dExp b <= x)%Z -> Fnormal (Float nNormMin x).
 intros x H; (cut (0 < nNormMin)%Z; [ intros Z1 | apply nNormPos ]).
 repeat split; simpl in |- *; auto with zarith.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 rewrite PosNormMin.
 pattern nNormMin at 1 in |- *; replace nNormMin with (1 * nNormMin)%Z;
  auto with zarith.
 apply Zmult_gt_0_lt_compat_r; auto with zarith.
-rewrite PosNormMin; auto with zarith.
+rewrite PosNormMin; lia.
 Qed.
 
 Theorem FcanonicNnormMin :
@@ -3152,22 +2906,22 @@ Hypothesis pGivesBound : Zpos (vNum b) = Zpower_nat radix precision.
 
 Definition FSucc (x : float) :=
   match Z_eq_bool (Fnum x) (pPred (vNum b)) with
-  | true => Float (nNormMin radix precision) (Zsucc (Fexp x))
+  | true => Float (nNormMin radix precision) (Z.succ (Fexp x))
   | false =>
       match Z_eq_bool (Fnum x) (- nNormMin radix precision) with
       | true =>
           match Z_eq_bool (Fexp x) (- dExp b) with
-          | true => Float (Zsucc (Fnum x)) (Fexp x)
-          | false => Float (- pPred (vNum b)) (Zpred (Fexp x))
+          | true => Float (Z.succ (Fnum x)) (Fexp x)
+          | false => Float (- pPred (vNum b)) (Z.pred (Fexp x))
           end
-      | false => Float (Zsucc (Fnum x)) (Fexp x)
+      | false => Float (Z.succ (Fnum x)) (Fexp x)
       end
   end.
 
 Theorem FSuccSimpl1 :
  forall x : float,
  Fnum x = pPred (vNum b) ->
- FSucc x = Float (nNormMin radix precision) (Zsucc (Fexp x)).
+ FSucc x = Float (nNormMin radix precision) (Z.succ (Fexp x)).
 intros x H'; unfold FSucc in |- *.
 generalize (Z_eq_bool_correct (Fnum x) (pPred (vNum b)));
  case (Z_eq_bool (Fnum x) (pPred (vNum b))); auto.
@@ -3178,11 +2932,11 @@ Theorem FSuccSimpl2 :
  forall x : float,
  Fnum x = (- nNormMin radix precision)%Z ->
  Fexp x <> (- dExp b)%Z ->
- FSucc x = Float (- pPred (vNum b)) (Zpred (Fexp x)).
+ FSucc x = Float (- pPred (vNum b)) (Z.pred (Fexp x)).
 intros x H' H'0; unfold FSucc in |- *.
 generalize (Z_eq_bool_correct (Fnum x) (pPred (vNum b)));
  case (Z_eq_bool (Fnum x) (pPred (vNum b))); auto.
-intros H'1; absurd (0%nat <= pPred (vNum b))%Z; auto with zarith arith.
+intros H'1; absurd (0 <= pPred (vNum b))%Z; auto with zarith arith.
 rewrite <- H'1; rewrite H'.
 unfold nNormMin in |- *; simpl in |- *; auto with zarith.
 replace 0%Z with (- (0))%Z; auto with zarith.
@@ -3199,12 +2953,12 @@ Qed.
 
 Theorem FSuccSimpl3 :
  FSucc (Float (- nNormMin radix precision) (- dExp b)) =
- Float (Zsucc (- nNormMin radix precision)) (- dExp b).
+ Float (Z.succ (- nNormMin radix precision)) (- dExp b).
 unfold FSucc in |- *; simpl in |- *.
 generalize (Z_eq_bool_correct (- nNormMin radix precision) (pPred (vNum b)));
  case (Z_eq_bool (- nNormMin radix precision) (pPred (vNum b)));
  auto.
-intros H'1; absurd (0%nat <= pPred (vNum b))%Z; auto with zarith arith.
+intros H'1; absurd (0 <= pPred (vNum b))%Z; auto with zarith arith.
 rewrite <- H'1.
 unfold nNormMin in |- *; simpl in |- *; auto with zarith.
 replace 0%Z with (- (0))%Z; auto with zarith.
@@ -3225,7 +2979,7 @@ Theorem FSuccSimpl4 :
  forall x : float,
  Fnum x <> pPred (vNum b) ->
  Fnum x <> (- nNormMin radix precision)%Z ->
- FSucc x = Float (Zsucc (Fnum x)) (Fexp x).
+ FSucc x = Float (Z.succ (Fnum x)) (Fexp x).
 intros x H' H'0; unfold FSucc in |- *.
 generalize (Z_eq_bool_correct (Fnum x) (pPred (vNum b)));
  case (Z_eq_bool (Fnum x) (pPred (vNum b))); auto.
@@ -3240,19 +2994,19 @@ Qed.
 Theorem FSuccDiff1 :
  forall x : float,
  Fnum x <> (- nNormMin radix precision)%Z ->
- Fminus radix (FSucc x) x = Float 1%nat (Fexp x) :>R.
+ Fminus radix (FSucc x) x = Float 1 (Fexp x) :>R.
 intros x H'.
 generalize (Z_eq_bool_correct (Fnum x) (pPred (vNum b)));
  case (Z_eq_bool (Fnum x) (pPred (vNum b))); intros H'1.
 rewrite FSuccSimpl1; auto.
 unfold FtoRradix, FtoR, Fminus, Fopp, Fplus in |- *; simpl in |- *; auto.
-repeat rewrite Zmin_le2; auto with zarith.
+repeat rewrite Z.min_r; auto with zarith.
 rewrite <- Zminus_succ_l; repeat rewrite <- Zminus_diag_reverse.
 rewrite absolu_Zs; auto with zarith; simpl in |- *.
 rewrite H'1; unfold pPred in |- *; rewrite pGivesBound;
  unfold nNormMin in |- *.
 replace (Zpower_nat radix (pred precision) * (radix * 1))%Z with
- (Zpower_nat radix precision). f_equal. unfold Zpred.
+ (Zpower_nat radix precision). f_equal. unfold Z.pred.
 rewrite Z.opp_add_distr. rewrite Z.mul_1_r. rewrite Z.add_assoc. now rewrite Z.add_opp_diag_r.
 rewrite Z.mul_1_r.
 pattern precision at 1 in |- *; replace precision with (pred precision + 1).
@@ -3263,15 +3017,15 @@ rewrite FSuccSimpl4; auto.
 unfold FtoRradix, FtoR, Fminus, Fopp, Fplus in |- *; simpl in |- *; auto.
 repeat rewrite Zmin_n_n; repeat rewrite <- Zminus_diag_reverse; simpl in |- *.
 repeat rewrite Zmult_1_r.
-replace (Zsucc (Fnum x) + - Fnum x)%Z with (Z_of_nat 1).
+replace (Z.succ (Fnum x) + - Fnum x)%Z with (Z_of_nat 1).
 simpl in |- *; auto.
-simpl in |- *; unfold Zsucc in |- *; ring.
+simpl in |- *; unfold Z.succ in |- *; ring.
 Qed.
 
 Theorem FSuccDiff2 :
  forall x : float,
  Fnum x = (- nNormMin radix precision)%Z ->
- Fexp x = (- dExp b)%Z -> Fminus radix (FSucc x) x = Float 1%nat (Fexp x) :>R.
+ Fexp x = (- dExp b)%Z -> Fminus radix (FSucc x) x = Float 1 (Fexp x) :>R.
 intros x H' H'0; replace x with (Float (Fnum x) (Fexp x)).
 rewrite H'; rewrite H'0; rewrite FSuccSimpl3; auto.
 unfold FtoRradix, FtoR, Fminus, Fopp, Fplus in |- *; simpl in |- *; auto.
@@ -3286,19 +3040,19 @@ Theorem FSuccDiff3 :
  forall x : float,
  Fnum x = (- nNormMin radix precision)%Z ->
  Fexp x <> (- dExp b)%Z ->
- Fminus radix (FSucc x) x = Float 1%nat (Zpred (Fexp x)) :>R.
+ Fminus radix (FSucc x) x = Float 1 (Z.pred (Fexp x)) :>R.
 intros x H' H'1; rewrite FSuccSimpl2; auto.
 unfold FtoRradix, FtoR, Fminus, Fopp, Fplus in |- *; simpl in |- *; auto.
-repeat rewrite Zmin_le1; auto with zarith.
-rewrite <- Zminus_diag_reverse; rewrite <- Zminus_n_predm;
+repeat rewrite Z.min_l; auto with zarith.
+rewrite <- Zminus_diag_reverse; rewrite Z.sub_pred_r;
  repeat rewrite <- Zminus_diag_reverse.
 rewrite absolu_Zs; auto with zarith; simpl in |- *.
 rewrite H'; unfold pPred in |- *; rewrite pGivesBound;
  unfold nNormMin in |- *.
-rewrite Zopp_involutive; repeat rewrite Zmult_1_r.
+rewrite Z.opp_involutive; repeat rewrite Zmult_1_r.
 replace (Zpower_nat radix (pred precision) * radix)%Z with
  (Zpower_nat radix precision).
-unfold Zpred in |- *; simpl in |- *;
+unfold Z.pred in |- *; simpl in |- *;
  repeat rewrite plus_IZR || rewrite Ropp_Ropp_IZR. f_equal.
 simpl in |- *; ring.
 pattern precision at 1 in |- *; replace precision with (pred precision + 1).
@@ -3309,7 +3063,7 @@ Qed.
 
 Theorem ZltNormMinVnum : (nNormMin radix precision < Zpos (vNum b))%Z.
 unfold nNormMin in |- *; rewrite pGivesBound; auto with zarith.
-apply Zpower_nat_monotone_lt; omega.
+apply Zpower_nat_monotone_lt; lia.
 Qed.
 
 
@@ -3322,15 +3076,15 @@ cut (Fbounded b a);
 generalize (Z_eq_bool_correct (Fnum a) (pPred (vNum b)));
  case (Z_eq_bool (Fnum a) (pPred (vNum b))); auto.
 intros H'3; repeat split; simpl in |- *; auto.
-rewrite Zabs_eq; try apply ZltNormMinVnum.
+rewrite Z.abs_eq; try apply ZltNormMinVnum.
 apply Zlt_le_weak, nNormPos; auto with zarith.
-apply Zle_trans with (m := Fexp a); try apply B0; auto with zarith.
-rewrite pGivesBound; rewrite Zabs_eq; auto with zarith.
+apply Z.le_trans with (m := Fexp a); try apply B0; auto with zarith.
+rewrite pGivesBound; rewrite Z.abs_eq; auto with zarith.
 pattern precision at 1 in |- *; replace precision with (1 + pred precision).
 rewrite Zpower_nat_is_exp; rewrite Zpower_nat_1; unfold nNormMin in |- *;
  auto with zarith.
 generalize precisionNotZero; case precision; auto with zarith.
-apply Zle_mult_gen; simpl in |- *; auto with zarith.
+apply Z.mul_nonneg_nonneg; simpl in |- *; auto with zarith.
 apply Zlt_le_weak, nNormPos; auto with zarith.
 intros H'3;
  generalize (Z_eq_bool_correct (Fnum a) (- nNormMin radix precision));
@@ -3339,29 +3093,30 @@ intros H'4; absurd (0 <= Fnum a)%Z; auto.
 2: apply LeR0Fnum with (radix := radix); auto with zarith.
 rewrite H'4; auto.
 apply Zlt_not_le.
-replace 0%Z with (- 0%nat)%Z by easy.
+replace 0%Z with (- 0)%Z by easy.
 apply Zlt_Zopp, nNormPos; auto with zarith.
 intros H'4; repeat split; simpl in |- *; auto with zarith.
-apply Zle_lt_trans with (Zsucc (Zabs (Fnum a))); auto with zarith.
-case (Zlt_next (Zabs (Fnum a)) (Zpos (vNum b)));
+apply Z.le_lt_trans with (Z.succ (Z.abs (Fnum a))).
+lia.
+case (Zlt_next (Z.abs (Fnum a)) (Zpos (vNum b)));
  auto with zarith arith; try apply B0.
 intros H1; contradict H'3.
-unfold pPred in |- *; rewrite H1; rewrite Zabs_eq; auto with zarith.
+unfold pPred in |- *; rewrite H1; rewrite Z.abs_eq; auto with zarith.
 apply LeR0Fnum with (radix := radix); auto with zarith.
 apply B0.
-apply Zle_trans with (Zabs (radix * Fnum a)); try apply H'0.
+apply Z.le_trans with (Z.abs (radix * Fnum a)); try apply H'0.
 case H'0; auto.
 repeat rewrite Zabs_Zmult.
 cut (0 <= Fnum a)%Z; [ intros Z1 | apply LeR0Fnum with (radix := radix) ];
  auto.
-rewrite (Zabs_eq (Fnum a)); auto.
-rewrite (Zabs_eq (Zsucc (Fnum a))); auto with zarith.
+rewrite (Z.abs_eq (Fnum a)); auto.
+rewrite (Z.abs_eq (Z.succ (Fnum a))); auto with zarith.
 Qed.
 
 Theorem FSuccSubnormNotNearNormMin :
  forall a : float,
  Fsubnormal radix b a ->
- Fnum a <> Zpred (nNormMin radix precision) -> Fsubnormal radix b (FSucc a).
+ Fnum a <> Z.pred (nNormMin radix precision) -> Fsubnormal radix b (FSucc a).
 intros a H' H'0.
 cut (Fbounded b a);
  [ intros B0 | apply FsubnormalFbounded with (1 := H'); auto ].
@@ -3386,17 +3141,17 @@ rewrite digitnNormMin; auto with arith.
 case (nNormMin radix precision); simpl in |- *; auto.
 apply FsubnormalDigit with (b := b); auto.
 intros H'4; repeat split; simpl in |- *; auto with zarith arith; try apply H'.
-apply Zle_lt_trans with (m := Zsucc (Zabs (Fnum a))).
+apply Z.le_lt_trans with (m := Z.succ (Z.abs (Fnum a))).
 apply Zabs_Zs.
-apply Zlt_le_trans with (m := Zsucc (nNormMin radix precision)).
+apply Z.lt_le_trans with (m := Z.succ (nNormMin radix precision)).
 apply Zsucc_lt_compat; apply pSubnormal_absolu_min with (3 := pGivesBound);
  auto with zarith arith.
 case H'; intros H1 (H2, H3).
 apply Zlt_le_succ,ZltNormMinVnum.
 rewrite Zabs_Zmult.
-rewrite (Zabs_eq radix); auto with zarith.
-apply Zlt_le_trans with (m := (radix * nNormMin radix precision)%Z).
-apply Zmult_gt_0_lt_compat_l; try apply Zlt_gt; auto with zarith.
+rewrite (Z.abs_eq radix); auto with zarith.
+apply Z.lt_le_trans with (m := (radix * nNormMin radix precision)%Z).
+apply Zmult_gt_0_lt_compat_l; try apply Z.lt_gt; auto with zarith.
 apply Zlt_Zabs_Zpred; auto with zarith arith.
 apply pSubnormal_absolu_min with (3 := pGivesBound); auto.
 pattern radix at 1 in |- *; rewrite <- (Zpower_nat_1 radix);
@@ -3408,7 +3163,7 @@ Qed.
 Theorem FSuccSubnormNearNormMin :
  forall a : float,
  Fsubnormal radix b a ->
- Fnum a = Zpred (nNormMin radix precision) -> Fnormal radix b (FSucc a).
+ Fnum a = Z.pred (nNormMin radix precision) -> Fnormal radix b (FSucc a).
 intros a H' H'0.
 cut (Fbounded b a); [ intros Fb0 | apply FsubnormalFbounded with (1 := H') ].
 unfold FSucc in |- *.
@@ -3423,14 +3178,14 @@ intros H'3;
  generalize (Z_eq_bool_correct (Fnum a) (- nNormMin radix precision));
  case (Z_eq_bool (Fnum a) (- nNormMin radix precision)).
 intros H'1;
- absurd (- nNormMin radix precision < Zpred (nNormMin radix precision))%Z.
+ absurd (- nNormMin radix precision < Z.pred (nNormMin radix precision))%Z.
 rewrite <- H'1; rewrite <- H'0; auto with zarith.
-unfold nNormMin in |- *; apply Zlt_le_trans with (m := (- (0))%Z);
+unfold nNormMin in |- *; apply Z.lt_le_trans with (m := (- (0))%Z);
  auto with zarith.
 intros H'4; repeat split; simpl in |- *; auto with zarith arith; try apply Fb0.
 rewrite H'0.
 rewrite <- Zsucc_pred.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 apply ZltNormMinVnum.
 apply Zlt_le_weak, nNormPos; easy.
 rewrite H'0.
@@ -3438,7 +3193,7 @@ rewrite <- Zsucc_pred.
 pattern radix at 1 in |- *; rewrite <- (Zpower_nat_1 radix);
  unfold nNormMin in |- *; rewrite <- Zpower_nat_is_exp.
 rewrite pGivesBound.
-rewrite Zabs_eq.
+rewrite Z.abs_eq.
 generalize precisionNotZero; case precision; simpl in |- *; auto with zarith.
 apply Zpower_NR0; auto with zarith.
 Qed.
@@ -3448,10 +3203,10 @@ intros f H'; unfold FSucc in |- *.
 generalize (Z_eq_bool_correct (Fnum f) (pPred (vNum b)));
  case (Z_eq_bool (Fnum f) (pPred (vNum b))); intros H'1.
 repeat split; simpl in |- *.
-rewrite Zabs_eq.
+rewrite Z.abs_eq.
 apply ZltNormMinVnum.
 apply Zlt_le_weak, nNormPos; easy.
-apply Zle_trans with (Fexp f); auto with zarith; apply H'.
+apply Z.le_trans with (Fexp f); auto with zarith; apply H'.
 generalize (Z_eq_bool_correct (Fnum f) (- nNormMin radix precision));
  case (Z_eq_bool (Fnum f) (- nNormMin radix precision));
  intros H'2.
@@ -3462,8 +3217,8 @@ apply Zlt_Zabs_Zpred; auto with zarith arith.
 apply H'.
 repeat split; simpl in |- *; auto with zarith arith.
 rewrite Zabs_Zopp.
-rewrite Zabs_eq; unfold pPred in |- *; auto with zarith.
-generalize (proj2 H'); omega.
+rewrite Z.abs_eq; unfold pPred in |- *; lia.
+generalize (proj2 H'); lia.
 repeat split; simpl in |- *; try apply H'.
 apply Zlt_Zabs_Zpred; try apply H'; auto with zarith.
 Qed.
@@ -3471,8 +3226,8 @@ Qed.
 Theorem FSuccSubnormal :
  forall a : float, Fsubnormal radix b a -> Fcanonic radix b (FSucc a).
 intros a H'.
-generalize (Z_eq_bool_correct (Fnum a) (Zpred (nNormMin radix precision)));
- case (Z_eq_bool (Fnum a) (Zpred (nNormMin radix precision)));
+generalize (Z_eq_bool_correct (Fnum a) (Z.pred (nNormMin radix precision)));
+ case (Z_eq_bool (Fnum a) (Z.pred (nNormMin radix precision)));
  intros H'1.
 left; apply FSuccSubnormNearNormMin; auto.
 right; apply FSuccSubnormNotNearNormMin; auto.
@@ -3516,12 +3271,12 @@ intros H'4; contradict H'1; auto.
 apply floatEq; auto.
 intros H'4; repeat split; simpl in |- *; auto with zarith.
 rewrite Zabs_Zopp.
-unfold pPred in |- *; rewrite Zabs_eq; auto with zarith.
+unfold pPred in |- *; rewrite Z.abs_eq; auto with zarith.
 apply Zle_Zpred; auto with zarith.
 case (Zle_next (- dExp b) (Fexp a)); try apply Fb0; auto with zarith.
 rewrite <- Zopp_mult_distr_r; rewrite Zabs_Zopp.
 rewrite Zabs_Zmult.
-repeat rewrite Zabs_eq; auto with zarith.
+repeat rewrite Z.abs_eq; auto with zarith.
 pattern (Zpos (vNum b)) at 1 in |- *;
  rewrite (PosNormMin radix) with (precision := precision);
  auto with zarith.
@@ -3530,18 +3285,18 @@ unfold pPred in |- *; apply Zle_Zpred; auto with zarith.
 apply ZltNormMinVnum.
 apply Zle_Zpred; auto with zarith.
 intros H'2; repeat split; simpl in |- *; auto with zarith arith.
-apply Zlt_trans with (Zabs (Fnum a)); try apply Fb0.
+apply Z.lt_trans with (Z.abs (Fnum a)); try apply Fb0.
 repeat rewrite Zabs_eq_opp; auto with zarith.
 apply Fb0.
 rewrite Zabs_Zmult.
-rewrite (Zabs_eq radix);
- [ idtac | apply Zle_trans with 1%Z; auto with zarith ].
+rewrite (Z.abs_eq radix);
+ [ idtac | apply Z.le_trans with 1%Z; auto with zarith ].
 repeat rewrite Zabs_eq_opp; auto with zarith.
 pattern (Zpos (vNum b)) at 1 in |- *;
  rewrite (PosNormMin radix) with (precision := precision);
  auto with zarith.
 apply Zle_Zmult_comp_l; auto with zarith.
-replace (- Zsucc (Fnum a))%Z with (Zpred (- Fnum a)).
+replace (- Z.succ (Fnum a))%Z with (Z.pred (- Fnum a)).
 case (Zle_lt_or_eq (nNormMin radix precision) (- Fnum a)); auto with zarith.
 rewrite <- Zabs_eq_opp; auto with zarith.
 apply pNormal_absolu_min with (b := b); auto.
@@ -3552,13 +3307,14 @@ Qed.
 
 Theorem FSuccNormNegNormMin :
  Fsubnormal radix b (FSucc (Float (- nNormMin radix precision) (- dExp b))).
+Proof.
 unfold FSucc in |- *; simpl in |- *.
 generalize (Z_eq_bool_correct (- nNormMin radix precision) (pPred (vNum b)));
  case (Z_eq_bool (- nNormMin radix precision) (pPred (vNum b)));
  intros H'; auto.
-absurd (0%nat < pPred (vNum b))%Z; auto.
+absurd (0 < pPred (vNum b))%Z; auto.
 rewrite <- H'; auto with zarith.
-replace (Z_of_nat 0) with (- (0))%Z; [ idtac | simpl in |- *; auto ].
+change 0%Z with (- (0))%Z.
 apply Zle_not_lt; apply Zle_Zopp, Zlt_le_weak.
 apply nNormPos; auto with zarith.
 unfold pPred in |- *; apply Zlt_succ_pred; simpl in |- *;
@@ -3574,18 +3330,18 @@ generalize (Z_eq_bool_correct (- dExp b) (- dExp b));
  case (Z_eq_bool (- dExp b) (- dExp b)); intros H'1.
 2: contradict H'1; auto.
 repeat split; simpl in |- *; auto with zarith.
-apply Zle_lt_trans with (m := nNormMin radix precision);
+apply Z.le_lt_trans with (m := nNormMin radix precision);
  auto with zarith.
-rewrite <- Zopp_Zpred_Zs; rewrite Zabs_Zopp; rewrite Zabs_eq;
+rewrite <- Zopp_Zpred_Zs; rewrite Zabs_Zopp; rewrite Z.abs_eq;
  auto with zarith.
 apply Zle_Zpred; simpl in |- *; auto with zarith.
 apply nNormPos; auto with zarith.
 apply ZltNormMinVnum.
-rewrite Zabs_Zmult; rewrite (Zabs_eq radix); auto with zarith.
+rewrite Zabs_Zmult; rewrite (Z.abs_eq radix); auto with zarith.
 rewrite (PosNormMin radix) with (precision := precision); auto with zarith.
 apply Zmult_gt_0_lt_compat_l; auto with zarith.
 rewrite <- Zopp_Zpred_Zs; rewrite Zabs_Zopp.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 apply Zle_Zpred; simpl in |- *; auto with zarith.
 apply nNormPos; auto with zarith.
 Qed.
@@ -3617,12 +3373,12 @@ unfold pPred in |- *;
  rewrite (PosNormMin radix) with (precision := precision);
  auto with zarith; unfold nNormMin in |- *.
 rewrite powerRZ_Zs; auto with real zarith.
-2: apply Rgt_not_eq, Rlt_IZR; omega.
+2: apply Rgt_not_eq, IZR_lt; lia.
 repeat rewrite <- Rmult_assoc.
 apply Rlt_monotony_exp; auto with zarith.
 rewrite Zmult_comm.
 rewrite <- mult_IZR.
-apply Rlt_IZR; auto with zarith.
+apply IZR_lt; auto with zarith.
 intros H';
  generalize (Z_eq_bool_correct (Fnum a) (- nNormMin radix precision));
  case (Z_eq_bool (Fnum a) (- nNormMin radix precision)).
@@ -3630,27 +3386,27 @@ intros H'0; generalize (Z_eq_bool_correct (Fexp a) (- dExp b));
  case (Z_eq_bool (Fexp a) (- dExp b)).
 intros H'1; unfold FtoRradix, FtoR in |- *; simpl in |- *.
 apply Rlt_monotony_exp; auto with real zarith.
-apply Rlt_IZR; auto with zarith.
+apply IZR_lt; auto with zarith.
 intros H'1; unfold FtoRradix, FtoR in |- *; simpl in |- *; rewrite H'0.
-pattern (Fexp a) at 1 in |- *; replace (Fexp a) with (Zsucc (Zpred (Fexp a))).
-rewrite powerRZ_Zs; auto with real zarith.
+pattern (Fexp a) at 1 in |- *; replace (Fexp a) with (Z.succ (Z.pred (Fexp a))).
+rewrite powerRZ_Zs.
 repeat rewrite <- Rmult_assoc.
 apply Rlt_monotony_exp; auto with real zarith.
 rewrite <- mult_IZR.
-apply Rlt_IZR; auto with zarith.
+apply IZR_lt; auto with zarith.
 rewrite <- Zopp_mult_distr_l.
 apply Zlt_Zopp.
 rewrite Zmult_comm.
 unfold pPred in |- *;
  rewrite (PosNormMin radix) with (precision := precision);
  auto with zarith.
-apply Rgt_not_eq, Rlt_IZR; omega.
+apply Rgt_not_eq, IZR_lt; lia.
 apply sym_equal; apply Zsucc_pred.
 intros H'1; unfold FtoRradix, FtoR in |- *; simpl in |- *;
  auto with real zarith.
 apply Rmult_lt_compat_r.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
-apply Rlt_IZR; auto with zarith.
+apply powerRZ_lt, IZR_lt; auto with zarith.
+apply IZR_lt; auto with zarith.
 Qed.
 
 Theorem FSuccPropPos :
@@ -3661,14 +3417,14 @@ intros x y H' H'0 H'1 H'2.
 cut (Fbounded b x); [ intros Fb0 | apply FcanonicBound with (1 := H'0) ].
 cut (Fbounded b y); [ intros Fb1 | apply FcanonicBound with (1 := H'1) ].
 case FcanonicLtPos with (p := x) (q := y) (3 := pGivesBound); auto.
-case (Z_eq_dec (Fnum x) (pPred (vNum b))); intros H'4.
+case (Z.eq_dec (Fnum x) (pPred (vNum b))); intros H'4.
 rewrite FSuccSimpl1; auto.
 intros H'5; case (Zlt_next _ _ H'5); intros H'6.
 replace y with (Float (Fnum y) (Fexp y)).
 rewrite H'6.
 generalize Fle_Zle; unfold Fle, FtoRradix in |- *; intros H'7; apply H'7;
  clear H'7; auto with arith.
-rewrite <- (Zabs_eq (Fnum y)); auto with zarith.
+rewrite <- (Z.abs_eq (Fnum y)); auto with zarith.
 apply pNormal_absolu_min with (b := b); auto.
 case H'1; auto with zarith.
 intros H'7; contradict H'5; apply Zle_not_lt.
@@ -3695,9 +3451,9 @@ apply FSuccLt; auto.
 apply Rle_trans with (r2 := FtoR radix x); auto with real.
 apply FSuccCanonic; auto.
 rewrite FSuccSimpl4; auto.
-apply sym_not_equal; apply Zlt_not_eq.
-apply Zlt_le_trans with (m := 0%Z); auto with zarith.
-replace 0%Z with (- 0%nat)%Z; auto with zarith.
+apply sym_not_equal; apply Z.lt_neq.
+apply Z.lt_le_trans with (m := 0%Z); auto with zarith.
+replace 0%Z with (- 0)%Z; auto with zarith.
 apply Zlt_Zopp.
 apply nNormPos; auto.
 apply LeR0Fnum with (radix := radix); auto with zarith.
@@ -3708,21 +3464,21 @@ generalize (Z_eq_bool_correct (Fnum x) (Zpos (vNum b)));
 contradict H'6; auto.
 apply Zle_not_lt; apply Zlt_le_weak.
 rewrite H'4; auto with zarith.
-rewrite <- (Zabs_eq (Fnum y)); auto with zarith; try apply Fb1.
+rewrite <- (Z.abs_eq (Fnum y)); auto with zarith; try apply Fb1.
 apply LeR0Fnum with (radix := radix); auto with zarith.
 apply Rle_trans with (FtoRradix x); auto with real.
 case (Zlt_next _ _ H'6); intros H'7.
 rewrite FSuccSimpl4; auto.
 rewrite <- H'7; rewrite H'5; unfold FtoRradix, FtoR in |- *; simpl in |- *;
  auto with real.
-apply Zlt_not_eq.
+apply Z.lt_neq.
 unfold pPred in |- *; apply Zlt_succ_pred; rewrite <- H'7; auto with zarith.
-rewrite <- (Zabs_eq (Fnum y)); auto with zarith; try apply Fb1.
+rewrite <- (Z.abs_eq (Fnum y)); auto with zarith; try apply Fb1.
 apply LeR0Fnum with (radix := radix); auto with zarith.
 apply Rle_trans with (FtoRradix x); auto with real.
 apply Zlt_not_eq_rev.
-apply Zlt_le_trans with (m := 0%Z); auto with zarith.
-replace 0%Z with (- 0%nat)%Z; auto with zarith.
+apply Z.lt_le_trans with (m := 0%Z); auto with zarith.
+replace 0%Z with (- 0)%Z; auto with zarith.
 apply Zlt_Zopp.
 apply nNormPos; auto.
 apply LeR0Fnum with (radix := radix); auto with zarith.
@@ -3731,19 +3487,19 @@ replace y with (Float (Fnum y) (Fexp y)).
 rewrite H'5.
 unfold FtoRradix, FtoR in |- *; simpl in |- *; auto with real.
 apply Rmult_le_compat_r.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
-apply Rle_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
+apply IZR_le; auto with zarith.
 case y; simpl in |- *; auto.
 contradict H'7; auto.
 apply Zle_not_lt; apply Zlt_le_weak.
 rewrite H'7.
 unfold pPred in |- *; rewrite <- Zsucc_pred.
-rewrite <- (Zabs_eq (Fnum y)); try apply Fb1.
+rewrite <- (Z.abs_eq (Fnum y)); try apply Fb1.
 apply LeR0Fnum with (radix := radix); auto with zarith.
 apply Rle_trans with (FtoRradix x); auto with real.
 apply Zlt_not_eq_rev.
-apply Zlt_le_trans with (m := 0%Z); auto with zarith.
-replace 0%Z with (- 0%nat)%Z; auto with zarith.
+apply Z.lt_le_trans with (m := 0%Z); auto with zarith.
+replace 0%Z with (- 0)%Z; auto with zarith.
 apply Zlt_Zopp.
 apply nNormPos; auto.
 apply LeR0Fnum with (radix := radix); auto with zarith.
@@ -3769,7 +3525,7 @@ apply R0LtFnum with (radix := radix); auto with zarith.
 intros H'0.
 apply LeZEROFnum with (radix := radix); simpl in |- *; auto with zarith.
 replace 0%Z with (- (0))%Z; [ apply Zle_Zopp | simpl in |- *; auto ].
-unfold pPred in |- *; apply Zle_Zpred; apply Zlt_trans with 1%Z;
+unfold pPred in |- *; apply Zle_Zpred; apply Z.lt_trans with 1%Z;
  auto with zarith;
  apply (vNumbMoreThanOne radix) with (precision := precision);
  auto with zarith.
@@ -3815,7 +3571,7 @@ rewrite H'7.
 rewrite <- Zpred_succ.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 apply Rle_monotone_exp; auto with zarith.
-rewrite <- (Zopp_involutive (Fnum y)); apply Rle_IZR; apply Zle_Zopp.
+rewrite <- (Z.opp_involutive (Fnum y)); apply IZR_le; apply Zle_Zopp.
 unfold pPred in |- *; apply Zle_Zpred; rewrite <- Zabs_eq_opp;
  auto with zarith; try apply Fb1.
 apply Zlt_le_weak; apply R0LtFnum with (radix := radix); auto with zarith.
@@ -3834,7 +3590,7 @@ case y; auto.
 intros H'6; elim H'6; intros H'7 H'8; clear H'6; apply Rlt_le.
 contradict H'8; rewrite H'4.
 apply Zle_not_lt.
-replace (Fnum y) with (- Zabs (Fnum y))%Z.
+replace (Fnum y) with (- Z.abs (Fnum y))%Z.
 apply Zle_Zopp.
 apply pNormal_absolu_min with (3 := pGivesBound); auto.
 case H'1; auto.
@@ -3860,11 +3616,11 @@ rewrite H'6.
 generalize Fle_Zle; unfold Fle, FtoRradix in |- *; intros H'8; apply H'8;
  clear H'8; auto with zarith arith.
 case y; auto.
-apply Zlt_not_eq.
-apply Zlt_trans with 0%Z; auto with zarith.
+apply Z.lt_neq.
+apply Z.lt_trans with 0%Z; auto with zarith.
 apply R0LtFnum with (radix := radix); auto with zarith.
 unfold pPred in |- *; apply Zlt_succ_pred.
-replace (Zsucc 0) with (Z_of_nat 1);
+replace (Z.succ 0) with (Z_of_nat 1);
  [ apply (vNumbMoreThanOne radix) with (precision := precision)
  | simpl in |- * ]; auto with zarith.
 Qed.
@@ -3885,15 +3641,15 @@ generalize (Z_eq_bool_correct (Fnum p) (pPred (vNum b)));
  case (Z_eq_bool (Fnum p) (pPred (vNum b))); intros H'0.
 rewrite FSuccSimpl1; simpl in |- *; auto with arith.
 intros H'1 H'2.
-replace p with (Fshift radix (Zabs_nat (Fexp q - Fexp p)) q).
+replace p with (Fshift radix (Z.abs_nat (Fexp q - Fexp p)) q).
 unfold FtoRradix in |- *; rewrite FshiftCorrect; auto with real.
-cut (Fexp (Fshift radix (Zabs_nat (Fexp q - Fexp p)) q) = Fexp p);
+cut (Fexp (Fshift radix (Z.abs_nat (Fexp q - Fexp p)) q) = Fexp p);
  [ intros Eq0 | idtac ].
 apply floatEq; auto.
 apply sym_equal; apply Zeq_Zs; auto.
 apply Rle_Fexp_eq_Zle with (radix := radix); auto with arith.
 rewrite FshiftCorrect; auto.
-replace (Zsucc (Fnum p)) with (Fnum (Fshift radix 1 (FSucc p))); auto.
+replace (Z.succ (Fnum p)) with (Fnum (Fshift radix 1 (FSucc p))); auto.
 apply Rlt_Fexp_eq_Zlt with (radix := radix); auto with arith.
 repeat rewrite FshiftCorrect; auto.
 rewrite FSuccSimpl1; simpl in |- *; auto with arith.
@@ -3918,15 +3674,15 @@ pattern p at 1 in |- *; replace p with (Float (Fnum p) (Fexp p)).
 rewrite H'1; rewrite H'2.
 rewrite FSuccSimpl3; auto with arith.
 intros H'3 H'4.
-replace p with (Fshift radix (Zabs_nat (Fexp q - Fexp p)) q).
+replace p with (Fshift radix (Z.abs_nat (Fexp q - Fexp p)) q).
 unfold FtoRradix in |- *; rewrite FshiftCorrect; auto with real.
-cut (Fexp (Fshift radix (Zabs_nat (Fexp q - Fexp p)) q) = Fexp p);
+cut (Fexp (Fshift radix (Z.abs_nat (Fexp q - Fexp p)) q) = Fexp p);
  [ intros Eq0 | idtac ].
 apply floatEq; auto.
 apply sym_equal; apply Zeq_Zs; auto.
 apply Rle_Fexp_eq_Zle with (radix := radix); auto with arith.
 rewrite FshiftCorrect; auto.
-replace (Zsucc (Fnum p)) with (Fnum (FSucc p)); auto.
+replace (Z.succ (Fnum p)) with (Fnum (FSucc p)); auto.
 pattern p at 2 in |- *; replace p with (Float (Fnum p) (Fexp p)).
 rewrite H'1; rewrite H'2.
 rewrite FSuccSimpl3; auto with arith.
@@ -3947,16 +3703,16 @@ intros H'3 H'4.
 unfold FtoRradix in |- *; rewrite <- FshiftCorrect with (n := 1) (x := p);
  auto.
 replace (Fshift radix 1 p) with
- (Fshift radix (S (Zabs_nat (Fexp q - Fexp p))) q).
+ (Fshift radix (S (Z.abs_nat (Fexp q - Fexp p))) q).
 repeat rewrite FshiftCorrect; auto with real.
 cut
- (Fexp (Fshift radix (S (Zabs_nat (Fexp q - Fexp p))) q) =
+ (Fexp (Fshift radix (S (Z.abs_nat (Fexp q - Fexp p))) q) =
   Fexp (Fshift radix 1 p)); [ intros Eq0 | idtac ].
 apply floatEq; auto.
 apply sym_equal; apply Zeq_Zs; auto.
 apply Rle_Fexp_eq_Zle with (radix := radix); auto with arith.
 repeat rewrite FshiftCorrect; auto.
-replace (Zsucc (Fnum (Fshift radix 1 p))) with (Fnum (FSucc p)); auto.
+replace (Z.succ (Fnum (Fshift radix 1 p))) with (Fnum (FSucc p)); auto.
 apply Rlt_Fexp_eq_Zlt with (radix := radix); auto with arith.
 repeat rewrite FshiftCorrect; auto.
 rewrite FSuccSimpl2; auto with arith.
@@ -3964,28 +3720,25 @@ rewrite FSuccSimpl2; auto with arith.
 rewrite FSuccSimpl2; auto with arith.
 unfold Fshift in |- *; simpl in |- *.
 rewrite Z.mul_1_r; auto.
-unfold pPred in |- *;
+rewrite H'1; unfold pPred in |- *;
  rewrite (PosNormMin radix) with (precision := precision);
- auto with zarith; rewrite H'1.
-rewrite Zopp_mult_distr_l_reverse.
-rewrite (Zmult_comm radix).
-apply Zopp_Zpred_Zs.
+ lia.
 unfold Fshift in |- *; simpl in |- *.
-replace (Zpos (P_of_succ_nat (Zabs_nat (Fexp q - Fexp p))))
- with (Zsucc (Fexp q - Fexp p)).
-unfold Zsucc, Zpred in |- *; ring.
-rewrite <- (inj_abs (Fexp q - Fexp p)); auto with zarith.
+replace (Zpos (P_of_succ_nat (Z.abs_nat (Fexp q - Fexp p))))
+ with (Z.succ (Fexp q - Fexp p)).
+unfold Z.succ, Z.pred in |- *; ring.
+rewrite <- (inj_abs (Fexp q - Fexp p)); lia.
 rewrite FSuccSimpl4; auto.
 intros H'2 H'3.
-replace p with (Fshift radix (Zabs_nat (Fexp q - Fexp p)) q).
+replace p with (Fshift radix (Z.abs_nat (Fexp q - Fexp p)) q).
 unfold FtoRradix in |- *; rewrite FshiftCorrect; auto with real.
-cut (Fexp (Fshift radix (Zabs_nat (Fexp q - Fexp p)) q) = Fexp p);
+cut (Fexp (Fshift radix (Z.abs_nat (Fexp q - Fexp p)) q) = Fexp p);
  [ intros Eq0 | idtac ].
 apply floatEq; auto.
 apply sym_equal; apply Zeq_Zs; auto.
 apply Rle_Fexp_eq_Zle with (radix := radix); auto with arith.
 rewrite FshiftCorrect; auto.
-replace (Zsucc (Fnum p)) with (Fnum (FSucc p)); auto.
+replace (Z.succ (Fnum p)) with (Fnum (FSucc p)); auto.
 rewrite FSuccSimpl4; auto.
 apply Rlt_Fexp_eq_Zlt with (radix := radix); auto with arith.
 repeat rewrite FshiftCorrect; auto.
@@ -4041,16 +3794,16 @@ Theorem nNormMimLtvNum : (nNormMin radix precision < pPred (vNum b))%Z.
 unfold pPred in |- *;
  rewrite PosNormMin with (radix := radix) (precision := precision);
  auto with zarith.
-apply Zlt_le_trans with (Zpred (2 * nNormMin radix precision)).
-replace (Zpred (2 * nNormMin radix precision)) with
- (Zpred (nNormMin radix precision) + nNormMin radix precision)%Z;
- [ idtac | unfold Zpred in |- *; ring ].
+apply Z.lt_le_trans with (Z.pred (2 * nNormMin radix precision)).
+replace (Z.pred (2 * nNormMin radix precision)) with
+ (Z.pred (nNormMin radix precision) + nNormMin radix precision)%Z;
+ [ idtac | unfold Z.pred in |- *; ring ].
 pattern (nNormMin radix precision) at 1 in |- *;
  replace (nNormMin radix precision) with (0 + nNormMin radix precision)%Z;
  [ idtac | ring ].
 apply Zplus_lt_compat_r; auto.
 apply Zlt_succ_pred.
-replace (Zsucc 0) with (Z_of_nat 1); [ idtac | simpl in |- *; auto ].
+replace (Z.succ 0) with (Z_of_nat 1); [ idtac | simpl in |- *; auto ].
 rewrite <- (Zpower_nat_O radix); unfold nNormMin in |- *.
 apply Zpower_nat_monotone_lt. assumption. now apply lt_pred.
 apply Zle_Zpred_Zpred. apply Zle_Zmult_comp_r; auto with zarith.
@@ -4081,22 +3834,22 @@ Hypothesis pGivesBound : Zpos (vNum b) = Zpower_nat radix precision.
 
 Definition FPred (x : float) :=
   match Z_eq_bool (Fnum x) (- pPred (vNum b)) with
-  | true => Float (- nNormMin radix precision) (Zsucc (Fexp x))
+  | true => Float (- nNormMin radix precision) (Z.succ (Fexp x))
   | false =>
       match Z_eq_bool (Fnum x) (nNormMin radix precision) with
       | true =>
           match Z_eq_bool (Fexp x) (- dExp b) with
-          | true => Float (Zpred (Fnum x)) (Fexp x)
-          | false => Float (pPred (vNum b)) (Zpred (Fexp x))
+          | true => Float (Z.pred (Fnum x)) (Fexp x)
+          | false => Float (pPred (vNum b)) (Z.pred (Fexp x))
           end
-      | false => Float (Zpred (Fnum x)) (Fexp x)
+      | false => Float (Z.pred (Fnum x)) (Fexp x)
       end
   end.
 
 Theorem FPredSimpl1 :
  forall x : float,
  Fnum x = (- pPred (vNum b))%Z ->
- FPred x = Float (- nNormMin radix precision) (Zsucc (Fexp x)).
+ FPred x = Float (- nNormMin radix precision) (Z.succ (Fexp x)).
 intros x H'; unfold FPred in |- *.
 generalize (Z_eq_bool_correct (Fnum x) (- pPred (vNum b)));
  case (Z_eq_bool (Fnum x) (- pPred (vNum b))); auto.
@@ -4106,13 +3859,13 @@ Qed.
 Theorem FPredSimpl2 :
  forall x : float,
  Fnum x = nNormMin radix precision ->
- Fexp x <> (- dExp b)%Z -> FPred x = Float (pPred (vNum b)) (Zpred (Fexp x)).
+ Fexp x <> (- dExp b)%Z -> FPred x = Float (pPred (vNum b)) (Z.pred (Fexp x)).
+Proof.
 intros x H' H'0; unfold FPred in |- *.
 generalize (Z_eq_bool_correct (Fnum x) (- pPred (vNum b)));
  case (Z_eq_bool (Fnum x) (- pPred (vNum b))); auto.
-intros H'1; absurd (0%nat < Fnum x)%Z; auto with zarith arith.
-apply Zle_not_lt; rewrite H'1; replace (Z_of_nat 0) with (- (0))%Z;
- [ apply Zle_Zopp | simpl in |- *; auto ].
+intros H'1; absurd (0 < Fnum x)%Z; auto with zarith arith.
+apply Zle_not_lt; rewrite H'1; change 0%Z with (- (0))%Z; apply Zle_Zopp.
 unfold pPred in |- *; apply Zle_Zpred; red in |- *; simpl in |- *; auto.
 rewrite H'.
 apply nNormPos; auto with zarith.
@@ -4127,13 +3880,13 @@ Qed.
 
 Theorem FPredSimpl3 :
  FPred (Float (nNormMin radix precision) (- dExp b)) =
- Float (Zpred (nNormMin radix precision)) (- dExp b).
+ Float (Z.pred (nNormMin radix precision)) (- dExp b).
 unfold FPred in |- *; simpl in |- *.
 generalize (Z_eq_bool_correct (nNormMin radix precision) (- pPred (vNum b)));
  case (Z_eq_bool (nNormMin radix precision) (- pPred (vNum b)));
  auto.
 intros H'0; absurd (0 < pPred (vNum b))%Z; auto with zarith arith.
-rewrite <- (Zopp_involutive (pPred (vNum b))); rewrite <- H'0.
+rewrite <- (Z.opp_involutive (pPred (vNum b))); rewrite <- H'0.
 apply Zle_not_lt; replace 0%Z with (- (0))%Z;
  [ apply Zle_Zopp | simpl in |- *; auto ].
 apply Zlt_le_weak; apply nNormPos; auto with zarith.
@@ -4154,7 +3907,7 @@ Theorem FPredSimpl4 :
  forall x : float,
  Fnum x <> (- pPred (vNum b))%Z ->
  Fnum x <> nNormMin radix precision ->
- FPred x = Float (Zpred (Fnum x)) (Fexp x).
+ FPred x = Float (Z.pred (Fnum x)) (Fexp x).
 intros x H' H'0; unfold FPred in |- *.
 generalize (Z_eq_bool_correct (Fnum x) (- pPred (vNum b)));
  case (Z_eq_bool (Fnum x) (- pPred (vNum b))); auto.
@@ -4182,31 +3935,31 @@ replace x with (Float (Fnum x) (Fexp x)).
 rewrite H'2; rewrite H'3; rewrite FPredSimpl3; unfold Fopp in |- *;
  simpl in |- *; rewrite FSuccSimpl3; simpl in |- *;
  auto.
-rewrite <- Zopp_Zpred_Zs; rewrite Zopp_involutive; auto.
+rewrite <- Zopp_Zpred_Zs; rewrite Z.opp_involutive; auto.
 case x; simpl in |- *; auto.
 rewrite FPredSimpl2; auto; rewrite FSuccSimpl2; unfold Fopp in |- *;
- simpl in |- *; try rewrite Zopp_involutive;
+ simpl in |- *; try rewrite Z.opp_involutive;
  auto.
 rewrite H'2; auto.
 rewrite FPredSimpl4; auto; rewrite FSuccSimpl4; auto.
 unfold Fopp in |- *; simpl in |- *; rewrite <- Zopp_Zpred_Zs;
- rewrite Zopp_involutive; auto.
+ rewrite Z.opp_involutive; auto.
 unfold Fopp in |- *; simpl in |- *; contradict H'1; rewrite <- H'1;
- rewrite Zopp_involutive; auto.
+ rewrite Z.opp_involutive; auto.
 unfold Fopp in |- *; simpl in |- *; contradict H'2; auto with zarith.
 Qed.
 
 Theorem FPredDiff1 :
  forall x : float,
  Fnum x <> nNormMin radix precision ->
- Fminus radix x (FPred x) = Float 1%nat (Fexp x) :>R.
+ Fminus radix x (FPred x) = Float 1 (Fexp x) :>R.
 intros x H'; rewrite (FPredFopFSucc x).
 pattern x at 1 in |- *; rewrite <- (Fopp_Fopp x).
 rewrite <- Fopp_Fminus_dist.
 rewrite Fopp_Fminus.
 unfold FtoRradix in |- *; rewrite FSuccDiff1; auto.
 replace (Fnum (Fopp x)) with (- Fnum x)%Z.
-contradict H'; rewrite <- (Zopp_involutive (Fnum x)); rewrite H';
+contradict H'; rewrite <- (Z.opp_involutive (Fnum x)); rewrite H';
  auto with zarith.
 case x; simpl in |- *; auto.
 Qed.
@@ -4214,7 +3967,7 @@ Qed.
 Theorem FPredDiff2 :
  forall x : float,
  Fnum x = nNormMin radix precision ->
- Fexp x = (- dExp b)%Z -> Fminus radix x (FPred x) = Float 1%nat (Fexp x) :>R.
+ Fexp x = (- dExp b)%Z -> Fminus radix x (FPred x) = Float 1 (Fexp x) :>R.
 intros x H' H'0; rewrite (FPredFopFSucc x).
 pattern x at 1 in |- *; rewrite <- (Fopp_Fopp x).
 rewrite <- Fopp_Fminus_dist.
@@ -4227,7 +3980,7 @@ Theorem FPredDiff3 :
  forall x : float,
  Fnum x = nNormMin radix precision ->
  Fexp x <> (- dExp b)%Z ->
- Fminus radix x (FPred x) = Float 1%nat (Zpred (Fexp x)) :>R.
+ Fminus radix x (FPred x) = Float 1 (Z.pred (Fexp x)) :>R.
 intros x H' H'0; rewrite (FPredFopFSucc x).
 pattern x at 1 in |- *; rewrite <- (Fopp_Fopp x).
 rewrite <- Fopp_Fminus_dist.
@@ -4319,8 +4072,8 @@ generalize (Z_eq_bool_correct (Fnum x) (pPred (vNum b)));
 generalize (Z_eq_bool_correct (nNormMin radix precision) (- pPred (vNum b)));
  case (Z_eq_bool (nNormMin radix precision) (- pPred (vNum b)));
  simpl in |- *.
-intros H'; contradict H'; apply sym_not_equal; apply Zlt_not_eq; auto.
-apply Zlt_le_trans with (- 0%nat)%Z.
+intros H'; contradict H'; apply sym_not_equal; apply Z.lt_neq; auto.
+apply Z.lt_le_trans with (- 0)%Z.
 apply Zlt_Zopp; unfold pPred in |- *; apply Zlt_succ_pred; simpl in |- *;
  apply vNumbMoreThanOne with (3 := pGivesBound); auto.
 simpl in |- *; apply Zlt_le_weak; apply nNormPos; auto.
@@ -4328,12 +4081,12 @@ generalize
  (Z_eq_bool_correct (nNormMin radix precision) (nNormMin radix precision));
  case (Z_eq_bool (nNormMin radix precision) (nNormMin radix precision));
  simpl in |- *.
-generalize (Z_eq_bool_correct (Zsucc (Fexp x)) (- dExp b));
- case (Z_eq_bool (Zsucc (Fexp x)) (- dExp b)); simpl in |- *.
+generalize (Z_eq_bool_correct (Z.succ (Fexp x)) (- dExp b));
+ case (Z_eq_bool (Z.succ (Fexp x)) (- dExp b)); simpl in |- *.
 intros H' H'0 H'1 H'2; absurd (- dExp b <= Fexp x)%Z; try apply Fb0.
 rewrite <- H'; auto with zarith.
-replace (Zpred (Zsucc (Fexp x))) with (Fexp x);
- [ idtac | unfold Zsucc, Zpred in |- *; ring ]; auto.
+replace (Z.pred (Z.succ (Fexp x))) with (Fexp x);
+ [ idtac | unfold Z.succ, Z.pred in |- *; ring ]; auto.
 intros H' H'0 H'1 H'2; rewrite <- H'2; auto.
 apply floatEq; auto.
 intros H'; case H'; auto.
@@ -4342,54 +4095,54 @@ generalize (Z_eq_bool_correct (Fnum x) (- nNormMin radix precision));
  simpl in |- *.
 generalize (Z_eq_bool_correct (Fexp x) (- dExp b));
  case (Z_eq_bool (Fexp x) (- dExp b)); simpl in |- *.
-generalize (Z_eq_bool_correct (Zsucc (Fnum x)) (- pPred (vNum b)));
- case (Z_eq_bool (Zsucc (Fnum x)) (- pPred (vNum b)));
+generalize (Z_eq_bool_correct (Z.succ (Fnum x)) (- pPred (vNum b)));
+ case (Z_eq_bool (Z.succ (Fnum x)) (- pPred (vNum b)));
  simpl in |- *.
-intros H0 H1 H2; absurd (Zsucc (Fnum x) <= Fnum x)%Z; auto with zarith.
+intros H0 H1 H2; absurd (Z.succ (Fnum x) <= Fnum x)%Z; auto with zarith.
 rewrite H0; rewrite H2; (apply Zle_Zopp; auto with zarith).
 unfold pPred in |- *; apply Zle_Zpred; apply ZltNormMinVnum; auto with zarith.
-generalize (Z_eq_bool_correct (Zsucc (Fnum x)) (nNormMin radix precision));
- case (Z_eq_bool (Zsucc (Fnum x)) (nNormMin radix precision));
+generalize (Z_eq_bool_correct (Z.succ (Fnum x)) (nNormMin radix precision));
+ case (Z_eq_bool (Z.succ (Fnum x)) (nNormMin radix precision));
  simpl in |- *.
 intros H' H'0 H'1 H'2; contradict H'2.
 rewrite <- H'; auto with zarith.
-replace (Zpred (Zsucc (Fnum x))) with (Fnum x);
- [ idtac | unfold Zsucc, Zpred in |- *; ring ]; auto.
+replace (Z.pred (Z.succ (Fnum x))) with (Fnum x);
+ [ idtac | unfold Z.succ, Z.pred in |- *; ring ]; auto.
 intros H' H'0 H'1 H'2 H'3; apply floatEq; auto.
 generalize (Z_eq_bool_correct (- pPred (vNum b)) (- pPred (vNum b)));
  case (Z_eq_bool (- pPred (vNum b)) (- pPred (vNum b)));
  auto.
 intros H' H'0 H'1 H'2; rewrite <- H'1.
-replace (Zsucc (Zpred (Fexp x))) with (Fexp x);
- [ idtac | unfold Zsucc, Zpred in |- *; ring ]; auto.
+replace (Z.succ (Z.pred (Fexp x))) with (Fexp x);
+ [ idtac | unfold Z.succ, Z.pred in |- *; ring ]; auto.
 apply floatEq; auto.
 intros H'; case H'; auto.
-generalize (Z_eq_bool_correct (Zsucc (Fnum x)) (- pPred (vNum b)));
- case (Z_eq_bool (Zsucc (Fnum x)) (- pPred (vNum b)));
+generalize (Z_eq_bool_correct (Z.succ (Fnum x)) (- pPred (vNum b)));
+ case (Z_eq_bool (Z.succ (Fnum x)) (- pPred (vNum b)));
  simpl in |- *.
 intros H'; absurd (- pPred (vNum b) <= Fnum x)%Z; auto with zarith.
 apply Zle_Zabs_inv1; try apply Fb0.
 unfold pPred in |- *; apply Zle_Zpred; try apply Fb0.
-generalize (Z_eq_bool_correct (Zsucc (Fnum x)) (nNormMin radix precision));
- case (Z_eq_bool (Zsucc (Fnum x)) (nNormMin radix precision));
+generalize (Z_eq_bool_correct (Z.succ (Fnum x)) (nNormMin radix precision));
+ case (Z_eq_bool (Z.succ (Fnum x)) (nNormMin radix precision));
  simpl in |- *.
 generalize (Z_eq_bool_correct (Fexp x) (- dExp b));
  case (Z_eq_bool (Fexp x) (- dExp b)); simpl in |- *.
 intros H' H'0 H'1 H'2 H'3.
-replace (Zpred (Zsucc (Fnum x))) with (Fnum x);
- [ idtac | unfold Zsucc, Zpred in |- *; ring ]; auto.
+replace (Z.pred (Z.succ (Fnum x))) with (Fnum x);
+ [ idtac | unfold Z.succ, Z.pred in |- *; ring ]; auto.
 apply floatEq; auto.
 intros H' H'0 H'1 H'2 H'3; case H.
-intros H'4; absurd (nNormMin radix precision <= Zabs (Fnum x))%Z.
-replace (Fnum x) with (Zpred (Zsucc (Fnum x)));
- [ idtac | unfold Zsucc, Zpred in |- *; ring ]; auto.
+intros H'4; absurd (nNormMin radix precision <= Z.abs (Fnum x))%Z.
+replace (Fnum x) with (Z.pred (Z.succ (Fnum x)));
+ [ idtac | unfold Z.succ, Z.pred in |- *; ring ]; auto.
 rewrite H'0.
-apply Zlt_not_le; rewrite Zabs_eq; auto with zarith.
+apply Zlt_not_le; rewrite Z.abs_eq; auto with zarith.
 apply Zle_Zpred; apply nNormPos; auto with zarith.
 apply pNormal_absolu_min with (b := b); auto.
 intros H'4; contradict H'; apply FsubnormalFexp with (1 := H'4).
 intros H' H'0 H'1 H'2; apply floatEq; simpl in |- *; auto.
-unfold Zpred, Zsucc in |- *; ring.
+unfold Z.pred, Z.succ in |- *; ring.
 Qed.
 
 Theorem FSucPred :
@@ -4402,9 +4155,9 @@ generalize (Z_eq_bool_correct (Fnum x) (- pPred (vNum b)));
 generalize (Z_eq_bool_correct (- nNormMin radix precision) (pPred (vNum b)));
  case (Z_eq_bool (- nNormMin radix precision) (pPred (vNum b)));
  simpl in |- *.
-intros H'; contradict H'; apply Zlt_not_eq; auto.
-rewrite <- (Zopp_involutive (pPred (vNum b))); apply Zlt_Zopp.
-apply Zlt_le_trans with (- 0%nat)%Z.
+intros H'; contradict H'; apply Z.lt_neq; auto.
+rewrite <- (Z.opp_involutive (pPred (vNum b))); apply Zlt_Zopp.
+apply Z.lt_le_trans with (- 0)%Z.
 apply Zlt_Zopp; unfold pPred in |- *; apply Zlt_succ_pred; simpl in |- *.
 apply (vNumbMoreThanOne radix) with (precision := precision); auto.
 simpl in |- *; apply Zlt_le_weak; apply nNormPos; auto with zarith arith.
@@ -4412,62 +4165,62 @@ generalize
  (Z_eq_bool_correct (- nNormMin radix precision) (- nNormMin radix precision));
  case (Z_eq_bool (- nNormMin radix precision) (- nNormMin radix precision));
  simpl in |- *.
-generalize (Z_eq_bool_correct (Zsucc (Fexp x)) (- dExp b));
- case (Z_eq_bool (Zsucc (Fexp x)) (- dExp b)); simpl in |- *.
+generalize (Z_eq_bool_correct (Z.succ (Fexp x)) (- dExp b));
+ case (Z_eq_bool (Z.succ (Fexp x)) (- dExp b)); simpl in |- *.
 intros H' H'0 H'1 H'2; absurd (- dExp b <= Fexp x)%Z; try apply Fb0.
 rewrite <- H'; auto with zarith.
 intros H' H'0 H'1 H'2; rewrite <- H'2; apply floatEq; simpl in |- *; auto;
- unfold Zsucc, Zpred in |- *; ring.
+ unfold Z.succ, Z.pred in |- *; ring.
 intros H'; case H'; auto.
 generalize (Z_eq_bool_correct (Fnum x) (nNormMin radix precision));
  case (Z_eq_bool (Fnum x) (nNormMin radix precision));
  simpl in |- *.
 generalize (Z_eq_bool_correct (Fexp x) (- dExp b));
  case (Z_eq_bool (Fexp x) (- dExp b)); simpl in |- *.
-generalize (Z_eq_bool_correct (Zpred (Fnum x)) (pPred (vNum b)));
- case (Z_eq_bool (Zpred (Fnum x)) (pPred (vNum b)));
+generalize (Z_eq_bool_correct (Z.pred (Fnum x)) (pPred (vNum b)));
+ case (Z_eq_bool (Z.pred (Fnum x)) (pPred (vNum b)));
  simpl in |- *.
 intros H' H'0 H'1 H'2; absurd (nNormMin radix precision <= pPred (vNum b))%Z.
 rewrite <- H'; rewrite H'1; auto with zarith.
 apply Zle_Zpred, ZltNormMinVnum; easy.
-generalize (Z_eq_bool_correct (Zpred (Fnum x)) (- nNormMin radix precision));
- case (Z_eq_bool (Zpred (Fnum x)) (- nNormMin radix precision));
+generalize (Z_eq_bool_correct (Z.pred (Fnum x)) (- nNormMin radix precision));
+ case (Z_eq_bool (Z.pred (Fnum x)) (- nNormMin radix precision));
  simpl in |- *.
 intros H' H'0 H'1 H'2 H'3;
- absurd (Zpred (nNormMin radix precision) = (- nNormMin radix precision)%Z);
+ absurd (Z.pred (nNormMin radix precision) = (- nNormMin radix precision)%Z);
  auto with zarith.
 intros H' H'0 H'1 H'2 H'3; apply floatEq; simpl in |- *; auto;
- unfold Zpred, Zsucc in |- *; ring.
+ unfold Z.pred, Z.succ in |- *; ring.
 generalize (Z_eq_bool_correct (pPred (vNum b)) (pPred (vNum b)));
  case (Z_eq_bool (pPred (vNum b)) (pPred (vNum b)));
  auto.
 intros H' H'0 H'1 H'2; rewrite <- H'1; apply floatEq; simpl in |- *; auto;
- unfold Zpred, Zsucc in |- *; ring.
+ unfold Z.pred, Z.succ in |- *; ring.
 intros H'; case H'; auto.
-generalize (Z_eq_bool_correct (Zpred (Fnum x)) (pPred (vNum b)));
- case (Z_eq_bool (Zpred (Fnum x)) (pPred (vNum b)));
+generalize (Z_eq_bool_correct (Z.pred (Fnum x)) (pPred (vNum b)));
+ case (Z_eq_bool (Z.pred (Fnum x)) (pPred (vNum b)));
  simpl in |- *.
 intros H'; absurd (Fnum x <= pPred (vNum b))%Z; auto with zarith.
 apply Zle_Zabs_inv2; unfold pPred in |- *; apply Zle_Zpred, Fb0.
-generalize (Z_eq_bool_correct (Zpred (Fnum x)) (- nNormMin radix precision));
- case (Z_eq_bool (Zpred (Fnum x)) (- nNormMin radix precision));
+generalize (Z_eq_bool_correct (Z.pred (Fnum x)) (- nNormMin radix precision));
+ case (Z_eq_bool (Z.pred (Fnum x)) (- nNormMin radix precision));
  simpl in |- *.
 generalize (Z_eq_bool_correct (Fexp x) (- dExp b));
  case (Z_eq_bool (Fexp x) (- dExp b)); simpl in |- *.
 intros H' H'0 H'1 H'2 H'3; apply floatEq; simpl in |- *; auto;
- unfold Zsucc, Zpred in |- *; ring.
+ unfold Z.succ, Z.pred in |- *; ring.
 intros H' H'0 H'1 H'2 H'3; case H; intros C0.
-absurd (nNormMin radix precision <= Zabs (Fnum x))%Z.
-replace (Fnum x) with (Zsucc (Zpred (Fnum x)));
- [ idtac | unfold Zsucc, Zpred in |- *; ring ].
+absurd (nNormMin radix precision <= Z.abs (Fnum x))%Z.
+replace (Fnum x) with (Z.succ (Z.pred (Fnum x)));
+ [ idtac | unfold Z.succ, Z.pred in |- *; ring ].
 rewrite H'0.
 rewrite <- Zopp_Zpred_Zs; rewrite Zabs_Zopp.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 apply Zle_Zpred; simpl in |- *; apply nNormPos; auto with zarith.
 apply pNormal_absolu_min with (b := b); auto.
 contradict H'; apply FsubnormalFexp with (1 := C0).
 intros H' H'0 H'1 H'2; apply floatEq; simpl in |- *; auto.
-unfold Zpred, Zsucc in |- *; ring.
+unfold Z.pred, Z.succ in |- *; ring.
 Qed.
 
 
@@ -4497,35 +4250,35 @@ Hypothesis precisionNotZero : precision <> 0.
 Hypothesis pGivesBound : Zpos (vNum b) = Zpower_nat radix precision.
 (* a function that returns a boundd greater than a given nat *)
 
-Definition boundNat (n : nat) := Float 1%nat (digit radix n).
+Definition boundNat (n : nat) := Float 1 (digit radix n).
 
 Theorem boundNatCorrect : forall n : nat, (n < boundNat n)%R.
+Proof.
 intros n; unfold FtoRradix, FtoR, boundNat in |- *; simpl in |- *.
 rewrite Rmult_1_l.
 rewrite <- Zpower_nat_Z_powerRZ; auto with real zarith.
-rewrite INR_IZR_INZ; auto with real zarith.
-apply Rle_lt_trans with (Zabs n); [rewrite (Zabs_eq (Z_of_nat n))|idtac];auto with real zarith.
-apply Rlt_IZR, digitMore; easy.
+apply Rle_lt_trans with (Z.abs n); [rewrite (Z.abs_eq (Z_of_nat n))|idtac];auto with real zarith.
+apply IZR_lt, digitMore; easy.
 Qed.
 
 
 (* A function that returns a bounded greater than a given r *)
 
-Definition boundR (r : R) := boundNat (Zabs_nat (up (Rabs r))).
+Definition boundR (r : R) := boundNat (Z.abs_nat (up (Rabs r))).
 
 Theorem boundRCorrect1 : forall r : R, (r < boundR r)%R.
+Proof.
 intros r; case (Rle_or_lt r 0); intros H'.
 apply Rle_lt_trans with (1 := H').
 unfold boundR, boundNat, FtoRradix, FtoR in |- *; simpl in |- *;
  auto with real.
 rewrite Rmult_1_l; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
-apply Rlt_trans with (2 := boundNatCorrect (Zabs_nat (up (Rabs r)))).
+apply powerRZ_lt, IZR_lt; lia.
+apply Rlt_trans with (2 := boundNatCorrect (Z.abs_nat (up (Rabs r)))).
 replace (Rabs r) with r; auto with real.
 apply Rlt_le_trans with (r2 := IZR (up r)); auto with real zarith.
 case (archimed r); auto.
-rewrite INR_IZR_INZ; auto with real zarith.
-apply Rle_IZR, Zle_abs.
+apply IZR_le, Zle_abs.
 unfold Rabs in |- *; case (Rcase_abs r); auto with real.
 intros H'0; contradict H'0; auto with real.
 Qed.
@@ -4548,7 +4301,7 @@ apply Ropp_le_contravar.
 unfold boundR, boundNat, FtoRradix, FtoR in |- *; simpl in |- *;
  auto with real zarith.
 rewrite Rmult_1_l; apply Rlt_le; auto with real zarith arith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 Qed.
 (* A function that returns a list containing all the bounded smaller than a given real *)
 
@@ -4563,30 +4316,31 @@ Theorem mBFadic_correct1 :
  ~ is_Fzero q ->
  (Fopp (boundR r) < q)%R ->
  (q < boundR r)%R -> Fbounded b q -> In q (mBFloat r).
+Proof.
 intros r q.
 case (Zle_or_lt (Fexp (boundR r)) (Fexp q)); intros H'.
 intros H'0 H'1 H'2 H'3; case H'0.
 apply is_Fzero_rep2 with (radix := radix); auto.
 rewrite <-
- FshiftCorrect with (n := Zabs_nat (Fexp q - Fexp (boundR r))) (x := q);
+ FshiftCorrect with (n := Z.abs_nat (Fexp q - Fexp (boundR r))) (x := q);
  auto with arith.
 apply is_Fzero_rep1 with (radix := radix).
 unfold is_Fzero in |- *.
-cut (forall p : Z, (- 1%nat < p)%Z -> (p < 1%nat)%Z -> p = 0%Z);
+cut (forall p : Z, (- 1 < p)%Z -> (p < 1)%Z -> p = 0%Z);
  [ intros tmp; apply tmp | idtac ].
-replace (- 1%nat)%Z with (Fnum (Fopp (boundR r))).
+replace (- 1)%Z with (Fnum (Fopp (boundR r))).
 apply Rlt_Fexp_eq_Zlt with (radix := radix); auto with real zarith.
 rewrite FshiftCorrect; auto.
 unfold Fshift in |- *; simpl in |- *.
 rewrite (fun x y => inj_abs (x - y)); auto with zarith.
-apply Zle_Zminus_ZERO; assumption.
+apply Zle_minus_le_0; assumption.
 now simpl.
-replace (Z_of_nat 1) with (Fnum (boundR r)).
+replace 1%Z with (Fnum (boundR r)).
 apply Rlt_Fexp_eq_Zlt with (radix := radix); auto with zarith.
 rewrite FshiftCorrect; auto.
 unfold Fshift in |- *; simpl in |- *.
 rewrite inj_abs; auto with zarith.
-apply Zle_Zminus_ZERO; assumption.
+apply Zle_minus_le_0; assumption.
 now simpl.
 intros p0; case p0; simpl in |- *; auto with zarith.
 intros H'0 H'1 H'2 H'3; unfold mBFloat in |- *.
@@ -4621,17 +4375,17 @@ apply (vNumbMoreThanOne radix) with (precision := precision);
 unfold pPred in |- *; apply Zle_Zpred; simpl in |- *.
 red in |- *; simpl in |- *; auto.
 apply mZlist_correct; auto.
-unfold boundR, boundNat in |- *; simpl in |- *; auto with zarith.
+unfold boundR, boundNat in |- *; simpl in |- *; lia.
 case (dExp b); try intros; try rewrite N2Z.inj_pos; auto with zarith arith.
 auto with zarith.
 Qed.
 
 Theorem mBFadic_correct4 :
- forall r : R, In (Float 0%nat (- dExp b)) (mBFloat r).
+ forall r : R, In (Float 0 (- dExp b)) (mBFloat r).
 intros p; unfold mBFloat in |- *.
-replace (Float 0%nat (- dExp b)) with
+replace (Float 0 (- dExp b)) with
  ((fun p : Z * Z => Float (fst p) (snd p))
-    (Fnum (Float 0%nat (- dExp b)), Fexp (Float 0%nat (- dExp b)))).
+    (Fnum (Float 0 (- dExp b)), Fexp (Float 0 (- dExp b)))).
 apply in_map with (f := fun p : Z * Z => Float (fst p) (snd p));
  auto.
 apply mProd_correct; auto.
@@ -4645,7 +4399,7 @@ unfold pPred in |- *; apply Zle_Zpred.
 red in |- *; simpl in |- *; auto with zarith.
 apply mZlist_correct; auto.
 simpl in |- *; auto with zarith.
-unfold boundR, boundNat in |- *; simpl in |- *; auto with zarith.
+unfold boundR, boundNat in |- *; simpl in |- *; lia.
 case (dExp b); auto with zarith.
 Qed.
 
@@ -4653,7 +4407,7 @@ Theorem mBPadic_Fbounded :
  forall (p : float) (r : R), In p (mBFloat r) -> Fbounded b p.
 intros p r H'; red in |- *; repeat (split; auto).
 apply Zpred_Zle_Zabs_intro.
-apply mZlist_correct_rev1 with (q := Zpred (Zpos (vNum b)));
+apply mZlist_correct_rev1 with (q := Z.pred (Zpos (vNum b)));
  auto with real.
 apply
  mProd_correct_rev1
@@ -4667,7 +4421,7 @@ apply
 intros a1 b1; case a1; case b1; simpl in |- *.
 intros z z0 z1 z2 H'0; inversion H'0; auto.
 generalize H'; case p; auto.
-apply mZlist_correct_rev2 with (p := (- Zpred (Zpos (vNum b)))%Z);
+apply mZlist_correct_rev2 with (p := (- Z.pred (Zpos (vNum b)))%Z);
  auto.
 apply
  mProd_correct_rev1
@@ -4928,10 +4682,10 @@ apply mBPadic_Fbounded with (r := r); auto.
 split; auto.
 intros f H'0 H'2.
 case (Req_dec f 0); intros H'6.
-replace (FtoRradix f) with (FtoRradix (Float 0%nat (- dExp b))).
+replace (FtoRradix f) with (FtoRradix (Float 0 (- dExp b))).
 apply H'4; auto.
 apply mBFadic_correct4; auto.
-replace (FtoRradix (Float 0%nat (- dExp b))) with (FtoRradix f); auto.
+replace (FtoRradix (Float 0 (- dExp b))) with (FtoRradix f); auto.
 rewrite H'6.
 unfold FtoRradix, FtoR in |- *; simpl in |- *; auto with real.
 rewrite H'6.
@@ -4995,23 +4749,23 @@ elim H0; intros H'3 H'6; apply H'6; clear H0; auto.
 rewrite <- H'0; auto with real.
 exists
  (Fnum
-    (Fshift radix (Zabs_nat (Fexp (Fnormalize radix b precision q) - Fexp p))
+    (Fshift radix (Z.abs_nat (Fexp (Fnormalize radix b precision q) - Fexp p))
        (Fnormalize radix b precision q))).
 pattern (Fexp p) at 2 in |- *;
  replace (Fexp p) with
   (Fexp
      (Fshift radix
-        (Zabs_nat (Fexp (Fnormalize radix b precision q) - Fexp p))
+        (Z.abs_nat (Fexp (Fnormalize radix b precision q) - Fexp p))
         (Fnormalize radix b precision q))).
 unfold FtoRradix in |- *;
  rewrite <-
   FshiftCorrect
                 with
                 (n :=
-                  Zabs_nat (Fexp (Fnormalize radix b precision q) - Fexp p))
+                  Z.abs_nat (Fexp (Fnormalize radix b precision q) - Fexp p))
                (x := Fnormalize radix b precision q).
 case
- (Fshift radix (Zabs_nat (Fexp (Fnormalize radix b precision q) - Fexp p))
+ (Fshift radix (Z.abs_nat (Fexp (Fnormalize radix b precision q) - Fexp p))
     (Fnormalize radix b precision q)); auto.
 auto with arith.
 simpl in |- *; rewrite inj_abs; auto with zarith.
@@ -5081,25 +4835,25 @@ Definition Even (z : Z) : Prop := exists z1 : _, z = (2 * z1)%Z.
 
 Definition Odd (z : Z) : Prop := exists z1 : _, z = (2 * z1 + 1)%Z.
 
-Theorem OddSEven : forall n : Z, Odd n -> Even (Zsucc n).
-intros n H'; case H'; intros m H'1; exists (Zsucc m).
-rewrite H'1; unfold Zsucc in |- *; ring.
+Theorem OddSEven : forall n : Z, Odd n -> Even (Z.succ n).
+intros n H'; case H'; intros m H'1; exists (Z.succ m).
+rewrite H'1; unfold Z.succ in |- *; ring.
 Qed.
 
-Theorem EvenSOdd : forall n : Z, Even n -> Odd (Zsucc n).
+Theorem EvenSOdd : forall n : Z, Even n -> Odd (Z.succ n).
 intros n H'; case H'; intros m H'1; exists m.
-rewrite H'1; unfold Zsucc in |- *; ring.
+rewrite H'1; unfold Z.succ in |- *; ring.
 Qed.
 
 
-Theorem OddSEvenInv : forall n : Z, Odd (Zsucc n) -> Even n.
+Theorem OddSEvenInv : forall n : Z, Odd (Z.succ n) -> Even n.
 intros n H'; case H'; intros m H'1; exists m.
-apply Zsucc_inj; rewrite H'1; (unfold Zsucc in |- *; ring).
+apply Z.succ_inj; rewrite H'1; (unfold Z.succ in |- *; ring).
 Qed.
 
-Theorem EvenSOddInv : forall n : Z, Even (Zsucc n) -> Odd n.
-intros n H'; case H'; intros m H'1; exists (Zpred m).
-apply Zsucc_inj; rewrite H'1; (unfold Zsucc, Zpred in |- *; ring).
+Theorem EvenSOddInv : forall n : Z, Even (Z.succ n) -> Odd n.
+intros n H'; case H'; intros m H'1; exists (Z.pred m).
+apply Z.succ_inj; rewrite H'1; (unfold Z.succ, Z.pred in |- *; ring).
 Qed.
 
 Theorem EvenO : Even 0.
@@ -5113,8 +4867,8 @@ Qed.
 
 
 Theorem OddOpp : forall z : Z, Odd z -> Odd (- z).
-intros z H; case H; intros z1 H1; exists (- Zsucc z1)%Z; rewrite H1.
-unfold Zsucc in |- *; ring.
+intros z H; case H; intros z1 H1; exists (- Z.succ z1)%Z; rewrite H1.
+unfold Z.succ in |- *; ring.
 Qed.
 
 Theorem EvenOpp : forall z : Z, Even z -> Even (- z).
@@ -5249,9 +5003,9 @@ intros H'; split; intros H'0; auto with zarith.
 replace (pred precision) with (S (pred (pred precision))); auto with zarith.
 now apply EvenExp.
 contradict H'0; apply OddNEven.
-replace (Zpred (Zpower_nat radix precision)) with
+replace (Z.pred (Zpower_nat radix precision)) with
  (Zpower_nat radix precision + - (1))%Z;
- [ idtac | unfold Zpred in |- *; simpl in |- *; auto ].
+ [ idtac | unfold Z.pred in |- *; simpl in |- *; auto ].
 replace precision with (S (pred precision));
  [ auto with zarith | inversion precisionGreaterThanOne; auto ].
 apply OddPlus2.
@@ -5808,7 +5562,7 @@ Theorem ZquotientProp :
  ex
    (fun r : Z =>
     m = (Zquotient m n * n + r)%Z /\
-    (Zabs (Zquotient m n * n) <= Zabs m)%Z /\ (Zabs r < Zabs n)%Z).
+    (Z.abs (Zquotient m n * n) <= Z.abs m)%Z /\ (Z.abs r < Z.abs n)%Z).
 intros m n; unfold Zquotient in |- *; case n; simpl in |- *.
 intros H; case H; auto.
 intros n' Hn'; case m; simpl in |- *; auto.
@@ -5821,9 +5575,8 @@ rewrite H1.
 rewrite inj_plus; rewrite inj_mult.
 rewrite <- (inject_nat_convert (Zpos n') n'); auto.
 repeat rewrite inj_oZ1; auto.
-rewrite inj_oZ1; rewrite Zabs_eq; auto with zarith.
-rewrite <- (inject_nat_convert (Zpos n') n'); auto with zarith.
-rewrite inj_oZ1; rewrite Zabs_eq; auto with zarith.
+rewrite inj_oZ1; rewrite Z.abs_eq by auto with zarith; lia.
+rewrite inj_oZ1; rewrite Z.abs_eq; lia.
 rewrite <- (inject_nat_convert (Zpos n') n'); auto with zarith.
 intros m'; generalize (Pdiv_correct m' n'); case (Pdiv m' n'); simpl in |- *;
  auto.
@@ -5832,11 +5585,11 @@ replace (Zneg m') with (- Zpos m')%Z; [ idtac | simpl in |- *; auto ].
 rewrite <- (inject_nat_convert (Zpos m') m'); auto.
 rewrite H1.
 rewrite inj_plus; rewrite inj_mult.
-repeat rewrite inj_oZ1; auto with zarith.
+repeat rewrite inj_oZ1; lia.
 rewrite <- Zopp_mult_distr_l; rewrite Zabs_Zopp.
-rewrite inj_oZ1; rewrite Zabs_eq; auto with zarith.
+rewrite inj_oZ1; rewrite Z.abs_eq by auto with zarith; lia.
 rewrite Zabs_Zopp.
-rewrite inj_oZ1; rewrite Zabs_eq; auto with zarith.
+rewrite inj_oZ1; rewrite Z.abs_eq; lia.
 intros n' Hn'; case m; simpl in |- *; auto.
 exists 0%Z; repeat split; simpl in |- *; auto with zarith.
 intros m'; generalize (Pdiv_correct m' n'); case (Pdiv m' n'); simpl in |- *;
@@ -5847,12 +5600,11 @@ rewrite <- (inject_nat_convert (Zpos m') m'); auto.
 rewrite H1.
 rewrite inj_plus; rewrite inj_mult.
 rewrite <- (inject_nat_convert (Zpos n') n'); auto.
-repeat rewrite inj_oZ1; auto with zarith.
+repeat rewrite inj_oZ1; lia.
 replace (Zneg n') with (- Zpos n')%Z; [ idtac | simpl in |- *; auto ].
 rewrite Zmult_opp_opp.
-rewrite inj_oZ1; rewrite Zabs_eq; auto with zarith.
-rewrite <- (inject_nat_convert (Zpos n') n'); auto with zarith.
-rewrite inj_oZ1; rewrite Zabs_eq; auto with zarith.
+rewrite inj_oZ1; rewrite Z.abs_eq by auto with zarith; lia.
+rewrite inj_oZ1; rewrite Z.abs_eq; lia.
 rewrite <- (inject_nat_convert (Zpos n') n'); auto with zarith.
 intros m'; generalize (Pdiv_correct m' n'); case (Pdiv m' n'); simpl in |- *;
  auto.
@@ -5863,17 +5615,17 @@ replace (Zneg n') with (- Zpos n')%Z; [ idtac | simpl in |- *; auto ].
 rewrite H1.
 rewrite inj_plus; rewrite inj_mult.
 rewrite <- (inject_nat_convert (Zpos n') n'); auto.
-repeat rewrite inj_oZ1; auto with zarith.
+repeat rewrite inj_oZ1; lia.
 replace (Zneg n') with (- Zpos n')%Z; [ idtac | simpl in |- *; auto ].
 rewrite <- Zopp_mult_distr_r; rewrite Zabs_Zopp.
-rewrite inj_oZ1; rewrite Zabs_eq; auto with zarith.
+rewrite inj_oZ1; rewrite Z.abs_eq by auto with zarith; lia.
 rewrite Zabs_Zopp.
-rewrite inj_oZ1; rewrite Zabs_eq; auto with zarith.
+rewrite inj_oZ1; rewrite Z.abs_eq; lia.
 Qed.
 
 Theorem ZquotientPos :
  forall z1 z2 : Z, (0 <= z1)%Z -> (0 <= z2)%Z -> (0 <= Zquotient z1 z2)%Z.
-intros z1 z2 H H0; case (Z_eq_dec z2 0); intros Z1.
+intros z1 z2 H H0; case (Z.eq_dec z2 0); intros Z1.
 rewrite Z1; red in |- *; case z1; simpl in |- *; auto; intros; red in |- *;
  intros; discriminate.
 case (ZquotientProp z1 z2); auto; intros r (H1, (H2, H3)).
@@ -5881,9 +5633,9 @@ case (Zle_or_lt 0 (Zquotient z1 z2)); auto; intros Z2.
 contradict H3; apply Zle_not_lt.
 replace r with (z1 - Zquotient z1 z2 * z2)%Z;
  [ idtac | pattern z1 at 1 in |- *; rewrite H1; ring ].
-repeat rewrite Zabs_eq; auto.
+repeat rewrite Z.abs_eq; auto.
 pattern z2 at 1 in |- *; replace z2 with (0 + 1 * z2)%Z; [ idtac | ring ].
-unfold Zminus in |- *; apply Zle_trans with (z1 + 1 * z2)%Z; auto with zarith.
+unfold Zminus in |- *; apply Z.le_trans with (z1 + 1 * z2)%Z; auto with zarith.
 apply Zplus_le_compat_l.
 rewrite Zopp_mult_distr_l.
 apply Zle_Zmult_comp_r; auto with zarith.
@@ -5902,12 +5654,12 @@ case (ZquotientProp n m); auto; intros z2 (Hz2, (Hz3, Hz4)).
 cut (z2 = 0%Z);
  [ intros H1; pattern n at 1 in |- *; rewrite Hz2; rewrite H1; ring | idtac ].
 cut (z2 = ((z1 - Zquotient n m) * m)%Z); [ intros H2 | idtac ].
-case (Z_eq_dec (z1 - Zquotient n m) 0); intros H3.
+case (Z.eq_dec (z1 - Zquotient n m) 0); intros H3.
 rewrite H2; rewrite H3; ring.
 contradict Hz4.
-replace (Zabs m) with (1 * Zabs m)%Z; [ idtac | ring ].
+replace (Z.abs m) with (1 * Z.abs m)%Z; [ idtac | ring ].
 apply Zle_not_lt; rewrite H2.
-rewrite Zabs_Zmult; apply Zle_Zmult_comp_r; auto with zarith.
+rewrite Zabs_Zmult; apply Zle_Zmult_comp_r; lia.
 rewrite Zmult_minus_distr_r; rewrite (Zmult_comm z1); rewrite <- Hz1;
  (pattern n at 1 in |- *; rewrite Hz2); ring.
 Qed.
@@ -5933,10 +5685,10 @@ Theorem Zeq_mult_simpl :
  forall a b c : Z, c <> 0%Z -> (a * c)%Z = (b * c)%Z -> a = b.
 intros a b c H H0.
 case (Zle_or_lt c 0); intros Zl1.
-apply Zle_antisym; apply Zmult_le_reg_r with (p := (- c)%Z); try apply Zlt_gt;
+apply Zle_antisym; apply Zmult_le_reg_r with (p := (- c)%Z); try apply Z.lt_gt;
  auto with zarith; repeat rewrite <- Zopp_mult_distr_r;
  rewrite H0; auto with zarith.
-apply Zle_antisym; apply Zmult_le_reg_r with (p := c); try apply Zlt_gt;
+apply Zle_antisym; apply Zmult_le_reg_r with (p := c); try apply Z.lt_gt;
  auto with zarith; rewrite H0; auto with zarith.
 Qed.
 
@@ -5977,46 +5729,36 @@ Theorem Zdivides1 : forall m : Z, Zdivides m 1.
 intros m; exists m; auto with zarith.
 Qed.
 
-Theorem Zabs_eq_case :
- forall z1 z2 : Z, Zabs z1 = Zabs z2 -> z1 = z2 \/ z1 = (- z2)%Z.
-intros z1 z2; case z1; case z2; simpl in |- *; auto;
- try (intros; discriminate); intros p1 p2 H1; injection H1;
- (intros H2; rewrite H2); auto.
-Qed.
-
-
-
-
 Theorem NotDividesDigit :
  forall r v : Z,
  (1 < r)%Z -> v <> 0%Z -> ~ Zdivides v (Zpower_nat r (digit r v)).
 intros r v H H'; red in |- *; intros H'0; case H'0; intros q E.
-absurd (Zabs v < Zpower_nat r (digit r v))%Z; auto with zarith.
+absurd (Z.abs v < Zpower_nat r (digit r v))%Z; auto with zarith.
 apply Zle_not_lt.
-case (Z_eq_dec q 0); intros Z1.
+case (Z.eq_dec q 0); intros Z1.
 case H'; rewrite E; rewrite Z1; ring.
 pattern v at 2 in |- *; rewrite E.
 rewrite Zabs_Zmult.
 pattern (Zpower_nat r (digit r v)) at 1 in |- *;
  replace (Zpower_nat r (digit r v)) with (Zpower_nat r (digit r v) * 1)%Z;
  [ idtac | ring ].
-rewrite (fun x y => Zabs_eq (Zpower_nat x y)); auto with zarith.
-apply Zle_Zmult_comp_l; auto with zarith.
-apply Zpower_NR0; omega.
-apply Zpower_NR0; omega.
+rewrite (fun x y => Z.abs_eq (Zpower_nat x y)); auto with zarith.
+apply Zle_Zmult_comp_l; try lia.
+apply Zpower_NR0; lia.
+apply Zpower_NR0; lia.
 now apply digitMore.
 Qed.
 
 Theorem ZDividesLe :
- forall n m : Z, n <> 0%Z -> Zdivides n m -> (Zabs m <= Zabs n)%Z.
+ forall n m : Z, n <> 0%Z -> Zdivides n m -> (Z.abs m <= Z.abs n)%Z.
 intros n m H' H'0; case H'0; intros q E; rewrite E.
 rewrite Zabs_Zmult.
-pattern (Zabs m) at 1 in |- *; replace (Zabs m) with (Zabs m * 1)%Z;
+pattern (Z.abs m) at 1 in |- *; replace (Z.abs m) with (Z.abs m * 1)%Z;
  [ idtac | ring ].
 apply Zle_Zmult_comp_l; auto with zarith.
 generalize E H'; case q; simpl in |- *; auto;
  try (intros H1 H2; case H2; rewrite H1; ring; fail);
- intros p; case p; unfold Zle in |- *; simpl in |- *;
+ intros p; case p; unfold Z.le in |- *; simpl in |- *;
  intros; red in |- *; discriminate.
 Qed.
 
@@ -6169,10 +5911,10 @@ intros v p H' H'0 H'1.
 apply maxDivSimplInv; auto.
 2: apply maxDivUniqueInverse; auto.
 apply Zpower_nat_anti_monotone_lt with (n := radix); auto.
-apply Zle_lt_trans with (m := Zabs v); auto.
-rewrite <- (fun x => Zabs_eq (Zpower_nat radix x));
+apply Z.le_lt_trans with (m := Z.abs v); auto.
+rewrite <- (fun x => Z.abs_eq (Zpower_nat radix x));
  try apply ZDividesLe; auto.
-apply Zpower_NR0; omega.
+apply Zpower_NR0; lia.
 apply digitMore; auto.
 Qed.
 
@@ -6201,7 +5943,7 @@ red in |- *; intros H'.
 absurd (Zdivides v (Zpower_nat radix (S (maxDiv v (digit radix v))))).
 case (maxDivUniqueDigit v); auto.
 apply ZdividesDiv with (p := Zpower_nat radix n); auto with zarith.
-apply sym_not_eq, Zlt_not_eq, Zpower_nat_less; easy.
+apply sym_not_eq, Z.lt_neq, Zpower_nat_less; easy.
 apply digitAdd; auto with zarith.
 Qed.
 
@@ -6236,7 +5978,7 @@ intros Z1 Z2; case Z1.
 case Z2; intros z1 Hz1; exists (- z1)%Z; rewrite Hz1; ring.
 intros Z1 Z2; case Z2.
 case Z1; intros z1 Hz1; exists (- z1)%Z.
-rewrite <- (Zopp_involutive v); rewrite Hz1; ring.
+rewrite <- (Z.opp_involutive v); rewrite Hz1; ring.
 Qed.
 
 Theorem LSB_opp : forall x : float, LSB x = LSB (Fopp x).
@@ -6246,22 +5988,22 @@ rewrite maxDiv_opp; auto.
 Qed.
 
 Theorem maxDiv_abs :
- forall (v : Z) (p : nat), maxDiv v p = maxDiv (Zabs v) p.
+ forall (v : Z) (p : nat), maxDiv v p = maxDiv (Z.abs v) p.
 intros v p; elim p; simpl in |- *; auto.
 intros n H; case (ZdividesP v (radix * Zpower_nat radix n));
- case (ZdividesP (Zabs v) (radix  * Zpower_nat radix n));
+ case (ZdividesP (Z.abs v) (radix  * Zpower_nat radix n));
  auto.
 intros Z1 Z2; case Z1.
-case Z2; intros z1 Hz1; exists (Zabs z1); rewrite Hz1.
-rewrite Zabs_Zmult; f_equal. apply Zabs_eq.
+case Z2; intros z1 Hz1; exists (Z.abs z1); rewrite Hz1.
+rewrite Zabs_Zmult; f_equal. apply Z.abs_eq.
 apply Z.mul_nonneg_nonneg; try auto with zarith.
 apply Zpower_NR0; auto with zarith.
 intros Z1 Z2; case Z2.
 case Z1; intros z1 Hz1.
 case (Zle_or_lt v 0); intros Z4.
-exists (- z1)%Z; rewrite <- (Zopp_involutive v);
+exists (- z1)%Z; rewrite <- (Z.opp_involutive v);
  rewrite <- (Zabs_eq_opp v); auto; rewrite Hz1; ring.
-exists z1; rewrite <- (Zabs_eq v); auto with zarith; rewrite Hz1; ring.
+exists z1; rewrite <- (Z.abs_eq v); auto with zarith; rewrite Hz1; ring.
 Qed.
 
 Theorem LSB_abs : forall x : float, LSB x = LSB (Fabs x).
@@ -6270,12 +6012,13 @@ rewrite Fdigit_abs; auto.
 rewrite maxDiv_abs; auto.
 Qed.
 
-Definition MSB (x : float) := Zpred (Z_of_nat (Fdigit radix x) + Fexp x).
+Definition MSB (x : float) := Z.pred (Z_of_nat (Fdigit radix x) + Fexp x).
 
 Theorem MSB_shift :
  forall (x : float) (n : nat), ~ is_Fzero x -> MSB x = MSB (Fshift radix n x).
 intros; unfold MSB, Fshift, Fdigit in |- *; simpl in |- *.
-rewrite digitAdd; auto with zarith.
+rewrite digitAdd; try easy.
+lia.
 Qed.
 
 Theorem MSB_comp :
@@ -6313,33 +6056,33 @@ auto with zarith.
 Qed.
 
 Theorem Ulp_Le_LSigB :
- forall x : float, (Float 1%nat (Fexp x) <= Float 1%nat (LSB x))%R.
+ forall x : float, (Float 1 (Fexp x) <= Float 1 (LSB x))%R.
 intros x; apply (oneExp_le radix); auto.
 apply Fexp_le_LSB; auto.
 Qed.
 
 Theorem MSB_le_abs :
- forall x : float, ~ is_Fzero x -> (Float 1%nat (MSB x) <= Fabs x)%R.
+ forall x : float, ~ is_Fzero x -> (Float 1 (MSB x) <= Fabs x)%R.
 intros x H'; unfold MSB, FtoRradix, FtoR in |- *; simpl in |- *.
-replace (Zpred (Fdigit radix x + Fexp x)) with
- (Zpred (Fdigit radix x) + Fexp x)%Z; [ idtac | unfold Zpred in |- *; ring ].
+replace (Z.pred (Fdigit radix x + Fexp x)) with
+ (Z.pred (Fdigit radix x) + Fexp x)%Z; [ idtac | unfold Z.pred in |- *; ring ].
 rewrite powerRZ_add; auto with real zarith arith.
 rewrite Rmult_1_l.
 repeat rewrite (fun r : R => Rmult_comm r (powerRZ radix (Fexp x))).
 apply Rmult_le_compat_l; auto with real zarith.
-now apply powerRZ_le, Rlt_IZR.
+now apply powerRZ_le, IZR_lt.
 rewrite <- inj_pred; auto with real zarith.
 rewrite <- Zpower_nat_Z_powerRZ; auto.
-apply Rle_IZR; auto.
+apply IZR_le; auto.
 unfold Fdigit in |- *; auto with arith.
 apply digitLess; auto.
 unfold Fdigit in |- *.
 apply not_eq_sym; apply lt_O_neq; apply digitNotZero; auto.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 Qed.
 
 Theorem abs_lt_MSB :
- forall x : float, (Fabs x < Float 1%nat (Zsucc (MSB x)))%R.
+ forall x : float, (Fabs x < Float 1 (Z.succ (MSB x)))%R.
 intros x.
 rewrite (MSB_abs x).
 unfold MSB, FtoRradix, FtoR in |- *.
@@ -6348,20 +6091,20 @@ rewrite powerRZ_add; auto with real zarith.
 rewrite Rmult_1_l.
 repeat rewrite (fun r : R => Rmult_comm r (powerRZ radix (Fexp x))).
 apply Rmult_lt_compat_l; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; easy.
+apply powerRZ_lt, IZR_lt; easy.
 rewrite <- Zpower_nat_Z_powerRZ; auto with arith.
-apply Rlt_IZR.
+apply IZR_lt.
 unfold Fdigit in |- *; auto with arith.
 unfold Fabs in |- *; simpl in |- *.
-pattern (Zabs (Fnum x)) at 1 in |- *; rewrite <- (Zabs_eq (Zabs (Fnum x)));
+pattern (Z.abs (Fnum x)) at 1 in |- *; rewrite <- (Z.abs_eq (Z.abs (Fnum x)));
  auto with zarith.
 apply digitMore; easy.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 Qed.
 
 Theorem LSB_le_abs :
- forall x : float, ~ is_Fzero x -> (Float 1%nat (LSB x) <= Fabs x)%R.
-intros x H'; apply Rle_trans with (FtoRradix (Float 1%nat (MSB x))).
+ forall x : float, ~ is_Fzero x -> (Float 1 (LSB x) <= Fabs x)%R.
+intros x H'; apply Rle_trans with (FtoRradix (Float 1 (MSB x))).
 apply (oneExp_le radix); auto.
 apply LSB_le_MSB; auto.
 apply MSB_le_abs; auto.
@@ -6373,13 +6116,13 @@ Theorem MSB_monotoneAux :
 intros x y H' H'0; unfold MSB in |- *.
 rewrite <- H'0.
 cut (Fdigit radix x <= Fdigit radix y)%Z;
- [ unfold Zpred in |- *; auto with zarith | idtac ].
+ [ unfold Z.pred in |- *; auto with zarith | idtac ].
 unfold Fdigit in |- *; apply inj_le.
 apply digit_monotone; auto.
 apply le_IZR.
 apply Rmult_le_reg_l with (r := powerRZ radix (Fexp x));
  auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 repeat rewrite (Rmult_comm (powerRZ radix (Fexp x))); auto.
 pattern (Fexp x) at 2 in |- *; rewrite H'0; auto.
 Qed.
@@ -6390,7 +6133,7 @@ Theorem MSB_monotone :
 intros x y H' H'0 H'1; rewrite (MSB_abs x); rewrite (MSB_abs y).
 case (Zle_or_lt (Fexp (Fabs x)) (Fexp (Fabs y))); simpl in |- *; intros Zle1.
 rewrite
- MSB_shift with (x := Fabs y) (n := Zabs_nat (Fexp (Fabs y) - Fexp (Fabs x))).
+ MSB_shift with (x := Fabs y) (n := Z.abs_nat (Fexp (Fabs y) - Fexp (Fabs x))).
 apply MSB_monotoneAux; auto.
 unfold FtoRradix in |- *; repeat rewrite Fabs_correct; auto with real arith.
 rewrite FshiftCorrect; auto with real arith.
@@ -6401,7 +6144,7 @@ unfold Fshift in |- *; simpl in |- *.
 rewrite inj_abs; [ ring | auto with zarith ].
 apply Fabs_Fzero; auto.
 rewrite
- MSB_shift with (x := Fabs x) (n := Zabs_nat (Fexp (Fabs x) - Fexp (Fabs y))).
+ MSB_shift with (x := Fabs x) (n := Z.abs_nat (Fexp (Fabs x) - Fexp (Fabs y))).
 apply MSB_monotoneAux; auto.
 unfold FtoRradix in |- *; repeat rewrite Fabs_correct; auto with real arith.
 rewrite FshiftCorrect; auto with real arith.
@@ -6416,18 +6159,18 @@ Qed.
 Theorem LSB_rep_min :
  forall p : float, exists z : Z, p = Float z (LSB p) :>R.
 intros p;
- exists (Zquotient (Fnum p) (Zpower_nat radix (Zabs_nat (LSB p - Fexp p)))).
+ exists (Zquotient (Fnum p) (Zpower_nat radix (Z.abs_nat (LSB p - Fexp p)))).
 unfold FtoRradix, FtoR, LSB in |- *; simpl in |- *.
 rewrite powerRZ_add; auto with real zarith.
-2: apply IZR_neq; omega.
+2: apply IZR_neq; lia.
 rewrite <- Rmult_assoc.
 replace (maxDiv (Fnum p) (Fdigit radix p) + Fexp p - Fexp p)%Z with
  (Z_of_nat (maxDiv (Fnum p) (Fdigit radix p))); auto.
-rewrite absolu_INR.
+rewrite Zabs2Nat.id.
 rewrite <- Zpower_nat_Z_powerRZ; auto with zarith.
 rewrite <- mult_IZR.
 rewrite <- ZdividesZquotient; auto with zarith.
-now apply sym_not_eq, Zlt_not_eq, Zpower_nat_less.
+now apply sym_not_eq, Z.lt_neq, Zpower_nat_less.
 apply maxDivCorrect.
 ring.
 Qed.
@@ -6483,8 +6226,8 @@ intros p H'; unfold Fulp, FtoRradix, FtoR, Fnormalize in |- *; simpl in |- *;
 case (Z_zerop (Fnum p)); simpl in |- *; auto.
 intros H'0; apply (Rle_powerRZ radix (- dExp b) (Fexp p));
  auto with real zarith; try apply H'.
-apply Rle_IZR; omega.
-intros H'0; apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith arith.
+apply IZR_le; lia.
+intros H'0; apply Rle_powerRZ; try apply IZR_le; auto with real zarith arith.
 Qed.
 
 Theorem Fulp_zero :
@@ -6498,36 +6241,36 @@ Theorem FulpLe2 :
  forall p : float,
  Fbounded b p ->
  Fnormal radix b (Fnormalize radix b precision p) ->
- (Fulp p <= Rabs p * powerRZ radix (Zsucc (- precision)))%R.
+ (Fulp p <= Rabs p * powerRZ radix (Z.succ (- precision)))%R.
 intros p H1 H2; unfold Fulp in |- *.
 replace (FtoRradix p) with (FtoRradix (Fnormalize radix b precision p));
  [ idtac | unfold FtoRradix in |- *; apply FnormalizeCorrect; auto ].
-apply Rmult_le_reg_l with (powerRZ radix (Zpred precision)).
-apply powerRZ_lt, Rlt_IZR; auto with real arith.
+apply Rmult_le_reg_l with (powerRZ radix (Z.pred precision)).
+apply powerRZ_lt, IZR_lt; auto with real arith.
 replace
- (powerRZ radix (Zpred precision) *
+ (powerRZ radix (Z.pred precision) *
   (Rabs (Fnormalize radix b precision p) *
-   powerRZ radix (Zsucc (- precision))))%R with
+   powerRZ radix (Z.succ (- precision))))%R with
  (Rabs (Fnormalize radix b precision p)).
 unfold FtoRradix in |- *; rewrite <- Fabs_correct; auto with arith real.
 unfold Fabs, FtoR in |- *; simpl in |- *.
-apply Rmult_le_compat_r; [ apply powerRZ_le, Rlt_IZR | rewrite <- inj_pred ];
+apply Rmult_le_compat_r; [ apply powerRZ_le, IZR_lt | rewrite <- inj_pred ];
  auto with real arith zarith.
 rewrite <- Zpower_nat_Z_powerRZ.
 replace (Zpower_nat radix (pred precision)) with (nNormMin radix precision);
- auto; apply Rle_IZR.
+ auto; apply IZR_le.
 apply pNormal_absolu_min with b; auto with arith zarith real.
 apply
  trans_eq
   with
     (Rabs (Fnormalize radix b precision p) *
-     (powerRZ radix (Zpred precision) * powerRZ radix (Zsucc (- precision))))%R;
+     (powerRZ radix (Z.pred precision) * powerRZ radix (Z.succ (- precision))))%R;
  [ idtac | ring ].
 rewrite <- powerRZ_add; auto with zarith real.
-replace (Zpred precision + Zsucc (- precision))%Z with 0%Z;
- [ simpl in |- *; ring | unfold Zsucc, Zpred in |- *; ring ];
+replace (Z.pred precision + Z.succ (- precision))%Z with 0%Z;
+ [ simpl in |- *; ring | unfold Z.succ, Z.pred in |- *; ring ];
  auto with real zarith.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 Qed.
 
 Theorem FulpGe :
@@ -6538,13 +6281,13 @@ replace (FtoRradix p) with (FtoRradix (Fnormalize radix b precision p));
  [ idtac | unfold FtoRradix in |- *; apply FnormalizeCorrect; auto ].
 unfold FtoRradix in |- *; rewrite <- Fabs_correct; auto with arith real.
 unfold FtoR in |- *; simpl in |- *; unfold Fulp in |- *.
-apply Rmult_le_compat_r; [ apply powerRZ_le, Rlt_IZR | idtac ];
+apply Rmult_le_compat_r; [ apply powerRZ_le, IZR_lt | idtac ];
  auto with real arith zarith.
-apply Rle_trans with (IZR (Zpred (Zpos (vNum b))));
- [ apply Rle_IZR; auto with zarith | idtac ].
+apply Rle_trans with (IZR (Z.pred (Zpos (vNum b))));
+ [ apply IZR_le; auto with zarith | idtac ].
 apply Zle_Zpred.
 apply FnormalizeBounded; auto with zarith.
-unfold Zpred in |- *; right; rewrite pGivesBound; replace 1%R with (IZR 1);
+unfold Z.pred in |- *; right; rewrite pGivesBound; replace 1%R with (IZR 1);
  auto with real.
 rewrite <- Zpower_nat_Z_powerRZ; rewrite Z_R_minus;auto.
 Qed.
@@ -6554,7 +6297,7 @@ Theorem LeFulpPos :
  Fbounded b x ->
  Fbounded b y -> (0 <= x)%R -> (x <= y)%R -> (Fulp x <= Fulp y)%R.
 intros x y Hx Hy H1 H2; unfold Fulp in |- *.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 apply Fcanonic_Rle_Zle with radix b precision; auto with zarith arith.
 apply FnormalizeCanonic; auto with zarith arith.
 apply FnormalizeCanonic; auto with zarith arith.
@@ -6574,14 +6317,14 @@ replace (Fulp p) with (powerRZ radix (Fexp p)).
 2: apply FcanonicBound with (1 := H'); auto with zarith.
 2: apply FnormalizeCorrect; easy.
 unfold FtoRradix in |- *; rewrite <- Fminus_correct; auto with zarith.
-case (Z_eq_dec (Fnum p) (- nNormMin radix precision)); intros H1'.
-case (Z_eq_dec (Fexp p) (- dExp b)); intros H2'.
+case (Z.eq_dec (Fnum p) (- nNormMin radix precision)); intros H1'.
+case (Z.eq_dec (Fexp p) (- dExp b)); intros H2'.
 rewrite FSuccDiff2; auto with arith.
 unfold FtoR in |- *; simpl in |- *; rewrite Rmult_1_l; auto with real.
 rewrite FSuccDiff3; auto with arith zarith.
 unfold FtoR in |- *; simpl in |- *; rewrite Rmult_1_l.
-apply Rlt_le; apply Rlt_powerRZ; try apply Rlt_IZR; auto with real zarith.
-unfold Zpred in |- *; auto with zarith.
+apply Rlt_le; apply Rlt_powerRZ; try apply IZR_lt; auto with real zarith.
+unfold Z.pred in |- *; auto with zarith.
 rewrite FSuccDiff1; auto with arith zarith.
 unfold FtoR in |- *; simpl in |- *; rewrite Rmult_1_l; auto with real zarith.
 Qed.
@@ -6603,6 +6346,7 @@ Qed.
 Theorem FulpPredCan :
  forall p : float,
  Fcanonic radix b p -> (p - FPred b radix precision p <= Fulp p)%R.
+Proof.
 intros p H'.
 replace (Fulp p) with (powerRZ radix (Fexp p)).
 2: unfold Fulp in |- *; replace (Fnormalize radix b precision p) with p; auto;
@@ -6611,15 +6355,14 @@ replace (Fulp p) with (powerRZ radix (Fexp p)).
 2: apply FcanonicBound with (1:=H').
 2: apply FnormalizeCorrect; easy.
 unfold FtoRradix in |- *; rewrite <- Fminus_correct; auto with arith.
-case (Z_eq_dec (Fnum p) (nNormMin radix precision)); intros H1'.
-case (Z_eq_dec (Fexp p) (- dExp b)); intros H2'.
+case (Z.eq_dec (Fnum p) (nNormMin radix precision)); intros H1'.
+case (Z.eq_dec (Fexp p) (- dExp b)); intros H2'.
 rewrite FPredDiff2; auto with zarith.
 unfold FtoR in |- *; simpl in |- *; rewrite Rmult_1_l; auto with real.
 rewrite FPredDiff3; auto with arith.
 unfold FtoR in |- *; simpl in |- *; rewrite Rmult_1_l; auto with real.
-apply Rlt_le; apply Rlt_powerRZ; try apply Rlt_IZR; auto with real zarith.
-replace 1%R with (INR 1); auto with real arith.
-unfold Zpred in |- *; auto with zarith.
+apply Rlt_le; apply Rlt_powerRZ; try apply IZR_lt; auto with real zarith.
+unfold Z.pred in |- *; auto with zarith.
 rewrite FPredDiff1; auto with zarith.
 unfold FtoR in |- *; simpl in |- *; rewrite Rmult_1_l; auto with real.
 Qed.
@@ -6641,7 +6384,7 @@ Qed.
 Theorem FSuccDiffPos :
  forall x : float,
  (0 <= x)%R ->
- Fminus radix (FSucc b radix precision x) x = Float 1%nat (Fexp x) :>R.
+ Fminus radix (FSucc b radix precision x) x = Float 1 (Fexp x) :>R.
 intros x H.
 unfold FtoRradix in |- *; apply FSuccDiff1; auto with zarith.
 contradict H; unfold FtoRradix, FtoR in |- *; simpl in |- *; rewrite H.
@@ -6651,7 +6394,7 @@ apply Rlt_monotony_exp; auto with real arith.
 assert (0 < nNormMin radix precision)%Z.
 apply nNormPos; auto with zarith.
 replace 0%R with (IZR (- 0)); auto with real zarith arith.
-apply Rlt_IZR; omega.
+apply IZR_lt; lia.
 Qed.
 
 Theorem FulpFPredGePos :
@@ -6667,7 +6410,7 @@ apply Rlt_le; apply FPredLt; auto with zarith.
 Qed.
 
 Theorem CanonicFulp :
- forall p : float, Fcanonic radix b p -> Fulp p = Float 1%nat (Fexp p).
+ forall p : float, Fcanonic radix b p -> Fulp p = Float 1 (Fexp p).
 intros p H; unfold Fulp in |- *.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 unfold FtoRradix, FtoR in |- *; simpl in |- *; ring.
@@ -6685,7 +6428,7 @@ Theorem FulpFabs : forall f : float, Fulp f = Fulp (Fabs f) :>R.
 intros f; unfold Fulp in |- *; case (Rle_or_lt 0 f); intros H'.
 replace (Fabs f) with f; auto; unfold Fabs in |- *; apply floatEq;
  simpl in |- *; auto with zarith real.
-apply sym_eq; apply Zabs_eq; apply LeR0Fnum with radix; auto with zarith real.
+apply sym_eq; apply Z.abs_eq; apply LeR0Fnum with radix; auto with zarith real.
 replace (Fabs f) with (Fopp f);
  [ rewrite Fnormalize_Fopp | apply floatEq; simpl in |- * ];
  auto with zarith.
@@ -6703,7 +6446,7 @@ rewrite <- Eq1.
 replace (p - p)%R with 0%R; [ idtac | ring ].
 rewrite Rabs_R0; auto.
 unfold Fulp, FtoRradix, FtoR in |- *; simpl in |- *; auto with real arith.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
+apply powerRZ_lt, IZR_lt; auto with zarith.
 case H'.
 intros H'1 H'2; elim H'2; intros H'3 H'4; elim H'4; intros H'5 H'6;
  case H'5 with (1 := H'0); clear H'5 H'4 H'2; intros H'5.
@@ -6755,9 +6498,9 @@ Theorem RoundedModeErrorExpStrict :
  Fbounded b q ->
  P x p -> q = (x - p)%R :>R -> q <> 0%R :>R -> (Fexp q < Fexp p)%Z.
 intros P H p q x H0 H1 H2 H3 H4.
-apply Zlt_powerRZ with (e := IZR radix); try apply Rle_IZR; auto with real zarith.
+apply Zlt_powerRZ with (e := IZR radix); try apply IZR_le; auto with real zarith.
 apply Rle_lt_trans with (FtoRradix (Fabs q)).
-replace (powerRZ radix (Fexp q)) with (FtoRradix (Float 1%nat (Fexp q)));
+replace (powerRZ radix (Fexp q)) with (FtoRradix (Float 1 (Fexp q)));
  unfold FtoRradix in |- *;
  [ apply RleFexpFabs; auto with arith
  | unfold FtoR in |- *; simpl in |- *; ring ].
@@ -6765,7 +6508,7 @@ rewrite (Fabs_correct radix); auto with zarith.
 fold FtoRradix in |- *; rewrite H3.
 apply Rlt_le_trans with (Fulp p);
  [ apply RoundedModeUlp with P; auto | unfold Fulp in |- * ].
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 apply FcanonicLeastExp with radix b precision; auto with real zarith.
 apply sym_eq; apply FnormalizeCorrect; auto.
 apply FnormalizeCanonic; auto with zarith.
@@ -6811,6 +6554,7 @@ Theorem RoundedModeMult :
  RoundedModeP b radix P ->
  forall (r : R) (q q' : float),
  P r q -> Fbounded b q' -> (r <= radix * q')%R -> (q <= radix * q')%R.
+Proof.
 intros P H' r q q' H'0 H'1.
 replace (radix * q')%R with (FtoRradix (Float (Fnum q') (Fexp q' + 1%nat))).
 intros H'2; case H'2.
@@ -6826,7 +6570,7 @@ apply (RoundedProjector _ _ P H'); auto.
 apply FBoundedScale; auto.
 case H'.
 intros H'4 H'5; elim H'5; intros H'6 H'7; clear H'5.
-apply (H'6 r (Float (Fnum q') (Fexp q' + 1%nat)) q); auto.
+apply (H'6 r (Float (Fnum q') (Fexp q' + 1)) q); auto.
 apply RoundedModeBounded with (P := P) (r := r); auto.
 rewrite (FvalScale _ radixMoreThanOne b).
 rewrite powerRZ_1; auto.
@@ -6837,6 +6581,7 @@ Theorem RoundedModeMultLess :
  RoundedModeP b radix P ->
  forall (r : R) (q q' : float),
  P r q -> Fbounded b q' -> (radix * q' <= r)%R -> (radix * q' <= q)%R.
+Proof.
 intros P H' r q q' H'0 H'1.
 replace (radix * q')%R with (FtoRradix (Float (Fnum q') (Fexp q' + 1%nat))).
 intros H'2; case H'2.
@@ -6919,23 +6664,24 @@ Theorem PminPos :
  forall p min : float,
  (0 <= p)%R ->
  Fbounded b p ->
- isMin b radix (/ 2%nat * p) min ->
+ isMin b radix (/ 2 * p) min ->
  exists c : float, Fbounded b c /\ c = (p - min)%R :>R.
+Proof.
 intros p min H' H'0 H'1.
-cut (min <= / 2%nat * p)%R;
+cut (min <= / 2 * p)%R;
  [ intros Rl1; Casec Rl1; intros Rl1
  | apply isMin_inv1 with (1 := H'1); auto ].
 case (eqExpMax _ radixMoreThanOne b min p); auto.
 case H'1; auto.
 rewrite Fabs_correct; auto with arith.
 rewrite Rabs_right; auto.
-apply Rle_trans with (/ 2%nat * p)%R; auto.
+apply Rle_trans with (/ 2 * p)%R; auto.
 apply Rlt_le; auto.
-apply Rmult_le_reg_l with (r := INR 2); auto with real.
+apply Rmult_le_reg_l with (r := 2); auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real; rewrite Rmult_ne_r;
  auto with real.
-apply Rle_ge; apply RleMinR0 with (r := (/ 2%nat * p)%R); auto.
-apply Rmult_le_reg_l with (r := INR 2); auto with real.
+apply Rle_ge; apply RleMinR0 with (r := (/ 2 * p)%R); auto.
+apply Rmult_le_reg_l with (r := 2); auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real; rewrite Rmult_1_l;
  rewrite Rmult_0_r; auto with real.
 intros min' H'2; elim H'2; intros H'3 H'4; elim H'4; intros H'5 H'6;
@@ -6947,8 +6693,8 @@ exists Smin; split; auto.
 rewrite H'7; auto.
 unfold FtoRradix in |- *.
 rewrite <- H'5; auto.
-replace (Float (Zsucc (Fnum min')) (Fexp min')) with
- (Float (Fnum (Fshift radix (Zabs_nat (Fexp p - Fexp min')) p) - Fnum min')
+replace (Float (Z.succ (Fnum min')) (Fexp min')) with
+ (Float (Fnum (Fshift radix (Z.abs_nat (Fexp p - Fexp min')) p) - Fnum min')
     (Fexp min')); auto.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 rewrite <- Z_R_minus.
@@ -6965,21 +6711,21 @@ apply Zlt_succ_le.
 apply Zplus_lt_reg_l with (p := Fnum min'); auto.
 cut (forall x y : Z, (x + (y - x))%Z = y);
  [ intros tmp; rewrite tmp; clear tmp | intros; ring ].
-replace (Fnum min' + Zsucc (Zsucc (Fnum min')))%Z with
- (2%nat * Zsucc (Fnum min'))%Z.
+replace (Fnum min' + Z.succ (Z.succ (Fnum min')))%Z with
+ (2 * Z.succ (Fnum min'))%Z.
 apply (Rlt_Float_Zlt radix) with (r := Fexp min'); auto;
  fold FtoRradix in |- *.
-replace (FtoRradix (Float (2%nat * Zsucc (Fnum min')) (Fexp min'))) with
- (2%nat * Float (Zsucc (Fnum min')) (Fexp min'))%R.
+replace (FtoRradix (Float (2 * Z.succ (Fnum min')) (Fexp min'))) with
+ (2 * Float (Z.succ (Fnum min')) (Fexp min'))%R.
 rewrite <- H'7.
 replace
- (Float (Fnum p * Zpower_nat radix (Zabs_nat (Fexp p - Fexp min')))
-    (Fexp min')) with (Fshift radix (Zabs_nat (Fexp p - Fexp min')) p).
+ (Float (Fnum p * Zpower_nat radix (Z.abs_nat (Fexp p - Fexp min')))
+    (Fexp min')) with (Fshift radix (Z.abs_nat (Fexp p - Fexp min')) p).
 unfold FtoRradix in |- *; rewrite FshiftCorrect; auto.
-apply Rmult_lt_reg_l with (r := (/ 2%nat)%R); auto with real.
+apply Rmult_lt_reg_l with (r := (/ 2)%R); auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_l; auto with real; rewrite Rmult_1_l;
  auto with real.
-case (Rle_or_lt Smin (/ 2%nat * FtoR radix p)); auto.
+case (Rle_or_lt Smin (/ 2 * FtoR radix p)); auto.
 intros H'2; absurd (min < Smin)%R.
 apply Rle_not_lt.
 case H'1; auto.
@@ -6987,67 +6733,62 @@ intros H'8 H'9; elim H'9; intros H'10 H'11; apply H'11; clear H'9; auto.
 rewrite H'7; unfold FtoRradix in |- *; rewrite <- H'5; auto.
 unfold FtoR in |- *; simpl in |- *; apply Rlt_monotony_exp;
  auto with real zarith.
-apply Rlt_IZR; omega.
+apply IZR_lt; lia.
 unfold Fshift in |- *; simpl in |- *.
-replace (Fexp p - Zabs_nat (Fexp p - Fexp min'))%Z with (Fexp min'); auto.
+replace (Fexp p - Z.abs_nat (Fexp p - Fexp min'))%Z with (Fexp min'); auto.
 rewrite inj_abs; auto.
 ring.
 auto with zarith.
-replace (FtoRradix (Float (2%nat * Zsucc (Fnum min')) (Fexp min'))) with
- ((2%nat * Zsucc (Fnum min'))%Z * powerRZ radix (Fexp min'))%R.
+replace (FtoRradix (Float (2 * Z.succ (Fnum min')) (Fexp min'))) with
+ ((2 * Z.succ (Fnum min'))%Z * powerRZ radix (Fexp min'))%R.
 rewrite mult_IZR; auto.
 unfold FtoRradix, FtoR in |- *; simpl in |- *; ring.
 simpl in |- *; auto.
-replace (Z_of_nat 2) with (Zsucc (Zsucc 0)).
-repeat rewrite <- Zmult_succ_l_reverse; unfold Zsucc in |- *; ring.
+replace (Z_of_nat 2) with (Z.succ (Z.succ 0)).
+repeat rewrite <- Zmult_succ_l_reverse; unfold Z.succ in |- *; ring.
 simpl in |- *; auto.
 apply Zlt_le_succ; auto.
 apply Zplus_lt_reg_l with (p := Fnum min'); auto.
 cut (forall x y : Z, (x + (y - x))%Z = y);
  [ intros tmp; rewrite tmp; clear tmp | intros; ring ].
-replace (Fnum min' + Fnum min')%Z with (2%nat * Fnum min')%Z.
+replace (Fnum min' + Fnum min')%Z with (2 * Fnum min')%Z.
 apply (Rlt_Float_Zlt radix) with (r := Fexp min'); auto;
  fold FtoRradix in |- *.
-replace (FtoRradix (Float (2%nat * Fnum min') (Fexp min'))) with
- (2%nat * Float (Fnum min') (Fexp min'))%R.
+replace (FtoRradix (Float (2 * Fnum min') (Fexp min'))) with
+ (2 * Float (Fnum min') (Fexp min'))%R.
 replace
- (Float (Fnum p * Zpower_nat radix (Zabs_nat (Fexp p - Fexp min')))
-    (Fexp min')) with (Fshift radix (Zabs_nat (Fexp p - Fexp min')) p).
+ (Float (Fnum p * Zpower_nat radix (Z.abs_nat (Fexp p - Fexp min')))
+    (Fexp min')) with (Fshift radix (Z.abs_nat (Fexp p - Fexp min')) p).
 unfold FtoRradix in |- *; rewrite FshiftCorrect; auto.
-apply Rmult_lt_reg_l with (r := (/ 2%nat)%R); auto with real.
+apply Rmult_lt_reg_l with (r := (/ 2)%R); auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_l; auto with real; rewrite Rmult_1_l;
  auto with real.
 replace (FtoR radix (Float (Fnum min') (Fexp min'))) with (FtoR radix min);
  auto.
 unfold Fshift in |- *; simpl in |- *.
-replace (Fexp p - Zabs_nat (Fexp p - Fexp min'))%Z with (Fexp min'); auto.
+replace (Fexp p - Z.abs_nat (Fexp p - Fexp min'))%Z with (Fexp min'); auto.
 rewrite inj_abs; auto.
 ring.
 auto with zarith.
-replace (FtoRradix (Float (2%nat * Fnum min') (Fexp min'))) with
- ((2%nat * Fnum min')%Z * powerRZ radix (Fexp min'))%R.
+replace (FtoRradix (Float (2 * Fnum min') (Fexp min'))) with
+ ((2 * Fnum min')%Z * powerRZ radix (Fexp min'))%R.
 rewrite mult_IZR; auto.
 unfold FtoRradix, FtoR in |- *; simpl in |- *; ring.
 simpl in |- *; auto.
-replace (Z_of_nat 2) with (Zsucc (Zsucc 0)).
-repeat rewrite <- Zmult_succ_l_reverse; unfold Zsucc in |- *; ring.
-simpl in |- *; auto.
+ring.
 exists min; split; auto.
 case H'1; auto.
 rewrite Rl1.
-pattern (FtoRradix p) at 2 in |- *;
- replace (FtoRradix p) with (2%nat * (/ 2%nat * p))%R.
-simpl in |- *; ring.
-rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real; rewrite Rmult_ne_r;
- auto with real.
+field.
 Qed.
 
 Theorem div2IsBetweenPos :
  forall p min max : float,
  (0 <= p)%R ->
  Fbounded b p ->
- isMin b radix (/ 2%nat * p) min ->
- isMax b radix (/ 2%nat * p) max -> p = (min + max)%R :>R.
+ isMin b radix (/ 2 * p) min ->
+ isMax b radix (/ 2 * p) max -> p = (min + max)%R :>R.
+Proof.
 intros p min max P H' H'0 H'1; apply Rle_antisym.
 apply Rplus_le_reg_l with (r := (- max)%R).
 replace (- max + p)%R with (p - max)%R; [ idtac | ring ].
@@ -7058,22 +6799,22 @@ intros H'2 H'3; elim H'3; intros H'4 H'5; apply H'5; clear H'3; auto.
 apply Sterbenz; auto.
 case H'1; auto.
 apply Rle_trans with (FtoRradix max); auto.
-apply Rmult_le_reg_l with (r := INR 2); auto with real.
+apply Rmult_le_reg_l with (r := 2); auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real; rewrite Rmult_1_l;
  auto with real.
 apply Rledouble; auto.
 apply Rle_trans with (FtoRradix min); auto.
-apply RleMinR0 with (r := (/ 2%nat * p)%R); auto.
-apply Rmult_le_reg_l with (r := INR 2); auto with real.
+apply RleMinR0 with (r := (/ 2 * p)%R); auto.
+apply Rmult_le_reg_l with (r := 2); auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real; rewrite Rmult_1_l;
  rewrite Rmult_0_r; auto with real.
-apply Rle_trans with (/ 2%nat * p)%R; auto; apply isMax_inv1 with (1 := H'1).
+apply Rle_trans with (/ 2 * p)%R; auto; apply isMax_inv1 with (1 := H'1).
 case H'1.
 intros H'3 H'6; elim H'6; intros H'7 H'8; apply H'8; clear H'6; auto.
-apply Rmult_le_reg_l with (r := INR 2); auto with real.
+apply Rmult_le_reg_l with (r := 2%R); auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real; rewrite Rmult_1_l;
  auto with real.
-apply Rmult_le_reg_l with (r := (/ 2%nat)%R); auto with real.
+apply Rmult_le_reg_l with (r := (/ 2)%R); auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_l; auto with real; rewrite Rmult_1_l;
  auto with real.
 apply isMax_inv1 with (1 := H'1).
@@ -7081,11 +6822,11 @@ rewrite Fminus_correct; auto with arith.
 apply Rplus_le_reg_l with (r := FtoR radix max).
 replace (FtoR radix max + (FtoR radix p - FtoR radix max))%R with
  (FtoR radix p); [ idtac | ring ].
-apply Rplus_le_reg_l with (r := (- (/ 2%nat * p))%R).
-replace (- (/ 2%nat * p) + FtoR radix p)%R with (/ 2%nat * p)%R.
-replace (- (/ 2%nat * p) + (FtoR radix max + / 2%nat * p))%R with
+apply Rplus_le_reg_l with (r := (- (/ 2 * p))%R).
+replace (- (/ 2 * p) + FtoR radix p)%R with (/ 2 * p)%R.
+replace (- (/ 2 * p) + (FtoR radix max + / 2 * p))%R with
  (FtoR radix max); [ apply isMax_inv1 with (1 := H'1) | ring ].
-replace (FtoR radix p) with (2%nat * (/ 2%nat * p))%R.
+replace (FtoR radix p) with (2 * (/ 2 * p))%R.
 simpl in |- *; ring.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real.
 apply Rplus_le_reg_l with (r := (- min)%R).
@@ -7098,21 +6839,17 @@ intros H'2 H'5; elim H'5; intros H'6 H'7; apply H'7; clear H'5; auto.
 unfold FtoRradix in H'4; rewrite H'4; auto.
 fold FtoRradix in |- *; apply Rplus_le_reg_l with (r := FtoRradix min).
 replace (min + (p - min))%R with (FtoRradix p); [ idtac | ring ].
-apply Rplus_le_reg_l with (r := (- (/ 2%nat * p))%R).
-replace (- (/ 2%nat * p) + p)%R with (/ 2%nat * p)%R.
-replace (- (/ 2%nat * p) + (min + / 2%nat * p))%R with (FtoRradix min);
+apply Rplus_le_reg_l with (r := (- (/ 2 * p))%R).
+replace (- (/ 2 * p) + p)%R with (/ 2 * p)%R by field.
+replace (- (/ 2 * p) + (min + / 2 * p))%R with (FtoRradix min);
  [ apply isMin_inv1 with (1 := H'0) | ring ].
-pattern (FtoRradix p) at 3 in |- *;
- replace (FtoRradix p) with (2%nat * (/ 2%nat * p))%R.
-simpl in |- *; ring.
-rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real.
 Qed.
 
 Theorem div2IsBetween :
  forall p min max : float,
  Fbounded b p ->
- isMin b radix (/ 2%nat * p) min ->
- isMax b radix (/ 2%nat * p) max -> p = (min + max)%R :>R.
+ isMin b radix (/ 2 * p) min ->
+ isMax b radix (/ 2 * p) max -> p = (min + max)%R :>R.
 intros p min max H' H'0 H'1; case (Rle_or_lt 0 p); intros H'2.
 apply div2IsBetweenPos; auto.
 cut (forall x y : R, (- x)%R = (- y)%R -> x = y);
@@ -7123,10 +6860,10 @@ apply div2IsBetweenPos; auto with zarith.
 rewrite (Fopp_correct radix); auto.
 replace 0%R with (-0)%R; try apply Rlt_le; auto with real.
 now apply oppBounded.
-replace (/ 2%nat * Fopp p)%R with (- (/ 2%nat * p))%R.
+replace (/ 2 * Fopp p)%R with (- (/ 2 * p))%R.
 apply MaxOppMin; easy.
 rewrite (Fopp_correct radix); auto; fold FtoRradix; ring.
-replace (/ 2%nat * Fopp p)%R with (- (/ 2%nat * p))%R.
+replace (/ 2 * Fopp p)%R with (- (/ 2 * p))%R.
 apply MinOppMax; easy.
 rewrite (Fopp_correct radix); auto; fold FtoRradix;ring.
 intros x y H'3; rewrite <- (Ropp_involutive x);
@@ -7284,31 +7021,31 @@ Qed.
 (* Properties of LSB and MSB *)
 
 Theorem FUlp_Le_LSigB :
- forall x : float, Fbounded b x -> (Fulp x <= Float 1%nat (LSB radix x))%R.
+ forall x : float, Fbounded b x -> (Fulp x <= Float 1 (LSB radix x))%R.
+Proof.
 intros x H; unfold is_Fzero, Fulp, Fnormalize in |- *;
  case (Z_zerop (Fnum x)); intros ZH.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 rewrite Rmult_1_l.
 apply Rle_powerRZ.
-apply Rle_IZR; omega.
-apply Zle_trans with (Fexp x); auto.
+apply IZR_le; lia.
+apply Z.le_trans with (Fexp x); auto.
 case H; auto.
 apply Fexp_le_LSB; auto.
 rewrite
  LSB_shift
            with
            (n :=
-             min (precision - Fdigit radix x) (Zabs_nat (dExp b + Fexp x)));
+             min (precision - Fdigit radix x) (Z.abs_nat (dExp b + Fexp x)));
  auto.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 rewrite Rmult_1_l.
 apply Rle_powerRZ; auto with arith.
-apply Rle_IZR; omega.
-replace 1%R with (INR 1); auto with real arith.
+apply IZR_le; lia.
 exact
  (Fexp_le_LSB radix
     (Fshift radix
-       (min (precision - Fdigit radix x) (Zabs_nat (dExp b + Fexp x))) x)).
+       (min (precision - Fdigit radix x) (Z.abs_nat (dExp b + Fexp x))) x)).
 Qed.
 
 
@@ -7350,7 +7087,7 @@ Theorem errorBoundedMultMin :
 intros p q fmin Fp Fq H' H'0 H'1 H'2.
 cut (0 <= Fnum p * Fnum q)%Z;
  [ intros multPos
- | apply Zle_mult_gen; apply (LeR0Fnum radix); auto with arith ].
+ | apply Z.mul_nonneg_nonneg; apply (LeR0Fnum radix); auto with arith ].
 cut (ex (fun m : Z => FtoRradix fmin = Float m (Fexp (Fmult p q)))).
 2: unfold FtoRradix in |- *;
     apply
@@ -7380,10 +7117,9 @@ intros H'3;
       apply Rmult_le_reg_l with (r := powerRZ radix (Fexp p + Fexp q));
       auto with real zarith;
       repeat rewrite (Rmult_comm (powerRZ radix (Fexp p + Fexp q)));
-      auto with zarith; apply powerRZ_lt, Rlt_IZR; omega ]); intros H'4.
+      auto with zarith; apply powerRZ_lt, IZR_lt; lia ]); intros H'4.
 repeat split; simpl in |- *; auto.
-case (ZquotientProp (Fnum p * Fnum q) (Zpower_nat radix precision));
- auto with zarith.
+case (ZquotientProp (Fnum p * Fnum q) (Zpower_nat radix precision)); try lia.
 intros x (H'5, (H'6, H'7)).
 cut
  (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision) *
@@ -7392,8 +7128,8 @@ cut
 cut
  (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision) *
   powerRZ radix precision <= m)%R; [ intros H'9 | idtac ].
-rewrite Zabs_eq; auto with zarith.
-apply Zle_lt_trans with x; auto.
+rewrite Z.abs_eq; auto with zarith.
+apply Z.le_lt_trans with x; auto.
 replace x with
  (Fnum p * Fnum q +
   -
@@ -7406,49 +7142,49 @@ rewrite mult_IZR.
 rewrite Zpower_nat_Z_powerRZ; auto with zarith.
 pattern (Fnum p * Fnum q)%Z at 1 in |- *; rewrite H'5; ring.
 rewrite pGivesBound.
-rewrite <- (Zabs_eq (Zpower_nat radix precision)); auto with zarith.
+rewrite <- (Z.abs_eq (Zpower_nat radix precision)); lia.
 apply Rmult_le_reg_l with (r := powerRZ radix (Fexp p + Fexp q));
  auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 repeat rewrite (Rmult_comm (powerRZ radix (Fexp p + Fexp q))); auto.
-rewrite Rmult_assoc; rewrite <- powerRZ_add; auto with real zarith.
-apply IZR_neq; omega.
+rewrite Rmult_assoc; rewrite <- powerRZ_add. auto with real zarith.
+apply IZR_neq; lia.
 case
  (FboundedMbound _ radixMoreThanOne b precision)
   with
     (z := (precision + (Fexp p + Fexp q))%Z)
     (m := Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision));
  auto with zarith.
-apply Zmult_le_reg_r with (p := Zpower_nat radix precision); auto with zarith.
+apply Zmult_le_reg_r with (p := Zpower_nat radix precision); try lia.
 pattern (Zpower_nat radix precision) at 2 in |- *;
- rewrite <- (fun x => Zabs_eq (Zpower_nat radix x)).
+ rewrite <- (fun x => Z.abs_eq (Zpower_nat radix x)).
 rewrite <- Zabs_Zmult.
-apply Zle_trans with (1 := H'6); auto with zarith.
+apply Z.le_trans with (1 := H'6); auto with zarith.
 rewrite Zabs_Zmult.
-apply Zle_trans with (Zpower_nat radix precision * Zabs (Fnum q))%Z.
+apply Z.le_trans with (Zpower_nat radix precision * Z.abs (Fnum q))%Z.
 apply Zle_Zmult_comp_r; auto with zarith.
 apply Zlt_le_weak; rewrite <- pGivesBound; apply Fp.
-apply Zle_Zmult_comp_l; auto with zarith.
+apply Zle_Zmult_comp_l; try lia.
 apply Zlt_le_weak; rewrite <- pGivesBound; apply Fq.
-apply Zpower_NR0; omega.
+apply Zpower_NR0; lia.
 intros x0 (H'8, H'9); rewrite <- H'9.
 case H'2.
 intros H'10 (H'11, H'12); apply H'12; auto.
 rewrite H'9; auto.
-rewrite powerRZ_add; auto with real zarith.
+rewrite powerRZ_add.
 rewrite <- Rmult_assoc.
 unfold FtoRradix in |- *; rewrite <- Fmult_correct; auto with zarith.
 unfold Fmult, FtoR in |- *; simpl in |- *.
 repeat rewrite (fun x => Rmult_comm x (powerRZ radix (Fexp p + Fexp q))).
 apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-rewrite <- Zpower_nat_Z_powerRZ; auto with zarith.
+apply powerRZ_le, IZR_lt; lia.
+rewrite <- Zpower_nat_Z_powerRZ.
 pattern (Fnum p * Fnum q)%Z at 2 in |- *;
- rewrite <- (Zabs_eq (Fnum p * Fnum q)); auto.
-rewrite <- mult_IZR; apply Rle_IZR; apply Zle_Zabs_inv2; auto.
-apply IZR_neq; omega.
-simpl in |- *; auto.
-apply Zmin_n_n; auto.
+ rewrite <- (Z.abs_eq (Fnum p * Fnum q)); auto.
+rewrite <- mult_IZR; apply IZR_le; apply Zle_Zabs_inv2; auto.
+apply IZR_neq; lia.
+simpl in |- *.
+apply Zmin_n_n.
 Qed.
 
 Theorem errorBoundedMultMax :
@@ -7465,12 +7201,12 @@ Theorem errorBoundedMultMax :
 intros p q fmax Fp Fq H' H'0 H'1 H'2.
 cut (0 <= Fnum p * Fnum q)%Z;
  [ intros multPos
- | apply Zle_mult_gen; apply (LeR0Fnum radix); auto with arith ].
-case (ZquotientProp (Fnum p * Fnum q) (Zpower_nat radix precision));
- auto with zarith.
+ | apply Z.mul_nonneg_nonneg; apply (LeR0Fnum radix); auto with arith ].
+case (ZquotientProp (Fnum p * Fnum q) (Zpower_nat radix precision)).
+lia.
 intros r; intros (H'3, (H'4, H'5)).
 cut (0 <= Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision))%Z;
- [ intros Z2 | apply ZquotientPos; auto with zarith ].
+ [ intros Z2 | apply ZquotientPos; lia ].
 cut (0 <= r)%Z;
  [ intros Z3
  | replace r with
@@ -7479,9 +7215,8 @@ cut (0 <= r)%Z;
      Zpower_nat radix precision)%Z;
     [ idtac | pattern (Fnum p * Fnum q)%Z at 1 in |- *; rewrite H'3; ring ];
     auto ].
-2: apply Zle_Zminus_ZERO; rewrite Zabs_eq in H'4; auto with zarith;
-    rewrite Zabs_eq in H'4; auto with zarith.
-case (Z_eq_dec r 0); intros Z4.
+2: apply Zle_minus_le_0, Zle_Zabs_inv2 ; now rewrite (Z.abs_eq _ multPos) in H'4.
+case (Z.eq_dec r 0); intros Z4.
 exists (Fzero (Fexp p + Fexp q)); repeat (split; auto with zarith).
 replace (FtoRradix (Fzero (Fexp p + Fexp q))) with 0%R;
  [ idtac | unfold Fzero, FtoRradix, FtoR in |- *; simpl in |- *; ring ].
@@ -7495,18 +7230,20 @@ case
     (z := (precision + (Fexp p + Fexp q))%Z)
     (m := Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision));
  auto with zarith.
-apply Zmult_le_reg_r with (p := Zpower_nat radix precision); auto with zarith.
+apply Zmult_le_reg_r with (p := Zpower_nat radix precision).
+lia.
 pattern (Zpower_nat radix precision) at 2 in |- *;
- rewrite <- (fun x => Zabs_eq (Zpower_nat radix x)).
+ rewrite <- (fun x => Z.abs_eq (Zpower_nat radix x)).
 rewrite <- Zabs_Zmult.
-apply Zle_trans with (1 := H'4); auto with zarith.
+apply Z.le_trans with (1 := H'4); auto with zarith.
 rewrite Zabs_Zmult.
-apply Zle_trans with (Zpower_nat radix precision * Zabs (Fnum q))%Z.
+apply Z.le_trans with (Zpower_nat radix precision * Z.abs (Fnum q))%Z.
 apply Zle_Zmult_comp_r; auto with zarith.
 apply Zlt_le_weak; rewrite <- pGivesBound; apply Fp.
-apply Zle_Zmult_comp_l; auto with zarith.
+apply Zle_Zmult_comp_l.
+lia.
 apply Zlt_le_weak; rewrite <- pGivesBound; apply Fq.
-apply Zpower_NR0; omega.
+apply Zpower_NR0; lia.
 intros x (H'6, H'7).
 cut (FtoR radix (Fmult p q) = FtoR radix x).
 intros H'8; rewrite H'8.
@@ -7515,12 +7252,12 @@ rewrite <- H'8; auto.
 rewrite Fmult_correct; auto with zarith.
 rewrite H'7.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
-rewrite powerRZ_add with (n := Z_of_nat precision); auto with real zarith.
+rewrite powerRZ_add with (n := Z_of_nat precision).
 pattern (Fnum p * Fnum q)%Z at 1 in |- *; rewrite H'3.
 rewrite plus_IZR; rewrite mult_IZR.
 repeat rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
 rewrite Z4; simpl;ring.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 cut (ex (fun m : Z => FtoRradix fmax = Float m (Fexp (Fmult p q))));
  [ intros Z5 | idtac ].
 2: unfold FtoRradix in |- *;
@@ -7547,7 +7284,7 @@ cut (Fmult p q <= fmax)%R;
     auto with real zarith; (intros H1 H2; case H2; auto) ].
 cut
  (fmax <=
-  Zsucc (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)) *
+  Z.succ (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)) *
   powerRZ radix (precision + (Fexp p + Fexp q)))%R.
 rewrite E; repeat rewrite Zmin_n_n; repeat rewrite <- Zminus_diag_reverse;
  repeat rewrite Zpower_nat_O; repeat rewrite Zmult_1_r;
@@ -7557,16 +7294,16 @@ repeat rewrite Zmin_n_n; repeat rewrite <- Zminus_diag_reverse;
  repeat rewrite Zpower_nat_O; repeat rewrite Zmult_1_r;
  auto.
 intros H1 H2; rewrite Zabs_Zopp; apply Zlt_Zabs_intro.
-apply Zlt_le_trans with 0%Z; auto with zarith.
+apply Z.lt_le_trans with 0%Z; try lia.
 cut (Fnum p * Fnum q <= m)%Z; auto with zarith.
 apply le_IZR;
  apply (Rle_monotony_contra_exp radix) with (z := (Fexp p + Fexp q)%Z);
  auto with zarith.
 cut
  (m <=
-  Zsucc (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)) *
+  Z.succ (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)) *
   Zpower_nat radix precision)%Z; [ intros H'9 | idtac ].
-apply Zle_lt_trans with (Zpower_nat radix precision - r)%Z;
+apply Z.le_lt_trans with (Zpower_nat radix precision - r)%Z;
  [ idtac | rewrite pGivesBound; auto with zarith ].
 replace r with
  (Fnum p * Fnum q -
@@ -7577,58 +7314,56 @@ replace
   (Fnum p * Fnum q -
    Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision) *
    Zpower_nat radix precision))%Z with
- (Zsucc (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)) *
+ (Z.succ (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)) *
   Zpower_nat radix precision - Fnum p * Fnum q)%Z;
- auto with zarith.
+ lia.
 pattern (Fnum p * Fnum q)%Z at 1 in |- *; rewrite H'3; ring.
 apply le_IZR;
  apply (Rle_monotony_contra_exp radix) with (z := (Fexp p + Fexp q)%Z);
  auto with zarith.
 replace
  (IZR
-    (Zsucc (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)) *
+    (Z.succ (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)) *
      Zpower_nat radix precision) * powerRZ radix (Fexp p + Fexp q))%R with
- (Zsucc (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)) *
+ (Z.succ (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)) *
   powerRZ radix (precision + (Fexp p + Fexp q)))%R;
  [ auto | idtac ].
-rewrite powerRZ_add; auto with real zarith.
-repeat rewrite mult_IZR; repeat rewrite Zpower_nat_Z_powerRZ; auto with zarith.
+rewrite powerRZ_add.
+repeat rewrite mult_IZR; repeat rewrite Zpower_nat_Z_powerRZ.
 ring.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 case
  (FboundedMbound _ radixMoreThanOne b precision)
   with
     (z := (precision + (Fexp p + Fexp q))%Z)
-    (m := Zsucc (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)));
+    (m := Z.succ (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)));
  auto with zarith.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 apply Zlt_le_succ.
 case (Zle_lt_or_eq _ _ multPos); intros Eq1.
-cut (0 < Zabs (Fnum p))%Z; [ intros Eq2 | idtac ].
-cut (0 < Zabs (Fnum q))%Z; [ intros Eq3 | idtac ].
-apply Zlt_mult_simpl_l with (c := Zpower_nat radix precision);
- auto with zarith.
-
+cut (0 < Z.abs (Fnum p))%Z; [ intros Eq2 | idtac ].
+cut (0 < Z.abs (Fnum q))%Z; [ intros Eq3 | idtac ].
+apply Zlt_mult_simpl_l with (c := Zpower_nat radix precision); try lia.
 rewrite (fun x y z => Zmult_comm x (Zquotient y z)).
-apply Zle_lt_trans with (Fnum p * Fnum q)%Z.
-rewrite Zabs_eq in H'4; auto with zarith; rewrite Zabs_eq in H'4;
+apply Z.le_lt_trans with (Fnum p * Fnum q)%Z.
+rewrite Z.abs_eq in H'4; auto with zarith; rewrite Z.abs_eq in H'4;
  auto with zarith.
-cut (Zabs (Fnum q) < Zpower_nat radix precision)%Z;
+cut (Z.abs (Fnum q) < Zpower_nat radix precision)%Z;
  [ intros Eq4| rewrite <- pGivesBound; apply Fq ]; auto with zarith.
-cut (Zabs (Fnum p) < Zpower_nat radix precision)%Z;
+cut (Z.abs (Fnum p) < Zpower_nat radix precision)%Z;
  [ intros Eq4' | rewrite <- pGivesBound; case Fp ]; auto with zarith.
-apply Zle_lt_trans with (Zabs (Fnum p*Fnum q)).
+apply Z.le_lt_trans with (Z.abs (Fnum p*Fnum q)).
 apply Zle_Zabs.
 rewrite Zabs_Zmult.
-apply Zlt_trans with (Zabs (Fnum p) * Zpower_nat radix precision)%Z.
-apply Zmult_gt_0_lt_compat_l; auto with zarith.
-apply Zmult_gt_0_lt_compat_r; auto with zarith.
-case (Zle_lt_or_eq _ _ (Zle_ZERO_Zabs (Fnum q))); auto.
-intros Eq3; contradict Eq1; replace (Fnum q) with 0%Z; auto with zarith.
-case (Zle_lt_or_eq _ _ (Zle_ZERO_Zabs (Fnum p))); auto.
-intros Eq3; contradict Eq1; replace (Fnum p) with 0%Z; auto with zarith.
+apply Z.lt_trans with (Z.abs (Fnum p) * Zpower_nat radix precision)%Z.
+apply Zmult_gt_0_lt_compat_l. lia. unfold Fbounded in Fq; lia.
+apply Zmult_gt_0_lt_compat_r. lia. unfold Fbounded in Fp; lia.
+case (Zle_lt_or_eq _ _ (Z.abs_nonneg (Fnum q))); auto.
+intros Eq3; contradict Eq1; replace (Fnum q) with 0%Z; lia.
+case (Zle_lt_or_eq _ _ (Z.abs_nonneg (Fnum p))); auto.
+intros Eq3; contradict Eq1; replace (Fnum p) with 0%Z; lia.
 rewrite <- Eq1; replace (Zquotient 0 (Zpower_nat radix precision)) with 0%Z;
- auto with zarith.
+ lia.
 intros f1 (Hf1, Hf2); rewrite <- Hf2.
 case H'2; intros L1 (L2, L3); apply L3; auto.
 rewrite Hf2; unfold Fmult, FtoRradix, FtoR in |- *.
@@ -7636,25 +7371,22 @@ replace
  (Fnum p * powerRZ radix (Fexp p) * (Fnum q * powerRZ radix (Fexp q)))%R with
  (Fnum p * Fnum q * powerRZ radix (Fexp p + Fexp q))%R.
 replace
- (Zsucc (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)) *
+ (Z.succ (Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision)) *
   powerRZ radix (precision + (Fexp p + Fexp q)))%R with
  ((Zquotient (Fnum p * Fnum q) (Zpower_nat radix precision) *
    Zpower_nat radix precision + Zpower_nat radix precision)%Z *
   powerRZ radix (Fexp p + Fexp q))%R.
 apply Rle_monotone_exp; auto with real zarith.
-rewrite <- mult_IZR; apply Rle_IZR.
-pattern (Fnum p * Fnum q)%Z at 1 in |- *; rewrite H'3;
- cut (r < Zpower_nat radix precision)%Z; auto with zarith.
-rewrite Zabs_eq in H'5; auto with zarith; rewrite Zabs_eq in H'5;
- auto with zarith.
-unfold Zsucc in |- *; repeat rewrite mult_IZR || rewrite plus_IZR;
+rewrite <- mult_IZR; apply IZR_le.
+lia.
+unfold Z.succ in |- *; repeat rewrite mult_IZR || rewrite plus_IZR;
  simpl in |- *.
-rewrite (powerRZ_add radix precision); auto with real zarith.
+rewrite (powerRZ_add radix precision).
 rewrite <- (Zpower_nat_Z_powerRZ radix precision); auto with real zarith;
  ring.
-apply IZR_neq; omega.
-rewrite powerRZ_add; auto with real zarith; try ring.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
+rewrite powerRZ_add. auto with real zarith; try ring.
+apply IZR_neq; lia.
 unfold Fopp, Fminus, Fmult in |- *; simpl in |- *; auto.
 apply Zmin_n_n.
 Qed.
@@ -7677,7 +7409,7 @@ unfold FtoRradix in |- *; apply eqExpMax; auto.
 apply RoundedModeBounded with (radix := radix) (P := P) (r := (p * q)%R);
  auto; auto.
 unfold pPred in |- *; apply maxFbounded; auto.
-apply Zle_trans with (1 := H'3); auto with zarith.
+apply Z.le_trans with (1 := H'3); auto with zarith.
 replace (FtoR radix (Float (pPred (vNum b)) (precision + (Fexp p + Fexp q))))
  with (radix * Float (pPred (vNum b)) (pred precision + (Fexp p + Fexp q)))%R.
 rewrite Fabs_correct; auto with zarith.
@@ -7705,27 +7437,27 @@ repeat rewrite <- Rmult_assoc.
 repeat rewrite (fun (z : Z) (x : R) => Rmult_comm x (powerRZ radix z));
  auto.
 apply Rmult_le_compat_l; auto with real arith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 rewrite <- Rmult_assoc.
 rewrite (fun x : R => Rmult_comm x radix).
 rewrite <- powerRZ_Zs; auto with real arith.
-replace (Zsucc (pred precision)) with (Z_of_nat precision).
+replace (Z.succ (pred precision)) with (Z_of_nat precision).
 rewrite mult_IZR; auto.
 apply Rmult_le_compat; auto with real arith.
-apply Rle_IZR, Zle_Zpred; auto with zarith.
-apply Rle_IZR, Zle_Zpred; auto with zarith.
+apply IZR_le, Zle_Zpred; auto with zarith.
+apply IZR_le, Zle_Zpred; auto with zarith.
 unfold pPred in |- *; rewrite pGivesBound; rewrite <- Zpower_nat_Z_powerRZ;
- apply Rle_IZR; auto with real zarith.
+ apply IZR_le; auto with real zarith.
 rewrite inj_pred; auto with arith zarith.
 apply IZR_neq; auto with real zarith.
 apply IZR_neq; auto with real zarith.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 repeat rewrite (Rmult_comm (pPred (vNum b))).
 rewrite <- Rmult_assoc.
-rewrite <- powerRZ_Zs; auto with real zarith.
+rewrite <- powerRZ_Zs.
 rewrite inj_pred; auto with arith zarith.
-replace (Zsucc (Zpred precision + (Fexp p + Fexp q))) with
- (precision + (Fexp p + Fexp q))%Z; auto; unfold Zsucc, Zpred in |- *;
+replace (Z.succ (Z.pred precision + (Fexp p + Fexp q))) with
+ (precision + (Fexp p + Fexp q))%Z; auto; unfold Z.succ, Z.pred in |- *;
  ring.
 apply IZR_neq; auto with real zarith.
 Qed.
@@ -7844,39 +7576,39 @@ Qed.
 
 Theorem errorBoundedMultExp_aux :
  forall n1 n2 : Z,
- (Zabs n1 < Zpos (vNum b))%Z ->
- (Zabs n2 < Zpos (vNum b))%Z ->
+ (Z.abs n1 < Zpos (vNum b))%Z ->
+ (Z.abs n2 < Zpos (vNum b))%Z ->
  (exists ny : Z,
     (exists ey : Z,
        (n1 * n2)%R = (ny * powerRZ radix ey)%R :>R /\
-       (Zabs ny < Zpos (vNum b))%Z)) ->
+       (Z.abs ny < Zpos (vNum b))%Z)) ->
  exists nx : Z,
    (exists ex : Z,
       (n1 * n2)%R = (nx * powerRZ radix ex)%R :>R /\
-      (Zabs nx < Zpos (vNum b))%Z /\
+      (Z.abs nx < Zpos (vNum b))%Z /\
       (0 <= ex)%Z /\ (ex <= precision)%Z).
 intros n1 n2 H H0 H1.
 case H1; intros ny (ey, (H2, H3)).
 case (Zle_or_lt 0 ey); intros Zl1.
 case (Zle_or_lt ey precision); intros Zl2.
 exists ny; exists ey; repeat (split; auto).
-exists (ny * Zpower_nat radix (Zabs_nat (ey - precision)))%Z;
+exists (ny * Zpower_nat radix (Z.abs_nat (ey - precision)))%Z;
  exists (Z_of_nat precision); repeat (split; auto with zarith).
-replace (IZR (ny * Zpower_nat radix (Zabs_nat (ey - precision)))) with
+replace (IZR (ny * Zpower_nat radix (Z.abs_nat (ey - precision)))) with
  (ny * powerRZ radix (ey - precision))%R.
 rewrite Rmult_assoc; rewrite <- powerRZ_add; auto with zarith real.
 replace (ey - precision + precision)%Z with ey; [ auto | ring ].
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 rewrite mult_IZR.
 rewrite Zpower_nat_powerRZ_absolu; auto with real zarith.
 rewrite Zabs_Zmult.
 apply lt_IZR; apply Rmult_lt_reg_l with (r := powerRZ radix precision);
  auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 repeat rewrite (fun x y => Rmult_comm (powerRZ x y)).
 rewrite mult_IZR.
 rewrite Rmult_assoc.
-rewrite (Zabs_eq (Zpower_nat radix (Zabs_nat (ey - precision))));
+rewrite (Z.abs_eq (Zpower_nat radix (Z.abs_nat (ey - precision))));
  auto with zarith.
 rewrite Zpower_nat_powerRZ_absolu; auto with real zarith.
 rewrite <- powerRZ_add; auto with real zarith.
@@ -7884,21 +7616,21 @@ replace (ey - precision + precision)%Z with ey; [ idtac | ring ].
 replace (powerRZ radix precision) with (IZR (Zpos (vNum b)));
  [ idtac
  | rewrite pGivesBound; rewrite <- Zpower_nat_powerRZ_absolu;
-    try rewrite absolu_INR; auto with zarith ].
+    try rewrite Zabs2Nat.id; auto with zarith ].
 rewrite <- (fun x y => Rabs_pos_eq (powerRZ x y)); auto with real zarith.
 rewrite <- Rabs_Zabs; rewrite <- Rabs_mult; rewrite <- H2.
 rewrite Rabs_mult; repeat rewrite Rabs_Zabs; auto with real zarith.
-case (Zle_lt_or_eq 0 (Zabs n2)); auto with zarith; intros Z1.
-apply Rlt_trans with (Zpos (vNum b) * Zabs n2)%R;
+case (Zle_lt_or_eq 0 (Z.abs n2)); auto with zarith; intros Z1.
+apply Rlt_trans with (Zpos (vNum b) * Z.abs n2)%R;
  auto with real zarith.
-apply Rmult_lt_compat_r; apply Rlt_IZR; try easy.
-apply Rmult_lt_compat_l; apply Rlt_IZR; try easy.
+apply Rmult_lt_compat_r; apply IZR_lt; try easy.
+apply Rmult_lt_compat_l; apply IZR_lt; try easy.
 rewrite <- Z1; auto with real zarith.
-replace (Zabs n1 * 0%Z)%R with (0 * Zpos (vNum b))%R;
+replace (Z.abs n1 * 0%Z)%R with (0 * Zpos (vNum b))%R;
  [ auto with real zarith | simpl; ring ].
-apply powerRZ_le, Rlt_IZR; omega.
-apply IZR_neq; omega.
-apply Zpower_NR0; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply IZR_neq; lia.
+apply Zpower_NR0; lia.
 exists (n1 * n2)%Z; exists 0%Z; repeat (split; auto with zarith).
 rewrite mult_IZR; rewrite powerRZ_O; ring.
 apply lt_IZR.
@@ -7909,11 +7641,11 @@ pattern (Rabs ny) at 2 in |- *; replace (Rabs ny) with (Rabs ny * 1)%R;
  [ apply Rmult_le_compat_l | ring ]; auto with arith real.
 apply Rabs_pos.
 rewrite (Rabs_pos_eq (powerRZ radix ey));
- [ idtac | apply powerRZ_le, Rlt_IZR; auto with arith real ].
-replace 1%R with (powerRZ radix 0); [ apply Rle_powerRZ; try apply Rlt_IZR | simpl in |- * ];
+ [ idtac | apply powerRZ_le, IZR_lt; auto with arith real ].
+replace 1%R with (powerRZ radix 0); [ apply Rle_powerRZ; try apply IZR_lt | simpl in |- * ];
  auto with real arith zarith.
-apply Rle_IZR; omega.
-rewrite Rabs_Zabs; try apply Rlt_IZR; auto with real zarith.
+apply IZR_le; lia.
+rewrite Rabs_Zabs; try apply IZR_lt; auto with real zarith.
 Qed.
 
 Theorem errorBoundedMultExpPos :
@@ -7962,8 +7694,8 @@ apply trans_eq with (FtoRradix pq); auto with real.
 rewrite Rmult_assoc; rewrite <- powerRZ_add; auto with real zarith.
 replace (Fexp pq - (Fexp p + Fexp q) + (Fexp p + Fexp q))%Z with (Fexp pq);
  auto; ring.
-apply IZR_neq; omega.
-apply Rgt_not_eq, powerRZ_lt, Rlt_IZR; omega.
+apply IZR_neq; lia.
+apply Rgt_not_eq, powerRZ_lt, IZR_lt; lia.
 cut (Fbounded b pq); [ intros Z1; case Z1 | idtac ]; auto with real zarith.
 apply (RoundedModeBounded b radix P (p * q)); auto.
 intros nx (ex, (H'4, (H'5, (H'6, H'7)))).
@@ -7974,11 +7706,11 @@ exists (Float nx (ex + (Fexp p + Fexp q))); exists (Fzero (Fexp p + Fexp q));
 rewrite <- Eq1; rewrite H6; apply (FzeroisReallyZero radix).
 replace (FtoRradix pq) with (p * q)%R.
 unfold FtoRradix in |- *; unfold FtoR in |- *; simpl in |- *.
-rewrite powerRZ_add; auto with zarith real.
-2: apply IZR_neq; omega.
-repeat rewrite <- Rmult_assoc; rewrite <- H'4; rewrite powerRZ_add;
- [ ring | auto with zarith real ].
-apply IZR_neq; omega.
+rewrite powerRZ_add.
+2: apply IZR_neq; lia.
+repeat rewrite <- Rmult_assoc; rewrite <- H'4; rewrite powerRZ_add.
+ring.
+apply IZR_neq; lia.
 replace (FtoRradix p * FtoRradix q)%R with
  (pq + (FtoRradix p * FtoRradix q - FtoRradix pq))%R;
  [ rewrite H6 | idtac ]; ring.
@@ -8224,7 +7956,7 @@ Qed.
 Theorem ClosestMin :
  forall (r : R) (min max : float),
  isMin b radix r min ->
- isMax b radix r max -> (2%nat * r <= min + max)%R -> Closest r min.
+ isMax b radix r max -> (2 * r <= min + max)%R -> Closest r min.
 intros r min max H' H'0 H'1; split.
 case H'; auto.
 intros f H'2.
@@ -8254,7 +7986,7 @@ apply Rplus_le_reg_l with (r := FtoR radix min).
 repeat rewrite Rplus_minus; auto.
 apply Rplus_le_reg_l with (r := r).
 replace (r + (FtoR radix min + (max - r)))%R with (min + max)%R.
-replace (r + r)%R with (2%nat * r)%R; auto.
+replace (r + r)%R with (2 * r)%R; auto.
 simpl in |- *; ring.
 simpl in |- *; fold FtoRradix; ring.
 apply Rplus_le_reg_l with (r := r).
@@ -8275,7 +8007,7 @@ Qed.
 Theorem ClosestMax :
  forall (r : R) (min max : float),
  isMin b radix r min ->
- isMax b radix r max -> (min + max <= 2%nat * r)%R -> Closest r max.
+ isMax b radix r max -> (min + max <= 2 * r)%R -> Closest r max.
 intros r min max H' H'0 H'1; split.
 case H'0; auto.
 intros f H'2.
@@ -8287,7 +8019,7 @@ apply Rplus_le_reg_l with (r := FtoRradix min).
 repeat rewrite Rplus_minus; auto.
 apply Rplus_le_reg_l with (r := r).
 replace (r + (min + (max - r)))%R with (min + max)%R.
-replace (r + r)%R with (2%nat * r)%R; auto.
+replace (r + r)%R with (2 * r)%R; auto.
 simpl in |- *; ring.
 simpl in |- *; ring.
 replace (r - min)%R with (- (min - r))%R.
@@ -8373,7 +8105,7 @@ Theorem ClosestMinEq :
  forall (r : R) (min max p : float),
  isMin b radix r min ->
  isMax b radix r max ->
- (2%nat * r < min + max)%R -> Closest r p -> p = min :>R.
+ (2 * r < min + max)%R -> Closest r p -> p = min :>R.
 intros r min max p H' H'0 H'1 H'2.
 case (ClosestMinOrMax r p); auto; intros H'3.
 unfold FtoRradix in |- *; apply MinEq with (1 := H'3); auto.
@@ -8385,7 +8117,7 @@ replace (- (min - r))%R with (r - min)%R; [ idtac | ring ].
 red in |- *; apply Rplus_lt_reg_l with (r := FtoRradix min).
 repeat rewrite Rplus_minus; auto.
 apply Rplus_lt_reg_l with (r := r).
-replace (r + r)%R with (2%nat * r)%R; [ idtac | simpl in |- *; ring ].
+replace (r + r)%R with (2 * r)%R; [ idtac | simpl in |- *; ring ].
 replace (r + (min + (max - r)))%R with (min + max)%R; [ idtac | ring ]; auto.
 apply Rle_ge; apply Rplus_le_reg_l with (r := r).
 repeat rewrite Rplus_minus; auto.
@@ -8408,7 +8140,7 @@ Theorem ClosestMaxEq :
  forall (r : R) (min max p : float),
  isMin b radix r min ->
  isMax b radix r max ->
- (min + max < 2%nat * r)%R -> Closest r p -> p = max :>R.
+ (min + max < 2 * r)%R -> Closest r p -> p = max :>R.
 intros r min max p H' H'0 H'1 H'2.
 case (ClosestMinOrMax r p); auto; intros H'3.
 2: unfold FtoRradix in |- *; apply MaxEq with (1 := H'3); auto.
@@ -8420,7 +8152,7 @@ replace (- (min - r))%R with (r - min)%R; [ idtac | ring ].
 red in |- *; apply Rplus_lt_reg_l with (r := FtoRradix min).
 repeat rewrite Rplus_minus; auto.
 apply Rplus_lt_reg_l with (r := r).
-replace (r + r)%R with (2%nat * r)%R; [ idtac | simpl in |- *; ring ].
+replace (r + r)%R with (2 * r)%R; [ idtac | simpl in |- *; ring ].
 replace (r + (min + (max - r)))%R with (min + max)%R; [ idtac | ring ]; auto.
 apply Rle_ge; apply Rplus_le_reg_l with (r := r).
 repeat rewrite Rplus_minus; auto.
@@ -8581,14 +8313,14 @@ case (Rle_or_lt (r - min) (max - r)); intros H'1.
 case H'1; intros H'2; auto.
 exists min; split.
 apply ClosestMin with (max := max); auto.
-replace (2%nat * r)%R with (r + r)%R; [ idtac | simpl in |- *; ring ].
+replace (2 * r)%R with (r + r)%R; [ idtac | simpl in |- *; ring ].
 apply Rminus_le; auto.
 replace (r + r - (min + max))%R with (r - min - (max - r))%R;
  [ idtac | simpl in |- *; ring ].
 apply Rle_minus; auto.
 right; intros q H'3.
 apply ClosestMinEq with (r := r) (max := max); auto.
-replace (2%nat * r)%R with (r + r)%R; [ idtac | simpl in |- *; ring ].
+replace (2 * r)%R with (r + r)%R; [ idtac | simpl in |- *; ring ].
 apply Rminus_lt; auto.
 replace (r + r - (min + max))%R with (r - min - (max - r))%R;
  [ idtac | simpl in |- *; ring ].
@@ -8596,14 +8328,14 @@ apply Rlt_minus; auto.
 case (FNevenOrFNodd b radix precision min); intros Ev0.
 exists min; split; auto.
 apply ClosestMin with (max := max); auto.
-replace (2%nat * r)%R with (r + r)%R; [ idtac | simpl in |- *; ring ].
+replace (2 * r)%R with (r + r)%R; [ idtac | simpl in |- *; ring ].
 apply Rminus_le; auto.
 replace (r + r - (min + max))%R with (r - min - (max - r))%R;
  [ idtac | simpl in |- *; ring ].
 apply Rle_minus; auto.
 exists max; split; auto.
 apply ClosestMax with (min := min); auto.
-replace (2%nat * r)%R with (r + r)%R; [ idtac | simpl in |- *; ring ].
+replace (2 * r)%R with (r + r)%R; [ idtac | simpl in |- *; ring ].
 apply Rminus_le; auto.
 replace (min + max - (r + r))%R with (max - r - (r - min))%R;
  [ idtac | simpl in |- *; ring ].
@@ -8631,14 +8363,14 @@ apply FNoddSuc; auto.
 case H'; auto.
 exists max; split; auto.
 apply ClosestMax with (min := min); auto.
-replace (2%nat * r)%R with (r + r)%R; [ idtac | simpl in |- *; ring ].
+replace (2 * r)%R with (r + r)%R; [ idtac | simpl in |- *; ring ].
 apply Rminus_le; auto.
 replace (min + max - (r + r))%R with (max - r - (r - min))%R;
  [ idtac | simpl in |- *; ring ].
 apply Rle_minus; auto with real.
 right; intros q H'2.
 apply ClosestMaxEq with (r := r) (min := min); auto.
-replace (2%nat * r)%R with (r + r)%R; [ idtac | simpl in |- *; ring ].
+replace (2 * r)%R with (r + r)%R; [ idtac | simpl in |- *; ring ].
 apply Rminus_lt; auto.
 replace (min + max - (r + r))%R with (max - r - (r - min))%R;
  [ idtac | simpl in |- *; ring ].
@@ -8847,7 +8579,7 @@ Qed.
 
 Theorem ClosestUlp :
  forall (p : R) (q : float),
- Closest b radix p q -> (2%nat * Rabs (p - q) <= Fulp b radix precision q)%R.
+ Closest b radix p q -> (2 * Rabs (p - q) <= Fulp b radix precision q)%R.
 intros p q H'.
 case (Req_dec p q); intros Eqpq.
 rewrite Eqpq.
@@ -8855,8 +8587,8 @@ replace (Rabs (q - q)) with 0%R;
  [ rewrite Rmult_0_r
  | replace (q - q)%R with 0%R; try ring; rewrite Rabs_right; auto with real ].
 unfold Fulp in |- *; apply Rlt_le; auto with real arith.
-apply powerRZ_lt, Rlt_IZR; omega.
-replace (2%nat * Rabs (p - q))%R with (Rabs (p - q) + Rabs (p - q))%R;
+apply powerRZ_lt, IZR_lt; lia.
+replace (2 * Rabs (p - q))%R with (Rabs (p - q) + Rabs (p - q))%R;
  [ idtac | simpl in |- *; ring ].
 case ClosestMinOrMax with (1 := H'); intros H'1.
 apply Rle_trans with (Rabs (p - q) + Rabs (FNSucc b radix precision q - p))%R.
@@ -8903,11 +8635,11 @@ Qed.
 
 Theorem ClosestExp :
  forall (p : R) (q : float),
- Closest b radix p q -> (2%nat * Rabs (p - q) <= powerRZ radix (Fexp q))%R.
+ Closest b radix p q -> (2 * Rabs (p - q) <= powerRZ radix (Fexp q))%R.
 intros p q H'.
 apply Rle_trans with (Fulp b radix precision q).
 apply (ClosestUlp p q); auto.
-replace (powerRZ radix (Fexp q)) with (FtoRradix (Float 1%nat (Fexp q))).
+replace (powerRZ radix (Fexp q)) with (FtoRradix (Float 1 (Fexp q))).
 apply (FulpLe b radix); auto.
 apply
  RoundedModeBounded with (radix := radix) (P := Closest b radix) (r := p);
@@ -8928,19 +8660,19 @@ case (Zle_or_lt (Fexp p) (Fexp q)); auto; intros Z1.
 absurd (powerRZ radix (Fexp p) <= powerRZ radix (Fexp q))%R.
 2: apply Rle_powerRZ; auto with real arith.
 apply Rgt_not_le.
-red in |- *; apply Rlt_le_trans with (2%nat * powerRZ radix (Fexp q))%R.
+red in |- *; apply Rlt_le_trans with (2 * powerRZ radix (Fexp q))%R.
 apply Rltdouble; auto with real arith.
-apply powerRZ_lt, Rlt_IZR; omega.
-apply Rle_trans with (2%nat * Fabs q)%R.
+apply powerRZ_lt, IZR_lt; lia.
+apply Rle_trans with (2 * Fabs q)%R.
 apply Rmult_le_compat_l; auto with real arith.
-replace (powerRZ radix (Fexp q)) with (FtoRradix (Float 1%nat (Fexp q)));
+replace (powerRZ radix (Fexp q)) with (FtoRradix (Float 1 (Fexp q)));
  auto.
 apply (RleFexpFabs radix); auto with real zarith.
 unfold FtoRradix, FtoR in |- *; simpl in |- *; ring.
 rewrite (Fabs_correct radix); auto with arith.
 replace (FtoR radix q) with (x - p)%R; auto.
 apply ClosestExp; auto.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 Qed.
 
 Theorem ClosestIdem :
@@ -8962,11 +8694,11 @@ Qed.
 Theorem FmultRadixInv :
  forall (x z : float) (y : R),
  Fbounded b x ->
- Closest b radix y z -> (/ 2%nat * x < y)%R -> (/ 2%nat * x <= z)%R.
+ Closest b radix y z -> (/ 2 * x < y)%R -> (/ 2 * x <= z)%R.
 intros x z y H' H'0 H'1.
-case MinEx with (r := (/ 2%nat * x)%R) (3 := pGivesBound); auto with zarith.
+case MinEx with (r := (/ 2 * x)%R) (3 := pGivesBound); auto with zarith.
 intros min isMin.
-case MaxEx with (r := (/ 2%nat * x)%R) (3 := pGivesBound); auto with zarith.
+case MaxEx with (r := (/ 2 * x)%R) (3 := pGivesBound); auto with zarith.
 intros max isMax.
 case (Rle_or_lt y max); intros Rl1.
 case Rl1; clear Rl1; intros Rl1.
@@ -8976,14 +8708,14 @@ apply sym_eq.
 unfold FtoRradix in |- *;
  apply ClosestMaxEq with (b := b) (r := y) (min := min);
  auto.
-apply isMinComp with (r1 := (/ 2%nat * x)%R) (max := max); auto.
+apply isMinComp with (r1 := (/ 2 * x)%R) (max := max); auto.
 apply Rle_lt_trans with (2 := H'1); auto.
 apply isMin_inv1 with (1 := isMin).
-apply isMaxComp with (r1 := (/ 2%nat * x)%R) (min := min); auto.
+apply isMaxComp with (r1 := (/ 2 * x)%R) (min := min); auto.
 apply Rle_lt_trans with (2 := H'1); auto.
 apply isMin_inv1 with (1 := isMin).
 replace (FtoR radix min + FtoR radix max)%R with (FtoRradix x).
-apply Rmult_lt_reg_l with (r := (/ 2%nat)%R); auto with real.
+apply Rmult_lt_reg_l with (r := (/ 2)%R); auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_l; try rewrite Rmult_1_l; auto with real.
 unfold FtoRradix in |- *; apply (div2IsBetween b radix precision); auto.
 cut (Closest b radix max z); [ intros C0 | idtac ].
@@ -9006,11 +8738,11 @@ Theorem ClosestErrorBound :
  forall (p q : float) (x : R),
  Fbounded b p ->
  Closest b radix x p ->
- q = (x - p)%R :>R -> (Rabs q <= Float 1%nat (Fexp p) * / 2%nat)%R.
+ q = (x - p)%R :>R -> (Rabs q <= Float 1 (Fexp p) * / 2)%R.
 intros p q x H H0 H1.
-apply Rle_trans with (Fulp b radix precision p * / 2%nat)%R.
+apply Rle_trans with (Fulp b radix precision p * / 2)%R.
 rewrite H1.
-replace (Rabs (x - p)) with (2%nat * Rabs (x - p) * / 2%nat)%R;
+replace (Rabs (x - p)) with (2 * Rabs (x - p) * / 2)%R;
  [ idtac | field; auto with real ].
 apply Rmult_le_compat_r; auto with real.
 simpl; auto with real.
@@ -9027,16 +8759,16 @@ Theorem ClosestErrorBoundNormal_aux :
  forall (x : R) (p : float),
  Closest b radix x p ->
  Fnormal radix b (Fnormalize radix b precision p) ->
- (Rabs (x - p) <= Rabs p * (/ 2%nat * (radix * / Zpos (vNum b))))%R.
+ (Rabs (x - p) <= Rabs p * (/ 2 * (radix * / Zpos (vNum b))))%R.
 intros x p H H'.
-apply Rle_trans with (/ 2%nat * Fulp b radix precision p)%R.
+apply Rle_trans with (/ 2 * Fulp b radix precision p)%R.
 replace (Rabs (x - FtoRradix p)) with
- (/ 2%nat * (2%nat * Rabs (x - FtoRradix p)))%R.
+ (/ 2 * (2 * Rabs (x - FtoRradix p)))%R.
 apply Rmult_le_compat_l; [simpl; auto with real|idtac].
 apply ClosestUlp; auto.
 rewrite <- Rmult_assoc; rewrite Rinv_l; simpl in |- *; auto with real.
 apply
- Rle_trans with (/ 2%nat * (Rabs p * (radix * / Zpos (vNum b))))%R;
+ Rle_trans with (/ 2 * (Rabs p * (radix * / Zpos (vNum b))))%R;
  [ apply Rmult_le_compat_l | right; ring; ring ].
 apply Rlt_le; apply Rinv_0_lt_compat; auto with real arith.
 unfold Fulp in |- *.
@@ -9044,32 +8776,32 @@ replace (Fexp (Fnormalize radix b precision p)) with
  (Fexp (Fnormalize radix b precision p) + precision + - precision)%Z;
  [ idtac | ring ].
 rewrite powerRZ_add; auto with real zarith.
-2: apply IZR_neq; omega.
+2: apply IZR_neq; lia.
 apply Rle_trans with (Rabs p * radix * powerRZ radix (- precision))%R;
  [ apply Rmult_le_compat_r | right ]; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 2: rewrite pGivesBound; simpl in |- *.
 2: rewrite powerRZ_Zopp; auto with real zarith.
 2: rewrite Zpower_nat_Z_powerRZ; auto with real zarith; ring.
-2: apply IZR_neq; omega.
+2: apply IZR_neq; lia.
 replace (FtoRradix p) with (FtoRradix (Fnormalize radix b precision p));
  [ idtac | apply (FnormalizeCorrect radix) ]; auto.
 rewrite <- (Fabs_correct radix); unfold FtoR in |- *; simpl in |- *;
  auto with arith.
 rewrite powerRZ_add; auto with real zarith.
-2: apply IZR_neq; omega.
+2: apply IZR_neq; lia.
 replace
- (Zabs (Fnum (Fnormalize radix b precision p)) *
+ (Z.abs (Fnum (Fnormalize radix b precision p)) *
   powerRZ radix (Fexp (Fnormalize radix b precision p)) * radix)%R with
  (powerRZ radix (Fexp (Fnormalize radix b precision p)) *
-  (Zabs (Fnum (Fnormalize radix b precision p)) * radix))%R;
+  (Z.abs (Fnum (Fnormalize radix b precision p)) * radix))%R;
  [ idtac | ring ].
 apply Rmult_le_compat_l; auto with arith real.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 rewrite <- Zpower_nat_Z_powerRZ; auto with real zarith.
-rewrite <- mult_IZR; apply Rle_IZR.
+rewrite <- mult_IZR; apply IZR_le.
 rewrite <- pGivesBound; pattern radix at 2 in |- *;
- rewrite <- (Zabs_eq radix); auto with zarith.
+ rewrite <- (Z.abs_eq radix); auto with zarith.
 rewrite <- Zabs_Zmult.
 rewrite Zmult_comm; elim H'; auto.
 Qed.
@@ -9080,19 +8812,19 @@ Theorem ClosestErrorBoundNormal :
  forall (x : R) (p : float),
  Closest b radix x p ->
  Fnormal radix b (Fnormalize radix b precision p) ->
- (Rabs (x - p) <= Rabs p * (/ 2%nat * powerRZ radix (Zsucc (- precision))))%R.
+ (Rabs (x - p) <= Rabs p * (/ 2 * powerRZ radix (Z.succ (- precision))))%R.
 intros x p H H1.
 apply
  Rle_trans
-  with (Rabs (FtoRradix p) * (/ 2%nat * (radix * / Zpos (vNum b))))%R;
+  with (Rabs (FtoRradix p) * (/ 2 * (radix * / Zpos (vNum b))))%R;
  [ apply ClosestErrorBoundNormal_aux; auto | right ].
-replace (powerRZ radix (Zsucc (- precision))) with
+replace (powerRZ radix (Z.succ (- precision))) with
  (radix * / Zpos (vNum b))%R; auto with real.
 rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ.
 rewrite Rinv_powerRZ; auto with real zarith.
 rewrite powerRZ_Zs; auto with real zarith.
-apply IZR_neq; omega.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
+apply IZR_neq; lia.
 Qed.
 
 
@@ -9147,10 +8879,10 @@ replace (Fnormalize radix b precision (FPred b radix precision f)) with
 pattern (IZR radix) at 2 in |- *; replace (IZR radix) with (powerRZ radix 1);
  [ idtac | simpl in |- *; auto with arith zarith real ].
 rewrite <- powerRZ_add; auto with zarith real.
-2: apply IZR_neq; omega.
-apply Rle_powerRZ; try apply Rle_IZR; auto with zarith real.
+2: apply IZR_neq; lia.
+apply Rle_powerRZ; try apply IZR_le; auto with zarith real.
 replace (1 + Fexp (FPred b radix precision f))%Z with
- (Zsucc (Fexp (FPred b radix precision f))); auto with zarith.
+ (Z.succ (Fexp (FPred b radix precision f))); auto with zarith.
 unfold FPred in |- *.
 generalize (Z_eq_bool_correct (Fnum f) (- pPred (vNum b)));
  case (Z_eq_bool (Fnum f) (- pPred (vNum b))); intros H1;
@@ -9250,7 +8982,7 @@ generalize
 rewrite FnormalizeCorrect; auto with real arith.
 rewrite FnormalizeCorrect; auto with real arith.
 rewrite H'21; rewrite H'19; auto.
-apply Zle_trans with (Fexp r); auto.
+apply Z.le_trans with (Fexp r); auto.
 apply FcanonicLeastExp with radix b precision; auto with zarith.
 rewrite FnormalizeCorrect; auto with real arith.
 apply FnormalizeCanonic; auto with zarith.
@@ -9272,6 +9004,7 @@ Theorem errorBoundedMultClosest :
        Fbounded b s /\
        r = pq :>R /\
        s = (p * q - r)%R :>R /\ Fexp s = (Fexp r - precision)%Z :>Z)).
+Proof.
 intros.
 cut (RoundedModeP b radix (Closest b radix));
  [ intros G1 | apply ClosestRoundedModeP with precision; auto ].
@@ -9308,7 +9041,7 @@ elim H13; intros H12 H14; clear H13.
 cut
  (ex
     (fun m : Z =>
-     s = Float m (Fexp r - precision) :>R /\ (Zabs m <= pPred (vNum b))%Z)).
+     s = Float m (Fexp r - precision) :>R /\ (Z.abs m <= pPred (vNum b))%Z)).
 intros H13; elim H13; intros m H15; elim H15; intros H16 H17; clear H15 H13.
 exists r; exists (Float m (Fexp r - precision)).
 split; auto.
@@ -9329,18 +9062,18 @@ rewrite <- Fminus_correct; fold FtoRradix in |- *; auto.
 unfold Fmult in |- *; unfold Fminus in |- *; unfold Fopp in |- *;
  unfold Fplus in |- *; simpl in |- *.
 unfold FtoRradix in |- *; unfold FtoR in |- *; simpl in |- *.
-rewrite Zmin_le1; auto with zarith.
+rewrite Z.min_l; auto with zarith.
 replace
  (Fnum p * Fnum q *
-  Zpower_nat radix (Zabs_nat (Fexp p + Fexp q - (Fexp p + Fexp q))))%Z with
+  Zpower_nat radix (Z.abs_nat (Fexp p + Fexp q - (Fexp p + Fexp q))))%Z with
  (Fnum p * Fnum q)%Z.
 2: replace (Fexp p + Fexp q - (Fexp p + Fexp q))%Z with 0%Z;
     auto with zarith arith; simpl in |- *.
 2: auto with zarith.
 exists
  ((Fnum p * Fnum q +
-   - Fnum r * Zpower_nat radix (Zabs_nat (Fexp r - (Fexp p + Fexp q)))) *
-  Zpower_nat radix (Zabs_nat (Fexp p + Fexp q + (precision - Fexp r))))%Z;
+   - Fnum r * Zpower_nat radix (Z.abs_nat (Fexp r - (Fexp p + Fexp q)))) *
+  Zpower_nat radix (Z.abs_nat (Fexp p + Fexp q + (precision - Fexp r))))%Z;
  split.
 rewrite plus_IZR.
 repeat rewrite mult_IZR.
@@ -9352,9 +9085,9 @@ rewrite
  (Zpower_nat_powerRZ_absolu radix (Fexp p + Fexp q + (precision - Fexp r)))
  .
 2: auto with zarith arith.
-cut (radix <> 0%R :>R); [ intros W | auto with real arith zarith ].
+cut (radix <> 0%R :>R). intros W.
 unfold Zminus in |- *.
-repeat rewrite powerRZ_add; try rewrite <- INR_IZR_INZ; auto.
+repeat rewrite powerRZ_add; auto.
 apply
  trans_eq
   with
@@ -9376,11 +9109,11 @@ apply
 replace (powerRZ radix precision * powerRZ radix (- precision))%R with 1%R.
 replace (powerRZ radix (Fexp r) * powerRZ radix (- Fexp r))%R with 1%R;
  try ring.
-rewrite <- powerRZ_add; try rewrite <- INR_IZR_INZ; auto.
+rewrite <- powerRZ_add; auto.
 rewrite Zplus_opp_r; simpl in |- *; auto.
-rewrite <- powerRZ_add; try rewrite <- INR_IZR_INZ; auto.
+rewrite <- powerRZ_add; auto.
 rewrite Zplus_opp_r; simpl in |- *; auto.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 apply le_IZR; rewrite <- Rabs_Zabs.
 rewrite mult_IZR; rewrite plus_IZR.
 repeat rewrite mult_IZR.
@@ -9390,7 +9123,7 @@ rewrite
 2: auto with zarith arith.
 rewrite (Zpower_nat_powerRZ_absolu radix (Fexp r - (Fexp p + Fexp q))).
 2: auto with zarith arith.
-rewrite powerRZ_add; try rewrite <- INR_IZR_INZ; auto with real arith.
+rewrite powerRZ_add; auto with real arith.
 replace
  ((Fnum p * Fnum q +
    (- Fnum r)%Z * powerRZ radix (Fexp r - (Fexp p + Fexp q))) *
@@ -9404,10 +9137,10 @@ rewrite Rabs_mult.
 rewrite (Rabs_right (powerRZ radix (precision - Fexp r))).
 2: apply Rle_ge; apply powerRZ_le; auto with real zarith.
 apply Rmult_le_reg_l with (powerRZ radix (Fexp r - precision)).
-apply powerRZ_lt, Rlt_IZR; auto with real arith.
+apply powerRZ_lt, IZR_lt; auto with real arith.
 rewrite Rmult_comm; rewrite Rmult_assoc; rewrite <- powerRZ_add.
 2: apply IZR_neq; auto with zarith arith real.
-2: apply Rlt_IZR; auto with zarith arith real.
+2: apply IZR_lt; auto with zarith arith real.
 2: apply IZR_neq; auto with zarith arith real.
 replace (precision - Fexp r + (Fexp r - precision))%Z with 0%Z;
  [ simpl in |- * | ring ].
@@ -9442,9 +9175,9 @@ replace
 2: repeat rewrite <- powerRZ_add; auto with real arith.
 2: replace (- (Fexp p + Fexp q) + (Fexp p + Fexp q))%Z with 0%Z;
     simpl in |- *; simpl; ring.
-apply Rle_trans with (powerRZ radix (Fexp r) * / 2%nat)%R.
+apply Rle_trans with (powerRZ radix (Fexp r) * / 2)%R.
 rewrite <- H10;
- replace (powerRZ radix (Fexp r)) with (FtoRradix (Float 1%nat (Fexp r)));
+ replace (powerRZ radix (Fexp r)) with (FtoRradix (Float 1 (Fexp r)));
  unfold FtoRradix in |- *;
  [ idtac | unfold FtoR in |- *; simpl in |- *; ring ].
 apply ClosestErrorBound with b precision (p * q)%R; auto.
@@ -9452,31 +9185,31 @@ apply (ClosestCompatible b radix (p * q)%R (p * q)%R pq); auto.
 unfold Zminus in |- *; rewrite powerRZ_add; auto with real arith.
 rewrite Rmult_assoc; apply Rmult_le_compat_l.
 apply powerRZ_le; auto with real arith.
-apply Rlt_IZR; omega.
-unfold pPred, Zpred in |- *; rewrite pGivesBound.
+apply IZR_lt; lia.
+unfold pPred, Z.pred in |- *; rewrite pGivesBound.
 rewrite plus_IZR; rewrite Zpower_nat_Z_powerRZ.
 replace (powerRZ radix (- precision) * (powerRZ radix precision + (-1)%Z))%R
  with (1 + - powerRZ radix (- precision))%R.
-apply Rle_trans with (1 + - powerRZ radix (- 1%nat))%R.
+apply Rle_trans with (1 + - powerRZ radix (- 1))%R.
 simpl in |- *.
 replace (radix * 1)%R with (IZR radix); [ idtac | ring ].
-replace (/ (1+1))%R with (1 + - / 2)%R.
+replace (/ 2)%R with (1 + - / 2)%R.
 apply Rplus_le_compat_l; apply Ropp_le_contravar.
 apply Rle_Rinv; auto with real arith zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 field.
 apply Rplus_le_compat_l; apply Ropp_le_contravar.
-apply Rle_powerRZ; auto with real arith zarith.
-apply Rle_IZR; omega.
+apply Rle_powerRZ; try lia.
+apply IZR_le; lia.
 rewrite Rmult_plus_distr_l.
-rewrite <- powerRZ_add; auto with real arith.
+rewrite <- powerRZ_add.
 replace (- precision + precision)%Z with 0%Z; simpl in |- *; ring.
-apply IZR_neq; omega.
-apply IZR_neq; omega.
-apply IZR_neq; omega.
-apply IZR_neq; omega.
-apply IZR_neq; omega.
-apply IZR_neq; omega.
+now apply IZR_neq.
+now apply IZR_neq.
+now apply IZR_neq.
+now apply IZR_neq.
+now apply IZR_neq.
+now apply IZR_neq.
 Qed.
 End FRoundPM.
 (*** was file Finduct.v  ***)
@@ -9522,19 +9255,19 @@ rewrite Zmult_plus_distr_l.
 rewrite Zplus_assoc.
 repeat rewrite (fun x y z : Z => Zplus_comm x (y * z)).
 apply Zplus_lt_compat_l.
-apply Zlt_le_trans with (Zpower_nat radix precision); auto with zarith.
-apply Zle_lt_trans with (Zpred (Zpower_nat radix precision));
+apply Z.lt_le_trans with (Zpower_nat radix precision); auto with zarith.
+apply Z.le_lt_trans with (Z.pred (Zpower_nat radix precision));
  auto with zarith.
 apply Zle_Zabs_inv2; auto with zarith.
 apply Zle_Zpred; auto with zarith.
 rewrite <- pGivesBound; apply Fb1.
-apply Zle_trans with ((Fexp q - Fexp p) * Zpower_nat radix precision)%Z;
+apply Z.le_trans with ((Fexp q - Fexp p) * Zpower_nat radix precision)%Z;
  auto with zarith.
 pattern (Zpower_nat radix precision) at 1 in |- *;
  replace (Zpower_nat radix precision) with
-  (Zsucc 0 * Zpower_nat radix precision)%Z; auto.
-apply Zle_Zmult_comp_r; auto with zarith.
-unfold Zsucc in |- *; ring.
+  (Z.succ 0 * Zpower_nat radix precision)%Z; auto.
+apply Zle_Zmult_comp_r; lia.
+unfold Z.succ in |- *; ring.
 cut (0 <= Fnum q)%Z; auto with zarith.
 apply (LeR0Fnum radix); auto.
 apply Rle_trans with (FtoRradix p); auto; apply Rlt_le; auto.
@@ -9632,7 +9365,7 @@ Theorem radixRangeBoundExp :
  Fcanonic radix b p ->
  Fcanonic radix b q ->
  (0 <= p)%R ->
- (p < q)%R -> (q < radix * p)%R -> Fexp p = Fexp q \/ Zsucc (Fexp p) = Fexp q.
+ (p < q)%R -> (q < radix * p)%R -> Fexp p = Fexp q \/ Z.succ (Fexp p) = Fexp q.
 intros p q H' H'0 H'1 H'2 H'3.
 case (FcanonicLtPos _ radixMoreThanOne b precision) with (p := p) (q := q);
  auto with arith.
@@ -9641,7 +9374,7 @@ intros H'4; right.
 Casec H'; intros H'.
 case
  (FcanonicLtPos _ radixMoreThanOne b precision)
-  with (p := q) (q := Float (Fnum p) (Zsucc (Fexp p)));
+  with (p := q) (q := Float (Fnum p) (Z.succ (Fexp p)));
  auto with arith.
 left.
 case H'; intros H1 H2; red in H1.
@@ -9652,19 +9385,19 @@ rewrite powerRZ_Zs; auto with real zarith; auto.
 rewrite <- Rmult_assoc;
  rewrite (fun (x : R) (y : Z) => Rmult_comm x y);
  rewrite Rmult_assoc; auto.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 simpl in |- *; intros; apply Zle_antisym; auto with zarith.
 simpl in |- *; auto.
 intros H'5; elim H'5; intros H'6 H'7; auto.
 case
  (FcanonicLtPos _ radixMoreThanOne b precision)
-  with (p := q) (q := Float (nNormMin radix precision) (Zsucc (Fexp p)));
+  with (p := q) (q := Float (nNormMin radix precision) (Z.succ (Fexp p)));
  auto with arith.
 left; repeat split; simpl in |- *.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 apply ZltNormMinVnum; auto with zarith.
 unfold nNormMin in |- *; apply Zpower_NR0; auto with zarith.
-apply Zle_trans with (Fexp p); auto with zarith; apply H'.
+apply Z.le_trans with (Fexp p); auto with zarith; apply H'.
 case H'; auto.
 rewrite <- (PosNormMin radix b precision); auto with zarith.
 apply Rle_trans with (1 := H'1); auto with real.
@@ -9675,12 +9408,12 @@ rewrite <- Rmult_assoc;
  rewrite (fun (x : R) (y : Z) => Rmult_comm x y);
  rewrite Rmult_assoc; auto.
 apply Rmult_lt_compat_l; auto with real arith.
-apply Rlt_IZR; omega.
+apply IZR_lt; lia.
 case H'.
 intros H'5 H'6; elim H'6; intros H'7 H'8; rewrite H'7; clear H'6.
 change (p < firstNormalPos radix b precision)%R in |- *.
 apply (FsubnormalLtFirstNormalPos radix); auto with arith.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 simpl in |- *; intros; apply Zle_antisym; auto with zarith.
 intros H'5; elim H'5; intros H'6 H'7; rewrite H'6; clear H'5; auto.
 Qed.
@@ -9715,7 +9448,7 @@ Theorem plusExpMin :
  forall p q pq : float,
  P (p + q)%R pq ->
  exists s : float,
-   Fbounded b s /\ s = pq :>R /\ (Zmin (Fexp p) (Fexp q) <= Fexp s)%Z.
+   Fbounded b s /\ s = pq :>R /\ (Z.min (Fexp p) (Fexp q) <= Fexp s)%Z.
 intros P H' p q pq H'0.
 case
  (RoundedModeRep b radix precision)
@@ -9742,20 +9475,21 @@ Theorem plusExpUpperBound :
  Fbounded b p ->
  Fbounded b q ->
  exists r : float,
-   Fbounded b r /\ r = pq :>R /\ (Fexp r <= Zsucc (Zmax (Fexp p) (Fexp q)))%Z.
+   Fbounded b r /\ r = pq :>R /\ (Fexp r <= Z.succ (Zmax (Fexp p) (Fexp q)))%Z.
+Proof.
 intros P H' p q pq H'0 H'1 H'2.
-replace (Zsucc (Zmax (Fexp p) (Fexp q))) with
- (Fexp (Float (pPred (vNum b)) (Zsucc (Zmax (Fexp p) (Fexp q)))));
+replace (Z.succ (Zmax (Fexp p) (Fexp q))) with
+ (Fexp (Float (pPred (vNum b)) (Z.succ (Zmax (Fexp p) (Fexp q)))));
  [ idtac | simpl in |- *; auto ].
 unfold FtoRradix in |- *; apply eqExpMax; auto.
 apply RoundedModeBounded with (radix := radix) (P := P) (r := (p + q)%R);
  auto with arith.
 unfold pPred in |- *; apply maxFbounded; auto.
-apply Zle_trans with (Fexp p); try apply H'1.
-apply Zle_trans with (Zsucc (Fexp p)); auto with zarith.
+apply Z.le_trans with (Fexp p); try apply H'1.
+apply Z.le_trans with (Z.succ (Fexp p)); auto with zarith.
 apply Zsucc_le_compat, ZmaxLe1.
 replace
- (FtoR radix (Float (pPred (vNum b)) (Zsucc (Zmax (Fexp p) (Fexp q))))) with
+ (FtoR radix (Float (pPred (vNum b)) (Z.succ (Zmax (Fexp p) (Fexp q))))) with
  (radix * Float (pPred (vNum b)) (Zmax (Fexp p) (Fexp q)))%R.
 rewrite Fabs_correct; auto with zarith.
 unfold FtoRradix in |- *;
@@ -9764,15 +9498,15 @@ unfold FtoRradix in |- *;
    with (b := b) (precision := precision) (P := P) (r := (p + q)%R);
  auto.
 unfold pPred in |- *; apply maxFbounded; auto.
-apply Zle_trans with (Fexp p); try apply H'1; apply ZmaxLe1.
+apply Z.le_trans with (Fexp p); try apply H'1; apply ZmaxLe1.
 apply Rle_trans with (Rabs p + Rabs q)%R.
 apply Rabs_triang; auto.
 apply
  Rle_trans
   with
-    (2%nat * FtoR radix (Float (pPred (vNum b)) (Zmax (Fexp p) (Fexp q))))%R;
+    (2 * FtoR radix (Float (pPred (vNum b)) (Zmax (Fexp p) (Fexp q))))%R;
  auto.
-cut (forall r : R, (2%nat * r)%R = (r + r)%R);
+cut (forall r : R, (2 * r)%R = (r + r)%R);
  [ intros tmp; rewrite tmp; clear tmp | intros; simpl in |- *; ring ].
 apply Rplus_le_compat; auto.
 rewrite <- (Fabs_correct radix); auto with arith; apply maxMax1; auto;
@@ -9780,15 +9514,13 @@ rewrite <- (Fabs_correct radix); auto with arith; apply maxMax1; auto;
 rewrite <- (Fabs_correct radix); auto with arith; apply maxMax1; auto;
  apply ZmaxLe2.
 apply Rmult_le_compat; auto with real arith.
-replace 0%R with (INR 0); auto with real arith.
-apply LeFnumZERO; simpl in |- *; auto; replace 0%Z with (Z_of_nat 0);
- auto with zarith.
+apply LeFnumZERO; simpl in |- *; auto.
 unfold pPred in |- *; apply Zle_Zpred; auto with zarith.
-rewrite INR_IZR_INZ; apply Rle_IZR; simpl in |- *; auto with zarith.
+apply IZR_le; simpl in |- *; auto with zarith.
 cut (1 < radix)%Z; auto with zarith;intros.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 rewrite powerRZ_Zs; auto with real zarith; try ring.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 Qed.
 
 Theorem plusExpBound :
@@ -9801,33 +9533,33 @@ Theorem plusExpBound :
  exists r : float,
    Fbounded b r /\
    r = pq :>R /\
-   (Zmin (Fexp p) (Fexp q) <= Fexp r)%Z /\
-   (Fexp r <= Zsucc (Zmax (Fexp p) (Fexp q)))%Z.
+   (Z.min (Fexp p) (Fexp q) <= Fexp r)%Z /\
+   (Fexp r <= Z.succ (Zmax (Fexp p) (Fexp q)))%Z.
 intros P H' p q pq H'0 H'1 H'2.
 case (plusExpMin P H' _ _ _ H'0).
 intros r' H'3; elim H'3; intros H'4 H'5; elim H'5; intros H'6 H'7;
  clear H'5 H'3.
-case (Zle_or_lt (Fexp r') (Zsucc (Zmax (Fexp p) (Fexp q)))); intros Zl1.
+case (Zle_or_lt (Fexp r') (Z.succ (Zmax (Fexp p) (Fexp q)))); intros Zl1.
 exists r'; repeat (split; auto).
 case (plusExpUpperBound P H' _ _ _ H'0); auto.
 intros r'' H'3; elim H'3; intros H'5 H'8; elim H'8; intros H'9 H'10;
  clear H'8 H'3.
 exists
- (Fshift radix (Zabs_nat (Fexp r' - Zsucc (Zmax (Fexp p) (Fexp q)))) r');
+ (Fshift radix (Z.abs_nat (Fexp r' - Z.succ (Zmax (Fexp p) (Fexp q)))) r');
  split.
-apply FboundedShiftLess with (n := Zabs_nat (Fexp r' - Fexp r'')); auto.
+apply FboundedShiftLess with (n := Z.abs_nat (Fexp r' - Fexp r'')); auto.
 apply ZleLe; auto.
 repeat rewrite <- Zabs_absolu.
-repeat rewrite Zabs_eq; auto with zarith.
+repeat rewrite Z.abs_eq; auto with zarith.
 rewrite FshiftCorrectInv; auto.
 apply trans_eq with (FtoRradix pq); auto.
-apply Zle_trans with (1 := H'10); auto with zarith.
+apply Z.le_trans with (1 := H'10); auto with zarith.
 split.
 unfold FtoRradix in |- *; rewrite FshiftCorrect; auto.
 split.
 simpl in |- *.
 repeat rewrite inj_abs; auto with zarith arith.
-apply Zle_trans with (Zmax (Fexp p) (Fexp q)); auto with zarith.
+apply Z.le_trans with (Zmax (Fexp p) (Fexp q)); auto with zarith.
 apply Zmin_Zmax; auto.
 simpl in |- *.
 repeat rewrite inj_abs; auto with zarith arith.
@@ -9843,7 +9575,7 @@ Theorem minusRoundRep :
  Fbounded b p ->
  Fbounded b q -> exists r : float, Fbounded b r /\ r = (q - qmp)%R :>R.
 intros P H' p q qmp H'0 H'1 H'2 H'3 H'4 H'5.
-case (Rle_or_lt (/ 2%nat * q) p); intros Rle1.
+case (Rle_or_lt (/ 2 * q) p); intros Rle1.
 exists p; split; auto.
 replace (FtoRradix qmp) with (FtoRradix (Fminus radix q p)).
 rewrite (Fminus_correct radix); auto with arith; unfold FtoRradix in |- *;
@@ -9867,7 +9599,7 @@ apply oppBounded; auto.
 apply Sterbenz; auto.
 apply RoundedModeBounded with (radix := radix) (P := P) (r := (q - p)%R);
  auto; auto.
-case MaxEx with (r := (/ 2%nat * FtoR radix q)%R) (3 := pGivesBound);
+case MaxEx with (r := (/ 2 * FtoR radix q)%R) (3 := pGivesBound);
  auto with zarith.
 intros max H'6.
 apply Rle_trans with (FtoRradix max);
@@ -9875,7 +9607,7 @@ apply Rle_trans with (FtoRradix max);
 apply (RleBoundRoundl b radix precision) with (P := P) (r := (q - p)%R); auto;
  fold FtoRradix in |- *.
 case H'6; auto.
-case MinEx with (r := (/ 2%nat * FtoR radix q)%R) (3 := pGivesBound);
+case MinEx with (r := (/ 2 * FtoR radix q)%R) (3 := pGivesBound);
  auto with zarith.
 intros min H'7.
 replace (FtoRradix max) with (q - min)%R.
@@ -9910,17 +9642,18 @@ Theorem ExactMinusIntervalAux :
  RoundedModeP b radix P ->
  forall p q : float,
  (0 < p)%R ->
- (2%nat * p < q)%R ->
+ (2 * p < q)%R ->
  Fcanonic radix b p ->
  Fcanonic radix b q ->
  (exists r : float, Fbounded b r /\ r = (q - p)%R :>R) ->
  forall r : float,
  Fcanonic radix b r ->
- (2%nat * p < r)%R ->
+ (2 * p < r)%R ->
  (r <= q)%R -> exists r' : float, Fbounded b r' /\ r' = (r - p)%R :>R.
+Proof.
 intros P H' p q H'0 H'1 H'2 H'3 H'4 r H'5 H'6 H'7.
 cut (0 <= p)%R; [ intros Rle0 | apply Rlt_le; auto ].
-cut (0 <= r)%R; [ intros Rle1 | apply Rle_trans with (2%nat * p)%R; auto ].
+cut (0 <= r)%R; [ intros Rle1 | apply Rle_trans with (2 * p)%R; auto ].
 2: apply Rle_trans with (FtoRradix p); auto with zarith.
 2: apply Rledouble; auto.
 2: apply Rlt_le; auto.
@@ -9941,7 +9674,7 @@ cut (0 <= Fnormalize radix b precision r')%R; [ intros Rle2 | idtac ].
 2: replace (FtoR radix p + 0)%R with (FtoR radix p); [ idtac | ring ].
 2: replace (FtoR radix p + (FtoR radix q0 - FtoR radix p))%R with
     (FtoR radix q0); [ idtac | ring ].
-2: apply Rle_trans with (2%nat * p)%R; auto.
+2: apply Rle_trans with (2 * p)%R; auto.
 2: apply Rledouble; auto with real zarith.
 2: apply Rlt_le; apply Rlt_trans with (1 := H'11); auto.
 2: apply (FPredLt b radix precision); auto with zarith.
@@ -9956,11 +9689,11 @@ case radixRangeBoundExp with (b:=b) (radix:=radix) (precision:=precision) (p := 
  auto with zarith; fold FtoRradix in |- *.
 apply FnormalizeCanonic; auto with zarith.
 rewrite (FnormalizeCorrect radix); auto with arith.
-apply Rlt_le_trans with (2%nat * r')%R; auto.
+apply Rlt_le_trans with (2 * r')%R; auto.
 rewrite H'14.
 rewrite Rmult_minus_distr_l.
 pattern (FtoRradix q0) at 1 in |- *;
- (replace (FtoRradix q0) with (2%nat * q0 - q0)%R;
+ (replace (FtoRradix q0) with (2 * q0 - q0)%R;
    [ idtac | simpl in |- *; ring ]).
 unfold Rminus in |- *; apply Rplus_lt_compat_l; apply Ropp_lt_contravar.
 apply Rlt_trans with (1 := H'11).
@@ -9968,7 +9701,7 @@ apply (FPredLt b radix precision); auto with zarith.
 apply Rmult_le_compat_r; auto with real arith.
 unfold FtoRradix in Rle2; rewrite (FnormalizeCorrect radix) in Rle2;
  auto with arith.
-rewrite INR_IZR_INZ; apply Rle_IZR; simpl; omega.
+apply IZR_le; simpl; lia.
 intros H'10.
 case
  (FcanonicLtPos _ radixMoreThanOne b precision)
@@ -9978,15 +9711,15 @@ apply FnormalizeCanonic; auto with zarith.
 intros; contradict H'10; auto with zarith.
 intros H'12; elim H'12; intros H'15 H'16; clear H'12.
 exists
- (Float (Zpred (Fnum (Fnormalize radix b precision r')))
+ (Float (Z.pred (Fnum (Fnormalize radix b precision r')))
     (Fexp (Fnormalize radix b precision r'))).
 split.
 cut (Fbounded b (Fnormalize radix b precision r')); [ intros Fb0 | idtac ].
 repeat split; simpl in |- *; auto.
 case Rle2; intros Z1.
-apply Zle_lt_trans with (Zabs (Fnum (Fnormalize radix b precision r')));
+apply Z.le_lt_trans with (Z.abs (Fnum (Fnormalize radix b precision r')));
  auto with zarith.
-repeat rewrite Zabs_eq; auto with zarith.
+repeat rewrite Z.abs_eq; auto with zarith.
 apply (LeR0Fnum radix); auto with zarith.
 apply Zle_Zpred; apply (LtR0Fnum radix); auto with zarith.
 apply Fb0.
@@ -10000,7 +9733,7 @@ apply FcanonicBound with (radix := radix); auto.
 apply FnormalizeCanonic; auto with zarith.
 apply FnormalizeBounded; auto with zarith.
 replace
- (Float (Zpred (Fnum (Fnormalize radix b precision r')))
+ (Float (Z.pred (Fnum (Fnormalize radix b precision r')))
     (Fexp (Fnormalize radix b precision r'))) with
  (Fminus radix (Fnormalize radix b precision r')
     (Fminus radix q0 (FPred b radix precision q0))).
@@ -10009,7 +9742,7 @@ repeat rewrite (Fopp_correct radix); repeat rewrite (Fminus_correct radix);
 rewrite (FnormalizeCorrect radix); auto with arith.
 unfold FtoRradix in H'14; rewrite H'14.
 unfold FtoRradix in |- *; ring; ring.
-replace (FPred b radix precision q0) with (Float (Zpred (Fnum q0)) (Fexp q0));
+replace (FPred b radix precision q0) with (Float (Z.pred (Fnum q0)) (Fexp q0));
  auto.
 unfold Fminus, Fopp, Fplus in |- *; simpl in |- *.
 repeat rewrite Zmin_n_n; repeat rewrite <- Zminus_diag_reverse; simpl in |- *;
@@ -10018,15 +9751,15 @@ rewrite H'10.
 repeat rewrite Zmin_n_n; repeat rewrite <- Zminus_diag_reverse; simpl in |- *;
  auto.
 repeat rewrite Zmult_1_r.
-apply floatEq; simpl in |- *; auto; unfold Zpred in |- *; ring.
-case (Z_eq_dec (Fnum q0) (nNormMin radix precision)); intros Zeq2.
-case (Z_eq_dec (Fexp q0) (- dExp b)); intros Zeq1.
+apply floatEq; simpl in |- *; auto; unfold Z.pred in |- *; ring.
+case (Z.eq_dec (Fnum q0) (nNormMin radix precision)); intros Zeq2.
+case (Z.eq_dec (Fexp q0) (- dExp b)); intros Zeq1.
 rewrite Zeq1; rewrite Zeq2; rewrite <- (FPredSimpl3 b radix); auto with zarith;
  rewrite <- Zeq1; rewrite <- Zeq2; auto.
 contradict H'16.
 apply Zle_not_lt.
 rewrite Zeq2.
-rewrite <- (Zabs_eq (Fnum (Fnormalize radix b precision r')));
+rewrite <- (Z.abs_eq (Fnum (Fnormalize radix b precision r')));
  auto with zarith.
 apply pNormal_absolu_min with (b := b); auto with zarith.
 cut (Fcanonic radix b (Fnormalize radix b precision r'));
@@ -10043,15 +9776,15 @@ cut (Fbounded b (Fnormalize radix b precision r'));
  [ intros T; apply T | idtac ].
 apply FnormalizeBounded; auto with zarith.
 intros H'10.
-case (Z_eq_dec (Fnum q0) (nNormMin radix precision)); intros Zeq2.
+case (Z.eq_dec (Fnum q0) (nNormMin radix precision)); intros Zeq2.
 exists
- (Float (Zpred (Fnum (Fnormalize radix b precision r')))
+ (Float (Z.pred (Fnum (Fnormalize radix b precision r')))
     (Fexp (Fnormalize radix b precision r'))).
 cut (Fbounded b (Fnormalize radix b precision r')); [ intros Fb1 | idtac ].
 repeat split; simpl in |- *; auto with zarith.
 case Rle2; intros Z1.
-apply Zlt_trans with (Zabs (Fnum (Fnormalize radix b precision r'))).
-repeat rewrite Zabs_eq; auto with zarith.
+apply Z.lt_trans with (Z.abs (Fnum (Fnormalize radix b precision r'))).
+repeat rewrite Z.abs_eq; auto with zarith.
 apply (LeR0Fnum radix); auto.
 apply Zle_Zpred; apply (LtR0Fnum radix); auto.
 case Fb1; auto.
@@ -10063,13 +9796,13 @@ apply sym_equal; change (is_Fzero (Fnormalize radix b precision r')) in |- *;
 apply Fb1.
 rewrite FPredSimpl2; auto with zarith.
 rewrite <- H'10.
-cut (forall z : Z, Zpred (Zsucc z) = z);
+cut (forall z : Z, Z.pred (Z.succ z) = z);
  [ intros tmp; rewrite tmp; clear tmp
- | intros; unfold Zsucc, Zpred in |- *; ring ].
+ | intros; unfold Z.succ, Z.pred in |- *; ring ].
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
-cut (forall x : Z, Zpred x = (x - 1%nat)%Z);
+cut (forall x : Z, Z.pred x = (x - 1)%Z);
  [ intros tmp; rewrite tmp; clear tmp
- | intros; unfold Zpred in |- *; simpl in |- *; ring ].
+ | intros; unfold Z.pred in |- *; simpl in |- *; ring ].
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 rewrite <- Z_R_minus; auto.
 rewrite (fun x y => Rmult_comm (x - y)); rewrite Rmult_minus_distr_l;
@@ -10082,11 +9815,11 @@ rewrite (FnormalizeCorrect radix); auto.
 unfold FtoRradix in H'14; rewrite H'14.
 unfold FtoR in |- *; simpl in |- *.
 pattern (Fexp q0) at 1 in |- *; rewrite <- H'10.
-rewrite Zeq2; rewrite powerRZ_Zs; auto with real zarith.
-2: apply IZR_neq; omega.
+rewrite Zeq2; rewrite powerRZ_Zs.
+2: apply IZR_neq; lia.
 rewrite <- Rmult_assoc.
 replace (nNormMin radix precision * radix)%R with (powerRZ radix precision).
-unfold pPred, nNormMin, Zpred in |- *; rewrite pGivesBound.
+unfold pPred, nNormMin, Z.pred in |- *; rewrite pGivesBound.
 rewrite plus_IZR; repeat rewrite Zpower_nat_Z_powerRZ; simpl in |- *; try ring.
 rewrite <- Zpower_nat_Z_powerRZ; auto with zarith; rewrite <- mult_IZR;
  rewrite Zmult_comm; rewrite <- (PosNormMin radix b precision);
@@ -10104,21 +9837,21 @@ exists
 cut (Fbounded b (Fnormalize radix b precision r')); [ intros Fb1 | idtac ].
 repeat split; simpl in |- *; auto with zarith; try apply Fb1.
 case (Zle_or_lt (Fnum (Fnormalize radix b precision r')) radix); intros Z1.
-apply Zle_lt_trans with radix.
+apply Z.le_lt_trans with radix.
 rewrite Zabs_eq_opp; auto with zarith.
 cut (0 <= Fnum (Fnormalize radix b precision r'))%Z; auto with zarith.
 apply (LeR0Fnum radix); auto.
 rewrite <- (Zpower_nat_1 radix); rewrite pGivesBound; auto with zarith.
-apply Zpower_nat_monotone_lt; omega.
-apply Zle_lt_trans with (Zabs (Fnum (Fnormalize radix b precision r'))).
-repeat rewrite Zabs_eq; auto with zarith.
+apply Zpower_nat_monotone_lt; lia.
+apply Z.le_lt_trans with (Z.abs (Fnum (Fnormalize radix b precision r'))).
+repeat rewrite Z.abs_eq; auto with zarith.
 case Fb1; auto.
 rewrite FPredSimpl4; auto with arith.
 rewrite <- H'10.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
-cut (forall x : Z, Zpred x = (x - 1%nat)%Z);
+cut (forall x : Z, Z.pred x = (x - 1)%Z);
  [ intros tmp; rewrite tmp; clear tmp
- | intros; unfold Zpred in |- *; simpl in |- *; ring ].
+ | intros; unfold Z.pred in |- *; simpl in |- *; ring ].
 repeat rewrite <- Z_R_minus; auto.
 repeat rewrite (fun x y => Rmult_comm (x - y));
  repeat rewrite Rmult_minus_distr_l;
@@ -10131,15 +9864,15 @@ rewrite (FnormalizeCorrect radix); auto.
 unfold FtoRradix in H'14; rewrite H'14.
 unfold FtoR in |- *; simpl in |- *.
 rewrite <- H'10.
-repeat rewrite powerRZ_Zs; auto with real arith.
+repeat rewrite powerRZ_Zs.
 ring.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 auto with real zarith.
-unfold FtoR in |- *; simpl in |- *; auto.
+unfold FtoR in |- *; simpl in |- *.
 red in |- *; intros H'12; absurd (0 <= Fnum q0)%Z; auto.
 apply Zlt_not_le.
 rewrite H'12.
-replace 0%Z with (- 0%nat)%Z; [ apply Zlt_Zopp | simpl in |- *; auto ].
+change 0%Z with (- 0)%Z; apply Zlt_Zopp.
 unfold pPred in |- *; apply Zlt_succ_pred; simpl in |- *; auto with zarith.
 apply (vNumbMoreThanOne radix) with (precision := precision);
  auto with zarith.
@@ -10162,16 +9895,17 @@ Theorem ExactMinusIntervalAux1 :
  Fcanonic radix b r ->
  (p <= r)%R ->
  (r <= q)%R -> exists r' : float, Fbounded b r' /\ r' = (r - p)%R :>R.
+Proof.
 intros P H' p q H'0 H'1 H'2 H'3 H'4 r H'5 H'6 H'7.
 Casec H'0; intros H'0.
-case (Rle_or_lt q (2%nat * p)); intros Rl1.
+case (Rle_or_lt q (2 * p)); intros Rl1.
 exists (Fminus radix r p); split; auto.
 rewrite <- Fopp_Fminus.
 apply oppBounded.
 apply Sterbenz; auto.
 apply (FcanonicBound radix b); auto with arith.
 apply (FcanonicBound radix b); auto with arith.
-apply Rmult_le_reg_l with (r := INR 2); auto with real.
+apply Rmult_le_reg_l with (r := 2); auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real arith;
  rewrite Rmult_1_l; auto.
 apply Rle_trans with (1 := H'7); auto.
@@ -10179,14 +9913,14 @@ apply Rle_trans with (1 := H'6); auto.
 apply Rledouble; auto.
 apply Rle_trans with (2 := H'6); apply Rlt_le; auto.
 rewrite (Fminus_correct radix); auto with arith.
-case (Rle_or_lt r (2%nat * p)); intros Rl2.
+case (Rle_or_lt r (2 * p)); intros Rl2.
 exists (Fminus radix r p); split; auto.
 rewrite <- Fopp_Fminus.
 apply oppBounded.
 apply Sterbenz; auto.
 apply (FcanonicBound radix b); auto with arith.
 apply (FcanonicBound radix b); auto with arith.
-apply Rmult_le_reg_l with (r := INR 2); auto with real.
+apply Rmult_le_reg_l with (r := 2%R); auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real arith;
  rewrite Rmult_1_l; auto.
 apply Rle_trans with (1 := H'6); auto.
@@ -10246,13 +9980,13 @@ Qed.
 Theorem LSBMinus :
  forall p q : float,
  ~ is_Fzero (Fminus radix p q) ->
- (Zmin (LSB radix p) (LSB radix q) <= LSB radix (Fminus radix p q))%Z.
+ (Z.min (LSB radix p) (LSB radix q) <= LSB radix (Fminus radix p q))%Z.
 intros p q H'1.
 elim (LSB_rep_min radix) with (p := p); auto; intros z E.
 elim (LSB_rep_min radix) with (p := q); auto; intros z0 E0.
 replace (LSB radix (Fminus radix p q)) with
  (LSB radix (Fminus radix (Float z (LSB radix p)) (Float z0 (LSB radix q)))).
-replace (Zmin (LSB radix p) (LSB radix q)) with
+replace (Z.min (LSB radix p) (LSB radix q)) with
  (Fexp (Fminus radix (Float z (LSB radix p)) (Float z0 (LSB radix q))));
  [ idtac | simpl in |- *; auto ].
 apply Fexp_le_LSB; auto.
@@ -10264,13 +9998,13 @@ Qed.
 Theorem LSBPlus :
  forall p q : float,
  ~ is_Fzero (Fplus radix p q) ->
- (Zmin (LSB radix p) (LSB radix q) <= LSB radix (Fplus radix p q))%Z.
+ (Z.min (LSB radix p) (LSB radix q) <= LSB radix (Fplus radix p q))%Z.
 intros p q H'.
 elim (LSB_rep_min _ radixMoreThanOne p); intros z E.
 elim (LSB_rep_min _ radixMoreThanOne q); intros z0 E0.
 replace (LSB radix (Fplus radix p q)) with
  (LSB radix (Fplus radix (Float z (LSB radix p)) (Float z0 (LSB radix q)))).
-replace (Zmin (LSB radix p) (LSB radix q)) with
+replace (Z.min (LSB radix p) (LSB radix q)) with
  (Fexp (Fplus radix (Float z (LSB radix p)) (Float z0 (LSB radix q))));
  [ idtac | simpl in |- *; auto ].
 apply Fexp_le_LSB; auto.
@@ -10313,7 +10047,7 @@ Theorem errorBoundedPlusLe :
  Closest b radix (p + q) pq ->
  exists error : float,
    error = Rabs (p + q - pq) :>R /\
-   Fbounded b error /\ Fexp error = Zmin (Fexp p) (Fexp q).
+   Fbounded b error /\ Fexp error = Z.min (Fexp p) (Fexp q).
 intros p q pq H' H'0 H'1 H'2.
 cut (ex (fun m : Z => pq = Float m (Fexp (Fplus radix p q)) :>R)).
 2: unfold FtoRradix in |- *;
@@ -10344,26 +10078,25 @@ unfold FtoRradix in |- *; rewrite <- Fabs_correct; auto with arith.
 rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr.
 unfold FtoRradix in H'4; rewrite <- H'4.
 simpl in |- *.
-rewrite Zmin_le1; auto.
+rewrite Z.min_l; auto.
 generalize H'1 H'; case p; case q; unfold Fabs, Fminus, Fopp, Fplus in |- *;
  simpl in |- *; clear H'1 H'.
 intros Fnum1 Fexp1 Fnum2 Fexp2 H'5 H'6.
 repeat rewrite Zmin_n_n; auto.
-repeat rewrite (Zmin_le2 _ _ H'5); auto with zarith.
-replace (Zabs_nat (Fexp2 - Fexp2)) with 0.
+repeat rewrite (Z.min_r _ _ H'5); auto with zarith.
+replace (Z.abs_nat (Fexp2 - Fexp2)) with 0.
 rewrite Zpower_nat_O.
-cut (forall z : Z, (z * 1%nat)%Z = z);
- [ intros tmp; repeat rewrite tmp; clear tmp | auto with zarith ].
+rewrite 3!Zmult_1_r.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 intros H'.
 repeat split; simpl in |- *.
-rewrite (fun x => Zabs_eq (Zabs x)); auto with zarith.
-apply Zle_lt_trans with (Zabs Fnum2); auto.
+rewrite (fun x => Z.abs_eq (Z.abs x)); auto with zarith.
+apply Z.le_lt_trans with (Z.abs Fnum2); auto.
 apply le_IZR.
 apply (Rle_monotony_contra_exp radix) with (z := Fexp2); auto.
 case H'6; auto.
 case H'6; auto.
-replace (Fexp2 - Fexp2)%Z with 0%Z; simpl in |- *; auto with zarith.
+replace (Fexp2 - Fexp2)%Z with 0%Z; simpl in |- *; lia.
 Qed.
 
 Theorem errorBoundedPlusAbs :
@@ -10373,13 +10106,13 @@ Theorem errorBoundedPlusAbs :
  Closest b radix (p + q) pq ->
  exists error : float,
    error = Rabs (p + q - pq) :>R /\
-   Fbounded b error /\ Fexp error = Zmin (Fexp p) (Fexp q).
+   Fbounded b error /\ Fexp error = Z.min (Fexp p) (Fexp q).
 intros p q pq H' H'0 H'1.
 case (Zle_or_lt (Fexp p) (Fexp q)); intros H'2.
 apply errorBoundedPlusLe; auto.
 replace (p + q)%R with (q + p)%R; [ idtac | ring ].
-replace (Zmin (Fexp p) (Fexp q)) with (Zmin (Fexp q) (Fexp p));
- [ idtac | apply Zmin_sym ].
+replace (Z.min (Fexp p) (Fexp q)) with (Z.min (Fexp q) (Fexp p));
+ [ idtac | apply Z.min_comm ].
 apply errorBoundedPlusLe; auto.
 auto with zarith.
 apply (ClosestCompatible b radix (p + q)%R (q + p)%R pq); auto.
@@ -10394,7 +10127,7 @@ Theorem errorBoundedPlus :
  (Closest b radix (p + q) pq) ->
  exists error : float,
    error = (p + q - pq)%R :>R /\
-   (Fbounded b error) /\ (Fexp error) = (Zmin (Fexp p) (Fexp q)).
+   (Fbounded b error) /\ (Fexp error) = (Z.min (Fexp p) (Fexp q)).
 intros p q pq H' H'0 H'1.
 case (errorBoundedPlusAbs p q pq); auto.
 intros x H'2; elim H'2; intros H'3 H'4; elim H'4; intros H'5 H'6;
@@ -10415,11 +10148,11 @@ Theorem plusExact1 :
  Fbounded b p ->
  Fbounded b q ->
  Closest b radix (p + q) r ->
- (Fexp r <= Zmin (Fexp p) (Fexp q))%Z -> r = (p + q)%R :>R.
+ (Fexp r <= Z.min (Fexp p) (Fexp q))%Z -> r = (p + q)%R :>R.
 intros p q r H' H'0 H'1 H'2.
 cut
- (2%nat * Rabs (FtoR radix (Fplus radix p q) - FtoR radix r) <=
-  Float 1%nat (Fexp r))%R;
+ (2 * Rabs (FtoR radix (Fplus radix p q) - FtoR radix r) <=
+  Float 1 (Fexp r))%R;
  [ rewrite Fplus_correct; auto with zarith; intros Rl1 | idtac ].
 case errorBoundedPlus with (p := p) (q := q) (pq := r); auto.
 intros x H'3; elim H'3; intros H'4 H'5; elim H'5; intros H'6 H'7;
@@ -10446,17 +10179,17 @@ red in |- *; apply Rle_lt_trans with (Rabs (FtoR radix x)).
 unfold FtoRradix, FtoR in |- *; simpl in |- *; auto.
 rewrite Rabs_mult.
 apply Rmult_le_compat; auto with real arith.
-apply powerRZ_le, IZR_lt; omega.
+apply powerRZ_le, IZR_lt; lia.
 rewrite Rabs_Zabs.
 apply IZR_le.
 assert (0 < Z.abs (Fnum x))%Z; [idtac|auto with zarith].
 now apply <- Z.abs_pos.
 rewrite Rabs_right; auto with real arith.
 apply Rle_powerRZ; auto with real arith.
-apply Rle_IZR; auto with zarith.
+apply IZR_le; auto with zarith.
 auto with zarith.
-apply Rle_ge, powerRZ_le, Rlt_IZR; omega.
-cut (forall r : R, (2%nat * r)%R = (r + r)%R);
+apply Rle_ge, powerRZ_le, IZR_lt; lia.
+cut (forall r : R, (2 * r)%R = (r + r)%R);
  [ intros tmp; rewrite tmp; clear tmp | intros f; simpl in |- *; ring ].
 pattern (Rabs (FtoR radix x)) at 1 in |- *;
  replace (Rabs (FtoR radix x)) with (Rabs (FtoR radix x) + 0)%R;
@@ -10480,26 +10213,27 @@ Theorem plusExact2Aux :
  Fcanonic radix b p ->
  Fbounded b q ->
  Closest b radix (p + q) r ->
- (Fexp r < Zpred (Fexp p))%Z -> r = (p + q)%R :>R.
+ (Fexp r < Z.pred (Fexp p))%Z -> r = (p + q)%R :>R.
+Proof.
 intros p q r H' H'0 H'1 H'2 H'3.
 apply plusExact1; auto.
 apply FcanonicBound with (1 := H'0); auto.
 case (Zle_or_lt (Fexp p) (Fexp q)); intros Zl1.
-rewrite Zmin_le1; auto with zarith.
-apply Zle_trans with (Zpred (Fexp p)); auto with zarith.
-unfold Zpred in |- *; auto with zarith.
-rewrite Zmin_le2; auto with zarith.
+rewrite Z.min_l; auto with zarith.
+apply Z.le_trans with (Z.pred (Fexp p)); auto with zarith.
+unfold Z.pred in |- *; auto with zarith.
+rewrite Z.min_r; auto with zarith.
 case (Zlt_next _ _ Zl1); intros Zl2.
 rewrite Zl2 in H'3.
-replace (Fexp q) with (Zpred (Zsucc (Fexp q))); auto with zarith;
- unfold Zpred, Zsucc in |- *; ring.
+replace (Fexp q) with (Z.pred (Z.succ (Fexp q))); auto with zarith;
+ unfold Z.pred, Z.succ in |- *; ring.
 case H'0; clear H'0; intros H'0.
-absurd (r < Float (nNormMin radix precision) (Zpred (Fexp p)))%R.
+absurd (r < Float (nNormMin radix precision) (Z.pred (Fexp p)))%R.
 apply Rle_not_lt; auto.
 unfold FtoRradix in |- *;
  apply
   (ClosestMonotone b radix
-     (Float (nNormMin radix precision) (Zpred (Fexp p))) (
+     (Float (nNormMin radix precision) (Z.pred (Fexp p))) (
      p + q)%R); auto; auto.
 cut (Float (nNormMin radix precision) (Fexp p) <= p)%R;
  [ intros Eq1 | idtac ].
@@ -10510,8 +10244,8 @@ apply
  auto.
 unfold FtoRradix, FtoR in |- *; simpl in |- *; auto.
 apply Rmult_lt_compat_l; auto with real arith.
-apply Rlt_IZR; apply nNormPos; auto with zarith.
-apply Rlt_powerRZ; try apply Rlt_IZR; omega.
+apply IZR_lt; apply nNormPos; auto with zarith.
+apply Rlt_powerRZ; try apply IZR_lt; lia.
 pattern (FtoRradix p) at 1 in |- *; replace (FtoRradix p) with (p + 0)%R;
  auto with real.
 apply Rplus_lt_reg_l with (r := (- q)%R); auto.
@@ -10521,9 +10255,9 @@ apply
  auto.
 apply
  Rlt_le_trans
-  with (2%nat * Float (nNormMin radix precision) (Zpred (Fexp p)))%R;
+  with (2 * Float (nNormMin radix precision) (Z.pred (Fexp p)))%R;
  auto.
-cut (forall r : R, (2%nat * r)%R = (r + r)%R);
+cut (forall r : R, (2 * r)%R = (r + r)%R);
  [ intros tmp; rewrite tmp; clear tmp | intros; simpl in |- *; ring ].
 rewrite (Rplus_comm (- q)).
 apply Rplus_lt_compat_l.
@@ -10532,33 +10266,33 @@ rewrite <- (Fabs_correct radix); auto with arith.
 unfold FtoRradix in |- *; apply maxMaxBis with (b := b); auto with zarith.
 apply Rlt_le; auto.
 apply
- Rle_trans with (radix * Float (nNormMin radix precision) (Zpred (Fexp p)))%R.
+ Rle_trans with (radix * Float (nNormMin radix precision) (Z.pred (Fexp p)))%R.
 apply Rmult_le_compat_r; auto.
 apply (LeFnumZERO radix); simpl in |- *; auto with arith.
 apply Zlt_le_weak; apply nNormPos; auto with zarith.
-rewrite INR_IZR_INZ; apply Rle_IZR; simpl in |- *; cut (1 < radix)%Z;
+apply IZR_le; simpl in |- *; cut (1 < radix)%Z;
  auto with real zarith.
-pattern (Fexp p) at 2 in |- *; replace (Fexp p) with (Zsucc (Zpred (Fexp p)));
- [ idtac | unfold Zsucc, Zpred in |- *; ring ].
+pattern (Fexp p) at 2 in |- *; replace (Fexp p) with (Z.succ (Z.pred (Fexp p)));
+ [ idtac | unfold Z.succ, Z.pred in |- *; ring ].
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 rewrite powerRZ_Zs; auto with real zarith.
 repeat rewrite <- Rmult_assoc.
 rewrite (Rmult_comm radix); auto with real.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 unfold FtoRradix, FtoR in |- *; simpl in |- *; auto.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_IZR.
-rewrite <- (Zabs_eq (Fnum p)); auto with zarith.
+apply powerRZ_le, IZR_lt; lia.
+apply IZR_le.
+rewrite <- (Z.abs_eq (Fnum p)); auto with zarith.
 apply pNormal_absolu_min with (b := b); auto with zarith.
 apply (LeR0Fnum radix); auto with arith.
 apply (RoundedModeProjectorIdem b radix (Closest b radix)); auto.
 apply ClosestRoundedModeP with (precision := precision); auto.
 repeat split; simpl in |- *.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 apply ZltNormMinVnum; auto with zarith.
 apply Zlt_le_weak; apply nNormPos; auto with zarith.
-apply Zle_trans with (Fexp q); auto with zarith; apply H'1.
+apply Z.le_trans with (Fexp q); auto with zarith; apply H'1.
 case (Rle_or_lt 0 r); intros Rl1.
 rewrite <- (Rabs_right r); auto with real.
 rewrite <- (Fabs_correct radix); auto with arith.
@@ -10581,7 +10315,7 @@ Theorem plusExact2 :
  Fcanonic radix b p ->
  Fbounded b q ->
  Closest b radix (p + q) r ->
- (Fexp r < Zpred (Fexp p))%Z -> r = (p + q)%R :>R.
+ (Fexp r < Z.pred (Fexp p))%Z -> r = (p + q)%R :>R.
 intros p q r H' H'0 H'1 H'2.
 case (Rle_or_lt 0 p); intros Rl1.
 apply plusExact2Aux; auto.
@@ -10611,7 +10345,7 @@ apply plusExact1; auto.
 apply (ClosestCompatible b radix (p + q)%R (p + q)%R r); auto.
 apply FboundedFzero; auto.
 simpl in |- *; auto.
-unfold Zmin in |- *; case (Fexp p ?= Fexp q)%Z; auto with zarith; try apply H'; try apply H'0.
+unfold Z.min in |- *; case (Fexp p ?= Fexp q)%Z; auto with zarith; try apply H'; try apply H'0.
 Qed.
 
 
@@ -10626,10 +10360,10 @@ apply (vNumbMoreThanOne radix) with (precision := precision);
 Qed.
 
 Theorem pPredMoreThanRadix : (radix < pPred (vNum b))%Z.
-apply Zle_lt_trans with (nNormMin radix precision).
+apply Z.le_lt_trans with (nNormMin radix precision).
 pattern radix at 1 in |- *; rewrite <- (Zpower_nat_1 radix);
  unfold nNormMin in |- *; auto with zarith.
-apply Zpower_nat_monotone_le; omega.
+apply Zpower_nat_monotone_le; lia.
 apply nNormMimLtvNum; auto with zarith.
 Qed.
 
@@ -10648,16 +10382,16 @@ Theorem plusExactExp :
        Fbounded b s /\
        s = pq :>R /\
        r = (p + q - s)%R :>R /\
-       Fexp r = Zmin (Fexp p) (Fexp q) :>Z /\
-       (Fexp r <= Fexp s)%Z /\ (Fexp s <= Zsucc (Zmax (Fexp p) (Fexp q)))%Z)).
+       Fexp r = Z.min (Fexp p) (Fexp q) :>Z /\
+       (Fexp r <= Fexp s)%Z /\ (Fexp s <= Z.succ (Zmax (Fexp p) (Fexp q)))%Z)).
 intros p q pq H H0 H1.
 case (plusExpBound b radix precision) with (P := Closest b radix) (5 := H1);
  auto with zarith.
 apply (ClosestRoundedModeP b radix precision); auto with zarith.
 intros r (H2, (H3, (H4, H5))); fold FtoRradix in H3.
 case (Req_dec (p + q - pq) 0); intros Hr.
-cut (Fbounded b (Fzero (Zmin (Fexp p) (Fexp q)))); [ intros Fbs | idtac ].
-exists (Fzero (Zmin (Fexp p) (Fexp q))); exists r; repeat (split; auto).
+cut (Fbounded b (Fzero (Z.min (Fexp p) (Fexp q)))); [ intros Fbs | idtac ].
+exists (Fzero (Z.min (Fexp p) (Fexp q))); exists r; repeat (split; auto).
 rewrite (FzeroisReallyZero radix); rewrite <- Hr; rewrite <- H3; auto.
 case (Zmin_or (Fexp p) (Fexp q)); intros Hz; rewrite Hz;
  apply FboundedZeroSameExp; auto.
@@ -10828,7 +10562,7 @@ unfold FtoRradix in |- *;
  replace (FtoR radix f) with (FtoR radix (Fnormalize radix b precision f));
  [ idtac | apply FnormalizeCorrect; auto with zarith arith ].
 cut (Fcanonic radix b (Fzero (- dExp b))); [ intros H3 | idtac ].
-2: right; repeat (split; simpl in |- *; auto with zarith).
+2: right; repeat (split; simpl in |- *; rewrite ?Zmult_0_r; auto with zarith).
 cut (p = Fzero (- dExp b)); [ intros H4 | idtac ].
 2: apply
     FcanonicUnique with (radix := radix) (precision := precision) (b := b);
@@ -10860,23 +10594,22 @@ apply FcanonicUnique with (radix := radix) (precision := precision) (b := b);
  auto with zarith.
 right; repeat (split; simpl in |- *; auto with zarith).
 rewrite pGivesBound.
-rewrite <- Zabs_Zopp; rewrite Zabs_eq; auto with zarith.
+rewrite <- Zabs_Zopp; rewrite Z.abs_eq; auto with zarith.
 replace (- (radix * -1))%Z with (Zpower_nat radix 1); auto with arith zarith.
-apply Zpower_nat_monotone_lt; omega.
+apply Zpower_nat_monotone_lt; lia.
 unfold Zpower_nat in |- *; simpl in |- *; ring.
 apply FnormalizeCanonic; auto with zarith.
 repeat (split; simpl in |- *; auto with zarith).
 apply sym_eq; apply FnormalizeCorrect; auto with zarith.
-now apply Zlt_not_eq, Zpower_nat_less.
+now apply Z.lt_neq, Zpower_nat_less.
 rewrite FPredSimpl4; simpl in |- *; auto with zarith.
 rewrite FSuccSimpl4; simpl in |- *; auto with zarith.
 simpl in |- *; unfold FtoR in |- *; simpl in |- *; ring.
 unfold nNormMin in |- *.
 replace (-1)%Z with (- Zpower_nat radix (pred 1))%Z; auto with zarith arith.
-apply sym_not_eq, Zlt_not_eq, Zlt_Zopp.
-apply Zpower_nat_monotone_lt; omega.
-unfold nNormMin in |- *; auto with zarith arith.
-now apply Zlt_not_eq, Zpower_nat_less.
+apply sym_not_eq, Z.lt_neq, Zlt_Zopp.
+apply Zpower_nat_monotone_lt; lia.
+now apply Z.lt_neq, Zpower_nat_less.
 Qed.
 
 Theorem MinOrMax3 :
@@ -10918,34 +10651,23 @@ Variable precision : nat.
 Hypothesis precisionGreaterThanOne : 1 < precision.
 Hypothesis pGivesBound : Zpos (vNum b) = Zpower_nat radix precision.
 
-Theorem TwoMoreThanOne : (1 < radix)%Z.
-unfold radix in |- *; red in |- *; simpl in |- *; auto.
-Qed.
-
-
-
-Theorem TwoMoreThanOneR : (1 < radix)%R.
-replace 1%R with (IZR 1); auto with real.
-Qed.
-
-
 Theorem FulpLeGeneral :
  forall p : float,
  Fbounded b p ->
  (Fulp b radix precision p <=
-  Rabs (FtoRradix p) * powerRZ radix (Zsucc (- precision)) +
+  Rabs (FtoRradix p) * powerRZ radix (Z.succ (- precision)) +
   powerRZ radix (- dExp b))%R.
+Proof.
 intros p Hp.
 cut (Fcanonic radix b (Fnormalize radix b precision p));
- [ intros H | apply FnormalizeCanonic; auto with arith zarith; try apply TwoMoreThanOne ].
+ [ intros H | apply FnormalizeCanonic; auto with arith zarith ].
 case H; intros H1.
 apply
- Rle_trans with (Rabs (FtoR radix p) * powerRZ radix (Zsucc (- precision)))%R.
+ Rle_trans with (Rabs (FtoR radix p) * powerRZ radix (Z.succ (- precision)))%R.
 apply FulpLe2; auto with zarith.
-try apply TwoMoreThanOne.
-apply Rle_trans with (Rabs p * powerRZ radix (Zsucc (- precision)) + 0)%R;
+apply Rle_trans with (Rabs p * powerRZ radix (Z.succ (- precision)) + 0)%R;
  [ right; fold FtoRradix; ring | apply Rplus_le_compat_l; auto with real zarith ].
-apply powerRZ_le, Rlt_IZR, TwoMoreThanOne.
+now apply powerRZ_le, IZR_lt.
 apply Rle_trans with (powerRZ radix (- dExp b)).
 right; unfold Fulp in |- *; simpl in |- *.
 replace (Fexp (Fnormalize radix b precision p)) with (- dExp b)%Z;
@@ -10953,7 +10675,7 @@ replace (Fexp (Fnormalize radix b precision p)) with (- dExp b)%Z;
 apply Rle_trans with (0 + powerRZ radix (- dExp b))%R;
  [ right; ring | apply Rplus_le_compat_r ].
 apply Rmult_le_pos; try apply Rabs_pos.
-apply powerRZ_le, Rlt_IZR, TwoMoreThanOne.
+now apply powerRZ_le, IZR_lt.
 Qed.
 
 Theorem RoundLeGeneral :
@@ -10962,14 +10684,14 @@ Theorem RoundLeGeneral :
  Closest b radix z p ->
  (Rabs p <=
   Rabs z * / (1 - powerRZ radix (- precision)) +
-  powerRZ radix (Zpred (- dExp b)) * / (1 - powerRZ radix (- precision)))%R.
+  powerRZ radix (Z.pred (- dExp b)) * / (1 - powerRZ radix (- precision)))%R.
+Proof.
 intros p z Hp H.
 cut (0 < 1 - powerRZ radix (- precision))%R; [ intros H1 | idtac ].
 2: apply Rplus_lt_reg_r with (powerRZ radix (- precision)).
 2: ring_simplify.
-2: replace 1%R with (powerRZ radix 0);
-    [ auto with real zarith | simpl in |- *; auto ].
-2: apply Rlt_powerRZ; try omega; try apply TwoMoreThanOneR.
+2: change 1%R with (powerRZ radix 0).
+2: apply Rlt_powerRZ ; [ now apply IZR_lt | lia ].
 apply Rmult_le_reg_l with (1 - powerRZ radix (- precision))%R; auto.
 ring_simplify ((1 - powerRZ radix (- precision)) * Rabs p)%R.
 apply
@@ -10977,36 +10699,36 @@ apply
   with
     (Rabs z *
      ((1 - powerRZ radix (- precision)) * / (1 - powerRZ radix (- precision))) +
-     powerRZ radix (Zpred (- dExp b)) *
+     powerRZ radix (Z.pred (- dExp b)) *
      ((1 - powerRZ radix (- precision)) * / (1 - powerRZ radix (- precision))))%R;
  [ idtac | right; ring; ring ].
 repeat rewrite Rinv_r; auto with real.
 ring_simplify.
-apply Rplus_le_reg_l with (- powerRZ radix (Zpred (- dExp b)))%R.
+apply Rplus_le_reg_l with (- powerRZ radix (Z.pred (- dExp b)))%R.
 ring_simplify.
 apply
  Rle_trans
   with
     (Rabs p +
      -
-     (Rabs p * powerRZ radix (- precision) + powerRZ radix (Zpred (- dExp b))))%R;
+     (Rabs p * powerRZ radix (- precision) + powerRZ radix (Z.pred (- dExp b))))%R;
  [ right; ring | idtac ].
 apply Rle_trans with (Rabs p + - (/ radix * Fulp b radix precision p))%R.
 apply Rplus_le_compat_l; apply Ropp_le_contravar.
 apply Rmult_le_reg_l with (IZR radix); auto with real zarith.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real zarith.
-ring_simplify (1 * Fulp b radix precision p)%R.
+rewrite Rmult_1_l.
 apply
  Rle_trans
   with
     (Rabs p * (powerRZ radix 1 * powerRZ radix (- precision)) +
-     powerRZ radix 1 * powerRZ radix (Zpred (- dExp b)))%R;
+     powerRZ radix 1 * powerRZ radix (Z.pred (- dExp b)))%R;
  [ idtac | right; simpl in |- *; ring ].
 repeat rewrite <- powerRZ_add; auto with zarith real.
-replace (1 + - precision)%Z with (Zsucc (- precision)); auto with zarith.
-replace (1 + Zpred (- dExp b))%Z with (- dExp b)%Z; auto with zarith.
+replace (1 + - precision)%Z with (Z.succ (- precision)); auto with zarith.
+replace (1 + Z.pred (- dExp b))%Z with (- dExp b)%Z; auto with zarith.
 apply FulpLeGeneral; auto.
-unfold Zpred in |- *; auto with zarith.
+unfold Z.pred in |- *; auto with zarith.
 apply Rplus_le_reg_l with (- Rabs z + / radix * Fulp b radix precision p)%R.
 ring_simplify.
 apply Rle_trans with (Rabs (p - z)).
@@ -11017,14 +10739,9 @@ replace (- (p - z))%R with (z - p)%R; [ idtac | ring ].
 apply Rmult_le_reg_l with (IZR radix); auto with real zarith.
 apply Rle_trans with (Fulp b radix precision p * (radix * / radix))%R;
  [ rewrite Rinv_r; auto with real zarith | right; ring ].
-ring_simplify (Fulp b radix precision p * 1)%R.
-unfold FtoRradix in |- *; apply ClosestUlp; auto.
-try apply TwoMoreThanOne.
+rewrite Rmult_1_r.
+now apply ClosestUlp.
 Qed.
-
-
-
-
 
 Theorem ExactSum_Near :
  forall p q f : float,
@@ -11034,6 +10751,7 @@ Theorem ExactSum_Near :
  Closest b radix (p + q) f ->
  Fexp p = (- dExp b)%Z ->
  (Rabs (p + q - f) < powerRZ radix (- dExp b))%R -> (p + q)%R = f.
+Proof.
 intros p q f Hp Hq Hf H H12 H1.
 case
  errorBoundedPlus
@@ -11044,7 +10762,6 @@ case
     (p := p)
     (q := q)
     (pq := f); auto with zarith.
-try apply TwoMoreThanOne.
 intros x0 H'; elim H'; intros H2 H'1; elim H'1; intros H3 H4; clear H' H'1.
 apply Rplus_eq_reg_l with (- FtoRradix f)%R; ring_simplify (-f+f)%R.
 apply trans_eq with (FtoR radix p + FtoR radix q - FtoR radix f)%R;
@@ -11056,22 +10773,22 @@ rewrite <- Fabs_correct; auto with zarith.
 apply is_Fzero_rep1; unfold is_Fzero in |- *.
 cut (forall z : Z, (0 <= z)%Z -> (z < 1)%Z -> z = 0%Z);
  [ intros W; apply W | auto with zarith ].
-unfold Fabs in |- *; simpl in |- *; apply Zle_ZERO_Zabs.
+unfold Fabs in |- *; simpl in |- *; apply Z.abs_nonneg.
 replace 1%Z with (Fnum (Float 1 (- dExp b))); [ idtac | simpl in |- *; auto ].
 apply Rlt_Fexp_eq_Zlt with (radix := radix); auto with zarith real.
-try apply TwoMoreThanOne.
-rewrite Fabs_correct; auto with zarith; try apply  TwoMoreThanOne; apply Rlt_le_trans with (1 := H5).
+rewrite Fabs_correct; auto with zarith; apply Rlt_le_trans with (1 := H5).
 right; unfold FtoR in |- *; simpl in |- *; ring.
 unfold Fabs in |- *; simpl in |- *.
-rewrite H4; rewrite H12; apply Zmin_le1; auto with zarith.
+rewrite H4; rewrite H12; apply Z.min_l; auto with zarith.
 elim Hq; auto with zarith.
-try apply TwoMoreThanOne.
 intros m; case (Rle_or_lt 0 m); intros H'.
 rewrite Rabs_right; auto with real.
 rewrite Rabs_left1; auto with real; intros H'1.
 rewrite <- (Ropp_involutive m); rewrite H'1; auto with real.
 Qed.
+
 End AxpyMisc.
+
 Section AxpyAux.
 
 Let radix := 2%Z.
@@ -11096,36 +10813,37 @@ Hypothesis rDef : isMin b radix (a1 * x1 + y1) r.
 Theorem Axpy_aux1 :
  Fcanonic radix b u ->
  (Rabs (FtoRradix a * FtoRradix x - FtoRradix t) <=
-  / 4%nat * Fulp b radix precision (FPred b radix precision u))%R ->
+  / 4 * Fulp b radix precision (FPred b radix precision u))%R ->
  (0 < u)%R ->
- (4%nat * Rabs t <= Rabs u)%R ->
+ (4 * Rabs t <= Rabs u)%R ->
  (Rabs (y1 - y) + Rabs (a1 * x1 - a * x) <
-  / 4%nat * Fulp b radix precision (FPred b radix precision u))%R ->
+  / 4 * Fulp b radix precision (FPred b radix precision u))%R ->
  MinOrMax radix b (a1 * x1 + y1) u.
+Proof.
 intros H Hblop H1 H2 H3.
 cut
  (Rabs (a1 * x1 + y1 - u) <
-  / 2%nat * Fulp b radix precision (FPred b radix precision u) +
+  / 2 * Fulp b radix precision (FPred b radix precision u) +
   Rabs (t + y - u))%R; [ intros H4 | idtac ].
 case (Rle_or_lt (t + y) u); intros H5.
-apply MinOrMax1 with precision; auto with zarith arith; try apply TwoMoreThanOne.
+apply MinOrMax1 with precision; auto with zarith arith.
 apply Rlt_le_trans with (1 := H4).
 apply
  Rplus_le_reg_l
-  with (- (/ 2%nat * Fulp b radix precision (FPred b radix precision u)))%R.
+  with (- (/ 2 * Fulp b radix precision (FPred b radix precision u)))%R.
 ring_simplify
-    (- (/ 2%nat * Fulp b radix precision (FPred b radix precision u)) +
-     (/ 2%nat * Fulp b radix precision (FPred b radix precision u) +
+    (- (/ 2 * Fulp b radix precision (FPred b radix precision u)) +
+     (/ 2 * Fulp b radix precision (FPred b radix precision u) +
       Rabs (FtoRradix t + FtoRradix y - FtoRradix u)))%R.
 apply
  Rle_trans
-  with (/ 2%nat * Fulp b radix precision (FPred b radix precision u))%R;
+  with (/ 2 * Fulp b radix precision (FPred b radix precision u))%R;
  [ idtac | right ].
 generalize uDef; unfold Closest in |- *; intros H6; elim H6; intros H7 H8;
  clear H6 H7.
 case
  (Rle_or_lt (Rabs (FtoRradix t + FtoRradix y - FtoRradix u))
-    (/ 2%nat * Fulp b radix precision (FPred b radix precision u)));
+    (/ 2 * Fulp b radix precision (FPred b radix precision u)));
  auto; intros H6.
 cut
  (Rabs (FtoR radix u - (FtoRradix t + FtoRradix y)) <=
@@ -11144,7 +10862,7 @@ apply
  Rplus_le_reg_l
   with
     (u - (FtoRradix t + FtoRradix y) -
-     / 2%nat * Fulp b radix precision (FPred b radix precision u))%R.
+     / 2 * Fulp b radix precision (FPred b radix precision u))%R.
 ring_simplify.
 fold FtoRradix in |- *; pattern (FtoRradix u) at 1 in |- *;
  replace (FtoRradix u) with
@@ -11156,25 +10874,22 @@ apply
  Rle_trans
   with
     (Fulp b radix precision (FPred b radix precision u) -
-     Fulp b radix precision (FPred b radix precision u) * / 2%nat)%R;
+     Fulp b radix precision (FPred b radix precision u) * / 2)%R;
  [ right; ring | idtac ].
 apply
  Rle_trans
-  with (/ 2%nat * Fulp b radix precision (FPred b radix precision u))%R.
+  with (/ 2 * Fulp b radix precision (FPred b radix precision u))%R.
 right;
  apply
   trans_eq
    with
-     ((1 - / 2%nat) * Fulp b radix precision (FPred b radix precision u))%R;
+     ((1 - / 2) * Fulp b radix precision (FPred b radix precision u))%R;
  [ ring | auto with real arith ].
-replace (1 - / 2%nat)%R with (/ 2%nat)%R; auto with real arith.
-rewrite <- (Rinv_r (INR 2)); auto with real arith.
-simpl; field; auto with real.
+field.
 apply Rlt_le; apply Rlt_le_trans with (1 := H6).
 rewrite Rabs_left1; [ right; ring | idtac ].
 apply Rplus_le_reg_l with (FtoRradix u).
 ring_simplify; auto.
-try apply TwoMoreThanOne.
 fold FtoRradix in |- *;
  apply
   Rplus_le_reg_l with (Fulp b radix precision (FPred b radix precision u)).
@@ -11192,33 +10907,26 @@ apply RRle_abs.
 rewrite <- Rabs_Ropp.
 replace (- (FtoRradix u + - (FtoRradix t + FtoRradix y)))%R with
  (FtoRradix t + FtoRradix y - u)%R; [ idtac | ring ].
-apply Rmult_le_reg_l with (INR 2); auto with arith real.
+apply Rmult_le_reg_l with 2%R; auto with arith real.
 apply Rle_trans with (Fulp b radix precision u).
 unfold FtoRradix in |- *; apply ClosestUlp; auto with arith zarith.
-replace (INR 2) with (IZR radix); auto with zarith arith real.
-try apply TwoMoreThanOne.
+change 2%R with (IZR radix).
 apply FulpFPredLe; auto with zarith.
-try apply TwoMoreThanOne.
-try apply TwoMoreThanOne.
-try apply TwoMoreThanOne.
 apply
  trans_eq
-  with ((1 - / 2%nat) * Fulp b radix precision (FPred b radix precision u))%R;
+  with ((1 - / 2) * Fulp b radix precision (FPred b radix precision u))%R;
  [ idtac | ring ].
-replace (1 - / 2%nat)%R with (/ 2%nat)%R; auto with real arith.
-rewrite <- (Rinv_r (INR 2)); auto with real arith.
-simpl; field; auto with real.
+field.
 case
  (Rle_or_lt (t + y)
-    (u + / 2%nat * Fulp b radix precision (FPred b radix precision u)));
+    (u + / 2 * Fulp b radix precision (FPred b radix precision u)));
  intros H6.
 apply MinOrMax1 with precision; auto with arith zarith real.
-try apply TwoMoreThanOne.
 apply Rlt_le_trans with (1 := H4); rewrite Rabs_right.
 apply
  Rplus_le_reg_l
   with
-    (u + - (/ 2%nat * Fulp b radix precision (FPred b radix precision u)))%R.
+    (u + - (/ 2 * Fulp b radix precision (FPred b radix precision u)))%R.
 ring_simplify.
 apply Rle_trans with (1 := H6).
 apply
@@ -11226,53 +10934,45 @@ apply
   with
     (FtoRradix u +
      (Fulp b radix precision (FPred b radix precision u) +
-      - (Fulp b radix precision (FPred b radix precision u) * / 2%nat)))%R;
+      - (Fulp b radix precision (FPred b radix precision u) * / 2)))%R;
  [ apply Rplus_le_compat_l; right | right; ring ].
 apply
  trans_eq
-  with ((1 - / 2%nat) * Fulp b radix precision (FPred b radix precision u))%R;
+  with ((1 - / 2) * Fulp b radix precision (FPred b radix precision u))%R;
  [ idtac | ring ].
-replace (1 - / 2%nat)%R with (/ 2%nat)%R; auto with real arith.
-rewrite <- (Rinv_r (INR 2)); auto with real arith.
-simpl; field; auto with real.
+field.
 apply Rle_ge; apply Rplus_le_reg_l with (FtoRradix u); auto with real.
 ring_simplify; auto with real.
 apply MinOrMax2 with precision; auto with arith zarith real.
-try apply TwoMoreThanOne.
 apply Rlt_le_trans with (1 := H4).
 apply
  Rle_trans
   with
-    (/ 2%nat * Fulp b radix precision u +
+    (/ 2 * Fulp b radix precision u +
      Rabs (FtoRradix t + FtoRradix y - FtoRradix u))%R;
  [ apply Rplus_le_compat_r | idtac ].
 apply Rmult_le_compat_l; auto with real arith.
 apply FulpFPredGePos; auto with arith zarith.
-try apply TwoMoreThanOne.
 apply
  Rle_trans
   with
-    (/ 2%nat * Fulp b radix precision u + / 2%nat * Fulp b radix precision u)%R;
+    (/ 2 * Fulp b radix precision u + / 2 * Fulp b radix precision u)%R;
  [ apply Rplus_le_compat_l | right ].
-apply Rmult_le_reg_l with (INR 2); auto with real arith.
+apply Rmult_le_reg_l with 2%R; auto with real arith.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real arith.
 ring_simplify (1 * Fulp b radix precision u)%R.
 unfold FtoRradix in |- *; apply ClosestUlp; auto with real arith zarith.
-try apply TwoMoreThanOne.
-apply trans_eq with ((/ 2%nat + / 2%nat) * Fulp b radix precision u)%R;
- [ ring | auto with real arith ].
-replace (/ 2%nat + / 2%nat)%R with 1%R; [ ring | auto with real arith ].
-rewrite <- (Rinv_r (INR 2)); auto with real arith; simpl in |- *; ring.
+field.
 cut (forall z z' : R, (Rabs z <= z')%R -> (- z' <= z)%R);
  [ intros V | idtac ].
 replace (a1 * x1 + y1)%R with
  (a1 * x1 - a * x + (y1 - y) + (a * x - t + (t + y)))%R;
  [ fold FtoRradix in |- * | ring ].
 replace (FtoRradix u) with
- (- (/ 4%nat * Fulp b radix precision (FPred b radix precision u)) +
-  (- (/ 4%nat * Fulp b radix precision (FPred b radix precision u)) +
+ (- (/ 4 * Fulp b radix precision (FPred b radix precision u)) +
+  (- (/ 4 * Fulp b radix precision (FPred b radix precision u)) +
    (FtoRradix u +
-    / 2%nat * Fulp b radix precision (FPred b radix precision u))))%R.
+    / 2 * Fulp b radix precision (FPred b radix precision u))))%R.
 apply Rplus_le_compat.
 apply V; auto with real.
 apply
@@ -11288,20 +10988,15 @@ apply
  trans_eq
   with
     (FtoRradix u +
-     (- / 4%nat + (- / 4%nat + / 2%nat)) *
+     (- / 4 + (- / 4 + / 2)) *
      Fulp b radix precision (FPred b radix precision u))%R;
  [ ring | idtac ].
-replace (- / 4%nat + (- / 4%nat + / 2%nat))%R with 0%R; [ ring | idtac ].
-replace (/ 2%nat)%R with (2%nat * / 4%nat)%R; [ simpl in |- *; ring | idtac ].
-replace (INR 4) with (2%nat * 2%nat)%R; auto with arith real zarith.
-rewrite Rinv_mult_distr; auto with real arith.
-rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real arith.
-rewrite <- mult_INR; auto with real arith.
+field.
 intros z z'; case (Rle_or_lt 0 z); intros P1 P2.
 apply Rle_trans with (-0)%R; [ apply Ropp_le_contravar | simpl in |- * ];
  auto with real.
 apply Rle_trans with (Rabs z); try apply Rabs_pos; easy.
-replace (-0)%R with 0%R; auto with real.
+now rewrite Ropp_0.
 apply Ropp_le_cancel; rewrite Ropp_involutive; rewrite <- Rabs_left;
  auto with real.
 replace (a1 * x1 + y1 - FtoRradix u)%R with
@@ -11332,124 +11027,101 @@ apply Rplus_le_compat_r; apply Rabs_triang.
 apply
  Rlt_le_trans
   with
-    (/ 4%nat * Fulp b radix precision (FPred b radix precision u) +
+    (/ 4 * Fulp b radix precision (FPred b radix precision u) +
      (Rabs (FtoRradix a * FtoRradix x - FtoRradix t) +
       Rabs (FtoRradix t + FtoRradix y - FtoRradix u)))%R;
  auto with real.
 apply
  Rle_trans
   with
-    (/ 4%nat * Fulp b radix precision (FPred b radix precision u) +
-     (/ 4%nat * Fulp b radix precision (FPred b radix precision u) +
+    (/ 4 * Fulp b radix precision (FPred b radix precision u) +
+     (/ 4 * Fulp b radix precision (FPred b radix precision u) +
       Rabs (FtoRradix t + FtoRradix y - FtoRradix u)))%R;
  auto with real.
-apply
- Rle_trans
-  with
-    ((/ 4%nat + / 4%nat) * Fulp b radix precision (FPred b radix precision u) +
-     Rabs (FtoRradix t + FtoRradix y - FtoRradix u))%R;
- [ right; ring | apply Rplus_le_compat_r ].
-replace (/ 4%nat + / 4%nat)%R with (/ 2%nat)%R; auto with real.
-replace (/ 2%nat)%R with (2%nat * / 4%nat)%R; [ simpl in |- *; ring | idtac ].
-replace (INR 4) with (2%nat * 2%nat)%R; auto with arith real zarith.
-rewrite Rinv_mult_distr; auto with real arith.
-rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real arith.
-rewrite <- mult_INR; auto with real arith.
+lra.
 Qed.
 
 Theorem Axpy_aux1_aux1 :
  Fnormal radix b t ->
  Fcanonic radix b u ->
  (0 < u)%R ->
- (4%nat * Rabs t <= Rabs u)%R ->
+ (4 * Rabs t <= Rabs u)%R ->
  (Rabs (FtoRradix a * FtoRradix x - FtoRradix t) <=
-  / 4%nat * Fulp b radix precision (FPred b radix precision u))%R.
+  / 4 * Fulp b radix precision (FPred b radix precision u))%R.
+Proof.
 intros H1 H2 H3 H4.
 cut (Fcanonic radix b t); [ intros H5 | left; auto ].
-apply Rle_trans with (/ 2%nat * Fulp b radix precision t)%R.
-apply Rmult_le_reg_l with (INR 2); auto with real arith.
+apply Rle_trans with (/ 2 * Fulp b radix precision t)%R.
+apply Rmult_le_reg_l with 2%R; auto with real arith.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real arith.
 ring_simplify (1 * Fulp b radix precision t)%R.
 unfold FtoRradix in |- *; apply ClosestUlp; auto with real arith zarith.
-try apply TwoMoreThanOne.
-apply Rle_trans with (/ 2%nat * (/ 4%nat * Fulp b radix precision u))%R.
+apply Rle_trans with (/ 2 * (/ 4 * Fulp b radix precision u))%R.
 apply Rmult_le_compat_l; auto with real arith.
-apply Rmult_le_reg_l with (INR 4); auto with real arith.
+apply Rmult_le_reg_l with 4%R; auto with real arith.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real arith.
 ring_simplify (1 * Fulp b radix precision u)%R.
-cut (Fbounded b (Float (Fnum t) (Zsucc (Zsucc (Fexp t)))));
+cut (Fbounded b (Float (Fnum t) (Z.succ (Z.succ (Fexp t)))));
  [ intros H6 | idtac ].
 2: elim H1; intros H7 H8; elim H7; intros H9 H10.
 2: repeat (split; simpl in |- *; auto with zarith).
 apply
  Rle_trans
-  with (Fulp b radix precision (Float (Fnum t) (Zsucc (Zsucc (Fexp t))))).
+  with (Fulp b radix precision (Float (Fnum t) (Z.succ (Z.succ (Fexp t))))).
 right; unfold Fulp in |- *.
 replace (Fnormalize radix b precision t) with t;
  [ idtac
  | apply
     FcanonicUnique with (radix := radix) (b := b) (precision := precision);
     auto with real zarith ].
-2: try apply TwoMoreThanOne.
 2: apply FnormalizeCanonic; auto with zarith.
-2: try apply TwoMoreThanOne.
 2: apply sym_eq; apply FnormalizeCorrect; auto with real zarith.
-2: try apply TwoMoreThanOne.
 replace
- (Fnormalize radix b precision (Float (Fnum t) (Zsucc (Zsucc (Fexp t)))))
- with (Float (Fnum t) (Zsucc (Zsucc (Fexp t)))).
-replace (Fexp (Float (Fnum t) (Zsucc (Zsucc (Fexp t))))) with
- (Zsucc (Zsucc (Fexp t))); [ idtac | simpl in |- *; auto ].
-replace (Zsucc (Zsucc (Fexp t))) with (2 + Fexp t)%Z;
- [ rewrite powerRZ_add | unfold Zsucc in |- * ]; auto with zarith real.
+ (Fnormalize radix b precision (Float (Fnum t) (Z.succ (Z.succ (Fexp t)))))
+ with (Float (Fnum t) (Z.succ (Z.succ (Fexp t)))).
+replace (Fexp (Float (Fnum t) (Z.succ (Z.succ (Fexp t))))) with
+ (Z.succ (Z.succ (Fexp t))); [ idtac | simpl in |- *; auto ].
+replace (Z.succ (Z.succ (Fexp t))) with (2 + Fexp t)%Z;
+ [ rewrite powerRZ_add | unfold Z.succ in |- * ]; auto with zarith real.
 f_equal; simpl; unfold radix; ring_simplify; easy.
 apply FcanonicUnique with (radix := radix) (b := b) (precision := precision);
  auto with real arith zarith.
-try apply TwoMoreThanOne.
 2: apply FnormalizeCanonic; auto with zarith.
-2: try apply TwoMoreThanOne.
 2: apply sym_eq; apply FnormalizeCorrect; auto with real zarith.
-2: try apply TwoMoreThanOne.
 elim H1; intros H7 H8.
 left; repeat (split; simpl in |- *; auto with zarith).
 rewrite
- FulpFabs with b radix precision (Float (Fnum t) (Zsucc (Zsucc (Fexp t))));
+ FulpFabs with b radix precision (Float (Fnum t) (Z.succ (Z.succ (Fexp t))));
  auto with zarith.
-2: try apply TwoMoreThanOne.
 rewrite FulpFabs with b radix precision u; auto with zarith.
-2: try apply TwoMoreThanOne.
 apply LeFulpPos; auto with zarith real.
-try apply TwoMoreThanOne.
 now apply absFBounded.
 now apply absFBounded.
 unfold FtoRradix in |- *; rewrite Fabs_correct; auto with real zarith.
 apply Rabs_pos.
-try apply TwoMoreThanOne.
-replace (FtoR radix (Fabs (Float (Fnum t) (Zsucc (Zsucc (Fexp t)))))) with
- (Zabs (Fnum t) * powerRZ radix (Zsucc (Zsucc (Fexp t))))%R;
+replace (FtoR radix (Fabs (Float (Fnum t) (Z.succ (Z.succ (Fexp t)))))) with
+ (Z.abs (Fnum t) * powerRZ radix (Z.succ (Z.succ (Fexp t))))%R;
  [ idtac | unfold FtoR in |- *; simpl in |- *; auto ].
-replace (Zsucc (Zsucc (Fexp t))) with (2 + Fexp t)%Z;
- [ rewrite powerRZ_add | unfold Zsucc in |- * ]; auto with zarith real.
-replace (powerRZ radix 2) with (INR 4);
+replace (Z.succ (Z.succ (Fexp t))) with (2 + Fexp t)%Z;
+ [ rewrite powerRZ_add | unfold Z.succ in |- * ]; auto with zarith real.
+replace (powerRZ radix 2) with 4%R;
  [ idtac | simpl; unfold radix; ring_simplify; easy ].
 rewrite Rmult_comm; rewrite Rmult_assoc.
-replace (powerRZ radix (Fexp t) * Zabs (Fnum t))%R with (Rabs (FtoRradix t));
+replace (powerRZ radix (Fexp t) * Z.abs (Fnum t))%R with (Rabs (FtoRradix t));
  [ unfold FtoRradix in |- *; repeat rewrite Fabs_correct;
     auto with real zarith
  | idtac ].
-try apply TwoMoreThanOne.
 unfold FtoRradix in |- *; rewrite <- Fabs_correct; auto with zarith;
- try apply TwoMoreThanOne; unfold FtoR in |- *; simpl in |- *; ring.
-apply Rmult_le_reg_l with (INR 2); auto with arith real.
+ unfold FtoR in |- *; simpl in |- *; ring.
+apply Rmult_le_reg_l with 2%R; auto with arith real.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with arith real.
-ring_simplify (1 * (/ 4%nat * Fulp b radix precision u))%R.
+ring_simplify (1 * (/ 4 * Fulp b radix precision u))%R.
 apply
  Rle_trans
   with
-    (/ 4%nat * (2%nat * Fulp b radix precision (FPred b radix precision u)))%R;
+    (/ 4 * (2 * Fulp b radix precision (FPred b radix precision u)))%R;
  [ apply Rmult_le_compat_l; auto with real arith | right; ring ].
-replace (INR 2) with (IZR radix); auto with arith zarith real.
-apply FulpFPredLe; auto with arith zarith real; try apply TwoMoreThanOne.
+apply FulpFPredLe; auto with arith zarith real.
 Qed.
 
 
@@ -11461,11 +11133,11 @@ Theorem Axpy_aux2 :
  (0 < u)%R ->
  FtoRradix u = (t + y)%R ->
  (Rabs (y1 - y) + Rabs (a1 * x1 - a * x) <
-  / 4%nat * Fulp b radix precision (FPred b radix precision u))%R ->
+  / 4 * Fulp b radix precision (FPred b radix precision u))%R ->
  MinOrMax radix b (a1 * x1 + y1) u.
+Proof.
 intros H1 H2 H3 H4 H5.
 apply MinOrMax1 with precision; auto with zarith; fold FtoRradix in |- *.
-try apply TwoMoreThanOne.
 replace (a1 * x1 + y1 - FtoRradix u)%R with
  (y1 - y + (a1 * x1 - a * x) + (a * x - t + (t + y - u)))%R;
  [ idtac | ring ].
@@ -11495,72 +11167,59 @@ apply
 apply
  Rlt_le_trans
   with
-    (/ 4%nat * Fulp b radix precision (FPred b radix precision u) +
+    (/ 4 * Fulp b radix precision (FPred b radix precision u) +
      (Rabs (FtoRradix a * FtoRradix x - FtoRradix t) +
       Rabs (FtoRradix t + FtoRradix y - FtoRradix u)))%R;
  [ apply Rplus_lt_compat_r; auto | idtac ].
 apply
  Rle_trans
   with
-    (/ 4%nat * Fulp b radix precision (FPred b radix precision u) +
-     (/ 2%nat * powerRZ radix (- dExp b) + 0))%R.
+    (/ 4 * Fulp b radix precision (FPred b radix precision u) +
+     (/ 2 * powerRZ radix (- dExp b) + 0))%R.
 apply Rplus_le_compat; auto with real.
 apply Rplus_le_compat.
-apply Rle_trans with (/ 2%nat * Fulp b radix precision t)%R;
- [ apply Rmult_le_reg_l with (INR 2) | apply Rmult_le_compat_l ];
+apply Rle_trans with (/ 2 * Fulp b radix precision t)%R;
+ [ apply Rmult_le_reg_l with 2%R | apply Rmult_le_compat_l ];
  auto with real arith.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real arith.
 ring_simplify (1 * Fulp b radix precision t)%R; unfold FtoRradix in |- *;
  apply ClosestUlp; auto with zarith.
-try apply TwoMoreThanOne.
 unfold Fulp in |- *; replace (Fnormalize radix b precision t) with t.
 elim H2; intros H6 H7; elim H7; intros H8 H9; rewrite H8;
  auto with zarith real.
 apply FcanonicUnique with (radix := radix) (b := b) (precision := precision);
  auto with real zarith.
-try apply TwoMoreThanOne.
 right; auto.
-apply FnormalizeCanonic; try apply TwoMoreThanOne; auto with zarith.
+apply FnormalizeCanonic; auto with zarith.
 apply sym_eq; apply FnormalizeCorrect; auto with zarith.
-try apply TwoMoreThanOne.
 rewrite H4; right.
 ring_simplify  (FtoRradix t + FtoRradix y - (FtoRradix t + FtoRradix y))%R;
  apply Rabs_R0.
-replace (/ 2%nat * powerRZ radix (- dExp b) + 0)%R with
- (/ 2%nat * powerRZ radix (- dExp b))%R; [ idtac | ring ].
+replace (/ 2 * powerRZ radix (- dExp b) + 0)%R with
+ (/ 2 * powerRZ radix (- dExp b))%R; [ idtac | ring ].
 apply
  Rle_trans
   with
-    (/ 4%nat * Fulp b radix precision (FPred b radix precision u) +
-     / 2%nat * Fulp b radix precision (FPred b radix precision u))%R;
+    (/ 4 * Fulp b radix precision (FPred b radix precision u) +
+     / 2 * Fulp b radix precision (FPred b radix precision u))%R;
  [ apply Rplus_le_compat_l; apply Rmult_le_compat_l; auto with real arith
  | idtac ].
 unfold Fulp in |- *; apply Rle_powerRZ; auto with zarith real.
 cut (Fbounded b (Fnormalize radix b precision (FPred b radix precision u)));
  [ intros H6; elim H6; auto | idtac ].
 apply FnormalizeBounded; auto with zarith arith.
-try apply TwoMoreThanOne.
 apply FBoundedPred; auto with zarith arith.
-try apply TwoMoreThanOne.
 apply
  Rle_trans
   with
-    ((/ 4%nat + / 2%nat) * Fulp b radix precision (FPred b radix precision u))%R;
+    ((/ 4 + / 2) * Fulp b radix precision (FPred b radix precision u))%R;
  [ right; ring | idtac ].
 apply
  Rle_trans with (1 * Fulp b radix precision (FPred b radix precision u))%R;
  [ apply Rmult_le_compat_r; auto with real zarith | right; ring ].
 unfold Fulp in |- *; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; try apply TwoMoreThanOne.
-apply Rmult_le_reg_l with (INR 4); auto with real arith.
-apply Rle_trans with (4%nat * / 4%nat + 2%nat * (2%nat * / 2%nat))%R;
- [ right; simpl; ring | idtac ].
-replace (2%nat * 2%nat)%R with (INR (2 * 2)); auto with arith real.
-repeat rewrite Rinv_r; auto with real arith.
-rewrite 2!Rmult_1_r.
-apply Rle_trans with 3%R;[right; easy|idtac].
-apply Rle_trans with 4%R; [idtac|right; simpl; ring].
-auto with real.
+now apply powerRZ_le, IZR_lt.
+lra.
 Qed.
 
 
@@ -11569,47 +11228,44 @@ Theorem Axpy_aux1_aux3 :
  Fsubnormal radix b t ->
  Fcanonic radix b u ->
  (0 < u)%R ->
- (Zsucc (- dExp b) <= Fexp (FPred b radix precision u))%Z ->
+ (Z.succ (- dExp b) <= Fexp (FPred b radix precision u))%Z ->
  (Rabs (FtoRradix a * FtoRradix x - FtoRradix t) <=
-  / 4%nat * Fulp b radix precision (FPred b radix precision u))%R.
+  / 4 * Fulp b radix precision (FPred b radix precision u))%R.
+Proof.
 intros H1 H2 H3 H4.
-apply Rle_trans with (/ 2%nat * Fulp b radix precision t)%R.
-apply Rmult_le_reg_l with (INR 2); auto with real arith;
+apply Rle_trans with (/ 2 * Fulp b radix precision t)%R.
+apply Rmult_le_reg_l with 2%R; auto with real arith;
  rewrite <- Rmult_assoc; rewrite Rinv_r; auto with arith real.
 ring_simplify (1 * Fulp b radix precision t)%R; unfold FtoRradix in |- *;
  apply ClosestUlp; auto with zarith.
-try apply TwoMoreThanOne.
-apply Rmult_le_reg_l with (INR 4); auto with real arith;
+apply Rmult_le_reg_l with 4%R; auto with real arith;
  repeat rewrite <- Rmult_assoc.
-replace (INR 4) with (2%nat * 2%nat)%R;
- [ rewrite (Rmult_assoc 2%nat 2%nat (/ 2%nat)); repeat rewrite Rinv_r;
-    auto with real arith
- | rewrite <- mult_INR; auto with real arith ].
+change 4%R with (2 * 2)%R.
+rewrite (Rmult_assoc 2 2 (/ 2)); repeat rewrite Rinv_r;
+  auto with real arith.
 ring_simplify; unfold Fulp in |- *.
 replace (Fnormalize radix b precision t) with t;
  [ elim H1; intros H9 H10; elim H10; intros H11 H12; rewrite H11 | idtac ].
 2: apply
     FcanonicUnique with (radix := radix) (b := b) (precision := precision);
     auto with real zarith.
-2: try apply TwoMoreThanOne.
 2: right; auto.
-2: apply FnormalizeCanonic; auto with zarith; try apply TwoMoreThanOne.
-2: apply sym_eq; apply FnormalizeCorrect; auto with zarith; try apply TwoMoreThanOne.
+2: apply FnormalizeCanonic; auto with zarith.
+2: apply sym_eq; apply FnormalizeCorrect; auto with zarith.
 replace (Fnormalize radix b precision (FPred b radix precision u)) with
  (FPred b radix precision u).
 2: apply
     FcanonicUnique with (radix := radix) (b := b) (precision := precision);
     auto with real zarith.
-2: try apply TwoMoreThanOne.
-2: apply FPredCanonic; auto with zarith; try apply TwoMoreThanOne.
-2: apply FnormalizeCanonic; auto with zarith; try apply TwoMoreThanOne.
-2: apply FBoundedPred; auto with zarith; try apply TwoMoreThanOne.
-2: apply sym_eq; apply FnormalizeCorrect; auto with zarith; try apply TwoMoreThanOne.
-replace (2%nat * powerRZ radix (- dExp b))%R with
- (powerRZ radix (Zsucc (- dExp b)));
- [ apply Rle_powerRZ | unfold Zsucc in |- * ]; auto with zarith real.
+2: apply FPredCanonic; auto with zarith.
+2: apply FnormalizeCanonic; auto with zarith.
+2: apply FBoundedPred; auto with zarith.
+2: apply sym_eq; apply FnormalizeCorrect; auto with zarith.
+replace (2 * powerRZ radix (- dExp b))%R with
+ (powerRZ radix (Z.succ (- dExp b)));
+ [ apply Rle_powerRZ | unfold Z.succ in |- * ]; auto with zarith real.
 rewrite powerRZ_add; auto with real zarith; simpl in |- *; unfold radix.
-rewrite Rmult_comm, Rmult_1_r; easy.
+ring.
 Qed.
 
 Theorem Axpy_aux3 :
@@ -11617,23 +11273,23 @@ Theorem Axpy_aux3 :
  Fsubnormal radix b t ->
  (0 < u)%R ->
  Fexp (FPred b radix precision u) = (- dExp b)%Z ->
- (Zsucc (- dExp b) <= Fexp u)%Z ->
+ (Z.succ (- dExp b) <= Fexp u)%Z ->
  (Rabs (y1 - y) + Rabs (a1 * x1 - a * x) <
-  / 4%nat * Fulp b radix precision (FPred b radix precision u))%R ->
+  / 4 * Fulp b radix precision (FPred b radix precision u))%R ->
  MinOrMax radix b (a1 * x1 + y1) u.
+Proof.
 intros H1 H2 H3 H4 H5 H6.
 case (Rle_or_lt u (a1 * x1 + y1)); intros H7.
 apply MinOrMax2 with precision; auto with zarith real;
  fold FtoRradix in |- *.
-try apply TwoMoreThanOne.
 replace (a1 * x1 + y1 - FtoRradix u)%R with
  (y1 - y + (a1 * x1 - a * x) + (a * x - t + (t + y - u)))%R;
  [ idtac | ring ].
 apply
  Rlt_le_trans
   with
-    (/ 4%nat * powerRZ radix (- dExp b) +
-     (/ 2%nat * powerRZ radix (- dExp b) + / 2%nat * Fulp b radix precision u))%R.
+    (/ 4 * powerRZ radix (- dExp b) +
+     (/ 2 * powerRZ radix (- dExp b) + / 2 * Fulp b radix precision u))%R.
 apply
  Rle_lt_trans
   with
@@ -11645,7 +11301,7 @@ apply
 apply
  Rlt_le_trans
   with
-    (/ 4%nat * powerRZ radix (- dExp b) +
+    (/ 4 * powerRZ radix (- dExp b) +
      Rabs
        (FtoRradix a * FtoRradix x - FtoRradix t +
         (FtoRradix t + FtoRradix y - FtoRradix u)))%R;
@@ -11662,73 +11318,64 @@ replace (Fnormalize radix b precision (FPred b radix precision u)) with
  (FPred b radix precision u); auto with zarith.
 apply FcanonicUnique with (radix := radix) (b := b) (precision := precision);
  auto with real zarith.
-try apply TwoMoreThanOne.
-apply FPredCanonic; auto with zarith; try apply TwoMoreThanOne.
-apply FnormalizeCanonic; auto with zarith; try apply TwoMoreThanOne.
-apply FBoundedPred; auto with zarith; try apply TwoMoreThanOne.
+apply FPredCanonic; auto with zarith.
+apply FnormalizeCanonic; auto with zarith.
+apply FBoundedPred; auto with zarith.
 apply sym_eq; apply FnormalizeCorrect; auto with zarith.
-try apply TwoMoreThanOne.
 apply
  Rle_trans
   with
     (Rabs (FtoRradix a * FtoRradix x - FtoRradix t) +
      Rabs (FtoRradix t + FtoRradix y - FtoRradix u))%R;
  [ apply Rabs_triang | apply Rplus_le_compat ].
-apply Rmult_le_reg_l with (INR 2);
+apply Rmult_le_reg_l with 2%R;
  [ idtac | rewrite <- Rmult_assoc; rewrite Rinv_r ];
  auto with arith real.
 ring_simplify; apply Rle_trans with (Fulp b radix precision t);
  [ unfold FtoRradix in |- *; apply ClosestUlp; auto with zarith
  | unfold Fulp in |- * ].
-try apply TwoMoreThanOne.
 replace (Fexp (Fnormalize radix b precision t)) with (- dExp b)%Z;
  auto with real zarith.
 replace (Fnormalize radix b precision t) with t.
 elim H2; auto with zarith.
 apply FcanonicUnique with (radix := radix) (b := b) (precision := precision);
  auto with real zarith.
-try apply TwoMoreThanOne.
 right; auto.
-apply FnormalizeCanonic; auto with zarith; try apply TwoMoreThanOne.
+apply FnormalizeCanonic; auto with zarith.
 apply sym_eq; apply FnormalizeCorrect; auto with zarith.
-try apply TwoMoreThanOne.
-apply Rmult_le_reg_l with (INR 2);
+apply Rmult_le_reg_l with 2%R;
  [ idtac | rewrite <- Rmult_assoc; rewrite Rinv_r ];
  auto with arith real.
 ring_simplify (1 * Fulp b radix precision u)%R; unfold FtoRradix in |- *;
  apply ClosestUlp; auto with zarith.
-try apply TwoMoreThanOne.
-apply Rmult_le_reg_l with (INR 4); auto with arith real.
-apply Rle_trans with   (powerRZ radix (-dExp b) * 3%nat
-  + Fulp b radix precision u * 2%nat)%R.
+apply Rmult_le_reg_l with 4%R; auto with arith real.
+apply Rle_trans with   (powerRZ radix (-dExp b) * 3
+  + Fulp b radix precision u * 2)%R.
 right; simpl; field; auto with real.
 apply
  Rle_trans
   with
-    (Fulp b radix precision u * 2%nat + Fulp b radix precision u * 2%nat)%R;
+    (Fulp b radix precision u * 2 + Fulp b radix precision u * 2)%R;
  [ apply Rplus_le_compat_r | idtac ]; auto with real arith.
-apply Rle_trans with (3%nat * powerRZ radix (- dExp b))%R; [ right;ring | idtac ].
-apply Rle_trans with (4%nat * powerRZ radix (- dExp b))%R;
+apply Rle_trans with (3 * powerRZ radix (- dExp b))%R; [ right;ring | idtac ].
+apply Rle_trans with (4 * powerRZ radix (- dExp b))%R;
  auto with arith zarith real.
 apply Rmult_le_compat_r.
-apply powerRZ_le, Rlt_IZR; try apply TwoMoreThanOne.
-rewrite 2!INR_IZR_INZ; apply Rle_IZR; simpl; omega.
-unfold Fulp in |- *; replace (INR 2) with (powerRZ radix 1);
+now apply powerRZ_le, IZR_lt.
+now apply IZR_le.
+unfold Fulp in |- *; replace 2%R with (powerRZ radix 1);
  [ idtac | simpl in |- *; auto with zarith real ].
-replace (INR 4) with (powerRZ radix 2);
+replace 4%R with (powerRZ radix 2);
  [ idtac | simpl; unfold pow, radix; ring ].
 repeat rewrite <- powerRZ_add; auto with zarith real.
-replace (2 + - dExp b)%Z with (Zsucc (- dExp b) + 1)%Z;
- [ apply Rle_powerRZ | unfold Zsucc in |- * ]; auto with zarith real.
+replace (2 + - dExp b)%Z with (Z.succ (- dExp b) + 1)%Z;
+ [ apply Rle_powerRZ | unfold Z.succ in |- * ]; auto with zarith real.
 replace (Fnormalize radix b precision u) with u; auto with zarith arith.
 apply FcanonicUnique with (radix := radix) (b := b) (precision := precision);
  auto with real zarith.
-try apply TwoMoreThanOne.
-apply FnormalizeCanonic; auto with zarith; try apply TwoMoreThanOne.
+apply FnormalizeCanonic; auto with zarith.
 apply sym_eq; apply FnormalizeCorrect; auto with zarith.
-try apply TwoMoreThanOne.
-right; replace (INR 4) with (2%nat + 2%nat)%R;
- [ ring | rewrite <- plus_INR; auto with arith real ].
+lra.
 case (Rle_or_lt (t + y) u); intros H8.
 apply Axpy_aux2; auto.
 apply sym_eq; unfold FtoRradix in |- *; apply ExactSum_Near with b precision;
@@ -11738,27 +11385,22 @@ cut (forall v w : R, (v <= w)%R -> v <> w -> (v < w)%R); [ intros V | idtac ].
 2: intros V W H' H'1; case H'; auto with real.
 2: intros H'2; absurd (V = W); auto with real.
 apply V.
-apply Rmult_le_reg_l with (INR 2); auto with real arith.
+apply Rmult_le_reg_l with 2%R; auto with real arith.
 apply Rle_trans with (Fulp b radix precision u);
  [ unfold FtoRradix in |- *; apply ClosestUlp; auto with zarith | idtac ].
-try apply TwoMoreThanOne.
 replace (powerRZ 2%Z (- dExp b)) with
  (Fulp b radix precision (FPred b radix precision u)).
-replace (INR 2) with (IZR radix); auto with zarith real.
 apply FulpFPredLe; auto with zarith.
-try apply TwoMoreThanOne.
 unfold Fulp in |- *;
  replace (Fnormalize radix b precision (FPred b radix precision u)) with
   (FPred b radix precision u).
 rewrite H4; auto with zarith real.
 apply FcanonicUnique with (radix := radix) (b := b) (precision := precision);
  auto with real zarith.
-try apply TwoMoreThanOne.
-apply FPredCanonic; auto with zarith; try apply TwoMoreThanOne.
-apply FnormalizeCanonic; auto with zarith; try apply TwoMoreThanOne.
-apply FBoundedPred; auto with zarith; try apply TwoMoreThanOne.
+apply FPredCanonic; auto with zarith.
+apply FnormalizeCanonic; auto with zarith.
+apply FBoundedPred; auto with zarith.
 apply sym_eq; apply FnormalizeCorrect; auto with zarith.
-try apply TwoMoreThanOne.
 replace (powerRZ 2%Z (- dExp b)) with
  (Fulp b radix precision (FPred b radix precision u)).
 2: unfold Fulp in |- *;
@@ -11780,29 +11422,23 @@ contradict V'.
 cut (ProjectorP b radix (Closest b radix));
  [ unfold ProjectorP in |- *; intros W' | idtac ].
 apply sym_eq; apply W'; auto with zarith real.
-apply FBoundedPred; auto with zarith; try apply TwoMoreThanOne.
+apply FBoundedPred; auto with zarith.
 apply RoundedProjector; apply ClosestRoundedModeP with precision;
  auto with zarith.
-try apply TwoMoreThanOne.
 apply not_eq_sym; apply Rlt_dichotomy_converse; left.
 unfold FtoRradix in |- *; apply FPredLt; auto with zarith.
-try apply TwoMoreThanOne.
 apply
  Rplus_eq_reg_l with (Fulp b radix precision (FPred b radix precision u)).
 rewrite Rplus_comm; unfold FtoRradix in |- *; rewrite FpredUlpPos;
  auto with zarith.
 rewrite <- W; unfold FtoRradix, radix in |- *; ring.
-try apply TwoMoreThanOne.
 apply FcanonicUnique with (radix := radix) (b := b) (precision := precision);
  auto with real zarith.
-try apply TwoMoreThanOne.
-apply FPredCanonic; auto with zarith; try apply TwoMoreThanOne.
-apply FnormalizeCanonic; auto with zarith; try apply TwoMoreThanOne.
-apply FBoundedPred; auto with zarith; try apply TwoMoreThanOne.
+apply FPredCanonic; auto with zarith.
+apply FnormalizeCanonic; auto with zarith.
+apply FBoundedPred; auto with zarith.
 apply sym_eq; apply FnormalizeCorrect; auto with zarith.
-try apply TwoMoreThanOne.
 apply MinOrMax1 with precision; auto with zarith; fold FtoRradix in |- *.
-try apply TwoMoreThanOne.
 rewrite Rabs_left1.
 2: apply Rplus_le_reg_l with (FtoRradix u).
 2: ring_simplify; auto with real.
@@ -11828,12 +11464,12 @@ apply
     (Rabs (y1 - FtoRradix y + (a1 * x1 - FtoRradix a * FtoRradix x)) +
      Rabs (FtoRradix a * FtoRradix x - FtoRradix t))%R;
  [ apply Rabs_triang | idtac ].
-apply Rmult_le_reg_l with (INR 2); auto with real arith.
+apply Rmult_le_reg_l with 2%R; auto with real arith.
 apply
  Rle_trans
   with
-    (2%nat * Rabs (y1 - FtoRradix y + (a1 * x1 - FtoRradix a * FtoRradix x)) +
-     2%nat * Rabs (FtoRradix a * FtoRradix x - FtoRradix t))%R;
+    (2 * Rabs (y1 - FtoRradix y + (a1 * x1 - FtoRradix a * FtoRradix x)) +
+     2 * Rabs (FtoRradix a * FtoRradix x - FtoRradix t))%R;
  [ right; ring | idtac ].
 apply
  Rle_trans
@@ -11845,12 +11481,12 @@ apply Rplus_le_compat.
 apply
  Rle_trans
   with
-    (2%nat * (/ 4%nat * Fulp b radix precision (FPred b radix precision u)))%R;
+    (2 * (/ 4 * Fulp b radix precision (FPred b radix precision u)))%R;
  auto with real.
 apply
  Rle_trans
   with
-    (2%nat *
+    (2 *
      (Rabs (y1 - FtoRradix y) + Rabs (a1 * x1 - FtoRradix a * FtoRradix x)))%R;
  [ apply Rmult_le_compat_l; auto with real arith; apply Rabs_triang | idtac ].
 apply Rmult_le_compat_l; auto with real arith.
@@ -11859,53 +11495,48 @@ apply
  [ rewrite <- Rmult_assoc; apply Rmult_le_compat_r | right; ring ];
  auto with real arith zarith.
 unfold Fulp in |- *; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; try apply TwoMoreThanOne.
-rewrite Rmult_comm; apply Rmult_le_reg_l with (INR 4); auto with arith real;
- rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real arith.
-simpl; ring_simplify; auto with real arith.
+now apply powerRZ_le, IZR_lt.
+lra.
 apply Rle_trans with (Fulp b radix precision t);
  [ unfold FtoRradix in |- *; apply ClosestUlp; auto with zarith
  | unfold Fulp in |- * ].
-try apply TwoMoreThanOne.
 apply Rle_powerRZ; auto with zarith real.
 replace (Fnormalize radix b precision t) with t;
  [ elim H2; intros H9 H10; elim H10; intros H11 H12; rewrite H11 | idtac ].
-2: apply sym_eq; apply FcanonicFnormalizeEq; auto with zarith; try apply TwoMoreThanOne; right; auto.
+2: apply sym_eq; apply FcanonicFnormalizeEq; auto with zarith; right; auto.
 replace (Fnormalize radix b precision (FPred b radix precision u)) with
  (FPred b radix precision u); [ rewrite H4; auto with zarith | idtac ].
 apply sym_eq; apply FcanonicFnormalizeEq; auto with zarith.
-try apply TwoMoreThanOne.
-apply FPredCanonic; auto with zarith; try apply TwoMoreThanOne.
+apply FPredCanonic; auto with zarith.
 Qed.
 
 Theorem AxpyPos :
  Fcanonic radix b u ->
  Fcanonic radix b t ->
  (0 < u)%R ->
- (4%nat * Rabs t <= Rabs u)%R ->
+ (4 * Rabs t <= Rabs u)%R ->
  (Rabs (y1 - y) + Rabs (a1 * x1 - a * x) <
-  / 4%nat * Fulp b radix precision (FPred b radix precision u))%R ->
+  / 4 * Fulp b radix precision (FPred b radix precision u))%R ->
  MinOrMax radix b (a1 * x1 + y1) u.
+Proof.
 intros H1 H2 H3 H4 H5.
 case H2; intros H6.
 apply Axpy_aux1; auto; apply Axpy_aux1_aux1; auto.
-cut (forall z1 z2 : Z, (z1 <= z2)%Z -> z1 = z2 \/ (Zsucc z1 <= z2)%Z);
+cut (forall z1 z2 : Z, (z1 <= z2)%Z -> z1 = z2 \/ (Z.succ z1 <= z2)%Z);
  [ intros V | idtac ].
-2: intros z1 z2 V; omega.
+2: intros z1 z2 V; lia.
 case (V (- dExp b)%Z (Fexp u));
  [ elim Fu; intuition | intros H7 | intros H7 ].
 apply Axpy_aux2; auto.
 unfold FtoRradix in |- *; apply plusExact1 with b precision;
  auto with zarith.
-try apply TwoMoreThanOne.
 rewrite <- H7; elim H6; intros H8 H9; elim H9; intros H10 H11; rewrite H10.
-rewrite Zmin_le1; auto with zarith; elim Fy; auto.
+rewrite Z.min_l; auto with zarith; elim Fy; auto.
 case (V (- dExp b)%Z (Fexp (FPred b radix precision u))).
 cut (Fbounded b (FPred b radix precision u)); [ intros H8 | idtac ];
  auto.
 apply H8.
 apply FBoundedPred; auto with zarith.
-try apply TwoMoreThanOne.
 intros H8; apply Axpy_aux3; auto.
 intros H8; apply Axpy_aux1; auto.
 apply Axpy_aux1_aux3; auto.
@@ -11922,6 +11553,7 @@ Theorem UlpFlessuGe_aux :
  Fbounded b p ->
  Fcanonic radix b p ->
  (Rabs p - Fulp b radix precision p <= Rabs (FLess p))%R.
+Proof.
 intros p H H1.
 cut
  (forall p : float,
@@ -11936,9 +11568,7 @@ pattern p at 3 in |- *; rewrite <- Fopp_Fopp.
 rewrite <- (Rabs_Ropp (FtoR radix (FSucc b radix precision (Fopp (Fopp p)))));
  rewrite <- (Fopp_correct radix (FSucc b radix precision (Fopp (Fopp p)))).
 rewrite <- FPredFopFSucc with b radix precision (Fopp p); auto with zarith.
-2: try apply TwoMoreThanOne.
-replace (Fulp b radix precision p) with (Fulp b radix precision (Fopp p));
- auto.
+replace (Fulp b radix precision p) with (Fulp b radix precision (Fopp p)).
 fold FtoRradix in |- *; apply V; auto.
 apply oppBounded; easy.
 apply FcanonicFopp; easy.
@@ -11950,11 +11580,11 @@ rewrite <- H4; rewrite Rabs_R0.
 ring_simplify (0 - Fulp b radix precision p)%R; apply Rle_trans with 0%R;
  auto with real zarith.
 rewrite <- Ropp_0; apply Ropp_le_contravar.
-unfold Fulp; apply powerRZ_le, Rlt_IZR; try apply TwoMoreThanOne.
+now unfold Fulp; apply powerRZ_le, IZR_lt.
 apply Rabs_pos.
 intros q H2 H3 H4.
 unfold FtoRradix in |- *; rewrite <- FpredUlpPos with b radix precision q;
- auto with zarith; fold FtoRradix in |- *; try apply TwoMoreThanOne.
+ auto with zarith; fold FtoRradix in |- *.
 apply
  Rle_trans
   with
@@ -11973,28 +11603,28 @@ ring_simplify
       Fulp b radix precision q))%R.
 rewrite Rplus_comm; apply Rplus_le_compat_r.
 apply FulpFPredGePos; auto with zarith real.
-try apply TwoMoreThanOne.
-apply powerRZ_le, Rlt_IZR; try apply TwoMoreThanOne.
+now apply powerRZ_le, IZR_lt.
 Qed.
 
 Theorem UlpFlessuGe :
  Fcanonic radix b u ->
  (/
-  (4%nat * (powerRZ radix precision - 1) * (1 + powerRZ radix (- precision))) *
-  ((1 - powerRZ radix (Zsucc (- precision))) * Rabs y) +
+  (4 * (powerRZ radix precision - 1) * (1 + powerRZ radix (- precision))) *
+  ((1 - powerRZ radix (Z.succ (- precision))) * Rabs y) +
   -
   (/
-   (4%nat * (powerRZ radix precision - 1) * (1 + powerRZ radix (- precision)) *
+   (4 * (powerRZ radix precision - 1) * (1 + powerRZ radix (- precision)) *
     (1 - powerRZ radix (- precision))) *
-   ((1 - powerRZ radix (Zsucc (- precision))) * Rabs (a * x))) +
+   ((1 - powerRZ radix (Z.succ (- precision))) * Rabs (a * x))) +
   -
-  (powerRZ radix (Zpred (- dExp b)) *
-   (/ (2%nat * (powerRZ radix precision - 1)) +
+  (powerRZ radix (Z.pred (- dExp b)) *
+   (/ (2 * (powerRZ radix precision - 1)) +
     /
-    (4%nat * (powerRZ radix precision - 1) *
+    (4 * (powerRZ radix precision - 1) *
      (1 + powerRZ radix (- precision)) * (1 - powerRZ radix (- precision))) *
-    (1 - powerRZ radix (Zsucc (- precision))))) <=
-  / 4%nat * Fulp b radix precision (FLess u))%R.
+    (1 - powerRZ radix (Z.succ (- precision))))) <=
+  / 4 * Fulp b radix precision (FLess u))%R.
+Proof.
 intros Cu.
 cut (0 < 1 - powerRZ radix (- precision))%R; [ intros H'1 | idtac ].
 2: apply Rplus_lt_reg_r with (powerRZ radix (- precision)).
@@ -12002,28 +11632,27 @@ cut (0 < 1 - powerRZ radix (- precision))%R; [ intros H'1 | idtac ].
 2: replace 1%R with (powerRZ radix 0);
     [ auto with real zarith | simpl in |- *; auto ].
 2: apply Rlt_powerRZ; auto with zarith.
-2: apply Rlt_IZR; try apply TwoMoreThanOne.
+2: now apply IZR_lt.
 cut (0 < 1 + powerRZ radix (- precision))%R; [ intros H'2 | idtac ].
 2: apply Rlt_le_trans with 1%R; auto with real.
 2: apply Rle_trans with (1 + 0)%R; auto with real zarith.
 2: apply Rplus_le_compat_l.
-2: apply powerRZ_le, Rlt_IZR; try apply TwoMoreThanOne.
+2: now apply powerRZ_le, IZR_lt.
 cut (0 < powerRZ radix precision - 1)%R; [ intros H'3 | idtac ].
 2: apply Rplus_lt_reg_r with 1%R.
 2: ring_simplify.
 2: replace 1%R with (powerRZ radix 0);
     [ auto with real zarith | simpl in |- *; auto ].
-2: apply Rlt_powerRZ; auto with zarith; apply Rlt_IZR; try apply TwoMoreThanOne.
-cut (0 < 1 - powerRZ radix (Zsucc (- precision)))%R; [ intros H'4 | idtac ].
-2: apply Rplus_lt_reg_r with (powerRZ radix (Zsucc (- precision))).
+2: apply Rlt_powerRZ; auto with zarith; now apply IZR_lt.
+cut (0 < 1 - powerRZ radix (Z.succ (- precision)))%R; [ intros H'4 | idtac ].
+2: apply Rplus_lt_reg_r with (powerRZ radix (Z.succ (- precision))).
 2: ring_simplify.
 2: replace 1%R with (powerRZ radix 0);
     [ auto with real zarith | simpl in |- *; auto ].
-2: apply Rlt_powerRZ; auto with zarith; apply Rlt_IZR; try apply TwoMoreThanOne.
-cut (0 < INR 4)%R; [ intros H'5 | auto with arith real ].
+2: apply Rlt_powerRZ; auto with zarith; now apply IZR_lt.
 rewrite
  (Rinv_mult_distr
-    (4%nat * (powerRZ radix precision - 1) *
+    (4 * (powerRZ radix precision - 1) *
      (1 + powerRZ radix (- precision))) (1 - powerRZ radix (- precision)))
  ; auto with real.
 2: apply Rmult_integral_contrapositive; split; auto with real.
@@ -12031,27 +11660,27 @@ apply
  Rle_trans
   with
     (/
-     (4%nat * (powerRZ radix precision - 1) *
+     (4 * (powerRZ radix precision - 1) *
       (1 + powerRZ radix (- precision))) *
-     (1 - powerRZ radix (Zsucc (- precision))) *
+     (1 - powerRZ radix (Z.succ (- precision))) *
      (Rabs y -
       (Rabs (FtoRradix a * FtoRradix x) * / (1 - powerRZ radix (- precision)) +
-       powerRZ radix (Zpred (- dExp b)) * / (1 - powerRZ radix (- precision)))) +
+       powerRZ radix (Z.pred (- dExp b)) * / (1 - powerRZ radix (- precision)))) +
      -
-     (powerRZ radix (Zpred (- dExp b)) *
-      / (2%nat * (powerRZ radix precision - 1))))%R;
+     (powerRZ radix (Z.pred (- dExp b)) *
+      / (2 * (powerRZ radix precision - 1))))%R;
  [ right; ring; ring | idtac ].
 apply
  Rle_trans
   with
     (/
-     (4%nat * (powerRZ radix precision - 1) *
+     (4 * (powerRZ radix precision - 1) *
       (1 + powerRZ radix (- precision))) *
-     (1 - powerRZ radix (Zsucc (- precision))) *
+     (1 - powerRZ radix (Z.succ (- precision))) *
      (Rabs (FtoRradix y) - Rabs t) +
      -
-     (powerRZ radix (Zpred (- dExp b)) *
-      / (2%nat * (powerRZ radix precision - 1))))%R;
+     (powerRZ radix (Z.pred (- dExp b)) *
+      / (2 * (powerRZ radix precision - 1))))%R;
  [ apply Rplus_le_compat_r | idtac ].
 apply Rmult_le_compat_l.
 apply Rlt_le; apply Rmult_lt_0_compat; auto with real.
@@ -12062,31 +11691,31 @@ apply
  Rle_trans
   with
     (Rabs (FtoRradix a * FtoRradix x) * / (1 - powerRZ 2%Z (- precision)) +
-     powerRZ 2%Z (Zpred (- dExp b)) * / (1 - powerRZ 2%Z (- precision)))%R;
+     powerRZ 2%Z (Z.pred (- dExp b)) * / (1 - powerRZ 2%Z (- precision)))%R;
  [ idtac | right; unfold FtoRradix, radix, Rminus in |- *; auto with real ].
 apply RoundLeGeneral; auto with zarith.
 rewrite
- (Rinv_mult_distr (4%nat * (powerRZ radix precision - 1))
+ (Rinv_mult_distr (4 * (powerRZ radix precision - 1))
     (1 + powerRZ radix (- precision))); auto with real.
 apply
  Rle_trans
   with
-    (/ (4%nat * (powerRZ radix precision - 1)) *
-     (1 - powerRZ radix (Zsucc (- precision))) *
+    (/ (4 * (powerRZ radix precision - 1)) *
+     (1 - powerRZ radix (Z.succ (- precision))) *
      (/ (1 + powerRZ radix (- precision)) *
       (Rabs (FtoRradix y) - Rabs (FtoRradix t))) +
      -
-     (powerRZ radix (Zpred (- dExp b)) *
-      / (2%nat * (powerRZ radix precision - 1))))%R;
+     (powerRZ radix (Z.pred (- dExp b)) *
+      / (2 * (powerRZ radix precision - 1))))%R;
  [ right; ring | idtac ].
 apply
  Rle_trans
   with
-    (/ (4%nat * (powerRZ radix precision - 1)) *
-     (1 - powerRZ radix (Zsucc (- precision))) * Rabs u +
+    (/ (4 * (powerRZ radix precision - 1)) *
+     (1 - powerRZ radix (Z.succ (- precision))) * Rabs u +
      -
-     (powerRZ radix (Zpred (- dExp b)) *
-      / (2%nat * (powerRZ radix precision - 1))))%R.
+     (powerRZ radix (Z.pred (- dExp b)) *
+      / (2 * (powerRZ radix precision - 1))))%R.
 apply Rplus_le_compat_r; apply Rmult_le_compat_l.
 apply Rlt_le; apply Rmult_lt_0_compat; auto with real.
 apply Rinv_0_lt_compat; apply Rmult_lt_0_compat; auto with real.
@@ -12120,27 +11749,22 @@ apply Rle_trans with (Fulp b radix precision u * (radix * / radix))%R;
  [ rewrite Rinv_r; auto with real zarith | right; ring ].
 ring_simplify (Fulp b radix precision u * 1)%R.
 unfold FtoRradix in |- *; apply ClosestUlp; auto with real zarith.
-try apply TwoMoreThanOne.
 rewrite Rplus_comm; auto.
 rewrite Rplus_comm; apply Rplus_le_compat_r.
 apply Rmult_le_reg_l with (IZR radix); auto with real zarith.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real zarith.
 ring_simplify (1 * Fulp b radix precision u)%R.
 apply
- Rle_trans with (Rabs (FtoRradix u) * powerRZ radix (Zsucc (- precision)))%R.
+ Rle_trans with (Rabs (FtoRradix u) * powerRZ radix (Z.succ (- precision)))%R.
 unfold FtoRradix in |- *; apply FulpLe2; auto with zarith.
-try apply TwoMoreThanOne.
 replace (Fnormalize radix b precision u) with u;
  [ idtac
  | apply
     FcanonicUnique with (radix := radix) (precision := precision) (b := b) ];
  auto with zarith real.
-try apply TwoMoreThanOne.
 apply FnormalizeCanonic; auto with zarith.
-try apply TwoMoreThanOne.
 apply sym_eq; apply FnormalizeCorrect; auto with zarith.
-try apply TwoMoreThanOne.
-unfold Zsucc in |- *; rewrite powerRZ_add; auto with zarith real;
+unfold Z.succ in |- *; rewrite powerRZ_add; auto with zarith real;
  simpl in |- *; auto with zarith real; right; ring.
 replace (FtoRradix y + FtoRradix t)%R with (FtoRradix u); auto with real.
 apply Rle_trans with (1 * Rabs (FtoRradix u))%R;
@@ -12150,27 +11774,26 @@ pattern 1%R at 2 in |- *; replace 1%R with (/ 1)%R; auto with real zarith.
 apply Rle_Rinv; auto with real zarith.
 pattern 1%R at 1 in |- *; replace 1%R with (1 + 0)%R; auto with real zarith.
 apply Rplus_le_compat_l.
-apply powerRZ_le, Rlt_IZR; try apply TwoMoreThanOne.
+now apply powerRZ_le, IZR_lt.
 unfold FtoRradix in |- *; apply plusExact1 with b precision;
  auto with real zarith.
-try apply TwoMoreThanOne.
 rewrite Rplus_comm; auto.
 elim H1; intros H5 H6; elim H6; intros H7 H8; rewrite H7; apply Zmin_Zle;
  elim Fy; elim Ft; auto with zarith.
 apply
  Rle_trans
   with
-    (/ (4%nat * (powerRZ radix precision - 1)) *
+    (/ (4 * (powerRZ radix precision - 1)) *
      (Rabs (FtoRradix u) -
-      (Rabs u * powerRZ radix (Zsucc (- precision)) +
+      (Rabs u * powerRZ radix (Z.succ (- precision)) +
        powerRZ radix (- dExp b))))%R.
 right; simpl; ring_simplify.
-unfold Zpred, Zsucc; rewrite 2!powerRZ_add; auto with zarith real.
+unfold Z.pred, Z.succ; rewrite 2!powerRZ_add; auto with zarith real.
 unfold radix; simpl; field; auto with real.
 apply
  Rle_trans
   with
-    (/ (4%nat * (powerRZ radix precision - 1)) *
+    (/ (4 * (powerRZ radix precision - 1)) *
      (Rabs (FtoRradix u) - Fulp b radix precision u))%R.
 apply Rmult_le_compat_l; auto with real.
 apply Rlt_le; apply Rinv_0_lt_compat; apply Rmult_lt_0_compat; auto with real.
@@ -12178,7 +11801,7 @@ unfold Rminus in |- *; apply Rplus_le_compat_l; apply Ropp_le_contravar.
 apply FulpLeGeneral; auto.
 apply
  Rle_trans
-  with (/ (4%nat * (powerRZ radix precision - 1)) * Rabs (FLess u))%R.
+  with (/ (4 * (powerRZ radix precision - 1)) * Rabs (FLess u))%R.
 apply Rmult_le_compat_l; auto with real.
 apply Rlt_le; apply Rinv_0_lt_compat; apply Rmult_lt_0_compat; auto with real.
 apply UlpFlessuGe_aux; auto.
@@ -12186,82 +11809,80 @@ rewrite Rinv_mult_distr; auto with real.
 rewrite Rmult_assoc; apply Rmult_le_compat_l; auto with real.
 apply Rmult_le_reg_l with (powerRZ radix precision - 1)%R; auto.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real.
-ring_simplify (1 * Rabs (FtoRradix (FLess u)))%R; unfold FtoRradix in |- *;
+rewrite Rmult_1_l; unfold FtoRradix in |- *;
  apply FulpGe; auto with zarith.
-try apply TwoMoreThanOne.
 unfold FLess in |- *; case (Rcase_abs u); intros H.
 apply FBoundedSuc; auto with zarith.
-try apply TwoMoreThanOne.
-apply FBoundedPred; auto with zarith; try apply TwoMoreThanOne.
+apply FBoundedPred; auto with zarith.
 Qed.
 
 Theorem UlpFlessuGe2 :
  Fcanonic radix b u ->
- (powerRZ radix (Zpred (Zpred (- precision))) *
-  (1 - powerRZ radix (Zsucc (- precision))) * Rabs y +
-  - (powerRZ radix (Zpred (Zpred (- precision))) * Rabs (a * x)) +
-  - powerRZ radix (Zpred (Zpred (- dExp b))) <
-  / 4%nat * Fulp b radix precision (FLess u))%R.
+ (powerRZ radix (Z.pred (Z.pred (- precision))) *
+  (1 - powerRZ radix (Z.succ (- precision))) * Rabs y +
+  - (powerRZ radix (Z.pred (Z.pred (- precision))) * Rabs (a * x)) +
+  - powerRZ radix (Z.pred (Z.pred (- dExp b))) <
+  / 4 * Fulp b radix precision (FLess u))%R.
+Proof.
 intros H.
 apply
  Rlt_le_trans
   with
     (/
-     (4%nat * (powerRZ radix precision - 1) *
+     (4 * (powerRZ radix precision - 1) *
       (1 + powerRZ radix (- precision))) *
-     ((1 - powerRZ radix (Zsucc (- precision))) * Rabs (FtoRradix y)) +
+     ((1 - powerRZ radix (Z.succ (- precision))) * Rabs (FtoRradix y)) +
      -
      (/
-      (4%nat * (powerRZ radix precision - 1) *
+      (4 * (powerRZ radix precision - 1) *
        (1 + powerRZ radix (- precision)) * (1 - powerRZ radix (- precision))) *
-      ((1 - powerRZ radix (Zsucc (- precision))) *
+      ((1 - powerRZ radix (Z.succ (- precision))) *
        Rabs (FtoRradix a * FtoRradix x))) +
      -
-     (powerRZ radix (Zpred (- dExp b)) *
-      (/ (2%nat * (powerRZ radix precision - 1)) +
+     (powerRZ radix (Z.pred (- dExp b)) *
+      (/ (2 * (powerRZ radix precision - 1)) +
        /
-       (4%nat * (powerRZ radix precision - 1) *
+       (4 * (powerRZ radix precision - 1) *
         (1 + powerRZ radix (- precision)) * (1 - powerRZ radix (- precision))) *
-       (1 - powerRZ radix (Zsucc (- precision))))))%R;
+       (1 - powerRZ radix (Z.succ (- precision))))))%R;
  [ idtac | apply UlpFlessuGe; auto ].
 cut (0 < 1 - powerRZ radix (- precision))%R; [ intros H'1 | idtac ].
 2: apply Rplus_lt_reg_r with (powerRZ radix (- precision)).
 2: ring_simplify.
 2: replace 1%R with (powerRZ radix 0);
     [ auto with real zarith | simpl in |- *; auto ].
-2: apply Rlt_powerRZ; auto with zarith; apply Rlt_IZR, TwoMoreThanOne.
+2: apply Rlt_powerRZ; auto with zarith; now apply IZR_lt.
 cut (0 < 1 + powerRZ radix (- precision))%R; [ intros H'2 | idtac ].
 2: apply Rlt_le_trans with 1%R; auto with real.
 2: apply Rle_trans with (1 + 0)%R; auto with real zarith.
 2: apply Rplus_le_compat_l.
-2: apply powerRZ_le, Rlt_IZR; try apply TwoMoreThanOne.
+2: now apply powerRZ_le, IZR_lt.
 cut (0 < powerRZ radix precision - 1)%R; [ intros H'3 | idtac ].
 2: apply Rplus_lt_reg_r with 1%R.
 2: ring_simplify.
 2: replace 1%R with (powerRZ radix 0);
     [ auto with real zarith | simpl in |- *; auto ].
-2: apply Rlt_powerRZ; auto with zarith; apply Rlt_IZR, TwoMoreThanOne.
-cut (0 < 1 - powerRZ radix (Zsucc (- precision)))%R; [ intros H'4 | idtac ].
-2: apply Rplus_lt_reg_r with (powerRZ radix (Zsucc (- precision))).
+2: apply Rlt_powerRZ; auto with zarith; now apply IZR_lt.
+cut (0 < 1 - powerRZ radix (Z.succ (- precision)))%R; [ intros H'4 | idtac ].
+2: apply Rplus_lt_reg_r with (powerRZ radix (Z.succ (- precision))).
 2: ring_simplify.
 2: replace 1%R with (powerRZ radix 0);
     [ auto with real zarith | simpl in |- *; auto ].
-2: apply Rlt_powerRZ; auto with zarith; apply Rlt_IZR, TwoMoreThanOne.
-cut (0 < INR 4)%R; [ intros H'5 | auto with arith real ].
+2: apply Rlt_powerRZ; auto with zarith; now apply IZR_lt.
 apply
  Rle_lt_trans
   with
     (/
-     (4%nat * (powerRZ radix precision - 1) *
+     (4 * (powerRZ radix precision - 1) *
       (1 + powerRZ radix (- precision))) *
-     ((1 - powerRZ radix (Zsucc (- precision))) * Rabs (FtoRradix y)) +
+     ((1 - powerRZ radix (Z.succ (- precision))) * Rabs (FtoRradix y)) +
      -
      (/
-      (4%nat * (powerRZ radix precision - 1) *
+      (4 * (powerRZ radix precision - 1) *
        (1 + powerRZ radix (- precision)) * (1 - powerRZ radix (- precision))) *
-      ((1 - powerRZ radix (Zsucc (- precision))) *
+      ((1 - powerRZ radix (Z.succ (- precision))) *
        Rabs (FtoRradix a * FtoRradix x))) +
-     - powerRZ radix (Zpred (Zpred (- dExp b))))%R;
+     - powerRZ radix (Z.pred (Z.pred (- dExp b))))%R;
  [ apply Rplus_le_compat_r | apply Rplus_lt_compat_l ].
 apply Rplus_le_compat.
 repeat rewrite <- Rmult_assoc.
@@ -12275,27 +11896,26 @@ replace (powerRZ radix (- precision + precision)) with 1%R;
  | ring_simplify (- precision + precision)%Z; simpl in |- *; auto with real zarith ].
 ring_simplify (-1 + (- powerRZ radix (- precision) + (powerRZ radix precision + 1)))%R.
 apply Rmult_le_compat_r; auto with real.
-apply Rle_trans with (/ (4%nat * powerRZ radix precision))%R;
+apply Rle_trans with (/ (4 * powerRZ radix precision))%R;
  [ right | idtac ].
-unfold Zpred in |- *.
-replace (- precision + -1 + -1)%Z with (- 2%nat + - precision)%Z;
+unfold Z.pred in |- *.
+replace (- precision + -1 + -1)%Z with (- 2 + - precision)%Z;
  [ rewrite powerRZ_add | ring ]; auto with zarith real.
 rewrite Rinv_mult_distr; auto with real zarith.
-replace (powerRZ radix (- 2%nat)) with (/ 4%nat)%R.
+replace (powerRZ radix (- 2)) with (/ 4)%R.
 replace (/ powerRZ radix precision)%R with (powerRZ radix (- precision));
  auto with real.
 apply powerRZ_Zopp; auto with zarith real.
-rewrite powerRZ_Zopp; auto with zarith real.
-replace (powerRZ radix 2%nat) with (INR 4);
- [ auto with zarith real | unfold radix; simpl in |- *; ring ].
-apply Rgt_not_eq, powerRZ_lt, Rlt_IZR; try apply TwoMoreThanOne.
+simpl; unfold radix.
+field.
+now apply Rgt_not_eq, powerRZ_lt, IZR_lt.
 apply Rle_Rinv; auto with real.
 apply
  Rlt_le_trans
   with
-    (4%nat *
+    (4 *
      (powerRZ radix precision - 1 + (1 - powerRZ radix (- precision))))%R.
-apply Rle_lt_trans with (4%nat * (0 + 0))%R; [ right; ring | auto with real ].
+apply Rle_lt_trans with (4 * (0 + 0))%R; [ right; ring | auto with real ].
 ring_simplify (precision+-precision)%Z; simpl; right;ring.
 apply Rmult_le_compat_l; auto with real zarith.
 ring_simplify (precision+-precision)%Z.
@@ -12305,19 +11925,20 @@ apply
 apply Rle_trans with (powerRZ radix precision + -0)%R;
  [ idtac | right; ring ]; auto with real zarith.
 apply Rplus_le_compat_l, Ropp_le_contravar.
-apply powerRZ_le; auto with zarith; apply Rlt_IZR; try apply TwoMoreThanOne.
+apply powerRZ_le; auto with zarith; now apply IZR_lt.
 apply Ropp_le_contravar.
 repeat rewrite <- Rmult_assoc.
 apply Rmult_le_compat_r; auto with real.
 apply Rabs_pos.
-unfold Zpred in |- *.
-replace (- precision + -1 + -1)%Z with (- 2%nat + - precision)%Z;
+unfold Z.pred in |- *.
+replace (- precision + -1 + -1)%Z with (- 2 + - precision)%Z;
  [ rewrite powerRZ_add | ring ]; auto with zarith real.
-repeat rewrite Rmult_assoc; rewrite Rinv_mult_distr; auto with real zarith.
+repeat rewrite Rmult_assoc; rewrite Rinv_mult_distr.
+2: auto with real.
 2: apply Rmult_integral_contrapositive; split; auto with real.
-replace (powerRZ radix (- 2%nat)) with (/ 4%nat)%R.
-2: rewrite powerRZ_Zopp; auto with zarith real.
-2: replace (powerRZ radix 2%nat) with (INR 4);
+replace (powerRZ radix (- 2)) with (/ 4)%R.
+2: simpl; unfold radix; field.
+2: replace (powerRZ radix 2) with 4%R;
     [ auto with zarith real | unfold radix; simpl in |- *; ring ].
 repeat rewrite Rmult_assoc; apply Rmult_le_compat_l; auto with real.
 apply
@@ -12356,8 +11977,8 @@ apply
  [ idtac | right].
 apply Rplus_le_compat_l; apply Rplus_le_compat_l.
 apply Rplus_le_compat; auto with real zarith.
-apply Ropp_le_contravar, Rle_powerRZ; auto with zarith; left; apply Rlt_IZR; try apply TwoMoreThanOne.
-apply powerRZ_le; apply Rlt_IZR, TwoMoreThanOne.
+apply Ropp_le_contravar, Rle_powerRZ; auto with zarith; left; now apply IZR_lt.
+now apply powerRZ_le, IZR_lt.
 apply trans_eq with
  (powerRZ radix (- precision) * powerRZ radix precision +( -
  powerRZ radix (- precision) *
@@ -12377,39 +11998,40 @@ replace (- precision + (- precision + - precision))%Z with
 ring.
 (* *)
 apply Ropp_lt_contravar.
-apply Rmult_lt_reg_l with (powerRZ radix (Z_of_nat 2 + dExp b));
+apply Rmult_lt_reg_l with (powerRZ radix (2 + dExp b));
  auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; try apply TwoMoreThanOne.
-rewrite <- Rmult_assoc; unfold Zpred in |- *.
+now apply powerRZ_lt, IZR_lt.
+rewrite <- Rmult_assoc; unfold Z.pred in |- *.
 repeat rewrite <- powerRZ_add; auto with real zarith.
-replace (2%nat + dExp b + (- dExp b + -1 + -1))%Z with 0%Z by ring.
-replace (2%nat + dExp b + (- dExp b + -1))%Z with 1%Z by ring.
+replace (2 + dExp b + (- dExp b + -1 + -1))%Z with 0%Z by ring.
+replace (2 + dExp b + (- dExp b + -1))%Z with 1%Z by ring.
 replace (powerRZ radix 0) with 1%R;
  [ idtac | simpl in |- *; auto with real zarith ].
 replace (powerRZ radix 1) with 2%R;
  [ idtac | unfold radix; simpl in |- *; ring; auto with real zarith ].
 rewrite Rmult_plus_distr_l.
-apply Rlt_le_trans with (/ 3%nat + 2%nat * / 3%nat)%R.
+apply Rlt_le_trans with (/ 3 + 2 * / 3)%R.
 2: simpl; right;field; auto with real.
 apply
  Rle_lt_trans
   with
-    (/ 3%nat +
+    (/ 3 +
   2 *
  (/
-  (4%nat * (powerRZ radix precision - 1) * (1 + powerRZ radix (- precision)) *
+  (4 * (powerRZ radix precision - 1) * (1 + powerRZ radix (- precision)) *
    (1 - powerRZ radix (- precision))) * (1 - powerRZ radix (- precision + 1))))%R;
  [ apply Rplus_le_compat_r | apply Rplus_lt_compat_l ].
 rewrite Rinv_mult_distr; auto with arith real.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with arith real.
-rewrite Rmult_1_l; replace (INR 3) with (powerRZ radix 2%nat - 1)%R;
+rewrite Rmult_1_l; replace 3%R with (powerRZ radix 2 - 1)%R;
  auto with real zarith arith.
 apply Rle_Rinv; auto with real arith.
 replace 0%R with (powerRZ radix 0 - 1)%R;
  [ unfold Rminus in |- *; auto with real arith zarith | simpl in |- *; ring ].
 apply Rplus_lt_compat_r.
-apply Rlt_powerRZ; auto with zarith; try apply Rlt_IZR; try apply TwoMoreThanOne.
-unfold Rminus in |- *; apply Rplus_le_compat_r; apply Rle_powerRZ; auto with real arith zarith.
+apply Rlt_powerRZ; auto with zarith; now apply IZR_lt.
+unfold Rminus in |- *; apply Rplus_le_compat_r; apply Rle_powerRZ; try lia.
+auto with real arith zarith.
 unfold radix; simpl in |- *; ring; auto with arith zarith real.
 apply Rmult_lt_compat_l; auto with real arith.
 repeat rewrite Rinv_mult_distr; auto with real.
@@ -12417,8 +12039,8 @@ repeat rewrite Rinv_mult_distr; auto with real.
 apply
  Rle_lt_trans
   with
-    (/ 4%nat * / (powerRZ radix 2%nat - 1) * / (1 + 0) *
-     / (1 - powerRZ radix (- 2%nat)) * (1 - 0))%R.
+    (/ 4 * / (powerRZ radix 2 - 1) * / (1 + 0) *
+     / (1 - powerRZ radix (- 2)) * (1 - 0))%R.
 repeat rewrite Rmult_assoc.
 apply Rmult_le_compat_l; auto with real arith.
 apply Rmult_le_compat; auto with real arith zarith.
@@ -12428,15 +12050,15 @@ apply Rle_Rinv; auto with real arith zarith.
 apply Rle_lt_trans with (powerRZ radix 0 - 1)%R;
  [ right; simpl in |- *; ring | auto with real arith zarith ].
 unfold Rminus in |- *; apply Rplus_lt_compat_r; auto with real arith zarith.
-apply Rlt_powerRZ; auto with zarith; try (simpl; omega); apply Rlt_IZR; try apply TwoMoreThanOne.
-unfold Rminus in |- *; apply Rplus_le_compat_r; apply Rle_powerRZ;
- auto with real arith zarith.
+apply Rlt_powerRZ; auto with zarith; try (simpl; lia); now apply IZR_lt.
+unfold Rminus in |- *; apply Rplus_le_compat_r; apply Rle_powerRZ; try lia.
+auto with real arith zarith.
 apply Rmult_le_compat; auto with real arith zarith.
 apply Rmult_le_pos; auto with real.
 apply Rle_Rinv.
 ring_simplify; auto with real.
 apply Rplus_le_compat_l.
-apply powerRZ_le; apply Rlt_IZR, TwoMoreThanOne.
+now apply powerRZ_le, IZR_lt.
 apply Rmult_le_compat; auto with real arith zarith.
 apply Rle_Rinv; auto with real arith zarith.
 apply Rle_lt_trans with (1 - powerRZ radix 0)%R;
@@ -12444,32 +12066,24 @@ apply Rle_lt_trans with (1 - powerRZ radix 0)%R;
 unfold Rminus in |- *; apply Rplus_lt_compat_l; apply Ropp_lt_contravar;
  auto with real arith zarith.
 apply Rlt_powerRZ; simpl; auto with zarith.
-apply Rlt_IZR; try apply TwoMoreThanOne.
+now apply IZR_lt.
 unfold Rminus in |- *; apply Rplus_le_compat_l; apply Ropp_le_contravar;
- apply Rle_powerRZ; auto with real arith zarith.
+ apply Rle_powerRZ; try lia.
+auto with real arith zarith.
 unfold Rminus in |- *; apply Rplus_le_compat_l; apply Ropp_le_contravar;
  auto with real arith zarith.
-apply powerRZ_le; apply Rlt_IZR, TwoMoreThanOne.
+now apply powerRZ_le, IZR_lt.
 ring_simplify (1 - 0)%R; rewrite Rmult_1_r.
 ring_simplify (1 + 0)%R; rewrite Rinv_1; rewrite Rmult_1_r.
+change (-2)%Z with (-(2))%Z.
 rewrite powerRZ_Zopp; auto with real arith zarith.
-replace (powerRZ radix 2%nat) with (INR 4);
+replace (powerRZ radix 2) with 4%R;
  [ idtac | simpl in |- *; unfold radix; ring; auto with arith real zarith ].
-replace (4%nat - 1)%R with (INR 3);
- [ idtac | simpl in |- *; ring; auto with arith real zarith ].
-replace (1 - / 4%nat)%R with (3%nat * / 4%nat)%R.
-rewrite Rinv_mult_distr; auto with real arith zarith.
-rewrite Rinv_involutive; auto with real arith zarith.
-apply Rle_lt_trans with (4%nat * / 4%nat * (/ 3%nat * / 3%nat))%R;
- [ right; ring | idtac ].
-rewrite Rinv_r; auto with real arith zarith; rewrite Rmult_1_l.
-apply Rlt_le_trans with (/ 3%nat * 1)%R;
- [ apply Rmult_lt_compat_l; auto with arith real zarith | right; ring ].
-apply Rmult_lt_reg_l with (INR 3); auto with arith real.
-rewrite Rinv_r; auto with arith real; rewrite Rmult_1_r; auto with arith real.
-simpl; field; auto with real.
+lra.
 Qed.
+
 End AxpyAux.
+
 Section Axpy.
 
 Let radix := 2%Z.
@@ -12492,10 +12106,11 @@ Theorem Axpy_tFlessu :
  Closest b radix (t + y) u ->
  Fcanonic radix b u ->
  Fcanonic radix b t ->
- (4%nat * Rabs t <= Rabs u)%R ->
+ (4 * Rabs t <= Rabs u)%R ->
  (Rabs (y1 - y) + Rabs (a1 * x1 - a * x) <
-  / 4%nat * Fulp b radix precision (FLess b precision u))%R ->
+  / 4 * Fulp b radix precision (FLess b precision u))%R ->
  MinOrMax radix b (a1 * x1 + y1) u.
+Proof.
 intros a1 x1 y1 a x y t u Fa Fx Fy Ft Fu tDef uDef Cu Ct H1.
 unfold FLess in |- *; case (Rcase_abs (FtoR 2 u)); fold radix in |- *;
  intros H3 H2.
@@ -12536,9 +12151,7 @@ replace (Fulp b radix precision (Fopp (FSucc b radix precision u))) with
  auto.
 unfold Fulp in |- *; rewrite Fnormalize_Fopp; simpl in |- *;
  auto with real zarith.
-try apply TwoMoreThanOne.
 apply MinOrMax3 with precision; auto with zarith; fold FtoRradix in |- *.
-try apply TwoMoreThanOne.
 cut (FtoRradix t = 0%R); [ intros H' | idtac ].
 cut (FtoRradix y = 0%R); [ intros H5 | idtac ].
 replace (a1 * x1 + y1 - FtoRradix u)%R with
@@ -12552,58 +12165,49 @@ apply
 apply
  Rlt_le_trans
   with
-    (/ 4%nat * Fulp b radix precision (FPred b radix precision u) +
+    (/ 4 * Fulp b radix precision (FPred b radix precision u) +
      Rabs (FtoRradix a * FtoRradix x))%R; auto with real.
 apply Rplus_lt_compat_r; apply Rle_lt_trans with (2 := H2); apply Rabs_triang.
 apply
  Rle_trans
   with
-    (/ 4%nat * Fulp b radix precision (FPred b radix precision u) +
-     / 2%nat * Fulp b radix precision (FPred b radix precision u))%R;
+    (/ 4 * Fulp b radix precision (FPred b radix precision u) +
+     / 2 * Fulp b radix precision (FPred b radix precision u))%R;
  [ apply Rplus_le_compat_l | idtac ].
 replace (FtoRradix a * FtoRradix x)%R with (FtoRradix a * FtoRradix x - t)%R;
  [ idtac | rewrite H'; ring ].
-apply Rmult_le_reg_l with (INR 2); auto with real arith.
+apply Rmult_le_reg_l with 2%R; auto with real arith.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real arith.
 ring_simplify (1 * Fulp b radix precision (FPred b radix precision u))%R;
  apply Rle_trans with (Fulp b radix precision t).
 unfold FtoRradix in |- *; apply ClosestUlp; auto with zarith.
-try apply TwoMoreThanOne.
 unfold Fulp in |- *; apply Rle_powerRZ; auto with real zarith.
 replace (Fexp (Fnormalize radix b precision t)) with (- dExp b)%Z.
 cut (Fbounded b (Fnormalize radix b precision (FPred b radix precision u)));
  [ intros H6; elim H6; auto | apply FnormalizeBounded; auto with zarith ].
-try apply TwoMoreThanOne.
 apply FBoundedPred; auto with zarith.
-try apply TwoMoreThanOne.
 replace (Fnormalize radix b precision t) with t.
 replace t with (Float 0 (- dExp b)); [ simpl in |- *; auto | idtac ].
 apply FcanonicUnique with (radix := radix) (precision := precision) (b := b);
  auto with zarith.
-try apply TwoMoreThanOne.
 right; repeat (split; simpl in |- *; auto with zarith).
 fold FtoRradix in |- *; rewrite H'; unfold FtoRradix, FtoR in |- *;
  simpl in |- *; ring.
 apply FcanonicUnique with (radix := radix) (precision := precision) (b := b);
  auto with zarith.
-try apply TwoMoreThanOne.
 apply FnormalizeCanonic; auto with zarith.
-try apply TwoMoreThanOne.
 apply sym_eq; apply FnormalizeCorrect; auto with zarith.
-try apply TwoMoreThanOne.
 apply
  Rle_trans
   with
-    ((/ 4%nat + / 2%nat) * Fulp b radix precision (FPred b radix precision u))%R;
+    ((/ 4 + / 2) * Fulp b radix precision (FPred b radix precision u))%R;
  [ right; ring | idtac ].
 apply
  Rle_trans with (1 * Fulp b radix precision (FPred b radix precision u))%R;
  [ apply Rmult_le_compat_r | right; ring ].
 unfold Fulp in |- *; auto with real zarith.
-apply powerRZ_le; apply Rlt_IZR; try apply TwoMoreThanOne.
-apply Rmult_le_reg_l with (INR 4); auto with real arith.
-apply Rle_trans with 3%R;simpl;[right; field|idtac].
-apply Rle_trans with (3+1)%R; auto with real; right; ring.
+now apply powerRZ_le; apply IZR_lt.
+lra.
 cut (ProjectorP b radix (Closest b radix));
  [ unfold ProjectorP in |- *; intros V | idtac ].
 replace 0%R with (FtoRradix (Float 0 (- dExp b)));
@@ -12614,17 +12218,15 @@ replace (FtoRradix y) with (FtoRradix t + FtoRradix y)%R; auto.
 rewrite H'; ring.
 apply FcanonicUnique with (radix := radix) (precision := precision) (b := b);
  auto with zarith.
-try apply TwoMoreThanOne.
 right; repeat (split; simpl in |- *; auto with zarith).
 fold FtoRradix in |- *; rewrite <- H4; unfold FtoRradix, FtoR in |- *;
  simpl in |- *; ring.
 apply RoundedProjector; auto.
 apply ClosestRoundedModeP with precision; auto with zarith.
-try apply TwoMoreThanOne.
 cut (forall z : R, (Rabs z <= 0)%R -> z = 0%R); [ intros V; apply V | idtac ].
-apply Rmult_le_reg_l with (INR 4); auto with real arith.
+apply Rmult_le_reg_l with 4%R; auto with real arith.
 apply Rle_trans with (1 := H1); right; rewrite <- H4; auto with real.
-ring_simplify (4%nat*0)%R; apply Rabs_R0.
+ring_simplify (4*0)%R; apply Rabs_R0.
 intros z V; case (Req_dec 0 z); auto with real.
 intros V'; contradict V.
 apply Rlt_not_le; apply Rabs_pos_lt; auto.
@@ -12637,16 +12239,17 @@ Theorem Axpy_opt :
  (Closest b radix (a * x) t) ->
  (Closest b radix (t + y) u) ->
  (Fcanonic radix b u) -> (Fcanonic radix b t) ->
- ((5%nat + 4%nat * (powerRZ radix (- precision))) *
+ ((5 + 4 * (powerRZ radix (- precision))) *
     / (1 - powerRZ radix (- precision)) *
-    (Rabs (a * x) + (powerRZ radix (Zpred (- dExp b))))
+    (Rabs (a * x) + (powerRZ radix (Z.pred (- dExp b))))
     <= Rabs y)%R ->
  (Rabs (y1 - y) + Rabs (a1 * x1 - a * x) <=
-    (powerRZ radix (Zpred (Zpred (- precision)))) *
-    (1 - powerRZ radix (Zsucc (- precision))) * Rabs y +
-    - (powerRZ radix (Zpred (Zpred (- precision))) * Rabs (a * x)) +
-    - powerRZ radix (Zpred (Zpred (- dExp b))))%R ->
+    (powerRZ radix (Z.pred (Z.pred (- precision)))) *
+    (1 - powerRZ radix (Z.succ (- precision))) * Rabs y +
+    - (powerRZ radix (Z.pred (Z.pred (- precision))) * Rabs (a * x)) +
+    - powerRZ radix (Z.pred (Z.pred (- dExp b))))%R ->
          (MinOrMax radix b (a1 * x1 + y1) u).
+Proof.
 intros a1 x1 y1 a x y t u Fa Fx Fy Ft Fu tDef uDef Cu Ct H1 H2.
 apply Axpy_tFlessu with a x y t; auto.
 cut (0 < 1 - powerRZ radix (- precision))%R; [ intros H'1 | idtac ].
@@ -12658,7 +12261,7 @@ cut (0 < 1 - powerRZ radix (- precision))%R; [ intros H'1 | idtac ].
 cut (0 < 1 + powerRZ radix (- precision))%R; [ intros H'2 | idtac ].
 2: apply Rlt_le_trans with 1%R; auto with real.
 2: apply Rle_trans with (1 + 0)%R; auto with real zarith.
-cut ((5%nat + 4%nat * powerRZ radix (- precision)) * Rabs t <= Rabs y)%R;
+cut ((5 + 4 * powerRZ radix (- precision)) * Rabs t <= Rabs y)%R;
  [ intros H3 | idtac ].
 apply Rplus_le_reg_l with (- Rabs (FtoRradix u))%R.
 ring_simplify (- Rabs (FtoRradix u) + Rabs (FtoRradix u))%R.
@@ -12666,7 +12269,7 @@ apply
  Rle_trans
   with
     (- ((Rabs y + - Rabs t) * / (1 + powerRZ radix (- precision))) +
-     4%nat * Rabs (FtoRradix t))%R;
+     4 * Rabs (FtoRradix t))%R;
  [ apply Rplus_le_compat_r; apply Ropp_le_contravar | idtac ].
 apply
  Rle_trans
@@ -12702,27 +12305,22 @@ apply Rle_trans with (Fulp b radix precision u * (radix * / radix))%R;
  [ rewrite Rinv_r; auto with real zarith | right; ring ].
 ring_simplify (Fulp b radix precision u * 1)%R.
 unfold FtoRradix in |- *; apply ClosestUlp; auto with real zarith.
-try apply TwoMoreThanOne.
 rewrite Rplus_comm; auto.
-ring_simplify (1*Rabs u)%R; apply Rplus_le_compat_l.
+rewrite Rmult_1_l; apply Rplus_le_compat_l.
 apply Rmult_le_reg_l with (IZR radix); auto with real zarith.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real zarith.
 ring_simplify (1 * Fulp b radix precision u)%R.
 apply
- Rle_trans with (Rabs (FtoRradix u) * powerRZ radix (Zsucc (- precision)))%R.
+ Rle_trans with (Rabs (FtoRradix u) * powerRZ radix (Z.succ (- precision)))%R.
 unfold FtoRradix in |- *; apply FulpLe2; auto with zarith.
-try apply TwoMoreThanOne.
 replace (Fnormalize radix b precision u) with u;
  [ idtac
  | apply
     FcanonicUnique with (radix := radix) (precision := precision) (b := b) ];
  auto with zarith real.
-try apply TwoMoreThanOne.
 apply FnormalizeCanonic; auto with zarith.
-try apply TwoMoreThanOne.
 apply sym_eq; apply FnormalizeCorrect; auto with zarith.
-try apply TwoMoreThanOne.
-unfold Zsucc in |- *; rewrite powerRZ_add; auto with zarith real;
+unfold Z.succ in |- *; rewrite powerRZ_add; auto with zarith real;
  simpl in |- *; auto with zarith real; right; ring.
 replace (FtoRradix y + FtoRradix t)%R with (FtoRradix u); auto with real.
 apply Rle_trans with (Rabs (FtoRradix u) * 1)%R;
@@ -12732,24 +12330,20 @@ pattern 1%R at 2 in |- *; replace 1%R with (/ 1)%R; auto with real zarith.
 apply Rle_Rinv; auto with real zarith.
 pattern 1%R at 1 in |- *; replace 1%R with (1 + 0)%R; auto with real zarith.
 apply Rplus_le_compat_l.
-apply powerRZ_le; apply Rlt_IZR; try apply TwoMoreThanOne.
+now apply powerRZ_le, IZR_lt.
 unfold FtoRradix in |- *; apply plusExact1 with b precision;
  auto with real zarith.
-try apply TwoMoreThanOne.
 rewrite Rplus_comm; auto.
 elim H4; intros H5 H6; elim H6; intros H7 H8; rewrite H7; apply Zmin_Zle;
  elim Fy; elim Ft; auto with zarith.
 apply
  Rle_trans
   with
-    (((5%nat + 4%nat * powerRZ radix (- precision)) * Rabs (FtoRradix t) +
+    (((5 + 4 * powerRZ radix (- precision)) * Rabs (FtoRradix t) +
       - Rabs (FtoRradix y)) * / (1 + powerRZ radix (- precision)))%R.
-right; replace (INR 5) with (1 + 4%nat)%R;
- [ idtac
- | replace 1%R with (INR 1); [ rewrite <- plus_INR | idtac ];
-    auto with real arith ].
-replace (4%nat * Rabs (FtoRradix t))%R with
- (4%nat * Rabs (FtoRradix t) *
+right; replace 5%R with (1 + 4)%R by ring.
+replace (4 * Rabs (FtoRradix t))%R with
+ (4 * Rabs (FtoRradix t) *
   ((1 + powerRZ radix (- precision)) * / (1 + powerRZ radix (- precision))))%R.
 ring; ring.
 rewrite Rinv_r; auto with real; ring.
@@ -12758,34 +12352,30 @@ apply Rle_trans with (0 * / (1 + powerRZ radix (- precision)))%R;
 apply Rplus_le_reg_l with (Rabs (FtoRradix y)).
 apply
  Rle_trans
-  with ((5%nat + 4%nat * powerRZ radix (- precision)) * Rabs (FtoRradix t))%R;
+  with ((5 + 4 * powerRZ radix (- precision)) * Rabs (FtoRradix t))%R;
  [ right; ring | ring_simplify (Rabs (FtoRradix y) + 0)%R ];
  auto.
 apply Rle_trans with (2 := H1).
 rewrite Rmult_assoc.
 apply Rmult_le_compat_l; auto with real arith.
-apply Rle_trans with (5%nat + 4%nat * 0)%R; auto with real arith.
-ring_simplify (5%nat + 4%nat * 0)%R; auto with real arith.
+apply Rle_trans with (5 + 4 * 0)%R; auto with real arith.
+ring_simplify (5 + 4 * 0)%R; auto with real arith.
 apply Rplus_le_compat_l; apply Rmult_le_compat_l.
-rewrite INR_IZR_INZ; apply Rle_IZR; omega.
-apply powerRZ_le, Rlt_IZR; try apply TwoMoreThanOne.
+now apply IZR_le.
+now apply powerRZ_le, IZR_lt.
 apply
  Rle_trans
   with
     (Rabs (FtoRradix a * FtoRradix x) * / (1 - powerRZ radix (- precision)) +
-     powerRZ radix (Zpred (- dExp b)) * / (1 - powerRZ 2%Z (- precision)))%R;
+     powerRZ radix (Z.pred (- dExp b)) * / (1 - powerRZ 2%Z (- precision)))%R;
  [ idtac | right; simpl; unfold radix; ring ].
 unfold FtoRradix in |- *; apply RoundLeGeneral; auto with real zarith.
-apply Rplus_le_compat_l, powerRZ_le, Rlt_IZR; try apply TwoMoreThanOne.
+now apply Rplus_le_compat_l, powerRZ_le, IZR_lt.
 ring_simplify.
-apply Rlt_powerRZ; auto with zarith; apply Rlt_IZR; try apply TwoMoreThanOne.
+apply Rlt_powerRZ; auto with zarith; now apply IZR_lt.
 apply Rle_lt_trans with (1 := H2).
 apply UlpFlessuGe2 with t; auto.
 Qed.
-
-
-
-
 
 End Axpy.
 (*** was file Veltkamp.v  ***)
@@ -12813,28 +12403,28 @@ Theorem FboundedMbound2Pos :
  exists c : float, Fbounded b c /\ c = (m * powerRZ radix z)%R :>R /\ (z <= Fexp c)%Z.
 intros C z m H' H'0 H'1; case (Zle_lt_or_eq _ _ H'0); intros H'2.
 exists (Float m z); split; auto with zarith.
-repeat split; simpl in |- *; auto with zarith.
+repeat split; simpl in |- *; lia.
 exists (Float 1 (p+z)).
 split;[split; simpl; auto with zarith|split].
-rewrite pGivesBound; apply Zle_lt_trans with (Zpower_nat radix 0); auto with zarith.
+rewrite pGivesBound; apply Z.le_lt_trans with (Zpower_nat radix 0); auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
 unfold FtoRradix, FtoR; simpl; rewrite H'2; rewrite Zpower_nat_Z_powerRZ.
 rewrite powerRZ_add; auto with real zarith.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 simpl; auto with zarith.
 Qed.
 
 Theorem FboundedMbound2 :
  (0 < p) ->
  forall z m : Z,
- (Zabs m <= Zpower_nat radix p)%Z ->
+ (Z.abs m <= Zpower_nat radix p)%Z ->
  (- dExp b <= z)%Z ->
  exists c : float, Fbounded b c /\ c = (m * powerRZ radix z)%R :>R /\ (z <= Fexp c)%Z.
 intros C z m H H0.
 case (Zle_or_lt 0 m); intros H1.
-case (FboundedMbound2Pos C z (Zabs m)); auto; try rewrite Zabs_eq; auto.
+case (FboundedMbound2Pos C z (Z.abs m)); auto; try rewrite Z.abs_eq; auto.
 intros f (H2, H3); exists f; split; auto.
-case (FboundedMbound2Pos C z (Zabs m)); auto; try rewrite Zabs_eq_opp;
+case (FboundedMbound2Pos C z (Z.abs m)); auto; try rewrite Zabs_eq_opp;
  auto with zarith.
 intros f (H2, H3); elim H3; intros; exists (Fopp f); split; auto with zarith.
 apply oppBounded; auto with zarith.
@@ -12954,7 +12544,7 @@ replace (- (f + - FSucc b radix p f))%R with (FSucc b radix p f - f)%R;[idtac|ri
 unfold FtoRradix; rewrite <- Fminus_correct; auto;rewrite FSuccDiffPos; auto with real zarith.
 unfold FtoR; simpl; ring_simplify (1 * powerRZ radix (Fexp f))%R; rewrite Rabs_right.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 replace e with (Fexp (Float (nNormMin radix p) e)); auto.
 apply Fcanonic_Rle_Zle with radix b p; auto with real zarith.
 apply FcanonicNnormMin; auto with zarith.
@@ -12963,15 +12553,15 @@ unfold nNormMin, FtoR; simpl;rewrite Zpower_nat_Z_powerRZ.
 rewrite <- powerRZ_add; auto with real zarith.
 rewrite Rabs_right.
 replace (pred p+e)%Z with (e+p-1)%Z; auto with real zarith.
-rewrite inj_pred; unfold Zpred; auto with zarith arith.
-apply Rle_ge, powerRZ_le, Rlt_IZR; omega.
-apply IZR_neq; omega.
+rewrite inj_pred; unfold Z.pred; auto with zarith arith.
+apply Rle_ge, powerRZ_le, IZR_lt; lia.
+apply IZR_neq; lia.
 rewrite Rabs_right; auto.
 apply Rle_ge; apply Rle_trans with (2:=fGe); auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_ge, powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply Rle_ge, powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (2:=fGe); auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 auto with real.
 rewrite <- Rabs_Ropp with (z-f)%R.
 apply Rle_trans with (Rabs ((f - FSucc b radix p f) - (-(z - f))))%R.
@@ -12989,7 +12579,7 @@ replace ( (f + - FPred b radix p f))%R with (FSucc b radix p (FPred b radix p f)
 unfold FtoRradix; rewrite <- Fminus_correct; auto;rewrite FSuccDiffPos; auto with real zarith.
 unfold FtoR; simpl; ring_simplify (1 * powerRZ radix (Fexp (FPred b radix p f)))%R; rewrite Rabs_right.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 replace e with (Fexp (Float (nNormMin radix p) e)); auto.
 apply Fcanonic_Rle_Zle with radix b p; auto with real zarith.
 apply FcanonicNnormMin; auto with zarith.
@@ -12999,15 +12589,15 @@ unfold nNormMin, FtoR; simpl;rewrite Zpower_nat_Z_powerRZ.
 rewrite <- powerRZ_add; auto with real zarith.
 rewrite Rabs_right.
 replace (pred p+e)%Z with (e+p-1)%Z; auto with real zarith.
-rewrite inj_pred; unfold Zpred; auto with zarith arith.
-apply Rle_ge; apply powerRZ_le, Rlt_IZR; omega.
-apply IZR_neq; omega.
+rewrite inj_pred; unfold Z.pred; auto with zarith arith.
+apply Rle_ge; apply powerRZ_le, IZR_lt; lia.
+apply IZR_neq; lia.
 rewrite Rabs_right; auto.
 apply Rle_ge; apply Rle_trans with (2:=H1); auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_ge; apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply Rle_ge; apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (2:=H1); auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 rewrite FSucPred; auto with zarith.
 ring.
 fold Rminus; auto with real.
@@ -13023,8 +12613,9 @@ apply FcanonicNnormMin; auto with zarith.
 fold FtoRradix; rewrite <- T; auto.
 unfold nNormMin, FtoRradix, FtoR; simpl;rewrite Zpower_nat_Z_powerRZ.
 rewrite <- powerRZ_add; auto with real zarith.
-replace (pred p+e)%Z with (e+p-1)%Z; auto with real zarith.
-apply IZR_neq; omega.
+replace (pred p+e)%Z with (e+p-1)%Z; try easy.
+lia.
+apply IZR_neq; lia.
 cut (FPred b radix p f < f)%R; [intros|unfold FtoRradix; apply FPredLt; auto with zarith].
 rewrite Rabs_right.
 rewrite Rabs_right.
@@ -13069,9 +12660,9 @@ rewrite <- Fabs_correct; auto.
 apply Rle_trans with (FtoR radix (Float (S 0) (Fexp (((Fminus radix (Fnormalize radix b p g) f)))))).
 unfold FtoR; simpl.
 apply Rle_trans with (powerRZ radix e);[right; field; auto with real|idtac].
-apply Rle_trans with (powerRZ radix (Zmin (Fexp (Fnormalize radix b p g)) (Fexp f)))%R;[idtac|right;ring].
+apply Rle_trans with (powerRZ radix (Z.min (Fexp (Fnormalize radix b p g)) (Fexp f)))%R;[idtac|right;ring].
 apply Rle_powerRZ; auto with zarith real.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply Zmin_Zle.
 replace e with (Fexp (Float (nNormMin radix p) e)); auto.
 apply Fcanonic_Rle_Zle with radix b p; auto with real zarith.
@@ -13082,14 +12673,14 @@ unfold nNormMin, FtoR; simpl;rewrite Zpower_nat_Z_powerRZ.
 rewrite <- powerRZ_add; auto with real zarith.
 rewrite Rabs_right.
 replace (pred p+e)%Z with (e+p-1)%Z; auto with real zarith.
-rewrite inj_pred; unfold Zpred; auto with zarith arith.
-apply Rle_ge; apply powerRZ_le, Rlt_IZR; omega.
-apply IZR_neq; omega.
+rewrite inj_pred; unfold Z.pred; auto with zarith arith.
+apply Rle_ge; apply powerRZ_le, IZR_lt; lia.
+apply IZR_neq; lia.
 cut (powerRZ radix (e + p - 1) <= g)%R;[intros Y|idtac].
 unfold FtoRradix;rewrite FnormalizeCorrect; auto with zarith.
 fold FtoRradix; rewrite Rabs_right; auto.
 apply Rle_ge; apply Rle_trans with (2:=Y); auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 cut ((powerRZ radix (e + p - 1)= (Float (nNormMin radix p) e)))%R.
 intros U; rewrite U.
 case zGe; intros T'.
@@ -13106,8 +12697,9 @@ apply FcanonicNnormMin; auto with zarith.
 fold FtoRradix; rewrite <- U; rewrite T'; auto.
 unfold nNormMin, FtoRradix, FtoR; simpl;rewrite Zpower_nat_Z_powerRZ.
 rewrite <- powerRZ_add; auto with real zarith.
-replace (pred p+e)%Z with (e+p-1)%Z; auto with real zarith.
-apply IZR_neq; omega.
+replace (pred p+e)%Z with (e+p-1)%Z; try easy.
+lia.
+apply IZR_neq; lia.
 replace e with (Fexp (Float (nNormMin radix p) e)); auto.
 apply Fcanonic_Rle_Zle with radix b p; auto with real zarith.
 apply FcanonicNnormMin; auto with zarith.
@@ -13116,12 +12708,12 @@ unfold nNormMin, FtoR; simpl;rewrite Zpower_nat_Z_powerRZ.
 rewrite <- powerRZ_add; auto with real zarith.
 rewrite Rabs_right.
 replace (pred p+e)%Z with (e+p-1)%Z; auto with real zarith.
-rewrite inj_pred; unfold Zpred; auto with zarith arith.
-apply Rle_ge; apply powerRZ_le, Rlt_IZR; omega.
-apply IZR_neq; omega.
+rewrite inj_pred; unfold Z.pred; auto with zarith arith.
+apply Rle_ge; apply powerRZ_le, IZR_lt; lia.
+apply IZR_neq; lia.
 rewrite Rabs_right; auto.
 apply Rle_ge; apply Rle_trans with (2:=fGe); auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply RleFexpFabs; auto with zarith.
 rewrite Fminus_correct; auto; rewrite FnormalizeCorrect; auto.
 fold FtoRradix; auto with real.
@@ -13210,21 +12802,21 @@ apply Rle_ge; fold FtoRradix; apply Rle_trans with (z-z)%R; unfold Rminus;auto w
 rewrite H0'; apply Rlt_le_trans with  (FSucc b radix p g - 0)%R; auto with real.
 unfold Rminus; apply Rplus_lt_compat_l;  apply Ropp_lt_contravar.
 unfold Rdiv; apply Rmult_lt_0_compat; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 rewrite H0.
 apply Rplus_eq_reg_l with (-g+ powerRZ radix (Fexp g) / 2)%R; ring_simplify.
 apply trans_eq with (powerRZ radix (Fexp g));[field; auto with real|idtac].
-apply trans_eq with (FtoRradix (Float 1%nat (Fexp g)));[unfold FtoRradix, FtoR; simpl; ring|idtac].
+apply trans_eq with (FtoRradix (Float 1 (Fexp g)));[unfold FtoRradix, FtoR; simpl; ring|idtac].
 unfold FtoRradix; rewrite <- FSuccDiff1 with b radix p g; auto with zarith.
 rewrite Fminus_correct; auto with real; ring.
 cut (- nNormMin radix p < Fnum g)%Z; auto with zarith.
-apply Zlt_le_trans with 0%Z; auto with zarith; apply Zplus_lt_reg_l with (nNormMin radix p).
+apply Z.lt_le_trans with 0%Z; auto with zarith; apply Zplus_lt_reg_l with (nNormMin radix p).
 ring_simplify.
 unfold nNormMin; auto with zarith.
-apply Zpower_nat_less; omega.
+apply Zpower_nat_less; lia.
 rewrite H0; apply Rle_lt_trans with (g+0)%R; auto with real.
 apply Rplus_lt_compat_l; unfold Rdiv; apply Rmult_lt_0_compat; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 Qed.
 
 
@@ -13232,11 +12824,12 @@ Theorem ClosestImplyEven_int: (Even radix)%Z
    ->  (EvenClosest b radix p z f) -> (Fcanonic radix b f) -> (0 <= f)%R
    ->  (z=(powerRZ radix (Fexp f))*(m+1/2))%R -> (exists n:Z, IZR n=m)
    ->  (FNeven b radix p f).
+Proof.
 intros I; intros.
 elim H3; clear H3; intros n H4.
 cut (0 <= Fnum f)%Z; [intros|apply LeR0Fnum with radix; auto with real zarith].
 case (Zle_lt_or_eq _ _ H3); intros Y1.
-case (Z_eq_dec (nNormMin radix p) (Fnum f)).
+case (Z.eq_dec (nNormMin radix p) (Fnum f)).
 intros H5; unfold FNeven; rewrite FcanonicFnormalizeEq; auto with zarith.
 unfold Feven; rewrite <- H5; unfold nNormMin.
 replace (pred p) with (S (pred (pred p))); auto with zarith.
@@ -13254,41 +12847,41 @@ case H0; intros.
 cut (nNormMin radix p < Fnum f)%Z;[intros K|idtac].
 elim H5; intros; elim H6; intros.
 left; split;[split| idtac]; simpl; auto.
-apply Zle_lt_trans with (2:=H8); repeat rewrite Zabs_eq; auto with zarith.
-rewrite Zabs_eq; auto with zarith.
+apply Z.le_lt_trans with (2:=H8); repeat rewrite Z.abs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 rewrite PosNormMin with radix b p; auto with zarith.
 cut (nNormMin radix p <= Fnum f)%Z; auto with zarith.
 elim H5; intros.
+rewrite Z.abs_eq in H7 by auto with zarith.
 apply Zmult_le_reg_r with radix; auto with zarith.
-rewrite Zmult_comm; rewrite <- PosNormMin with radix b p; auto with zarith.
-rewrite Zabs_eq in H7; auto with zarith.
+rewrite Zmult_comm; rewrite <- PosNormMin with radix b p; lia.
 elim H5; intros T1 T2; elim T1; elim T2; clear T1 T2; intros.
-right; split; split; simpl; auto with zarith.
-apply Zle_lt_trans with (2:=H7); rewrite Zabs_eq; auto with zarith.
-rewrite Zabs_eq; auto with zarith.
-apply Zle_trans with (2:=I1); apply Zplus_le_reg_l with 1%Z.
+right; split; split; simpl; try lia.
+apply Z.le_lt_trans with (2:=H7); rewrite Z.abs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
+apply Z.le_trans with (2:=I1); apply Zplus_le_reg_l with 1%Z.
 ring_simplify; auto with zarith.
-apply Zle_Rle.
+apply le_IZR.
 rewrite H4; apply Rplus_le_reg_l with (1/2)%R.
 rewrite Rplus_comm; apply Rmult_le_reg_l with (powerRZ radix (Fexp f)); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 rewrite <- H2; apply Rplus_le_reg_l with (-f)%R.
 apply Rle_trans with (z-f)%R;[right;ring|idtac].
 apply Rle_trans with (Rabs (z-f))%R;[apply RRle_abs|idtac].
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (powerRZ radix (Fexp f)).
 unfold FtoRradix; apply ClosestExp with b p; auto with zarith.
 elim H; auto.
 unfold FtoRradix, FtoR; simpl; right; field; auto with real.
-apply Zle_Rle.
+apply le_IZR.
 rewrite H4; apply Rplus_le_reg_l with (1/2)%R.
 rewrite (Rplus_comm (1/2)%R m); apply Rmult_le_reg_l with (powerRZ radix (Fexp f)); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 rewrite <- H2; apply Rplus_le_reg_l with (-z+(1/2)*(powerRZ radix (Fexp f)))%R.
 unfold Zminus; rewrite plus_IZR; simpl.
 apply Rle_trans with (-(z-f))%R;[right;unfold FtoRradix, FtoR; field; auto with real|idtac].
 apply Rle_trans with (Rabs (-(z-f)))%R;[apply RRle_abs|idtac].
-rewrite Rabs_Ropp; apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+rewrite Rabs_Ropp; apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (powerRZ radix (Fexp f)).
 unfold FtoRradix; apply ClosestExp with b p; auto with zarith.
 elim H; auto.
@@ -13306,7 +12899,7 @@ Variables s t:nat.
 Variables p x q hx: float.
 
 Let b' := Bound
-    (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (minus t s)))))
+    (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (minus t s)))))
     (dExp b).
 
 Let FtoRradix := FtoR radix.
@@ -13316,8 +12909,8 @@ Hypothesis radixMoreThanOne : (1 < radix)%Z.
 Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ radixMoreThanOne).
 
 Hypothesis pGivesBound: Zpos (vNum b)=(Zpower_nat radix t).
-Hypothesis SLe: (2 <= s)%nat.
-Hypothesis SGe: (s <= t-2)%nat.
+Hypothesis SLe: (2 <= s).
+Hypothesis SGe: (s <= t-2).
 Hypothesis Fx:  Fbounded b x.
 Hypothesis pDef: (Closest b radix (x*((powerRZ radix s)+1))%R p).
 Hypothesis qDef: (Closest b radix (x-p)%R  q).
@@ -13328,27 +12921,28 @@ Hypothesis Nq:  Fnormal radix b q.
 Hypothesis Nx:  Fnormal radix b x.
 
 Lemma p'GivesBound: Zpos (vNum b')=(Zpower_nat radix (minus t s)).
-unfold b' in |- *; unfold vNum in |- *.
+clear SGe SLe.
+  unfold b' in |- *; unfold vNum in |- *.
 apply
  trans_eq
   with
     (Z_of_nat
        (nat_of_P
           (P_of_succ_nat
-             (pred (Zabs_nat (Zpower_nat radix (minus t s))))))).
+             (pred (Z.abs_nat (Zpower_nat radix (minus t s))))))).
 unfold Z_of_nat in |- *; rewrite nat_of_P_o_P_of_succ_nat_eq_succ;
  auto with zarith.
 rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
-cut (Zabs (Zpower_nat radix (minus t s)) = Zpower_nat radix (minus t s)).
+cut (Z.abs (Zpower_nat radix (minus t s)) = Zpower_nat radix (minus t s)).
 intros H; pattern (Zpower_nat radix (minus t s)) at 2 in |- *; rewrite <- H.
 rewrite Zabs_absolu.
-rewrite <- (S_pred (Zabs_nat (Zpower_nat radix (minus t s))) 0);
+rewrite <- (S_pred (Z.abs_nat (Zpower_nat radix (minus t s))) 0);
  auto with arith zarith.
 apply lt_Zlt_inv; simpl in |- *; auto with zarith arith.
 rewrite <- Zabs_absolu; rewrite H; auto with arith zarith.
-apply Zpower_nat_less; omega.
-apply Zabs_eq; auto with arith zarith.
-apply Zpower_NR0; omega.
+apply Zpower_nat_less; lia.
+apply Z.abs_eq; auto with arith zarith.
+apply Zpower_NR0; lia.
 Qed.
 
 
@@ -13357,7 +12951,7 @@ unfold FtoRradix; apply RleRoundedR0 with b t (Closest b radix) (x * (powerRZ ra
 apply ClosestRoundedModeP with t; auto with zarith.
 apply Rmult_le_pos; auto with real.
 apply Rplus_le_le_0_compat; auto with real.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 Qed.
 
 Lemma qNeg: (q <= 0)%R.
@@ -13368,7 +12962,7 @@ generalize ClosestMonotone; unfold MonotoneP; intros.
 unfold FtoRradix; apply H with b x  (x * (powerRZ radix s + 1))%R; auto with zarith real.
 apply Rplus_lt_reg_r with (-x)%R; ring_simplify.
 apply Rle_lt_trans with (x*0)%R;[right;ring|apply Rmult_lt_compat_l;auto with real zarith].
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 unfold FtoRradix; apply RoundedModeProjectorIdem with (P:=(Closest b radix)) (b:=b); auto.
 apply ClosestRoundedModeP with t; auto with zarith.
 Qed.
@@ -13381,14 +12975,14 @@ replace z with ((z-f)+f)%R;[idtac|ring].
 apply Rle_trans with (Rabs(z-f)+Rabs(f))%R;[apply Rabs_triang|idtac].
 apply Rplus_le_reg_l with (- Rabs(f))%R.
 ring_simplify.
-apply Rmult_le_reg_l with 2%nat; auto with real zarith.
+apply Rmult_le_reg_l with 2; auto with real zarith.
 apply Rle_trans with (Fulp b radix t f).
 unfold FtoRradix; apply ClosestUlp; auto with zarith.
-apply Rle_trans with (Rabs f * powerRZ radix (Zsucc (- t)))%R.
+apply Rle_trans with (Rabs f * powerRZ radix (Z.succ (- t)))%R.
 unfold FtoRradix; apply FulpLe2; auto with zarith.
 elim H; auto.
 rewrite FcanonicFnormalizeEq; auto with zarith; left; auto.
-unfold Zsucc; replace (-t+1)%Z with (1-t)%Z;[idtac|ring].
+unfold Z.succ; replace (-t+1)%Z with (1-t)%Z;[idtac|ring].
 simpl; right; field; auto with real.
 Qed.
 
@@ -13413,29 +13007,29 @@ apply Rmult_le_reg_l with (1-(1+(powerRZ radix (1-t))/2)/(powerRZ radix s + 1))%
 apply Rmult_lt_reg_l with (2*(powerRZ radix s + 1))%R; auto with real zarith.
 apply Rmult_lt_0_compat; auto with real zarith.
 apply Rplus_lt_0_compat; auto with real.
-apply powerRZ_lt, Rlt_IZR; omega.
-apply Rle_lt_trans with 0%R;[right;ring|idtac].
-apply Rlt_le_trans with (2*powerRZ radix s  -  (powerRZ radix (1- t)))%R;[idtac|right; field; auto with real zarith].
+apply powerRZ_lt, IZR_lt; lia.
+rewrite Rmult_0_r.
+apply Rlt_le_trans with (2*powerRZ radix s  -  (powerRZ radix (1- t)))%R;[idtac|right; field].
 apply Rplus_lt_reg_r with ((powerRZ radix (1-t)))%R.
 ring_simplify.
 apply Rle_lt_trans with (powerRZ radix s); auto with real zarith.
-apply Rle_powerRZ; auto with zarith; left; apply Rlt_IZR; omega.
+apply Rle_powerRZ; auto with zarith; left; apply IZR_lt; lia.
 apply Rle_lt_trans with (powerRZ radix s + 0)%R; auto with real zarith.
 apply Rlt_le_trans with (powerRZ radix s + powerRZ radix s)%R; auto with real zarith.
-apply Rplus_lt_compat_l; apply powerRZ_lt, Rlt_IZR; omega.
+apply Rplus_lt_compat_l; apply powerRZ_lt, IZR_lt; lia.
 right; ring.
 cut (0 < (powerRZ radix s + 1))%R; auto with real zarith.
 apply Rplus_lt_0_compat; auto with real.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rle_trans with ((FtoR radix (Fopp q))*(1 + (powerRZ radix (1- t))/2))%R.
 fold FtoRradix; apply Rle_trans with (p-x)%R.
 apply Rle_trans with (p - (p*(1 + powerRZ radix (1 - t) / 2) / (powerRZ radix s + 1)))%R;[right|unfold Rminus;apply Rplus_le_compat_l].
 field; auto with real zarith.
 cut (0 < (powerRZ radix s + 1))%R; auto with real zarith.
-apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, Rlt_IZR; omega.
+apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, IZR_lt; lia.
 apply Ropp_le_contravar.
 apply Rmult_le_reg_l with (powerRZ radix s + 1)%R; auto with real zarith.
-apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, Rlt_IZR; omega.
+apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, IZR_lt; lia.
 apply Rle_trans with ((p * (1 + powerRZ radix (1 - t)/2)))%R;[idtac|right;field].
 replace ((powerRZ radix s + 1)* x)%R with (Rabs ((x * (powerRZ radix s + 1))))%R.
 replace (FtoRradix p) with (Rabs p).
@@ -13443,9 +13037,9 @@ apply RleRRounded; auto.
 apply Rabs_right; apply Rle_ge; apply pPos.
 rewrite Rabs_right; auto with real; apply Rle_ge; apply Rmult_le_pos; auto with real zarith.
 cut (0 < (powerRZ radix s + 1))%R; auto with real zarith.
-apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, Rlt_IZR; omega.
+apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, IZR_lt; lia.
 apply Rgt_not_eq.
-apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, Rlt_IZR; omega.
+apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, IZR_lt; lia.
 replace (p - x)%R with (Rabs (x-p))%R.
 replace (FtoRradix (Fopp q)) with (Rabs q)%R.
 apply RleRRounded; auto.
@@ -13457,7 +13051,7 @@ generalize ClosestMonotone; unfold MonotoneP; intros.
 unfold FtoRradix; apply H with b x  (x * (powerRZ radix s + 1))%R; auto with zarith real.
 apply Rplus_lt_reg_r with (-x)%R; ring_simplify.
 apply Rle_lt_trans with (x*0)%R;[right;ring|apply Rmult_lt_compat_l;auto with real zarith].
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 unfold FtoRradix; apply RoundedModeProjectorIdem with (P:=(Closest b radix)) (b:=b); auto.
 apply ClosestRoundedModeP with t; auto with zarith.
 fold FtoRradix;apply Rle_trans with ((Fopp q)*((1 - (1 + powerRZ radix (1 - t) / 2) / (powerRZ radix s + 1)) *S 1))%R;[idtac|right;ring].
@@ -13468,37 +13062,38 @@ apply Rplus_le_reg_l with (-1)%R; ring_simplify ((-1 +(1+powerRZ radix (1 - t) /
 apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with (powerRZ radix (1 - t))%R;[right;field; auto with real|idtac].
 apply Rle_trans with (powerRZ radix (0))%R;[idtac|right;simpl;field]; auto with real zarith.
-apply Rle_powerRZ; auto with zarith; left; apply Rlt_IZR; omega.
+apply Rle_powerRZ; auto with zarith; left; apply IZR_lt; lia.
 apply Rmult_le_reg_l with (/2)%R; auto with real.
 apply Rplus_le_reg_l with (-3/4+(1 + powerRZ radix (1 - t) / 2) / (powerRZ radix s + 1))%R.
 apply Rle_trans with ((1 + powerRZ radix (1 - t) / 2) / (powerRZ radix s + 1))%R;[right; field; auto with real|idtac].
 cut  (0 <  powerRZ radix s + 1)%R; auto with real.
-apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, Rlt_IZR; omega.
+apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, IZR_lt; lia.
 apply Rmult_le_reg_l with (powerRZ radix s + 1)%R; auto with real zarith.
-apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, Rlt_IZR; omega.
+apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, IZR_lt; lia.
 apply Rmult_le_reg_l with 4%R.
 auto with real.
-apply Rle_trans with (4+ 2*(powerRZ radix (1 - t)))%R;[right; field; auto with real zarith|idtac].
-cut  (0 < (( ((powerRZ radix s + 1)))))%R; auto with real zarith.
-apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, Rlt_IZR; omega.
+apply Rle_trans with (4+ 2*(powerRZ radix (1 - t)))%R;[right; field|idtac].
+apply Rgt_not_eq, Rlt_gt.
+apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, IZR_lt; lia.
 apply Rle_trans with (powerRZ radix s + 1)%R;[idtac|right;simpl;field;auto with real].
 apply Rplus_le_compat.
 apply Rle_trans with (powerRZ radix 2)%R; [simpl;auto with real zarith|idtac].
 ring_simplify (radix * 1)%R; apply Rmult_le_compat; auto with real zarith arith;
- replace (R1 +R1)%R with 2%R by easy; apply Rle_IZR; auto with zarith.
+ replace (R1 +R1)%R with 2%R by easy; apply IZR_le; auto with zarith.
 apply Rle_powerRZ; auto with zarith real.
-left; apply Rlt_IZR; omega.
-apply Rle_trans with (powerRZ radix (1+(1 - t)))%R;[rewrite powerRZ_add; auto with real zarith|idtac].
-apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+left; apply IZR_lt; lia.
+apply Rle_trans with (powerRZ radix (1+(1 - t)))%R.
+rewrite powerRZ_add.
+apply Rmult_le_compat_r.
+apply powerRZ_le, IZR_lt; lia.
 simpl; ring_simplify (radix*1)%R; apply Rle_trans with (IZR 2); auto with real zarith.
-apply Rle_IZR; omega.
-apply IZR_neq; omega.
-apply Rle_trans with (powerRZ radix 0)%R;[idtac|simpl; auto with real].
+apply IZR_le; lia.
+apply IZR_neq; lia.
+change 1%R with (powerRZ radix 0).
 apply Rle_powerRZ; auto with zarith real.
-apply Rle_IZR; omega.
-cut  (0 < (( ((powerRZ radix s + 1)))))%R; auto with real zarith.
-apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, Rlt_IZR; omega.
+apply IZR_le; lia.
+apply Rgt_not_eq, Rlt_gt.
+apply Rplus_lt_0_compat; auto with real; apply powerRZ_lt, IZR_lt; lia.
 Qed.
 
 
@@ -13520,7 +13115,7 @@ Qed.
 
 
 Lemma epLe: (Fexp p <=s+1+Fexp x)%Z.
-apply Zle_trans with (Fexp (Float (Fnum x) (s+1+Fexp x))).
+apply Z.le_trans with (Fexp (Float (Fnum x) (s+1+Fexp x))).
 2: simpl; auto with zarith.
 apply Fcanonic_Rle_Zle with radix b t; auto with zarith.
 left; auto.
@@ -13531,28 +13126,28 @@ rewrite Rabs_right;[idtac|fold FtoRradix; apply Rle_ge].
 generalize ClosestMonotone; unfold MonotoneP; intros.
 unfold FtoRradix; apply H with b (x * (powerRZ radix s + 1))%R (x * (powerRZ radix (s + 1)))%R ; auto with zarith real.
 apply Rmult_lt_compat_l; auto with real.
-rewrite powerRZ_add; auto with real zarith; simpl; ring_simplify (radix*1)%R.
+rewrite powerRZ_add; simpl; ring_simplify (radix*1)%R.
 apply Rlt_le_trans with (powerRZ radix s * 2%Z)%R.
 apply Rlt_le_trans with (powerRZ radix s+powerRZ radix s)%R.
 apply Rplus_lt_compat_l; apply Rle_lt_trans with (powerRZ radix 0)%R; auto with real zarith.
-apply Rlt_powerRZ; auto with zarith; apply Rlt_IZR; omega.
+apply Rlt_powerRZ; auto with zarith; apply IZR_lt; lia.
 right; simpl; ring.
 apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le; apply Rlt_IZR; omega.
-apply Rle_IZR; omega.
-apply IZR_neq; omega.
+apply powerRZ_le; apply IZR_lt; lia.
+apply IZR_le; lia.
+apply IZR_neq; lia.
 replace ((x * powerRZ radix (s + 1)))%R with (FtoRradix (Float (Fnum x) (s + 1 + Fexp x)))%R.
 unfold FtoRradix; apply RoundedModeProjectorIdem with (P:=(Closest b radix)) (b:=b); auto.
 apply ClosestRoundedModeP with t; auto with zarith.
 elim Fx; intros; split; simpl; auto with zarith.
 unfold FtoRradix, FtoR; simpl; ring_simplify.
-rewrite powerRZ_add; auto with real zarith; try ring.
-apply IZR_neq; omega.
+rewrite powerRZ_add. ring.
+apply IZR_neq; lia.
 apply Rle_trans with (x * powerRZ radix (s + 1))%R; auto with real zarith.
 apply Rmult_le_pos; auto with real zarith.
-apply powerRZ_le; apply Rlt_IZR; omega.
+apply powerRZ_le; apply IZR_lt; lia.
 unfold FtoRradix, FtoR; simpl;right;ring_simplify.
-repeat rewrite powerRZ_add; try apply IZR_neq; try omega.
+repeat rewrite powerRZ_add; try apply IZR_neq; try lia.
 ring.
 Qed.
 
@@ -13567,7 +13162,7 @@ cut (exists g:float, (Fnormal radix b g)/\(FtoRradix g=(Fnum x+radix)*(powerRZ r
    (Fexp g=Fexp x +s)%Z).
 intros T; elim T; intros g T'; elim T'; intros H1 T''; elim T''; intros H2 H3; clear T T' T''.
 left.
-apply Zle_trans with (Fexp g); auto with zarith.
+apply Z.le_trans with (Fexp g); auto with zarith.
 apply Fcanonic_Rle_Zle with radix b t; auto with zarith.
 left; auto.
 left; auto.
@@ -13581,10 +13176,10 @@ generalize ClosestMonotone; unfold MonotoneP; intros.
 unfold FtoRradix; apply H0 with b x  (x * (powerRZ radix s + 1))%R; auto with zarith real.
 apply Rplus_lt_reg_r with (-x)%R; ring_simplify.
 apply Rle_lt_trans with (x*0)%R;[right;ring|apply Rmult_lt_compat_l;auto with real zarith].
-apply powerRZ_lt;apply Rlt_IZR; omega.
+apply powerRZ_lt;apply IZR_lt; lia.
 unfold FtoRradix; apply RoundedModeProjectorIdem with (P:=(Closest b radix)) (b:=b); auto.
 apply ClosestRoundedModeP with t; auto with zarith.
-apply Rmult_le_reg_l with (2%nat); auto with real arith.
+apply Rmult_le_reg_l with (2); auto with real arith.
 apply Rle_trans with (powerRZ radix (Fexp q)).
 unfold FtoRradix; apply ClosestExp with b t; auto with zarith.
 right; simpl; field; auto with real.
@@ -13595,7 +13190,7 @@ apply Rle_trans with (Rabs ((- (x * (powerRZ radix s + 1)) + p)))%R; [apply RRle
 rewrite <- Rabs_Ropp.
 replace (- (- (x * (powerRZ radix s + 1)) + p))%R with ((x * (powerRZ radix s + 1)-p))%R;[idtac|ring].
 apply Rle_trans with (/ 2 * powerRZ radix (Fexp p))%R;[idtac|right;ring].
-apply Rmult_le_reg_l with (2%nat); auto with real arith.
+apply Rmult_le_reg_l with (2); auto with real arith.
 apply Rle_trans with (powerRZ radix (Fexp p)).
 unfold FtoRradix; apply ClosestExp with b t; auto with zarith.
 right; simpl; field; auto with real.
@@ -13605,29 +13200,30 @@ apply Rle_trans with (x * powerRZ radix s + powerRZ radix (Fexp p))%R;[apply Rpl
 apply Rle_trans with (/ 2 * powerRZ radix (Fexp p) + / 2 * powerRZ radix (Fexp p))%R;
    [apply Rplus_le_compat_l|right; field; auto with real].
 apply Rmult_le_compat_l; auto with real; apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply eqLeep.
 apply Rle_trans with (x * powerRZ radix s + radix * powerRZ radix (s+Fexp x))%R;[apply Rplus_le_compat_l|idtac].
 apply Rle_trans with (powerRZ radix (s+1+Fexp x))%R;[apply Rle_powerRZ; auto with real zarith; try apply epLe|idtac].
-apply Rle_IZR; omega.
-right; repeat rewrite powerRZ_add; try apply IZR_neq; try omega.
+apply IZR_le; lia.
+right; repeat rewrite powerRZ_add; try apply IZR_neq; try lia.
 simpl; ring.
 right; rewrite H2; rewrite Rabs_mult.
 rewrite Rabs_right;[idtac|apply Rle_ge; auto with real zarith].
 rewrite Rabs_right;[idtac|apply Rle_ge; auto with real zarith].
-2: apply powerRZ_le; apply Rlt_IZR; omega.
-unfold FtoRradix, FtoR; repeat rewrite powerRZ_add; try apply IZR_neq; try omega.
+2: apply powerRZ_le; apply IZR_lt; lia.
+unfold FtoRradix, FtoR; repeat rewrite powerRZ_add; try apply IZR_neq; try lia.
 simpl; ring.
 apply Rle_trans with ((Fnum x)+0)%R.
 ring_simplify.
-apply Rle_IZR, LeR0Fnum with radix; auto with real zarith.
-apply Rplus_le_compat_l; apply Rle_IZR; omega.
+apply IZR_le, LeR0Fnum with radix; auto with real zarith.
+apply Rplus_le_compat_l; apply IZR_le; lia.
 exists (Float (Fnum x +radix) (Fexp x + s)).
 elim Nx; elim Fx; intros.
-repeat split; simpl; auto with zarith.
-rewrite Zabs_eq; auto with zarith.
-rewrite Zabs_eq in H3; auto with zarith.
-apply Zle_trans with (1:=H3); auto with zarith.
+repeat split; simpl.
+1,2 : lia.
+rewrite Z.abs_eq by  auto with zarith.
+rewrite Z.abs_eq in H3 by auto with zarith.
+apply Z.le_trans with (1:=H3); auto with zarith.
 unfold FtoRradix, FtoR; simpl; rewrite plus_IZR; simpl; ring.
 cut (FtoRradix p <= powerRZ radix (Fexp x+t+s) + powerRZ radix (Fexp x+t))%R;[intros J1|idtac].
 cut (- (x - p) < powerRZ radix (Fexp x) * (powerRZ radix (t + s) + radix + 1))%R;[intros J2|idtac].
@@ -13646,14 +13242,14 @@ apply FcanonicFopp; left; auto.
 apply FcanonicNnormMin; elim Fx; auto with zarith.
 fold FtoRradix; apply Rlt_le_trans with (1:=V').
 unfold FtoRradix, FtoR, nNormMin; simpl.
-rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add; auto with real zarith.
+rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add.
 replace (pred t +(s+1+Fexp x))%Z with (t+s+Fexp x)%Z; auto with real.
-rewrite inj_pred; unfold Zpred; auto with zarith.
-apply IZR_neq; omega.
+rewrite inj_pred; unfold Z.pred; auto with zarith.
+apply IZR_neq; lia.
 apply Rle_ge; apply R0RltRlePred; auto with zarith.
 apply LtFnumZERO; auto.
 simpl; unfold nNormMin; auto with zarith.
-apply Zpower_nat_less; omega.
+apply Zpower_nat_less; lia.
 apply Rle_ge; rewrite Fopp_correct; auto; generalize qNeg; auto with real.
 rewrite FPredSimpl2; simpl; auto with zarith.
 elim Fx; auto with zarith.
@@ -13676,32 +13272,31 @@ rewrite <- V'; unfold FtoRradix; rewrite Fopp_correct; auto with real.
 apply Rplus_le_compat; auto with real.
 apply Ropp_le_contravar.
 unfold FtoRradix, FtoR; apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_trans with (IZR (Zpower_nat radix t - radix)); auto with real zarith.
+apply powerRZ_le, IZR_lt; lia.
+apply Rle_trans with (IZR (Zpower_nat radix t - radix)).
 unfold Zminus; rewrite plus_IZR; rewrite Zpower_nat_Z_powerRZ;
   rewrite Ropp_Ropp_IZR;  auto with real zarith.
-now apply Rle_IZR.
+now apply IZR_le.
 replace (t+s+Fexp x)%Z with (Fexp x+t+s)%Z; auto with zarith.
 ring_simplify.
-pattern (IZR radix) at 4 in |-*; replace (IZR radix) with (powerRZ radix 1);
-  auto with real zarith.
-repeat rewrite <- powerRZ_add; auto with real zarith.
+pattern (IZR radix) at 4 in |-*; replace (IZR radix) with (powerRZ radix 1).
+repeat rewrite <- powerRZ_add.
 rewrite Zplus_comm.
 ring_simplify.
 apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with (radix*powerRZ radix (1+Fexp x))%R.
 apply Rmult_le_compat_r; replace 2%R with (IZR 2); auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply IZR_le; lia.
 apply Rle_trans with (powerRZ radix (2+Fexp x)).
-right; repeat rewrite powerRZ_add; try apply IZR_neq; try omega.
+right; repeat rewrite powerRZ_add; try apply IZR_neq; try lia.
 simpl; ring.
 apply Rle_trans with (powerRZ radix (s+Fexp x)).
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 right; field; auto with real.
-apply IZR_neq; omega.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
+apply IZR_neq; lia.
 simpl; ring.
 intros.
 apply Rmult_le_reg_l with 2%R; auto with real.
@@ -13741,7 +13336,7 @@ unfold FtoRradix; rewrite <- Fminus_correct; auto.
 replace q with (Float (-(nNormMin radix t)) (s+1+Fexp x)).
 rewrite FSuccDiff3; auto with zarith real.
 unfold FtoR; simpl.
-replace (Zpred (s+1+Fexp x))%Z with (s+Fexp x)%Z; unfold Zpred; auto with real zarith.
+replace (Z.pred (s+1+Fexp x))%Z with (s+Fexp x)%Z; unfold Z.pred; auto with real zarith.
 simpl; elim Fx; auto with zarith.
 apply FnormalUnique with radix b t; auto with zarith.
 replace (Float (- nNormMin radix t) (s + 1 + Fexp x)) with
@@ -13755,10 +13350,10 @@ rewrite V'; unfold FtoRradix, FtoR, nNormMin; simpl.
 rewrite Ropp_Ropp_IZR; rewrite Zpower_nat_Z_powerRZ.
 apply trans_eq with (-(powerRZ radix (pred t) * powerRZ radix (s + 1 + Fexp x)))%R;
   auto with real.
-rewrite <- powerRZ_add; auto with real zarith.
+rewrite <- powerRZ_add.
 replace ((pred t + (s + 1 + Fexp x)))%Z with  (t + s + Fexp x)%Z; auto with real.
-rewrite inj_pred; auto with zarith; unfold Zpred; ring.
-apply IZR_neq; omega.
+rewrite inj_pred; auto with zarith; unfold Z.pred; ring.
+apply IZR_neq; lia.
 apply Rle_trans with (FtoRradix (Float 1%Z (t+s+Fexp x)));[idtac|right; unfold FtoRradix, FtoR; simpl; ring].
 generalize ClosestMonotone; unfold MonotoneP; intros.
 unfold FtoRradix; apply H0 with b (-(x-p))%R   ((powerRZ radix (Fexp x))*(powerRZ radix (t+s)+radix+1))%R;
@@ -13766,7 +13361,7 @@ unfold FtoRradix; apply H0 with b (-(x-p))%R   ((powerRZ radix (Fexp x))*(powerR
 apply ClosestOpp; auto.
 clear H0; generalize ClosestCompatible; unfold CompatibleP; intros T.
 cut (Fbounded b (Float 1 (t + s + Fexp x)));[intros H1|idtac].
-2: split; simpl; elim Fx; intros; auto with zarith.
+2: split; simpl; elim Fx; intros; lia.
 apply T with  (powerRZ radix (Fexp x) * (powerRZ radix (t + s) + radix + 1))%R
   (Fnormalize radix b t (Float 1 (t + s + Fexp x))); auto with real.
 2: rewrite FnormalizeCorrect; auto with zarith.
@@ -13774,14 +13369,14 @@ apply ImplyClosest with t (Fexp x+s+1)%Z; auto with zarith.
 apply FnormalizeBounded; auto with zarith.
 apply FnormalizeCanonic; auto with zarith.
 apply Rle_trans with  (powerRZ radix (Fexp x) * powerRZ radix (t + s))%R.
-rewrite <- powerRZ_add; auto with real zarith.
+rewrite <- powerRZ_add.
 replace (Fexp x + s + 1 + t - 1)%Z with  (Fexp x + (t + s))%Z; auto with real zarith.
-apply IZR_neq; omega.
-apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, IZR_lt; omega.
+apply IZR_neq; lia.
+apply Rmult_le_compat_l.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (powerRZ radix (t + s) +0)%R; auto with real zarith.
 rewrite Rplus_assoc; apply Rplus_le_compat_l; auto with real zarith.
-rewrite <- plus_IZR; apply Rle_IZR; omega.
+rewrite <- plus_IZR; apply IZR_le; lia.
 rewrite FnormalizeCorrect; auto with zarith; unfold FtoR; simpl; right.
 replace  (Fexp x + s + 1 + t - 1)%Z with  (t + s + Fexp x)%Z; ring.
 elim Fx; auto with zarith.
@@ -13791,54 +13386,54 @@ replace  (powerRZ radix (Fexp x) * (powerRZ radix (t + s) + radix + 1) -
   with (powerRZ radix (Fexp x) *(radix+1))%R.
 rewrite Rabs_right.
 replace (Fexp x+s+1)%Z with (Fexp x+(1+s))%Z;[idtac|ring].
-rewrite powerRZ_add; auto with real zarith.
+rewrite powerRZ_add.
 apply Rle_trans with (powerRZ radix (Fexp x) * (powerRZ radix (1+s) */ 2))%R;[idtac|right;unfold Rdiv; ring].
 apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with (powerRZ radix (1+s));[idtac|right; field; auto with real].
-rewrite powerRZ_add; auto with real zarith.
+rewrite powerRZ_add.
 apply Rmult_le_compat; auto with real zarith.
-rewrite <- plus_IZR; apply Rle_IZR; omega.
-simpl; ring_simplify (radix*1)%R; apply Rle_IZR; auto with real zarith.
-2: apply IZR_neq; omega.
-2: apply IZR_neq; omega.
-apply Rle_trans with (powerRZ radix 2); [idtac|apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith].
+rewrite <- plus_IZR; apply IZR_le; lia.
+simpl; ring_simplify (radix*1)%R; apply IZR_le; auto with real zarith.
+2: apply IZR_neq; lia.
+2: apply IZR_neq; lia.
+apply Rle_trans with (powerRZ radix 2); [idtac|apply Rle_powerRZ; try apply IZR_le; auto with real zarith].
 simpl; ring_simplify (radix*1)%R.
 apply Rle_trans with (radix+radix)%R.
-apply Rplus_le_compat_l, Rle_IZR; omega.
+apply Rplus_le_compat_l, IZR_le; lia.
 apply Rle_trans with (2*radix)%R; [right;ring|idtac].
-apply Rmult_le_compat_r; apply Rle_IZR; auto with real zarith.
+apply Rmult_le_compat_r; apply IZR_le; auto with real zarith.
 apply Rle_ge; apply Rmult_le_pos; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rplus_le_le_0_compat; apply Rle_IZR; auto with zarith.
-repeat rewrite powerRZ_add; try apply IZR_neq; try omega.
+apply powerRZ_le, IZR_lt; lia.
+apply Rplus_le_le_0_compat; apply IZR_le; lia.
+repeat rewrite powerRZ_add; try apply IZR_neq; try lia.
 ring.
 replace (-(x-p))%R with (p+-x)%R by ring.
 apply Rle_lt_trans with ((powerRZ radix (Fexp x + t + s) + powerRZ radix (Fexp x + t))+
    -(powerRZ radix (Fexp x + t) - radix*powerRZ radix (Fexp x)))%R.
 apply Rplus_le_compat; auto with real.
-apply Ropp_le_contravar; unfold FtoRradix, FtoR; rewrite powerRZ_add; auto with real zarith.
+apply Ropp_le_contravar; unfold FtoRradix, FtoR; rewrite powerRZ_add.
 apply Rle_trans with ((powerRZ radix t - radix)*powerRZ radix (Fexp x))%R;[right;ring|idtac].
 apply Rmult_le_compat_r.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 rewrite <- Zpower_nat_Z_powerRZ.
 apply Rle_trans with (IZR ((Zpower_nat radix t - radix))); auto with real zarith.
 unfold Zminus; rewrite plus_IZR; rewrite Ropp_Ropp_IZR; simpl; auto with real.
-now apply Rle_IZR.
-apply IZR_neq; omega.
+now apply IZR_le.
+apply IZR_neq; lia.
 apply Rplus_lt_reg_r with (radix * powerRZ radix (Fexp x))%R.
 ring_simplify.
 rewrite Rplus_comm, Rplus_assoc; apply Rplus_lt_compat_l.
-rewrite <- powerRZ_add; auto with real zarith.
+rewrite <- powerRZ_add.
 replace (Fexp x+(t+s))%Z with (Fexp x +t+s)%Z; auto with zarith real.
 apply Rle_lt_trans with  (powerRZ radix (Fexp x + t + s)+0)%R; auto with real zarith.
 apply Rplus_lt_compat_l.
-apply powerRZ_lt, Rlt_IZR; omega.
-apply IZR_neq; omega.
+apply powerRZ_lt, IZR_lt; lia.
+apply IZR_neq; lia.
 cut ( powerRZ radix (Fexp x + t + s) + powerRZ radix (Fexp x + t)=
-   Float (Zpower_nat radix (pred t)+Zpower_nat radix (Zabs_nat (t-s-1))) (Fexp x+s+1))%R.
-cut (Fbounded b (Float (Zpower_nat radix (pred t)+Zpower_nat radix (Zabs_nat (t-s-1))) (Fexp x+s+1))).
+   Float (Zpower_nat radix (pred t)+Zpower_nat radix (Z.abs_nat (t-s-1))) (Fexp x+s+1))%R.
+cut (Fbounded b (Float (Zpower_nat radix (pred t)+Zpower_nat radix (Z.abs_nat (t-s-1))) (Fexp x+s+1))).
 intros.
 rewrite H1.
 generalize ClosestMonotone; unfold MonotoneP; intros.
@@ -13848,49 +13443,47 @@ unfold FtoRradix, FtoR.
 apply Rlt_le_trans with ((powerRZ radix t * powerRZ radix (Fexp x) * (powerRZ radix s + 1)))%R.
 apply Rmult_lt_compat_r; auto with real zarith.
 apply Rplus_lt_0_compat; auto with real.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 rewrite <- Zpower_nat_Z_powerRZ; rewrite <- pGivesBound; elim Fx; intros.
-rewrite Zabs_eq in H3; auto with zarith real.
-now apply Rlt_IZR.
-right;repeat rewrite powerRZ_add; try apply IZR_neq; try omega.
+rewrite Z.abs_eq in H3; auto with zarith real.
+now apply IZR_lt.
+right;repeat rewrite powerRZ_add; try apply IZR_neq; try lia.
 ring.
 rewrite H1; unfold FtoRradix; apply RoundedModeProjectorIdem with (P:=(Closest b radix)) (b:=b); auto.
 apply ClosestRoundedModeP with t; auto with zarith.
 split; simpl.
-rewrite pGivesBound; rewrite Zabs_eq ; auto with zarith.
-apply Zlt_le_trans with (Zpower_nat radix (pred t) + Zpower_nat radix (pred t))%Z.
+rewrite pGivesBound; rewrite Z.abs_eq ; auto with zarith.
+apply Z.lt_le_trans with (Zpower_nat radix (pred t) + Zpower_nat radix (pred t))%Z.
 apply Zplus_lt_compat_l.
-apply Zpower_nat_monotone_lt; auto with zarith.
-pattern t at 3 in |-*; replace t with (1+(pred t))%nat; auto with zarith.
+apply Zpower_nat_monotone_lt; lia.
+pattern t at 3 in |-*; replace t with (1+(pred t)); auto with zarith.
 rewrite Zpower_nat_is_exp; replace (Zpower_nat radix 1) with radix; auto with zarith.
-apply Zle_trans with (2*Zpower_nat radix (pred t))%Z; auto with zarith.
-apply Zmult_le_compat_r; try omega.
-apply Zpower_NR0; omega.
+apply Z.le_trans with (2*Zpower_nat radix (pred t))%Z; auto with zarith.
+apply Zmult_le_compat_r; try lia.
+apply Zpower_NR0; lia.
 unfold Zpower_nat; simpl; auto with zarith.
-apply Z.add_nonneg_nonneg; apply Zpower_NR0; omega.
+apply Z.add_nonneg_nonneg; apply Zpower_NR0; lia.
 elim Fx; auto with zarith.
 unfold FtoRradix, FtoR; simpl; rewrite plus_IZR.
 repeat rewrite Zpower_nat_Z_powerRZ.
 rewrite Rmult_plus_distr_r.
-repeat rewrite <- powerRZ_add; auto with real zarith.
-replace (Zabs_nat (t - s - 1) + (Fexp x + s + 1))%Z with  (Fexp x + t)%Z.
+repeat rewrite <- powerRZ_add.
+replace (Z.abs_nat (t - s - 1) + (Fexp x + s + 1))%Z with  (Fexp x + t)%Z.
 replace (pred t + (Fexp x + s + 1))%Z with (Fexp x + t + s)%Z; auto with real.
-rewrite inj_pred; unfold Zpred; auto with zarith.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-apply IZR_neq; omega.
-apply IZR_neq; omega.
+rewrite inj_pred; unfold Z.pred; auto with zarith.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+apply IZR_neq; lia.
+apply IZR_neq; lia.
 Qed.
-
-
 
 
 Lemma eqGe: (s+ Fexp x <= Fexp q)%Z.
 case (Rle_or_lt ((powerRZ radix (Fexp x))*((powerRZ radix (t-1))+radix))%R x);intros H.
-apply Zle_trans with (Fexp (Float (nNormMin radix t) (s+Fexp x)));[simpl; auto with zarith|idtac].
-apply Zle_trans with (Fexp (Fopp q));[idtac|simpl; auto with zarith].
-apply Fcanonic_Rle_Zle with radix b t; auto with zarith.
+apply Z.le_trans with (Fexp (Float (nNormMin radix t) (s+Fexp x)));[simpl; auto with zarith|idtac].
+apply Z.le_trans with (Fexp (Fopp q));[idtac|simpl; auto with zarith].
+apply Fcanonic_Rle_Zle with radix b t; try lia.
 apply FcanonicNnormMin; auto with zarith.
 elim Fx; auto with zarith.
 apply FcanonicFopp; left; auto.
@@ -13900,59 +13493,58 @@ apply Rle_trans with (2:=Rabs_triang_inv (-(p-x))%R ((x-p)-q)%R).
 apply Rle_trans with ((x*(powerRZ radix s)-(powerRZ radix (Fexp p))/2)-(powerRZ radix (Fexp q))/2)%R.
 apply Rle_trans with (((powerRZ radix (Fexp x) * (powerRZ radix (t - 1) + radix))) * powerRZ radix s - powerRZ radix (s+1+Fexp x) / 2 -  powerRZ radix (s+1+Fexp x) / 2)%R.
 unfold nNormMin, FtoRradix, FtoR; simpl;rewrite Zpower_nat_Z_powerRZ.
-rewrite <- powerRZ_add; auto with real zarith.
-2: apply IZR_neq; omega.
+rewrite <- powerRZ_add.
+2: apply IZR_neq; lia.
 rewrite Rabs_right.
-2:apply Rle_ge; auto with real zarith.
-2: apply powerRZ_le, Rlt_IZR; omega.
-replace (pred t+(s+Fexp x))%Z with (t-1+(s+Fexp x))%Z; auto with real zarith.
+2: apply Rle_ge, powerRZ_le, IZR_lt; lia.
+replace (pred t+(s+Fexp x))%Z with (t-1+(s+Fexp x))%Z by lia.
 apply Rle_trans with (powerRZ radix (Fexp x) * (powerRZ radix (t - 1) + radix) *
     powerRZ radix s - powerRZ radix (s + 1 + Fexp x))%R;[idtac|right;field; auto with real].
 rewrite Rmult_plus_distr_l.
 rewrite Rmult_plus_distr_r.
 pattern (IZR radix) at 6 in |-*; replace (IZR radix) with (powerRZ radix 1)%R; [idtac|simpl; ring].
-repeat rewrite <- powerRZ_add; try apply IZR_neq; try omega.
+repeat rewrite <- powerRZ_add; try apply IZR_neq; try lia.
 replace (Fexp x + (t - 1) + s)%Z with (t - 1 + (s + Fexp x))%Z;[idtac|ring].
 replace (s + 1+ Fexp x)%Z with (Fexp x+1+s)%Z;[right|idtac];ring.
 unfold Rminus; apply Rplus_le_compat.
 apply Rplus_le_compat.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Ropp_le_contravar; unfold Rdiv; apply Rmult_le_compat_r; auto with real.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply epLe.
 apply Ropp_le_contravar; unfold Rdiv; apply Rmult_le_compat_r; auto with real.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
-apply Zle_trans with (Fexp p);[apply eqLeep|apply epLe].
+apply IZR_le; lia.
+apply Z.le_trans with (Fexp p);[apply eqLeep|apply epLe].
 unfold Rminus; apply Rplus_le_compat.
 rewrite Rabs_left1.
 apply Rplus_le_reg_l with ((powerRZ radix (Fexp p) / 2)+x-p)%R.
 ring_simplify.
 apply Rle_trans with ((x * (powerRZ radix s + 1))-p)%R;[right;ring|idtac].
 apply Rle_trans with (Rabs ((x * (powerRZ radix s + 1))-p))%R;[apply RRle_abs|idtac].
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (powerRZ radix (Fexp p)).
 unfold FtoRradix; apply ClosestExp with b t; auto with zarith.
 simpl; right; field; auto with real.
-apply Rplus_le_reg_l with (p)%R; ring_simplify.
+apply Rplus_le_reg_l with p; ring_simplify.
 generalize ClosestMonotone; unfold MonotoneP; intros.
 unfold FtoRradix; apply H0 with b x  (x * (powerRZ radix s + 1))%R; auto with zarith real.
 apply Rplus_lt_reg_r with (-x)%R; ring_simplify.
 apply Rle_lt_trans with (x*0)%R;[right;ring|apply Rmult_lt_compat_l;auto with real zarith].
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 unfold FtoRradix; apply RoundedModeProjectorIdem with (P:=(Closest b radix)) (b:=b); auto.
 apply ClosestRoundedModeP with t; auto with zarith.
 apply Ropp_le_contravar.
 replace (x + - p + - q)%R with ((x-p)-q)%R;[idtac|ring].
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (powerRZ radix (Fexp q)).
 unfold FtoRradix; apply ClosestExp with b t; auto with zarith.
 simpl; right; field; auto with real.
 case (Rle_or_lt (powerRZ radix (Fexp x) * (powerRZ radix (t - 1) + 1))%R x); intros H'.
 cut ((powerRZ radix (Fexp x) * ((powerRZ radix (s+t-1))+(powerRZ radix (t-1))+(powerRZ radix s))) <= p)%R;[intros|idtac].
-apply Zle_trans with (Fexp (Float (nNormMin radix t) (Fexp x+s)));[simpl;auto with zarith|idtac].
+apply Z.le_trans with (Fexp (Float (nNormMin radix t) (Fexp x+s)));[simpl;auto with zarith|idtac].
 apply Fcanonic_Rle_Zle with radix b t; auto with real zarith.
 apply FcanonicNnormMin; auto with zarith; elim Fx; auto with zarith.
 left; auto.
@@ -13972,72 +13564,72 @@ apply Rlt_le_trans with (((powerRZ radix (Fexp x) *
 2: apply Rplus_le_compat; auto with real.
 unfold FtoRradix, FtoR,nNormMin; simpl; rewrite Zpower_nat_Z_powerRZ.
 repeat rewrite Rmult_plus_distr_l.
-repeat rewrite <- powerRZ_add; try apply IZR_neq; try omega.
-replace (pred t + (Fexp x + s))%Z with (Fexp x+(s + t - 1))%Z;[idtac|rewrite inj_pred; unfold Zpred; auto with zarith].
+repeat rewrite <- powerRZ_add; try apply IZR_neq; try lia.
+replace (pred t + (Fexp x + s))%Z with (Fexp x+(s + t - 1))%Z;[idtac|rewrite inj_pred; unfold Z.pred; auto with zarith].
 apply Rplus_lt_reg_r with ((radix * powerRZ radix (Fexp x))- (powerRZ radix (Fexp x+(s + t - 1))))%R.
 ring_simplify.
 apply Rle_lt_trans with (powerRZ radix (1+Fexp x)); auto with real zarith.
-rewrite powerRZ_add; try apply IZR_neq; try omega.
+rewrite powerRZ_add; try apply IZR_neq; try lia.
 simpl; right;ring.
-apply Rlt_powerRZ; auto with zarith; apply Rlt_IZR; omega.
+apply Rlt_powerRZ; auto with zarith; apply IZR_lt; lia.
 apply qNeg.
 apply Rle_ge; apply LeFnumZERO; simpl; auto with zarith.
 unfold nNormMin; auto with zarith.
-apply Zpower_NR0; omega.
+apply Zpower_NR0; lia.
 cut ( (powerRZ radix (Fexp x) *
     (powerRZ radix (s + t - 1) + powerRZ radix (t - 1) + powerRZ radix s))=
-    (Float ((Zpower_nat radix (pred t) + Zpower_nat radix (Zabs_nat (t -s-1)) + 1)) ((Fexp x)+s)))%R;[intros V1|idtac].
-cut (Fbounded b ( Float ((Zpower_nat radix (pred t) + Zpower_nat radix (Zabs_nat (t -s-1)) + 1))%Z ((Fexp x)+s)));[intros V2|idtac].
+    (Float ((Zpower_nat radix (pred t) + Zpower_nat radix (Z.abs_nat (t -s-1)) + 1)) ((Fexp x)+s)))%R;[intros V1|idtac].
+cut (Fbounded b ( Float ((Zpower_nat radix (pred t) + Zpower_nat radix (Z.abs_nat (t -s-1)) + 1))%Z ((Fexp x)+s)));[intros V2|idtac].
 rewrite V1.
 generalize ClosestMonotone; unfold MonotoneP; intros.
 unfold FtoRradix; apply H0 with b ( (Float
-      (Zpower_nat radix (pred t) + Zpower_nat radix (Zabs_nat (t - s - 1)) +
+      (Zpower_nat radix (pred t) + Zpower_nat radix (Z.abs_nat (t - s - 1)) +
        1) (Fexp x + s))%R)  (x * (powerRZ radix s + 1))%R; auto with zarith real.
 2: unfold FtoRradix; apply RoundedModeProjectorIdem with (P:=(Closest b radix)) (b:=b); auto.
 2:apply ClosestRoundedModeP with t; auto with zarith.
 rewrite <- V1; clear H0 V2 V1.
 apply Rlt_le_trans with ( (powerRZ radix (Fexp x) * (powerRZ radix (t - 1) + 1) *(powerRZ radix s + 1)))%R.
 2: apply Rmult_le_compat_r; auto with real zarith.
-2: apply Rplus_le_le_0_compat; auto with real; apply powerRZ_le, Rlt_IZR; omega.
+2: apply Rplus_le_le_0_compat; auto with real; apply powerRZ_le, IZR_lt; lia.
 rewrite Rmult_assoc; apply Rmult_lt_compat_l; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 rewrite Rmult_plus_distr_l; rewrite Rmult_plus_distr_r.
-rewrite <- powerRZ_add; auto with real zarith.
-2: apply IZR_neq; omega.
+rewrite <- powerRZ_add.
+2: apply IZR_neq; lia.
 apply Rlt_le_trans with ((powerRZ radix (s + t - 1))+ powerRZ radix (t - 1)+ powerRZ radix s+1)%R .
 repeat rewrite Rplus_assoc; repeat apply Rplus_lt_compat_l; auto with real zarith.
 replace (s+t-1)%Z with (t-1+s)%Z; [right; ring|ring].
 split; simpl.
-rewrite pGivesBound; rewrite Zabs_eq; auto with zarith.
-apply Zlt_le_trans with ((Zpower_nat radix (pred t) + Zpower_nat radix (pred (pred t)) +  Zpower_nat radix (pred (pred t))))%Z.
+rewrite pGivesBound; rewrite Z.abs_eq; auto with zarith.
+apply Z.lt_le_trans with ((Zpower_nat radix (pred t) + Zpower_nat radix (pred (pred t)) +  Zpower_nat radix (pred (pred t))))%Z.
 repeat rewrite <- Zplus_assoc;apply Zplus_lt_compat_l.
-cut (Zpower_nat radix (Zabs_nat (t - s - 1))  <= Zpower_nat radix (pred (pred t)))%Z;[intros|idtac].
+cut (Zpower_nat radix (Z.abs_nat (t - s - 1))  <= Zpower_nat radix (pred (pred t)))%Z;[intros|idtac].
 cut (1 <Zpower_nat radix (pred (pred t)))%Z;auto with zarith.
-apply Zle_lt_trans with  (Zpower_nat radix 0)%Z; auto with zarith.
-apply Zpower_nat_monotone_lt; omega.
-apply Zpower_nat_monotone_le; auto with zarith.
+apply Z.le_lt_trans with  (Zpower_nat radix 0)%Z; auto with zarith.
+apply Zpower_nat_monotone_lt; lia.
+apply Zpower_nat_monotone_le; lia.
 pattern t at 4 in |-*; replace t with ((pred t)+1); auto with zarith.
 cut  ((Zpower_nat radix 1)=radix)%Z;[intros K|unfold Zpower_nat; simpl; auto with zarith].
 rewrite Zpower_nat_is_exp; rewrite K.
-apply Zle_trans with  (Zpower_nat radix (pred t)+ (Zpower_nat radix (pred t)))%Z.
+apply Z.le_trans with  (Zpower_nat radix (pred t)+ (Zpower_nat radix (pred t)))%Z.
 rewrite <- Zplus_assoc; apply Zplus_le_compat_l.
 pattern (pred t) at 3 in |-*; replace (pred t) with ((pred (pred t))+1); auto with zarith.
 rewrite Zpower_nat_is_exp; rewrite K.
-apply Zle_trans with (Zpower_nat radix (pred (pred t)) * 2)%Z; auto with zarith.
-apply Zmult_le_compat_l; try omega.
-apply Zpower_NR0; omega.
-apply Zle_trans with (Zpower_nat radix ((pred t)) * 2)%Z; auto with zarith.
-apply Zmult_le_compat_l; try omega.
-apply Zpower_NR0; omega.
-apply Z.add_nonneg_nonneg; try apply Z.add_nonneg_nonneg; try apply Zpower_NR0; omega.
+apply Z.le_trans with (Zpower_nat radix (pred (pred t)) * 2)%Z; auto with zarith.
+apply Zmult_le_compat_l; try lia.
+apply Zpower_NR0; lia.
+apply Z.le_trans with (Zpower_nat radix ((pred t)) * 2)%Z; auto with zarith.
+apply Zmult_le_compat_l; try lia.
+apply Zpower_NR0; lia.
+apply Z.add_nonneg_nonneg; try apply Z.add_nonneg_nonneg; try apply Zpower_NR0; lia.
 elim Fx; auto with zarith.
 unfold FtoRradix, FtoR; simpl.
 repeat rewrite plus_IZR; repeat rewrite Zpower_nat_Z_powerRZ.
-rewrite inj_pred; auto with zarith; unfold Zpred.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-simpl; unfold Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; try omega.
+rewrite inj_pred; auto with zarith; unfold Z.pred.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+simpl; unfold Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; try lia.
 repeat rewrite Rmult_plus_distr_l; repeat rewrite Rmult_plus_distr_r.
-repeat rewrite <- powerRZ_add; try apply IZR_neq; try omega.
+repeat rewrite <- powerRZ_add; try apply IZR_neq; try lia.
 replace (Fexp x + (s + t + - (1)))%Z with (t + -1 + (Fexp x + s))%Z by ring.
 replace (Fexp x + (t + - (1)))%Z with (t + - s + - (1) + (Fexp x + s))%Z; ring.
 cut (FtoRradix x= powerRZ radix (Fexp x+t-1))%R;[intros K|idtac].
@@ -14053,20 +13645,20 @@ replace  (FtoR radix (Fopp (Float (nNormMin radix t) (s + Fexp x)))) with (x-p)%
 rewrite K'; rewrite K; rewrite Fopp_correct; unfold FtoR; simpl.
 unfold nNormMin; rewrite Zpower_nat_Z_powerRZ.
 rewrite inj_pred; auto with zarith.
-unfold Zpred, Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; try omega.
+unfold Z.pred, Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; try lia.
 simpl; ring.
 cut ((powerRZ radix (Fexp x + t - 1) * (powerRZ radix s + 1))=
    (FtoRradix (Float (Zpower_nat radix s +1) (Fexp x+t-1))))%R;[intros L; rewrite L|idtac].
 unfold FtoRradix; apply sym_eq; apply ClosestIdem with b; auto.
 split;simpl;[idtac|elim Fx; auto with zarith].
-rewrite pGivesBound; rewrite Zabs_eq; auto with zarith.
+rewrite pGivesBound; rewrite Z.abs_eq; auto with zarith.
 replace t with ((pred t)+1); auto with zarith; rewrite Zpower_nat_is_exp.
-apply Zlt_le_trans with  (Zpower_nat radix (pred t)+ Zpower_nat radix (pred t))%Z; auto with zarith.
+apply Z.lt_le_trans with  (Zpower_nat radix (pred t)+ Zpower_nat radix (pred t))%Z; auto with zarith.
 apply Zplus_lt_compat.
 apply Zpower_nat_monotone_lt; auto with zarith.
 replace 1%Z with (Zpower_nat radix 0)%Z; auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
-apply Zle_trans with  (Zpower_nat radix (pred t) * 2)%Z; auto with zarith.
+apply Z.le_trans with  (Zpower_nat radix (pred t) * 2)%Z; auto with zarith.
 apply Zmult_le_compat_l; auto with zarith.
 unfold Zpower_nat; simpl; auto with zarith.
 apply Zpower_NR0; auto with zarith.
@@ -14075,27 +13667,28 @@ fold FtoRradix; rewrite <- L; rewrite <- K; auto.
 unfold FtoRradix, FtoR; simpl; rewrite plus_IZR; rewrite Zpower_nat_Z_powerRZ; simpl; ring.
 cut (Fnum x=Zpower_nat radix (pred t));[intros|idtac].
 unfold FtoRradix, FtoR; rewrite H0; rewrite Zpower_nat_Z_powerRZ.
-rewrite <- powerRZ_add; auto with real zarith.
-replace  (pred t + Fexp x)%Z with  (Fexp x + t - 1)%Z; auto with real zarith.
-apply IZR_neq; omega.
+rewrite <- powerRZ_add.
+replace  (pred t + Fexp x)%Z with  (Fexp x + t - 1)%Z; try easy.
+lia.
+apply IZR_neq; lia.
 cut ( Zpower_nat radix (pred t) <= Fnum x)%Z;[intros P1|idtac].
 cut ( Fnum x < Zpower_nat radix (pred t) +1)%Z;[intros P2; auto with zarith|idtac].
-apply Zlt_Rlt; rewrite plus_IZR; rewrite Zpower_nat_Z_powerRZ.
+apply lt_IZR; rewrite plus_IZR; rewrite Zpower_nat_Z_powerRZ.
 apply Rmult_lt_reg_l with (powerRZ radix (Fexp x)); auto with real zarith.
-apply powerRZ_lt, IZR_lt; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rle_lt_trans with (FtoRradix x);[right; unfold FtoRradix, FtoR;ring|idtac].
 apply Rlt_le_trans with (1:=H'); right; simpl.
 replace (t-1)%Z with (Z_of_nat (pred t));[ring|rewrite inj_pred; auto with zarith].
 apply Zmult_le_reg_r with radix; auto with zarith.
-apply Zle_trans with (Zpos (vNum b)); [rewrite pGivesBound|rewrite Zmult_comm].
+apply Z.le_trans with (Zpos (vNum b)); [rewrite pGivesBound|rewrite Zmult_comm].
 pattern radix at 2 in |-*; replace radix with (Zpower_nat radix 1).
 rewrite <- Zpower_nat_is_exp.
 replace (pred t + 1) with t; auto with zarith.
 unfold Zpower_nat; simpl; auto with zarith.
 elim Nx; intros.
 rewrite Zabs_Zmult in H1.
-rewrite Zabs_eq in H1; auto with zarith.
-rewrite Zabs_eq in H1; auto with zarith.
+rewrite Z.abs_eq in H1; auto with zarith.
+rewrite Z.abs_eq in H1; auto with zarith.
 apply LeR0Fnum with radix; auto with real.
 Qed.
 
@@ -14112,6 +13705,7 @@ Qed.
 Lemma Veltkamp_aux_aux: forall v:float,  (FtoRradix v=hx) -> Fcanonic radix b' v ->
   (Rabs (x-v) <= (powerRZ radix (s+Fexp x)) /2)%R
   -> (powerRZ radix (t-1+Fexp x) <= v)%R.
+Proof.
 intros.
 case (Rle_or_lt (powerRZ radix (t-1)+(powerRZ radix s)/2)%R (Fnum x)); intros W.
 fold FtoRradix; apply Rplus_le_reg_l with (-v+x-powerRZ radix (t-1+Fexp x))%R.
@@ -14119,14 +13713,14 @@ ring_simplify.
 apply Rle_trans with (x-v)%R; [right; ring|idtac].
 apply Rle_trans with (Rabs (x-v))%R;[apply RRle_abs|idtac].
 unfold FtoRradix; apply Rle_trans with (1:=H1).
-unfold FtoR; rewrite powerRZ_add; auto with real zarith; unfold Rdiv.
-2: apply IZR_neq; omega.
-rewrite powerRZ_add; auto with real zarith.
-2: apply IZR_neq; omega.
+unfold FtoR; rewrite powerRZ_add; unfold Rdiv.
+2: apply IZR_neq; lia.
+rewrite powerRZ_add.
+2: apply IZR_neq; lia.
 apply Rle_trans with  (powerRZ radix (Fexp x) * (powerRZ radix s * / 2))%R;[right;ring|idtac].
 apply Rle_trans with  (powerRZ radix (Fexp x) * (- powerRZ radix (t - 1) + Fnum x))%R;[idtac|right;ring].
 apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, IZR_lt; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with ( - powerRZ radix (t - 1) + (powerRZ radix (t - 1) + powerRZ radix s / 2))%R;
    auto with real zarith.
 right; unfold Rdiv; ring.
@@ -14134,9 +13728,9 @@ cut (exists eps:Z, (FtoRradix x=powerRZ radix (Fexp x)*(powerRZ radix (t-1) + ep
     /\ (0 <= eps)%Z /\ (eps < (powerRZ radix s)/2)%R).
 intros T; elim T; intros eps T'; elim T'; intros H3 T''; elim T''; intros H4 H5; clear T T' T''.
 fold FtoRradix; rewrite H; rewrite hxExact.
-cut (Fbounded b (Float (Zpower_nat radix (pred t)+Zpower_nat radix (Zabs_nat (t-s-1))+eps) (s+Fexp x)));
+cut (Fbounded b (Float (Zpower_nat radix (pred t)+Zpower_nat radix (Z.abs_nat (t-s-1))+eps) (s+Fexp x)));
    [intros Yp|idtac].
-cut (FtoRradix (Float (Zpower_nat radix (pred t)+Zpower_nat radix (Zabs_nat (t-s-1))+eps) (s+Fexp x))
+cut (FtoRradix (Float (Zpower_nat radix (pred t)+Zpower_nat radix (Z.abs_nat (t-s-1))+eps) (s+Fexp x))
   = powerRZ radix (Fexp x)*(powerRZ radix (t+s-1)+ powerRZ radix (t-1)+eps*powerRZ radix s))%R;
    [intros Yp'|idtac].
 cut (Fbounded b (Float ((Zpower_nat radix (pred t)+eps)) (s+Fexp x))); [intros Yq|idtac].
@@ -14150,44 +13744,44 @@ cut (FtoRradix (Fopp q)=(powerRZ radix (Fexp x) *
          (powerRZ radix (t + s - 1) + eps * powerRZ radix s)))%R;[intros YYq|idtac].
 replace (FtoRradix q) with (-(-q))%R; [idtac|ring]; unfold FtoRradix; rewrite <- Fopp_correct.
 fold FtoRradix; rewrite YYp; rewrite YYq; right.
-repeat rewrite powerRZ_add; auto with real zarith; try ring.
-apply IZR_neq; omega.
+repeat rewrite powerRZ_add; try ring.
+apply IZR_neq; lia.
 rewrite <- Yq'.
 unfold FtoRradix; apply sym_eq.
 apply ImplyClosestStrict with b t  (-(x-p))%R (s+Fexp x)%Z; auto with zarith.
 left; split; auto.
-rewrite pGivesBound; rewrite Zabs_Zmult; rewrite Zabs_eq; auto with zarith.
-simpl; rewrite Zabs_eq; auto with zarith.
-apply Zle_trans with (radix*((Zpower_nat radix (pred t) + 0)))%Z; auto with zarith.
+rewrite pGivesBound; rewrite Zabs_Zmult; rewrite Z.abs_eq; auto with zarith.
+simpl; rewrite Z.abs_eq; auto with zarith.
+apply Z.le_trans with (radix*((Zpower_nat radix (pred t) + 0)))%Z; auto with zarith.
 pattern t at 1; replace t with (1+(pred t)); auto with zarith.
 rewrite Zpower_nat_is_exp.
 replace (Zpower_nat radix 1) with radix; auto with zarith.
 unfold Zpower_nat; simpl; auto with zarith.
-apply Z.add_nonneg_nonneg; try apply Zpower_NR0; omega.
+apply Z.add_nonneg_nonneg; try apply Zpower_NR0; lia.
 rewrite YYp; rewrite H3.
 ring_simplify.
-rewrite <- powerRZ_add; auto with real zarith.
-2: apply IZR_neq; omega.
+rewrite <- powerRZ_add.
+2: apply IZR_neq; lia.
 replace (Fexp x+(t+s-1))%Z with (s+Fexp x+t-1)%Z;[idtac|ring].
 apply Rplus_le_reg_l with ( -(powerRZ radix (s + Fexp x + t - 1))+eps * powerRZ radix (Fexp x))%R.
 ring_simplify.
 rewrite Rmult_assoc; apply Rmult_le_compat_l; auto with real zarith.
-apply Rle_IZR; easy.
+apply IZR_le; easy.
 apply Rle_trans with (powerRZ radix (Fexp x)*1)%R; auto with real; apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, IZR_lt; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (powerRZ radix 0); auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; omega.
+apply Rle_powerRZ; try apply IZR_le; lia.
 fold FtoRradix; rewrite Yq'.
 apply Rle_trans with  (powerRZ radix (Fexp x) *(powerRZ radix (t + s - 1) + 0))%R.
 ring_simplify (powerRZ radix (t + s - 1) + 0)%R.
-rewrite <- powerRZ_add; auto with real zarith.
+rewrite <- powerRZ_add.
 replace (s + Fexp x + t - 1)%Z with (Fexp x+(t + s - 1))%Z; auto with real zarith.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, IZR_lt; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rplus_le_compat_l; apply Rmult_le_pos; auto with real zarith.
-now apply Rle_IZR.
-apply powerRZ_le, IZR_lt; omega.
+now apply IZR_le.
+apply powerRZ_le, IZR_lt; lia.
 elim Fx; auto with zarith.
 fold FtoRradix; rewrite Yq'; rewrite YYp; rewrite H3.
 ring_simplify ( (-
@@ -14200,31 +13794,30 @@ ring_simplify ( (-
 rewrite Ropp_mult_distr_l_reverse; rewrite Rabs_Ropp; rewrite Rabs_mult.
 rewrite Rabs_right;[idtac|apply Rle_ge; auto with real zarith].
 rewrite Rabs_right;[idtac|apply Rle_ge; auto with real zarith].
-unfold Rdiv; rewrite powerRZ_add; auto with real zarith.
+unfold Rdiv; rewrite powerRZ_add.
 apply Rlt_le_trans with  ((powerRZ radix s*/2) * powerRZ radix (Fexp x))%R;[idtac|right;ring].
 rewrite Rmult_comm; apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, IZR_lt; omega.
-apply IZR_neq; omega.
-apply Rle_IZR; easy.
-apply powerRZ_le, IZR_lt; omega.
+apply powerRZ_lt, IZR_lt; lia.
+apply IZR_neq; lia.
+apply IZR_le; easy.
+apply powerRZ_le, IZR_lt; lia.
 apply ClosestOpp; auto.
 rewrite <- Yp'.
 unfold FtoRradix; apply sym_eq.
 apply ImplyClosestStrict with b t  (x * (powerRZ radix s + 1))%R (s+Fexp x)%Z; auto with zarith.
 left; split; auto.
-rewrite pGivesBound; rewrite Zabs_Zmult; rewrite Zabs_eq; auto with zarith.
-simpl; rewrite Zabs_eq; auto with zarith.
-apply Zle_trans with (radix*((Zpower_nat radix (pred t) + 0+0)))%Z; auto with zarith.
+rewrite pGivesBound; rewrite Zabs_Zmult; rewrite Z.abs_eq; auto with zarith.
+simpl; rewrite Z.abs_eq; auto with zarith.
+apply Z.le_trans with (radix*((Zpower_nat radix (pred t) + 0+0)))%Z; auto with zarith.
 pattern t at 1; replace t with (1+(pred t)); auto with zarith.
 rewrite Zpower_nat_is_exp.
-replace (Zpower_nat radix 1) with radix; auto with zarith.
-unfold Zpower_nat; simpl; auto with zarith.
+rewrite Zpower_nat_1; auto with zarith.
 apply Zmult_le_compat_l; auto with zarith.
 apply Zplus_le_compat; auto with zarith.
 apply Zplus_le_compat_l.
-apply Zpower_NR0; omega.
+apply Zpower_NR0; lia.
 apply Z.add_nonneg_nonneg; auto.
-apply Z.add_nonneg_nonneg; apply Zpower_NR0; omega.
+apply Z.add_nonneg_nonneg; apply Zpower_NR0; lia.
 rewrite H3.
 apply Rle_trans with (powerRZ radix (Fexp x) * (powerRZ radix (t - 1) + 0) *
     (powerRZ radix s + 0))%R; auto with real zarith.
@@ -14232,24 +13825,24 @@ right; ring_simplify.
 unfold Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; ring.
 apply Rmult_le_compat; auto with real zarith.
 ring_simplify  (powerRZ radix (t - 1) + 0)%R; apply Rmult_le_pos; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply powerRZ_le, Rlt_IZR; omega.
-ring_simplify; apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply powerRZ_le, IZR_lt; lia.
+ring_simplify; apply powerRZ_le, IZR_lt; lia.
 apply Rmult_le_compat_l.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rplus_le_compat_l, Rle_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply Rplus_le_compat_l, IZR_le; lia.
 fold FtoRradix; rewrite Yp'.
 apply Rle_trans with  (powerRZ radix (Fexp x) *(powerRZ radix (t + s - 1) + 0+0))%R.
 right; ring_simplify.
 rewrite <- powerRZ_add; try apply IZR_neq; auto with real zarith.
 replace (s + Fexp x + t - 1)%Z with (Fexp x+(t + s - 1))%Z; auto with real zarith.
 apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rplus_le_compat.
 apply Rplus_le_compat_l.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rmult_le_pos; try apply Rle_IZR; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply Rmult_le_pos; try apply IZR_le; auto with real zarith.
+apply powerRZ_le, IZR_lt; lia.
 elim Fx; auto with zarith.
 fold FtoRradix; rewrite Yp';rewrite H3.
 ring_simplify (powerRZ radix (Fexp x) * (powerRZ radix (t - 1) + eps) *
@@ -14263,79 +13856,79 @@ ring_simplify (powerRZ radix (Fexp x) * powerRZ radix (t - 1) * powerRZ radix s 
     powerRZ radix (Fexp x) * (powerRZ radix s * powerRZ radix (t - 1)))%R.
 rewrite Rabs_mult.
 rewrite Rabs_right;[idtac|apply Rle_ge; auto with real zarith].
-2: apply powerRZ_le, Rlt_IZR; omega.
+2: apply powerRZ_le, IZR_lt; lia.
 rewrite Rabs_right;[idtac|apply Rle_ge; auto with real zarith].
 2: now apply IZR_le.
 unfold Rdiv; rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 apply Rlt_le_trans with  (powerRZ radix (Fexp x)*  (powerRZ radix s*/2))%R;[idtac|right;ring].
 apply Rmult_lt_compat_l; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 unfold FtoRradix, FtoR; simpl.
 rewrite plus_IZR; rewrite Zpower_nat_Z_powerRZ; rewrite inj_pred; auto with zarith.
-unfold Zpred, Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
+unfold Z.pred, Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 simpl; ring.
 split; simpl.
 clear Yp'; elim Yp; simpl; intros.
-rewrite Zabs_eq; auto with zarith.
-rewrite Zabs_eq in H2; auto with zarith.
-apply Zle_lt_trans with (2:=H2).
+rewrite Z.abs_eq; auto with zarith.
+rewrite Z.abs_eq in H2; auto with zarith.
+apply Z.le_lt_trans with (2:=H2).
 rewrite <- Zplus_assoc;  apply Zplus_le_compat_l; auto with zarith.
-apply Zle_trans with (0+eps)%Z; auto with zarith; apply Zplus_le_compat_r; auto with zarith.
-apply Zpower_NR0; omega.
+apply Z.le_trans with (0+eps)%Z; auto with zarith; apply Zplus_le_compat_r; auto with zarith.
+apply Zpower_NR0; lia.
 apply Z.add_nonneg_nonneg; auto with zarith.
-apply Z.add_nonneg_nonneg; apply Zpower_NR0; omega.
-apply Z.add_nonneg_nonneg; try apply Zpower_NR0; omega.
+apply Z.add_nonneg_nonneg; apply Zpower_NR0; lia.
+apply Z.add_nonneg_nonneg; try apply Zpower_NR0; lia.
 elim Fx; auto with zarith.
 unfold FtoRradix, FtoR; simpl.
 rewrite plus_IZR; rewrite plus_IZR.
 repeat rewrite Zpower_nat_Z_powerRZ; rewrite inj_pred; auto with zarith.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-unfold Zpred, Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
-rewrite powerRZ_Zopp;auto with real zarith.
-2: apply IZR_neq; omega.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+unfold Z.pred, Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
+rewrite powerRZ_Zopp.
+2: apply IZR_neq; lia.
 simpl; field; auto with real zarith.
 split; apply Rgt_not_eq.
-apply Rlt_IZR; omega.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply IZR_lt; lia.
+apply powerRZ_lt, IZR_lt; lia.
 split; simpl.
 2: elim Fx; auto with zarith.
-rewrite Zabs_eq; auto with zarith.
-rewrite pGivesBound; apply Zlt_Rlt.
+rewrite Z.abs_eq; auto with zarith.
+rewrite pGivesBound; apply lt_IZR.
 rewrite plus_IZR;rewrite plus_IZR; repeat rewrite Zpower_nat_Z_powerRZ.
 rewrite inj_pred; auto with zarith.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-apply Rlt_le_trans with  (powerRZ radix (Zpred t) + powerRZ radix (t - s - 1) + powerRZ radix s / 2)%R;
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+apply Rlt_le_trans with  (powerRZ radix (Z.pred t) + powerRZ radix (t - s - 1) + powerRZ radix s / 2)%R;
   auto with real.
-apply Rle_trans with (powerRZ radix (Zpred t)+powerRZ radix (t-2)+powerRZ radix (t-2))%R.
+apply Rle_trans with (powerRZ radix (Z.pred t)+powerRZ radix (t-2)+powerRZ radix (t-2))%R.
 apply Rplus_le_compat.
 apply Rplus_le_compat_l; auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 apply Rle_trans with (powerRZ radix s).
 apply Rmult_le_reg_l with (2%R); auto with real.
 apply Rle_trans with (powerRZ radix s);[right; field; auto with real|auto with real zarith].
 rewrite <- (Rmult_1_l (powerRZ _ _)) at 1; apply Rmult_le_compat_r.
-apply powerRZ_le, IZR_lt; omega.
+apply powerRZ_le, IZR_lt; lia.
 auto with real.
-apply Rle_powerRZ; try apply Rle_IZR; auto with zarith real.
-replace (Zpred t) with (t-1)%Z;[idtac|unfold Zpred; ring].
+apply Rle_powerRZ; try apply IZR_le; auto with zarith real.
+replace (Z.pred t) with (t-1)%Z;[idtac|unfold Z.pred; ring].
 apply Rle_trans with  (powerRZ radix (t-1)+powerRZ radix (t-1))%R.
 rewrite Rplus_assoc; apply Rplus_le_compat_l.
 apply Rle_trans with (2*powerRZ radix (t - 2))%R; [right;ring|idtac].
 apply Rle_trans with (radix*powerRZ radix (t - 2))%R; [apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le, IZR_lt; omega.
-apply Rle_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply IZR_le; lia.
 replace (t-1)%Z with (1+(t-2))%Z;[rewrite powerRZ_add; try apply IZR_neq; simpl|idtac]; auto with real zarith.
 right; ring.
 apply Rle_trans with (2*powerRZ radix (t - 1))%R; [right;ring|idtac].
 apply Rle_trans with (radix*powerRZ radix (t - 1))%R; [apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le, IZR_lt; omega.
-apply Rle_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply IZR_le; lia.
 pattern (Z_of_nat t)%Z at 2 in |-*; replace (Z_of_nat t)%Z with (1+(t-1))%Z;
-  [rewrite powerRZ_add; simpl|idtac]; auto with real zarith.
+  [rewrite powerRZ_add; simpl|ring].
 right; ring.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 apply Z.add_nonneg_nonneg; auto with zarith.
-apply Z.add_nonneg_nonneg; apply Zpower_NR0; omega.
+apply Z.add_nonneg_nonneg; apply Zpower_NR0; lia.
 exists (Fnum x- Zpower_nat radix (pred t))%Z; split.
 unfold Zminus; rewrite plus_IZR; rewrite Ropp_Ropp_IZR; rewrite Zpower_nat_Z_powerRZ.
 replace (Z_of_nat (pred t)) with (t+-(1))%Z; [idtac|rewrite inj_pred; auto with zarith].
@@ -14346,11 +13939,11 @@ ring_simplify.
 apply Zmult_le_reg_r with radix; auto with zarith.
 elim Nx; intros.
 rewrite Zabs_Zmult in H3.
-rewrite Zabs_eq in H3; auto with zarith.
-rewrite Zabs_eq in H3; [idtac|apply LeR0Fnum with radix; auto with zarith real].
+rewrite Z.abs_eq in H3; auto with zarith.
+rewrite Z.abs_eq in H3; [idtac|apply LeR0Fnum with radix; auto with zarith real].
 rewrite Zmult_comm with (Fnum x) radix.
-apply Zle_trans with (2:=H3); rewrite pGivesBound.
-pattern t at 2; replace t with (1+(pred t)); auto with zarith.
+apply Z.le_trans with (2:=H3); rewrite pGivesBound.
+pattern t at 2; replace t with (1+(pred t)) by auto with zarith.
 rewrite Zpower_nat_is_exp.
 replace ( Zpower_nat radix 1) with radix;[idtac|unfold Zpower_nat; simpl]; auto with zarith.
 unfold Zminus; rewrite plus_IZR; rewrite Ropp_Ropp_IZR; rewrite Zpower_nat_Z_powerRZ.
@@ -14365,23 +13958,24 @@ Lemma Veltkamp_aux:
    (Rabs (x-hx) <= (powerRZ radix (s+Fexp x)) /2)%R /\
    (exists hx':float, (FtoRradix hx'=hx) /\ (Closest b' radix x hx')
     /\ (s+Fexp x <= Fexp hx')%Z).
+Proof.
 generalize p'GivesBound;intros J.
-cut (powerRZ radix (t - 1 + Fexp x) <= x)%R;[intros xGe|idtac].
+cut (powerRZ radix ((t - 1) + Fexp x) <= x)%R;[intros xGe|idtac].
 2:rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; unfold FtoRradix, FtoR.
 2:apply Rmult_le_compat_r; auto with real zarith.
-2: apply powerRZ_le, IZR_lt; omega.
-2:apply Rmult_le_reg_l with radix; try apply Rlt_IZR; auto with real zarith.
+2: apply powerRZ_le, IZR_lt; lia.
+2:apply Rmult_le_reg_l with radix; try apply IZR_lt; auto with real zarith.
 2:apply Rle_trans with (powerRZ radix t).
 2:unfold Zminus; rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; right; field; auto with real.
-2: apply IZR_neq; omega.
+2: apply IZR_neq; lia.
 2:rewrite <- Zpower_nat_Z_powerRZ; rewrite <- pGivesBound; rewrite <- mult_IZR; elim Nx; intros H H0.
-2:rewrite Zabs_Zmult in H0; rewrite Zabs_eq in H0; auto with zarith.
-2:apply Rle_IZR; rewrite Zabs_eq in H0; auto with zarith real.
+2:rewrite Zabs_Zmult in H0; rewrite Z.abs_eq in H0; auto with zarith.
+2:apply IZR_le; rewrite Z.abs_eq in H0; auto with zarith real.
 2:apply LeR0Fnum with radix; auto with real.
 cut (Rabs (x - hx) <= (powerRZ radix (s + Fexp x))/2)%R;[intros|idtac].
 2:case eqEqual; intros L.
 2:fold FtoRradix; rewrite hxExact.
-2:replace (x-(p+q))%R with ((x-p)-q)%R;[apply Rmult_le_reg_l with (INR 2); auto with real zarith|ring].
+2:replace (x-(p+q))%R with ((x-p)-q)%R;[apply Rmult_le_reg_l with 2%R; auto with real zarith|ring].
 2:apply Rle_trans with (powerRZ radix (Fexp q)).
 2:unfold FtoRradix; apply ClosestExp with b t; auto with zarith.
 2:rewrite L; simpl; right; field; auto with real.
@@ -14401,18 +13995,18 @@ replace  (s + Fexp x + (t - s)%nat - 1)%Z with ((t-1)+(Fexp x))%Z;[idtac|rewrite
 fold FtoRradix; apply Veltkamp_aux_aux; auto.
 assert (s+Fexp x-1 < Fexp v)%Z; auto with zarith.
 assert (t-1+Fexp x < t-s+Fexp v)%Z; auto with zarith.
-apply Zlt_powerRZ with radix; try apply Rle_IZR; auto with real zarith.
+apply Zlt_powerRZ with radix; try apply IZR_le; auto with real zarith.
 apply Rle_lt_trans with (FtoRradix v).
 apply Veltkamp_aux_aux; auto.
 apply Rle_lt_trans with (1:=RRle_abs v).
 unfold FtoRradix; rewrite <- Fabs_correct; auto with zarith.
 unfold FtoR, Fabs; simpl.
-rewrite powerRZ_add; auto with real zarith.
-2: apply IZR_neq; omega.
+rewrite powerRZ_add.
+2: apply IZR_neq; lia.
 apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, IZR_lt; omega.
+apply powerRZ_lt, IZR_lt; lia.
 elim Fv; intros.
-apply Rlt_le_trans with (IZR (Zpos (vNum b'))); try apply Rlt_IZR; auto with real zarith.
+apply Rlt_le_trans with (IZR (Zpos (vNum b'))); try apply IZR_lt; auto with real zarith.
 rewrite J; rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
 rewrite inj_minus1; auto with real zarith.
 cut (exists c:float, (FtoRradix c=hx) /\ (Fbounded b' c)).
@@ -14428,12 +14022,12 @@ exists v; split; auto.
 rewrite hxExact; unfold FtoRradix; rewrite <- Fplus_correct; auto.
 rewrite H1; unfold FtoR; replace (s+ Fexp x)%Z with (Fexp (Fplus radix p q)); auto with real.
 unfold Fplus; simpl.
-rewrite Zmin_le2;[auto|apply eqLeep].
+rewrite Z.min_r;[auto|apply eqLeep].
 2: elim Fx; unfold b'; simpl; auto with zarith.
-cut ( (Zabs (Fnum (Fplus radix p q)) < ((Zpower_nat radix (t - s))+1)))%Z; auto with zarith.
-apply Zlt_Rlt.
+cut ( (Z.abs (Fnum (Fplus radix p q)) < ((Zpower_nat radix (t - s))+1)))%Z; auto with zarith.
+apply lt_IZR.
 apply Rmult_lt_reg_l with (powerRZ radix (Fexp (Fplus radix p q))); auto with real zarith.
-apply powerRZ_lt, IZR_lt; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rle_lt_trans with (Rabs (Fplus radix p q)).
 unfold FtoRradix; rewrite <- Fabs_correct; auto.
 unfold Fabs, FtoR; simpl; auto with real.
@@ -14447,21 +14041,21 @@ apply Rlt_le_trans with ((powerRZ radix (s + Fexp x))/2 + (powerRZ radix (t+Fexp
 apply Rplus_lt_compat_l.
 unfold FtoRradix; rewrite <- Fabs_correct; auto; unfold FtoR; simpl.
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, IZR_lt; omega.
-elim Fx; intros; rewrite <- Zpower_nat_Z_powerRZ; rewrite <- pGivesBound; try apply Rlt_IZR; auto with real zarith.
+apply powerRZ_lt, IZR_lt; lia.
+elim Fx; intros; rewrite <- Zpower_nat_Z_powerRZ; rewrite <- pGivesBound; try apply IZR_lt; auto with real zarith.
 replace (Fexp (Fplus radix p q)) with (s+ Fexp x)%Z.
 2:unfold Fplus; simpl.
-2:rewrite Zmin_le2;[auto|apply eqLeep].
+2:rewrite Z.min_r;[auto|apply eqLeep].
 rewrite plus_IZR; rewrite Zpower_nat_Z_powerRZ; simpl.
-rewrite Rmult_plus_distr_l; rewrite <- powerRZ_add; auto with real zarith.
+rewrite Rmult_plus_distr_l; rewrite <- powerRZ_add.
 rewrite Rplus_comm; apply Rplus_le_compat.
 rewrite inj_minus1; auto with real zarith.
-ring_simplify ((s + Fexp x + (t - s)))%Z; auto with real zarith.
+ring_simplify ((s + Fexp x + (t - s)))%Z.
 rewrite Zplus_comm; auto with real.
 unfold Rdiv; apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, IZR_lt; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (/1)%R; auto with real.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 elim L; clear L; intros L1 L2.
 cut (Fexp q=s+1+Fexp x)%Z;[intros L3|idtac].
 2:cut (q=Float (-(nNormMin radix t)) (s+1+Fexp x));[intros I; rewrite I; simpl; auto|idtac].
@@ -14475,20 +14069,20 @@ cut (Fexp q=s+1+Fexp x)%Z;[intros L3|idtac].
 2:rewrite Ropp_Ropp_IZR; rewrite Zpower_nat_Z_powerRZ.
 2:apply trans_eq with (-(powerRZ radix (pred t) * powerRZ radix (s + 1 + Fexp x)))%R;
   auto with real.
-2:rewrite <- powerRZ_add; auto with real zarith.
+2:rewrite <- powerRZ_add.
 2:replace ((pred t + (s + 1 + Fexp x)))%Z with  (t + s + Fexp x)%Z; auto with real.
-2:rewrite inj_pred; auto with zarith; unfold Zpred; ring.
-2: apply IZR_neq; omega.
+2:rewrite inj_pred; auto with zarith; unfold Z.pred; ring.
+2: apply IZR_neq; lia.
 generalize FboundedMbound; intros P.
 elim P with radix b' (t-s) (Fexp (Fplus radix p q))%Z (Fnum (Fplus radix p q));
   auto with zarith; clear P.
 intros v H'; elim H'; intros ; clear H'.
 exists v; split; auto.
 rewrite hxExact; unfold FtoRradix; rewrite <- Fplus_correct; auto.
-cut ( (Zabs (Fnum (Fplus radix p q)) < ((Zpower_nat radix (t - s))+1)))%Z; auto with zarith.
-apply Zlt_Rlt.
+cut ( (Z.abs (Fnum (Fplus radix p q)) < ((Zpower_nat radix (t - s))+1)))%Z; auto with zarith.
+apply lt_IZR.
 apply Rmult_lt_reg_l with (powerRZ radix (Fexp (Fplus radix p q))); auto with real zarith.
-apply powerRZ_lt, IZR_lt; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rle_lt_trans with (Rabs (Fplus radix p q)).
 unfold FtoRradix; rewrite <- Fabs_correct; auto.
 unfold Fabs, FtoR; simpl; auto with real.
@@ -14502,23 +14096,23 @@ apply Rlt_le_trans with ((powerRZ radix (s + Fexp x))/2 + (powerRZ radix (t+Fexp
 apply Rplus_lt_compat_l.
 unfold FtoRradix; rewrite <- Fabs_correct; auto; unfold FtoR; simpl.
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, IZR_lt; omega.
-elim Fx; intros; rewrite <- Zpower_nat_Z_powerRZ; rewrite <- pGivesBound; try apply Rlt_IZR; auto with real zarith.
+apply powerRZ_lt, IZR_lt; lia.
+elim Fx; intros; rewrite <- Zpower_nat_Z_powerRZ; rewrite <- pGivesBound; try apply IZR_lt; auto with real zarith.
 replace (Fexp (Fplus radix p q)) with (s+ 1+Fexp x)%Z.
 2:unfold Fplus; simpl.
-2:rewrite Zmin_le2;[auto|apply eqLeep].
+2:rewrite Z.min_r;[auto|apply eqLeep].
 rewrite plus_IZR; rewrite Zpower_nat_Z_powerRZ; simpl.
-rewrite Rmult_plus_distr_l; rewrite <- powerRZ_add; auto with real zarith.
-2: apply IZR_neq; omega.
+rewrite Rmult_plus_distr_l; rewrite <- powerRZ_add.
+2: apply IZR_neq; lia.
 rewrite Rplus_comm; apply Rplus_le_compat.
 rewrite inj_minus1; auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR;  omega.
+apply Rle_powerRZ; try apply IZR_le;  lia.
 unfold Rdiv; apply Rmult_le_compat; auto with real zarith.
-apply powerRZ_le, IZR_lt; omega.
-apply Rle_powerRZ; try apply Rle_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply Rle_powerRZ; try apply IZR_le; lia.
 apply Rle_trans with (/1)%R; auto with real.
 unfold b', Fplus; simpl.
-rewrite Zmin_le2;[elim Nq; intros Fq T; elim Fq; auto|apply eqLeep].
+rewrite Z.min_r;[elim Nq; intros Fq T; elim Fq; auto|apply eqLeep].
 Qed.
 
 Hypothesis pDefEven: (EvenClosest b radix t (x*((powerRZ radix s)+1))%R p).
@@ -14529,25 +14123,26 @@ Hypothesis hxDefEven:(EvenClosest b radix t (q+p)%R hx).
 Lemma VeltkampEven1: (Even radix)
    ->(exists hx':float, (FtoRradix hx'=hx)
     /\ (EvenClosest b' radix (t-s) x hx')).
+Proof.
 intros I.
 generalize p'GivesBound; intros J.
 cut (powerRZ radix (t - 1 + Fexp x) <= x)%R;[intros xGe|idtac].
 2:rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; unfold FtoRradix, FtoR.
 2:apply Rmult_le_compat_r; auto with real zarith.
-2: apply powerRZ_le, IZR_lt; omega.
+2: apply powerRZ_le, IZR_lt; lia.
 2:apply Rmult_le_reg_l with radix; auto with real zarith.
-2: apply Rlt_IZR; omega.
+2: apply IZR_lt; lia.
 2:apply Rle_trans with (powerRZ radix t).
 2:unfold Zminus; rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; right; field; auto with real.
-2: apply IZR_neq; omega.
+2: apply IZR_neq; lia.
 2:rewrite <- Zpower_nat_Z_powerRZ; rewrite <- pGivesBound; rewrite <- mult_IZR; elim Nx; intros.
-2:apply Rle_IZR; rewrite Zabs_Zmult in H0; rewrite Zabs_eq in H0; auto with zarith.
-2:rewrite Zabs_eq in H0; auto with zarith real.
+2:apply IZR_le; rewrite Zabs_Zmult in H0; rewrite Z.abs_eq in H0; auto with zarith.
+2:rewrite Z.abs_eq in H0; auto with zarith real.
 2:apply LeR0Fnum with radix; auto with real.
 cut (Rabs (x - hx) <= (powerRZ radix (s + Fexp x))/2)%R;[intros|idtac].
 2:case eqEqual; intros L.
 2:fold FtoRradix; rewrite hxExact.
-2:replace (x-(p+q))%R with ((x-p)-q)%R;[apply Rmult_le_reg_l with (INR 2); auto
+2:replace (x-(p+q))%R with ((x-p)-q)%R;[apply Rmult_le_reg_l with 2%R; auto
   with real zarith|ring].
 2:apply Rle_trans with (powerRZ radix (Fexp q)).
 2:unfold FtoRradix; apply ClosestExp with b t; auto with zarith.
@@ -14586,45 +14181,45 @@ unfold FNeven; rewrite FcanonicFnormalizeEq; auto with zarith.
 case (Zle_lt_or_eq _ _ L); intros H4; clear L;unfold Feven.
 cut (exists m:Z, (Fnum v=radix*m)%Z);[intros T; elim T; intros m H5|idtac].
 rewrite H5; apply EvenMult1; auto.
-exists (Fnum p*Zpower_nat radix ((Zabs_nat (Fexp p-Fexp v-1)))+
-        Fnum q*Zpower_nat radix ((Zabs_nat (Fexp q-Fexp v-1))))%Z.
+exists (Fnum p*Zpower_nat radix ((Z.abs_nat (Fexp p-Fexp v-1)))+
+        Fnum q*Zpower_nat radix ((Z.abs_nat (Fexp q-Fexp v-1))))%Z.
 apply eq_IZR.
 rewrite mult_IZR; rewrite plus_IZR; repeat rewrite mult_IZR.
 repeat rewrite Zpower_nat_Z_powerRZ.
 generalize eqGe; generalize eqLeep; intros.
 repeat rewrite <- Zabs_absolu.
-repeat rewrite Zabs_eq; auto with zarith.
+repeat rewrite Z.abs_eq; auto with zarith.
 unfold Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 repeat rewrite powerRZ_Zopp; try apply IZR_neq; auto with real zarith.
 rewrite powerRZ_1.
 apply Rmult_eq_reg_l with (powerRZ radix (Fexp v)); auto with real zarith.
 apply trans_eq with (FtoRradix v);[unfold FtoRradix, FtoR; ring|idtac].
 rewrite H0; rewrite hxExact; unfold FtoRradix, FtoR; field.
-split; apply Rgt_not_eq; try apply Rlt_IZR; auto with zarith.
-apply powerRZ_lt, IZR_lt; omega.
-apply Rgt_not_eq, powerRZ_lt, IZR_lt; omega.
-replace (Fnum v) with (Fnum p*Zpower_nat radix ((Zabs_nat (Fexp p-Fexp v)))+
-        Fnum q*Zpower_nat radix ((Zabs_nat (Fexp q-Fexp v))))%Z.
+split; apply Rgt_not_eq; try apply IZR_lt; auto with zarith.
+apply powerRZ_lt, IZR_lt; lia.
+apply Rgt_not_eq, powerRZ_lt, IZR_lt; lia.
+replace (Fnum v) with (Fnum p*Zpower_nat radix ((Z.abs_nat (Fexp p-Fexp v)))+
+        Fnum q*Zpower_nat radix ((Z.abs_nat (Fexp q-Fexp v))))%Z.
 2:apply eq_IZR.
 2:rewrite plus_IZR; repeat rewrite mult_IZR.
 2:repeat rewrite Zpower_nat_Z_powerRZ.
 2: generalize eqGe; generalize eqLeep; intros.
 2:repeat rewrite <- Zabs_absolu.
-2:repeat rewrite Zabs_eq; auto with zarith.
+2:repeat rewrite Z.abs_eq; auto with zarith.
 2:unfold Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 2:repeat rewrite powerRZ_Zopp; try apply IZR_neq; auto with real zarith.
 2:apply Rmult_eq_reg_l with (powerRZ radix (Fexp v)); auto with real zarith.
 2:apply trans_eq with (FtoRradix v);[idtac|unfold FtoRradix, FtoR; ring].
 2:rewrite H0; rewrite hxExact; unfold FtoRradix, FtoR; field.
-2: apply Rgt_not_eq, powerRZ_lt, IZR_lt; omega.
-2: apply Rgt_not_eq, powerRZ_lt, IZR_lt; omega.
+2: apply Rgt_not_eq, powerRZ_lt, IZR_lt; lia.
+2: apply Rgt_not_eq, powerRZ_lt, IZR_lt; lia.
 cut (exists eps:R, ((eps=1)%R \/ (eps=-1)%R) /\ (FtoRradix x=v+ eps*(powerRZ radix (s + Fexp x))/2)%R).
 intros T; elim T; intros eps T'; elim T'; intros Heps1 Heps2; clear T T'.
 apply EvenPlus1.
 rewrite H4.
 cut ((Fexp p=1+s+Fexp x)%Z \/ (Fexp p=s+Fexp x)%Z);[intros T; case T; clear T; intros|idtac].
 rewrite H5; ring_simplify (1 + s + Fexp x - (s + Fexp x))%Z.
-replace (Zpower_nat radix (Zabs_nat 1))%Z with radix%Z.
+replace (Zpower_nat radix (Z.abs_nat 1))%Z with radix%Z.
 apply EvenMult2; auto.
 unfold Zpower_nat; simpl; auto with zarith.
 rewrite H5;ring_simplify ( (s + Fexp x - (s + Fexp x)))%Z.
@@ -14651,7 +14246,7 @@ unfold Zminus; repeat rewrite plus_IZR; rewrite mult_IZR; rewrite Ropp_Ropp_IZR.
 rewrite <- K.
 simpl; rewrite Zpower_nat_Z_powerRZ; unfold Rdiv; field; auto with real.
 rewrite mult_IZR; rewrite Zpower_nat_Z_powerRZ; rewrite inj_pred; auto with zarith.
-unfold Zpred, Zminus; rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl.
+unfold Z.pred, Zminus; rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl.
 rewrite I'; rewrite mult_IZR; simpl; field.
 apply IZR_neq; auto with real zarith.
 generalize eqLeep; generalize epLe; generalize eqLe; generalize eqGe; intros.
@@ -14659,7 +14254,7 @@ cut (s+Fexp x <= Fexp p)%Z; auto with zarith.
 intros T; case (Zle_lt_or_eq _ _ T); auto with zarith.
 cut ((Fexp q=1+s+Fexp x)%Z \/ (Fexp q=s+Fexp x)%Z);[intros T; case T; clear T; intros|idtac].
 rewrite H4; rewrite H5; ring_simplify (1 + s + Fexp x - (s + Fexp x))%Z.
-replace (Zpower_nat radix (Zabs_nat 1))%Z with radix%Z.
+replace (Zpower_nat radix (Z.abs_nat 1))%Z with radix%Z.
 apply EvenMult2; auto.
 unfold Zpower_nat; simpl; auto with zarith.
 rewrite H4; rewrite H5;ring_simplify ( (s + Fexp x - (s + Fexp x)))%Z.
@@ -14685,17 +14280,17 @@ rewrite Heps2; unfold FtoRradix, FtoR; rewrite H4.
 unfold Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl.
 field; auto with real.
 case Heps1; intros T; rewrite T.
-exists (Fnum p*(Zpower_nat radix (Zabs_nat (Fexp p-(s+Fexp x))))-Fnum v-1)%Z.
+exists (Fnum p*(Zpower_nat radix (Z.abs_nat (Fexp p-(s+Fexp x))))-Fnum v-1)%Z.
 unfold Zminus; repeat rewrite plus_IZR; rewrite mult_IZR; repeat rewrite Ropp_Ropp_IZR; simpl.
-repeat rewrite Zpower_nat_Z_powerRZ; replace (Z_of_nat (Zabs_nat (Fexp p + - (s + Fexp x)))) with
+repeat rewrite Zpower_nat_Z_powerRZ; replace (Z_of_nat (Z.abs_nat (Fexp p + - (s + Fexp x)))) with
     (Fexp p + - s + - Fexp x)%Z;[unfold Rdiv; field; auto with real|idtac].
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
 generalize eqLeep; generalize epLe; generalize eqLe; generalize eqGe; intros; auto with zarith.
-exists (Fnum p*(Zpower_nat radix (Zabs_nat (Fexp p-(s+Fexp x))))-Fnum v)%Z.
+exists (Fnum p*(Zpower_nat radix (Z.abs_nat (Fexp p-(s+Fexp x))))-Fnum v)%Z.
 unfold Zminus; repeat rewrite plus_IZR; rewrite mult_IZR; repeat rewrite Ropp_Ropp_IZR; simpl.
-repeat rewrite Zpower_nat_Z_powerRZ; replace (Z_of_nat (Zabs_nat (Fexp p + - (s + Fexp x)))) with
+repeat rewrite Zpower_nat_Z_powerRZ; replace (Z_of_nat (Z.abs_nat (Fexp p + - (s + Fexp x)))) with
     (Fexp p + - s + - Fexp x)%Z;[unfold Rdiv; field; auto with real|idtac].
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
 generalize eqLeep; generalize epLe; generalize eqLe; generalize eqGe; intros; auto with zarith.
 unfold Fopp; destruct q; simpl; auto with zarith.
 ring_simplify (-(-Fnum0))%Z; auto.
@@ -14724,12 +14319,12 @@ case H3; intros.
 left; unfold FNeven; unfold FNeven in H0.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 apply FnormalizeCanonic; auto with zarith.
-right; apply Zle_trans with (2:=H0).
+right; apply Z.le_trans with (2:=H0).
 apply FcanonicLeastExp with radix b' (t-s); auto with zarith.
 rewrite FnormalizeCorrect; auto with real zarith.
 apply FnormalizeCanonic; auto with zarith.
 cut (exists m:Z, (FtoRradix hx=m*powerRZ radix (s+Fexp x))%R /\
-        ((Zabs m) <= Zpos (vNum b'))%Z ).
+        ((Z.abs m) <= Zpos (vNum b'))%Z ).
 intros T; elim T; intros m T'; elim T'; intros; clear T T'.
 case (Zle_lt_or_eq _ _ H1); intros H2.
 exists (Float m (s+Fexp x)).
@@ -14742,14 +14337,14 @@ cut (Fcanonic radix b' (Float (nNormMin radix (t-s)) (s+1+Fexp x))).
 intros H3; split.
 rewrite H0; unfold FtoRradix, FtoR, nNormMin; simpl.
 rewrite Zpower_nat_Z_powerRZ; rewrite inj_pred; auto with zarith.
-rewrite Zabs_eq in H2.
+rewrite Z.abs_eq in H2.
 rewrite H2; rewrite J;rewrite Zpower_nat_Z_powerRZ.
 repeat rewrite <- powerRZ_add; try apply IZR_neq; auto with real zarith.
-replace (Zpred (t - s)%nat + (s + 1 + Fexp x))%Z with
-   ((t - s)%nat + (s + Fexp x))%Z; auto with real zarith; unfold Zpred; ring.
-apply Zle_Rle.
+replace (Z.pred (t - s)%nat + (s + 1 + Fexp x))%Z with
+   ((t - s)%nat + (s + Fexp x))%Z; auto with real zarith; unfold Z.pred; ring.
+apply le_IZR.
 apply Rmult_le_reg_l with (powerRZ radix (s + Fexp x)); auto with real zarith.
-apply powerRZ_lt, IZR_lt; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rle_trans with 0%R;[simpl; right; ring|rewrite Rmult_comm].
 rewrite <- H0; rewrite hxExact.
 apply Rplus_le_reg_l with (-q)%R.
@@ -14767,26 +14362,26 @@ left; unfold FNeven; rewrite FcanonicFnormalizeEq; auto with zarith.
 unfold Feven, nNormMin; simpl.
 replace (pred (t-s)) with (S (pred (pred (t-s)))); auto with zarith.
 apply EvenExp; auto with zarith.
-exists (Fnum p*Zpower_nat radix ((Zabs_nat (Fexp p-s-Fexp x)))+
-        Fnum q*Zpower_nat radix ((Zabs_nat (Fexp q-s-Fexp x))))%Z.
+exists (Fnum p*Zpower_nat radix ((Z.abs_nat (Fexp p-s-Fexp x)))+
+        Fnum q*Zpower_nat radix ((Z.abs_nat (Fexp q-s-Fexp x))))%Z.
 cut  (FtoRradix hx =
-   ((Fnum p * Zpower_nat radix (Zabs_nat (Fexp p - s - Fexp x)) +
-     Fnum q * Zpower_nat radix (Zabs_nat (Fexp q - s - Fexp x)))%Z *
+   ((Fnum p * Zpower_nat radix (Z.abs_nat (Fexp p - s - Fexp x)) +
+     Fnum q * Zpower_nat radix (Z.abs_nat (Fexp q - s - Fexp x)))%Z *
     powerRZ radix (s + Fexp x)))%R;[intros H'; split; auto|idtac].
-cut (Zabs
-      (Fnum p * Zpower_nat radix (Zabs_nat (Fexp p - s - Fexp x)) +
-       Fnum q * Zpower_nat radix (Zabs_nat (Fexp q - s - Fexp x))) <
+cut (Z.abs
+      (Fnum p * Zpower_nat radix (Z.abs_nat (Fexp p - s - Fexp x)) +
+       Fnum q * Zpower_nat radix (Z.abs_nat (Fexp q - s - Fexp x))) <
     Zpos (vNum b')+1)%Z; auto with zarith.
-apply Zlt_Rlt.
+apply lt_IZR.
 rewrite plus_IZR; simpl (IZR 1).
 rewrite <- Rabs_Zabs.
 apply Rmult_lt_reg_l with (powerRZ radix (s + Fexp x)); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rle_lt_trans with (Rabs ((powerRZ radix (s + Fexp x))*((Fnum p *
-      Zpower_nat radix (Zabs_nat (Fexp p - s - Fexp x)) +
-       Fnum q * Zpower_nat radix (Zabs_nat (Fexp q - s - Fexp x)))%Z)))%R.
+      Zpower_nat radix (Z.abs_nat (Fexp p - s - Fexp x)) +
+       Fnum q * Zpower_nat radix (Z.abs_nat (Fexp q - s - Fexp x)))%Z)))%R.
 rewrite Rabs_mult; rewrite (Rabs_right (powerRZ radix (s + Fexp x))); auto with real.
-apply Rle_ge; apply powerRZ_le, Rlt_IZR; omega.
+apply Rle_ge; apply powerRZ_le, IZR_lt; lia.
 rewrite Rmult_comm; rewrite <- H'.
 replace (FtoRradix hx) with (x+(-(x-hx)))%R;[idtac|ring].
 apply Rle_lt_trans with (Rabs x+Rabs (-(x-hx)))%R;[apply Rabs_triang|idtac].
@@ -14794,8 +14389,8 @@ rewrite Rabs_Ropp; apply Rlt_le_trans with (powerRZ radix (t+Fexp x)+Rabs (x-hx)
 apply Rplus_lt_compat_r; unfold FtoRradix; rewrite <- Fabs_correct; auto.
 unfold FtoR, Fabs; simpl; rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
-elim Fx; intros; rewrite <- Zpower_nat_Z_powerRZ; rewrite <- pGivesBound; try apply Rlt_IZR; auto with real zarith.
+apply powerRZ_lt, IZR_lt; lia.
+elim Fx; intros; rewrite <- Zpower_nat_Z_powerRZ; rewrite <- pGivesBound; try apply IZR_lt; auto with real zarith.
 apply Rle_trans with (powerRZ radix (t + Fexp x)+ powerRZ radix (s + Fexp x) / 2)%R;
    auto with real.
 rewrite J; rewrite Zpower_nat_Z_powerRZ; rewrite inj_minus1; auto with zarith.
@@ -14804,13 +14399,13 @@ apply Rplus_le_compat.
 rewrite <- powerRZ_add; try apply IZR_neq; auto with real zarith.
 replace (s + Fexp x + (t - s))%Z with (t + Fexp x)%Z by ring; auto with real.
 unfold Rdiv; apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (/1)%R; auto with real.
 rewrite plus_IZR; repeat rewrite mult_IZR.
 repeat rewrite Zpower_nat_Z_powerRZ.
 generalize eqGe; generalize eqLeep; intros.
 repeat rewrite <- Zabs_absolu.
-repeat rewrite Zabs_eq; auto with zarith.
+repeat rewrite Z.abs_eq; auto with zarith.
 rewrite Rmult_plus_distr_r.
 repeat rewrite Rmult_assoc.
 repeat rewrite <- powerRZ_add; try apply IZR_neq; auto with real zarith.
@@ -14823,24 +14418,25 @@ Qed.
 
 Lemma VeltkampEven2: (Odd radix)
    -> (exists hx':float, (FtoRradix hx'=hx) /\ (EvenClosest b' radix (t-s) x hx')).
+Proof.
 intros I.
 generalize p'GivesBound;intros J.
 cut (powerRZ radix (t - 1 + Fexp x) <= x)%R;[intros xGe|idtac].
 2:rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; unfold FtoRradix, FtoR.
 2:apply Rmult_le_compat_r; auto with real zarith.
-2: apply powerRZ_le, Rlt_IZR; omega.
-2:apply Rmult_le_reg_l with radix; try apply Rlt_IZR; auto with real zarith.
+2: apply powerRZ_le, IZR_lt; lia.
+2:apply Rmult_le_reg_l with radix; try apply IZR_lt; auto with real zarith.
 2:apply Rle_trans with (powerRZ radix t).
 2:unfold Zminus; rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; right; field; auto with real.
-2: apply Rgt_not_eq, Rlt_IZR; omega.
+2: apply Rgt_not_eq, IZR_lt; lia.
 2:rewrite <- Zpower_nat_Z_powerRZ; rewrite <- pGivesBound; rewrite <- mult_IZR; elim Nx; intros.
-2:apply Rle_IZR; rewrite Zabs_Zmult in H0; rewrite Zabs_eq in H0; auto with zarith.
-2:rewrite Zabs_eq in H0; auto with zarith real.
+2:apply IZR_le; rewrite Zabs_Zmult in H0; rewrite Z.abs_eq in H0; auto with zarith.
+2:rewrite Z.abs_eq in H0; auto with zarith real.
 2:apply LeR0Fnum with radix; auto with real.
 cut (Rabs (x - hx) <= (powerRZ radix (s + Fexp x))/2)%R;[intros|idtac].
 2:case eqEqual; intros L.
 2:fold FtoRradix; rewrite hxExact.
-2:replace (x-(p+q))%R with ((x-p)-q)%R;[apply Rmult_le_reg_l with (INR 2); auto with real zarith|ring].
+2:replace (x-(p+q))%R with ((x-p)-q)%R;[apply Rmult_le_reg_l with 2%R; auto with real zarith|ring].
 2:apply Rle_trans with (powerRZ radix (Fexp q)).
 2:unfold FtoRradix; apply ClosestExp with b t; auto with zarith.
 2:rewrite L; simpl; right; field; auto with real.
@@ -14872,8 +14468,8 @@ replace (S n)with (1+n); auto with zarith.
 rewrite Zpower_nat_is_exp.
 apply OddMult; auto.
 unfold Zpower_nat; simpl; ring_simplify (radix*1)%Z; auto.
-replace (Zpower_nat radix s) with (2*(Zabs (Fnum x-
-   Fnum v*Zpower_nat radix (Zabs_nat (Fexp v-Fexp x)))))%Z.
+replace (Zpower_nat radix s) with (2*(Z.abs (Fnum x-
+   Fnum v*Zpower_nat radix (Z.abs_nat (Fexp v-Fexp x)))))%Z.
 apply EvenMult1; unfold Even; exists 1%Z; auto with zarith.
 apply eq_IZR.
 rewrite mult_IZR; rewrite <- Rabs_Zabs.
@@ -14884,24 +14480,24 @@ rewrite <- powerRZ_add; try apply IZR_neq; auto with real zarith.
 apply Rmult_eq_reg_l with (/2)%R; auto with real.
 apply trans_eq with (powerRZ radix (s + Fexp x) / 2)%R.
 2: unfold Rdiv; rewrite Zplus_comm; ring.
-2: apply Rgt_not_eq; apply powerRZ_lt, Rlt_IZR; omega.
+2: apply Rgt_not_eq; apply powerRZ_lt, IZR_lt; lia.
 rewrite <- L.
 apply trans_eq with ((powerRZ radix (Fexp x) *
-     (Rabs (Fnum x +- (Fnum v * powerRZ radix (Zabs_nat (Fexp v +- Fexp x)))))))%R.
+     (Rabs (Fnum x +- (Fnum v * powerRZ radix (Z.abs_nat (Fexp v +- Fexp x)))))))%R.
 field; auto with real.
 rewrite <- (Rabs_right (powerRZ radix (Fexp x)));[idtac|apply Rle_ge; auto with real zarith].
 rewrite <- Rabs_mult.
 replace  (x - FtoR radix v)%R with (powerRZ radix (Fexp x) * (Fnum x +
-   -(Fnum v * powerRZ radix (Zabs_nat (Fexp v +- Fexp x)))))%R; auto with real.
+   -(Fnum v * powerRZ radix (Z.abs_nat (Fexp v +- Fexp x)))))%R; auto with real.
 unfold FtoRradix, FtoR; rewrite Rmult_plus_distr_l.
-rewrite <- Zabs_absolu; rewrite Zabs_eq.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq.
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 rewrite powerRZ_Zopp; try apply IZR_neq; auto with real zarith.
-field; auto with real zarith.
-apply Rgt_not_eq; apply powerRZ_lt, Rlt_IZR; omega.
+field.
+apply Rgt_not_eq; apply powerRZ_lt, IZR_lt; lia.
 apply Zplus_le_reg_l with (Fexp x).
 ring_simplify.
-apply Zle_trans with (Fexp (Float (nNormMin radix (t-s)) (Fexp x)));
+apply Z.le_trans with (Fexp (Float (nNormMin radix (t-s)) (Fexp x)));
    [simpl; auto with zarith|idtac].
 apply Fcanonic_Rle_Zle with radix b' (t-s); auto with zarith.
 apply FcanonicNnormMin; auto with zarith.
@@ -14909,15 +14505,15 @@ unfold b'; simpl; elim Fx; auto.
 cut (powerRZ radix (t - 1 + Fexp x) <= v)%R;[intros H3|idtac].
 2: apply Veltkamp_aux_aux; auto.
 fold (FtoRradix v);unfold FtoR, nNormMin; simpl.
-rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add; auto with real zarith.
+rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add.
 rewrite Rabs_right;[idtac|apply Rle_ge; auto with real zarith].
 rewrite Rabs_right;[idtac|apply Rle_ge;
    apply Rle_trans with (2:=H3); auto with real zarith].
-apply Rle_trans with (2:=H3); apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply powerRZ_le, Rlt_IZR; omega.
-apply IZR_neq; omega.
-apply powerRZ_le, Rlt_IZR; omega.
+apply Rle_trans with (2:=H3); apply Rle_powerRZ; try apply IZR_le; try lia.
+apply powerRZ_le, IZR_lt; lia.
+apply powerRZ_le, IZR_lt; lia.
+apply IZR_neq; lia.
+apply powerRZ_le, IZR_lt; lia.
 cut (exists c:float, (FtoRradix c=hx) /\ (Fbounded b' c)).
 intros T; elim T; intros c H'; elim H'; intros.
 exists (Fnormalize radix b' (t-s) c); split.
@@ -14931,12 +14527,12 @@ exists v; split; auto.
 rewrite hxExact; unfold FtoRradix; rewrite <- Fplus_correct; auto.
 rewrite H1; unfold FtoR; replace (s+ Fexp x)%Z with (Fexp (Fplus radix p q)); auto with real.
 unfold Fplus; simpl.
-rewrite Zmin_le2;[auto|apply eqLeep].
+rewrite Z.min_r;[auto|apply eqLeep].
 2: elim Fx; unfold b'; simpl; auto with zarith.
-cut ( (Zabs (Fnum (Fplus radix p q)) < ((Zpower_nat radix (t - s))+1)))%Z; auto with zarith.
-apply Zlt_Rlt.
+cut ( (Z.abs (Fnum (Fplus radix p q)) < ((Zpower_nat radix (t - s))+1)))%Z; auto with zarith.
+apply lt_IZR.
 apply Rmult_lt_reg_l with (powerRZ radix (Fexp (Fplus radix p q))); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rle_lt_trans with (Rabs (Fplus radix p q)).
 unfold FtoRradix; rewrite <- Fabs_correct; auto.
 unfold Fabs, FtoR; simpl; auto with real.
@@ -14950,21 +14546,21 @@ apply Rlt_le_trans with ((powerRZ radix (s + Fexp x))/2 + (powerRZ radix (t+Fexp
 apply Rplus_lt_compat_l.
 unfold FtoRradix; rewrite <- Fabs_correct; auto; unfold FtoR; simpl.
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 elim Fx; intros; rewrite <- Zpower_nat_Z_powerRZ; rewrite <- pGivesBound; auto with real zarith.
 apply IZR_lt; easy.
 replace (Fexp (Fplus radix p q)) with (s+ Fexp x)%Z.
 2:unfold Fplus; simpl.
-2:rewrite Zmin_le2;[auto|apply eqLeep].
+2:rewrite Z.min_r;[auto|apply eqLeep].
 rewrite plus_IZR; rewrite Zpower_nat_Z_powerRZ; simpl.
-rewrite Rmult_plus_distr_l; rewrite <- powerRZ_add; auto with real zarith.
+rewrite Rmult_plus_distr_l; rewrite <- powerRZ_add.
 rewrite Rplus_comm; apply Rplus_le_compat.
 rewrite inj_minus1; auto with real zarith.
 replace ((s + Fexp x + (t - s)))%Z with (t+Fexp x)%Z; auto with real; ring.
 unfold Rdiv; apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (/1)%R; auto with real.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 elim L; clear L; intros L1 L2.
 cut (Fexp q=s+1+Fexp x)%Z;[intros L3|idtac].
 2:cut (q=Float (-(nNormMin radix t)) (s+1+Fexp x));[intros I'; rewrite I'; simpl; auto|idtac].
@@ -14978,20 +14574,20 @@ cut (Fexp q=s+1+Fexp x)%Z;[intros L3|idtac].
 2:rewrite Ropp_Ropp_IZR; rewrite Zpower_nat_Z_powerRZ.
 2:apply trans_eq with (-(powerRZ radix (pred t) * powerRZ radix (s + 1 + Fexp x)))%R;
   auto with real.
-2:rewrite <- powerRZ_add; auto with real zarith.
+2:rewrite <- powerRZ_add.
 2:replace ((pred t + (s + 1 + Fexp x)))%Z with  (t + s + Fexp x)%Z; auto with real.
-2:rewrite inj_pred; auto with zarith; unfold Zpred; ring.
-2: apply IZR_neq; omega.
+2:rewrite inj_pred; auto with zarith; unfold Z.pred; ring.
+2: apply IZR_neq; lia.
 generalize FboundedMbound; intros P.
 elim P with radix b' (t-s) (Fexp (Fplus radix p q))%Z (Fnum (Fplus radix p q));
   auto with zarith; clear P.
 intros v H'; elim H'; intros ; clear H'.
 exists v; split; auto.
 rewrite hxExact; unfold FtoRradix; rewrite <- Fplus_correct; auto.
-cut ( (Zabs (Fnum (Fplus radix p q)) < ((Zpower_nat radix (t - s))+1)))%Z; auto with zarith.
-apply Zlt_Rlt.
+cut ( (Z.abs (Fnum (Fplus radix p q)) < ((Zpower_nat radix (t - s))+1)))%Z; auto with zarith.
+apply lt_IZR.
 apply Rmult_lt_reg_l with (powerRZ radix (Fexp (Fplus radix p q))); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rle_lt_trans with (Rabs (Fplus radix p q)).
 unfold FtoRradix; rewrite <- Fabs_correct; auto.
 unfold Fabs, FtoR; simpl; auto with real.
@@ -15005,22 +14601,22 @@ apply Rlt_le_trans with ((powerRZ radix (s + Fexp x))/2 + (powerRZ radix (t+Fexp
 apply Rplus_lt_compat_l.
 unfold FtoRradix; rewrite <- Fabs_correct; auto; unfold FtoR; simpl.
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 elim Fx; intros; rewrite <- Zpower_nat_Z_powerRZ; rewrite <- pGivesBound; auto with real zarith.
 now apply IZR_lt.
 replace (Fexp (Fplus radix p q)) with (s+ 1+Fexp x)%Z.
 2:unfold Fplus; simpl.
-2:rewrite Zmin_le2;[auto|apply eqLeep].
+2:rewrite Z.min_r;[auto|apply eqLeep].
 rewrite plus_IZR; rewrite Zpower_nat_Z_powerRZ; simpl.
 rewrite Rmult_plus_distr_l; rewrite <- powerRZ_add; try apply IZR_neq; auto with real zarith.
 rewrite Rplus_comm; apply Rplus_le_compat.
-apply Rle_powerRZ; try apply Rle_IZR; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; lia.
 unfold Rdiv; apply Rmult_le_compat; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_powerRZ; try apply Rle_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; lia.
+apply Rle_powerRZ; try apply IZR_le; auto with zarith.
 apply Rle_trans with (/1)%R; auto with real.
 unfold b', Fplus; simpl.
-rewrite Zmin_le2;[elim Nq; intros Fq T; elim Fq; auto|apply eqLeep].
+rewrite Z.min_r;[elim Nq; intros Fq T; elim Fq; auto|apply eqLeep].
 Qed.
 
 End Velt.
@@ -15031,7 +14627,7 @@ Variable b : Fbound.
 Variables s t:nat.
 
 Let b' := Bound
-    (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (minus t s)))))
+    (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (minus t s)))))
     (dExp b).
 
 Let FtoRradix := FtoR radix.
@@ -15041,8 +14637,8 @@ Hypothesis radixMoreThanOne : (1 < radix)%Z.
 Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ radixMoreThanOne).
 
 Hypothesis pGivesBound: Zpos (vNum b)=(Zpower_nat radix t).
-Hypothesis SLe: (2 <= s)%nat.
-Hypothesis SGe: (s <= t-2)%nat.
+Hypothesis SLe: (2 <= s).
+Hypothesis SGe: (s <= t-2).
 
 
 Lemma Veltkamp_pos: forall x p q hx:float,
@@ -15068,7 +14664,7 @@ apply Rle_lt_trans with (x*1)%R; auto with real.
 apply Rmult_lt_compat_l; auto with real zarith.
 apply Rle_lt_trans with (0+1)%R; auto with real zarith.
 apply Rplus_lt_compat_r.
-apply powerRZ_lt; try apply Rlt_IZR; auto with zarith.
+apply powerRZ_lt; try apply IZR_lt; auto with zarith.
 unfold FtoRradix; apply RoundedModeProjectorIdem with (P:=(Closest b radix)) (b:=b).
 apply ClosestRoundedModeP with t; auto with zarith.
 generalize firstNormalPosNormal; intros H4.
@@ -15087,27 +14683,27 @@ unfold FtoRradix; apply FnormalLtFirstNormalPos; auto with zarith real.
 apply Rplus_lt_reg_r with (FtoRradix x).
 apply Rle_lt_trans with ((IZR 2)*x)%R;[right; simpl; ring| idtac].
 apply Rle_lt_trans with (radix*x)%R;auto with real zarith.
-apply Rmult_le_compat_r; try apply Rle_IZR; auto with real zarith.
+apply Rmult_le_compat_r; try apply IZR_le; auto with real zarith.
 apply Rlt_le_trans with (radix*(radix*x))%R.
 apply Rle_lt_trans with (1*(radix*x))%R; auto with real zarith.
 apply Rmult_lt_compat_r; auto with real zarith.
 apply Rmult_lt_0_compat; auto with real zarith.
-apply Rlt_IZR; omega.
-apply Rlt_IZR; omega.
+apply IZR_lt; lia.
+apply IZR_lt; lia.
 apply Rle_trans with (FtoRradix p);[idtac|right; ring].
 apply Rle_trans with (FtoRradix (Float (Fnum x) (Fexp x+2))).
-unfold FtoRradix, FtoR; simpl; rewrite powerRZ_add; simpl; auto with real zarith.
+unfold FtoRradix, FtoR; simpl; rewrite powerRZ_add; simpl.
 right; ring.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 unfold FtoRradix; apply H3 with b (Float (Fnum x) (Fexp x + 2))
    (x * (powerRZ radix s + 1))%R; auto.
 apply Rle_lt_trans with  (x * (powerRZ radix 2))%R.
-unfold FtoRradix, FtoR; simpl; rewrite powerRZ_add; auto with real zarith.
-apply IZR_neq; omega.
+unfold FtoRradix, FtoR; simpl; rewrite powerRZ_add. auto with real.
+apply IZR_neq; lia.
 apply Rmult_lt_compat_l; auto with real zarith.
 apply Rle_lt_trans with (powerRZ radix s+0)%R; auto with real zarith.
 apply Rle_trans with (powerRZ radix s)%R; auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; auto with zarith real.
+apply Rle_powerRZ; try apply IZR_le; auto with zarith real.
 unfold FtoRradix; apply RoundedModeProjectorIdem with (P:=(Closest b radix)) (b:=b).
 apply ClosestRoundedModeP with t; auto with zarith.
 elim Nx; intros T1 T2; elim T1; intros.
@@ -15218,7 +14814,7 @@ apply Rle_lt_trans with (x*1)%R; auto with real.
 apply Rmult_lt_compat_l; auto with real zarith.
 apply Rle_lt_trans with (0+1)%R; auto with real zarith.
 apply Rplus_lt_compat_r.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 unfold FtoRradix; apply RoundedModeProjectorIdem with (P:=(EvenClosest b radix t)) (b:=b).
 apply EvenClosestRoundedModeP; auto with zarith.
 generalize firstNormalPosNormal; intros H4.
@@ -15239,26 +14835,26 @@ apply Rplus_lt_reg_r with (FtoRradix x).
 apply Rle_lt_trans with ((IZR 2)*x)%R;[right; simpl; ring| idtac].
 apply Rle_lt_trans with (radix*x)%R;auto with real zarith.
 apply Rmult_le_compat_r; auto with real.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply Rlt_le_trans with (radix*(radix*x))%R.
 apply Rle_lt_trans with (1*(radix*x))%R; auto with real zarith.
 apply Rmult_lt_compat_r; auto with real zarith.
-apply Rmult_lt_0_compat; try apply Rlt_IZR; auto with real zarith.
-apply Rlt_IZR; omega.
+apply Rmult_lt_0_compat; try apply IZR_lt; auto with real zarith.
+apply IZR_lt; lia.
 apply Rle_trans with (FtoRradix p);[idtac|right; ring].
 apply Rle_trans with (FtoRradix (Float (Fnum x) (Fexp x+2))).
 unfold FtoRradix, FtoR; simpl; rewrite powerRZ_add; simpl; auto with real zarith.
 right; ring.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 unfold FtoRradix; apply H3 with b t (Float (Fnum x) (Fexp x + 2))
    (x * (powerRZ radix s + 1))%R; auto.
 apply Rle_lt_trans with  (x * (powerRZ radix 2))%R.
-unfold FtoRradix, FtoR; simpl; rewrite powerRZ_add; auto with real zarith.
-apply IZR_neq; omega.
+unfold FtoRradix, FtoR; simpl; rewrite powerRZ_add. auto with real zarith.
+apply IZR_neq; lia.
 apply Rmult_lt_compat_l; auto with real zarith.
 apply Rle_lt_trans with (powerRZ radix s+0)%R; auto with real zarith.
 apply Rle_trans with (powerRZ radix s)%R; auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; auto with zarith real.
+apply Rle_powerRZ; try apply IZR_le; auto with zarith real.
 unfold FtoRradix; apply RoundedModeProjectorIdem with (P:=(EvenClosest b radix t)) (b:=b).
 apply EvenClosestRoundedModeP; auto with zarith.
 elim Nx; intros T1 T2; elim T1; intros.
@@ -15368,7 +14964,7 @@ Variable b : Fbound.
 Variables s t:nat.
 
 Let b' := Bound
-    (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (minus t s)))))
+    (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (minus t s)))))
     (dExp b).
 
 Definition plusExp (b:Fbound):=
@@ -15383,8 +14979,8 @@ Hypothesis radixMoreThanOne : (1 < radix)%Z.
 Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ radixMoreThanOne).
 
 Hypothesis pGivesBound: Zpos (vNum b)=(Zpower_nat radix t).
-Hypothesis SLe: (2 <= s)%nat.
-Hypothesis SGe: (s <= t-2)%nat.
+Hypothesis SLe: (2 <= s).
+Hypothesis SGe: (s <= t-2).
 
 
 Lemma bimplybplusNorm: forall f:float,
@@ -15401,34 +14997,34 @@ apply Rle_not_lt.
 unfold firstNormalPos.
 apply Rle_trans with (powerRZ radix (-(dExp b))).
 unfold FtoRradix, FtoR, plusExp, nNormMin; simpl.
-rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add; auto with real zarith.
+rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add.
 replace (pred t + - ((dExp b + Npos (P_of_succ_nat (pred (pred t)))))%N)%Z with (-(dExp b))%Z; auto with real.
 apply trans_eq with  (pred t + - (dExp b + (Zpos (P_of_succ_nat (pred (pred t))))))%Z.
 replace (Zpos (P_of_succ_nat (pred (pred t)))) with
     (Z_of_nat
        (nat_of_P
           (P_of_succ_nat
-             (pred (pred t))))); auto with zarith.
+             (pred (pred t))))); lia.
 cut (forall (x:N) (y:positive), (x+(Zpos y)=(x +Npos y)%N)%Z).
 intros T; rewrite <- T; auto with zarith.
 intros;unfold Nplus.
 case x; auto with zarith.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 unfold FtoRradix; rewrite <- Fabs_correct; auto.
 apply Rle_trans with (1*(powerRZ radix (- dExp b)))%R; auto with real.
 unfold FtoR; apply Rmult_le_compat; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 unfold Fabs; simpl.
-cut ((Fnum f=0)%Z \/  (1 <= Zabs (Fnum f))%Z).
+cut ((Fnum f=0)%Z \/  (1 <= Z.abs (Fnum f))%Z).
 intros H3; case H3; auto with real zarith.
 intros H4; absurd (FtoRradix f=0)%R; auto with real.
 unfold FtoRradix, FtoR; rewrite H4; simpl; ring.
-apply Rle_IZR.
+apply IZR_le.
 case (Zle_or_lt 0%Z (Fnum f)); intros H3.
-case (Zle_lt_or_eq _ _ H3); auto with zarith; intros H4.
-right; rewrite <- Zabs_Zopp; rewrite Zabs_eq; auto with zarith.
+case (Zle_lt_or_eq _ _ H3); lia.
+right; lia.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 unfold Fabs; simpl; elim H; auto.
 unfold FtoRradix; rewrite <- FnormalizeCorrect with radix (plusExp b) t f; auto.
 rewrite <- Fabs_correct; auto.
@@ -15438,7 +15034,7 @@ apply FsubnormFabs; auto.
 rewrite Fabs_correct; auto with real.
 apply Rabs_pos.
 apply FnormalizeCanonic; auto with zarith.
-elim H; split; unfold plusExp; simpl; auto with zarith.
+elim H; split; unfold plusExp; simpl; lia.
 Qed.
 
 
@@ -15450,7 +15046,7 @@ intros g Fg; elim H; intros.
 apply H2; auto.
 elim Fg; intros; split; unfold plusExp; auto.
 cut (forall (x:N) (y:positive), (x+(Zpos y)=(x +Npos y)%N)%Z).
-intros T; simpl; rewrite <- T; auto with zarith.
+intros T; simpl; rewrite <- T; lia.
 intros;unfold Nplus.
 case x; auto with zarith.
 Qed.
@@ -15462,12 +15058,13 @@ Lemma Closestbbplus: forall b0:Fbound, forall n:nat, forall fext f:float,
     Zpos (vNum b0)=(Zpower_nat radix n) -> (1 < n) ->
    (-dExp b0 <= Fexp fext)%Z ->
     (Closest b0 radix fext f) -> (Closest (plusExp b0) radix fext f).
+Proof.
 intros b0 n fext f K1 K2; intros.
 elim H0; intros.
 split.
 elim H1; intros; split; auto.
 cut (forall (x:N) (y:positive), (x+(Zpos y)=(x +Npos y)%N)%Z).
-intros T; simpl; rewrite <- T; auto with zarith.
+intros T; simpl; rewrite <- T; lia.
 intros;unfold Nplus.
 case x; auto with zarith.
 intros g Hg.
@@ -15478,7 +15075,7 @@ case (Zle_lt_or_eq (-(dExp b0)) (Fexp (Fnormalize radix b0 n f))).
 cut (Fbounded b0 (Fnormalize radix b0 n f));[intros T; elim T; auto|idtac].
 apply FnormalizeBounded; auto with zarith.
 intros; apply Rle_trans with ((Fulp b0 radix n f)/2)%R.
-apply Rmult_le_reg_l with (INR 2); auto with zarith real.
+apply Rmult_le_reg_l with 2%R; auto with zarith real.
 apply Rle_trans with (Fulp b0 radix n f);[idtac|simpl; right; field; auto with real].
 rewrite <- Rabs_Ropp.
 replace (- (FtoR radix f - fext))%R with (fext - FtoR radix f)%R;[idtac|ring].
@@ -15495,47 +15092,47 @@ apply Rle_trans with (powerRZ radix (Fexp (Fnormalize radix b0 n f))).
 unfold Fulp, Rdiv; apply Rle_trans with
   ((/2+/radix)* powerRZ radix (Fexp (Fnormalize radix b0 n f)))%R.
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; right; field.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 apply Rle_trans with (1 * powerRZ radix (Fexp (Fnormalize radix b0 n f)))%R;
   [apply Rmult_le_compat_r; auto with real zarith|right; ring].
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rmult_le_reg_l with (2*radix)%R;
   [apply Rmult_lt_0_compat; auto with real zarith|idtac].
-apply Rlt_IZR; omega.
+apply IZR_lt; lia.
 apply Rle_trans with (2+radix)%R;
   [right; field; auto with real zarith | ring_simplify (2*radix*1)%R].
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 apply Rle_trans with (radix+radix)%R.
-apply Rplus_le_compat_r, Rle_IZR; omega.
+apply Rplus_le_compat_r, IZR_le; lia.
 right; ring.
 apply Rle_trans with  (powerRZ radix (n-2+Fexp (Fnormalize radix b0 n f)));
-  [apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith|idtac].
+  [apply Rle_powerRZ; try apply IZR_le; auto with real zarith|idtac].
 apply Rle_trans with (1*(powerRZ radix (n - 2 + Fexp (Fnormalize radix b0 n f))))%R;
    auto with real.
 apply Rle_trans with ((radix -1)*(powerRZ radix (n - 2 +  Fexp
   (Fnormalize radix b0 n f))))%R;[apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rplus_le_reg_l with 1%R.
-ring_simplify (1+(radix-1))%R; apply Rle_trans with (IZR 2); try apply Rle_IZR; auto with real zarith.
+ring_simplify (1+(radix-1))%R; apply Rle_trans with (IZR 2); try apply IZR_le; auto with real zarith.
 apply Rle_trans with ( - powerRZ radix (n - 2+ Fexp (Fnormalize radix b0 n f)) +
     powerRZ radix (n - 1 + Fexp (Fnormalize radix b0 n f)))%R.
 right; unfold Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
-simpl; field; auto with real zarith.
-apply IZR_neq; omega.
+simpl; field.
+apply IZR_neq; lia.
 rewrite Rplus_comm; unfold Rminus;apply Rplus_le_compat_l; apply Ropp_le_contravar;
    apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 cut (powerRZ radix (n - 1 + Fexp (Fnormalize radix b0 n f)) +
     - powerRZ radix (-1 + Fexp (Fnormalize radix b0 n f))=
    (Float (pPred (vNum b0)) (-1+Fexp (Fnormalize radix b0 n f))))%R.
 intros W; rewrite W.
 2: unfold FtoRradix, FtoR, pPred.
-2: apply trans_eq with (Zpred (Zpos (vNum b0))*powerRZ radix
+2: apply trans_eq with (Z.pred (Zpos (vNum b0))*powerRZ radix
   (-1+Fexp (Fnormalize radix b0 n f)))%R;[idtac|simpl; auto with real].
-2: unfold Zpred, Zminus; rewrite plus_IZR.
+2: unfold Z.pred, Zminus; rewrite plus_IZR.
 2: rewrite K1; rewrite Zpower_nat_Z_powerRZ.
 2: repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; field.
-2: apply IZR_neq; omega.
+2: apply IZR_neq; lia.
 case (Rle_or_lt  (Float (pPred (vNum b0)) (-1 + Fexp (Fnormalize radix b0 n f)))
     (Rabs fext)); auto with real; intros V.
 absurd ( Rabs f <= Float (pPred (vNum b0)) (-1 + Fexp (Fnormalize radix b0 n f)))%R.
@@ -15544,24 +15141,24 @@ apply Rlt_le_trans with (powerRZ radix (n-1+Fexp (Fnormalize radix b0 n f))).
 rewrite <- W; apply Rlt_le_trans with (powerRZ radix (n - 1 +
    Fexp (Fnormalize radix b0 n f))+-0)%R; auto with real zarith.
 apply Rplus_lt_compat_l, Ropp_lt_contravar.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 right; ring.
 unfold FtoRradix; rewrite <- FnormalizeCorrect with radix b0 n f; auto with zarith.
 rewrite <- Fabs_correct; auto.
-rewrite powerRZ_add; auto with real zarith; unfold FtoRradix, FtoR, Fabs; simpl.
+rewrite powerRZ_add; unfold FtoRradix, FtoR, Fabs; simpl.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rmult_le_reg_l with radix; auto with real zarith.
-now apply Rlt_IZR.
+now apply IZR_lt.
 apply Rle_trans with (powerRZ radix n).
 unfold Zminus; rewrite powerRZ_add; try apply IZR_neq; auto with real zarith;
   simpl; right; field ; auto with real.
-apply IZR_neq; omega.
-2: apply IZR_neq; omega.
+apply IZR_neq; lia.
+2: apply IZR_neq; lia.
 cut (Fnormal radix b0 (Fnormalize radix b0 n f));[intros Nf|idtac].
 rewrite <- Zpower_nat_Z_powerRZ; rewrite <- K1; rewrite <- mult_IZR;
   elim Nf; intros.
-apply Rle_IZR; rewrite Zabs_Zmult in H6; rewrite Zabs_eq in H6; auto with zarith real.
+apply IZR_le; rewrite Zabs_Zmult in H6; rewrite Z.abs_eq in H6; auto with zarith real.
 cut (Fcanonic radix b0 (Fnormalize radix b0 n f));[intros X|apply FnormalizeCanonic; auto with zarith].
 case X; auto; intros X'.
 elim X'; intros H5 H6; elim H6; intros.
@@ -15570,22 +15167,22 @@ unfold FtoRradix; apply RoundAbsMonotoner with b0 n (Closest b0 radix) fext;
   auto with real zarith.
 apply ClosestRoundedModeP with n; auto with zarith.
 split.
-apply Zle_lt_trans with (pPred (vNum b0)); auto with zarith.
-simpl; rewrite Zabs_eq; auto with zarith.
+apply Z.le_lt_trans with (pPred (vNum b0)); auto with zarith.
+simpl; rewrite Z.abs_eq; auto with zarith.
 apply Zlt_le_weak; apply pPredMoreThanOne with radix n; auto with zarith.
 unfold pPred; auto with zarith.
-apply Zle_trans with (Zpred (Fexp (Fnormalize radix b0 n f))); auto with zarith.
-unfold Zpred; apply Zle_trans with (-1+Fexp (Fnormalize radix b0 n f))%Z;auto with zarith.
+apply Z.le_trans with (Z.pred (Fexp (Fnormalize radix b0 n f))); auto with zarith.
+unfold Z.pred; apply Z.le_trans with (-1+Fexp (Fnormalize radix b0 n f))%Z;auto with zarith.
 apply Ropp_le_contravar; rewrite <- Fabs_correct; auto.
 unfold FtoR, Fabs; simpl.
 apply Rle_trans with ((powerRZ radix n)*(powerRZ radix (-1-dExp b0)))%R.
 apply Rmult_le_compat; auto with real zarith.
-apply Rle_IZR; auto with zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply IZR_le; auto with zarith.
+apply powerRZ_le, IZR_lt; lia.
 elim Hg; intros; rewrite <- Zpower_nat_Z_powerRZ;
-   rewrite <- K1; apply Rle_IZR; auto with real zarith.
+   rewrite <- K1; apply IZR_le; auto with real zarith.
 unfold plusExp in H5; simpl in H5; auto with zarith.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 unfold Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; right; ring.
 intros H4.
 apply Rle_trans with 0%R.
@@ -15597,22 +15194,22 @@ rewrite <- Fabs_correct; auto.
 unfold FtoR.
 replace (Fnum (Fabs (Fminus radix (Fnormalize radix b0 n f) fext))) with 0%Z;
    [simpl; ring|idtac].
-apply sym_eq; apply trans_eq with (Zabs (Fnum  (Fminus radix
+apply sym_eq; apply trans_eq with (Z.abs (Fnum  (Fminus radix
    (Fnormalize radix b0 n f) fext)));[simpl; auto with zarith|idtac].
-cut  ( 0 <= Zabs (Fnum (Fminus radix (Fnormalize radix b0 n f) fext)))%Z;
+cut  ( 0 <= Z.abs (Fnum (Fminus radix (Fnormalize radix b0 n f) fext)))%Z;
   auto with real zarith.
-cut  (Zabs (Fnum (Fminus radix (Fnormalize radix b0 n f) fext)) < 1)%Z;
+cut  (Z.abs (Fnum (Fminus radix (Fnormalize radix b0 n f) fext)) < 1)%Z;
   auto with real zarith.
-apply Zlt_Rlt.
+apply lt_IZR.
 apply Rmult_lt_reg_l with (powerRZ radix (-(dExp b0))); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rle_lt_trans with (Rabs (f-fext))%R.
 unfold FtoRradix; rewrite <- FnormalizeCorrect with radix b0 n f; auto with zarith.
 rewrite <- Fminus_correct; auto; rewrite <- Fabs_correct; auto.
 unfold FtoR; simpl.
-replace (Zmin (Fexp (Fnormalize radix b0 n f)) (Fexp fext)) with (-(dExp b0))%Z;
+replace (Z.min (Fexp (Fnormalize radix b0 n f)) (Fexp fext)) with (-(dExp b0))%Z;
   [right; ring|idtac].
-rewrite Zmin_le1; auto with zarith.
+rewrite Z.min_l; auto with zarith.
 apply Rlt_le_trans with (Fulp b0 radix n f);
    [idtac|unfold Fulp; simpl; rewrite H4; auto with real zarith].
 rewrite <- Rabs_Ropp.
@@ -15639,7 +15236,7 @@ left; generalize H6; unfold FNeven.
 replace (Fnormalize radix (plusExp b0) n f) with  (Fnormalize radix b0 n f); auto.
 apply FcanonicUnique with radix (plusExp b0) n; auto with zarith.
 elim H5; intros J1 J2; elim J1; intros J3 J4.
-unfold plusExp; left; split;[split|idtac];simpl; auto with zarith.
+unfold plusExp; left; split;[split|idtac];simpl; lia.
 apply FnormalizeCanonic; auto with zarith.
 elim H0; intros J1 J2; elim J1; auto.
 repeat rewrite FnormalizeCorrect; auto with real.
@@ -15653,41 +15250,36 @@ apply Rplus_eq_reg_l with (-(FtoR radix f))%R.
 ring_simplify (- FtoR radix f + FtoR radix f)%R.
 rewrite <- FnormalizeCorrect with radix b0 n f; auto.
 apply trans_eq with ((-Fnum (Fnormalize radix b0 n f) +
-   (Fnum fext)*Zpower_nat radix (Zabs_nat (Fexp fext+dExp b0)))%Z
+   (Fnum fext)*Zpower_nat radix (Z.abs_nat (Fexp fext+dExp b0)))%Z
    * (powerRZ radix (-(dExp b0))))%R.
 rewrite plus_IZR; rewrite mult_IZR; rewrite Zpower_nat_Z_powerRZ.
 rewrite Ropp_Ropp_IZR; unfold FtoR.
 replace (Fexp (Fnormalize radix b0 n f)) with (-(dExp b0))%Z.
 rewrite Rmult_plus_distr_r; rewrite Rmult_assoc.
-rewrite <- powerRZ_add; auto with real zarith.
-replace (Zabs_nat (Fexp fext + dExp b0)+-dExp b0)%Z with (Fexp fext);[ring|idtac].
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-apply IZR_neq; omega.
+rewrite <- powerRZ_add.
+replace (Z.abs_nat (Fexp fext + dExp b0)+-dExp b0)%Z with (Fexp fext);[ring|idtac].
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+apply IZR_neq; lia.
 elim H5; intros J1 J2; elim J2; auto.
 replace (- Fnum (Fnormalize radix b0 n f) +
-     Fnum fext * Zpower_nat radix (Zabs_nat (Fexp fext + dExp b0)))%Z with 0%Z;
+     Fnum fext * Zpower_nat radix (Z.abs_nat (Fexp fext + dExp b0)))%Z with 0%Z;
     [simpl; ring|idtac].
-cut (Zabs (- Fnum (Fnormalize radix b0 n f) +
-    Fnum fext * Zpower_nat radix (Zabs_nat (Fexp fext + dExp b0))) = Zabs 0)%Z;
-  auto with zarith.
-cut (0 <=  (Zabs
+cut ((Z.abs
      (- Fnum (Fnormalize radix b0 n f) + Fnum fext *
-   Zpower_nat radix (Zabs_nat (Fexp fext + dExp b0)))))%Z; auto with zarith.
-cut ((Zabs
-     (- Fnum (Fnormalize radix b0 n f) + Fnum fext *
-   Zpower_nat radix (Zabs_nat (Fexp fext + dExp b0)))) < 1)%Z; auto with zarith.
-apply Zlt_Rlt.
+   Zpower_nat radix (Z.abs_nat (Fexp fext + dExp b0)))) < 1)%Z;
+  try lia.
+apply lt_IZR.
 rewrite <- Rabs_Zabs; rewrite plus_IZR; rewrite Ropp_Ropp_IZR.
 rewrite mult_IZR; rewrite Zpower_nat_Z_powerRZ.
 apply Rmult_lt_reg_l with (Fulp b0 radix n f);
    [unfold Fulp; auto with real zarith|idtac].
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 pattern (Fulp b0 radix n f) at 1; rewrite <- (Rabs_right (Fulp b0 radix n f)).
-2: apply Rle_ge; unfold Fulp; apply powerRZ_le, Rlt_IZR; omega.
+2: apply Rle_ge; unfold Fulp; apply powerRZ_le, IZR_lt; lia.
 rewrite <- Rabs_mult.
 replace  (Fulp b0 radix n f *
        (- Fnum (Fnormalize radix b0 n f) +
-        Fnum fext * powerRZ radix (Zabs_nat (Fexp fext + dExp b0))))%R
+        Fnum fext * powerRZ radix (Z.abs_nat (Fexp fext + dExp b0))))%R
   with (fext -FtoR radix f)%R.
 apply Rlt_le_trans with ( Fulp b0 radix n f);[idtac|simpl; right; ring].
 apply RoundedModeUlp with (Closest b0 radix); auto with zarith.
@@ -15697,13 +15289,13 @@ apply Rplus_eq_reg_l with  (FtoR radix (Fnormalize radix b0 n f)).
 unfold Fulp, FtoRradix, FtoR;ring_simplify.
 apply trans_eq with (Fnum fext *
   (powerRZ radix (Fexp (Fnormalize radix b0 n f))*
-   powerRZ radix (Zabs_nat (Fexp fext + dExp b0))))%R;[idtac|ring].
-rewrite <- powerRZ_add; auto with real zarith.
-replace (Fexp (Fnormalize radix b0 n f) + Zabs_nat (Fexp fext + dExp b0))%Z
+   powerRZ radix (Z.abs_nat (Fexp fext + dExp b0))))%R;[idtac|ring].
+rewrite <- powerRZ_add.
+replace (Fexp (Fnormalize radix b0 n f) + Z.abs_nat (Fexp fext + dExp b0))%Z
   with (Fexp fext); auto.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
 elim H5; intros J1 J2; elim J2; intros; auto with zarith.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 Qed.
 
 Lemma ClosestClosest: forall b0:Fbound, forall n:nat, forall z:R, forall f1 f2:float,
@@ -15728,16 +15320,16 @@ apply FcanonicFabs; auto; left; auto.
 cut (Fexp (Fnormalize radix b0 n (Fabs f1)) <= Fexp (Fabs f2) - 2)%Z;[intros|idtac].
 unfold FNSucc, FSucc.
 case (Z_eq_bool (Fnum (Fnormalize radix b0 n (Fabs f1)))); auto with zarith.
-apply Zle_lt_trans with
-  (Zsucc (Fexp (Fnormalize radix b0 n (Fabs f1)))); auto with zarith.
+apply Z.le_lt_trans with
+  (Z.succ (Fexp (Fnormalize radix b0 n (Fabs f1)))); auto with zarith.
 case (Z_eq_bool (Fnum (Fnormalize radix b0 n (Fabs f1)))
             (- nNormMin radix n)).
 case (Z_eq_bool (Fexp (Fnormalize radix b0 n (Fabs f1))) (- dExp b0)).
-apply Zle_lt_trans with (Fexp (Fnormalize radix b0 n (Fabs f1))); auto with zarith.
-apply Zle_lt_trans with (Zpred (Fexp (Fnormalize radix b0 n (Fabs f1))));
+apply Z.le_lt_trans with (Fexp (Fnormalize radix b0 n (Fabs f1))); auto with zarith.
+apply Z.le_lt_trans with (Z.pred (Fexp (Fnormalize radix b0 n (Fabs f1))));
   auto with zarith.
-apply Zle_lt_trans with (Fexp (Fnormalize radix b0 n (Fabs f1))); auto with zarith.
-apply Zle_trans with (Fexp (Fabs f1));[idtac|unfold Fabs; simpl; auto with zarith].
+apply Z.le_lt_trans with (Fexp (Fnormalize radix b0 n (Fabs f1))); auto with zarith.
+apply Z.le_trans with (Fexp (Fabs f1));[idtac|unfold Fabs; simpl; auto with zarith].
 apply FcanonicLeastExp with radix b0 n; auto with zarith.
 rewrite FnormalizeCorrect; auto with real.
 apply absFBounded; elim H1; auto.
@@ -15779,7 +15371,7 @@ apply Rabs_pos.
 apply FnormalizeCanonic; auto with zarith.
 apply absFBounded; elim H1; auto.
 apply FcanonicFabs; auto; left; auto.
-apply Zle_lt_trans with (Fexp (Fabs f1)); [idtac|unfold Fabs; simpl; auto with zarith].
+apply Z.le_lt_trans with (Fexp (Fabs f1)); [idtac|unfold Fabs; simpl; auto with zarith].
 apply FcanonicLeastExp with radix b0 n; auto with zarith.
 rewrite FnormalizeCorrect; auto with real.
 apply absFBounded; elim H1; auto.
@@ -15815,7 +15407,7 @@ left; generalize H7; unfold FNeven.
 replace (Fnormalize radix (plusExp b0) n f) with  (Fnormalize radix b0 n f); auto.
 apply FcanonicUnique with radix (plusExp b0) n; auto with zarith.
 elim H6; intros J1 J2; elim J1; intros J3 J4.
-unfold plusExp; left; split;[split|idtac];simpl; auto with zarith.
+unfold plusExp; left; split;[split|idtac];simpl; lia.
 apply FnormalizeCanonic; auto with zarith.
 elim H5; auto.
 repeat rewrite FnormalizeCorrect; auto with real.
@@ -15829,10 +15421,10 @@ apply ClosestClosest with (plusExp b0) n fext q (Fnormalize radix b0 n f); auto.
 apply ClosestCompatible with (1 := H5); auto.
 rewrite FnormalizeCorrect; auto with real.
 elim H6; intros J1 J2; elim J1; intros.
-split; unfold plusExp; simpl; auto with zarith.
+split; unfold plusExp; simpl; lia.
 elim H6; intros J1 J2; elim J1; intros.
-split; [split|idtac]; unfold plusExp; simpl; auto with zarith.
-apply Zle_trans with (-(dExp b0)-1)%Z; auto with zarith.
+split; [split|idtac]; unfold plusExp; simpl; lia.
+apply Z.le_trans with (-(dExp b0)-1)%Z; lia.
 intros H6.
 right; intros;apply sym_eq.
 apply RoundedModeProjectorIdemEq with (plusExp b0) n (Closest (plusExp b0) radix);
@@ -15844,44 +15436,44 @@ apply Rplus_eq_reg_l with (-(FtoR radix f))%R.
 ring_simplify (- FtoR radix f + FtoR radix f)%R.
 rewrite <- FnormalizeCorrect with radix b0 n f; auto.
 apply trans_eq with ((-Fnum (Fnormalize radix b0 n f) +
-   (Fnum fext)*Zpower_nat radix (Zabs_nat (Fexp fext+dExp b0)))%Z
+   (Fnum fext)*Zpower_nat radix (Z.abs_nat (Fexp fext+dExp b0)))%Z
    * (powerRZ radix (-(dExp b0))))%R.
 rewrite plus_IZR; rewrite mult_IZR; rewrite Zpower_nat_Z_powerRZ.
 rewrite Ropp_Ropp_IZR; unfold FtoR.
 replace (Fexp (Fnormalize radix b0 n f)) with (-(dExp b0))%Z.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-rewrite powerRZ_add; auto with real zarith.
-rewrite powerRZ_Zopp; auto with real zarith.
-field; auto with real zarith.
-apply Rgt_not_eq, powerRZ_lt, IZR_lt; omega.
-apply IZR_neq; omega.
-apply IZR_neq; omega.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+rewrite powerRZ_add.
+rewrite powerRZ_Zopp.
+field.
+apply Rgt_not_eq, powerRZ_lt, IZR_lt; lia.
+apply IZR_neq; lia.
+apply IZR_neq; lia.
 replace (- Fnum (Fnormalize radix b0 n f) +
-     Fnum fext * Zpower_nat radix (Zabs_nat (Fexp fext + dExp b0)))%Z with 0%Z;
+     Fnum fext * Zpower_nat radix (Z.abs_nat (Fexp fext + dExp b0)))%Z with 0%Z;
     [simpl; ring|idtac].
-cut (Zabs (- Fnum (Fnormalize radix b0 n f) +
-    Fnum fext * Zpower_nat radix (Zabs_nat (Fexp fext + dExp b0))) = Zabs 0)%Z;
-  auto with zarith.
-rewrite (Zabs_eq 0%Z); auto with zarith.
-cut (0 <=  (Zabs
+cut (Z.abs (- Fnum (Fnormalize radix b0 n f) +
+    Fnum fext * Zpower_nat radix (Z.abs_nat (Fexp fext + dExp b0))) = Z.abs 0)%Z;
+  try lia.
+rewrite Z.abs_0.
+cut (0 <=  (Z.abs
      (- Fnum (Fnormalize radix b0 n f) + Fnum fext *
-   Zpower_nat radix (Zabs_nat (Fexp fext + dExp b0)))))%Z; auto with zarith.
-cut ((Zabs
+   Zpower_nat radix (Z.abs_nat (Fexp fext + dExp b0)))))%Z; auto with zarith.
+cut ((Z.abs
      (- Fnum (Fnormalize radix b0 n f) + Fnum fext *
-   Zpower_nat radix (Zabs_nat (Fexp fext + dExp b0)))) < 1)%Z; auto with zarith.
-apply Zlt_Rlt.
+   Zpower_nat radix (Z.abs_nat (Fexp fext + dExp b0)))) < 1)%Z; auto with zarith.
+apply lt_IZR.
 rewrite <- Rabs_Zabs; rewrite plus_IZR; rewrite Ropp_Ropp_IZR.
 rewrite mult_IZR; rewrite Zpower_nat_Z_powerRZ.
 apply Rmult_lt_reg_l with (Fulp b0 radix n f);
    [unfold Fulp; auto with real zarith|idtac].
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 pattern (Fulp b0 radix n f) at 1; rewrite <- (Rabs_right (Fulp b0 radix n f)).
 2: apply Rle_ge; unfold Fulp; auto with real zarith.
-2: apply powerRZ_le, Rlt_IZR; omega.
+2: apply powerRZ_le, IZR_lt; lia.
 rewrite <- Rabs_mult.
 replace  (Fulp b0 radix n f *
        (- Fnum (Fnormalize radix b0 n f) +
-        Fnum fext * powerRZ radix (Zabs_nat (Fexp fext + dExp b0))))%R
+        Fnum fext * powerRZ radix (Z.abs_nat (Fexp fext + dExp b0))))%R
   with (fext -FtoR radix f)%R.
 apply Rlt_le_trans with ( Fulp b0 radix n f);[idtac|simpl; right; ring].
 apply RoundedModeUlp with (Closest b0 radix); auto with zarith.
@@ -15890,12 +15482,12 @@ rewrite <- FnormalizeCorrect with radix b0 n f; auto.
 apply Rplus_eq_reg_l with  (FtoR radix (Fnormalize radix b0 n f)).
 unfold Fulp, FtoRradix, FtoR; ring_simplify.
 apply trans_eq with (Fnum fext *  (powerRZ radix (Fexp (Fnormalize radix b0 n f))
-  *(powerRZ radix (Zabs_nat (Fexp fext + dExp b0)))))%R;[idtac|ring].
-rewrite <- powerRZ_add; auto with real zarith.
-replace (Fexp (Fnormalize radix b0 n f) + Zabs_nat (Fexp fext + dExp b0))%Z
+  *(powerRZ radix (Z.abs_nat (Fexp fext + dExp b0)))))%R;[idtac|ring].
+rewrite <- powerRZ_add.
+replace (Fexp (Fnormalize radix b0 n f) + Z.abs_nat (Fexp fext + dExp b0))%Z
   with (Fexp fext); auto.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-apply IZR_neq; omega.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+apply IZR_neq; lia.
 Qed.
 
 
@@ -15953,7 +15545,7 @@ elim H; intros f T; elim T; intros H1 T'; elim T'; intros H2 T''; elim T''; intr
 split.
 rewrite <- Y; rewrite <- H1; rewrite H3; ring_simplify (0-0)%R; rewrite Rabs_R0.
 unfold Rdiv; apply Rmult_le_pos; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 exists f; split; auto; split; auto.
 lapply (bimplybplusNorm x);[intros T|elim Sx; auto].
 lapply T; clear T; [intros T; elim T;
@@ -15968,13 +15560,13 @@ cut (Fbounded b' f);[intros H3|idtac].
 split.
 rewrite <- x'Eq; unfold FtoRradix; apply Rle_trans with (1:=C).
 unfold Rdiv; apply Rmult_le_compat_r; auto with real.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 apply Zplus_le_compat_l.
 apply FcanonicLeastExp with radix (plusExp b) t; auto with zarith.
 elim Sx; intros T1 T2; elim T1; intros.
 split; unfold plusExp; auto with zarith.
 cut (forall (x:N) (y:positive), (x+(Zpos y)=(x +Npos y)%N)%Z).
-intros T; simpl; rewrite <- T; auto with zarith.
+intros T; simpl; rewrite <- T; lia.
 intros;unfold Nplus.
 case x0; auto with zarith.
 left; auto.
@@ -15985,13 +15577,13 @@ elim H1; intros J1 J2; elim J1; intros; auto with zarith.
 split.
 rewrite <- x'Eq; unfold FtoRradix; apply Rle_trans with (1:=C).
 unfold Rdiv; apply Rmult_le_compat_r; auto with real.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 apply Zplus_le_compat_l.
 apply FcanonicLeastExp with radix (plusExp b) t; auto with zarith.
 elim Sx; intros T1 T2; elim T1; intros.
 split; unfold plusExp; auto with zarith.
 cut (forall (x:N) (y:positive), (x+(Zpos y)=(x +Npos y)%N)%Z).
-intros T; simpl; rewrite <- T; auto with zarith.
+intros T; simpl; rewrite <- T; lia.
 intros;unfold Nplus.
 case x0; auto with zarith.
 left; auto.
@@ -16007,41 +15599,41 @@ apply (ClosestCompatible (plusExp b') radix x x f (Float m (Fexp x)));
    auto with real zarith.
 elim H4; intros; split; auto with zarith.
 cut (forall (x:N) (y:positive), (x+(Zpos y)=(x +Npos y)%N)%Z).
-intros T; simpl; rewrite <- T; auto with zarith.
-apply Zle_trans with (-(dExp b))%Z; auto with zarith.
+intros T; simpl; rewrite <- T.
+apply Z.le_trans with (-(dExp b))%Z; try easy; lia.
 intros;unfold Nplus.
 case x0; auto with zarith.
 unfold b'; simpl; auto with zarith.
 split.
-apply Zle_lt_trans with (Zabs (Fnum f)).
-apply Zle_trans with ((Zabs m)*1)%Z; auto with zarith.
+apply Z.le_lt_trans with (Z.abs (Fnum f)).
+apply Z.le_trans with ((Z.abs m)*1)%Z; auto with zarith.
 simpl; auto with zarith.
-apply Zle_trans with ((Zabs m)*(Zpower_nat radix (Zabs_nat (Fexp x-Fexp f))))%Z.
+apply Z.le_trans with ((Z.abs m)*(Zpower_nat radix (Z.abs_nat (Fexp x-Fexp f))))%Z.
 apply Zmult_le_compat_l; auto with zarith.
 apply Zpower_NR1; auto with zarith.
-replace (Fnum f) with (m*Zpower_nat radix (Zabs_nat (Fexp x - Fexp f)))%Z.
-rewrite Zabs_Zmult; rewrite (Zabs_eq (Zpower_nat radix (Zabs_nat (Fexp x - Fexp f))));
+replace (Fnum f) with (m*Zpower_nat radix (Z.abs_nat (Fexp x - Fexp f)))%Z.
+rewrite Zabs_Zmult; rewrite (Z.abs_eq (Zpower_nat radix (Z.abs_nat (Fexp x - Fexp f))));
     auto with zarith.
-apply Zpower_NR0; omega.
+apply Zpower_NR0; lia.
 apply eq_IZR; rewrite mult_IZR; rewrite Zpower_nat_Z_powerRZ.
 apply Rmult_eq_reg_l with (powerRZ radix (Fexp f)); auto with real zarith.
 apply trans_eq with (FtoR radix f);[rewrite H3|unfold FtoR; ring].
 unfold FtoR; simpl.
 apply trans_eq with (m*(powerRZ radix (Fexp f)*
-  powerRZ radix (Zabs_nat (Fexp x - Fexp f))))%R;[ring|idtac].
-rewrite <- powerRZ_add; auto with real zarith.
-replace (Fexp f + Zabs_nat (Fexp x - Fexp f))%Z with (Fexp x);[ring|idtac].
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
+  powerRZ radix (Z.abs_nat (Fexp x - Fexp f))))%R;[ring|idtac].
+rewrite <- powerRZ_add.
+replace (Fexp f + Z.abs_nat (Fexp x - Fexp f))%Z with (Fexp x);[ring|idtac].
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
 elim Sx; intros J1 J2; elim J1; intros; auto with zarith.
-apply IZR_neq; omega.
-apply Rgt_not_eq, powerRZ_lt, Rlt_IZR; omega.
+apply IZR_neq; lia.
+apply Rgt_not_eq, powerRZ_lt, IZR_lt; lia.
 elim H1; intros J1 J2; elim J1; unfold plusExp; simpl; auto with zarith.
 elim Sx; intros J1 J2; elim J1; intros ; unfold b'; simpl; auto.
 unfold plusExp; simpl.
-rewrite <- p'GivesBound with radix b s t; auto with zarith.
+rewrite <- p'GivesBound with radix b s t; lia.
 apply ClosestRoundedModeP with (t-s); auto with zarith.
 unfold plusExp; simpl.
-rewrite <- p'GivesBound with radix b s t; auto with zarith.
+rewrite <- p'GivesBound with radix b s t; lia.
 rewrite <- x'Eq; unfold FtoRradix;auto with zarith.
 replace (FtoR radix x' * (powerRZ radix s + 1))%R
   with (FtoRradix (Fplus radix x (Float (Fnum x) (s+Fexp x)%Z))).
@@ -16137,37 +15729,38 @@ unfold b'; simpl; elim Sx; intros J1 J2; elim J1; auto.
 generalize EvenClosestCompatible; unfold CompatibleP; intros C.
 apply C with x f; auto with real zarith; clear C.
 rewrite <- p'GivesBound with radix b s t; auto; unfold plusExp, b'; simpl; auto.
-elim H4; intros; split; auto with zarith.
+elim H4; intros; split; try easy; auto with zarith.
 cut (forall (x:N) (y:positive), (x+(Zpos y)=(x +Npos y)%N)%Z).
-intros T; simpl; rewrite <- T; auto with zarith.
-apply Zle_trans with (-(dExp b'))%Z; auto with zarith.
-apply Zle_trans with (-(dExp b') + Zneg  (P_of_succ_nat (pred (pred t))))%Z; auto with zarith.
-apply Zeq_le; ring_simplify; auto with zarith.
+intros T; simpl; rewrite <- T.
+apply Z.le_trans with (2 := H5).
+apply Z.le_trans with (-(dExp b') + Zneg  (P_of_succ_nat (pred (pred t))))%Z.
+apply Zeq_le; ring_simplify; easy.
+lia.
 intros;unfold Nplus.
 case x0; auto with zarith.
 unfold b'; simpl; auto with zarith.
 split.
-apply Zle_lt_trans with (Zabs (Fnum f)).
-apply Zle_trans with ((Zabs m)*1)%Z; auto with zarith.
+apply Z.le_lt_trans with (Z.abs (Fnum f)).
+apply Z.le_trans with ((Z.abs m)*1)%Z; auto with zarith.
 simpl; auto with zarith.
-apply Zle_trans with ((Zabs m)*(Zpower_nat radix (Zabs_nat (Fexp x-Fexp f))))%Z.
+apply Z.le_trans with ((Z.abs m)*(Zpower_nat radix (Z.abs_nat (Fexp x-Fexp f))))%Z.
 apply Zmult_le_compat_l; auto with zarith.
-apply Zpower_NR1; omega.
-replace (Fnum f) with (m*Zpower_nat radix (Zabs_nat (Fexp x - Fexp f)))%Z.
-rewrite Zabs_Zmult; rewrite (Zabs_eq (Zpower_nat radix (Zabs_nat (Fexp x - Fexp f))));
+apply Zpower_NR1; lia.
+replace (Fnum f) with (m*Zpower_nat radix (Z.abs_nat (Fexp x - Fexp f)))%Z.
+rewrite Zabs_Zmult; rewrite (Z.abs_eq (Zpower_nat radix (Z.abs_nat (Fexp x - Fexp f))));
     auto with zarith.
-apply Zpower_NR0; omega.
+apply Zpower_NR0; lia.
 apply eq_IZR; rewrite mult_IZR; rewrite Zpower_nat_Z_powerRZ.
 apply Rmult_eq_reg_l with (powerRZ radix (Fexp f)); auto with real zarith.
 apply trans_eq with (FtoR radix f);[rewrite H3|unfold FtoR; ring].
 unfold FtoR; simpl.
-apply trans_eq with (m*(powerRZ radix (Fexp f)*powerRZ radix (Zabs_nat (Fexp x - Fexp f))))%R;[ring|idtac].
-rewrite <- powerRZ_add; auto with real zarith.
-replace (Fexp f + Zabs_nat (Fexp x - Fexp f))%Z with (Fexp x);[ring|idtac].
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
+apply trans_eq with (m*(powerRZ radix (Fexp f)*powerRZ radix (Z.abs_nat (Fexp x - Fexp f))))%R;[ring|idtac].
+rewrite <- powerRZ_add.
+replace (Fexp f + Z.abs_nat (Fexp x - Fexp f))%Z with (Fexp x);[ring|idtac].
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
 elim Sx; intros J1 J2; elim J1; intros; auto with zarith.
-apply IZR_neq; omega.
-apply Rgt_not_eq, powerRZ_lt, Rlt_IZR; omega.
+apply IZR_neq; lia.
+apply Rgt_not_eq, powerRZ_lt, IZR_lt; lia.
 elim H1; intros J1 J2; elim J1; intros J3 J4; elim J3;
   unfold plusExp; simpl; auto with zarith.
 elim Sx; intros J1 J2; elim J1; intros ; unfold b'; simpl; auto.
@@ -16214,7 +15807,7 @@ Variable b : Fbound.
 Variables s t:nat.
 
 Let b' := Bound
-    (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (minus t s)))))
+    (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (minus t s)))))
     (dExp b).
 
 Let FtoRradix := FtoR radix.
@@ -16224,8 +15817,8 @@ Hypothesis radixMoreThanOne : (1 < radix)%Z.
 Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ radixMoreThanOne).
 
 Hypothesis pGivesBound: Zpos (vNum b)=(Zpower_nat radix t).
-Hypothesis SLe: (2 <= s)%nat.
-Hypothesis SGe: (s <= t-2)%nat.
+Hypothesis SLe: (2 <= s).
+Hypothesis SGe: (s <= t-2).
 
 Theorem Veltkamp: forall x p q hx:float,
      (Fbounded b x)
@@ -16247,7 +15840,7 @@ rewrite FnormalizeCorrect in C; auto.
 split.
 unfold FtoRradix; apply Rle_trans with (1:=C).
 unfold Rdiv; apply Rmult_le_compat_r; auto with real.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 apply Zplus_le_compat_l.
 apply FcanonicLeastExp with radix b t; auto with zarith.
 rewrite FnormalizeCorrect; auto with zarith real.
@@ -16268,7 +15861,7 @@ rewrite FnormalizeCorrect in C; auto.
 split.
 unfold FtoRradix; apply Rle_trans with (1:=C).
 unfold Rdiv; apply Rmult_le_compat_r; auto with real.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 apply Zplus_le_compat_l.
 apply FcanonicLeastExp with radix b t; auto with zarith.
 rewrite FnormalizeCorrect; auto with zarith real.
@@ -16318,15 +15911,15 @@ Variable b : Fbound.
 Variables s t:nat.
 
 Let b' := Bound
-    (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (minus t s)))))
+    (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (minus t s)))))
     (dExp b).
 
 Let bt := Bound
-    (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix s))))
+    (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix s))))
     (dExp b).
 
 Let bt2 := Bound
-    (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (minus s 1)))))
+    (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (minus s 1)))))
     (dExp b).
 
 Let FtoRradix := FtoR radix.
@@ -16336,8 +15929,8 @@ Hypothesis radixMoreThanOne : (1 < radix)%Z.
 Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ radixMoreThanOne).
 
 Hypothesis pGivesBound: Zpos (vNum b)=(Zpower_nat radix t).
-Hypothesis SLe: (2 <= s)%nat.
-Hypothesis SGe: (s <= t-2)%nat.
+Hypothesis SLe: (2 <= s).
+Hypothesis SGe: (s <= t-2).
 
 
 Theorem Veltkamp_tail_aux: forall x p q hx tx:float,
@@ -16348,7 +15941,7 @@ Theorem Veltkamp_tail_aux: forall x p q hx tx:float,
   -> (Closest b radix (x-hx)%R tx)
   -> (exists v:float, (FtoRradix v=hx) /\
      (Fexp (Fminus radix x v) = Fexp x) /\
-      (Zabs (Fnum (Fminus radix x v)) <= (powerRZ radix s)/2)%R).
+      (Z.abs (Fnum (Fminus radix x v)) <= (powerRZ radix s)/2)%R).
 intros.
 cut (Zpos (vNum b') = Zpower_nat radix (t - s));[intros I|idtac].
 2: unfold b'; apply p'GivesBound; auto with zarith.
@@ -16371,18 +15964,18 @@ cut (Rabs (x-v) <= (powerRZ radix (s+Fexp x)) /2)%R;[intros T1|idtac].
 cut (Fexp (Fminus radix x v) = Fexp x);[intros T2|idtac].
 split; auto.
 apply Rmult_le_reg_l with (powerRZ radix (Fexp x)); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rle_trans with (Rabs (x-v))%R;[right|idtac].
 unfold FtoRradix; rewrite <- Fminus_correct; auto;
    rewrite <- Fabs_correct; auto.
 rewrite <- T2; unfold FtoR, Fabs; simpl; ring.
-apply Rle_trans with (1:= T1); rewrite powerRZ_add; auto with real zarith.
+apply Rle_trans with (1:= T1); rewrite powerRZ_add.
 unfold Rdiv; right; ring.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 unfold Fminus; simpl.
-apply Zmin_le1.
+apply Z.min_l.
 case H; intros.
-apply Zle_trans with (Fexp (Float (nNormMin radix (t-s)) (Fexp x)));
+apply Z.le_trans with (Fexp (Float (nNormMin radix (t-s)) (Fexp x)));
    [simpl; auto with zarith|idtac].
 apply Fcanonic_Rle_Zle with radix b' (t-s); auto with zarith.
 apply FcanonicNnormMin; auto with zarith.
@@ -16399,14 +15992,14 @@ apply FcanonicBound with radix; auto.
 unfold FtoRradix; rewrite <- Fabs_correct; auto.
 unfold FtoR; simpl.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-elim H6; intros; apply Rle_IZR.
+apply powerRZ_le, IZR_lt; lia.
+elim H6; intros; apply IZR_le.
 apply Zmult_le_reg_r with radix; auto with zarith.
-apply Zle_trans with (Zabs (radix * Fnum x))%Z;
-   [idtac|rewrite Zabs_Zmult; rewrite Zabs_eq; auto with zarith].
-apply Zle_trans with (2:=H8).
+apply Z.le_trans with (Z.abs (radix * Fnum x))%Z;
+   [idtac|rewrite Zabs_Zmult; rewrite Z.abs_eq; auto with zarith].
+apply Z.le_trans with (2:=H8).
 unfold nNormMin; rewrite pGivesBound.
-apply Zle_trans with (Zpower_nat radix (t-s)); auto with zarith.
+apply Z.le_trans with (Zpower_nat radix (t-s)); auto with zarith.
 pattern (t-s) at 2; replace (t-s) with (pred (t-s)+1); auto with zarith.
 rewrite Zpower_nat_is_exp; unfold Zpower_nat; simpl; auto with zarith.
 ring_simplify (radix*1)%Z; auto with zarith.
@@ -16443,15 +16036,15 @@ unfold FtoRradix; apply RoundedModeProjectorIdemEq with b t (Closest b radix);
   auto with zarith.
 apply ClosestRoundedModeP with t; auto with zarith.
 split.
-apply Zlt_Rlt.
+apply lt_IZR.
 apply Rle_lt_trans with (1:=H6); rewrite pGivesBound;
   rewrite Zpower_nat_Z_powerRZ.
 apply Rlt_le_trans with (powerRZ radix s*1)%R;
    [unfold Rdiv; apply Rmult_lt_compat_l; auto with real zarith|
     ring_simplify (powerRZ radix s*1)%R; apply Rle_powerRZ; auto with real zarith].
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rlt_le_trans with (/1)%R; auto with real.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 rewrite H5; cut (Fbounded b (Fnormalize radix b t x));
    [intros T; elim T; auto|apply FnormalizeBounded; auto with zarith].
 rewrite Fminus_correct; auto; rewrite FnormalizeCorrect; auto with real.
@@ -16462,13 +16055,13 @@ rewrite FnormalizeCorrect; auto with real.
 fold FtoRradix; rewrite H4; ring.
 split.
 split.
-apply Zlt_le_trans with (Zpower_nat radix s).
-apply Zlt_Rlt.
+apply Z.lt_le_trans with (Zpower_nat radix s).
+apply lt_IZR.
 apply Rle_lt_trans with (1:=H6).
 rewrite Zpower_nat_Z_powerRZ; apply Rlt_le_trans with  (powerRZ radix s*1)%R;
    auto with real.
 unfold Rdiv; apply Rmult_lt_compat_l; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rlt_le_trans with (/1)%R; auto with real.
 apply Zeq_le; apply sym_eq.
 unfold bt in |- *; unfold vNum in |- * .
@@ -16478,16 +16071,16 @@ apply
     (Z_of_nat
        (nat_of_P
           (P_of_succ_nat
-             (pred (Zabs_nat (Zpower_nat radix (s))))))).
+             (pred (Z.abs_nat (Zpower_nat radix (s))))))).
 unfold Z_of_nat in |- *; rewrite nat_of_P_o_P_of_succ_nat_eq_succ;
  auto with zarith.
 rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
-rewrite <- S_pred with (Zabs_nat (Zpower_nat radix (s))) 0; auto with zarith.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
+rewrite <- S_pred with (Z.abs_nat (Zpower_nat radix (s))) 0; auto with zarith.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
 apply Zpower_NR0; auto with zarith.
-cut ( 0 < Zabs_nat (Zpower_nat radix s))%Z; auto with zarith.
-simpl; rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-apply Zpower_nat_less; omega.
+cut ( 0 < Z.abs_nat (Zpower_nat radix s))%Z; auto with zarith.
+simpl; rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+apply Zpower_nat_less; lia.
 apply Zpower_NR0; auto with zarith.
 rewrite H5; unfold bt; simpl.
 cut (Fbounded b (Fnormalize radix b t x));
@@ -16524,9 +16117,9 @@ unfold FtoRradix; apply RoundedModeProjectorIdemEq with b t (Closest b radix);
 apply ClosestRoundedModeP with t; auto with zarith.
 elim H7; intros.
 split.
-apply Zlt_le_trans with (1:=H10); rewrite pGivesBound.
+apply Z.lt_le_trans with (1:=H10); rewrite pGivesBound.
 unfold bt2; simpl; auto with zarith.
-apply Zle_trans with (Zpower_nat radix (s-1)); auto with zarith.
+apply Z.le_trans with (Zpower_nat radix (s-1)); auto with zarith.
 apply Zeq_le.
 apply
  trans_eq
@@ -16534,18 +16127,18 @@ apply
     (Z_of_nat
        (nat_of_P
           (P_of_succ_nat
-             (pred (Zabs_nat (Zpower_nat radix (s-1))))))).
+             (pred (Z.abs_nat (Zpower_nat radix (s-1))))))).
 unfold Z_of_nat in |- *; rewrite nat_of_P_o_P_of_succ_nat_eq_succ;
  auto with zarith.
 rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
-rewrite <- S_pred with (Zabs_nat (Zpower_nat radix (s-1))) 0; auto with zarith.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-apply Zpower_NR0; omega.
-cut ( 0 < Zabs_nat (Zpower_nat radix (s-1)))%Z; auto with zarith.
-simpl; rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-apply Zpower_nat_less; omega.
-apply Zpower_NR0; omega.
-apply Zpower_nat_monotone_le; omega.
+rewrite <- S_pred with (Z.abs_nat (Zpower_nat radix (s-1))) 0; auto with zarith.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+apply Zpower_NR0; lia.
+cut ( 0 < Z.abs_nat (Zpower_nat radix (s-1)))%Z; auto with zarith.
+simpl; rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+apply Zpower_nat_less; lia.
+apply Zpower_NR0; lia.
+apply Zpower_nat_monotone_le; lia.
 generalize H11; unfold bt2; simpl; auto.
 fold FtoRradix; rewrite J; auto with real.
 split; [rewrite J; ring|split; auto].
@@ -16561,23 +16154,23 @@ apply
     (Z_of_nat
        (nat_of_P
           (P_of_succ_nat
-             (pred (Zabs_nat (Zpower_nat radix (s-1))))))).
+             (pred (Z.abs_nat (Zpower_nat radix (s-1))))))).
 unfold Z_of_nat in |- *; rewrite nat_of_P_o_P_of_succ_nat_eq_succ;
  auto with zarith.
 rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
-rewrite <- S_pred with (Zabs_nat (Zpower_nat radix (s-1))) 0; auto with zarith.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-apply Zpower_NR0; omega.
-cut ( 0 < Zabs_nat (Zpower_nat radix (s-1)))%Z; auto with zarith.
-simpl; rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-apply Zpower_nat_less; omega.
-apply Zpower_NR0; omega.
-apply Zle_Rle; clear T.
+rewrite <- S_pred with (Z.abs_nat (Zpower_nat radix (s-1))) 0; auto with zarith.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+apply Zpower_NR0; lia.
+cut ( 0 < Z.abs_nat (Zpower_nat radix (s-1)))%Z; auto with zarith.
+simpl; rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+apply Zpower_nat_less; lia.
+apply Zpower_NR0; lia.
+apply le_IZR; clear T.
 apply Rle_trans with (1:=H6); rewrite Zpower_nat_Z_powerRZ.
 rewrite inj_minus1; auto with zarith.
-unfold Zminus; rewrite powerRZ_add; auto with real zarith.
+unfold Zminus; rewrite powerRZ_add.
 rewrite I; simpl; right; field.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 clear T; rewrite H5; unfold bt; simpl.
 cut (Fbounded b (Fnormalize radix b t x));
   [intros T; elim T; auto|apply FnormalizeBounded; auto with zarith].
@@ -16591,11 +16184,11 @@ Variable b : Fbound.
 Variables s t:nat.
 
 Let b' := Bound
-    (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (minus t s)))))
+    (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (minus t s)))))
     (dExp b).
 
 Let bt := Bound
-    (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix s))))
+    (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix s))))
     (dExp b).
 
 Let FtoRradix := FtoR radix.
@@ -16605,8 +16198,8 @@ Hypothesis radixMoreThanOne : (1 < radix)%Z.
 Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ radixMoreThanOne).
 
 Hypothesis pGivesBound: Zpos (vNum b)=(Zpower_nat radix t).
-Hypothesis SLe: (2 <= s)%nat.
-Hypothesis SGe: (s <= t-2)%nat.
+Hypothesis SLe: (2 <= s).
+Hypothesis SGe: (s <= t-2).
 
 Theorem VeltkampU: forall x p q hx tx:float,
      (Fcanonic radix b x)
@@ -16672,35 +16265,35 @@ Theorem BoundedL: forall (r:R) (x:float) (e:Z),
    (Rabs r < powerRZ radix (e+p))%R ->
        (exists x':float, (FtoRradix x'=r) /\ (Fbounded b x') /\ Fexp x'=e).
 intros.
-exists (Float (Fnum x*Zpower_nat radix (Zabs_nat (Fexp x -e)))%Z e).
+exists (Float (Fnum x*Zpower_nat radix (Z.abs_nat (Fexp x -e)))%Z e).
 split.
 rewrite <- H1; unfold FtoRradix, FtoR; simpl.
 rewrite mult_IZR; rewrite Zpower_nat_Z_powerRZ.
-rewrite Rmult_assoc; rewrite <- powerRZ_add; auto with real zarith.
-replace (Zabs_nat (Fexp x - e) + e)%Z with (Fexp x); auto with real.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-apply IZR_neq; omega.
+rewrite Rmult_assoc; rewrite <- powerRZ_add.
+replace (Z.abs_nat (Fexp x - e) + e)%Z with (Fexp x); auto with real.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+apply IZR_neq; lia.
 split;[idtac|simpl; auto].
 split; simpl; auto.
-apply Zlt_Rlt.
+apply lt_IZR.
 rewrite pGivesBound; rewrite <- Rabs_Zabs; rewrite mult_IZR.
 repeat rewrite Zpower_nat_Z_powerRZ.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
 rewrite Rabs_mult; rewrite (Rabs_right ( powerRZ radix (Fexp x - e))).
-2: apply Rle_ge, powerRZ_le, Rlt_IZR; omega.
+2: apply Rle_ge, powerRZ_le, IZR_lt; lia.
 apply Rmult_lt_reg_l with (powerRZ radix e); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
-rewrite <- powerRZ_add; auto with real zarith.
+apply powerRZ_lt, IZR_lt; lia.
+rewrite <- powerRZ_add.
 apply Rle_lt_trans with (2:=H2); rewrite <- H1.
 unfold FtoRradix, FtoR; rewrite Rabs_mult.
 rewrite (Rabs_right (powerRZ radix (Fexp x))).
 2: apply Rle_ge; auto with real zarith.
 right; apply trans_eq with (Rabs (Fnum x)*(powerRZ radix e*powerRZ radix (Fexp x-e)))%R;[ring|idtac].
-rewrite <- powerRZ_add; auto with real zarith.
+rewrite <- powerRZ_add.
 ring_simplify (e+(Fexp x-e))%Z; auto with real.
-apply IZR_neq; omega.
-apply  powerRZ_le, Rlt_IZR; omega.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
+apply  powerRZ_le, IZR_lt; lia.
+apply IZR_neq; lia.
 Qed.
 
 
@@ -16722,19 +16315,20 @@ Theorem Closestbbext: forall bext:Fbound, forall fext f:float,
     (vNum bext=vNum b) -> (dExp b < dExp bext)%Z ->
     (-dExp b <= Fexp fext)%Z ->
     (Closest b radix fext f) -> (Closest bext radix fext f).
+Proof.
 intros bext fext f K1 K2; intros.
 elim H0; intros.
 split.
-elim H1; intros; split; auto with zarith.
+elim H1; intros; split; try lia.
 intros g Hg.
 case (Zle_or_lt (-(dExp b)) (Fexp g)); intros.
 apply H2.
-elim Hg; split; auto with zarith.
+elim Hg; split; try lia.
 case (Zle_lt_or_eq (-(dExp b)) (Fexp (Fnormalize radix b p f))).
 cut (Fbounded b (Fnormalize radix b p f));[intros T; elim T; auto|idtac].
 apply FnormalizeBounded; auto with zarith.
 intros; apply Rle_trans with ((Fulp b radix p f)/2)%R.
-apply Rmult_le_reg_l with (INR 2); auto with zarith real.
+apply Rmult_le_reg_l with 2%R; auto with zarith real.
 apply Rle_trans with (Fulp b radix p f);[idtac|simpl; right; field; auto with real].
 rewrite <- Rabs_Ropp.
 replace (- (FtoR radix f - fext))%R with (fext - FtoR radix f)%R;[idtac|ring].
@@ -16757,43 +16351,43 @@ rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; right; fie
 apply IZR_neq; auto with real zarith.
 apply Rle_trans with (1 * powerRZ radix (Fexp (Fnormalize radix b p f)))%R;
   [apply Rmult_le_compat_r; auto with real zarith|right; ring].
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rmult_le_reg_l with (2*radix)%R;
   [apply Rmult_lt_0_compat; auto with real zarith|idtac].
-apply Rlt_IZR; omega.
+apply IZR_lt; lia.
 apply Rle_trans with (2+radix)%R;
   [right; field; auto with real zarith| ring_simplify (2*radix*1)%R].
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 apply Rle_trans with (radix+radix)%R;[idtac|right; ring].
-apply Rplus_le_compat_r, Rle_IZR; omega.
+apply Rplus_le_compat_r, IZR_le; lia.
 apply Rle_trans with  (powerRZ radix (p-2+Fexp (Fnormalize radix b p f)));
-  [apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith|idtac].
+  [apply Rle_powerRZ; try apply IZR_le; auto with real zarith|idtac].
 apply Rle_trans with (1*(powerRZ radix (p - 2 + Fexp (Fnormalize radix b p f))))%R;
    auto with real.
 apply Rle_trans with ((radix -1)*(powerRZ radix (p - 2 +  Fexp
   (Fnormalize radix b p f))))%R;[apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rplus_le_reg_l with 1%R.
 ring_simplify (1+(radix-1))%R; try rewrite <- plus_IZR; try apply IZR_le; auto with real zarith.
 apply Rle_trans with ( - powerRZ radix (p - 2+ Fexp (Fnormalize radix b p f)) +
     powerRZ radix (p - 1 + Fexp (Fnormalize radix b p f)))%R.
 right; unfold Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 simpl; field.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 unfold Rminus; rewrite Rplus_comm; apply Rplus_le_compat_l; apply Ropp_le_contravar;
    apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 cut (powerRZ radix (p - 1 + Fexp (Fnormalize radix b p f)) +
     - powerRZ radix (-1 + Fexp (Fnormalize radix b p f))=
    (Float (pPred (vNum b)) (-1+Fexp (Fnormalize radix b p f))))%R.
 intros W; rewrite W.
 2: unfold FtoRradix, FtoR, pPred.
-2: apply trans_eq with (Zpred (Zpos (vNum b))*powerRZ radix
+2: apply trans_eq with (Z.pred (Zpos (vNum b))*powerRZ radix
   (-1+Fexp (Fnormalize radix b p f)))%R;[idtac|simpl; auto with real].
-2: unfold Zpred, Zminus; rewrite plus_IZR.
+2: unfold Z.pred, Zminus; rewrite plus_IZR.
 2: rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ.
 2: repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; field.
-2: apply IZR_neq; omega.
+2: apply IZR_neq; lia.
 case (Rle_or_lt  (Float (pPred (vNum b)) (-1 + Fexp (Fnormalize radix b p f)))
     (Rabs fext)); auto with real; intros V.
 absurd ( Rabs f <= Float (pPred (vNum b)) (-1 + Fexp (Fnormalize radix b p f)))%R.
@@ -16802,50 +16396,50 @@ apply Rlt_le_trans with (powerRZ radix (p-1+Fexp (Fnormalize radix b p f))).
 rewrite <- W; apply Rlt_le_trans with (powerRZ radix (p - 1 +
    Fexp (Fnormalize radix b p f))+-0)%R; auto with real zarith.
 apply Rplus_lt_compat_l, Ropp_lt_contravar.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 right; ring.
 unfold FtoRradix; rewrite <- FnormalizeCorrect with radix b p f; auto with zarith.
 rewrite <- Fabs_correct; auto.
-rewrite powerRZ_add; auto with real zarith; unfold FtoRradix, FtoR, Fabs; simpl.
+rewrite powerRZ_add; unfold FtoRradix, FtoR, Fabs; simpl.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rmult_le_reg_l with radix; auto with real zarith.
-now apply Rlt_IZR.
+now apply IZR_lt.
 apply Rle_trans with (powerRZ radix p).
 unfold Zminus; rewrite powerRZ_add; try apply IZR_neq; auto with real zarith;
   simpl; right; field ; auto with real.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 cut (Fnormal radix b (Fnormalize radix b p f));[intros Nf|idtac].
 rewrite <- Zpower_nat_Z_powerRZ; rewrite <- pGivesBound; rewrite <- mult_IZR;
   elim Nf; intros.
-rewrite Zabs_Zmult in H6; rewrite Zabs_eq in H6; auto with zarith real.
-apply Rle_IZR; omega.
+rewrite Zabs_Zmult in H6; rewrite Z.abs_eq in H6; auto with zarith real.
+apply IZR_le; lia.
 cut (Fcanonic radix b (Fnormalize radix b p f));[intros X|apply FnormalizeCanonic; auto with zarith].
 case X; auto; intros X'.
 elim X'; intros H5 H6; elim H6; intros.
 absurd (-dExp b < dExp b)%Z; auto with zarith.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 unfold FtoRradix; apply RoundAbsMonotoner with b p (Closest b radix) fext;
   auto with real zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
 split.
-apply Zle_lt_trans with (pPred (vNum b)); auto with zarith.
-simpl; rewrite Zabs_eq; auto with zarith.
+apply Z.le_lt_trans with (pPred (vNum b)); auto with zarith.
+simpl; rewrite Z.abs_eq; auto with zarith.
 apply Zlt_le_weak; apply pPredMoreThanOne with radix p; auto with zarith.
 unfold pPred; auto with zarith.
-apply Zle_trans with (Zpred (Fexp (Fnormalize radix b p f))); auto with zarith.
-unfold Zpred; apply Zle_trans with (-1+Fexp (Fnormalize radix b p f))%Z;auto with zarith.
+apply Z.le_trans with (Z.pred (Fexp (Fnormalize radix b p f))); auto with zarith.
+unfold Z.pred; apply Z.le_trans with (-1+Fexp (Fnormalize radix b p f))%Z;auto with zarith.
 apply Ropp_le_contravar; rewrite <- Fabs_correct; auto.
 unfold FtoR, Fabs; simpl.
 apply Rle_trans with ((powerRZ radix p)*(powerRZ radix (-1-dExp b)))%R.
 apply Rmult_le_compat; auto with real zarith.
-apply Rle_IZR; auto with zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply IZR_le; auto with zarith.
+apply powerRZ_le, IZR_lt; lia.
 elim Hg; intros; rewrite <- Zpower_nat_Z_powerRZ;
    rewrite <- pGivesBound;rewrite <- K1; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 unfold Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; right; ring.
 intros H4.
 apply Rle_trans with 0%R; try apply Rabs_pos; right.
@@ -16855,22 +16449,22 @@ rewrite <- Fabs_correct; auto.
 unfold FtoR.
 replace (Fnum (Fabs (Fminus radix (Fnormalize radix b p f) fext))) with 0%Z;
    [simpl; ring|idtac].
-apply sym_eq; apply trans_eq with (Zabs (Fnum  (Fminus radix
+apply sym_eq; apply trans_eq with (Z.abs (Fnum  (Fminus radix
    (Fnormalize radix b p f) fext)));[simpl; auto with zarith|idtac].
-cut  ( 0 <= Zabs (Fnum (Fminus radix (Fnormalize radix b p f) fext)))%Z;
+cut  ( 0 <= Z.abs (Fnum (Fminus radix (Fnormalize radix b p f) fext)))%Z;
   auto with real zarith.
-cut  (Zabs (Fnum (Fminus radix (Fnormalize radix b p f) fext)) < 1)%Z;
+cut  (Z.abs (Fnum (Fminus radix (Fnormalize radix b p f) fext)) < 1)%Z;
   auto with real zarith.
-apply Zlt_Rlt.
+apply lt_IZR.
 apply Rmult_lt_reg_l with (powerRZ radix (-(dExp b))); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rle_lt_trans with (Rabs (f-fext))%R.
 unfold FtoRradix; rewrite <- FnormalizeCorrect with radix b p f; auto with zarith.
 rewrite <- Fminus_correct; auto; rewrite <- Fabs_correct; auto.
 unfold FtoR; simpl.
-replace (Zmin (Fexp (Fnormalize radix b p f)) (Fexp fext)) with (-(dExp b))%Z;
+replace (Z.min (Fexp (Fnormalize radix b p f)) (Fexp fext)) with (-(dExp b))%Z;
   [right; ring|idtac].
-rewrite Zmin_le1; auto with zarith.
+rewrite Z.min_l; auto with zarith.
 apply Rlt_le_trans with (Fulp b radix p f);
    [idtac|unfold Fulp; simpl; rewrite H4; auto with real zarith].
 rewrite <- Rabs_Ropp.
@@ -16899,6 +16493,7 @@ Theorem Underf_Err1: forall (a' a:float),
     vNum b=vNum b' -> (dExp b <= dExp b')%Z ->
    (Fbounded b' a') -> (Closest b radix a' a) ->
    (Underf_Err a a' (FtoRradix a') (/2)%R).
+Proof.
 intros.
 unfold Underf_Err.
 split; auto.
@@ -16907,19 +16502,19 @@ case (Zle_or_lt (- dExp b)%Z (Fexp a')); intros.
 cut (FtoRradix a'=a);[intros H4|idtac].
 rewrite H4; split; auto with real.
 ring_simplify (a-a)%R; rewrite Rabs_R0; apply Rlt_le; apply Rmult_lt_0_compat; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 unfold FtoRradix; apply RoundedModeProjectorIdemEq with b p (Closest b radix); auto.
 apply ClosestRoundedModeP with p; auto with zarith.
 elim H1; intros; split; auto.
 rewrite H; auto.
 split.
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (powerRZ radix (- dExp b));[idtac|simpl; right; field; auto with real].
 replace (a-a')%R with (-(a'-a))%R;[rewrite Rabs_Ropp|ring].
 apply Rle_trans with (Fulp b radix p a).
 unfold FtoRradix; apply ClosestUlp; auto with zarith.
-unfold Fulp; apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
-apply Zle_trans with (Fexp (firstNormalPos radix b p));[idtac|unfold firstNormalPos; simpl; auto with zarith].
+unfold Fulp; apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
+apply Z.le_trans with (Fexp (firstNormalPos radix b p));[idtac|unfold firstNormalPos; simpl; auto with zarith].
 apply Fcanonic_Rle_Zle with radix b p; auto with zarith.
 apply FnormalizeCanonic; auto with zarith; elim H2; auto.
 left; apply firstNormalPosNormal; auto with zarith.
@@ -16933,16 +16528,16 @@ unfold FtoRradix; rewrite <- Fabs_correct; auto.
 unfold firstNormalPos, Fabs, FtoR; simpl.
 apply Rle_trans with (powerRZ radix p * powerRZ radix (Fexp a'))%R.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 elim H1; intros; apply Rle_trans with (IZR (Zpos (vNum b'))); auto with real zarith.
-apply Rle_IZR; auto with zarith.
+apply IZR_le; auto with zarith.
 rewrite <- H; rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
 unfold nNormMin; rewrite Zpower_nat_Z_powerRZ.
 repeat rewrite <- powerRZ_add; try apply IZR_neq; auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; lia.
 apply Rle_ge; apply LeFnumZERO; auto.
 unfold firstNormalPos, nNormMin; simpl; auto with zarith.
-apply Zpower_NR0; omega.
+apply Zpower_NR0; lia.
 intros ; absurd (Fexp a' < - dExp b)%Z; auto with zarith.
 Qed.
 
@@ -16955,6 +16550,7 @@ Theorem Underf_Err2_aux: forall (r:R) (x1:float),
     (Fcanonic radix b x1) ->
     (Closest b radix r x1) ->
     (exists x2:float, (Underf_Err x1 x2 r (3/4)%R) /\ (Closest b' radix r x2)).
+Proof.
 intros.
 assert (ZH: (0 < 3/4)%R).
 apply Rmult_lt_reg_l with 4%R; auto with real.
@@ -16972,7 +16568,7 @@ elim H3; intros; rewrite <- H; auto.
 split;[idtac|intros; auto with real].
 ring_simplify (x1-x1)%R; rewrite Rabs_R0.
 apply Rlt_le; apply Rmult_lt_0_compat; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 split;[elim H2; intros T T'; elim T; intros; split; try rewrite <- H; auto with zarith|idtac].
 intros f H3.
 case (Zle_or_lt (-(dExp b)) (Fexp f)); intros.
@@ -16981,7 +16577,7 @@ elim H3; intros; split; try rewrite H; auto with zarith.
 fold FtoRradix; replace (f-r)%R with (-((x1-f)-(x1-r)))%R;[rewrite Rabs_Ropp|ring].
 apply Rle_trans with (Rabs (x1 - f) - Rabs (x1 - r))%R;[idtac|apply Rabs_triang_inv].
 apply Rplus_le_reg_l with (Rabs (x1-r)).
-apply Rle_trans with ((INR 2)*(Rabs (x1-r)))%R;[right; simpl; ring|idtac].
+apply Rle_trans with (2*(Rabs (x1-r)))%R;[right; simpl; ring|idtac].
 apply Rle_trans with (Rabs (x1 - f));[idtac|right; ring].
 apply Rle_trans with (Fulp b radix p x1).
 replace (x1-r)%R with (-(r-x1))%R;[rewrite Rabs_Ropp|ring].
@@ -16996,36 +16592,36 @@ apply Rplus_le_compat.
 apply Rle_trans with (FtoRradix (Float (Zpos (vNum b')) (Fexp f))).
 apply Rlt_le; unfold FtoRradix; apply MaxFloat; auto.
 unfold FtoRradix, FtoR; rewrite <- H; rewrite pGivesBound;simpl.
-rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add; auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; auto with zarith real.
-apply IZR_neq; omega.
-apply Rle_powerRZ; try apply Rle_IZR; auto with zarith real.
+rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add.
+apply Rle_powerRZ; try apply IZR_le; auto with zarith real.
+apply IZR_neq; lia.
+apply Rle_powerRZ; try apply IZR_le; auto with zarith real.
 apply Rle_trans with (2*powerRZ radix (p - 2 + Fexp x1))%R;[right; ring|idtac].
 apply Rle_trans with (radix*powerRZ radix (p - 2 + Fexp x1))%R;
   [apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply IZR_le; lia.
 unfold FtoRradix; rewrite <- Fabs_correct; auto; unfold FtoR, Fabs; simpl.
-rewrite powerRZ_add; auto with real zarith.
+rewrite powerRZ_add.
 rewrite <- Rmult_assoc; apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 case H1; intros T.
 elim T; intros H5 H6.
 apply Rmult_le_reg_l with (IZR radix); auto with real zarith.
-apply Rlt_IZR; omega.
+apply IZR_lt; lia.
 apply Rle_trans with  (IZR (Zpos (vNum b))).
 right; rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ.
-unfold Zminus; rewrite powerRZ_add; auto with real zarith; simpl.
+unfold Zminus; rewrite powerRZ_add; simpl.
 ring_simplify (radix*1)%R; field; auto with real zarith.
-apply IZR_neq; omega.
-apply IZR_neq; omega.
-apply Rle_trans with (IZR(Zabs (radix * Fnum x1))); auto with real zarith.
-apply Rle_IZR; auto with zarith real.
-rewrite Zabs_Zmult; rewrite Zabs_eq; auto with zarith real.
+apply IZR_neq; lia.
+apply IZR_neq; lia.
+apply Rle_trans with (IZR(Z.abs (radix * Fnum x1))); auto with real zarith.
+apply IZR_le; auto with zarith real.
+rewrite Zabs_Zmult; rewrite Z.abs_eq; auto with zarith real.
 right; rewrite mult_IZR; ring.
 elim T; intros T1 T2; elim T2; intros T3 T4.
 absurd  (- dExp b < Fexp x1)%Z; auto with zarith.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 intros I.
 generalize ClosestTotal; unfold TotalP.
 intros T; elim T with b' radix p r; auto.
@@ -17036,11 +16632,11 @@ exists x1; split.
 split; auto.
 assert (Fbounded b x1);[elim H2; auto|idtac].
 split.
-elim H4; intros; split; auto with zarith.
+elim H4; intros; split; try lia.
 split;[idtac|intros; auto with real].
 ring_simplify (x1-x1)%R; rewrite Rabs_R0; apply Rlt_le.
 apply Rmult_lt_0_compat; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 split.
 elim H2; intros T1 T2; elim T1; intros; split; try rewrite <- H; auto with zarith.
 intros f H4.
@@ -17054,8 +16650,8 @@ split;[elim H3'; auto|idtac].
 split.
 replace (x1-x2)%R with ((-(r-x1))+(r-x2))%R;[idtac|ring].
 apply Rle_trans with (1:=Rabs_triang (-(r-x1))%R (r-x2)%R).
-rewrite Rabs_Ropp; apply Rmult_le_reg_l with (INR 2); auto with real zarith.
-apply Rle_trans with (S 1 * (Rabs (r - x1)) + S 1 *Rabs (r - x2))%R;[right; ring|idtac].
+rewrite Rabs_Ropp; apply Rmult_le_reg_l with 2%R; auto with real zarith.
+apply Rle_trans with (2 * (Rabs (r - x1)) + 2 *Rabs (r - x2))%R;[right; ring|idtac].
 apply Rle_trans with ( powerRZ radix (- dExp b)+ (/2)*powerRZ radix (- dExp b))%R;[idtac|simpl; right; field].
 apply Rplus_le_compat.
 apply Rle_trans with (Fulp b radix p x1).
@@ -17066,22 +16662,22 @@ apply Rle_trans with (Fulp b' radix p x2).
 unfold FtoRradix; apply ClosestUlp; auto.
 rewrite <- H; auto.
 apply Rle_trans with (powerRZ radix (Fexp x2)).
-unfold Fulp; apply Rle_powerRZ; auto with zarith real.
-apply Rle_IZR; omega.
-apply FcanonicLeastExp with radix b' p; auto with zarith.
+unfold Fulp; apply Rle_powerRZ; try lia.
+apply IZR_le; lia.
+apply FcanonicLeastExp with radix b' p; try lia.
 rewrite FnormalizeCorrect; auto with zarith real.
 elim H3'; auto.
-apply FnormalizeCanonic; auto with zarith.
+apply FnormalizeCanonic; try lia.
 elim H3'; auto.
 apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with  (powerRZ radix (- dExp b));[idtac|right; field; auto with real].
 apply Rle_trans with  (radix * powerRZ radix (Fexp x2))%R;[apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply IZR_le; lia.
 apply Rle_trans with (powerRZ radix (Fexp x2+1)).
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; right; ring.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 intros H5; absurd ((Fexp x2 < - dExp b)%Z); auto with zarith.
 Qed.
 
@@ -17130,22 +16726,22 @@ elim H2; intros W1 T; elim T; intros W2 T'; elim T'; intros W3 W4; clear T T' H2
 cut (FtoRradix z=z')%R;[intros H9'; rewrite H9'; split; auto|idtac].
 ring_simplify (z'-z')%R; rewrite Rabs_R0.
 apply Rle_trans with (0* powerRZ radix (- dExp b))%R;[right; ring|apply Rmult_le_compat_r; auto with real zarith].
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (0+0)%R; [right; ring|apply Rplus_le_compat; auto with real].
 apply Rmult_le_reg_l with (powerRZ radix (- dExp b))%R; auto with real zarith;
     ring_simplify (powerRZ radix (- dExp b) * 0)%R; try rewrite Rmult_comm.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rle_trans with (2:=V3); auto with real.
 apply Rabs_pos.
 apply Rmult_le_reg_l with (powerRZ radix (- dExp b))%R; auto with real zarith;
     ring_simplify (powerRZ radix (- dExp b) * 0)%R; try rewrite Rmult_comm.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rle_trans with (2:=W3); auto with real.
 apply Rabs_pos.
 unfold FtoRradix; apply sym_eq.
 apply RoundedModeProjectorIdemEq with b p (Closest b radix); auto with zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
-elim H4; intros; split; auto with zarith.
+elim H4; intros; split; try lia.
 fold FtoRradix; rewrite H5.
 rewrite <- V4; auto with zarith.
 rewrite <- W4; auto with zarith real.
@@ -17171,11 +16767,11 @@ rewrite Fopp_correct; auto with real.
 apply ClosestCompatible with (1:=H8); auto.
 rewrite FnormalizeCorrect; auto with real.
 apply FnormalizeBounded; auto with zarith; elim H8; auto.
-apply Zle_trans with (-(dExp b))%Z.
+apply Z.le_trans with (-(dExp b))%Z.
 2: apply Zmin_Zle.
 2: elim V1; intros T1 T2; elim T1; auto.
 2: elim W1; intros T1 T2; elim T1; auto.
-apply Zle_trans with (Fexp (Float (pPred (vNum b)) (-(dExp b))%Z));
+apply Z.le_trans with (Fexp (Float (pPred (vNum b)) (-(dExp b))%Z));
    [idtac| simpl; auto with zarith].
 apply Fcanonic_Rle_Zle with radix b p; auto with zarith.
 apply FnormalizeCanonic; auto with zarith; elim H8; auto.
@@ -17194,18 +16790,18 @@ apply Rle_trans with (1:=Rabs_triang (x-x')%R (-(y-y'))%R); rewrite Rabs_Ropp.
 apply Rle_trans with (epsx * powerRZ radix (- dExp b)+ epsy * powerRZ radix (- dExp b))%R; auto with real.
 apply Rle_trans with ((epsx+epsy) * powerRZ radix (- dExp b))%R;[right; ring|idtac].
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 unfold FtoRradix; rewrite <- Fabs_correct; auto.
 unfold Fabs, FtoR; simpl.
 apply Rmult_le_compat; auto with real zarith.
-apply Rle_IZR; auto with zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply IZR_le; auto with zarith.
+apply powerRZ_le, IZR_lt; lia.
 elim H4; intros.
-apply Rle_trans with (IZR (Zpred (Zpos (vNum b')))); auto with real zarith.
-apply Rle_IZR; omega.
-unfold Zpred, Zminus; rewrite plus_IZR.
+apply Rle_trans with (IZR (Z.pred (Zpos (vNum b')))); auto with real zarith.
+apply IZR_le; lia.
+unfold Z.pred, Zminus; rewrite plus_IZR.
 rewrite <- H; rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 apply Rle_trans with  ((powerRZ radix p - 1) * powerRZ radix (- dExp b))%R.
 apply Rle_trans with (- powerRZ radix (- dExp b)+powerRZ radix p
    * powerRZ radix (- dExp b))%R;[idtac|right; ring].
@@ -17218,16 +16814,16 @@ apply Rle_trans with (powerRZ radix (p - 1 + - dExp b) +
     (powerRZ radix (p - 1 + - dExp b) - 0))%R; auto with real zarith.
 apply Rplus_le_compat_l; unfold Rminus; apply Rplus_le_compat_l; auto with real zarith.
 apply Ropp_le_contravar.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (2*(powerRZ radix (p - 1 + - dExp b)))%R;[right; ring|idtac].
 apply Rle_trans with (radix*(powerRZ radix (p - 1 + - dExp b)))%R;
  [apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply IZR_le; lia.
 unfold Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; right; field; auto with real zarith.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 unfold FtoR; simpl.
-unfold pPred, Zpred, Zminus; rewrite plus_IZR.
+unfold pPred, Z.pred, Zminus; rewrite plus_IZR.
 rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; simpl; auto with real zarith.
 apply Rle_ge; apply LeFnumZERO; auto.
 simpl; apply Zlt_le_weak.
@@ -17252,11 +16848,11 @@ apply Rle_trans with (powerRZ radix 3)%R; auto with real zarith.
 apply Rle_trans with (powerRZ 2 3)%R; auto with real zarith.
 simpl; right; ring.
 simpl; auto with real zarith.
-assert (2 <= radix)%R;[apply Rle_IZR; auto with real zarith|idtac].
+assert (2 <= radix)%R;[apply IZR_le; auto with real zarith|idtac].
 ring_simplify (2*1)%R; ring_simplify (radix*1)%R.
 apply Rmult_le_compat; auto with real zarith.
 apply Rlt_le; apply Rmult_lt_0_compat; auto with real.
-apply Rle_powerRZ; try apply Rle_IZR; auto with zarith real.
+apply Rle_powerRZ; try apply IZR_le; auto with zarith real.
 Qed.
 
 End GenericDek.
@@ -17270,11 +16866,11 @@ Variable b : Fbound.
 Variables s t:nat.
 
 Let b' := Bound
-    (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (minus t s)))))
+    (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (minus t s)))))
     (dExp b).
 
 Let bt := Bound
-    (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix s))))
+    (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix s))))
     (dExp b).
 
 Let FtoRradix := FtoR radix.
@@ -17286,8 +16882,8 @@ Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ radixMoreThanOne).
 
 Hypothesis pGivesBound: Zpos (vNum b)=(Zpower_nat radix t).
 
-Hypothesis SLe: (2 <= s)%nat.
-Hypothesis SGe: (s <= t-2)%nat.
+Hypothesis SLe: (2 <= s).
+Hypothesis SGe: (s <= t-2).
 
 
 Hypothesis Hst1: (t-1 <= s+s)%Z.
@@ -17342,15 +16938,15 @@ intros I; apply Rle_lt_trans with  (powerRZ radix (s + Fexp x) / 2 *Rabs y)%R; a
 apply Rmult_le_compat; try apply Rabs_pos; auto with real.
 apply Rmult_lt_compat_l; auto with real zarith.
 unfold Rdiv; apply Rmult_lt_0_compat; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 unfold FtoRradix; rewrite <- Fabs_correct; auto with zarith.
-unfold FtoR, Fabs; simpl; rewrite powerRZ_add; auto with real zarith.
+unfold FtoR, Fabs; simpl; rewrite powerRZ_add.
 apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 elim Ny; intros I1 I2; elim I1; intros.
-apply Rlt_le_trans with (IZR (Zpos (vNum b))); try apply Rlt_IZR; auto with real zarith.
+apply Rlt_le_trans with (IZR (Zpos (vNum b))); try apply IZR_lt; auto with real zarith.
 right; rewrite pGivesBound;rewrite Zpower_nat_Z_powerRZ; auto with real.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 unfold Rdiv; right; ring.
 Qed.
@@ -17371,29 +16967,30 @@ intros I; apply Rle_lt_trans with  (Rabs x*(powerRZ radix (s + Fexp y) / 2))%R; 
 apply Rmult_le_compat; try apply Rabs_pos; auto with real.
 apply Rmult_lt_compat_r; auto with real zarith.
 unfold Rdiv; apply Rmult_lt_0_compat; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 unfold FtoRradix; rewrite <- Fabs_correct; auto with zarith.
-unfold FtoR, Fabs; simpl; rewrite powerRZ_add; auto with real zarith.
+unfold FtoR, Fabs; simpl; rewrite powerRZ_add.
 apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 elim Nx; intros I1 I2; elim I1; intros.
 apply Rlt_le_trans with (IZR (Zpos (vNum b))); try apply IZR_lt; auto with real zarith.
 right; rewrite pGivesBound;rewrite Zpower_nat_Z_powerRZ; auto with real.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 unfold Rdiv; right; ring.
 Qed.
 
 
 Lemma eLe: (Rabs e <= (powerRZ radix (t+Fexp x+Fexp y)) /2)%R.
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+Proof.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 replace (FtoRradix e) with (x*y-r)%R;[idtac|rewrite eeq; ring].
 apply Rle_trans with (Fulp b radix t r).
 unfold FtoRradix; apply ClosestUlp; auto with zarith.
 apply Rle_trans with (powerRZ radix (t + Fexp x + Fexp y));
   [idtac|simpl; right; field; auto with real].
-unfold Fulp; apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
-apply Zle_trans with (Fexp (Float (pPred (vNum b)) (t+Fexp x+Fexp y)));
+unfold Fulp; apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
+apply Z.le_trans with (Fexp (Float (pPred (vNum b)) (t+Fexp x+Fexp y)));
   [idtac|simpl; auto with zarith].
 apply Fcanonic_Rle_Zle with radix b t; auto with zarith.
 apply FnormalizeCanonic; auto with zarith.
@@ -17403,7 +17000,7 @@ replace (Float (pPred (vNum b)) (t + Fexp x + Fexp y)) with
 apply FPredCanonic; auto with zarith.
 apply FcanonicNnormMin; auto with zarith.
 rewrite FPredSimpl2; auto with zarith.
-simpl; unfold Zpred; auto with zarith.
+simpl; unfold Z.pred; auto with zarith.
 replace (t+1+Fexp x +Fexp y+-1)%Z with (t+Fexp x+Fexp y)%Z; auto with zarith.
 simpl; auto with zarith.
 rewrite FnormalizeCorrect; auto with zarith.
@@ -17417,7 +17014,7 @@ replace (Float (pPred (vNum b)) (t + Fexp x + Fexp y)) with
 apply FBoundedPred; auto with zarith.
 elim FnormalNnormMin with radix b t (t + 1 + Fexp x + Fexp y)%Z; auto with zarith.
 rewrite FPredSimpl2; auto with zarith.
-simpl; unfold Zpred; auto with zarith.
+simpl; unfold Z.pred; auto with zarith.
 replace (t+1+Fexp x +Fexp y+-1)%Z with (t+Fexp x+Fexp y)%Z; auto with zarith.
 simpl; auto with zarith.
 rewrite Rabs_mult.
@@ -17426,18 +17023,18 @@ apply Rmult_le_compat; try apply Rabs_pos; auto with real zarith.
 unfold FtoRradix; rewrite <- Fabs_correct; auto with zarith.
 unfold FtoR, Fabs; simpl.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 elim Nx; intros I1 I2; elim I1; intros; unfold pPred; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 unfold FtoRradix; rewrite <- Fabs_correct; auto with zarith.
 unfold FtoR, Fabs; simpl.
-rewrite powerRZ_add; auto with real zarith.
+rewrite powerRZ_add.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 elim Ny; intros I1 I2; elim I1; intros; apply Rle_trans with (IZR (Zpos (vNum b))); auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 unfold FtoRradix, FtoR; simpl; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; right; ring.
 Qed.
 
@@ -17445,9 +17042,9 @@ Qed.
 
 
 Lemma rExp: (t - 1 + Fexp x + Fexp y <= Fexp r)%Z.
-apply Zle_trans with (Fexp (Float (nNormMin radix t) (t-1+Fexp x+Fexp y)));
+apply Z.le_trans with (Fexp (Float (nNormMin radix t) (t-1+Fexp x+Fexp y)));
   [simpl; auto with zarith|idtac].
-apply Zle_trans with (Fexp (Fnormalize radix b t r)).
+apply Z.le_trans with (Fexp (Fnormalize radix b t r)).
 apply Fcanonic_Rle_Zle with radix b t; auto with zarith.
 apply FcanonicNnormMin; auto with zarith.
 apply FnormalizeCanonic; auto with zarith.
@@ -17467,28 +17064,28 @@ apply Rmult_le_compat.
 unfold FtoRradix; apply LeFnumZERO; simpl;  unfold nNormMin; try apply Zpower_NR0; auto with zarith.
 unfold FtoRradix; apply LeFnumZERO; simpl;  unfold nNormMin; try apply Zpower_NR0; auto with zarith.
 unfold FtoRradix; rewrite <- Fabs_correct; auto with zarith; unfold FtoR; simpl.
-apply Rmult_le_compat_r; auto with real zarith; apply Rmult_le_reg_l with (IZR radix); try apply Rlt_IZR; auto with real zarith.
+apply Rmult_le_compat_r; auto with real zarith; apply Rmult_le_reg_l with (IZR radix); try apply IZR_lt; auto with real zarith.
 apply Rmult_le_compat_l.
-apply Rle_IZR; omega.
-apply powerRZ_le, Rlt_IZR; omega.
+apply IZR_le; lia.
+apply powerRZ_le, IZR_lt; lia.
 rewrite <- mult_IZR; rewrite <- (PosNormMin radix b t); auto with zarith.
-elim Nx; intros I1 I2; rewrite Zabs_Zmult in I2; rewrite Zabs_eq in I2; auto with real zarith.
-rewrite <- mult_IZR; apply Rle_IZR; auto with real zarith.
+elim Nx; intros I1 I2; rewrite Zabs_Zmult in I2; rewrite Z.abs_eq in I2; auto with real zarith.
+rewrite <- mult_IZR; apply IZR_le; auto with real zarith.
 unfold FtoRradix; rewrite <- Fabs_correct; auto with zarith; unfold FtoR; simpl.
-apply Rmult_le_compat_r; auto with real zarith; apply Rmult_le_reg_l with (IZR radix); try apply Rlt_IZR; auto with real zarith.
+apply Rmult_le_compat_r; auto with real zarith; apply Rmult_le_reg_l with (IZR radix); try apply IZR_lt; auto with real zarith.
 apply Rmult_le_compat_l.
-apply Rle_IZR; omega.
-apply powerRZ_le, Rlt_IZR; omega.
+apply IZR_le; lia.
+apply powerRZ_le, IZR_lt; lia.
 rewrite <- mult_IZR; rewrite <- (PosNormMin radix b t); auto with zarith.
-elim Ny; intros I1 I2; rewrite Zabs_Zmult in I2; rewrite Zabs_eq in I2; auto with real zarith.
-rewrite <- mult_IZR; apply Rle_IZR; auto with real zarith.
+elim Ny; intros I1 I2; rewrite Zabs_Zmult in I2; rewrite Z.abs_eq in I2; auto with real zarith.
+rewrite <- mult_IZR; apply IZR_le; auto with real zarith.
 unfold FtoRradix, FtoR; simpl.
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 replace (IZR (nNormMin radix t)) with (powerRZ radix (t-1));[ring|idtac].
 unfold nNormMin; rewrite Zpower_nat_Z_powerRZ.
-rewrite inj_pred; auto with zarith; unfold Zpred; auto with real zarith.
-apply Zpower_NR0; omega.
+rewrite inj_pred; auto with zarith; unfold Z.pred; auto with real zarith.
+apply Zpower_NR0; lia.
 apply FcanonicLeastExp with radix b t; auto with real zarith.
 rewrite FnormalizeCorrect; auto with zarith real.
 elim rDef; auto.
@@ -17503,12 +17100,12 @@ Proof.
 clear -radixMoreThanOne; intros.
 apply Rle_trans with  (powerRZ radix e1 + powerRZ radix e1)%R;
   [apply Rplus_le_compat_l; apply Rle_powerRZ; auto with real zarith|idtac].
-apply Rle_IZR; omega.
-apply Rle_trans with (powerRZ radix e1*2)%R;[right; ring|rewrite powerRZ_add; auto with real zarith].
+apply IZR_le; lia.
+apply Rle_trans with (powerRZ radix e1*2)%R;[right; ring|rewrite powerRZ_add].
 apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-simpl; ring_simplify (radix*1)%R; apply Rle_IZR; auto with real zarith.
-apply IZR_neq; omega.
+apply powerRZ_le, IZR_lt; lia.
+simpl; ring_simplify (radix*1)%R; apply IZR_le; auto with real zarith.
+apply IZR_neq; lia.
 Qed.
 
 
@@ -17555,12 +17152,12 @@ apply Rle_trans with  (powerRZ radix (t + s + Fexp x + Fexp y) +
   [apply Rplus_le_compat; try apply Rplus_le_compat_l |idtac].
 unfold Rdiv; apply Rle_trans with (powerRZ radix (t + Fexp x + Fexp y)*1)%R;[idtac|right; ring].
 apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (/1)%R; auto with real.
 unfold Rdiv; apply Rle_trans with (powerRZ radix (2*s + Fexp x + Fexp y)*1)%R;[idtac|right; ring].
  apply Rle_trans with (powerRZ radix (2*s + Fexp x + Fexp y)*(3*/4))%R;[right; ring|idtac].
 apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 assert (0<4)%R.
 auto with real.
 apply Rmult_le_reg_l with (4%R); auto with real.
@@ -17571,7 +17168,7 @@ apply Rle_trans with (powerRZ radix (t + s + Fexp x + Fexp y) +
     powerRZ radix (2 * s + Fexp x + Fexp y))%R.
 apply Rplus_le_compat_r; apply Rplus_le_compat_l.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply Rle_trans with (powerRZ radix (t + s + Fexp x + Fexp y) +
     powerRZ radix (t+1 + Fexp x + Fexp y+1))%R.
 rewrite Rplus_assoc; apply Rplus_le_compat_l.
@@ -17579,7 +17176,7 @@ apply powerRZSumRle; auto with zarith.
 apply Rle_trans with (powerRZ radix (t + s + Fexp x + Fexp y+1)).
 apply powerRZSumRle; auto with zarith.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 Qed.
 
 
@@ -17616,10 +17213,10 @@ apply Rmult_le_compat_l; auto with real.
 apply Rle_trans with  (powerRZ radix (t+1 + Fexp x + Fexp y) +
     powerRZ radix (2 * s + Fexp x + Fexp y))%R; auto with real zarith.
 apply Rplus_le_compat_r.
-apply Rle_powerRZ; try apply Rle_IZR; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with zarith.
 apply Rle_trans with  (powerRZ radix (t+1 + Fexp x + Fexp y+1)).
 apply powerRZSumRle; auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 Qed.
 
 
@@ -17646,21 +17243,21 @@ apply Rlt_le_trans with  (powerRZ radix (t + Fexp x + Fexp y) +
 apply Rplus_lt_compat_r.
 apply Rlt_le_trans with (powerRZ radix (t + Fexp x + Fexp y)*1)%R;[idtac|right; ring].
 unfold Rdiv; apply Rmult_lt_compat_l; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rlt_le_trans with (/1)%R; auto with real.
 apply Rle_trans with (powerRZ radix (t+1 + Fexp x + Fexp y) +
     powerRZ radix (2 * s + Fexp x + Fexp y))%R;[apply Rplus_le_compat|idtac].
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply Rle_trans with (powerRZ radix (2*s + Fexp x + Fexp y)*1)%R;[idtac|right; ring].
 unfold Rdiv; apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 assert (0 < 4)%R;[apply Rlt_le_trans with 2%R; auto with real|idtac].
 apply Rmult_le_reg_l with 4%R; auto with real.
 apply Rle_trans with 1%R;[right; field|ring_simplify (4*1)%R]; auto with real.
 apply Rle_trans with (powerRZ radix (t + 1 + Fexp x + Fexp y+1)).
 apply powerRZSumRle; auto with zarith.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 Qed.
 
 
@@ -17706,20 +17303,20 @@ apply
     (Z_of_nat
        (nat_of_P
           (P_of_succ_nat
-             (pred (Zabs_nat (Zpower_nat radix s)))))).
+             (pred (Z.abs_nat (Zpower_nat radix s)))))).
 unfold Z_of_nat in |- *; rewrite nat_of_P_o_P_of_succ_nat_eq_succ;
  auto with zarith.
 rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
-cut (Zabs (Zpower_nat radix s) = Zpower_nat radix s).
+cut (Z.abs (Zpower_nat radix s) = Zpower_nat radix s).
 intros H; pattern (Zpower_nat radix s) at 2 in |- *; rewrite <- H.
 rewrite Zabs_absolu.
-rewrite <- (S_pred (Zabs_nat (Zpower_nat radix s)) 0);
+rewrite <- (S_pred (Z.abs_nat (Zpower_nat radix s)) 0);
  auto with arith zarith.
 apply lt_Zlt_inv; simpl in |- *; auto with zarith arith.
 rewrite <- Zabs_absolu; rewrite H; auto with arith zarith.
-apply Zpower_nat_less; omega.
-apply Zabs_eq; auto with arith zarith.
-apply Zpower_NR0; omega.
+apply Zpower_nat_less; lia.
+apply Z.abs_eq; auto with arith zarith.
+apply Zpower_NR0; lia.
 Qed.
 
 
@@ -17734,18 +17331,21 @@ split.
 unfold Fmult; split; simpl; auto with zarith.
 rewrite Zabs_Zmult.
 elim Fx1; elim Fy1; intros.
-apply Zlt_le_trans with (Zpos (vNum b')*Zpos (vNum b'))%Z; auto with zarith.
-case (Zle_lt_or_eq 0%Z (Zabs (Fnum x1))); auto with zarith.
-intros I; apply Zlt_le_trans with  (Zabs (Fnum x1) * Zpos (vNum b'))%Z; auto with zarith.
+apply Z.lt_le_trans with (Zpos (vNum b')*Zpos (vNum b'))%Z.
+case (Zle_lt_or_eq 0%Z (Z.abs (Fnum x1)));[auto with zarith| |].
+intros I; apply Z.lt_le_trans with  (Z.abs (Fnum x1) * Zpos (vNum b'))%Z; auto with zarith.
 apply Zmult_lt_compat_l; auto with zarith.
-intros I; rewrite <- I, Zmult_0_l; auto with zarith.
+intros I; rewrite <- I, Zmult_0_l.
 apply Z.mul_pos_pos; auto with zarith.
 unfold b'; rewrite p'GivesBound; auto with zarith.
 rewrite <- Zpower_nat_is_exp.
 rewrite pGivesBound; auto with zarith.
-apply Zpower_nat_monotone_le; omega.
+apply Zpower_nat_monotone_le; lia.
 simpl; auto.
 Qed.
+
+
+
 
 Lemma Boundedx1y1: (exists x':float, (FtoRradix x'=x1*y1)%R /\ (Fbounded b x')).
 elim Boundedx1y1_aux; intros f T; elim T ; intros T1 T2; elim T2; intros.
@@ -17760,18 +17360,18 @@ split;[idtac|simpl; auto].
 unfold Fmult; split; simpl; auto with zarith.
 rewrite Zabs_Zmult.
 elim Fx1; elim Fy2; intros.
-apply Zlt_le_trans with (Zpos (vNum b')*Zpos (vNum bt))%Z; auto with zarith.
-case (Zle_lt_or_eq 0%Z (Zabs (Fnum x1))); auto with zarith.
-intros I; apply Zlt_le_trans with  (Zabs (Fnum x1) * Zpos (vNum bt))%Z; auto with zarith.
+apply Z.lt_le_trans with (Zpos (vNum b')*Zpos (vNum bt))%Z; auto with zarith.
+case (Zle_lt_or_eq 0%Z (Z.abs (Fnum x1))); [auto with zarith| |
+                                            ].
+intros I; apply Z.lt_le_trans with  (Z.abs (Fnum x1) * Zpos (vNum bt))%Z; auto with zarith.
 apply Zmult_lt_compat_l; auto with zarith.
-intros I; rewrite <- I; auto with zarith.
-rewrite Zmult_0_l.
+intros I; rewrite <- I; rewrite Zmult_0_l.
 apply Z.mul_pos_pos; auto with zarith.
 unfold b'; rewrite p'GivesBound; auto with zarith.
 rewrite p''GivesBound; auto with zarith.
 rewrite <- Zpower_nat_is_exp.
 rewrite pGivesBound; auto with zarith.
-apply Zpower_nat_monotone_le; omega.
+apply Zpower_nat_monotone_le; lia.
 Qed.
 
 Lemma Boundedx1y2: (exists x':float, (FtoRradix x'=x1*y2)%R /\ (Fbounded b x')).
@@ -17788,18 +17388,17 @@ split;[idtac|simpl; auto].
 unfold Fmult; split; simpl; auto with zarith.
 rewrite Zabs_Zmult.
 elim Fx2; elim Fy1; intros.
-apply Zlt_le_trans with (Zpos (vNum bt)*Zpos (vNum b'))%Z; auto with zarith.
-case (Zle_lt_or_eq 0%Z (Zabs (Fnum x2))); auto with zarith.
-intros I; apply Zlt_le_trans with  (Zabs (Fnum x2) * Zpos (vNum b'))%Z; auto with zarith.
+apply Z.lt_le_trans with (Zpos (vNum bt)*Zpos (vNum b'))%Z; auto with zarith.
+case (Zle_lt_or_eq 0%Z (Z.abs (Fnum x2))); [auto with zarith| |].
+intros I; apply Z.lt_le_trans with  (Z.abs (Fnum x2) * Zpos (vNum b'))%Z; auto with zarith.
 apply Zmult_lt_compat_l; auto with zarith.
-intros I; rewrite <- I; auto with zarith.
-rewrite Zmult_0_l.
+intros I; rewrite <- I; rewrite Zmult_0_l;
 apply Z.mul_pos_pos; auto with zarith.
 unfold b'; rewrite p'GivesBound; auto with zarith.
 rewrite p''GivesBound; auto with zarith.
 rewrite <- Zpower_nat_is_exp.
 rewrite pGivesBound; auto with zarith.
-apply Zpower_nat_monotone_le; omega.
+apply Zpower_nat_monotone_le; lia.
 Qed.
 
 Lemma Boundedx2y1: (exists x':float, (FtoRradix x'=x2*y1)%R /\ (Fbounded b x')).
@@ -17860,49 +17459,48 @@ Hypothesis D5: (Closest b radix (t3-x2y2)%R  t4).
 
 
 
-Lemma SLe: (2 <= s)%nat.
+Lemma SLe: (2 <= s).
 unfold s; auto with zarith.
 assert (2<= t-div2 t)%Z; auto with zarith.
-apply Zmult_le_reg_r with 2%Z; auto with zarith.
-replace ((t-div2 t)*2)%Z with (2*t-2*div2 t)%Z; auto with zarith.
+apply Zmult_le_reg_r with 2%Z; try lia.
+replace ((t-div2 t)*2)%Z with (2*t-2*div2 t)%Z by ring.
 replace (2*div2 t)%Z with (Z_of_nat (Div2.double (div2 t))).
 case (even_or_odd t); intros I.
-rewrite <- even_double; auto with zarith.
-apply Zle_trans with (2*t+1-(S ( Div2.double (div2 t))))%Z; auto with zarith.
-rewrite <- odd_double; auto with zarith.
-replace (Z_of_nat (S ( Div2.double (div2 t)))) with (1+ Div2.double (div2 t))%Z; auto with zarith.
+rewrite <- even_double by easy. lia.
+apply Z.le_trans with (2*t+1-(S ( Div2.double (div2 t))))%Z; try lia.
+rewrite <- odd_double by easy. lia.
 unfold Div2.double; rewrite inj_plus; ring.
 Qed.
 
 
-Lemma SGe: (s <= t-2)%nat.
-unfold s; auto with zarith.
-assert (2<= div2 t)%Z; auto with zarith.
-apply Zmult_le_reg_r with 2%Z; auto with zarith.
+Lemma SGe: (s <= t-2).
+unfold s.
+cut (2<= div2 t)%Z. lia.
+apply Zmult_le_reg_r with 2%Z; try lia.
 replace (div2 t*2)%Z with (Z_of_nat (Div2.double (div2 t))).
 case (even_or_odd t); intros I.
-rewrite <- even_double; auto with zarith.
-apply Zle_trans with (-1+(S ( Div2.double (div2 t))))%Z; auto with zarith.
+rewrite <- even_double by easy. lia.
+apply Z.le_trans with (-1+(S ( Div2.double (div2 t))))%Z. 2: lia.
 rewrite <- odd_double; auto with zarith.
 case (Zle_lt_or_eq 4 t); auto with zarith.
 intros I2; absurd (odd t); auto.
 intros I3; apply not_even_and_odd with t; auto.
-replace t with (4%nat); auto with zarith.
+replace t with (4) by auto with zarith.
 apply even_S; apply odd_S; apply even_S; apply odd_S; apply even_O.
 unfold Div2.double; rewrite inj_plus; ring.
 Qed.
 
 Lemma s2Ge: (t <= s + s)%Z.
 unfold s.
-assert (2*(div2 t) <= t)%Z; auto with zarith.
+cut (2*(div2 t) <= t)%Z. lia.
 case (even_or_odd t); intros I.
-apply Zle_trans with  (Div2.double (div2 t)).
+apply Z.le_trans with  (Div2.double (div2 t)).
 unfold Div2.double; rewrite inj_plus; auto with zarith.
 rewrite <- even_double; auto with zarith.
-apply Zle_trans with (-1+(S ( Div2.double (div2 t))))%Z; auto with zarith.
-rewrite inj_S; unfold Zsucc; auto with zarith.
+apply Z.le_trans with (-1+(S ( Div2.double (div2 t))))%Z.
+rewrite inj_S; unfold Z.succ; auto with zarith.
 unfold Div2.double; rewrite inj_plus; auto with zarith.
-rewrite <- odd_double; auto with zarith.
+rewrite <- odd_double by easy. lia.
 Qed.
 
 
@@ -17912,11 +17510,11 @@ rewrite inj_minus1; auto with zarith.
 2: generalize (lt_div2 t); auto with zarith.
 assert (t<= 2*(div2 t)+1)%Z; auto with zarith.
 case (even_or_odd t); intros I.
-apply Zle_trans with  ((Div2.double (div2 t)+1))%Z.
+apply Z.le_trans with  ((Div2.double (div2 t)+1))%Z.
 2:unfold Div2.double; rewrite inj_plus; auto with zarith.
 rewrite <- even_double; auto with zarith.
-apply Zle_trans with ((S ( Div2.double (div2 t))))%Z; auto with zarith.
-2: rewrite inj_S; unfold Zsucc; auto with zarith.
+apply Z.le_trans with ((S ( Div2.double (div2 t))))%Z; auto with zarith.
+2: rewrite inj_S; unfold Z.succ; auto with zarith.
 2: unfold Div2.double; rewrite inj_plus; auto with zarith.
 rewrite <- odd_double; auto with zarith.
 Qed.
@@ -18061,14 +17659,15 @@ rewrite Zabs_Zmult.
 elim J3; elim G3; replace  (Zpos
           (vNum
              (Bound
-                (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (s - 1)))))
+                (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (s - 1)))))
                 (dExp b))))%Z with (Zpower_nat radix (s - 1)); intros.
-apply Zlt_le_trans with (Zpower_nat radix (s - 1)*Zpower_nat radix (s - 1))%Z; auto with zarith.
-case (Zle_lt_or_eq 0%Z (Zabs (Fnum x2))); auto with zarith.
-intros I; apply Zlt_le_trans with  (Zabs (Fnum x2) * Zpower_nat radix (s-1))%Z; auto with zarith.
+apply Z.lt_le_trans with (Zpower_nat radix (s - 1)*Zpower_nat radix (s - 1))%Z.
+case (Zle_lt_or_eq 0%Z (Z.abs (Fnum x2))).
+auto with zarith.
+intros I; apply Z.lt_le_trans with  (Z.abs (Fnum x2) * Zpower_nat radix (s-1))%Z; auto with zarith.
 apply Zmult_lt_compat_l; auto with zarith.
-intros I; rewrite <- I; auto with zarith.
-rewrite Zmult_0_l; apply Z.mul_pos_pos; apply Zpower_nat_less; omega.
+intros I; rewrite <- I.
+rewrite Zmult_0_l; apply Z.mul_pos_pos; apply Zpower_nat_less; lia.
 rewrite pGivesBound; rewrite <- Zpower_nat_is_exp; auto with zarith.
 apply Zpower_nat_monotone_le; auto with zarith.
 generalize s2Le; auto with zarith.
@@ -18079,26 +17678,26 @@ apply
     (Z_of_nat
        (nat_of_P
           (P_of_succ_nat
-             (pred (Zabs_nat (Zpower_nat radix (s-1))))))).
+             (pred (Z.abs_nat (Zpower_nat radix (s-1))))))).
 unfold Z_of_nat in |- *; rewrite nat_of_P_o_P_of_succ_nat_eq_succ;
  auto with zarith.
 rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
-cut (Zabs (Zpower_nat radix (s-1)) = Zpower_nat radix (s-1)).
+cut (Z.abs (Zpower_nat radix (s-1)) = Zpower_nat radix (s-1)).
 intros HA; pattern (Zpower_nat radix (s-1)) at 2 in |- *; rewrite <- HA.
 rewrite Zabs_absolu.
-rewrite <- (S_pred (Zabs_nat (Zpower_nat radix (s-1))) 0);
+rewrite <- (S_pred (Z.abs_nat (Zpower_nat radix (s-1))) 0);
  auto with arith zarith.
 apply lt_Zlt_inv; simpl in |- *; auto with zarith arith.
 rewrite <- Zabs_absolu; rewrite HA; auto with arith zarith.
-apply Zpower_nat_less; omega.
-apply Zabs_eq; auto with arith zarith.
-apply Zpower_NR0; omega.
-apply Zle_trans with (Fexp (Fnormalize radix b t x)+Fexp (Fnormalize radix b t y))%Z; auto with zarith.
+apply Zpower_nat_less; lia.
+apply Z.abs_eq; auto with arith zarith.
+apply Zpower_NR0; lia.
+apply Z.le_trans with (Fexp (Fnormalize radix b t x)+Fexp (Fnormalize radix b t y))%Z; auto with zarith.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 left; auto.
 left; auto.
-apply Zle_trans with (Fexp (Fnormalize radix b t x)+Fexp (Fnormalize radix b t y))%Z; simpl; auto with zarith.
+apply Z.le_trans with (Fexp (Fnormalize radix b t x)+Fexp (Fnormalize radix b t y))%Z; simpl; auto with zarith.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 left; auto.
@@ -18119,30 +17718,31 @@ rewrite Zabs_Zmult.
 elim J3; elim G3; replace  (Zpos
           (vNum
              (Bound
-                (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (s)))))
+                (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (s)))))
                 (dExp b))))%Z with (Zpower_nat radix (s)); intros.
-apply Zlt_le_trans with (Zpower_nat radix s*Zpower_nat radix s)%Z; auto with zarith.
-case (Zle_lt_or_eq 0%Z (Zabs (Fnum x2))); auto with zarith.
-intros I; apply Zlt_le_trans with  (Zabs (Fnum x2) * Zpower_nat radix s)%Z; auto with zarith.
+apply Z.lt_le_trans with (Zpower_nat radix s*Zpower_nat radix s)%Z.
+case (Zle_lt_or_eq 0%Z (Z.abs (Fnum x2))).
+auto with zarith.
+intros I; apply Z.lt_le_trans with  (Z.abs (Fnum x2) * Zpower_nat radix s)%Z; auto with zarith.
 apply Zmult_lt_compat_l; auto with zarith.
-intros I; rewrite <- I; auto with zarith.
-rewrite Zmult_0_l; apply Z.mul_pos_pos; apply Zpower_nat_less; omega.
+intros I; rewrite <- I.
+rewrite Zmult_0_l; apply Z.mul_pos_pos; apply Zpower_nat_less; lia.
 rewrite <- Zpower_nat_is_exp; rewrite pGivesBound; auto with zarith.
 apply Zpower_nat_monotone_le; auto with zarith.
 assert (2*s <= t)%Z; auto with zarith.
 unfold s.
 rewrite inj_minus1 by (generalize (lt_div2 t); auto with zarith).
 assert (t <= 2*(div2 t))%Z; auto with zarith.
-apply Zle_trans with  (Div2.double (div2 t)).
+apply Z.le_trans with  (Div2.double (div2 t)).
 2: unfold Div2.double; rewrite inj_plus; auto with zarith.
 rewrite <- even_double; auto with zarith.
 apply sym_eq; apply p''GivesBound; auto.
-apply Zle_trans with (Fexp (Fnormalize radix b t x)+Fexp (Fnormalize radix b t y))%Z; auto with zarith.
+apply Z.le_trans with (Fexp (Fnormalize radix b t x)+Fexp (Fnormalize radix b t y))%Z; auto with zarith.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 left; auto.
 left; auto.
-apply Zle_trans with (Fexp (Fnormalize radix b t x)+Fexp (Fnormalize radix b t y))%Z; auto with zarith.
+apply Z.le_trans with (Fexp (Fnormalize radix b t x)+Fexp (Fnormalize radix b t y))%Z; auto with zarith.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 left; auto.
@@ -18212,6 +17812,7 @@ Hypothesis D5: (Closest b radix (t3-x2y2)%R  t4).
 
 
 Theorem DekkerS1: (radix=2)%Z \/ (even t) ->  (x*y=r-t4)%R.
+Proof.
 intros H; unfold FtoRradix.
 case (Req_dec 0%R y); intros Ny.
 cut (FtoRradix r=0)%R;[intros Z1|idtac].
@@ -18255,11 +17856,10 @@ elim Veltkamp with radix b s t y p' q' hy; auto with zarith arith.
 2: elim Cy; auto.
 intros T1 T; elim T; intros hy' T'; elim T'; intros G1 T''; elim T''; intros ; clear T1 T T' T''.
 unfold FtoRradix; rewrite <- G1.
- apply ClosestZero with (Bound (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (t - s)))))
-            (dExp b)) (t-s) (FtoR radix y)%R; auto with zarith.
-apply p'GivesBound; auto with zarith.
-apply SGe; auto.
-cut (s <= t-2)%nat ;[idtac | apply SGe; auto].
+ apply ClosestZero with (Bound (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (t - s)))))
+                               (dExp b)) (t-s) (FtoR radix y)%R; auto with zarith.
+apply p'GivesBound; solve [auto with zarith].
+cut (s <= t-2) ;[idtac | apply SGe; auto].
 unfold s; auto with zarith.
 unfold FtoRradix; apply ClosestZero with b t (x*y)%R; auto with zarith.
 rewrite <- Ny; ring.
@@ -18271,12 +17871,12 @@ intros yy T; elim T; intros X1 X2; clear T.
 rewrite <- X1.
 assert (Fnormal radix (plusExp t b) x).
 elim Cx; intros F1 F2; elim F1; intros.
-split;[split|idtac]; unfold plusExp; simpl; auto with zarith.
+split;[split|idtac]; unfold plusExp; simpl; lia.
 assert (- dExp (plusExp t b) <= Fexp x + Fexp yy)%Z.
 elim X2; intros F1 F2; elim F1; intros.
 assert (0 <= Fexp x)%Z; auto with zarith.
 apply Zplus_le_reg_l with (Fexp y).
-rewrite (Zplus_comm (Fexp y) (Fexp x)); apply Zle_trans with (2:=Expoxy).
+rewrite (Zplus_comm (Fexp y) (Fexp x)); apply Z.le_trans with (2:=Expoxy).
 elim Cy; intros F1' F2'; elim F2'; auto with zarith.
 assert (Closest (plusExp t b) radix
    (FtoR radix x * (powerRZ radix (t - div2 t)%nat + 1)) p).
@@ -18465,6 +18065,7 @@ Hypothesis D5: (Closest b radix (t3-x2y2)%R  t4).
 
 
 Theorem DekkerS2: (radix=2)%Z \/ (even t) ->  (x*y=r-t4)%R.
+Proof.
 intros H; unfold FtoRradix.
 case (Req_dec 0%R x); intros Ny.
 cut (FtoRradix r=0)%R;[intros Z1|idtac].
@@ -18508,11 +18109,10 @@ elim Veltkamp with radix b s t x p q hx; auto.
 2: elim Cx; auto.
 intros T1 T; elim T; intros hy' T'; elim T'; intros G1 T''; elim T''; intros ; clear T1 T T' T''.
 unfold FtoRradix; rewrite <- G1.
- apply ClosestZero with (Bound (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (t - s)))))
+ apply ClosestZero with (Bound (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (t - s)))))
             (dExp b)) (t-s) (FtoR radix x)%R; auto with zarith.
 apply p'GivesBound; auto with zarith.
-apply SGe; auto.
-cut  (s <= t - 2)%nat; [unfold s; auto with zarith| apply SGe; auto].
+cut  (s <= t - 2); [unfold s; auto with zarith| apply SGe; auto].
 unfold FtoRradix; apply ClosestZero with b t (x*y)%R; auto with zarith.
 rewrite <- Ny; ring.
 elim bimplybplusNorm with radix b s t x; auto.
@@ -18523,12 +18123,12 @@ intros xx T; elim T; intros X1 X2; clear T.
 rewrite <- X1.
 assert (Fnormal radix (plusExp t b) y).
 elim Cy; intros F1 F2; elim F1; intros.
-split;[split|idtac]; unfold plusExp; simpl; auto with zarith.
+split;[split|idtac]; unfold plusExp; simpl; lia.
 assert (- dExp (plusExp t b) <= Fexp xx + Fexp y)%Z.
 elim X2; intros F1 F2; elim F1; intros.
 assert (0 <= Fexp y)%Z; auto with zarith.
 apply Zplus_le_reg_l with (Fexp x).
-apply Zle_trans with (2:=Expoxy).
+apply Z.le_trans with (2:=Expoxy).
 elim Cx; intros F1' F2'; elim F2'; auto with zarith.
 assert (Closest (plusExp t b) radix
    (FtoR radix y * (powerRZ radix (t - div2 t)%nat + 1)) p').
@@ -18726,7 +18326,7 @@ absurd (- dExp b <= Fexp x + Fexp y)%Z; auto with zarith.
 apply Zlt_not_le.
 elim H; intros T1 T2; elim T2; intros G1 T; clear T1 T2 T.
 elim H0; intros T1 T2; elim T2; intros G2 T; clear T1 T2 T.
-rewrite G1; rewrite G2; auto with zarith.
+rewrite G1; rewrite G2; lia.
 Qed.
 
 
@@ -18750,7 +18350,7 @@ Let s:= t- div2 t.
 
 Variables x y:float.
 
-Let b' := Bound (vNum b) (Nplus (Ndouble (dExp b)) (Ndouble  (Npos (P_of_succ_nat t)))).
+Let b' := Bound (vNum b) (Nplus (N.double (dExp b)) (N.double  (Npos (P_of_succ_nat t)))).
 
 
 Theorem Veltkampb': forall (f pf qf hf tf:float),
@@ -18767,7 +18367,7 @@ assert (f*(powerRZ radix s + 1)= (FtoRradix (Fplus radix (Fmult f (Float 1 s)) f
 unfold FtoRradix; rewrite Fplus_correct; auto; rewrite Fmult_correct; auto.
 unfold FtoR; simpl; ring.
 rewrite H5; unfold FtoRradix; apply Closestbbext with b t; auto with zarith.
-simpl; rewrite Zmin_le2; auto with zarith; apply H0.
+simpl; rewrite Z.min_r; auto with zarith; apply H0.
 fold FtoRradix; rewrite <- H5; auto.
 split.
 unfold FtoRradix; rewrite <- Fminus_correct; auto.
@@ -18823,25 +18423,25 @@ Hypothesis D5: (Closest b radix (t3-x2y2)%R  t4).
 
 
 Theorem dExpPrim: (dExp b < dExp b')%Z.
-unfold b'; simpl; auto with zarith.
+unfold b'; simpl.
 cut (forall (x:N) (y:positive), (x+(Zpos y)=(x +Npos y)%N)%Z).
-intros T; simpl; rewrite <- T; auto with zarith.
-apply Zle_lt_trans with (Ndouble (dExp b)); auto with zarith.
-unfold Ndouble; case (dExp b); auto with zarith.
-intros; unfold Z_of_N; auto with zarith.
+intros T; simpl; rewrite <- T.
+apply Z.le_lt_trans with (N.double (dExp b)); [| lia].
+rewrite N.double_spec.
+lia.
 intros;unfold Nplus.
 case x0; auto with zarith.
 Qed.
 
-Theorem dExpPrimEq: (Z_of_N (Ndouble (dExp b) + Npos (xO (P_of_succ_nat t)))
+Theorem dExpPrimEq: (Z_of_N (N.double (dExp b) + Npos (xO (P_of_succ_nat t)))
    =2*(dExp b)+2*t+2)%Z.
 cut (forall (x:N) (y:positive), (x+(Zpos y)=(x +Npos y)%N)%Z).
-intros T; rewrite <- T; auto with zarith.
+intros T; rewrite <- T.
 2:intros;unfold Nplus.
 2:case x0; auto with zarith.
 replace  (Zpos (xO (P_of_succ_nat t))) with (2*t+2)%Z.
-unfold Ndouble; case (dExp b); auto with zarith.
-apply trans_eq with (2*(Zpos (P_of_succ_nat t)))%Z; auto with zarith.
+unfold N.double; case (dExp b); auto with zarith.
+lia.
 Qed.
 
 
@@ -18855,15 +18455,15 @@ rewrite FnormalizeCorrect; auto with zarith; rewrite <- Fabs_correct; auto.
 unfold FtoRradix, FtoR, Fabs; simpl.
 apply Rle_trans with ((IZR 1)*powerRZ radix (- dExp b))%R;[right; simpl; ring|idtac].
 apply Rmult_le_compat; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-case (Zle_lt_or_eq 0 (Zabs (Fnum f))); auto with zarith real.
-intros H1; apply Rle_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+case (Zle_lt_or_eq 0 (Z.abs (Fnum f))); auto with zarith real.
+intros H1; apply IZR_le; lia.
 intros; absurd (Rabs f =0)%R.
 apply Rabs_no_R0; auto.
 unfold FtoRradix; rewrite <- Fabs_correct; auto; unfold FtoR, Fabs; simpl; rewrite <- H1; simpl; ring.
 assert (Fbounded b f);[apply FcanonicBound with radix; auto with zarith|idtac].
 elim H1; intros; apply Rle_powerRZ; auto with zarith real.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 assert (Fcanonic radix b'  (Fnormalize radix b' t f)).
 apply FnormalizeCanonic; auto with zarith.
 assert (Fbounded b f);[apply FcanonicBound with radix; auto with zarith|idtac].
@@ -18874,13 +18474,12 @@ intros; absurd (Fabs f < (firstNormalPos radix b' t))%R.
 apply Rle_not_lt.
 apply Rle_trans with (powerRZ radix (-(dExp b))).
 unfold firstNormalPos, FtoRradix, FtoR; simpl.
-unfold nNormMin; rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add; auto with real zarith.
-apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+unfold nNormMin; rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add.
+apply Rle_powerRZ.
+apply IZR_le; lia.
 rewrite dExpPrimEq.
-rewrite inj_pred; auto with zarith; unfold Zpred.
-ring_simplify (t + -1 + - (2 * dExp b + 2 * t + 2))%Z; auto with zarith.
-apply IZR_neq; omega.
+rewrite inj_pred; lia.
+apply IZR_neq; lia.
 apply Rle_trans with (1:=H1); unfold FtoRradix; repeat rewrite Fabs_correct; auto.
 rewrite FnormalizeCorrect; auto with zarith real.
 apply Rle_lt_trans with (Fabs (Fnormalize radix b' t f)).
@@ -18890,18 +18489,19 @@ unfold FtoRradix; apply FsubnormalLtFirstNormalPos; auto with zarith.
 apply FsubnormFabs; auto.
 rewrite Fabs_correct; auto with real zarith; apply Rabs_pos.
 split;[unfold FtoRradix; rewrite FnormalizeCorrect; auto with zarith|idtac].
-apply Zle_trans with (Fexp (Float (nNormMin radix t) (-t-dExp b))); auto with zarith.
+apply Z.le_trans with (Fexp (Float (nNormMin radix t) (-t-dExp b))); auto with zarith.
 apply Fcanonic_Rle_Zle with radix b' t; auto with zarith.
 apply FcanonicNnormMin; auto with zarith.
-unfold b'; simpl; rewrite dExpPrimEq; auto with zarith.
+unfold b'; simpl; rewrite dExpPrimEq; lia.
 rewrite Rabs_right.
 rewrite <- Fabs_correct; auto; fold FtoRradix; apply Rle_trans with (2:=H1).
 unfold FtoRradix, FtoR, nNormMin; simpl; rewrite Zpower_nat_Z_powerRZ.
-rewrite <- powerRZ_add; try apply IZR_neq; auto with real zarith; apply Rle_powerRZ; auto with zarith real.
-apply Rle_IZR; omega.
+rewrite <- powerRZ_add by (apply IZR_neq; lia).
+apply Rle_powerRZ; try lia.
+apply IZR_le; lia.
 apply Rle_ge; apply LeFnumZERO; auto with zarith.
 unfold nNormMin; simpl; auto with zarith.
-apply Zpower_NR0; omega.
+apply Zpower_NR0; lia.
 Qed.
 
 Theorem Dekker2_aux:
@@ -19026,30 +18626,30 @@ intros Cx1y2' T; elim T; intros O4 T'; elim T'; intros O5 O6; clear T T'.
 elim Boundedx2y1_aux with radix b' s t x' Ctx' y' Chy'; auto with zarith.
 intros Cx2y1' T; elim T; intros O7 T'; elim T'; intros O8 O9; clear T T'.
 assert (tmp:forall (f:float) (i:nat), (i <= t) ->
-       (Fbounded (Bound (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (i)))))
+       (Fbounded (Bound (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (i)))))
              (dExp b')) f) -> (Fbounded b' f)).
 intros f i J1 J2; elim J2; intros J3 J4; split; auto with zarith.
-apply Zlt_le_trans with (1:=J3).
-apply Zle_trans with (Zpower_nat radix i);[idtac|unfold b'; simpl; rewrite pGivesBound; auto with zarith].
+apply Z.lt_le_trans with (1:=J3).
+apply Z.le_trans with (Zpower_nat radix i);[idtac|unfold b'; simpl; rewrite pGivesBound; auto with zarith].
 simpl.
 apply
- Zle_trans
+ Z.le_trans
   with
     (Z_of_nat
        (nat_of_P
           (P_of_succ_nat
-             (pred (Zabs_nat (Zpower_nat radix (i))))))).
+             (pred (Z.abs_nat (Zpower_nat radix (i))))))).
 unfold Z_of_nat in |- *; rewrite nat_of_P_o_P_of_succ_nat_eq_succ;
  auto with zarith.
 rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
-rewrite <- S_pred with (Zabs_nat (Zpower_nat radix (i))) 0; auto with zarith.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
+rewrite <- S_pred with (Z.abs_nat (Zpower_nat radix (i))) 0; auto with zarith.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
 apply Zpower_NR0; auto with zarith.
-cut ( 0 < Zabs_nat (Zpower_nat radix (i)))%Z; auto with zarith.
-simpl; rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-apply Zpower_nat_less; omega.
-apply Zpower_NR0; omega.
-apply Zpower_nat_monotone_le; omega.
+cut ( 0 < Z.abs_nat (Zpower_nat radix (i)))%Z; auto with zarith.
+simpl; rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+apply Zpower_nat_less; lia.
+apply Zpower_NR0; lia.
+apply Zpower_nat_monotone_le; lia.
 elim Boundedx2y2 with radix b' t x' y' p q Chx' Ctx' p' q' Chy' Cty'; auto with zarith.
 2: fold FtoRradix; rewrite Hx'; auto.
 2: fold FtoRradix; rewrite Hx'; auto.
@@ -19163,7 +18763,7 @@ cut (FtoRradix t4=0)%R;[intros Z2|idtac].
 replace ((x * y - (r - t4)))%R with 0%R.
 rewrite Rabs_R0; apply Rlt_le; apply Rmult_lt_0_compat; auto with real zarith.
 unfold Rdiv;  apply Rmult_lt_0_compat; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 fold FtoRradix; rewrite Z1; rewrite Z2; rewrite <- Ny; ring.
 cut (FtoRradix hx=0)%R;[intros Z3|idtac].
 cut (FtoRradix tx=0)%R;[intros Z4|idtac].
@@ -19202,11 +18802,10 @@ elim Veltkamp with radix b s t x p q hx; auto.
 2: apply FcanonicBound with radix; auto.
 intros T1 T; elim T; intros hy' T'; elim T'; intros G1 T''; elim T''; intros ; clear T1 T T' T''.
 unfold FtoRradix; rewrite <- G1.
-apply ClosestZero with (Bound (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (t - s)))))
+apply ClosestZero with (Bound (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (t - s)))))
             (dExp b)) (t-s) (FtoR radix x)%R; auto with zarith.
 apply p'GivesBound; auto with zarith.
-apply SGe; auto.
-cut (s <= t-2)%nat; [unfold s; auto with zarith | apply SGe; auto].
+cut (s <= t-2); [unfold s; auto with zarith | apply SGe; auto].
 unfold FtoRradix; apply ClosestZero with b t (x*y)%R; auto with zarith.
 rewrite <- Ny; ring.
 case (Req_dec 0%R y); intros Nx.
@@ -19215,7 +18814,7 @@ cut (FtoRradix t4=0)%R;[intros Z2|idtac].
 replace ((x * y - (r - t4)))%R with 0%R.
 rewrite Rabs_R0; apply Rlt_le; apply Rmult_lt_0_compat; auto with real zarith.
 unfold Rdiv;  apply Rmult_lt_0_compat; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 fold FtoRradix; rewrite Z1; rewrite Z2; rewrite <- Nx; ring.
 cut (FtoRradix hy=0)%R;[intros Z3|idtac].
 cut (FtoRradix ty=0)%R;[intros Z4|idtac].
@@ -19254,11 +18853,10 @@ elim Veltkamp with radix b s t y p' q' hy; auto.
 2: apply FcanonicBound with radix; auto.
 intros T1 T; elim T; intros hy' T'; elim T'; intros G1 T''; elim T''; intros ; clear T1 T T' T''.
 unfold FtoRradix; rewrite <- G1.
-apply ClosestZero with (Bound (P_of_succ_nat (pred (Zabs_nat (Zpower_nat radix (t - s)))))
+apply ClosestZero with (Bound (P_of_succ_nat (pred (Z.abs_nat (Zpower_nat radix (t - s)))))
             (dExp b)) (t-s) (FtoR radix y)%R; auto with zarith.
 apply p'GivesBound; auto with zarith.
-apply SGe; auto.
-cut (s <= t-2)%nat; [unfold s; auto with zarith | apply SGe; auto].
+cut (s <= t-2); [unfold s; auto with zarith | apply SGe; auto].
 unfold FtoRradix; apply ClosestZero with b t (x*y)%R; auto with zarith.
 rewrite <- Nx; ring.
 apply Dekker2_aux; auto.
@@ -19327,7 +18925,7 @@ cut (x * y = r + t4)%R; [intros; split; auto|idtac].
 rewrite H1; ring_simplify ( (r + t4) - (r + t4))%R; rewrite Rabs_R0.
 apply Rlt_le; apply Rmult_lt_0_compat; auto with real zarith.
 unfold Rdiv;  apply Rmult_lt_0_compat; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply trans_eq with (r-(Fopp t4))%R;[idtac|unfold FtoRradix; rewrite Fopp_correct; ring].
 unfold FtoRradix; apply Dekker1 with b t p q hx tx p' q' hy ty x1y1 x1y2 x2y1 x2y2
   (Fopp t1) (Fopp t2) (Fopp t3); auto; try rewrite Fopp_correct; fold FtoRradix.
@@ -19377,7 +18975,7 @@ Let radix := 2%Z.
 Let FtoRradix := FtoR radix.
 Local Coercion FtoRradix : float >-> R.
 
-Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ TwoMoreThanOne).
+Let radixMoreThanZERO : (0 < radix)%Z := eq_refl.
 
 Hypothesis precisionGreaterThanOne : 1 < precision.
 Hypothesis pGivesBound : Zpos (vNum bo) = Zpower_nat radix precision.
@@ -19449,12 +19047,12 @@ Theorem Fulp_le_twice_l: forall x y:float, (0 <= x)%R ->
    (Fnormal radix bo x) -> (Fbounded bo y) -> (2*x<=y)%R ->
    (2*(Fulp bo radix precision x) <= (Fulp bo radix precision y))%R.
 intros.
-assert (2*x=(Float (Fnum x) (Zsucc (Fexp x))))%R.
-unfold FtoRradix, FtoR, Zsucc; simpl; rewrite powerRZ_add; auto with real zarith.
+assert (2*x=(Float (Fnum x) (Z.succ (Fexp x))))%R.
+unfold FtoRradix, FtoR, Z.succ; simpl; rewrite powerRZ_add; auto with real zarith.
 rewrite powerRZ_1; unfold radix; ring.
-apply Rle_trans with (Fulp bo radix precision (Float (Fnum x) (Zsucc (Fexp x)))).
+apply Rle_trans with (Fulp bo radix precision (Float (Fnum x) (Z.succ (Fexp x)))).
 right; rewrite CanonicFulp; auto; [rewrite CanonicFulp|left]; auto.
-unfold FtoR, Zsucc; simpl; rewrite powerRZ_add; auto with real zarith.
+unfold FtoR, Z.succ; simpl; rewrite powerRZ_add; auto with real zarith.
 rewrite powerRZ_1; unfold radix; ring.
 elim H0; intros H4 H5; elim H4; intros.
 left; split; auto.
@@ -19469,12 +19067,12 @@ Theorem Fulp_le_twice_r: forall x y:float, (0 <= x)%R ->
    (Fnormal radix bo y) -> (Fbounded bo x) -> (x<=2*y)%R ->
    ((Fulp bo radix precision x) <= 2*(Fulp bo radix precision y))%R.
 intros.
-assert (2*y=(Float (Fnum y) (Zsucc (Fexp y))))%R.
-unfold FtoRradix, FtoR, Zsucc; simpl; rewrite powerRZ_add; auto with real zarith.
+assert (2*y=(Float (Fnum y) (Z.succ (Fexp y))))%R.
+unfold FtoRradix, FtoR, Z.succ; simpl; rewrite powerRZ_add; auto with real zarith.
 rewrite powerRZ_1; unfold radix; ring.
-apply Rle_trans with (Fulp bo radix precision (Float (Fnum y) (Zsucc (Fexp y)))).
+apply Rle_trans with (Fulp bo radix precision (Float (Fnum y) (Z.succ (Fexp y)))).
 2:right; rewrite CanonicFulp; auto; [rewrite CanonicFulp|left]; auto.
-2:unfold FtoR, Zsucc; simpl; rewrite powerRZ_add; auto with real zarith.
+2:unfold FtoR, Z.succ; simpl; rewrite powerRZ_add; auto with real zarith.
 2: rewrite powerRZ_1; unfold radix ; ring.
 2:left; auto.
 2:elim H0; intros H6 H5; elim H6; intros.
@@ -19488,11 +19086,11 @@ Qed.
 
 
 Theorem Half_Closest_Round: forall (x:float) (r:R),
-   (- dExp bo <= Zpred (Fexp x))%Z -> (Closest bo radix r x)
-  -> (Closest bo radix (r/2)%R (Float (Fnum x) (Zpred (Fexp x)))).
+   (- dExp bo <= Z.pred (Fexp x))%Z -> (Closest bo radix r x)
+  -> (Closest bo radix (r/2)%R (Float (Fnum x) (Z.pred (Fexp x)))).
 intros x r L H.
-assert (x/2=(Float (Fnum x) (Zpred (Fexp x))))%R.
-unfold FtoRradix, FtoR, Zpred; simpl; rewrite powerRZ_add; auto with real zarith.
+assert (x/2=(Float (Fnum x) (Z.pred (Fexp x))))%R.
+unfold FtoRradix, FtoR, Z.pred; simpl; rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 3; simpl; unfold radix; field.
 elim H; intros H2 H3.
 split; [split; simpl; auto with zarith; apply H2|idtac].
@@ -19501,23 +19099,23 @@ fold FtoRradix; rewrite <- H0.
 replace (x/2-r/2)%R with (/2*(x-r))%R;[idtac|unfold Rdiv; ring].
 rewrite Rabs_mult; rewrite Rabs_right; auto with real.
 2: apply Rle_ge; auto with real.
-replace (f-r/2)%R with (/2*((Float (Fnum f) (Zsucc (Fexp f)))-r))%R.
+replace (f-r/2)%R with (/2*((Float (Fnum f) (Z.succ (Fexp f)))-r))%R.
 rewrite Rabs_mult; rewrite Rabs_right with (/2)%R.
 2: apply Rle_ge; auto with real.
 apply Rmult_le_compat_l; auto with real.
 unfold FtoRradix; apply H3.
 destruct H1; split; simpl; auto with zarith.
-unfold FtoRradix, FtoR, Zsucc; simpl; rewrite powerRZ_add; auto with real zarith.
+unfold FtoRradix, FtoR, Z.succ; simpl; rewrite powerRZ_add; auto with real zarith.
 rewrite powerRZ_1; unfold radix; field.
 Qed.
 
 Theorem Twice_EvenClosest_Round: forall (x:float) (r:R),
    (-(dExp bo) <= (Fexp x)-1)%Z -> (Fnormal radix bo x)
   -> (EvenClosest bo radix precision r x)
-  -> (EvenClosest bo radix precision (2*r)%R (Float (Fnum x) (Zsucc (Fexp x)))).
+  -> (EvenClosest bo radix precision (2*r)%R (Float (Fnum x) (Z.succ (Fexp x)))).
 intros x r U Nx H.
-assert (x*2=(Float (Fnum x) (Zsucc (Fexp x))))%R.
-unfold FtoRradix, FtoR, Zsucc; simpl; rewrite powerRZ_add; auto with real zarith.
+assert (x*2=(Float (Fnum x) (Z.succ (Fexp x))))%R.
+unfold FtoRradix, FtoR, Z.succ; simpl; rewrite powerRZ_add; auto with real zarith.
 rewrite powerRZ_1; unfold radix; ring.
 elim H; intros H2 H3; elim H2; intros H'1 H'2; split.
 split; [split; simpl; auto with zarith; apply H'1|idtac].
@@ -19526,13 +19124,13 @@ fold FtoRradix; rewrite <- H0.
 replace (x*2-2*r)%R with (2*(x-r))%R;[idtac|unfold Rdiv; ring].
 rewrite Rabs_mult; rewrite Rabs_right; auto with real.
 case (Zle_lt_or_eq (-(dExp bo))%Z (Fexp f)); try apply H1; intros L.
-replace (f-2*r)%R with (2*((Float (Fnum f) (Zpred (Fexp f)))-r))%R.
+replace (f-2*r)%R with (2*((Float (Fnum f) (Z.pred (Fexp f)))-r))%R.
 rewrite Rabs_mult; rewrite Rabs_right with (2)%R.
 2: apply Rle_ge; auto with real.
 apply Rmult_le_compat_l; auto with real.
 unfold FtoRradix; apply H'2.
 split; simpl; auto with zarith; apply H1.
-unfold FtoRradix, FtoR, Zpred; simpl; rewrite powerRZ_add; auto with real zarith.
+unfold FtoRradix, FtoR, Z.pred; simpl; rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 2; simpl; unfold radix; field.
 replace (f-2*r)%R with (-((2*r)-f))%R;[rewrite Rabs_Ropp|ring].
 apply Rle_trans with (2:=Rabs_triang_inv (2*r)%R f).
@@ -19546,13 +19144,13 @@ apply Rle_trans with (2*(Rabs x)-4*Rabs (x-r))%R;[idtac|right;ring].
 apply Rle_trans with (((powerRZ radix precision)-1)*(powerRZ radix ((Fexp x)-1)))%R.
 unfold FtoRradix; rewrite <- Fabs_correct; auto;unfold Fabs, FtoR; simpl.
 apply Rmult_le_compat; auto with real zarith.
-apply Rle_IZR; auto with zarith.
+apply IZR_le; auto with zarith.
 apply powerRZ_le, IZR_lt; auto with zarith.
-apply Rle_trans with (Zpred (Zpower_nat radix precision));[rewrite <- pGivesBound|idtac].
-apply Rle_IZR;apply Zle_Zpred; auto with zarith; apply H1.
-unfold Zpred; rewrite plus_IZR; rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
+apply Rle_trans with (Z.pred (Zpower_nat radix precision));[rewrite <- pGivesBound|idtac].
+apply IZR_le;apply Zle_Zpred; auto with zarith; apply H1.
+unfold Z.pred; rewrite plus_IZR; rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
 rewrite <- L; apply Rle_powerRZ; auto with real zarith.
-apply Rle_trans with (2*(powerRZ radix (Zpred precision))*(powerRZ radix (Fexp x))-2*(powerRZ radix (Fexp x)))%R.
+apply Rle_trans with (2*(powerRZ radix (Z.pred precision))*(powerRZ radix (Fexp x))-2*(powerRZ radix (Fexp x)))%R.
 apply Rle_trans with (((powerRZ radix (precision+1))-4)*(powerRZ radix (Fexp x-1)))%R;[apply Rmult_le_compat_r; auto with real zarith|idtac].
 apply powerRZ_le, IZR_lt; auto with zarith.
 rewrite powerRZ_add; auto with real zarith; simpl.
@@ -19564,7 +19162,7 @@ apply Rle_powerRZ; auto with real zarith.
 replace (2*powerRZ radix (Fexp x))%R with (4*powerRZ radix (Fexp x -1))%R.
 replace 2%R with (powerRZ radix 1%Z);[idtac|apply powerRZ_1].
 repeat rewrite <- powerRZ_add; auto with real zarith.
-replace (1+Zpred precision+Fexp x)%Z with ((precision+1)+(Fexp x-1))%Z;[idtac|unfold Zpred; ring].
+replace (1+Z.pred precision+Fexp x)%Z with ((precision+1)+(Fexp x-1))%Z;[idtac|unfold Z.pred; ring].
 rewrite powerRZ_add with (n:=(precision+1)%Z);auto with real zarith; right;ring.
 unfold Zminus; rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 2; simpl; unfold radix; field.
@@ -19575,14 +19173,14 @@ apply powerRZ_le, IZR_lt; auto with zarith.
 apply Rmult_le_reg_l with radix; auto with real zarith.
 pattern (IZR radix) at 1 in |-*; replace (IZR radix) with (powerRZ radix 1%Z);[idtac|simpl; ring].
 rewrite <- powerRZ_add; auto with real zarith; elim Nx; intros.
-replace (1+Zpred precision)%Z with (Z_of_nat precision)%Z;[idtac|unfold Zpred; ring].
+replace (1+Z.pred precision)%Z with (Z_of_nat precision)%Z;[idtac|unfold Z.pred; ring].
 apply Rle_trans with (IZR (Zpos (vNum bo)));[rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real zarith|idtac].
-apply Rle_trans with (IZR (Zabs (radix * Fnum x))); auto with real zarith.
-apply Rle_IZR; auto.
-rewrite Zabs_Zmult; rewrite Zabs_eq; auto with real zarith.
+apply Rle_trans with (IZR (Z.abs (radix * Fnum x))); auto with real zarith.
+apply IZR_le; auto.
+rewrite Zabs_Zmult; rewrite Z.abs_eq; auto with real zarith.
 rewrite mult_IZR; auto with real.
 unfold radix; auto with zarith.
-replace 4%R with (2*2%nat)%R; [rewrite Rmult_assoc; apply Rmult_le_compat_l; auto with real|simpl;ring].
+replace 4%R with (2*2)%R; [rewrite Rmult_assoc; apply Rmult_le_compat_l; auto with real|simpl;ring].
 replace (x+-r)%R with (-(r-x))%R;[rewrite Rabs_Ropp|ring].
 apply Rle_trans with (Fulp bo radix precision x).
 unfold FtoRradix; apply ClosestUlp; auto.
@@ -19596,18 +19194,18 @@ elim Nx; intros; left; split; auto with zarith.
 elim H1; intros; split; simpl; auto with zarith.
 left; auto.
 right; intros.
-apply trans_eq with (2*(FtoR radix (Float (Fnum q0) (Zpred (Fexp q0)))))%R.
-unfold FtoR, Zpred; simpl; rewrite powerRZ_add; auto with real zarith.
+apply trans_eq with (2*(FtoR radix (Float (Fnum q0) (Z.pred (Fexp q0)))))%R.
+unfold FtoR, Z.pred; simpl; rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 3; simpl; unfold radix; field.
 apply trans_eq with (2*(FtoR radix x))%R.
-2: unfold FtoR, Zsucc; simpl; rewrite powerRZ_add; auto with real zarith.
+2: unfold FtoR, Z.succ; simpl; rewrite powerRZ_add; auto with real zarith.
 2: rewrite powerRZ_1; unfold radix; ring.
 apply Rmult_eq_compat_l; apply V.
 replace r with ((2*r)/2)%R;[idtac|field; auto with real].
 apply Half_Closest_Round; auto.
-apply Zle_trans with (1:=U).
-fold (Zpred (Fexp x)); cut (Fexp x <= Fexp q0)%Z; auto with zarith.
-apply Zle_trans with (Fexp (Fnormalize radix bo precision q0)).
+apply Z.le_trans with (1:=U).
+fold (Z.pred (Fexp x)); cut (Fexp x <= Fexp q0)%Z; auto with zarith.
+apply Z.le_trans with (Fexp (Fnormalize radix bo precision q0)).
 apply Fcanonic_Rle_Zle with radix bo precision; auto with zarith.
 left; auto.
 apply FnormalizeCanonic; auto with zarith.
@@ -19662,12 +19260,12 @@ Theorem Fulp_le_twice_r_round: forall (x y:float) (r:R), (0 <= x)%R ->
    (EvenClosest bo radix precision r y) ->
    ((Fulp bo radix precision x) <= 2*(Fulp bo radix precision y))%R.
 intros x y r H H0 H1 U H2 H3.
-assert (2*y=(Float (Fnum y) (Zsucc (Fexp y))))%R.
-unfold FtoRradix, FtoR, Zsucc; simpl; rewrite powerRZ_add; auto with real zarith.
+assert (2*y=(Float (Fnum y) (Z.succ (Fexp y))))%R.
+unfold FtoRradix, FtoR, Z.succ; simpl; rewrite powerRZ_add; auto with real zarith.
 rewrite powerRZ_1; unfold radix; ring.
-apply Rle_trans with (Fulp bo radix precision (Float (Fnum y) (Zsucc (Fexp y)))).
+apply Rle_trans with (Fulp bo radix precision (Float (Fnum y) (Z.succ (Fexp y)))).
 2:right; rewrite CanonicFulp; auto; [rewrite CanonicFulp|left]; auto.
-2:unfold FtoR, Zsucc; simpl; rewrite powerRZ_add; auto with real zarith.
+2:unfold FtoR, Z.succ; simpl; rewrite powerRZ_add; auto with real zarith.
 2:rewrite powerRZ_1; unfold radix; ring.
 2:left; auto.
 2:elim H1; intros H6 H5; elim H6; intros.
@@ -19777,8 +19375,8 @@ generalize EvenClosestSymmetric; unfold SymmetricP; intros.
 rewrite Rabs_left1; auto with real.
 replace (Fabs d) with (Fopp d).
 apply H0; auto.
-unfold Fabs, Fopp; replace (Zabs (Fnum d)) with (-(Fnum d))%Z; auto.
-rewrite <- Zabs_Zopp; rewrite Zabs_eq; auto with zarith.
+unfold Fabs, Fopp; replace (Z.abs (Fnum d)) with (-(Fnum d))%Z; auto.
+rewrite <- Zabs_Zopp; rewrite Z.abs_eq; auto with zarith.
 cut (Fnum d <= 0)%Z; auto with zarith.
 apply R0LeFnum with radix; auto.
 apply RleRoundedLessR0 with bo precision (EvenClosest bo radix precision) (p-q)%R; auto with real zarith.
@@ -19805,7 +19403,7 @@ Let radix := 2%Z.
 Let FtoRradix := FtoR radix.
 Local Coercion FtoRradix : float >-> R.
 
-Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ TwoMoreThanOne).
+Let radixMoreThanZERO : (0 < radix)%Z := eq_refl.
 
 Hypothesis precisionGreaterThanOne : 1 < precision.
 Hypothesis pGivesBound : Zpos (vNum bo) = Zpower_nat radix precision.
@@ -19953,14 +19551,14 @@ Theorem EvenClosestFabs :
 intros.
 case (Rle_or_lt 0%R r); intros.
 rewrite Rabs_right; auto with real.
-unfold Fabs; rewrite Zabs_eq; auto with zarith.
+unfold Fabs; rewrite Z.abs_eq; auto with zarith.
 apply LeR0Fnum with (radix := radix); auto with zarith.
 apply RleRoundedR0 with bo precision (EvenClosest bo radix precision) r; auto with zarith.
 apply EvenClosestRoundedModeP; auto with zarith.
 rewrite Rabs_left; auto with real.
 replace (Fabs f) with (Fopp f).
 generalize EvenClosestSymmetric; unfold SymmetricP; auto.
-unfold Fabs, Fopp; rewrite <- Zabs_Zopp; rewrite Zabs_eq; auto.
+unfold Fabs, Fopp; rewrite <- Zabs_Zopp; rewrite Z.abs_eq; auto.
 assert (Fnum f <= 0)%Z; auto with zarith.
 apply R0LeFnum with (radix:=radix); auto with zarith.
 apply RleRoundedLessR0 with  bo precision (EvenClosest bo radix precision) r; auto with zarith real.
@@ -19971,6 +19569,7 @@ Qed.
 
 Theorem discri2: (3*(Rmin (Fulp bo radix precision p) (Fulp bo radix precision q))
   <= (Rabs (p-q)))%R -> (delta <= 2*(Fulp bo radix precision d))%R.
+Proof.
 intros H1; unfold delta.
 apply Rle_trans with (1 * Fulp bo radix precision d)%R;[ring_simplify (1 * Fulp bo radix precision d)%R | unfold Fulp; auto with real zarith].
 replace  (d - (b * b' - a * c))%R with ((d-(t+s))+(t+s-b*b'+a*c))%R;[idtac|ring].
@@ -19980,7 +19579,6 @@ rewrite Rmult_plus_distr_l.
 apply Rle_trans with (Fulp bo radix precision d+Fulp bo radix precision d)%R;[idtac|right;ring].
 apply Rplus_le_compat.
 rewrite <- Rabs_Ropp; replace (- (d - (t + s)))%R with ((t+s)-d)%R;[idtac|ring].
-replace 2%R with (INR 2); auto with real.
 unfold FtoRradix; apply ClosestUlp; auto.
 elim Roundd; auto.
 rewrite t_exact.
@@ -20007,8 +19605,8 @@ unfold Rminus; apply Rplus_le_compat_l; auto with real.
 replace (t+s)%R with (t-(-s))%R; [idtac|ring].
 apply Rle_trans with ((Rabs t)-(Rabs (-s)))%R;[idtac|apply Rabs_triang_inv].
 rewrite Rabs_Ropp; auto with real.
-assert (t/2=(Float (Fnum t) (Zpred (Fexp t))))%R.
-unfold FtoRradix, FtoR, Zpred; simpl; rewrite powerRZ_add; auto with real zarith.
+assert (t/2=(Float (Fnum t) (Z.pred (Fexp t))))%R.
+unfold FtoRradix, FtoR, Z.pred; simpl; rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 3; unfold radix; simpl; field.
 unfold Rdiv; rewrite <- (Rabs_right (/2)%R); auto with real.
 2: apply Rle_ge; apply Rlt_le; auto with real.
@@ -20017,11 +19615,11 @@ rewrite H; unfold FtoRradix; rewrite <- Fabs_correct; auto.
 rewrite <- Fabs_correct; auto.
 apply EvenClosestMonotone2 with bo precision (Rabs (dp-dq))%R (Rabs (p-q)/2)%R; auto.
 apply EvenClosestFabs; auto; left; auto.
-replace (Rabs (p - q) / 2)%R with (FtoRradix (Fabs (Float (Fnum t) (Zpred (Fexp t))))).
+replace (Rabs (p - q) / 2)%R with (FtoRradix (Fabs (Float (Fnum t) (Z.pred (Fexp t))))).
 unfold FtoRradix; apply RoundedModeProjectorIdem with (b:=bo) (P:=(EvenClosest bo radix precision)); auto.
 apply EvenClosestRoundedModeP; auto.
 split; simpl; auto with zarith.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 apply Roundt.
 unfold FtoRradix; rewrite Fabs_correct; auto; fold FtoRradix; rewrite <- H.
 rewrite t_exact; unfold Rdiv; rewrite Rabs_mult; auto with real.
@@ -20034,15 +19632,16 @@ replace (2*(3*/2))%R with 3%R;[idtac|field; auto with real].
 apply Rle_trans with (1:=H1).
 right; field; auto with real.
 apply Rmult_le_compat_r; auto with real.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 Qed.
 
 Theorem discri3: (exists f:float, (Fbounded bo f) /\ (FtoRradix f)=(dp-dq)%R)
     -> (delta <= 2*(Fulp bo radix precision d))%R.
+Proof.
 intros T; elim T; intros f T1; elim T1; intros H1 H2; clear T T1.
 unfold delta.
 replace (d - (b * b' - a * c))%R with (-((t+s)-d))%R.
-apply Rmult_le_reg_l with (INR 2); auto with arith real.
+apply Rmult_le_reg_l with 2%R; auto with arith real.
 apply Rle_trans with (Fulp bo radix precision d).
 rewrite Rabs_Ropp; unfold FtoRradix; apply ClosestUlp; auto.
 elim Roundd; auto.
@@ -20050,9 +19649,9 @@ simpl; apply Rle_trans with (1*(1*(Fulp bo radix precision d)))%R; unfold Fulp; 
 right; ring.
 apply Rmult_le_compat; auto with real zarith.
 ring_simplify   (1 * powerRZ radix (Fexp (Fnormalize radix bo precision d)))%R; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 apply Rmult_le_compat_r; auto with real.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 replace (FtoRradix s) with (dp-dq)%R.
 rewrite dpEq; rewrite dqEq; rewrite t_exact; ring.
 rewrite <- H2.
@@ -20073,7 +19672,8 @@ Theorem errorBoundedMultClosest_Can:
             Fbounded bo s /\
            (FtoRradix s = f1*f2 - g)%R /\
             Fexp s = (Fexp g - precision)%Z /\
-            (Rabs (Fnum s) <= powerRZ radix (Zpred precision))%R).
+            (Rabs (Fnum s) <= powerRZ radix (Z.pred precision))%R).
+Proof.
 intros.
 generalize errorBoundedMultClosest; intros T.
 elim T with (b:=bo) (radix:=radix) (precision:=precision) (p:=f1) (q:=f2) (pq:=g); auto with zarith real; clear T; fold FtoRradix.
@@ -20083,22 +19683,22 @@ rewrite <- H8; auto with real.
 split; [replace g with g'; auto with zarith|idtac].
 apply FcanonicUnique with radix bo precision; auto with zarith.
 apply Rmult_le_reg_l with (powerRZ radix (Fexp dg)); auto with zarith real.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
+apply powerRZ_lt, IZR_lt; auto with zarith.
 apply Rle_trans with (Rabs dg);[right; unfold FtoRradix, FtoR|idtac].
 rewrite Rabs_mult;rewrite (Rabs_right (powerRZ radix (Fexp dg)));auto with real.
 apply Rle_ge; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 rewrite H9; rewrite <- powerRZ_add; auto with real zarith.
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (Fulp bo radix precision g').
 unfold FtoRradix; apply ClosestUlp; auto.
 replace g' with g; auto.
 apply FcanonicUnique with radix bo precision; auto with zarith.
 rewrite CanonicFulp; auto.
 right; apply trans_eq with (powerRZ radix (Fexp g'));[unfold FtoR; simpl; ring|idtac].
-apply trans_eq with ((powerRZ radix 1%Z)*(powerRZ radix (Fexp dg+Zpred precision)))%R;[rewrite <- powerRZ_add; auto with zarith real|idtac].
+apply trans_eq with ((powerRZ radix 1%Z)*(powerRZ radix (Fexp dg+Z.pred precision)))%R;[rewrite <- powerRZ_add; auto with zarith real|idtac].
 2: rewrite powerRZ_1; unfold radix; simpl; ring.
-rewrite H10; unfold Zpred; auto with zarith real.
+rewrite H10; unfold Z.pred; auto with zarith real.
 ring_simplify (1 + (Fexp g' - precision + (precision + -1)))%Z; auto with real.
 assert (- dExp bo + 2 * precision - 1 < 2*precision+Fexp f1+Fexp f2)%Z; auto with zarith.
 apply Zlt_powerRZ with radix; auto with real zarith.
@@ -20108,20 +19708,20 @@ replace (2*precision)%Z with (precision+precision)%Z; auto with zarith.
 unfold FtoR, Fabs; simpl.
 repeat rewrite powerRZ_add; auto with real zarith.
 repeat rewrite <- Rmult_assoc; apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
-apply Rle_lt_trans with  (Zabs (Fnum f1)*Zabs (Fnum f2) * powerRZ 2 (Fexp f1))%R;
+apply powerRZ_lt, IZR_lt; auto with zarith.
+apply Rle_lt_trans with  (Z.abs (Fnum f1)*Z.abs (Fnum f2) * powerRZ 2 (Fexp f1))%R;
   [unfold radix; right; ring| apply Rmult_lt_compat_r; auto with real zarith].
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
-apply Rle_lt_trans with   (Zabs (Fnum f1)* powerRZ 2 precision)%R.
+apply powerRZ_lt, IZR_lt; auto with zarith.
+apply Rle_lt_trans with   (Z.abs (Fnum f1)* powerRZ 2 precision)%R.
 apply Rmult_le_compat_l; auto with real zarith.
-apply Rle_IZR; auto with zarith.
+apply IZR_le; auto with zarith.
 apply Rle_trans with (Zpos (vNum bo)).
-apply Rle_IZR, Zlt_le_weak; apply H0.
+apply IZR_le, Zlt_le_weak; apply H0.
 rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real.
 apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
+apply powerRZ_lt, IZR_lt; auto with zarith.
 apply Rlt_le_trans with (Zpos (vNum bo)).
-apply Rlt_IZR; apply H.
+apply IZR_lt; apply H.
 rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 assert (powerRZ radix (- dExp bo + 2 * precision - 1) <= Rabs g)%R.
@@ -20136,7 +19736,7 @@ fold FtoRradix; rewrite H5; auto.
 exists (Float 1 (-dExp bo+2*precision-1)).
 split;[split|idtac].
 simpl; apply vNumbMoreThanOne with radix precision; auto with zarith.
-apply Zle_trans with (- dExp bo + 2 * precision - 1)%Z; auto with zarith.
+apply Z.le_trans with (- dExp bo + 2 * precision - 1)%Z; auto with zarith.
 unfold FtoRradix, FtoR; simpl; ring.
 assert (- dExp bo + 2 * precision - 1 < precision+Fexp g)%Z; auto with zarith.
 apply Zlt_powerRZ with radix; auto with zarith real.
@@ -20145,9 +19745,9 @@ unfold FtoRradix; rewrite <- Fabs_correct; auto.
 rewrite powerRZ_add; auto with real zarith.
 unfold FtoR, Fabs; simpl.
 apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
+apply powerRZ_lt, IZR_lt; auto with zarith.
 apply Rlt_le_trans with (Zpos (vNum bo)).
-apply Rlt_IZR, H1.
+apply IZR_lt, H1.
 rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
 Qed.
 
@@ -20165,34 +19765,34 @@ intros dq' T2; elim T2; intros H2' T3; elim T3; intros H3' T4; elim T4; intros H
 2: left; auto.
 2: left; auto.
 assert ((Rabs (Fnum dp'-Fnum dq') < (powerRZ radix precision))%R \/
- (((Rabs dp')= (powerRZ radix (Zpred (Fexp p))))%R /\  ((Rabs dq')= (powerRZ radix (Zpred (Fexp p))))%R)).
+ (((Rabs dp')= (powerRZ radix (Z.pred (Fexp p))))%R /\  ((Rabs dq')= (powerRZ radix (Z.pred (Fexp p))))%R)).
 case H5; intros.
 left; unfold Rminus; apply Rle_lt_trans with (1:=Rabs_triang (Fnum dp') (-(Fnum dq'))%R).
 rewrite Rabs_Ropp.
-apply Rlt_le_trans with ((powerRZ radix (Zpred precision)) +(Rabs (Fnum dq')))%R; auto with real zarith.
-apply Rle_trans with ((powerRZ radix (Zpred precision))+ (powerRZ radix (Zpred precision)))%R; auto with real zarith.
-right; unfold Zpred; repeat rewrite powerRZ_add; auto with real zarith.
+apply Rlt_le_trans with ((powerRZ radix (Z.pred precision)) +(Rabs (Fnum dq')))%R; auto with real zarith.
+apply Rle_trans with ((powerRZ radix (Z.pred precision))+ (powerRZ radix (Z.pred precision)))%R; auto with real zarith.
+right; unfold Z.pred; repeat rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 2 4; simpl; unfold radix; field.
 case H5'; intros.
 left; unfold Rminus; apply Rle_lt_trans with (1:=Rabs_triang (Fnum dp') (-(Fnum dq'))%R); rewrite Rabs_Ropp.
-apply Rle_lt_trans with ((powerRZ radix (Zpred precision)) +(Rabs (Fnum dq')))%R; auto with real zarith.
-apply Rlt_le_trans with ((powerRZ radix (Zpred precision))+ (powerRZ radix (Zpred precision)))%R; auto with real zarith.
-right; unfold Zpred; repeat rewrite powerRZ_add; auto with real zarith.
+apply Rle_lt_trans with ((powerRZ radix (Z.pred precision)) +(Rabs (Fnum dq')))%R; auto with real zarith.
+apply Rlt_le_trans with ((powerRZ radix (Z.pred precision))+ (powerRZ radix (Z.pred precision)))%R; auto with real zarith.
+right; unfold Z.pred; repeat rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 2 4; simpl; unfold radix; field.
 right; unfold FtoRradix, FtoR;repeat rewrite Rabs_mult.
 rewrite (Rabs_right (powerRZ radix (Fexp dp'))); try apply Rle_ge; auto with real zarith.
 rewrite (Rabs_right (powerRZ radix (Fexp dq'))); try apply Rle_ge; auto with real zarith.
 rewrite H; rewrite H0.
 repeat rewrite <- powerRZ_add; auto with real zarith.
-rewrite H4'; rewrite H4; unfold Zpred.
+rewrite H4'; rewrite H4; unfold Z.pred.
 ring_simplify (precision + -1 + (Fexp p - precision))%Z; ring_simplify (precision + -1 + (Fexp q - precision))%Z;
   ring_simplify (Fexp p+-1)%Z; rewrite <- H1; auto with zarith real.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 case H; clear H; intros H.
 exists (Float ((Fnum dp')-(Fnum dq'))%Z (Fexp dq')).
 split; [split; auto with zarith|idtac].
-simpl; apply Zlt_Rlt.
+simpl; apply lt_IZR.
 rewrite pGivesBound;rewrite Zpower_nat_Z_powerRZ; auto.
 rewrite <- Rabs_Zabs; unfold Zminus; rewrite plus_IZR; rewrite Ropp_Ropp_IZR; auto with real zarith.
 simpl; auto with zarith.
@@ -20203,21 +19803,19 @@ unfold Zminus; rewrite plus_IZR; rewrite Ropp_Ropp_IZR; replace (Fexp dp') with 
 rewrite H4'; rewrite <- H1; auto with zarith.
 rewrite dpEq; rewrite dqEq; rewrite <- H3; rewrite <- H3'.
 elim H; unfold Rabs; case (Rcase_abs dp'); case (Rcase_abs dq'); intros.
-exists (Float 0%Z 0%Z); split;[split; auto with zarith|idtac].
-simpl; case (dExp bo); auto with zarith.
+exists (Float 0%Z 0%Z); split;[split; unfold Fexp; try lia; auto with zarith|idtac].
 apply trans_eq with (-(-dp')+-dq')%R;[rewrite H0; rewrite H6; unfold FtoRradix, FtoR;simpl|idtac];ring.
-exists (Float (-2)%Z (Zpred (Fexp p))); split;[split; simpl; auto with zarith|idtac].
-rewrite pGivesBound; apply Zle_lt_trans with (Zpower_nat radix 1); auto with zarith.
+exists (Float (-2)%Z (Z.pred (Fexp p))); split;[split; simpl; auto with zarith|idtac].
+rewrite pGivesBound; apply Z.le_lt_trans with (Zpower_nat radix 1); auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
-apply Zle_trans with (Fexp dp'); auto with zarith; apply H2.
+apply Z.le_trans with (Fexp dp'); auto with zarith; apply H2.
 apply trans_eq with (-(-dp')+-dq')%R;[rewrite H0; rewrite H6; unfold FtoRradix, FtoR; simpl|idtac];ring.
-exists (Float 2%Z (Zpred (Fexp p))); split;[split;simpl;auto with zarith|idtac].
-rewrite pGivesBound; apply Zle_lt_trans with (Zpower_nat radix 1); auto with zarith.
+exists (Float 2%Z (Z.pred (Fexp p))); split;[split;simpl;auto with zarith|idtac].
+rewrite pGivesBound; apply Z.le_lt_trans with (Zpower_nat radix 1); auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
-apply Zle_trans with (Fexp dp'); auto with zarith; apply H2.
+apply Z.le_trans with (Fexp dp'); auto with zarith; apply H2.
 unfold Rminus;rewrite H0; rewrite H6; unfold FtoRradix, FtoR;simpl; ring.
-exists (Float 0%Z 0%Z); split;[split; auto with zarith|idtac].
-simpl; case (dExp bo); auto with zarith.
+exists (Float 0%Z 0%Z); split;[split; unfold Fexp; try lia; auto with zarith|idtac].
 rewrite H0; rewrite H6; unfold FtoRradix, FtoR; simpl;ring.
 Qed.
 
@@ -20232,7 +19830,7 @@ Let radix := 2%Z.
 Let FtoRradix := FtoR radix.
 Local Coercion FtoRradix : float >-> R.
 
-Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ TwoMoreThanOne).
+Let radixMoreThanZERO : (0 < radix)%Z := eq_refl.
 
 Hypothesis precisionGreaterThanOne : 1 < precision.
 Hypothesis pGivesBound : Zpos (vNum bo) = Zpower_nat radix precision.
@@ -20286,7 +19884,7 @@ Hypothesis Roundd : (EvenClosest bo radix precision (t+s)%R d).
 Hypothesis p_differ_q:~(p=q)%R.
 
 Variable e:Z.
-Hypothesis p_eqF : p=(Float (Zpower_nat radix (pred precision)) (Zsucc e)).
+Hypothesis p_eqF : p=(Float (Zpower_nat radix (pred precision)) (Z.succ e)).
 Hypothesis p_eqR : (FtoRradix p)=(powerRZ radix (precision+e)%Z).
 Hypothesis q_eqExp : (Fexp q)=e.
 
@@ -20305,7 +19903,7 @@ assert (forall f1 f2 g : float,
         Fbounded bo s /\
         FtoR 2 s = (FtoR 2 f1 * FtoR 2 f2 - FtoR 2 g)%R /\
         Fexp s = (Fexp g - precision)%Z /\
-        (Rabs (Fnum s) <= powerRZ (Zpos 2) (Zpred precision))%R).
+        (Rabs (Fnum s) <= powerRZ (Zpos 2) (Z.pred precision))%R).
 apply errorBoundedMultClosest_Can; auto.
 fold radix in H0; fold FtoRradix in H0.
 elim H0 with (f1:=b) (f2:=b') (g:=p); auto with zarith real.
@@ -20321,15 +19919,15 @@ exists (Fminus radix dp' dq'); split.
 2: unfold FtoRradix; rewrite Fminus_correct; auto with real.
 unfold Fminus, Fopp, Fplus; simpl.
 repeat rewrite H4'; repeat rewrite q_eqExp; repeat rewrite H4.
-replace (Fexp p) with (Zsucc e); [idtac|rewrite p_eqF; auto].
-rewrite Zmin_le2; auto with zarith.
+replace (Fexp p) with (Z.succ e); [idtac|rewrite p_eqF; auto].
+rewrite Z.min_r; auto with zarith.
 split; auto with zarith.
-simpl; unfold Zsucc.
+simpl; unfold Z.succ.
 ring_simplify  (e + 1 - precision - (e - precision))%Z; ring_simplify (e - precision - (e - precision))%Z.
 simpl.
 unfold nat_of_P, Zpower_nat; simpl.
 replace ( - Fnum dq' * 1)%Z with  (- Fnum dq')%Z; [idtac|ring].
-apply Zlt_Rlt.
+apply lt_IZR.
 rewrite pGivesBound;rewrite Zpower_nat_Z_powerRZ; auto.
 rewrite <- Rabs_Zabs; rewrite plus_IZR;rewrite mult_IZR;rewrite Ropp_Ropp_IZR.
 assert (forall (x y z:R), (0 < x*y)%R -> (Rabs x <= z)%R ->
@@ -20369,16 +19967,16 @@ apply Rle_trans with (1*z)%R;[right;ring|apply Rmult_le_compat_r; auto with real
 apply Rle_trans with (2:=H1); auto with real.
 apply Rabs_pos.
 replace (Fnum dp' * Zpos 2+-Fnum dq')%R with (2*(Fnum dp')-Fnum dq')%R; auto with real zarith.
-apply Rlt_le_trans with (2*powerRZ radix (Zpred precision))%R.
+apply Rlt_le_trans with (2*powerRZ radix (Z.pred precision))%R.
 apply H0; auto.
 apply Rmult_lt_reg_l with (powerRZ radix (Fexp dq')); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
+apply powerRZ_lt, IZR_lt; auto with zarith.
 apply Rmult_lt_reg_l with (powerRZ radix (Fexp dp')); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
+apply powerRZ_lt, IZR_lt; auto with zarith.
 apply Rle_lt_trans with 0%R;[right;ring|apply Rlt_le_trans with (1:=H)].
 rewrite dpEq; rewrite dqEq; rewrite <- H3; rewrite <- H3'.
 unfold FtoRradix, FtoR; right; ring.
-right; unfold Zpred, Zminus; rewrite powerRZ_add; auto with real zarith.
+right; unfold Z.pred, Zminus; rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 2; simpl; unfold radix; field.
 simpl; ring.
 simpl;rewrite <-q_eqExp; rewrite <- H4'; auto with zarith.
@@ -20388,11 +19986,12 @@ Qed.
 
 Theorem discri6: (0< dp)%R -> (dq < 0)%R
     -> (delta <= 2*(Fulp bo radix precision d))%R.
+Proof.
 intros;unfold delta.
 replace (d - (b * b' - a * c))%R with (-((t+s)-d)+-((dp-dq)-s))%R.
 2: rewrite dpEq; rewrite dqEq; unfold FtoRradix, radix; rewrite t_exact with bo precision b b' p q t; auto; ring.
 apply Rle_trans with (1:=Rabs_triang (-(t+s-d))%R (-(dp-dq-s))%R).
-apply Rmult_le_reg_l with (INR 2); auto with real zarith;rewrite Rmult_plus_distr_l.
+apply Rmult_le_reg_l with 2%R; auto with real zarith;rewrite Rmult_plus_distr_l.
 apply Rle_trans with ((Fulp bo radix precision d)+(Fulp bo radix precision s))%R;[apply Rplus_le_compat|idtac].
 rewrite Rabs_Ropp; unfold FtoRradix; apply ClosestUlp; auto.
 elim Roundd; auto.
@@ -20401,13 +20000,13 @@ elim Rounds; auto.
 apply Rle_trans with ((Fulp bo radix precision d+ 3* Fulp bo radix precision d))%R;[apply Rplus_le_compat_l|simpl;right;ring].
 apply Rle_trans with (2*Fulp bo radix precision d)%R;[idtac|unfold Fulp; auto with real zarith].
 rewrite FulpFabs; auto; rewrite FulpFabs with bo radix precision d; auto.
-assert (2*(Fabs d)=(Float (Fnum (Fabs d)) (Zsucc (Fexp (Fabs d)))))%R.
-unfold FtoRradix, FtoR, Zsucc; simpl; rewrite powerRZ_add; auto with real zarith.
+assert (2*(Fabs d)=(Float (Fnum (Fabs d)) (Z.succ (Fexp (Fabs d)))))%R.
+unfold FtoRradix, FtoR, Z.succ; simpl; rewrite powerRZ_add; auto with real zarith.
 rewrite powerRZ_1; unfold radix; ring.
-apply Rle_trans with (Fulp bo radix precision (Float (Fnum (Fabs d)) (Zsucc (Fexp (Fabs d))))).
+apply Rle_trans with (Fulp bo radix precision (Float (Fnum (Fabs d)) (Z.succ (Fexp (Fabs d))))).
 2:assert (Fnormal radix bo (Fabs d));[apply FnormalFabs; auto|idtac].
 2:right; rewrite CanonicFulp; auto; [rewrite CanonicFulp|left]; auto.
-2:unfold FtoR, Zsucc; simpl; rewrite powerRZ_add; auto with real zarith.
+2:unfold FtoR, Z.succ; simpl; rewrite powerRZ_add; auto with real zarith.
 2:rewrite powerRZ_1; unfold radix; ring.
 2:left; auto.
 2:elim H2; intros H6 H5; elim H6; intros.
@@ -20419,14 +20018,14 @@ assert (Fnormal radix bo (Fabs d));[apply FnormalFabs; auto|idtac].
 elim H2; intros H6 H5; elim H6; intros;split; simpl; auto with zarith.
 rewrite Fabs_correct; auto with real zarith; apply Rabs_pos.
 2: apply Rmult_le_compat_r; auto with real.
-2: apply powerRZ_le, Rlt_IZR; auto with zarith.
+2: apply powerRZ_le, IZR_lt; auto with zarith.
 apply EvenClosestMonotone2 with bo precision (Rabs (dp-dq))%R (2*Rabs (t+s))%R; auto.
 2: apply EvenClosestFabs; auto; left; auto.
 2: apply Twice_EvenClosest_Round; auto.
 2: apply FnormalFabs; auto.
 2: apply EvenClosestFabs; auto; left; auto.
 unfold Rminus; apply Rle_trans with (1:=Rabs_triang dp (-dq)%R).
-apply Rmult_le_reg_l with (INR 2); auto with real zarith; rewrite Rmult_plus_distr_l.
+apply Rmult_le_reg_l with 2%R; auto with real zarith; rewrite Rmult_plus_distr_l.
 apply Rle_trans with (Fulp bo radix precision p+Fulp bo radix precision q)%R;[apply Rplus_le_compat|idtac].
 rewrite dpEq; unfold FtoRradix; apply ClosestUlp; auto.
 elim Roundp; auto.
@@ -20436,7 +20035,7 @@ rewrite CanonicFulp; auto;[idtac|left; auto].
 rewrite CanonicFulp; auto;[idtac|left; auto].
 apply Rle_trans with (3*(powerRZ radix e))%R;[right|idtac].
 unfold FtoRradix, FtoR; simpl; rewrite q_eqExp; rewrite p_eqF; simpl.
-unfold Zsucc; rewrite powerRZ_add; auto with real zarith.
+unfold Z.succ; rewrite powerRZ_add; auto with real zarith.
 rewrite powerRZ_1; unfold radix ;ring.
 assert ((powerRZ radix e <= t))%R.
 unfold FtoRradix, radix; rewrite t_exact with bo precision b b' p q t; auto.
@@ -20446,13 +20045,13 @@ rewrite powerRZ_add; auto with real zarith; right;ring.
 unfold Rminus; apply Rplus_le_compat_l; auto with real.
 apply Ropp_le_contravar.
 unfold FtoRradix, FtoR; rewrite q_eqExp; apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 apply Rle_trans with (1:=(RRle_abs (Fnum q))).
-assert (Zabs (Fnum q) < Zpower_nat radix precision)%Z; auto with real zarith.
+assert (Z.abs (Fnum q) < Zpower_nat radix precision)%Z; auto with real zarith.
 rewrite <- pGivesBound; auto with zarith; apply Nq.
-rewrite Rabs_Zabs; apply Rle_trans with (Zpred (Zpower_nat radix precision)); auto with real zarith.
-apply Rle_IZR; auto with zarith.
-unfold Zpred; rewrite plus_IZR.
+rewrite Rabs_Zabs; apply Rle_trans with (Z.pred (Zpower_nat radix precision)); auto with real zarith.
+apply IZR_le; auto with zarith.
+unfold Z.pred; rewrite plus_IZR.
 rewrite Zpower_nat_Z_powerRZ; right; simpl; ring.
 assert (0<=s)%R.
 unfold FtoRradix; apply RleRoundedR0 with bo precision (EvenClosest bo radix precision) (dp-dq)%R; auto with real.
@@ -20463,9 +20062,9 @@ rewrite Rabs_right; auto with real.
 2: apply Rle_ge; apply Rle_trans with (0+0)%R; auto with real.
 2: apply Rplus_le_compat; auto with real zarith.
 2: apply Rle_trans with (2:=H2); auto with real zarith.
-2: apply powerRZ_le, Rlt_IZR; auto with zarith.
+2: apply powerRZ_le, IZR_lt; auto with zarith.
 apply Rle_trans with (4*powerRZ radix e)%R;[apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 apply Rle_trans with (4*(t+s))%R;[apply Rmult_le_compat_l; auto with real|simpl; right; ring].
 apply Rle_trans with (powerRZ radix e+0)%R;[idtac|apply Rplus_le_compat];auto with real.
 Qed.
@@ -20474,6 +20073,7 @@ Qed.
 
 Theorem discri7: (dp < 0)%R -> (0 < dq)%R
     -> (delta <= 2*(Fulp bo radix precision d))%R.
+Proof.
 intros L1 L2.
 unfold delta, FtoRradix; apply discri3 with p q t dp dq s; auto.
 assert (H0:forall f1 f2 g : float,
@@ -20487,7 +20087,7 @@ assert (H0:forall f1 f2 g : float,
         Fbounded bo s /\
         FtoR 2 s = (FtoR 2 f1 * FtoR 2 f2 - FtoR 2 g)%R /\
         Fexp s = (Fexp g - precision)%Z /\
-        (Rabs (Fnum s) <= powerRZ (Zpos 2) (Zpred precision))%R).
+        (Rabs (Fnum s) <= powerRZ (Zpos 2) (Z.pred precision))%R).
 apply errorBoundedMultClosest_Can; auto.
 fold radix in H0; fold FtoRradix in H0.
 elim H0 with (f1:=b) (f2:=b') (g:=p); auto with zarith real.
@@ -20500,44 +20100,44 @@ intros dq' T2; elim T2; intros H2' T3; elim T3; intros H3' T4; elim T4; intros H
 2: left; auto.
 2: left; auto.
 cut (exists dp'':float, (Fexp dp''=Fexp dq' /\ (FtoRradix dp''=dp')%R /\
-  (Rabs (Fnum dp'') <= powerRZ radix (Zpred precision))%R)).
+  (Rabs (Fnum dp'') <= powerRZ radix (Z.pred precision))%R)).
 intros T; elim T; intros dp'' T1; elim T1; intros H4'' T2; elim T2;
  intros H5'' H6''; clear T T1 T2.
 assert ((Rabs (Fnum dp''-Fnum dq') < (powerRZ radix precision))%R \/
- (((Rabs dp'')= (powerRZ radix (Zpred (Fexp q))))%R /\  ((Rabs dq')=
-(powerRZ radix (Zpred (Fexp q))))%R)).
+ (((Rabs dp'')= (powerRZ radix (Z.pred (Fexp q))))%R /\  ((Rabs dq')=
+(powerRZ radix (Z.pred (Fexp q))))%R)).
 case H6''; intros.
 left; unfold Rminus; apply Rle_lt_trans with (1:=Rabs_triang (Fnum dp'')
 (-(Fnum dq'))%R).
 rewrite Rabs_Ropp.
-apply Rlt_le_trans with ((powerRZ radix (Zpred precision)) +(Rabs (Fnum
+apply Rlt_le_trans with ((powerRZ radix (Z.pred precision)) +(Rabs (Fnum
 dq')))%R; auto with real zarith.
-apply Rle_trans with ((powerRZ radix (Zpred precision))+ (powerRZ radix
-(Zpred precision)))%R; auto with real zarith.
-right; unfold Zpred; repeat rewrite powerRZ_add; auto with real zarith.
+apply Rle_trans with ((powerRZ radix (Z.pred precision))+ (powerRZ radix
+(Z.pred precision)))%R; auto with real zarith.
+right; unfold Z.pred; repeat rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 2 4; simpl; unfold radix; field.
 case H5'; intros.
 left; unfold Rminus; apply Rle_lt_trans with (1:=Rabs_triang (Fnum dp'') (-(Fnum
 dq'))%R); rewrite Rabs_Ropp.
-apply Rle_lt_trans with ((powerRZ radix (Zpred precision)) +(Rabs (Fnum dq')))%R
+apply Rle_lt_trans with ((powerRZ radix (Z.pred precision)) +(Rabs (Fnum dq')))%R
 ; auto with real zarith.
-apply Rlt_le_trans with ((powerRZ radix (Zpred precision))+ (powerRZ radix (Zpred precision)))%R; auto with real zarith.
-right; unfold Zpred; repeat rewrite powerRZ_add; auto with real zarith.
+apply Rlt_le_trans with ((powerRZ radix (Z.pred precision))+ (powerRZ radix (Z.pred precision)))%R; auto with real zarith.
+right; unfold Z.pred; repeat rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 2 4; simpl; unfold radix; field.
 right; unfold FtoRradix, FtoR;repeat rewrite Rabs_mult.
 rewrite (Rabs_right (powerRZ radix (Fexp dp''))); try apply Rle_ge; auto with real zarith.
-2: apply powerRZ_le, Rlt_IZR; auto with zarith.
+2: apply powerRZ_le, IZR_lt; auto with zarith.
 rewrite (Rabs_right (powerRZ radix (Fexp dq'))); try apply Rle_ge; auto with real zarith.
-2: apply powerRZ_le, Rlt_IZR; auto with zarith.
+2: apply powerRZ_le, IZR_lt; auto with zarith.
 rewrite H; rewrite H0.
 repeat rewrite <- powerRZ_add; auto with real zarith.
-rewrite H4''; rewrite H4'; unfold Zpred.
+rewrite H4''; rewrite H4'; unfold Z.pred.
 ring_simplify (precision + -1 + (Fexp q - precision))%Z; ring_simplify (precision + -1 + (Fexp q -
  precision))%Z; ring_simplify (Fexp q+-1)%Z; auto with zarith real.
 case H; intros V; clear H.
 exists (Float (Fnum dp''-Fnum dq') (Fexp dq')).
 split;[split; auto with zarith|idtac].
-simpl; apply Zlt_Rlt.
+simpl; apply lt_IZR.
 rewrite pGivesBound;rewrite Zpower_nat_Z_powerRZ; auto.
 rewrite <- Rabs_Zabs; unfold Zminus; rewrite plus_IZR; rewrite Ropp_Ropp_IZR; auto with real zarith.
 simpl; auto with zarith; apply H2'.
@@ -20548,7 +20148,7 @@ unfold Zminus; rewrite plus_IZR; rewrite Ropp_Ropp_IZR.
 rewrite H4''; ring.
 exists (Float (-1)%Z (Fexp q)).
 split;[split; simpl; auto with zarith|idtac].
-rewrite pGivesBound; apply Zle_lt_trans with (Zpower_nat radix 0); auto with zarith.
+rewrite pGivesBound; apply Z.le_lt_trans with (Zpower_nat radix 0); auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
 apply Roundq.
 fold radix; fold FtoRradix; elim V; intros.
@@ -20558,69 +20158,69 @@ rewrite <- (Rabs_right dq); auto with real.
 2: apply Rle_ge; auto with real.
 rewrite dpEq; rewrite <- H3; rewrite <- H5''; rewrite H.
 rewrite dqEq; rewrite <- H3'; rewrite H0.
-unfold FtoRradix, FtoR, Zpred; simpl.
+unfold FtoRradix, FtoR, Z.pred; simpl.
 repeat rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 3 5; simpl; unfold radix; field.
-assert (FtoRradix dp'=(Float (2*Fnum dp') (Zpred (Fexp dp'))))%R.
-unfold FtoRradix, FtoR, Zpred.
+assert (FtoRradix dp'=(Float (2*Fnum dp') (Z.pred (Fexp dp'))))%R.
+unfold FtoRradix, FtoR, Z.pred.
 apply trans_eq with ((2 * Fnum dp')%Z*(powerRZ radix (Fexp dp'+-1)))%R;[auto|idtac].
 rewrite mult_IZR;rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 3; simpl; unfold radix; field.
 simpl; auto with real.
-exists (Float (2*Fnum dp') (Zpred (Fexp dp'))); split.
+exists (Float (2*Fnum dp') (Z.pred (Fexp dp'))); split.
 simpl; rewrite H4'; rewrite H4.
-rewrite q_eqExp; rewrite p_eqF; unfold Zpred, Zsucc;simpl; auto with zarith.
+rewrite q_eqExp; rewrite p_eqF; unfold Z.pred, Z.succ;simpl; auto with zarith.
 split; auto with real.
-apply Rmult_le_reg_l with (powerRZ radix (Zpred (Fexp dp'))); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
+apply Rmult_le_reg_l with (powerRZ radix (Z.pred (Fexp dp'))); auto with real zarith.
+apply powerRZ_lt, IZR_lt; auto with zarith.
 rewrite <- powerRZ_add; auto with real zarith.
-rewrite <- (Rabs_right (powerRZ radix (Zpred (Fexp dp'))));auto with real.
+rewrite <- (Rabs_right (powerRZ radix (Z.pred (Fexp dp'))));auto with real.
 2: apply Rle_ge; auto with real zarith.
 rewrite <- Rabs_mult.
-replace (powerRZ radix (Zpred (Fexp dp')) *
-  Fnum (Float (2 * Fnum dp') (Zpred (Fexp dp'))))%R with (FtoRradix dp'); auto with real.
+replace (powerRZ radix (Z.pred (Fexp dp')) *
+  Fnum (Float (2 * Fnum dp') (Z.pred (Fexp dp'))))%R with (FtoRradix dp'); auto with real.
 2: rewrite H; unfold FtoRradix, FtoR; simpl; auto with real.
 rewrite H3; rewrite <- dpEq.
-rewrite H4; unfold Zpred;ring_simplify (Fexp p - precision + -1 + (precision + -1))%Z.
+rewrite H4; unfold Z.pred;ring_simplify (Fexp p - precision + -1 + (precision + -1))%Z.
 rewrite Rabs_left; auto with real.
 apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rplus_le_reg_l with (FtoRradix dp).
 ring_simplify (dp+2*(-dp))%R.
 rewrite <- Rabs_left; auto with real.
-assert (Fbounded bo (Float (Zpred (Zpower_nat radix precision)) e)).
+assert (Fbounded bo (Float (Z.pred (Zpower_nat radix precision)) e)).
 split; auto with zarith.
-simpl; rewrite pGivesBound; auto with zarith.
+simpl; rewrite pGivesBound; lia.
 simpl; rewrite <- q_eqExp; apply Roundq; auto with zarith.
 rewrite <- Rabs_Ropp.
 replace (-dp)%R with (p-b*b')%R; [idtac|rewrite dpEq;ring].
 elim Roundp; intros K1 K2; elim K1; intros K3 K4.
-apply Rle_trans with (Rabs ((Float (Zpred (Zpower_nat radix precision)) e)-b*b')).
+apply Rle_trans with (Rabs ((Float (Z.pred (Zpower_nat radix precision)) e)-b*b')).
 unfold FtoRradix; apply K4; auto.
 clear K1 K2 K3 K4; rewrite Rabs_left1.
 rewrite dpEq; rewrite p_eqR.
 apply Rle_trans with (b*b'-(powerRZ radix precision -1)*(powerRZ radix e))%R.
-unfold FtoRradix, FtoR, Zpred, radix; simpl.
+unfold FtoRradix, FtoR, Z.pred, radix; simpl.
 rewrite plus_IZR; simpl; right; ring_simplify.
 rewrite Zpower_nat_Z_powerRZ; auto with real zarith; simpl; ring.
 unfold Rminus; rewrite Rplus_assoc; apply Rplus_le_compat_l.
-replace (Fexp p) with (Zsucc e);[unfold Zsucc|rewrite p_eqF; simpl; auto with zarith].
+replace (Fexp p) with (Z.succ e);[unfold Z.succ|rewrite p_eqF; simpl; auto with zarith].
 ring_simplify (e+1-2)%Z; unfold Zminus.
 repeat rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 6; simpl; unfold radix; right; field.
-apply Rplus_le_reg_l with (p-(Float (Zpred (Zpower_nat radix precision)) e))%R.
+apply Rplus_le_reg_l with (p-(Float (Z.pred (Zpower_nat radix precision)) e))%R.
 apply Rle_trans with (-(b*b'-p))%R;[right;ring|idtac].
 rewrite <- dpEq; rewrite <- Rabs_left; auto with real.
-rewrite dpEq; apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+rewrite dpEq; apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (Fulp bo radix precision p).
 unfold FtoRradix; apply ClosestUlp; auto.
 elim Roundp; auto.
 rewrite CanonicFulp; auto;[idtac|left; auto].
-replace (Fexp p) with (Zsucc e);[unfold Zsucc|rewrite p_eqF; simpl; auto with zarith].
-rewrite p_eqR; unfold FtoRradix, FtoR, Zpred; simpl.
+replace (Fexp p) with (Z.succ e);[unfold Z.succ|rewrite p_eqF; simpl; auto with zarith].
+rewrite p_eqR; unfold FtoRradix, FtoR, Z.pred; simpl.
 rewrite plus_IZR; rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
 repeat rewrite powerRZ_add; auto with real zarith.
 rewrite powerRZ_1; unfold radix;right; ring.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 Qed.
 
 Theorem discri8: (delta <= 2*(Fulp bo radix precision d))%R.
@@ -20657,7 +20257,7 @@ Let radix := 2%Z.
 Let FtoRradix := FtoR radix.
 Local Coercion FtoRradix : float >-> R.
 
-Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ TwoMoreThanOne).
+Let radixMoreThanZERO : (0 < radix)%Z := eq_refl.
 
 Hypothesis precisionGreaterThanOne : 1 < precision.
 Hypothesis pGivesBound : Zpos (vNum bo) = Zpower_nat radix precision.
@@ -20701,6 +20301,7 @@ Hypothesis SRounds : (3*(Rabs (p-q)) < p+q)%R -> (EvenClosest bo radix precision
 Hypothesis SRoundd : (3*(Rabs (p-q)) < p+q)%R -> (EvenClosest bo radix precision (t+s)%R d).
 
 Theorem discri9: (delta <= 2*(Fulp bo radix precision d))%R.
+Proof.
 assert (Square:(0<=b*b)%R).
 apply Rle_trans with (Rsqr b); auto with real.
 case (Rle_or_lt (p + q)%R (3 * Rabs (p - q))%R); intros.
@@ -20709,43 +20310,43 @@ case (Rle_or_lt (3*(Rmin (Fulp bo radix precision p) (Fulp bo radix precision q)
 unfold delta; apply discri2 with p q t dp dq s; auto.
 case (Zle_or_lt (Fexp q) (Fexp p)); intros.
 case (Zle_lt_or_eq (Fexp q) (Fexp p)); auto;intros.
-assert (Fexp q = Zpred (Fexp p))%Z.
-cut (Zle (Fexp q) (Zpred (Fexp p))); auto with zarith.
-cut (Zle (Zpred (Fexp p)) (Fexp q)); auto with zarith.
+assert (Fexp q = Z.pred (Fexp p))%Z.
+cut (Z.le (Fexp q) (Z.pred (Fexp p))); auto with zarith.
+cut (Z.le (Z.pred (Fexp p)) (Fexp q)); auto with zarith.
 clear H1;apply Zle_powerRZ with radix; auto with real zarith.
-apply Rle_trans with (Fulp bo radix precision (Float (Fnum p) (Zpred (Fexp p)))).
+apply Rle_trans with (Fulp bo radix precision (Float (Fnum p) (Z.pred (Fexp p)))).
 rewrite CanonicFulp; auto.
 unfold FtoR; simpl; right; ring.
 left; split; auto with zarith.
 split; simpl; auto with zarith; try apply Np.
-apply Zle_trans with (Fexp q); auto with zarith; apply Nq.
+apply Z.le_trans with (Fexp q); auto with zarith; apply Nq.
 simpl; elim Np; auto with zarith.
 apply Rle_trans with (Fulp bo radix precision q).
 apply LeFulpPos; auto with real zarith.
 split; simpl; auto with zarith; try apply Np.
-apply Zle_trans with (Fexp q); auto with zarith; apply Nq.
+apply Z.le_trans with (Fexp q); auto with zarith; apply Nq.
 apply LeFnumZERO; simpl; auto with real zarith.
 apply LeR0Fnum with radix; auto with real zarith.
 apply P_positive with bo precision b b; auto.
 apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with (FtoRradix p).
-unfold FtoRradix, FtoR, Zpred; simpl; rewrite powerRZ_add; auto with real zarith.
+unfold FtoRradix, FtoR, Z.pred; simpl; rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 2; simpl; unfold radix; right; field.
 apply P_le_two_Q with bo precision b b; auto.
 rewrite CanonicFulp; auto with zarith.
 unfold FtoR; simpl; right; ring.
 left; auto.
-clear H1 H2; assert (FtoRradix p=powerRZ radix (precision+Zpred (Fexp p)))%R.
+clear H1 H2; assert (FtoRradix p=powerRZ radix (precision+Z.pred (Fexp p)))%R.
 case (Zle_lt_or_eq (Zpower_nat radix (pred precision)) (Fnum p)).
 elim Np; intros.
-apply Zmult_le_reg_r with radix; auto with zarith; try (apply Zlt_gt; auto with zarith).
-apply Zle_trans with (Zpower_nat radix precision).
+apply Zmult_le_reg_r with radix; auto with zarith; try (apply Z.lt_gt; auto with zarith).
+apply Z.le_trans with (Zpower_nat radix precision).
 pattern radix at 2 in |-*; replace radix with (Zpower_nat radix 1).
 rewrite <- Zpower_nat_is_exp; auto with zarith.
 apply Zpower_nat_monotone_le; auto with zarith.
 simpl; auto with zarith.
-rewrite <- pGivesBound; apply Zle_trans with (1:=H2).
-rewrite Zabs_eq; auto with zarith.
+rewrite <- pGivesBound; apply Z.le_trans with (1:=H2).
+rewrite Z.abs_eq; auto with zarith.
 apply Z.mul_nonneg_nonneg; try unfold radix; auto with zarith.
 apply LeR0Fnum with radix; auto.
 apply P_positive with bo precision b b; auto.
@@ -20753,28 +20354,28 @@ intros H1; contradict H0.
 apply Rle_not_lt.
 rewrite CanonicFulp; auto; [idtac|left; auto].
 rewrite CanonicFulp; auto; [idtac|left; auto].
-replace (FtoR radix (Float (S 0) (Fexp p))) with (powerRZ radix (Fexp p));[idtac|unfold FtoR; simpl; ring].
-replace (FtoR radix (Float (S 0) (Fexp q))) with (powerRZ radix (Fexp q));[idtac|unfold FtoR; simpl; ring].
+replace (FtoR radix (Float 1 (Fexp p))) with (powerRZ radix (Fexp p));[idtac|unfold FtoR; simpl; ring].
+replace (FtoR radix (Float 1 (Fexp q))) with (powerRZ radix (Fexp q));[idtac|unfold FtoR; simpl; ring].
 rewrite H3; unfold Rmin.
-case (Rle_dec (powerRZ radix (Fexp p)) (powerRZ radix (Zpred (Fexp p)))); auto with real zarith; intros J.
+case (Rle_dec (powerRZ radix (Fexp p)) (powerRZ radix (Z.pred (Fexp p)))); auto with real zarith; intros J.
 contradict J; apply Rlt_not_le; auto with real zarith.
-apply Rlt_powerRZ; try apply Rlt_IZR; auto with zarith.
+apply Rlt_powerRZ; try apply IZR_lt; auto with zarith.
 clear J; rewrite Rabs_right.
 unfold FtoRradix, FtoR, Rminus.
-apply Rle_trans with ((Zsucc (Zpower_nat radix (pred precision))*(powerRZ radix (Fexp p))+-((Zpred (Zpower_nat radix precision))*(powerRZ radix (Fexp q)))))%R.
-unfold Zpred, Zsucc; rewrite plus_IZR; rewrite plus_IZR; repeat rewrite Zpower_nat_Z_powerRZ.
+apply Rle_trans with ((Z.succ (Zpower_nat radix (pred precision))*(powerRZ radix (Fexp p))+-((Z.pred (Zpower_nat radix precision))*(powerRZ radix (Fexp q)))))%R.
+unfold Z.pred, Z.succ; rewrite plus_IZR; rewrite plus_IZR; repeat rewrite Zpower_nat_Z_powerRZ.
 rewrite inj_pred; auto with zarith.
-rewrite H3; unfold Zpred; simpl; right;ring_simplify.
+rewrite H3; unfold Z.pred; simpl; right;ring_simplify.
 repeat rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 2 4 7 9; simpl; unfold radix; field.
 apply Rplus_le_compat;[apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le, Rlt_IZR; auto with zarith.
-apply Rle_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
+apply IZR_le; auto with zarith.
 apply Ropp_le_contravar; apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 apply Rle_trans with (1:=RRle_abs (Fnum q)).
 rewrite Rabs_Zabs; rewrite <- pGivesBound;auto with zarith.
-destruct Nq as ((T1,T2),T3); apply Rle_IZR; auto with zarith.
+destruct Nq as ((T1,T2),T3); apply IZR_le; auto with zarith.
 apply Rle_ge; apply Rlt_le; apply Rplus_lt_reg_r with q.
 ring_simplify.
 unfold FtoRradix; apply FcanonicPosFexpRlt with bo precision; auto with zarith.
@@ -20785,32 +20386,32 @@ left; auto.
 intros H1; unfold FtoRradix, FtoR; rewrite <- H1.
 rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add; auto with real zarith.
 rewrite inj_pred; auto with zarith.
-replace (Zpred precision+Fexp p)%Z with (precision + Zpred (Fexp p))%Z;[auto with real|unfold Zpred; ring].
-unfold delta; apply discri8 with p q t dp dq s (Zpred (Fexp p)); auto.
+replace (Z.pred precision+Fexp p)%Z with (precision + Z.pred (Fexp p))%Z;[auto with real|unfold Z.pred; ring].
+unfold delta; apply discri8 with p q t dp dq s (Z.pred (Fexp p)); auto.
 apply FcanonicUnique with radix bo precision; auto with zarith real.
 left; auto.
 left; split; [split;simpl|idtac]; auto with zarith.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 rewrite pGivesBound; auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
 apply Zpower_NR0; auto with zarith.
-apply Zle_trans with (Fexp p); auto with zarith; apply Np.
-simpl (Fnum (Float (Zpower_nat 2 (pred precision)) (Zsucc (Zpred (Fexp p))))).
+apply Z.le_trans with (Fexp p); auto with zarith; apply Np.
+simpl (Fnum (Float (Zpower_nat 2 (pred precision)) (Z.succ (Z.pred (Fexp p))))).
 replace radix with (Zpower_nat radix 1);[idtac|simpl; auto with zarith].
 rewrite <-Zpower_nat_is_exp; rewrite pGivesBound; auto with zarith.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 apply Zpower_nat_monotone_le; auto with zarith.
 apply Zpower_NR0; auto with zarith.
-fold FtoRradix; rewrite H1; unfold FtoRradix, FtoR, Zpred, Zsucc; simpl.
+fold FtoRradix; rewrite H1; unfold FtoRradix, FtoR, Z.pred, Z.succ; simpl.
 rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add; auto with real zarith.
-rewrite inj_pred; auto with zarith; unfold Zpred.
+rewrite inj_pred; auto with zarith; unfold Z.pred.
 replace (precision + -1 + (Fexp p + -1 + 1))%Z with (precision+(Fexp p+-1))%Z; auto with real; ring.
 unfold delta;apply discri4 with p q t dp dq s; auto.
-assert (Fexp p = Zpred (Fexp q))%Z.
-cut (Zle (Fexp p) (Zpred (Fexp q))); auto with zarith.
-cut (Zle (Zpred (Fexp q)) (Fexp p)); auto with zarith.
+assert (Fexp p = Z.pred (Fexp q))%Z.
+cut (Z.le (Fexp p) (Z.pred (Fexp q))); auto with zarith.
+cut (Z.le (Z.pred (Fexp q)) (Fexp p)); auto with zarith.
 clear H1;apply Zle_powerRZ with radix; auto with real zarith.
-apply Rle_trans with (Fulp bo radix precision (Float (Fnum q) (Zpred (Fexp q)))).
+apply Rle_trans with (Fulp bo radix precision (Float (Fnum q) (Z.pred (Fexp q)))).
 rewrite CanonicFulp; auto.
 unfold FtoR; simpl; right; ring.
 left; split; auto with zarith.
@@ -20820,12 +20421,12 @@ assert (exists s : float,
          Fbounded bo s /\
          FtoR 2 s = (FtoR 2 a * FtoR 2 c - FtoR 2 q)%R /\
          Fexp s = (Fexp q - precision)%Z /\
-         (Rabs (Fnum s) <= powerRZ (Zpos 2) (Zpred precision))%R).
+         (Rabs (Fnum s) <= powerRZ (Zpos 2) (Z.pred precision))%R).
 apply errorBoundedMultClosest_Can; auto.
 elim Roundq; auto.
 left; auto.
 elim H1; intros s' T; elim T; intros T1 T2; elim T2; intros T3 T4; elim T4; intros.
-apply Zle_trans with (Fexp q - precision)%Z; auto with zarith.
+apply Z.le_trans with (Fexp q - precision)%Z; auto with zarith.
 rewrite <- H2; auto with zarith.
 apply T.
 simpl; elim Nq; auto with zarith.
@@ -20836,35 +20437,35 @@ assert (exists s : float,
          Fbounded bo s /\
          FtoR 2 s = (FtoR 2 a * FtoR 2 c - FtoR 2 q)%R /\
          Fexp s = (Fexp q - precision)%Z /\
-         (Rabs (Fnum s) <= powerRZ (Zpos 2) (Zpred precision))%R).
+         (Rabs (Fnum s) <= powerRZ (Zpos 2) (Z.pred precision))%R).
 apply errorBoundedMultClosest_Can; auto.
 elim Roundq; auto.
 left; auto.
 elim H1; intros s' T; elim T; intros T1 T2; elim T2; intros T3 T4; elim T4; intros.
-apply Zle_trans with (Fexp q - precision)%Z; auto with zarith.
+apply Z.le_trans with (Fexp q - precision)%Z; auto with zarith.
 rewrite <- H2; auto with zarith; apply T.
 apply LeFnumZERO; simpl; auto with real zarith.
 apply LeR0Fnum with radix; auto with real zarith.
 apply Rlt_le; apply Q_positive with bo precision b b p; auto.
 apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with (FtoRradix q).
-unfold FtoRradix, FtoR, Zpred; simpl; rewrite powerRZ_add; auto with real zarith.
+unfold FtoRradix, FtoR, Z.pred; simpl; rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 2; simpl; unfold radix; right; field.
 apply Q_le_two_P with bo precision b b; auto.
 rewrite CanonicFulp; auto with zarith.
 unfold FtoR; simpl; right; ring.
 left; auto.
-clear H1; assert (FtoRradix q=powerRZ radix (precision+Zpred (Fexp q)))%R.
+clear H1; assert (FtoRradix q=powerRZ radix (precision+Z.pred (Fexp q)))%R.
 case (Zle_lt_or_eq (Zpower_nat radix (pred precision)) (Fnum q)).
 elim Nq; intros.
-apply Zmult_le_reg_r with radix; auto with zarith; try (apply Zlt_gt; auto with zarith).
-apply Zle_trans with (Zpower_nat radix precision).
+apply Zmult_le_reg_r with radix; auto with zarith; try (apply Z.lt_gt; auto with zarith).
+apply Z.le_trans with (Zpower_nat radix precision).
 pattern radix at 2 in |-*; replace radix with (Zpower_nat radix 1).
 rewrite <- Zpower_nat_is_exp; auto with zarith.
 apply Zpower_nat_monotone_le; auto with zarith.
 simpl; auto with zarith.
-rewrite <- pGivesBound; apply Zle_trans with (1:=H3).
-rewrite Zabs_eq; auto with zarith.
+rewrite <- pGivesBound; apply Z.le_trans with (1:=H3).
+rewrite Z.abs_eq; auto with zarith.
 apply Z.mul_nonneg_nonneg; try unfold radix; auto with zarith.
 apply LeR0Fnum with radix; auto.
 apply Rlt_le; apply Q_positive with bo precision b b p; auto.
@@ -20872,27 +20473,27 @@ intros H1; contradict H0.
 apply Rle_not_lt.
 rewrite CanonicFulp; auto; [idtac|left; auto].
 rewrite CanonicFulp; auto; [idtac|left; auto].
-replace (FtoR radix (Float (S 0) (Fexp p))) with (powerRZ radix (Fexp p));[idtac|unfold FtoR; simpl; ring].
-replace (FtoR radix (Float (S 0) (Fexp q))) with (powerRZ radix (Fexp q));[idtac|unfold FtoR; simpl; ring].
+replace (FtoR radix (Float 1 (Fexp p))) with (powerRZ radix (Fexp p));[idtac|unfold FtoR; simpl; ring].
+replace (FtoR radix (Float 1 (Fexp q))) with (powerRZ radix (Fexp q));[idtac|unfold FtoR; simpl; ring].
 rewrite H2; unfold Rmin.
-case (Rle_dec (powerRZ radix (Zpred (Fexp q))) (powerRZ radix (Fexp q))); auto with real zarith; intros J.
+case (Rle_dec (powerRZ radix (Z.pred (Fexp q))) (powerRZ radix (Fexp q))); auto with real zarith; intros J.
 clear J; rewrite Rabs_left1.
 unfold FtoRradix, FtoR, Rminus.
-apply Rle_trans with  (- ((Zpred (Zpower_nat radix precision)) * powerRZ radix (Fexp p) + - ((Zsucc (Zpower_nat radix (pred precision))) * powerRZ radix (Fexp q))))%R.
-unfold Zpred, Zsucc; rewrite plus_IZR; rewrite plus_IZR; repeat rewrite Zpower_nat_Z_powerRZ.
+apply Rle_trans with  (- ((Z.pred (Zpower_nat radix precision)) * powerRZ radix (Fexp p) + - ((Z.succ (Zpower_nat radix (pred precision))) * powerRZ radix (Fexp q))))%R.
+unfold Z.pred, Z.succ; rewrite plus_IZR; rewrite plus_IZR; repeat rewrite Zpower_nat_Z_powerRZ.
 rewrite inj_pred; auto with zarith.
-rewrite H2; unfold Zpred; simpl; right.
+rewrite H2; unfold Z.pred; simpl; right.
 repeat rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 2 5 7; simpl; unfold radix; field.
 apply Ropp_le_contravar.
 apply Rplus_le_compat;[apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 2:apply Ropp_le_contravar; apply Rmult_le_compat_r; auto with real zarith.
-2: apply powerRZ_le, Rlt_IZR; auto with zarith.
+2: apply powerRZ_le, IZR_lt; auto with zarith.
 apply Rle_trans with (1:=RRle_abs (Fnum p)).
 rewrite Rabs_Zabs; rewrite <- pGivesBound;auto with zarith.
-apply Rle_IZR, Zle_Zpred, Np.
-apply Rle_IZR; auto with zarith.
+apply IZR_le, Zle_Zpred, Np.
+apply IZR_le; auto with zarith.
 apply Rlt_le; apply Rplus_lt_reg_r with q.
 ring_simplify.
 unfold FtoRradix; apply FcanonicPosFexpRlt with bo precision; auto with zarith.
@@ -20901,16 +20502,16 @@ apply P_positive with bo precision b b; auto.
 left; auto.
 left; auto.
 contradict J; auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; try unfold radix; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; try unfold radix; auto with zarith.
 intros H1; unfold FtoRradix, FtoR; rewrite <- H1.
 rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add; auto with real zarith.
 rewrite inj_pred; auto with zarith.
-replace (Zpred precision+Fexp q)%Z with (precision + Zpred (Fexp q))%Z;[auto with real|unfold Zpred; ring].
+replace (Z.pred precision+Fexp q)%Z with (precision + Z.pred (Fexp q))%Z;[auto with real|unfold Z.pred; ring].
 unfold delta; rewrite <-Rabs_Ropp.
 replace (- (d - (b * b - a * c)))%R with (Fopp d-(a*c-b*b))%R;[idtac|unfold FtoRradix; rewrite Fopp_correct; ring].
 replace (Fulp bo radix precision d) with (Fulp bo radix precision (Fopp d)); auto with zarith.
 2: unfold Fulp; rewrite Fnormalize_Fopp; unfold Fopp; simpl; auto with real zarith.
-apply discri8 with q p (Fopp t) dq dp (Fopp s) (Zpred (Fexp q)); auto with zarith.
+apply discri8 with q p (Fopp t) dq dp (Fopp s) (Z.pred (Fexp q)); auto with zarith.
 apply oppBounded; auto.
 apply FcanonicFopp; auto.
 apply FnormalFop; auto.
@@ -20930,20 +20531,20 @@ generalize EvenClosestSymmetric; unfold SymmetricP;intros T; apply T; auto.
 apply FcanonicUnique with radix bo precision; auto with zarith real.
 left; auto.
 left; split; [split;simpl|idtac]; auto with zarith.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 rewrite pGivesBound; auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
 apply Zpower_NR0; auto with zarith.
-apply Zle_trans with (Fexp q); auto with zarith; apply Fq.
-simpl (Fnum (Float (Zpower_nat 2 (pred precision)) (Zsucc (Zpred (Fexp q))))).
+apply Z.le_trans with (Fexp q); auto with zarith; apply Fq.
+simpl (Fnum (Float (Zpower_nat 2 (pred precision)) (Z.succ (Z.pred (Fexp q))))).
 replace radix with (Zpower_nat radix 1);[idtac|simpl; auto with zarith].
 rewrite <-Zpower_nat_is_exp; rewrite pGivesBound; auto with zarith.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 apply Zpower_nat_monotone_le; auto with zarith.
 apply Zpower_NR0; auto with zarith.
-fold FtoRradix; rewrite H1; unfold FtoRradix, FtoR, Zpred, Zsucc; simpl.
+fold FtoRradix; rewrite H1; unfold FtoRradix, FtoR, Z.pred, Z.succ; simpl.
 rewrite Zpower_nat_Z_powerRZ; rewrite <- powerRZ_add; auto with real zarith.
-rewrite inj_pred; auto with zarith; unfold Zpred.
+rewrite inj_pred; auto with zarith; unfold Z.pred.
 replace (precision + -1 + (Fexp q + -1 + 1))%Z with (precision+(Fexp q+-1))%Z; auto with real; ring.
 Qed.
 
@@ -20960,8 +20561,7 @@ Let radix := 2%Z.
 Let FtoRradix := FtoR radix.
 Local Coercion FtoRradix : float >-> R.
 
-
-Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ TwoMoreThanOne).
+Let radixMoreThanZERO : (0 < radix)%Z := eq_refl.
 
 Hypothesis precisionGreaterThanOne : 1 < precision.
 Hypothesis pGivesBound : Zpos (vNum bo) = Zpower_nat radix precision.
@@ -20971,13 +20571,14 @@ Hypothesis precisionGreaterThanThree : 3 <= precision.
 Theorem RoundLeNormal: forall f:float, forall r:R,
   Closest bo radix r f -> (Fnormal radix bo f) ->
   (Rabs f <= Rabs r / (1 - powerRZ radix (- precision)))%R.
+Proof.
 intros.
 assert (0 < (1 - powerRZ radix (- precision)))%R.
 apply Rplus_lt_reg_r with (powerRZ radix (- precision)).
 ring_simplify.
 replace 1%R with (powerRZ radix 0);
     [ auto with real zarith | simpl in |- *; auto ].
-apply Rlt_powerRZ; try apply Rlt_IZR; auto with zarith.
+apply Rlt_powerRZ; try apply IZR_lt; auto with zarith.
 apply Rmult_le_reg_l with ((1 - powerRZ radix (- precision)))%R; auto with real.
 apply Rle_trans with (Rabs r);[idtac|right; field; auto with real].
 apply Rplus_le_reg_l with (-Rabs r+Rabs f*powerRZ radix (-precision))%R.
@@ -20985,15 +20586,15 @@ apply Rle_trans with (Rabs f-Rabs r)%R;[right; ring|idtac].
 apply Rle_trans with (Rabs f * powerRZ radix (- precision) )%R;[idtac|right; ring].
 apply Rle_trans with (Rabs (f-r));[apply Rabs_triang_inv|idtac].
 replace (f-r)%R with (-(r-f))%R;[rewrite Rabs_Ropp|ring].
-apply Rmult_le_reg_l with (INR 2); auto with real.
+apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with (Fulp bo radix precision f).
 unfold FtoRradix; apply ClosestUlp; auto.
-apply Rle_trans with (Rabs f*powerRZ radix (Zsucc (-precision)))%R.
+apply Rle_trans with (Rabs f*powerRZ radix (Z.succ (-precision)))%R.
 unfold FtoRradix; apply FulpLe2; auto.
 elim H0; auto.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 left; auto.
-right; unfold Zsucc; rewrite powerRZ_add; auto with real zarith.
+right; unfold Z.succ; rewrite powerRZ_add; auto with real zarith.
 rewrite powerRZ_1; unfold radix; simpl; ring.
 Qed.
 
@@ -21054,6 +20655,7 @@ Qed.
 
 
 Theorem discri10: (q <= p)%R -> (delta <= 2*(Fulp bo radix precision d))%R.
+Proof.
 intros G.
 case (Zle_lt_or_eq (Fexp d) (Fexp q)).
 apply Fcanonic_Rle_Zle with radix bo precision; auto with real zarith.
@@ -21068,7 +20670,7 @@ ring_simplify; auto with real.
 assert ( 0 < 2+(powerRZ radix (-precision)))%R.
 apply Rle_lt_trans with (0+0)%R; auto with real.
 apply Rplus_lt_compat; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
+apply powerRZ_lt, IZR_lt; auto with zarith.
 assert ((q <= p * (1 + powerRZ radix (1 - precision)) /
     (2 + powerRZ radix (- precision)))%R).
 apply Rmult_le_reg_l with (2 + powerRZ radix (- precision))%R; auto with real.
@@ -21084,7 +20686,7 @@ apply Rplus_lt_reg_r with (powerRZ radix (- precision)).
 ring_simplify.
 replace 1%R with (powerRZ radix 0);
     [ auto with real zarith | simpl in |- *; auto ].
-apply Rlt_powerRZ; try apply Rlt_IZR; auto with zarith.
+apply Rlt_powerRZ; try apply IZR_lt; auto with zarith.
 apply Rmult_le_reg_l with (/ (1 - powerRZ radix (- precision)))%R; auto with real.
 apply Rle_trans with (4 * q - 2 * p)%R;[right; field; auto with real|idtac].
 apply Rle_trans with (Fulp bo radix precision v).
@@ -21094,7 +20696,7 @@ apply Rle_trans with (Rabs (((p+q)-v)) +Rabs (- (3*(p-q)-v)))%R;[apply Rabs_tria
 apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with  (2*(Rabs (((p+q)-v))) +2*Rabs (- (3*(p-q)-v)))%R;[right;ring|idtac].
 apply Rle_trans with (Fulp bo radix precision v+Fulp bo radix precision v)%R;[idtac|right;ring].
-rewrite Rabs_Ropp; replace 2%R with (INR 2); auto with real zarith.
+rewrite Rabs_Ropp; auto with real zarith.
 apply Rplus_le_compat; unfold FtoRradix; apply ClosestUlp; auto with zarith.
 elim Roundv; auto.
 elim Roundu; intros Y1 Y2.
@@ -21104,15 +20706,15 @@ rewrite Rabs_right; auto with real.
 apply Rle_ge; apply Rplus_le_reg_l with q; auto with real.
 ring_simplify (q+0)%R; apply Rle_trans with (1:=G); right; ring.
 apply sym_eq; apply IneqEq.
-apply Rle_trans with (Rabs v * powerRZ radix (Zsucc (- precision)))%R.
+apply Rle_trans with (Rabs v * powerRZ radix (Z.succ (- precision)))%R.
 unfold FtoRradix; apply FulpLe2; auto.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 left; auto.
-unfold Zsucc; replace (-precision+1)%Z with (1-precision)%Z; auto with zarith.
+unfold Z.succ; replace (-precision+1)%Z with (1-precision)%Z; auto with zarith.
 apply Rle_trans with  (((3 * (p - q))*/(1 - powerRZ radix (- precision)))* powerRZ radix (1 - precision))%R;
    [idtac|right; ring].
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 assert (0 <= p-q)%R.
 apply Rplus_le_reg_l with q; auto with real.
 ring_simplify (q+0)%R; apply Rle_trans with (1:=G); right; ring.
@@ -21174,7 +20776,7 @@ rewrite J1; apply Rmult_le_compat_l; auto with real.
 assert (0 < (powerRZ radix precision) - 1)%R.
 apply Rplus_lt_reg_r with 1%R; ring_simplify.
 replace 1%R with (powerRZ radix 0); auto with real zarith.
-apply Rlt_powerRZ; try apply Rlt_IZR; auto with zarith.
+apply Rlt_powerRZ; try apply IZR_lt; auto with zarith.
 apply Rlt_le_trans with (p*(((powerRZ radix precision)+1)/((powerRZ radix precision) -1)))%R.
 apply Rle_lt_trans with (p*((2 + 2*powerRZ radix (1 - precision)) / (2 + powerRZ radix (- precision))))%R;
   [right; unfold Rdiv; ring|idtac].
@@ -21199,9 +20801,9 @@ apply Ropp_le_cancel; ring_simplify ( - (-2 * powerRZ radix (1 - precision)))%R.
 apply Rle_trans with (2*0)%R; auto with real zarith.
 right; ring.
 apply Rmult_le_compat_l; auto with real.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 apply Rplus_lt_compat_l.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
+apply powerRZ_lt, IZR_lt; auto with zarith.
 right; ring_simplify.
 rewrite <- powerRZ_add; auto with real zarith.
 ring_simplify (precision+-precision)%Z; simpl; ring.
@@ -21243,8 +20845,8 @@ apply P_positive with bo precision b b'; auto.
 left; apply FSuccLt; auto with zarith.
 assert (Fexp d = Fexp q-1)%Z.
 assert (Fexp q -1 <= Fexp d)%Z; auto with zarith.
-apply Zle_trans with (Fexp p-2)%Z; auto with zarith.
-apply Zle_trans with (Fexp (Float (Fnum p) (Fexp p-2))); auto with zarith.
+apply Z.le_trans with (Fexp p-2)%Z; auto with zarith.
+apply Z.le_trans with (Fexp (Float (Fnum p) (Fexp p-2))); auto with zarith.
 apply Fcanonic_Rle_Zle with radix bo precision; auto with real zarith.
 elim Np; intros Y1 Y2; elim Y1; intros; left; split;try split; simpl; auto with zarith.
 apply Rle_trans with (p/4)%R.
@@ -21253,11 +20855,11 @@ rewrite Rabs_mult; repeat rewrite Rabs_right.
 unfold Zminus; rewrite powerRZ_add; auto with real zarith.
 unfold powerRZ at 2; simpl; unfold radix; right; field.
 apply Rle_ge; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 apply Rle_ge; assert (0 <= Fnum p)%Z; auto with real zarith.
 apply LeR0Fnum with radix; auto with real zarith.
 fold FtoRradix; apply P_positive with bo precision b b'; auto.
-apply Rle_IZR; auto.
+apply IZR_le; auto.
 fold FtoRradix; rewrite dexact.
 rewrite Rabs_right.
 2: apply Rle_ge; apply Rplus_le_reg_l with q.
@@ -21284,7 +20886,7 @@ apply Rle_trans with (powerRZ radix 0); auto with real zarith.
 apply Rle_trans with (powerRZ radix (3-precision)); auto with real zarith.
 unfold Zminus; rewrite powerRZ_add; auto with real zarith.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 unfold powerRZ; simpl; unfold radix; repeat rewrite <- mult_IZR; auto with real zarith.
 apply Rle_powerRZ; auto with real zarith.
 simpl; auto with real.
@@ -21293,9 +20895,9 @@ elim Nq; intros.
 apply Zmult_le_reg_r with radix.
 unfold radix; auto with zarith.
 rewrite Zmult_comm; rewrite <- PosNormMin with radix bo precision; auto with zarith.
-apply Zle_trans with (1:=H4); rewrite Zabs_eq; auto with zarith.
+apply Z.le_trans with (1:=H4); rewrite Z.abs_eq; auto with zarith.
 apply Z.mul_nonneg_nonneg.
-unfold radix; omega.
+unfold radix; lia.
 assert (0 < Fnum q)%Z; auto with zarith.
 apply LtR0Fnum with radix; auto with real zarith.
 apply Q_positive with bo precision b b' p; auto.
@@ -21303,7 +20905,7 @@ intros P.
 assert (Fnum q < nNormMin radix precision+2)%Z.
 apply lt_IZR; rewrite plus_IZR; simpl.
 apply Rmult_lt_reg_l with (powerRZ radix (Fexp q)); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
+apply powerRZ_lt, IZR_lt; auto with zarith.
 apply Rle_lt_trans with q;[unfold FtoRradix, FtoR; auto with real|idtac].
 apply Rplus_lt_reg_r with (-2*powerRZ radix (Fexp q))%R.
 apply Rlt_le_trans with (powerRZ radix (Fexp q) * (nNormMin radix precision))%R;
@@ -21315,14 +20917,14 @@ rewrite <- FPredSuc with bo radix precision p; auto with zarith.
 2: left; auto.
 replace (FSucc bo radix precision p) with qq.
 rewrite FPredSimpl4; auto with zarith.
-unfold FtoRradix, FtoR, Zpred; simpl; rewrite J4; rewrite J5; ring_simplify.
+unfold FtoRradix, FtoR, Z.pred; simpl; rewrite J4; rewrite J5; ring_simplify.
 rewrite plus_IZR; rewrite powerRZ_add; auto with real zarith.
 rewrite powerRZ_1; unfold radix; ring.
 assert (- pPred (vNum bo) < Fnum qq)%Z; auto with zarith.
-apply Zlt_trans with (nNormMin radix precision); auto with zarith.
+apply Z.lt_trans with (nNormMin radix precision); auto with zarith.
 assert (0 < pPred (vNum bo))%Z.
 apply pPredMoreThanOne with radix precision; auto with zarith.
-apply Zlt_trans with 0%Z; auto with zarith.
+apply Z.lt_trans with 0%Z; auto with zarith.
 apply nNormPos; auto with zarith.
 apply FcanonicUnique with radix bo precision; auto with zarith real.
 left; auto.
@@ -21334,14 +20936,15 @@ unfold FtoRradix; rewrite <- Fabs_correct; auto.
 unfold Fabs, FtoR; simpl.
 apply Rlt_le_trans with  (powerRZ 2 precision*  powerRZ 2 (Fexp d))%R.
 apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
+apply powerRZ_lt, IZR_lt; auto with zarith.
 assert (Fbounded bo d);[rewrite dDef; elim Roundt; intros I1 I2; elim I1; auto|idtac].
 elim H3; intros.
-apply Rlt_le_trans with (Zpos (vNum bo)); try apply Rlt_IZR; auto with real zarith.
+apply Rlt_le_trans with (Zpos (vNum bo)); try apply IZR_lt; auto with real zarith.
 right; rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real.
 unfold nNormMin; repeat rewrite <- powerRZ_add; auto with real zarith.
 rewrite Zpower_nat_Z_powerRZ; repeat rewrite <- powerRZ_add; auto with real zarith.
-replace (Fexp q+pred precision)%Z with (precision+Fexp d)%Z; auto with real zarith.
+replace (Fexp q+pred precision)%Z with (precision+Fexp d)%Z by lia.
+apply Rle_refl.
 assert (Fnum q= nNormMin radix precision + 1)%Z; auto with zarith.
 clear P H3.
 assert (p=Float (nNormMin radix precision) (Fexp q+1)).
@@ -21349,14 +20952,14 @@ rewrite <- FPredSuc with bo radix precision p; auto with zarith.
 2: left; auto.
 replace (FSucc bo radix precision p) with qq.
 rewrite FPredSimpl4; auto with zarith.
-rewrite J4; rewrite J5; rewrite H4; unfold Zpred; auto with zarith.
+rewrite J4; rewrite J5; rewrite H4; unfold Z.pred; auto with zarith.
 ring_simplify  (nNormMin radix precision + 1 + -1)%Z; auto.
 assert (- pPred (vNum bo) < Fnum qq)%Z; auto with zarith.
 rewrite J4; rewrite H4.
-apply Zlt_trans with (nNormMin radix precision); auto with zarith.
+apply Z.lt_trans with (nNormMin radix precision); auto with zarith.
 assert (0 < pPred (vNum bo))%Z.
 apply pPredMoreThanOne with radix precision; auto with zarith.
-apply Zlt_trans with 0%Z; auto with zarith.
+apply Z.lt_trans with 0%Z; auto with zarith.
 apply nNormPos; auto with zarith.
 apply FcanonicUnique with radix bo precision; auto with zarith real.
 left; auto.
@@ -21368,24 +20971,24 @@ assert (FtoRradix p=powerRZ radix (Fexp q)*powerRZ radix precision)%R.
 rewrite H3; unfold FtoRradix, FtoR; simpl.
 unfold nNormMin; rewrite Zpower_nat_Z_powerRZ; rewrite inj_pred; auto with zarith.
 repeat rewrite <- powerRZ_add; auto with real zarith.
-replace (Fexp q+precision)%Z with (Zpred precision+(Fexp q+1))%Z;unfold Zpred; auto with real zarith.
+replace (Fexp q+precision)%Z with (Z.pred precision+(Fexp q+1))%Z;unfold Z.pred; auto with real zarith.
 assert (FtoRradix q=powerRZ radix (Fexp q)*(powerRZ radix (precision-1)+1))%R.
 unfold FtoRradix, FtoR; rewrite H4; rewrite plus_IZR; simpl.
 unfold nNormMin; rewrite Zpower_nat_Z_powerRZ; rewrite inj_pred; auto with zarith.
-unfold Zpred, Zminus; simpl; ring.
+unfold Z.pred, Zminus; simpl; ring.
 assert (exists w1:float, Fbounded bo w1 /\ (FtoRradix w1=powerRZ radix (Fexp q)*
   (powerRZ radix precision+powerRZ radix (precision-1)-2))%R).
 exists (Float (Zpower_nat radix (pred precision)+Zpower_nat radix (pred (pred precision))-1)
     (Fexp q+1)).
 split;[split; simpl|idtac].
-rewrite Zabs_eq; auto with zarith.
-rewrite pGivesBound; apply Zlt_le_trans with
+rewrite Z.abs_eq; auto with zarith.
+rewrite pGivesBound; apply Z.lt_le_trans with
  (Zpower_nat radix (pred precision) + Zpower_nat radix (pred precision))%Z.
 unfold Zminus; rewrite <- Zplus_assoc; apply Zplus_lt_compat_l.
-apply Zlt_le_trans with
+apply Z.lt_le_trans with
  (Zpower_nat radix (pred (pred precision)) + Zpower_nat radix (pred (pred precision)))%Z.
 apply Zplus_lt_compat_l; auto with zarith.
-apply Zlt_trans with 0%Z; auto with zarith.
+apply Z.lt_trans with 0%Z; auto with zarith.
 apply Zpower_nat_less; auto with zarith.
 pattern (pred precision) at 3; replace (pred precision) with (1+pred (pred precision)); auto with zarith.
 rewrite Zpower_nat_is_exp.
@@ -21395,8 +20998,8 @@ rewrite Zpower_nat_is_exp.
 replace (Zpower_nat radix 1) with 2%Z; auto with zarith.
 assert (1 <=  Zpower_nat radix (pred precision) +
     Zpower_nat radix (pred (pred precision)))%Z; auto with zarith.
-apply Zle_trans with  (Zpower_nat radix (pred precision)+0)%Z; auto with zarith.
-apply Zle_trans with  (Zpower_nat radix (pred precision))%Z; auto with zarith.
+apply Z.le_trans with  (Zpower_nat radix (pred precision)+0)%Z; auto with zarith.
+apply Z.le_trans with  (Zpower_nat radix (pred precision))%Z; auto with zarith.
 apply Zpower_NR1; unfold radix; auto with zarith.
 apply Zplus_le_compat_l.
 apply Zpower_NR0; unfold radix; auto with zarith.
@@ -21404,7 +21007,7 @@ elim J2; rewrite <- J5; auto.
 unfold FtoRradix, FtoR; simpl.
 unfold Zminus; repeat rewrite plus_IZR; simpl.
 repeat rewrite Zpower_nat_Z_powerRZ.
-repeat rewrite inj_pred; auto with zarith; unfold Zpred.
+repeat rewrite inj_pred; auto with zarith; unfold Z.pred.
 repeat rewrite powerRZ_add; auto with real zarith; simpl.
 unfold radix; ring_simplify (2*1)%R; field; auto with real.
 assert (0 < 4)%R;[apply Rlt_le_trans with 2%R|idtac]; auto with real.
@@ -21426,7 +21029,7 @@ unfold radix; ring_simplify (2*1)%R; field; auto with real.
 apply Rle_trans with (w1-0)%R; auto with real.
 unfold Rminus; apply Rplus_le_compat_l; auto with real zarith.
 apply Ropp_le_contravar.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 apply Rle_ge; apply Rplus_le_reg_l with q.
 ring_simplify; auto with real.
 apply Rle_ge; apply Rle_trans with (3*0)%R; auto with real.
@@ -21437,8 +21040,8 @@ assert (exists w2:float, Fbounded bo w2 /\ (FtoRradix w2=powerRZ radix (Fexp q)*
 exists (Float (Zpower_nat radix (pred precision)+Zpower_nat radix (pred (pred precision)))
     (Fexp q+1)).
 split;[split; simpl|idtac].
-rewrite Zabs_eq; auto with zarith.
-rewrite pGivesBound; apply Zlt_le_trans with
+rewrite Z.abs_eq; auto with zarith.
+rewrite pGivesBound; apply Z.lt_le_trans with
  (Zpower_nat radix (pred precision) + Zpower_nat radix (pred precision))%Z.
 apply Zplus_lt_compat_l; auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
@@ -21450,14 +21053,14 @@ elim J2; rewrite <- J5; auto.
 unfold FtoRradix, FtoR; simpl.
 unfold Zminus; repeat rewrite plus_IZR; simpl.
 repeat rewrite Zpower_nat_Z_powerRZ.
-repeat rewrite inj_pred; auto with zarith; unfold Zpred.
+repeat rewrite inj_pred; auto with zarith; unfold Z.pred.
 repeat rewrite powerRZ_add; auto with real zarith; simpl.
 ring_simplify (2*1)%R; field; auto with real.
 assert (0 < 4)%R;[apply Rlt_le_trans with 2%R|idtac]; auto with real.
 elim H7; intros w2 T1; elim T1; intros W21 W22; clear H7 T1.
 apply Rlt_le_trans with w2.
 rewrite W12; rewrite W22; apply Rmult_lt_compat_l; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; auto with zarith.
+apply powerRZ_lt, IZR_lt; auto with zarith.
 unfold Rminus; rewrite Rplus_assoc.
 apply Rplus_lt_compat_l; auto with real zarith.
 apply Rlt_le_trans with  (powerRZ radix (precision - 1) + -0)%R; auto with real.
@@ -21474,7 +21077,7 @@ fold FtoRradix; rewrite Rabs_right; auto with real.
 apply Rle_trans with (w2+0)%R; auto with real zarith.
 apply Rle_trans with (w2+powerRZ radix (Fexp q))%R; auto with real zarith.
 apply Rplus_le_compat_l.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 rewrite W22; rewrite H5; rewrite H6; right;ring.
 rewrite Rabs_right; auto with real; apply Rle_ge.
 unfold FtoRradix; apply RleRoundedR0 with bo precision
@@ -21486,8 +21089,8 @@ rewrite <- FPredSuc with bo radix precision p; auto with zarith.
 2: left; auto.
 replace (FSucc bo radix precision p) with qq.
 rewrite FPredSimpl2; auto with zarith.
-replace (Zpred (Fexp qq)) with (Fexp q); auto.
-rewrite J5; unfold Zpred; auto with zarith.
+replace (Z.pred (Fexp qq)) with (Fexp q); auto.
+rewrite J5; unfold Z.pred; auto with zarith.
 rewrite J5; assert (-dExp bo <= Fexp q)%Z; auto with zarith; apply Fq.
 apply FcanonicUnique with radix bo precision; auto with zarith real.
 left; auto.
@@ -21503,7 +21106,7 @@ rewrite dexact; rewrite dpEq; rewrite dqEq; ring.
 rewrite Rabs_Ropp.
 unfold Rminus; apply Rle_trans with (Rabs dp + Rabs (-dq))%R;[apply Rabs_triang|rewrite Rabs_Ropp].
 apply Rmult_le_reg_l with 2%R; auto with real.
-apply Rle_trans with (INR 2*Rabs dp + INR 2*Rabs dq)%R;[right; simpl; ring|idtac].
+apply Rle_trans with (2*Rabs dp + 2*Rabs dq)%R;[right; simpl; ring|idtac].
 apply Rle_trans with (Fulp bo radix precision p+Fulp bo radix precision q)%R;
   [apply Rplus_le_compat|idtac].
 rewrite dpEq; unfold FtoRradix; apply ClosestUlp; auto with zarith.
@@ -21528,10 +21131,10 @@ split;simpl; auto with zarith.
 split;[unfold FtoRradix, FtoR, nNormMin; simpl|idtac].
 rewrite Zpower_nat_Z_powerRZ; rewrite inj_pred; auto with zarith.
 rewrite <- powerRZ_add; auto with real zarith.
-replace (Zpred precision + (Fexp p - 1))%Z with (precision - 2 + Fexp p)%Z;
-  [auto with real|unfold Zpred; ring].
+replace (Z.pred precision + (Fexp p - 1))%Z with (precision - 2 + Fexp p)%Z;
+  [auto with real|unfold Z.pred; ring].
 split;[split;simpl; auto with zarith|idtac].
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 apply ZltNormMinVnum; auto with zarith.
 assert  (0 < nNormMin radix precision)%Z; auto with zarith.
 apply nNormPos; auto with zarith.
@@ -21555,21 +21158,21 @@ replace (powerRZ radix (precision - 1 + Fexp p)) with
 apply Rle_trans with ((2*2* (1 - powerRZ radix (- precision)))*
   powerRZ radix (precision - 2 + Fexp p))%R;[idtac|right; ring].
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 apply Rplus_le_reg_l with (-3+4*powerRZ radix (- precision))%R.
 ring_simplify.
 apply Rle_trans with (powerRZ radix (2+-precision)).
 rewrite powerRZ_add; auto with real zarith; unfold powerRZ at 2.
 simpl; unfold radix; right; ring.
 apply Rle_trans with (powerRZ radix 0); auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; unfold radix; auto with zarith.
-2: apply powerRZ_le;  try apply Rlt_IZR; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; unfold radix; auto with zarith.
+2: apply powerRZ_le;  try apply IZR_lt; auto with zarith.
 assert (0 < (1 - powerRZ radix (- precision)))%R.
 apply Rplus_lt_reg_r with (powerRZ radix (- precision)).
 ring_simplify.
 replace 1%R with (powerRZ radix 0);
     [ auto with real zarith | simpl in |- *; auto ].
-apply Rlt_powerRZ; try apply Rlt_IZR; auto with zarith.
+apply Rlt_powerRZ; try apply IZR_lt; auto with zarith.
 apply Rle_trans with (v* (1 - powerRZ radix (- precision)))%R.
 apply Rmult_le_compat_r; auto with real.
 assert (H3: exists g:float, Fbounded bo g /\
@@ -21588,15 +21191,15 @@ assert (forall f:float, Fnormal radix bo f ->  (0 <= f)%R ->
   (powerRZ radix (precision - 1 + Fexp f) <= f)%R).
 intros f Hf Hf'; rewrite powerRZ_add; auto with real zarith.
 unfold FtoRradix, FtoR; apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le; try apply Rlt_IZR; auto with zarith.
+apply powerRZ_le; try apply IZR_lt; auto with zarith.
 elim Hf; intros.
 apply Rmult_le_reg_l with (radix); auto with real zarith.
 apply Rle_trans with  (Zpos (vNum bo)).
 rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ.
 unfold Zminus; rewrite powerRZ_add; auto with real zarith; simpl.
 ring_simplify (2*1)%R; right; field; auto with real.
-apply Rle_trans with  (Zabs (radix * Fnum f)); try apply Rle_IZR; auto with real zarith.
-rewrite Zabs_Zmult; repeat rewrite Zabs_eq; auto with real zarith.
+apply Rle_trans with  (Z.abs (radix * Fnum f)); try apply IZR_le; auto with real zarith.
+rewrite Zabs_Zmult; repeat rewrite Z.abs_eq; auto with real zarith.
 rewrite mult_IZR; auto with real zarith.
 apply LeR0Fnum with radix; auto with real zarith.
 unfold radix; auto with zarith.
@@ -21634,7 +21237,7 @@ replace  (Rmin (Fulp bo 2 precision p) (Fulp bo 2 precision q))
 apply Rmult_le_compat; auto with real zarith.
 lra.
 unfold Fulp; auto with real zarith.
-apply powerRZ_le; try apply Rlt_IZR; auto with zarith.
+apply powerRZ_le; try apply IZR_lt; auto with zarith.
 lra.
 repeat rewrite CanonicFulp; auto with zarith.
 right; rewrite M; auto with real.
@@ -21644,15 +21247,15 @@ repeat rewrite CanonicFulp; auto with zarith.
 2: left; auto.
 rewrite Rmin_comm.
 unfold Rmin.
-case  (Rle_dec (FtoR 2 (Float (S 0) (Fexp q)))
-         (FtoR 2 (Float (S 0) (Fexp p)))); auto with real.
+case  (Rle_dec (FtoR 2 (Float 1 (Fexp q)))
+         (FtoR 2 (Float 1 (Fexp p)))); auto with real.
 intros N.
 absurd (Fexp q <= Fexp p)%Z.
 assert (Fexp p < Fexp q)%Z; auto with zarith.
 apply Zlt_powerRZ with radix; auto with real zarith.
-apply Rle_lt_trans with (FtoR 2 (Float (S 0) (Fexp p)));
+apply Rle_lt_trans with (FtoR 2 (Float 1 (Fexp p)));
   [right; unfold FtoR, radix; simpl; ring|idtac].
-apply Rlt_le_trans with (FtoR 2 (Float (S 0) (Fexp q))); auto with real.
+apply Rlt_le_trans with (FtoR 2 (Float 1 (Fexp q))); auto with real.
 right; unfold FtoR, radix; simpl; ring.
 apply Fcanonic_Rle_Zle with radix bo precision; auto with real zarith.
 left; auto.
@@ -21674,7 +21277,7 @@ Let radix := 2%Z.
 Let FtoRradix := FtoR radix.
 Local Coercion FtoRradix : float >-> R.
 
-Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ TwoMoreThanOne).
+Let radixMoreThanZERO : (0 < radix)%Z := eq_refl.
 
 Hypothesis precisionGreaterThanOne : 1 < precision.
 Hypothesis pGivesBound : Zpos (vNum bo) = Zpower_nat radix precision.
@@ -21756,7 +21359,7 @@ Let radix := 2%Z.
 Let FtoRradix := FtoR radix.
 Local Coercion FtoRradix : float >-> R.
 
-Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ TwoMoreThanOne).
+Let radixMoreThanZERO : (0 < radix)%Z := eq_refl.
 
 Hypothesis precisionGreaterThanOne : 1 < precision.
 Hypothesis pGivesBound : Zpos (vNum bo) = Zpower_nat radix precision.
@@ -21813,26 +21416,28 @@ Hypothesis Roundd : (EvenClosest bo radix precision (t+s)%R d).
 Theorem RoundGeNormal: forall f:float, forall r:R,
   Closest bo radix r f -> (Fnormal radix bo f) ->
   (Rabs r <= Rabs f * (1 + powerRZ radix (- precision)))%R.
+Proof.
 intros.
 apply Rplus_le_reg_l with (-Rabs f)%R.
 apply Rle_trans with (Rabs r-Rabs f)%R;[right; ring|idtac].
 apply Rle_trans with (Rabs f * powerRZ radix (- precision) )%R;[idtac|right; ring].
 apply Rle_trans with (Rabs (r-f));[apply Rabs_triang_inv|idtac].
-apply Rmult_le_reg_l with (INR 2); auto with real.
+apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with (Fulp bo radix precision f).
 unfold FtoRradix; apply ClosestUlp; auto.
-apply Rle_trans with (Rabs f*powerRZ radix (Zsucc (-precision)))%R.
+apply Rle_trans with (Rabs f*powerRZ radix (Z.succ (-precision)))%R.
 unfold FtoRradix; apply FulpLe2; auto.
 elim H0; auto.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 left; auto.
-right; unfold Zsucc; rewrite powerRZ_add; auto with real zarith.
+right; unfold Z.succ; rewrite powerRZ_add; auto with real zarith.
 rewrite powerRZ_1; unfold radix; simpl; ring.
 Qed.
 
 
 
 Theorem discri12:  (q <= p)%R -> (delta <= 2*(Fulp bo radix precision d))%R.
+Proof.
 intros M.
 assert (0 < 3)%R.
 apply Rlt_le_trans with 2%R; auto with real.
@@ -21846,7 +21451,7 @@ apply Rplus_lt_reg_r with (powerRZ radix (- precision)).
 ring_simplify.
 replace 1%R with (powerRZ radix 0);
     [ auto with real zarith | simpl in |- *; auto ].
-apply Rlt_powerRZ; try apply Rlt_IZR; auto with zarith.
+apply Rlt_powerRZ; try apply IZR_lt; auto with zarith.
 assert (p-q <= Rsqr (1+powerRZ radix (-precision))/(1-powerRZ radix (-precision))*/3*(p+Rabs q))%R.
 apply Rle_trans with (Rabs (p-q));[apply RRle_abs|idtac].
 apply Rle_trans with (Rabs t * (1 + powerRZ radix (- precision)))%R.
@@ -21857,7 +21462,7 @@ apply Rle_trans with (((((p + Rabs q)/(1 - powerRZ radix (- precision)))
   [idtac|right; unfold Rdiv, Rsqr; ring].
 apply Rmult_le_compat_r; auto with real.
 apply Rle_trans with (0+0)%R; try apply Rplus_le_compat; auto with real zarith.
-apply powerRZ_le; try apply Rlt_IZR; auto with zarith.
+apply powerRZ_le; try apply IZR_lt; auto with zarith.
 apply Rle_trans with ((3*Rabs t)*/3)%R;
   [right; field; auto with real| apply Rmult_le_compat_r; auto with real].
 apply Rle_trans with (Rabs (3*Rabs t));[apply RRle_abs|idtac].
@@ -21865,7 +21470,7 @@ apply Rle_trans with (Rabs u * (1 + powerRZ radix (- precision)))%R.
 apply RoundGeNormal; auto; elim Roundu; auto.
 apply Rmult_le_compat_r; auto with real.
 apply Rle_trans with (0+0)%R; try apply Rplus_le_compat; auto with real zarith.
-apply powerRZ_le; try apply Rlt_IZR; auto with zarith.
+apply powerRZ_le; try apply IZR_lt; auto with zarith.
 apply Rle_trans with (Rabs v).
 cut (0 <= u)%R.
 intros; repeat rewrite Rabs_right; auto with real.
@@ -21913,15 +21518,15 @@ apply Rlt_le_trans with 2%R;[idtac|right; ring].
 apply Rlt_le_trans with  (5 * powerRZ radix (- precision) +
     3*powerRZ radix (- precision))%R;
    [apply Rplus_lt_compat_l; apply Rmult_lt_compat_r; auto with real zarith|idtac].
-apply powerRZ_lt; try apply Rlt_IZR; auto with zarith.
+apply powerRZ_lt; try apply IZR_lt; auto with zarith.
 apply Rle_lt_trans with (powerRZ radix 1); auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; try unfold radix; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; try unfold radix; auto with zarith.
 simpl; unfold radix; ring_simplify (2*1)%R; auto with real.
 apply Rle_trans with  (8 * powerRZ radix (- precision))%R;[right; ring|idtac].
 replace 8%R with (powerRZ radix 3);[idtac|unfold powerRZ, radix; simpl; ring].
 replace 2%R with (powerRZ radix 1);[idtac|unfold powerRZ, radix; simpl; ring].
 rewrite <- powerRZ_add; auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; try unfold radix; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; try unfold radix; auto with zarith.
 apply Rplus_le_reg_l with (-q+ ((Rsqr (1 + powerRZ radix (- precision)) /
      (1 - powerRZ radix (- precision)) * / 3) * p))%R.
 apply Rle_trans with (p-q)%R;[right; ring|idtac].
@@ -21941,7 +21546,7 @@ rewrite CanonicFulp with bo radix precision f2; auto with zarith.
 unfold FtoR; simpl; ring_simplify ((1 * powerRZ radix (Fexp f2)))%R.
 unfold Fulp; rewrite <- powerRZ_add; auto with real zarith.
 apply Rle_powerRZ; auto with real zarith.
-apply Zle_trans with (Fexp (Float (Fnum f2) (i + Fexp f2))); auto with zarith.
+apply Z.le_trans with (Fexp (Float (Fnum f2) (i + Fexp f2))); auto with zarith.
 apply Fcanonic_Rle_Zle with radix bo precision; auto with real zarith.
 apply FnormalizeCanonic; auto with real zarith.
 elim H7; intros Y1 Y2; elim Y1; intros Y3 Y4.
@@ -21971,7 +21576,7 @@ assert (Rabs s <= 3*Fulp bo radix precision q)%R.
 assert (exists f:float, Fbounded bo f /\ (FtoRradix f= 3 * Fulp bo radix precision q)%R).
 exists (Float 3 (Fexp q)).
 split;[split; simpl; auto with zarith|idtac].
-apply Zlt_le_trans with (Zpower_nat radix 2); auto with zarith.
+apply Z.lt_le_trans with (Zpower_nat radix 2); auto with zarith.
 rewrite pGivesBound; auto with zarith.
 apply Zpower_nat_monotone_le; auto with zarith.
 apply Fq.
@@ -21985,8 +21590,8 @@ unfold FtoRradix; apply RoundAbsMonotoner with bo precision
 apply EvenClosestRoundedModeP; auto with zarith.
 fold FtoRradix; unfold Rminus; apply Rle_trans with (Rabs dp+Rabs (-dq))%R;
    [apply Rabs_triang|rewrite Rabs_Ropp].
-apply Rmult_le_reg_l with (INR 2); auto with real.
-apply Rle_trans with ((INR 2)*Rabs dp+(INR 2)*Rabs dq)%R;[right; ring|idtac].
+apply Rmult_le_reg_l with 2%R; auto with real.
+apply Rle_trans with (2*Rabs dp+2*Rabs dq)%R;[right; ring|idtac].
 apply Rle_trans with (Fulp bo radix precision p+Fulp bo radix precision q)%R;
    [apply Rplus_le_compat|idtac].
 rewrite dpEq; unfold FtoRradix; apply ClosestUlp; auto with zarith.
@@ -21998,7 +21603,7 @@ apply Rle_trans with  (5*Fulp bo radix precision q+Fulp bo radix precision q)%R;
 apply Rle_trans with  (powerRZ radix 2*Fulp bo radix precision q)%R;
   [idtac|apply Rmult_le_compat_r; auto with real zarith].
 2: unfold Fulp; auto with real zarith.
-2: apply powerRZ_le; try apply Rlt_IZR; auto with zarith.
+2: apply powerRZ_le; try apply IZR_lt; auto with zarith.
 2: unfold powerRZ, radix; simpl; lra.
 apply H5; auto with zarith.
 apply Rle_trans with  (3*Rabs q)%R;
@@ -22031,13 +21636,13 @@ apply Rle_trans with (7 * powerRZ radix (- precision) + powerRZ radix (- precisi
    [apply Rplus_le_compat_l|idtac].
 replace 2%R with (powerRZ radix 1); auto with real zarith.
 repeat rewrite <- powerRZ_add; auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; try unfold radix; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; try unfold radix; auto with zarith.
 simpl; unfold radix; ring.
 apply Rle_trans with (powerRZ radix 3 * powerRZ radix (- precision))%R;
   [unfold powerRZ at 3; unfold radix; right; simpl; ring | idtac].
 rewrite <- powerRZ_add; auto with real zarith.
 apply Rle_trans with (powerRZ radix 0); auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; try unfold radix; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; try unfold radix; auto with zarith.
 assert (t-3*Fulp bo radix precision t <= Rabs d)%R.
 assert (exists f:float, Fbounded bo f /\
    (FtoRradix f= t-3 * Fulp bo radix precision t)%R).
@@ -22046,14 +21651,14 @@ split;[split; simpl; auto with zarith|idtac].
 assert (0 < Fnum t)%Z;[apply LtR0Fnum with radix; auto with real zarith|idtac].
 fold FtoRradix; apply Rlt_le_trans with q; auto.
 case (Zle_or_lt 0 (Fnum t-3)%Z); intros.
-rewrite Zabs_eq; auto.
-apply Zle_lt_trans with (Zabs (Fnum t)); auto with zarith.
+rewrite Z.abs_eq; auto.
+apply Z.le_lt_trans with (Z.abs (Fnum t)); try lia.
 apply Ft.
-rewrite <- Zabs_Zopp; rewrite Zabs_eq; auto with zarith.
-apply Zlt_le_trans with 3%Z; auto with zarith.
-apply Zle_trans with (nNormMin radix precision); auto with zarith.
-unfold nNormMin; apply Zle_trans with (Zpower_nat radix 2); auto with zarith.
-simpl; auto with zarith.
+rewrite <- Zabs_Zopp; rewrite Z.abs_eq; auto with zarith.
+apply Z.lt_le_trans with 3%Z; auto with zarith.
+apply Z.le_trans with (nNormMin radix precision); auto with zarith.
+unfold nNormMin; apply Z.le_trans with (Zpower_nat radix 2).
+easy.
 apply Zpower_nat_monotone_le; auto with zarith.
 apply nNrMMimLevNum; auto with zarith.
 rewrite CanonicFulp; auto with zarith.
@@ -22081,26 +21686,26 @@ apply Rle_trans with (2:=H9).
 rewrite Rabs_right;[idtac|apply Rle_ge; apply Rle_trans with q; auto with real].
 apply Rle_trans with (t-t/2)%R;[right; field; auto with real|idtac].
 unfold Rminus; apply Rplus_le_compat_l; apply Ropp_le_contravar.
-apply Rle_trans with (3*(Rabs (FtoR radix t) * powerRZ radix (Zsucc (- precision))))%R.
+apply Rle_trans with (3*(Rabs (FtoR radix t) * powerRZ radix (Z.succ (- precision))))%R.
 apply Rmult_le_compat_l; auto with real.
 apply FulpLe2; auto with real zarith.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 left; auto.
-fold FtoRradix; apply Rle_trans with (Rabs t*(3*powerRZ radix  (Zsucc (- precision))))%R;
+fold FtoRradix; apply Rle_trans with (Rabs t*(3*powerRZ radix  (Z.succ (- precision))))%R;
    [right; ring|idtac].
 rewrite Rabs_right;[idtac|apply Rle_ge; apply Rle_trans with q; auto with real].
 unfold Rdiv; apply Rmult_le_compat_l; auto with real.
 apply Rle_trans with q; auto with real.
-apply Rle_trans with (4*powerRZ radix  (Zsucc (- precision)))%R;
+apply Rle_trans with (4*powerRZ radix  (Z.succ (- precision)))%R;
   [apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le; try apply Rlt_IZR; auto with zarith.
+apply powerRZ_le; try apply IZR_lt; auto with zarith.
 replace 4%R with (powerRZ radix 2).
 2: unfold powerRZ, radix; simpl; ring.
 replace (/2)%R with (powerRZ radix (-1)).
 2: unfold powerRZ, radix; ring_simplify (2*1)%R; auto with real.
 2: unfold powerRZ, radix; simpl; ring.
 rewrite <- powerRZ_add; auto with real zarith.
-unfold Zsucc; apply Rle_powerRZ; auto with real zarith.
+unfold Z.succ; apply Rle_powerRZ; auto with real zarith.
 unfold delta.
 replace (d-(b*b'-a*c))%R with
    (-((t+s)-d)+-((p-q)-t)+-((dp-dq)-s))%R;[idtac|rewrite dpEq; rewrite dqEq; ring].
@@ -22108,9 +21713,9 @@ apply Rle_trans with  (Rabs (- (t + s - d) + (- (p - q - t))) + Rabs (- (dp - dq
   [apply Rabs_triang|rewrite Rabs_Ropp].
 apply Rle_trans with  (Rabs (- (t + s - d)) + Rabs (- (p - q - t)) + Rabs ((dp - dq - s)))%R;
   [apply Rplus_le_compat_r; apply Rabs_triang|repeat rewrite Rabs_Ropp].
-apply Rmult_le_reg_l with (INR 2); auto with real.
-apply Rle_trans with ((INR 2)*Rabs ((t + s - d)) + (INR 2)*Rabs ((p - q - t))
-   + (INR 2)*Rabs ((dp - dq - s)))%R;[right; ring|idtac].
+apply Rmult_le_reg_l with 2%R; auto with real.
+apply Rle_trans with (2*Rabs ((t + s - d)) + 2*Rabs ((p - q - t))
+   + 2*Rabs ((dp - dq - s)))%R;[right; ring|idtac].
 apply Rle_trans with (Fulp bo radix precision d+Fulp bo radix precision t
   +Fulp bo radix precision s)%R;[apply Rplus_le_compat|idtac].
 apply Rplus_le_compat.
@@ -22137,20 +21742,20 @@ apply LeFulpPos; auto with zarith real.
 apply Rplus_le_reg_l with (3* Fulp bo radix precision t)%R.
 ring_simplify (3 * Fulp bo radix precision t + (t - 3 * Fulp bo radix precision t))%R.
 apply Rle_trans with (6*Fulp bo radix precision t)%R;[right; ring|idtac].
-apply Rle_trans with (6*(Rabs (FtoR radix t) * powerRZ radix (Zsucc (- precision))))%R.
+apply Rle_trans with (6*(Rabs (FtoR radix t) * powerRZ radix (Z.succ (- precision))))%R.
 apply Rmult_le_compat_l; auto with real.
 apply FulpLe2; auto with real zarith.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 left; auto.
-fold FtoRradix; apply Rle_trans with (Rabs t*(6*powerRZ radix  (Zsucc (- precision))))%R;
+fold FtoRradix; apply Rle_trans with (Rabs t*(6*powerRZ radix  (Z.succ (- precision))))%R;
    [right; ring|idtac].
 rewrite Rabs_right;[idtac|apply Rle_ge; apply Rle_trans with q; auto with real].
 apply Rle_trans with (t*1)%R; auto with real.
 apply Rmult_le_compat_l; auto with real.
 apply Rle_trans with q; auto with real.
-apply Rle_trans with (8*powerRZ radix  (Zsucc (- precision)))%R;
+apply Rle_trans with (8*powerRZ radix  (Z.succ (- precision)))%R;
   [apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le; try apply Rlt_IZR; auto with zarith.
+apply powerRZ_le; try apply IZR_lt; auto with zarith.
 replace 8%R with (powerRZ radix 3).
 2: unfold powerRZ, radix; simpl; ring.
 replace 1%R with (powerRZ radix 0).
@@ -22170,7 +21775,7 @@ Let radix := 2%Z.
 Let FtoRradix := FtoR radix.
 Local Coercion FtoRradix : float >-> R.
 
-Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ TwoMoreThanOne).
+Let radixMoreThanZERO : (0 < radix)%Z := eq_refl.
 
 Hypothesis precisionGreaterThanOne : 1 < precision.
 Hypothesis pGivesBound : Zpos (vNum bo) = Zpower_nat radix precision.
@@ -22272,7 +21877,7 @@ Let radix := 2%Z.
 Let FtoRradix := FtoR radix.
 Local Coercion FtoRradix : float >-> R.
 
-Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ TwoMoreThanOne).
+Let radixMoreThanZERO : (0 < radix)%Z := eq_refl.
 
 Hypothesis precisionGreaterThanOne : 1 < precision.
 Hypothesis pGivesBound : Zpos (vNum bo) = Zpower_nat radix precision.
@@ -22342,23 +21947,23 @@ assert (exists s : float,
          Fbounded bo s /\
          FtoR 2 s = (FtoR 2 b * FtoR 2 b - FtoR 2 p)%R /\
          Fexp s = (Fexp p - precision)%Z /\
-         (Rabs (Fnum s) <= powerRZ (Zpos 2) (Zpred precision))%R).
+         (Rabs (Fnum s) <= powerRZ (Zpos 2) (Z.pred precision))%R).
 apply errorBoundedMultClosest_Can; auto.
 elim Roundp; auto.
 left; auto.
 elim H1; intros s' T; elim T; intros T1 T2; elim T2; intros T3 T4; elim T4; intros.
-apply Zle_trans with (Fexp s')%Z; auto with zarith.
+apply Z.le_trans with (Fexp s')%Z; auto with zarith.
 apply T.
 assert (exists s : float,
          Fbounded bo s /\
          FtoR 2 s = (FtoR 2 a * FtoR 2 c - FtoR 2 q)%R /\
          Fexp s = (Fexp q - precision)%Z /\
-         (Rabs (Fnum s) <= powerRZ (Zpos 2) (Zpred precision))%R).
+         (Rabs (Fnum s) <= powerRZ (Zpos 2) (Z.pred precision))%R).
 apply errorBoundedMultClosest_Can; auto.
 elim Roundq; auto.
 left; auto.
 elim H1; intros s' T; elim T; intros T1 T2; elim T2; intros T3 T4; elim T4; intros.
-apply Zle_trans with (Fexp s')%Z; auto with zarith.
+apply Z.le_trans with (Fexp s')%Z; auto with zarith.
 apply T.
 fold FtoRradix; apply Rle_trans with (Rsqr b); auto with real.
 apply FcanonicUnique with radix bo precision; auto with zarith.
@@ -22384,7 +21989,7 @@ Let radix := 2%Z.
 Let FtoRradix := FtoR radix.
 Local Coercion FtoRradix : float >-> R.
 
-Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ TwoMoreThanOne).
+Let radixMoreThanZERO : (0 < radix)%Z := eq_refl.
 
 Hypothesis precisionGreaterThanOne : 1 < precision.
 Hypothesis pGivesBound : Zpos (vNum bo) = Zpower_nat radix precision.
@@ -22439,7 +22044,7 @@ absurd (FtoR radix (Fabs f) < FtoR radix (firstNormalPos radix bo precision))%R.
 apply Rle_not_lt; rewrite Fabs_correct; auto.
 fold FtoRradix; apply Rle_trans with (2:=H1).
 unfold firstNormalPos, FtoRradix, FtoR, nNormMin; simpl.
-rewrite Zpower_nat_Z_powerRZ; rewrite inj_pred; auto with zarith; unfold Zpred.
+rewrite Zpower_nat_Z_powerRZ; rewrite inj_pred; auto with zarith; unfold Z.pred.
 unfold Zminus; repeat rewrite powerRZ_add; auto with real zarith.
 right; simpl; ring.
 apply Rle_lt_trans with  (FtoR radix (Fabs  (Fnormalize radix bo precision f))).
@@ -22463,12 +22068,12 @@ rewrite <- FnormalizeCorrect with radix bo precision d; auto with zarith.
 assert (Fnormal radix bo (Fnormalize radix bo precision d)).
 apply H0; auto.
 apply Rle_trans with (2:=U4); auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; try unfold radix; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; try unfold radix; auto with zarith.
 assert (Fnormal radix bo (Fnormalize radix bo precision t)).
 apply H0.
 apply H with (p-q)%R; auto.
 apply Rle_trans with (2:=U7); auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; try unfold radix; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; try unfold radix; auto with zarith.
 apply discri14 with (Fnormalize radix bo precision p)
   (Fnormalize radix bo precision q) (Fnormalize radix bo precision t)
   dp dq (Fnormalize radix bo precision s) (Fnormalize radix bo precision u)
@@ -22497,9 +22102,9 @@ unfold FtoRradix; rewrite <- FnormalizeCorrect with radix bo precision d;
 rewrite <- Fabs_correct; auto; unfold FtoR, Fabs; simpl.
 rewrite Rmult_comm; rewrite powerRZ_add; auto with real zarith.
 apply Rmult_lt_compat_l; auto with real zarith.
-apply powerRZ_lt; try apply Rlt_IZR; auto with zarith.
+apply powerRZ_lt; try apply IZR_lt; auto with zarith.
 apply Rlt_le_trans with (Zpos (vNum bo)); auto with zarith real.
-apply Rlt_IZR; apply H2.
+apply IZR_lt; apply H2.
 rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
 assert (- dExp bo + precision < Fexp (Fnormalize radix bo precision t)
   + precision)%Z; auto with zarith.
@@ -22510,9 +22115,9 @@ unfold FtoRradix; rewrite <- FnormalizeCorrect with radix bo precision t;
 rewrite <- Fabs_correct; auto; unfold FtoR, Fabs; simpl.
 rewrite Rmult_comm; rewrite powerRZ_add; auto with real zarith.
 apply Rmult_lt_compat_l; auto with real zarith.
-apply powerRZ_lt; try apply Rlt_IZR; auto with zarith.
+apply powerRZ_lt; try apply IZR_lt; auto with zarith.
 apply Rlt_le_trans with (Zpos (vNum bo)); auto with zarith real.
-apply Rlt_IZR; apply H3.
+apply IZR_lt; apply H3.
 rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
 assert (Fbounded bo (Fnormalize radix bo precision t));
   auto with zarith real.
@@ -22529,11 +22134,11 @@ apply ClosestRoundedModeP with precision; auto with zarith.
 elim Roundp; auto.
 fold FtoRradix; rewrite H6; auto.
 apply Rle_trans with (2:=U1); auto with zarith real.
-apply Rle_powerRZ; try apply Rle_IZR; unfold radix; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; unfold radix; auto with zarith.
 exists (Float 1 (-dExp bo+precision-1)).
 split;[split|idtac].
 simpl; apply vNumbMoreThanOne with radix precision; auto with zarith.
-apply Zle_trans with (- dExp bo + precision - 1)%Z; auto with zarith.
+apply Z.le_trans with (- dExp bo + precision - 1)%Z; auto with zarith.
 unfold FtoRradix, FtoR; simpl; ring.
 apply H0; auto.
 apply H with (a*c)%R; auto.
@@ -22547,11 +22152,11 @@ apply ClosestRoundedModeP with precision; auto with zarith.
 elim Roundq; auto.
 fold FtoRradix; rewrite H5; auto.
 apply Rle_trans with (2:=U2); auto with zarith real.
-apply Rle_powerRZ; unfold radix; try apply Rle_IZR; auto with zarith.
+apply Rle_powerRZ; unfold radix; try apply IZR_le; auto with zarith.
 exists (Float 1 (-dExp bo+precision-1)).
 split;[split|idtac].
 simpl; apply vNumbMoreThanOne with radix precision; auto with zarith.
-apply Zle_trans with (- dExp bo + precision - 1)%Z; auto with zarith.
+apply Z.le_trans with (- dExp bo + precision - 1)%Z; auto with zarith.
 unfold FtoRradix, FtoR; simpl; ring.
 apply H0; auto; apply H with (3*Rabs t)%R; auto.
 apply H0; auto; apply H with (p+q)%R; auto.
@@ -22611,7 +22216,7 @@ Let radix := 2%Z.
 Let FtoRradix := FtoR radix.
 Local Coercion FtoRradix : float >-> R.
 
-Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ TwoMoreThanOne).
+Let radixMoreThanZERO : (0 < radix)%Z := eq_refl.
 
 Hypothesis precisionGreaterThanOne : 1 < precision.
 Hypothesis pGivesBound : Zpos (vNum bo) = Zpower_nat radix precision.
@@ -22629,8 +22234,8 @@ unfold FtoRradix; rewrite <- Fabs_correct; auto.
 rewrite Zplus_comm; rewrite powerRZ_add; auto with real zarith.
 unfold Fabs, FtoR; simpl.
 apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt; try apply Rlt_IZR; auto with zarith.
-apply Rlt_le_trans with (Zpos (vNum bo)); auto with zarith real; try apply Rlt_IZR, H.
+apply powerRZ_lt; try apply IZR_lt; auto with zarith.
+apply Rlt_le_trans with (Zpos (vNum bo)); auto with zarith real; try apply IZR_lt, H.
 rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
 Qed.
 
@@ -22651,19 +22256,19 @@ elim TT; intros R5 T; elim T; intros R6 R7; clear T TT.
 replace (FtoRradix g) with (FtoRradix g'); auto with real.
 apply Rle_trans with (powerRZ radix (Fexp g')).
 apply Rle_powerRZ; auto with real zarith.
-apply Zle_trans with (Zmin (Fexp f1) (Fexp f2)); auto with zarith.
+apply Z.le_trans with (Z.min (Fexp f1) (Fexp f2)); auto with zarith.
 apply Zmin_Zle; apply FexpGeUnderf; auto.
 unfold FtoRradix;  rewrite <- Fabs_correct; auto.
 unfold Fabs, FtoR; simpl.
 apply Rle_trans with (1%Z*powerRZ radix (Fexp g'))%R;
   [simpl; right; ring |apply Rmult_le_compat_r; auto with real zarith].
-apply powerRZ_le; try apply Rlt_IZR; auto with zarith.
-apply Rle_IZR.
-case (Zle_lt_or_eq 0 (Zabs (Fnum g'))); auto with zarith real; intros.
-case (Z_eq_dec 0 (Fnum g')); intros.
+apply powerRZ_le; try apply IZR_lt; auto with zarith.
+apply IZR_le.
+case (Zle_lt_or_eq 0 (Z.abs (Fnum g'))); auto with zarith real; intros.
+case (Z.eq_dec 0 (Fnum g')); intros.
 absurd (FtoR radix g=0)%R; auto with real.
 rewrite <- R3; unfold FtoR; simpl; rewrite <- e0; simpl; ring.
-absurd (0 <  Zabs (Fnum g'))%Z; auto with zarith.
+lia.
 Qed.
 
 Theorem AddExpGeUnderf2: forall f1:float ,forall f2:float, forall g:float, forall e:Z,
@@ -22721,9 +22326,9 @@ elim TT; intros R5 T; elim T; intros R6 R7; clear T TT.
 replace (FtoRradix g) with (FtoRradix g'); auto with real.
 apply Rle_trans with (powerRZ radix (Fexp g')).
 apply Rle_powerRZ; auto with real zarith.
-apply Zle_trans with (Zmin (Fexp f1) (Fexp f2)); auto with zarith.
-rewrite Zmin_le2.
-apply Zle_trans with ((e-1)-precision+1)%Z; auto with zarith.
+apply Z.le_trans with (Z.min (Fexp f1) (Fexp f2)); auto with zarith.
+rewrite Z.min_r.
+apply Z.le_trans with ((e-1)-precision+1)%Z; auto with zarith.
 apply FexpGeUnderf; auto.
 unfold Zminus; rewrite powerRZ_add; auto with real zarith; simpl.
 unfold radix; ring_simplify (2*1)%R; apply Rle_trans with ((Rabs f1)/2)%R; auto with real.
@@ -22733,13 +22338,13 @@ unfold FtoRradix;  rewrite <- Fabs_correct; auto.
 unfold Fabs, FtoR; simpl.
 apply Rle_trans with (1%Z*powerRZ radix (Fexp g'))%R;
   [simpl; right; ring|apply Rmult_le_compat_r; auto with real zarith].
-apply powerRZ_le; try apply Rlt_IZR; auto with zarith.
-apply Rle_IZR.
-case (Zle_lt_or_eq 0 (Zabs (Fnum g'))); auto with zarith real; intros.
-case (Z_eq_dec 0 (Fnum g')); intros.
+apply powerRZ_le; try apply IZR_lt; auto with zarith.
+apply IZR_le.
+case (Zle_lt_or_eq 0 (Z.abs (Fnum g'))); auto with zarith real; intros.
+case (Z.eq_dec 0 (Fnum g')); intros.
 absurd (FtoR radix g=0)%R; auto with real.
 rewrite <- R3; unfold FtoR; simpl; rewrite <- e0; simpl; ring.
-absurd (0 <  Zabs (Fnum g'))%Z; auto with zarith.
+lia.
 Qed.
 
 Theorem AddExpGe1Underf2: forall f1:float ,forall f2:float, forall g:float, forall e:Z,
@@ -22802,7 +22407,7 @@ assert (exists f:float, Fbounded bo f /\
 exists (Float 1  (- dExp bo + 3 * precision - 1)).
 split;[split|unfold FtoRradix, FtoR; simpl; ring].
 simpl; apply vNumbMoreThanOne with radix precision; auto with zarith.
-apply Zle_trans with (- dExp bo + 3 * precision - 1)%Z; auto with zarith.
+apply Z.le_trans with (- dExp bo + 3 * precision - 1)%Z; auto with zarith.
 elim H1; intros f T; elim T; intros; clear H1 T.
 rewrite H3; unfold FtoRradix.
 apply RoundAbsMonotonel with bo precision (EvenClosest bo radix precision)
@@ -22821,7 +22426,7 @@ assert (exists f:float, Fbounded bo f /\
 exists (Float 1  (- dExp bo + 3 * precision - 1)).
 split;[split|unfold FtoRradix, FtoR; simpl; ring].
 simpl; apply vNumbMoreThanOne with radix precision; auto with zarith.
-apply Zle_trans with (- dExp bo + 3 * precision - 1)%Z; auto with zarith.
+apply Z.le_trans with (- dExp bo + 3 * precision - 1)%Z; auto with zarith.
 elim H1; intros f T; elim T; intros; clear H1 T.
 rewrite H3; unfold FtoRradix.
 apply RoundAbsMonotonel with bo precision (EvenClosest bo radix precision)
@@ -22877,7 +22482,7 @@ rewrite powerRZ_add; auto with real zarith.
 rewrite powerRZ_1; unfold radix; ring.
 apply absFBounded; elim Roundt;  intros A1 A2; elim A1; auto.
 elim Roundt;  intros A1 A2; elim A1; intros A4 A3; elim A4; intros.
-split; unfold Fabs; simpl; auto with zarith.
+split; unfold Fabs; simpl; lia.
 unfold FtoRradix; rewrite Fabs_correct; auto.
 rewrite Rabs_right; auto with real.
 apply Rle_ge, Rabs_pos.
@@ -22909,19 +22514,19 @@ rewrite Fabs_correct; auto; right; unfold FtoRradix; ring.
 apply Rmult_le_compat_r; auto with real; apply Rabs_pos.
 split.
 apply Rle_trans with (2:=H); auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; unfold radix; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; unfold radix; auto with zarith.
 split.
 apply Rle_trans with (2:=H0); auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; unfold radix; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; unfold radix; auto with zarith.
 split.
 2: split.
 2: apply Rle_trans with (2:=H11); auto with real zarith.
-2: apply Rle_powerRZ; try apply Rle_IZR; unfold radix; auto with zarith.
+2: apply Rle_powerRZ; try apply IZR_le; unfold radix; auto with zarith.
 2:split.
 2:apply Rle_trans with (2:=H9); auto with real zarith.
-2: apply Rle_powerRZ; try apply Rle_IZR; unfold radix; auto with zarith.
+2: apply Rle_powerRZ; try apply IZR_le; unfold radix; auto with zarith.
 2:apply Rle_trans with (2:=H10); auto with real zarith.
-2: apply Rle_powerRZ; try apply Rle_IZR; unfold radix; auto with zarith.
+2: apply Rle_powerRZ; try apply IZR_le; unfold radix; auto with zarith.
 case (Rle_or_lt v u); intros.
 assert (powerRZ radix (-dExp bo+2*precision) <= Rabs d)%R.
 replace (-dExp bo+2*precision)%Z with
@@ -22932,7 +22537,7 @@ elim Roundp; intros A1 A2; elim A1; auto.
 apply oppBounded; elim Roundq; intros A1 A2; elim A1; auto.
 unfold FtoRradix; rewrite Fopp_correct;rewrite Rabs_Ropp; auto with real.
 apply Rle_trans with (2:=H13); auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; unfold radix; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; unfold radix; auto with zarith.
 replace (-dExp bo+precision)%Z with
   ((-dExp bo+2*precision)-precision)%Z; auto with zarith.
 apply AddExpGe1Underf2 with t s; auto with zarith.
@@ -22993,14 +22598,14 @@ right; unfold delta; rewrite H0.
 unfold FtoRradix; rewrite Fopp_correct; fold FtoRradix.
 replace (-q-(b*b-a*c))%R with ((a*c-q))%R;[idtac|rewrite C; ring].
 apply Rle_trans with (/2*(Fulp bo radix precision q))%R.
-apply Rmult_le_reg_l with (2%nat)%R; auto with real zarith.
+apply Rmult_le_reg_l with (2)%R; auto with real zarith.
 apply Rle_trans with (Fulp bo radix precision q);[idtac|simpl; right; field; auto with real].
 unfold FtoRradix; apply ClosestUlp; auto.
 elim Roundq; auto.
 apply Rle_trans with (2 * Fulp bo radix precision q)%R;
   [apply Rmult_le_compat_r; auto with real|idtac].
 unfold Fulp; auto with real zarith.
-apply powerRZ_le; try apply Rlt_IZR; auto with zarith.
+apply powerRZ_le; try apply IZR_lt; auto with zarith.
 lra.
 apply Rmult_le_compat_l; auto with real; right.
 apply trans_eq with (Fulp bo radix precision (Fopp q)).
@@ -23037,14 +22642,14 @@ replace (FtoR radix p) with (p-q)%R; [auto|
 right; unfold delta; rewrite H0.
 replace (p-(b*b-a*c))%R with ((-(b*b-p)))%R;[idtac|rewrite C; ring].
 apply Rle_trans with (/2*(Fulp bo radix precision p))%R.
-apply Rmult_le_reg_l with (2%nat)%R; auto with real zarith.
+apply Rmult_le_reg_l with (2)%R; auto with real zarith.
 apply Rle_trans with (Fulp bo radix precision p);[idtac|simpl; right; field; auto with real].
 rewrite Rabs_Ropp; unfold FtoRradix; apply ClosestUlp; auto.
 elim Roundp; auto.
 rewrite FulpComp with bo radix precision d p; auto with zarith.
 apply Rmult_le_compat_r; auto with real.
 unfold Fulp; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 lra.
 case (Req_dec v 0)%R.
 clear C; intros C.
@@ -23080,7 +22685,7 @@ apply Rle_trans with (Rabs (- (b * b - p)) + Rabs ((a * c - q)))%R;
   [apply Rabs_triang|idtac].
 apply Rle_trans with (/2*(Fulp bo radix precision p)
   +/2*(Fulp bo radix precision q))%R.
-apply Rplus_le_compat; apply Rmult_le_reg_l with (2%nat)%R; auto with real zarith.
+apply Rplus_le_compat; apply Rmult_le_reg_l with (2)%R; auto with real zarith.
 apply Rle_trans with (Fulp bo radix precision p);
   [idtac|simpl; right; field; auto with real].
 rewrite Rabs_Ropp; unfold FtoRradix; apply ClosestUlp; auto.
@@ -23100,7 +22705,7 @@ apply P_positive with bo precision b b; auto.
 fold FtoRradix; apply Rle_trans with (Rsqr b); auto with real.
 apply LeFulpPos; auto with real zarith.
 fold FtoRradix; rewrite H1; apply Rle_trans with (1*p)%R; auto with real.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 apply trans_eq with (Fulp bo radix precision (Fopp p)).
 unfold Fulp; rewrite Fnormalize_Fopp; auto with real zarith.
 apply FulpComp; auto with zarith.
@@ -23160,7 +22765,7 @@ right; unfold delta.
 replace (d - (b * b - a * c))%R with (-((dp-dq)-s))%R;
   [idtac|rewrite dpEq; auto; rewrite dqEq; auto; rewrite H3; rewrite H; ring].
 apply Rle_trans with (/2*(Fulp bo radix precision s))%R.
-apply Rmult_le_reg_l with (2%nat)%R; auto with real zarith.
+apply Rmult_le_reg_l with (2)%R; auto with real zarith.
 apply Rle_trans with (Fulp bo radix precision s);
   [idtac|simpl; right; field; auto with real].
 rewrite Rabs_Ropp; unfold FtoRradix; apply ClosestUlp; auto.
@@ -23169,7 +22774,7 @@ rewrite FulpComp with bo radix precision d s; auto with zarith real.
 2: elim SRounds; auto; intros A1 A2; elim A1; auto.
 apply Rmult_le_compat_r.
 unfold Fulp; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 lra.
 intros C''.
 case (Rle_or_lt v u); intros.
@@ -23218,7 +22823,7 @@ Let radix := 2%Z.
 Let FtoRradix := FtoR radix.
 Local Coercion FtoRradix : float >-> R.
 
-Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ TwoMoreThanOne).
+Let radixMoreThanZERO : (0 < radix)%Z := eq_refl.
 
 Hypothesis precisionGreaterThanOne : 1 < precision.
 Hypothesis pGivesBound : Zpos (vNum bo) = Zpower_nat radix precision.
@@ -23277,7 +22882,7 @@ unfold FtoRradix; rewrite Fopp_correct; fold FtoRradix.
 replace (-q-(b*b-a*c))%R with ((a*c-q)+(-(b*b)))%R;[idtac|ring].
 apply Rle_trans with (1:=(Rabs_triang (a * c - q)%R (-(b*b))%R)).
 apply Rle_trans with (/2*(Fulp bo radix precision q)+/2*(Fulp bo radix precision p))%R.
-apply Rplus_le_compat; apply Rmult_le_reg_l with (2%nat)%R; auto with real zarith.
+apply Rplus_le_compat; apply Rmult_le_reg_l with (2)%R; auto with real zarith.
 apply Rle_trans with (Fulp bo radix precision q);[idtac|simpl; right; field; auto with real].
 unfold FtoRradix; apply ClosestUlp; auto.
 elim Roundq; auto.
@@ -23294,7 +22899,7 @@ apply is_Fzero_rep2 with radix; auto with zarith.
 apply Rle_trans with (1 * Fulp bo radix precision q)%R;[right; field; auto with real|idtac].
 apply Rmult_le_compat; auto with real zarith.
 unfold Fulp; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 right; apply trans_eq with (Fulp bo radix precision (Fopp q)).
 unfold Fulp; rewrite Fnormalize_Fopp; auto with real zarith.
 apply FulpComp; auto with zarith.
@@ -23312,7 +22917,7 @@ unfold delta; rewrite H1.
 replace (p-(b*b-a*c))%R with (a*c+(-(b*b-p)))%R;[idtac|ring].
 apply Rle_trans with (1:=(Rabs_triang (a * c )%R (-(b*b-p))%R)).
 apply Rle_trans with (/2*(Fulp bo radix precision q)+/2*(Fulp bo radix precision p))%R.
-apply Rplus_le_compat; apply Rmult_le_reg_l with (2%nat)%R; auto with real zarith.
+apply Rplus_le_compat; apply Rmult_le_reg_l with (2)%R; auto with real zarith.
 apply Rle_trans with (Fulp bo radix precision q);[idtac|simpl; right; field; auto with real].
 replace (a*c)%R with (a*c-q)%R;[idtac|rewrite H0;ring].
 unfold FtoRradix; apply ClosestUlp; auto.
@@ -23329,7 +22934,7 @@ apply is_Fzero_rep2 with radix; auto with zarith.
 apply Rle_trans with (1 * Fulp bo radix precision p)%R;[right; field; auto with real|idtac].
 apply Rmult_le_compat; auto with real zarith.
 unfold Fulp; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; auto with zarith.
 right; apply FulpComp; auto with zarith.
 case (Rle_or_lt (p + q)%R (3 * Rabs (p - q))%R); intros.
 unfold delta;apply discri1 with p q; auto.
@@ -23340,8 +22945,7 @@ apply Rle_trans with (Rsqr (FtoR 2 b)) ; auto with real.
 2:unfold delta; apply discri9 with p q t dp dq s; auto.
 exists (Float 0%Z 0%Z).
 split.
-unfold Fbounded; split; auto with zarith.
-simpl; case (dExp bo); auto with zarith.
+unfold Fbounded; split; unfold Fexp; try lia; auto with zarith.
 apply trans_eq with 0%R.
 unfold FtoR; simpl; ring.
 fold radix; fold FtoRradix.
@@ -23387,11 +22991,8 @@ Hypothesis
 Variable Iminus : float -> float -> float.
 Hypothesis IminusPlus : forall p q : float, Iminus p q = Iplus p (Fopp q).
 
-Let radixMoreThanOne : (1 < radix)%Z.
-unfold radix in |- *; red in |- *; simpl in |- *; auto.
-Qed.
-
-Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ radixMoreThanOne).
+Let radixMoreThanOne : (1 < radix)%Z := eq_refl.
+Let radixMoreThanZERO : (0 < radix)%Z := eq_refl.
 
 
 Theorem IminusCorrect :
@@ -23525,13 +23126,14 @@ Theorem Dekker1_FTS :
  (0 <= q)%R ->
  (q <= p)%R ->
  Fbounded b p -> Fbounded b q -> Iminus (Iplus p q) p = (Iplus p q - p)%R :>R.
+Proof.
 intros p q H' H'0 H'1 H'2.
 apply MDekkerAux4; auto.
 apply oppBoundedInv; auto.
 rewrite Fopp_Fminus; auto.
 apply Sterbenz; auto.
 apply IplusBounded; auto.
-apply Rmult_le_reg_l with (r := INR 2); auto with real arith.
+apply Rmult_le_reg_l with (r := 2%R); auto with real arith.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real arith;
  rewrite Rmult_1_l.
 apply (RoundedModeMult b radix) with (P := Closest b radix) (r := (p + q)%R);
@@ -23543,7 +23145,7 @@ case H'; clear H'; intros H'.
 apply Rmult_le_reg_l with (r := (/ radix)%R); auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_l; auto with real; rewrite Rmult_1_l.
 apply (FmultRadixInv b radix precision) with (y := (p + q)%R); auto.
-apply Rmult_lt_reg_l with (r := INR 2); auto with real.
+apply Rmult_lt_reg_l with (r := 2%R); auto with real.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real; rewrite Rmult_1_l.
 apply Rle_lt_trans with (radix * p)%R.
 apply Rledouble; auto.
@@ -23564,13 +23166,14 @@ Theorem Dekker2_FTS :
  (- q <= p)%R ->
  (p <= radix * - q)%R ->
  Fbounded b p -> Fbounded b q -> Iminus (Iplus p q) p = (Iplus p q - p)%R :>R.
+Proof.
 intros p q H' H'0 H'1 H'2 H'3.
 apply MDekkerAux3; auto.
 rewrite <- (Fopp_Fopp q).
 change (Fbounded b (Fminus radix p (Fopp q))) in |- *.
 apply Sterbenz; auto.
 apply oppBounded; auto.
-apply Rmult_le_reg_l with (r := INR 2); auto with real arith.
+apply Rmult_le_reg_l with (r := 2%R); auto with real arith.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real arith;
  rewrite Rmult_1_l; auto.
 rewrite Fopp_correct; auto.
@@ -23584,25 +23187,26 @@ Theorem Dekker3 :
  (q <= 0)%R ->
  (radix * - q < p)%R ->
  Fbounded b p -> Fbounded b q -> Iminus (Iplus p q) p = (Iplus p q - p)%R :>R.
+Proof.
 intros p q H' H'0 H'1 H'2.
 apply MDekkerAux4; auto.
 apply Sterbenz; auto.
 apply IplusBounded; auto.
 apply (FmultRadixInv b radix precision) with (y := (p + q)%R); auto.
-apply Rmult_lt_reg_l with (r := INR 2); auto with real arith.
+apply Rmult_lt_reg_l with (r := 2%R); auto with real arith.
 rewrite <- Rmult_assoc; rewrite Rinv_r; auto with real arith;
  rewrite Rmult_1_l.
-replace (2%nat * (p + q))%R with (2%nat * p + 2%nat * q)%R;
+replace (2 * (p + q))%R with (2 * p + 2 * q)%R;
  [ idtac | simpl in |- *; ring ].
 apply Rplus_lt_reg_l with (r := (- FtoR radix p)%R).
 replace (- FtoR radix p + FtoR radix p)%R with 0%R;
  [ idtac | simpl in |- *; ring ].
-replace (- FtoR radix p + (2%nat * p + 2%nat * q))%R with (p + 2%nat * q)%R;
+replace (- FtoR radix p + (2 * p + 2 * q))%R with (p + 2 * q)%R;
  [ idtac | simpl in |- *; unfold FtoRradix in |- *; ring ].
-apply Rplus_lt_reg_l with (r := (2%nat * - q)%R).
-replace (2%nat * - q + 0)%R with (2%nat * - q)%R;
+apply Rplus_lt_reg_l with (r := (2 * - q)%R).
+replace (2 * - q + 0)%R with (2 * - q)%R;
  [ idtac | simpl in |- *; ring ].
-replace (2%nat * - q + (p + 2%nat * q))%R with (FtoRradix p);
+replace (2 * - q + (p + 2 * q))%R with (FtoRradix p);
  [ idtac | simpl in |- *; ring ]; auto.
 apply (RoundedModeMult b radix) with (P := Closest b radix) (r := (p + q)%R);
  auto.
@@ -23730,17 +23334,17 @@ Hypothesis Ca: Fcanonic radix bo a.
 Hypothesis Fexpb: (- dExp bo < Fexp b)%Z.
 
 
-Let Unmoins := (1 - (powerRZ radix (Zsucc (-p)))/2)%R.
-Let Unplus  := (1 + (powerRZ radix (Zsucc (-p)))/2)%R.
+Let Unmoins := (1 - (powerRZ radix (Z.succ (-p)))/2)%R.
+Let Unplus  := (1 + (powerRZ radix (Z.succ (-p)))/2)%R.
 
 Lemma UnMoinsPos: (0 < Unmoins)%R.
 unfold Unmoins.
-assert (powerRZ radix (Zsucc (-p)) / 2 < 1)%R; auto with real.
+assert (powerRZ radix (Z.succ (-p)) / 2 < 1)%R; auto with real.
 apply Rmult_lt_reg_l with 2%R; auto with real.
-apply Rle_lt_trans with (powerRZ radix (Zsucc (-p)));
+apply Rle_lt_trans with (powerRZ radix (Z.succ (-p)));
   [right; field; auto with real| ring_simplify (2*1)%R].
-apply Rle_lt_trans with (powerRZ radix (Zsucc (-1))); unfold Zpred; auto with real zarith.
-apply Rle_powerRZ;try apply Rle_IZR;  auto with zarith.
+apply Rle_lt_trans with (powerRZ radix (Z.succ (-1))); unfold Z.pred; auto with real zarith.
+apply Rle_powerRZ;try apply IZR_le;  auto with zarith.
 simpl; auto with real.
 apply Rplus_lt_reg_l with (powerRZ radix (Z.succ (- p)) / 2)%R.
 ring_simplify; assumption.
@@ -23758,7 +23362,7 @@ apply Rplus_le_reg_l with (-Rabs z+(1-Unmoins)*Rabs f)%R.
 apply Rle_trans with (Rabs f-Rabs z)%R;[right; ring|idtac].
 apply Rle_trans with (Rabs (f-z));[apply Rabs_triang_inv|idtac].
 replace (f-z)%R with (-(z-f))%R;[rewrite Rabs_Ropp|ring].
-apply Rle_trans with (Rabs (f) * (/ S 1 * powerRZ radix (Zsucc (- p))))%R.
+apply Rle_trans with (Rabs (f) * (/ S 1 * powerRZ radix (Z.succ (- p))))%R.
 unfold FtoRradix; apply ClosestErrorBoundNormal with bo; auto with zarith.
 rewrite FcanonicFnormalizeEq; auto with zarith; left; auto.
 unfold Unmoins, Rdiv; right; simpl; field.
@@ -23773,7 +23377,7 @@ intros.
 apply Rplus_le_reg_l with (-(Rabs f))%R.
 apply Rle_trans with (Rabs z-Rabs f)%R;[right; ring|idtac].
 apply Rle_trans with (Rabs (z-f));[apply Rabs_triang_inv|idtac].
-apply Rle_trans with (Rabs (f) * (/ S 1 * powerRZ radix (Zsucc (- p))))%R.
+apply Rle_trans with (Rabs (f) * (/ S 1 * powerRZ radix (Z.succ (- p))))%R.
 unfold FtoRradix; apply ClosestErrorBoundNormal with bo; auto with zarith.
 rewrite FcanonicFnormalizeEq; auto with zarith; left; auto.
 unfold Unplus; simpl; unfold Rdiv; right; field.
@@ -23833,8 +23437,8 @@ unfold FtoRradix; apply RoundAbsMonotonel with bo p (Closest bo radix) (a+b+e)%R
    auto with real zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
 split; simpl; auto with zarith.
-rewrite pGivesBound; apply Zlt_trans with (Zpower_nat radix 1); auto with zarith.
-unfold Zpower_nat; simpl; rewrite Zabs_eq; auto with zarith.
+rewrite pGivesBound; apply Z.lt_trans with (Zpower_nat radix 1); auto with zarith.
+unfold Zpower_nat; simpl; rewrite Z.abs_eq; auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
 replace (a+b+e)%R with ((a+b)-(-e))%R;[idtac|ring].
 apply Rle_trans with (Rabs (a+b)-Rabs (-e))%R;[idtac|apply Rabs_triang_inv].
@@ -23858,17 +23462,17 @@ rewrite <- Fabs_correct; auto.
 unfold FtoR.
 replace (Fexp (Fabs (Fplus radix a b))) with (Fexp (Fplus radix a b)); auto with zarith.
 replace (Fexp (Fplus radix a b)) with (Fexp b).
-case (Zle_lt_or_eq 0 (Zabs (Fnum (Fplus radix a b)))); auto with zarith.
-intros; case (Zle_lt_or_eq 1 (Zabs (Fnum (Fplus radix a b)))); auto with zarith.
+case (Zle_lt_or_eq 0 (Z.abs (Fnum (Fplus radix a b)))); auto with zarith.
+intros; case (Zle_lt_or_eq 1 (Z.abs (Fnum (Fplus radix a b)))); auto with zarith.
 right; right.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_IZR; generalize H1; unfold Fabs; simpl; auto with zarith.
+apply powerRZ_le, IZR_lt; lia.
+apply IZR_le; generalize H1; unfold Fabs; simpl; auto with zarith.
 intros; right; left.
- generalize H1; unfold Fabs; simpl; auto with zarith real.
+ generalize H1; unfold Fabs; simpl; try lia.
 intros H2; rewrite <- H2; simpl; ring.
-left; replace (Fnum (Fplus radix a b)) with 0%Z;[simpl; ring|auto with zarith].
-apply sym_eq; unfold Fplus; simpl; apply Zmin_le2.
+left; replace (Fnum (Fplus radix a b)) with 0%Z;[simpl; ring|lia].
+apply sym_eq; unfold Fplus; simpl; apply Z.min_r.
 apply Fcanonic_Rle_Zle with radix bo p; auto with zarith.
 case H0;intros H1;[idtac|case H1; clear H1; intros H1]; clear H0.
 replace (FtoRradix x) with 0%R.
@@ -23902,23 +23506,23 @@ apply Rabs_pos.
 apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with (3*Unmoins)%R;[idtac|right; field; auto with real].
 unfold Unplus, Unmoins.
-apply Rplus_le_reg_l with (-2+3* (powerRZ radix (Zsucc (- p)) / 2))%R.
+apply Rplus_le_reg_l with (-2+3* (powerRZ radix (Z.succ (- p)) / 2))%R.
 ring_simplify.
 apply Rle_trans with (powerRZ radix 0);[idtac|simpl; auto with real].
 apply Rle_trans with (powerRZ radix (3-p));
-  [idtac|apply Rle_powerRZ; try apply Rle_IZR; auto with zarith real].
-apply Rle_trans with ((5/2)*(powerRZ radix (Zsucc (-p))))%R;[right; field; auto with real|idtac].
-apply Rle_trans with ((radix*radix)*(powerRZ radix (Zsucc (- p))))%R.
+  [idtac|apply Rle_powerRZ; try apply IZR_le; auto with zarith real].
+apply Rle_trans with ((5/2)*(powerRZ radix (Z.succ (-p))))%R;[right; field; auto with real|idtac].
+apply Rle_trans with ((radix*radix)*(powerRZ radix (Z.succ (- p))))%R.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with 4%R; auto with real zarith.
 apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with 5%R;[simpl; right; field; auto with real|idtac].
 apply Rle_trans with 8%R; [auto with real zarith|simpl; right; ring].
-rewrite <- mult_IZR; apply Rle_IZR.
-apply Zle_trans with (2*2)%Z; auto with zarith.
+rewrite <- mult_IZR; apply IZR_le.
+apply Z.le_trans with (2*2)%Z. auto with zarith.
 apply Zmult_le_compat; auto with zarith.
-unfold Zsucc, Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
+unfold Z.succ, Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 simpl; right; ring.
 Qed.
 
@@ -23932,14 +23536,14 @@ rewrite <- Fabs_correct; auto.
 unfold FtoR.
 replace (Fexp (Fabs (Fplus radix a b))) with (Fexp (Fplus radix a b)); auto with zarith.
 replace (Fexp (Fplus radix a b)) with (Fexp b).
-case (Zle_lt_or_eq 0 (Zabs (Fnum (Fplus radix a b)))); auto with zarith.
+case (Zle_lt_or_eq 0 (Z.abs (Fnum (Fplus radix a b)))); auto with zarith.
 intros; right.
 apply Rle_trans with (1%Z*(powerRZ radix (Fexp b)))%R;[right; simpl; ring|idtac].
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_IZR; generalize H1; simpl; auto with zarith.
-intros; left; replace (Fnum (Fplus radix a b)) with 0%Z;[simpl; ring|auto with zarith].
-apply sym_eq; unfold Fplus; simpl; apply Zmin_le2.
+apply powerRZ_le, IZR_lt; lia.
+apply IZR_le; generalize H1; simpl; lia.
+intros; left; replace (Fnum (Fplus radix a b)) with 0%Z;[simpl; ring|lia].
+apply sym_eq; unfold Fplus; simpl; apply Z.min_r.
 apply Fcanonic_Rle_Zle with radix bo p; auto with zarith.
 case H1;intros H2; clear H1.
 absurd (FtoRradix x=0)%R; auto with real.
@@ -23974,27 +23578,27 @@ apply Rabs_pos.
 apply Rmult_le_reg_l with 3%R; auto with real.
 apply Rle_trans with (4*Unmoins)%R;[idtac|right; field; auto with real].
 unfold Unplus, Unmoins.
-apply Rplus_le_reg_l with (-3+4* (powerRZ radix (Zsucc (- p)) / 2))%R.
+apply Rplus_le_reg_l with (-3+4* (powerRZ radix (Z.succ (- p)) / 2))%R.
 ring_simplify.
 apply Rle_trans with (powerRZ radix 0);[idtac|simpl; auto with real].
 apply Rle_trans with (powerRZ radix (3-p));
   [idtac|apply Rle_powerRZ; auto with zarith real].
-apply Rle_trans with ((7/2)*(powerRZ radix (Zsucc (-p))))%R;[right; field; auto with real|idtac].
-apply Rle_trans with ((radix*radix)*(powerRZ radix (Zsucc (- p))))%R.
+apply Rle_trans with ((7/2)*(powerRZ radix (Z.succ (-p))))%R;[right; field; auto with real|idtac].
+apply Rle_trans with ((radix*radix)*(powerRZ radix (Z.succ (- p))))%R.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with 4%R; auto with real zarith.
 apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with 7%R;[simpl; right; field; auto with real|idtac].
 apply Rle_trans with 8%R; [auto with real zarith|simpl; right; ring].
-rewrite <- mult_IZR; apply Rle_IZR.
-apply Zle_trans with (2*2)%Z; auto with zarith.
+rewrite <- mult_IZR; apply IZR_le.
+apply Z.le_trans with (2*2)%Z. auto with zarith.
 apply Zmult_le_compat; auto with zarith.
-unfold Zsucc, Zminus; repeat rewrite powerRZ_add; auto with real zarith.
+unfold Z.succ, Zminus; repeat rewrite powerRZ_add; auto with real zarith.
 simpl; right; field.
-apply IZR_neq; omega.
-apply IZR_neq; omega.
-apply Rle_IZR; omega.
+apply IZR_neq; lia.
+apply IZR_neq; lia.
+apply IZR_le; lia.
 Qed.
 
 End GenericA.
@@ -24056,7 +23660,7 @@ Qed.
 
 
 Lemma Subexact: exists v:float, (FtoRradix v=x-y)%R /\ (Fbounded bo v) /\
-        (Fexp v=Zmin (Fexp x) (Fexp y))%Z.
+        (Fexp v=Z.min (Fexp x) (Fexp y))%Z.
 case (Req_dec (FtoRradix x) 0); intros.
 absurd (FtoRradix x =0)%R; auto with real.
 assert (~ is_Fzero x).
@@ -24064,7 +23668,7 @@ apply FnormalNotZero with radix bo; auto.
 unfold is_Fzero in H0.
 unfold FtoRradix, FtoR; apply prod_neq_R0; auto with real zarith.
 apply IZR_neq; auto.
-apply Rgt_not_eq; apply powerRZ_lt, Rlt_IZR; omega.
+apply Rgt_not_eq; apply powerRZ_lt, IZR_lt; lia.
 case (Rle_or_lt 0 y); intros S.
 exists (Fminus radix x y); split.
 unfold FtoRradix; rewrite Fminus_correct; auto with real zarith.
@@ -24134,15 +23738,15 @@ rewrite <- LSB_abs; auto.
 assert (exists ny:Z, (Rabs y=ny*powerRZ radix (LSB radix x))%R).
 unfold FtoRradix; rewrite <- Fabs_correct; auto.
 elim LSB_rep_min with radix (Fabs y); auto.
-intros ny1 H2; exists (ny1*Zpower_nat radix (Zabs_nat (LSB radix y - LSB radix x)))%Z;
+intros ny1 H2; exists (ny1*Zpower_nat radix (Z.abs_nat (LSB radix y - LSB radix x)))%Z;
    rewrite H2.
 rewrite <- LSB_abs; auto; rewrite mult_IZR; unfold FtoR; simpl;
   unfold FtoR; simpl.
 rewrite Zpower_nat_Z_powerRZ.
 rewrite Rmult_assoc; rewrite <- powerRZ_add; auto with real zarith.
-replace (Zabs_nat (LSB radix y - LSB radix x)+LSB radix x)%Z with (LSB radix y); auto with real.
-rewrite <- Zabs_absolu; rewrite Zabs_eq; auto with zarith.
-apply IZR_neq; omega.
+replace (Z.abs_nat (LSB radix y - LSB radix x)+LSB radix x)%Z with (LSB radix y); auto with real.
+rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
+apply IZR_neq; lia.
 apply Rplus_le_reg_l with (powerRZ radix (LSB radix x)-Rabs x)%R.
 ring_simplify.
 elim H1; intros nx H1'; elim H2; intros ny H2'; rewrite H1'; rewrite H2'.
@@ -24151,14 +23755,14 @@ apply Rle_trans with ((ny-nx)*powerRZ radix (LSB radix x))%R;[idtac|simpl; right
 apply Rmult_le_compat_r; auto with real zarith.
 assert (ny-nx=(ny-nx)%Z)%R.
 unfold Zminus; rewrite plus_IZR; rewrite Ropp_Ropp_IZR; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-rewrite <- minus_IZR; apply Rle_IZR.
+apply powerRZ_le, IZR_lt; lia.
+rewrite <- minus_IZR; apply IZR_le.
 assert (0 < ny - nx)%Z; auto with real zarith.
-apply Zlt_Rlt; rewrite minus_IZR.
+apply lt_IZR; rewrite minus_IZR.
 apply Rplus_lt_reg_r with nx.
 ring_simplify.
 apply Rmult_lt_reg_l with ( powerRZ radix (LSB radix x)); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 rewrite Rmult_comm; rewrite <- H1'; rewrite Rmult_comm; rewrite <- H2'; auto.
 Qed.
 
@@ -24175,10 +23779,11 @@ Hypothesis x1Exp: (-dExp bo < Fexp x1)%Z.
 
 Lemma Midpoint_aux_aux:
     (FtoRradix x1= f) \/ (exists v:float, (FtoRradix v=x2)%R /\ (Fexp x1 -2 <= Fexp v)%Z).
-case (Z_eq_dec (Fnum x1) (nNormMin radix p)); intros H1.
+Proof.
+case (Z.eq_dec (Fnum x1) (nNormMin radix p)); intros H1.
 case (Rle_or_lt 0 x2); intros G.
 assert (Rabs x2 <= powerRZ radix (Fexp x1)/2)%R.
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with  (powerRZ radix (Fexp x1));[idtac|right; simpl; field; auto with real].
 replace (FtoRradix x2) with ((x1+x2) -x1)%R;[idtac|ring].
 apply Rle_trans with (Fulp bo radix p x1).
@@ -24200,16 +23805,16 @@ apply LSB_Pred; auto.
 rewrite (Rabs_right (Float n (Fexp x1 - 1))); auto with real.
 rewrite <- H0; auto.
 apply Rle_ge; unfold FtoRradix; apply LeFnumZERO; simpl; auto with real zarith.
-apply Zle_trans with (MSB radix x2).
+apply Z.le_trans with (MSB radix x2).
 apply LSB_le_MSB; auto with zarith.
 contradict x2NonZero.
 unfold FtoRradix; apply is_Fzero_rep1; auto.
-apply Zle_trans with (Fexp x1-1)%Z.
-2: apply Zle_trans with (Fexp ((Float n (Fexp x1 - 1)))); auto with zarith.
+apply Z.le_trans with (Fexp x1-1)%Z.
+2: apply Z.le_trans with (Fexp ((Float n (Fexp x1 - 1)))); auto with zarith.
 2: apply Fexp_le_LSB.
 assert  (MSB radix x2 < Fexp x1)%Z; auto with zarith.
 apply Zlt_powerRZ with radix; auto with real.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply Rle_lt_trans with (FtoR radix (Float (S 0) (MSB radix x2)));
        [right; unfold FtoR; simpl; ring|idtac].
 apply Rle_lt_trans with (FtoR radix (Fabs x2)).
@@ -24220,27 +23825,27 @@ rewrite Fabs_correct; auto; fold FtoRradix.
 apply Rlt_le_trans with (1:=H).
 unfold Rdiv; apply Rle_trans with ( (powerRZ radix (Fexp x1)*1))%R; auto with real zarith.
 apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (/1)%R; auto with real.
 rewrite (Rabs_right (Float n (Fexp x1 - 1))); auto with real.
 2: apply Rle_ge; unfold FtoRradix; apply LeFnumZERO; simpl; auto with real zarith.
 rewrite <- H0; unfold Rminus; rewrite Rplus_comm.
 apply Rplus_lt_compat_r; apply Ropp_lt_contravar.
 unfold FtoRradix; rewrite <- Fabs_correct; auto.
-apply Rlt_le_trans with  (FtoR radix (Float (S 0) (Zsucc (MSB radix y))))%R.
+apply Rlt_le_trans with  (FtoR radix (Float (S 0) (Z.succ (MSB radix y))))%R.
 apply abs_lt_MSB; auto.
-unfold FtoR; simpl; ring_simplify (1 * powerRZ radix (Zsucc (MSB radix y)))%R.
+unfold FtoR; simpl; ring_simplify (1 * powerRZ radix (Z.succ (MSB radix y)))%R.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 assert  (powerRZ radix (Fexp x1 + p - 1) <= x1)%R.
 apply Rle_trans with (((nNormMin radix p))*(powerRZ radix (Fexp x1)))%R.
 unfold nNormMin; rewrite Zpower_nat_Z_powerRZ.
 replace (Fexp x1 + p - 1)%Z with (Fexp x1 + pred p)%Z.
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; right;ring.
-rewrite inj_pred; unfold Zpred; auto with zarith.
+rewrite inj_pred; unfold Z.pred; auto with zarith.
 unfold FtoRradix, FtoR; apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_IZR; auto with zarith.
+apply powerRZ_le, IZR_lt; lia.
+apply IZR_le; auto with zarith.
 left; unfold FtoRradix.
 apply ImplyClosestStrict with bo p (x1+x2+y)%R (Fexp x1); auto with zarith.
 elim x1Def; auto.
@@ -24258,7 +23863,7 @@ apply Rabs_pos.
 case (Rle_or_lt (Rabs y) (Rabs x2)); auto.
 intros I; absurd (MSB radix y < LSB radix x2)%Z; auto.
 apply Zle_not_lt.
-apply Zle_trans with (MSB radix x2).
+apply Z.le_trans with (MSB radix x2).
 apply LSB_le_MSB; auto with zarith.
 contradict x2NonZero.
 unfold FtoRradix; apply is_Fzero_rep1; auto.
@@ -24284,7 +23889,7 @@ apply trans_eq with (-(Fminus radix x1 (FPred bo radix p x1) - Rabs x2))%R.
 rewrite (Rabs_left x2); auto with real.
 unfold FtoRradix; rewrite Fminus_correct; auto with zarith; ring.
 unfold FtoRradix; rewrite FPredDiff3; auto with zarith.
-unfold FtoR, Zpred,Zminus; simpl;ring.
+unfold FtoR, Z.pred,Zminus; simpl;ring.
 apply Rplus_le_reg_l with (-(Rabs x2))%R.
 ring_simplify (- Rabs x2 + 2 * Rabs x2)%R.
 apply Rle_trans with (Rabs ((FPred bo radix p x1)-(x1+x2)))%R.
@@ -24302,7 +23907,7 @@ rewrite H; rewrite Rabs_Ropp; apply Rlt_not_le.
 rewrite Rabs_left; auto with real.
 apply Rplus_lt_reg_r with (-Rabs x2+powerRZ radix (Fexp x1-1))%R.
 ring_simplify; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 pattern (FtoRradix x2) at 1; replace (FtoRradix x2) with (-(x1-(x1+x2)))%R;[rewrite Rabs_Ropp|ring].
 elim x1Def; intros Y1 Y2; unfold FtoRradix; apply Y2; auto.
 apply FBoundedPred; auto with zarith.
@@ -24322,16 +23927,16 @@ apply LSB_Pred; auto.
 rewrite (Rabs_right (Float n (Fexp x1 - 2))); auto with real.
 rewrite <- H0; auto.
 apply Rle_ge; unfold FtoRradix; apply LeFnumZERO; simpl; auto with real zarith.
-apply Zle_trans with (MSB radix x2).
+apply Z.le_trans with (MSB radix x2).
 apply LSB_le_MSB; auto with zarith.
 contradict x2NonZero.
 unfold FtoRradix; apply is_Fzero_rep1; auto.
-apply Zle_trans with (Fexp x1-2)%Z.
-2: apply Zle_trans with (Fexp ((Float n (Fexp x1 - 2)))); auto with zarith.
+apply Z.le_trans with (Fexp x1-2)%Z.
+2: apply Z.le_trans with (Fexp ((Float n (Fexp x1 - 2)))); auto with zarith.
 2: apply Fexp_le_LSB.
 assert  (MSB radix x2 < Fexp x1-1)%Z; auto with zarith.
 apply Zlt_powerRZ with radix; auto with real.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply Rle_lt_trans with (FtoR radix (Float (S 0) (MSB radix x2)));
        [right; unfold FtoR; simpl; ring|idtac].
 apply Rle_lt_trans with (FtoR radix (Fabs x2)).
@@ -24342,24 +23947,24 @@ rewrite Fabs_correct; auto; fold FtoRradix.
 apply Rlt_le_trans with (1:=H).
 unfold Rdiv; apply Rle_trans with ( (powerRZ radix (Fexp x1-1)*1))%R; auto with real zarith.
 apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (/1)%R; auto with real.
 rewrite (Rabs_right (Float n (Fexp x1 - 2))); auto with real.
 2: apply Rle_ge; unfold FtoRradix; apply LeFnumZERO; simpl; auto with real zarith.
 rewrite <- H0; unfold Rminus; rewrite Rplus_comm.
 apply Rplus_lt_compat_r; apply Ropp_lt_contravar.
 unfold FtoRradix; rewrite <- Fabs_correct; auto.
-apply Rlt_le_trans with  (FtoR radix (Float (S 0) (Zsucc (MSB radix y))))%R.
+apply Rlt_le_trans with  (FtoR radix (Float (S 0) (Z.succ (MSB radix y))))%R.
 apply abs_lt_MSB; auto.
-unfold FtoR; simpl; ring_simplify (1 * powerRZ radix (Zsucc (MSB radix y)))%R.
+unfold FtoR; simpl; ring_simplify (1 * powerRZ radix (Z.succ (MSB radix y)))%R.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 assert (powerRZ radix (Fexp x1 + p - 1) = x1)%R.
 unfold FtoRradix, FtoR; replace (Fexp x1+p-1)%Z with (Fexp x1+pred p)%Z.
 rewrite powerRZ_add; auto with real zarith.
 rewrite H1; unfold nNormMin; rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
-apply IZR_neq; omega.
-rewrite inj_pred; auto with zarith; unfold Zpred; ring.
+apply IZR_neq; lia.
+rewrite inj_pred; auto with zarith; unfold Z.pred; ring.
 left; unfold FtoRradix.
 apply ImplyClosestStrict with bo p (x1+x2+y)%R (Fexp x1-1)%Z; auto with zarith.
 elim x1Def; auto.
@@ -24373,17 +23978,17 @@ apply Rle_trans with  (powerRZ radix (Fexp x1 - 1 + p - 1)+powerRZ radix (Fexp x
 rewrite Rplus_comm; apply Rplus_le_compat_l.
 apply Rle_trans with (powerRZ radix (Fexp x1 - 1) *1)%R;
    [unfold Rdiv; apply Rmult_le_compat_l; auto with real zarith|right; ring].
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (/1)%R; auto with real.
 apply Rle_trans with (powerRZ radix ((Fexp x1 - 1 + p - 1)+1)).
 apply powerRZSumRle; auto with zarith.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply Rplus_le_compat; auto with real.
 apply Rle_trans with (-(-(x2+y)))%R;[apply Ropp_le_contravar|right; ring].
 apply Rle_trans with (Rabs (-(x2+y)));[apply RRle_abs|rewrite Rabs_Ropp; auto with real].
 fold FtoRradix; rewrite <- H2; apply Rle_powerRZ; auto with zarith real.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 fold FtoRradix; replace (x1+x2+y-x1)%R with (x2+y)%R; auto with real; ring.
 right; elim Evenradix; intros n Hn.
 exists (Float (-n) (Fexp x1-2)); split;[idtac|simpl; auto with zarith].
@@ -24395,7 +24000,7 @@ apply IZR_neq; auto with zarith.
 apply IZR_neq; auto with zarith.
 rewrite Rabs_left; auto with real.
 assert (Rabs x2 <= powerRZ radix (Fexp x1)/2)%R.
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with  (powerRZ radix (Fexp x1));[idtac|right; simpl; field; auto with real].
 replace (FtoRradix x2) with ((x1+x2) -x1)%R;[idtac|ring].
 apply Rle_trans with (Fulp bo radix p x1).
@@ -24418,16 +24023,16 @@ apply LSB_Pred; auto.
 rewrite (Rabs_right (Float n (Fexp x1 - 1))); auto with real.
 rewrite <- H0; auto.
 apply Rle_ge; unfold FtoRradix; apply LeFnumZERO; simpl; auto with real zarith.
-apply Zle_trans with (MSB radix x2).
+apply Z.le_trans with (MSB radix x2).
 apply LSB_le_MSB; auto with zarith.
 contradict x2NonZero.
 unfold FtoRradix; apply is_Fzero_rep1; auto.
-apply Zle_trans with (Fexp x1-1)%Z.
-2: apply Zle_trans with (Fexp ((Float n (Fexp x1 - 1)))); auto with zarith.
+apply Z.le_trans with (Fexp x1-1)%Z.
+2: apply Z.le_trans with (Fexp ((Float n (Fexp x1 - 1)))); auto with zarith.
 2: apply Fexp_le_LSB.
 assert  (MSB radix x2 < Fexp x1)%Z; auto with zarith.
 apply Zlt_powerRZ with radix; auto with real.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply Rle_lt_trans with (FtoR radix (Float (S 0) (MSB radix x2)));
        [right; unfold FtoR; simpl; ring|idtac].
 apply Rle_lt_trans with (FtoR radix (Fabs x2)).
@@ -24438,37 +24043,37 @@ rewrite Fabs_correct; auto; fold FtoRradix.
 apply Rlt_le_trans with (1:=H).
 unfold Rdiv; apply Rle_trans with ( (powerRZ radix (Fexp x1)*1))%R; auto with real zarith.
 apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (/1)%R; auto with real.
 rewrite (Rabs_right (Float n (Fexp x1 - 1))); auto with real.
 2: apply Rle_ge; unfold FtoRradix; apply LeFnumZERO; simpl; auto with real zarith.
 rewrite <- H0; unfold Rminus; rewrite Rplus_comm.
 apply Rplus_lt_compat_r; apply Ropp_lt_contravar.
 unfold FtoRradix; rewrite <- Fabs_correct; auto.
-apply Rlt_le_trans with  (FtoR radix (Float (S 0) (Zsucc (MSB radix y))))%R.
+apply Rlt_le_trans with  (FtoR radix (Float (S 0) (Z.succ (MSB radix y))))%R.
 apply abs_lt_MSB; auto.
-unfold FtoR; simpl; ring_simplify (1 * powerRZ radix (Zsucc (MSB radix y)))%R.
+unfold FtoR; simpl; ring_simplify (1 * powerRZ radix (Z.succ (MSB radix y)))%R.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 assert  (powerRZ radix (Fexp x1 + p - 1) +powerRZ radix (Fexp x1) <= x1)%R.
 apply Rle_trans with (((nNormMin radix p)+1)*(powerRZ radix (Fexp x1)))%R.
 unfold nNormMin; rewrite Zpower_nat_Z_powerRZ.
 replace (Fexp x1 + p - 1)%Z with (Fexp x1 + pred p)%Z.
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; right;ring.
-rewrite inj_pred; unfold Zpred; auto with zarith.
+rewrite inj_pred; unfold Z.pred; auto with zarith.
 unfold FtoRradix, FtoR; apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 replace 1%R with (IZR 1); auto with zarith; rewrite <- plus_IZR.
 assert (nNormMin radix p + 1 <= Fnum x1)%Z; auto with real zarith.
 assert (nNormMin radix p  <= Fnum x1)%Z; auto with real zarith.
 elim Nx1; intros.
 apply Zmult_le_reg_r with radix; auto with zarith.
 rewrite Zmult_comm; rewrite <- PosNormMin with radix bo p; auto with zarith.
-apply Zle_trans with (1:=H3).
-rewrite Zabs_eq; auto with zarith.
+apply Z.le_trans with (1:=H3).
+rewrite Z.abs_eq; auto with zarith.
 apply Z.mul_nonneg_nonneg; auto with zarith.
 apply LeR0Fnum with radix; auto with real zarith.
-apply Rle_IZR; auto.
+apply IZR_le; auto.
 left; unfold FtoRradix.
 apply ImplyClosestStrict with bo p (x1+x2+y)%R (Fexp x1); auto with zarith.
 elim x1Def; auto.
@@ -24482,12 +24087,12 @@ apply Rle_trans with (Rabs (-(x2+y))); [apply RRle_abs|rewrite Rabs_Ropp].
 apply Rle_trans with (powerRZ radix (Fexp x1) / 2)%R; auto with real.
 apply Rle_trans with (powerRZ radix (Fexp x1) *1)%R; auto with real.
 unfold Rdiv; apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (/1)%R; auto with real.
 fold FtoRradix; apply Rle_trans with (2:=H2); auto with real zarith.
 apply Rle_trans with (powerRZ radix (Fexp x1 + p - 1)+0)%R; auto with real zarith.
 apply Rplus_le_compat_l.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 fold FtoRradix; replace (x1+x2+y-x1)%R with (x2+y)%R; auto with real; ring.
 right; elim Evenradix; intros n Hn.
 case (Rle_or_lt 0%R x2); intros.
@@ -24545,7 +24150,7 @@ apply FnormalNotZero with radix bo; auto.
 unfold is_Fzero in H0.
 unfold FtoRradix, FtoR; apply prod_neq_R0; auto with real zarith.
 apply IZR_neq; auto.
-apply Rgt_not_eq; apply powerRZ_lt, Rlt_IZR; omega.
+apply Rgt_not_eq; apply powerRZ_lt, IZR_lt; lia.
 elim Midpoint_aux_aux with bo radix p (Fopp x1) (Fopp x2) (Fopp y) (Fopp f); auto.
 repeat rewrite Fopp_correct; fold FtoRradix; intros; left; auto with real.
 apply Rmult_eq_reg_l with (-1)%R; auto with real.
@@ -24553,7 +24158,7 @@ apply trans_eq with (-x1)%R; [ring| apply trans_eq with (1:=H0);ring].
 intros T; elim T; intros v T'; elim T'; intros; clear T T'.
 right; exists (Fopp v); split.
 unfold FtoRradix; rewrite Fopp_correct; rewrite H0; rewrite Fopp_correct; ring.
-simpl; apply Zle_trans with (2:=H1); simpl; auto with zarith.
+simpl; apply Z.le_trans with (2:=H1); simpl; auto with zarith.
 replace  (FtoR radix (Fopp x1) + FtoR radix (Fopp x2))%R with (-(x1+x2))%R.
 apply ClosestOpp; auto.
 repeat rewrite Fopp_correct; unfold FtoRradix; ring.
@@ -24623,14 +24228,15 @@ Hypothesis gaDef: (Closest bo radix (gat+be2)%R ga).
 
 
 Lemma gatCorrect: exists v:float, (FtoRradix v=be1-r1)%R /\ (Fbounded bo v)
-                     /\ (Fexp v=Zmin (Fexp be1) (Fexp r1))%Z.
+                     /\ (Fexp v=Z.min (Fexp be1) (Fexp r1))%Z.
+Proof.
 unfold FtoRradix; apply Subexact with p u1 al1 al2; auto.
 apply Rle_trans with (Rabs u2).
 apply TwoSumProp with y al1; auto.
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (Fulp  bo radix p u1);[idtac|simpl; right; field; auto with real].
 rewrite u2Def; unfold FtoRradix; apply ClosestUlp; auto with zarith.
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (Fulp  bo radix p al1);[idtac|simpl; right; field; auto with real].
 fold FtoRradix; rewrite al2Def; unfold FtoRradix; apply ClosestUlp; auto with zarith.
 fold FtoRradix; replace (u1+al1+al2)%R with (a*x+y)%R; auto.
@@ -24654,7 +24260,7 @@ apply FnormalNotZero with radix bo; auto.
 unfold is_Fzero in H.
 unfold FtoRradix, FtoR; apply prod_neq_R0; auto with real zarith.
 apply IZR_neq; auto.
-apply Rgt_not_eq; apply powerRZ_lt, Rlt_IZR; omega.
+apply Rgt_not_eq; apply powerRZ_lt, IZR_lt; lia.
 assert (I3: (0<= r1)%R); auto with real.
 unfold FtoRradix; apply RleRoundedR0 with bo p (Closest bo radix) (a*x+y)%R; auto with zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
@@ -24665,7 +24271,7 @@ apply FnormalNotZero with radix bo; auto.
 unfold is_Fzero in H.
 unfold FtoRradix, FtoR; apply prod_neq_R0; auto with real zarith.
 apply IZR_neq; auto.
-apply Rgt_not_eq; apply powerRZ_lt, Rlt_IZR; omega.
+apply Rgt_not_eq; apply powerRZ_lt, IZR_lt; lia.
 assert (I3: (r1 <= 0)%R); auto with real.
 unfold FtoRradix; apply RleRoundedLessR0 with bo p (Closest bo radix) (a*x+y)%R;
    auto with zarith real.
@@ -24770,28 +24376,29 @@ Hypothesis be1DefE:(P (u1+al1)%R be1).
 
 
 Lemma Expr1 : (Fexp r1 <= Fexp be1+1)%Z.
+Proof.
 assert (radix*be1=(Float (Fnum be1) (Fexp be1+1)))%R.
 unfold FtoRradix, FtoR; simpl; rewrite powerRZ_add; try apply IZR_neq;
    auto with real zarith; simpl; ring.
-apply Zle_trans with (Fexp (Float (Fnum be1) (Fexp be1+1))); auto with zarith.
+apply Z.le_trans with (Fexp (Float (Fnum be1) (Fexp be1+1))); auto with zarith.
 apply Fcanonic_Rle_Zle with radix bo p; auto with zarith.
 left; auto.
 elim Nbe1; intros J1 J2; elim J1; intros J3 J4.
 left; split;[split|idtac]; simpl; auto with zarith.
 fold FtoRradix; rewrite <- H.
 rewrite Rabs_mult; rewrite (Rabs_right radix).
-2: apply Rle_ge, Rle_IZR; auto with real zarith.
+2: apply Rle_ge, IZR_le; auto with real zarith.
 apply Rle_trans with (2*Rabs be1)%R.
 2: apply Rmult_le_compat_r; auto with real.
 2: apply Rabs_pos.
-2: apply Rle_IZR; auto with real zarith.
+2: apply IZR_le; auto with real zarith.
 unfold FtoRradix; apply yLe2x with bo p u1 al1 al2; auto with real.
 apply Rle_trans with (Rabs u2).
 unfold FtoRradix; apply TwoSumProp with bo y al1; auto.
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (Fulp  bo radix p u1);[idtac|simpl; right; field; auto with real].
 rewrite u2Def; unfold FtoRradix; apply ClosestUlp; auto with zarith.
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (Fulp  bo radix p al1);[idtac|simpl; right; field; auto with real].
 fold FtoRradix; rewrite al2Def; unfold FtoRradix; apply ClosestUlp; auto with zarith.
 fold FtoRradix; replace (u1+al1+al2)%R with (a*x+y)%R; auto.
@@ -24801,33 +24408,34 @@ apply FnormalNotZero with radix bo; auto.
 unfold is_Fzero in H0.
 unfold FtoR; apply prod_neq_R0; auto with real zarith.
 apply IZR_neq; auto.
-apply Rgt_not_eq, powerRZ_lt, Rlt_IZR; omega.
+apply Rgt_not_eq, powerRZ_lt, IZR_lt; lia.
 Qed.
 
 
 Lemma Expbe1: (Fexp be1 <= Fexp r1+1)%Z.
+Proof.
 assert (radix*r1=(Float (Fnum r1) (Fexp r1+1)))%R.
 unfold FtoRradix, FtoR; simpl; rewrite powerRZ_add; try apply IZR_neq;
    auto with real zarith; simpl; ring.
-apply Zle_trans with (Fexp (Float (Fnum r1) (Fexp r1+1))); auto with zarith.
+apply Z.le_trans with (Fexp (Float (Fnum r1) (Fexp r1+1))); auto with zarith.
 apply Fcanonic_Rle_Zle with radix bo p; auto with zarith.
 left; auto.
 elim Nr1; intros J1 J2; elim J1; intros J3 J4.
 left; split;[split|idtac]; simpl; auto with zarith.
 fold FtoRradix; rewrite <- H.
 rewrite Rabs_mult; rewrite (Rabs_right radix).
-2: apply Rle_ge, Rle_IZR; auto with real zarith.
+2: apply Rle_ge, IZR_le; auto with real zarith.
 apply Rle_trans with (2*Rabs r1)%R.
 2: apply Rmult_le_compat_r; auto with real.
 2: apply Rabs_pos.
-2: apply Rle_IZR; auto with real zarith.
+2: apply IZR_le; auto with real zarith.
 unfold FtoRradix; apply xLe2y with bo p u1 al1 al2; auto with real.
 apply Rle_trans with (Rabs u2).
 unfold FtoRradix; apply TwoSumProp with bo y al1; auto.
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (Fulp  bo radix p u1);[idtac|simpl; right; field; auto with real].
 rewrite u2Def; unfold FtoRradix; apply ClosestUlp; auto with zarith.
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (Fulp  bo radix p al1);[idtac|simpl; right; field; auto with real].
 fold FtoRradix; rewrite al2Def; unfold FtoRradix; apply ClosestUlp; auto with zarith.
 fold FtoRradix; replace (u1+al1+al2)%R with (a*x+y)%R; auto.
@@ -24836,8 +24444,8 @@ Qed.
 
 
 Lemma Zmin_Zlt : forall z1 z2 z3 : Z,
-       (z1 < z2)%Z -> (z1 < z3)%Z -> (z1 < Zmin z2 z3)%Z.
-intros; unfold Zmin.
+       (z1 < z2)%Z -> (z1 < z3)%Z -> (z1 < Z.min z2 z3)%Z.
+intros; unfold Z.min.
 case (z2 ?= z3)%Z; auto.
 Qed.
 
@@ -24856,15 +24464,15 @@ rewrite be2Def; unfold FtoRradix; rewrite Fminus_correct; auto;
 rewrite LSB_comp with radix be2 (Fminus radix (Fplus radix u1  al1) be1); auto with zarith.
 2: contradict Be2NonZero.
 2: unfold FtoRradix; apply is_Fzero_rep1; auto.
-apply Zlt_le_trans with (Zmin (LSB radix (Fplus radix u1 al1)) (LSB radix be1)).
+apply Z.lt_le_trans with (Z.min (LSB radix (Fplus radix u1 al1)) (LSB radix be1)).
 2: apply LSBMinus; auto.
 2: contradict Be2NonZero.
 2: rewrite H1; unfold FtoRradix; apply is_Fzero_rep1; auto.
 apply Zmin_Zlt.
-apply Zlt_le_trans with (Zmin (LSB radix u1 ) (LSB radix al1)).
+apply Z.lt_le_trans with (Z.min (LSB radix u1 ) (LSB radix al1)).
 2: apply LSBPlus; auto.
 apply Zmin_Zlt.
-apply Zle_lt_trans with (MSB radix u2).
+apply Z.le_lt_trans with (MSB radix u2).
 apply MSB_monotone; auto.
 contradict H; unfold FtoRradix; apply is_Fzero_rep1; auto.
 contradict H0; unfold FtoRradix; apply is_Fzero_rep1; auto.
@@ -24905,7 +24513,7 @@ apply ClosestRoundedModeP with p; auto with zarith.
 apply FboundedFzero.
 rewrite FzeroisReallyZero; rewrite <- Be2NonZero; auto.
 apply Zlt_powerRZ with radix; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply Rle_lt_trans with (FtoR radix (Float (S 0) (MSB radix al2)));
    [unfold FtoR; simpl; right; ring|idtac].
 apply Rle_lt_trans with (FtoR radix (Fabs al2));[apply MSB_le_abs; auto with zarith|idtac].
@@ -24913,12 +24521,12 @@ contradict H; unfold FtoRradix; apply is_Fzero_rep1; auto.
 rewrite Fabs_correct; auto; fold FtoRradix.
 apply Rlt_le_trans with (powerRZ radix (Fexp be1)).
 2: apply Rle_powerRZ; auto with real zarith.
-2: apply Rle_IZR; omega.
+2: apply IZR_le; lia.
 2: apply Fexp_le_LSB; auto.
-apply Rlt_le_trans with (powerRZ radix (Zmin (Fexp u1) (Fexp al1))).
+apply Rlt_le_trans with (powerRZ radix (Z.min (Fexp u1) (Fexp al1))).
 cut (Rabs al2 < powerRZ radix (Fexp u1))%R;[intros I1|idtac].
 cut (Rabs al2 < powerRZ radix (Fexp al1))%R;[intros I2|idtac].
-unfold Zmin; case (Fexp u1 ?= Fexp al1)%Z; auto with real zarith.
+unfold Z.min; case (Fexp u1 ?= Fexp al1)%Z; auto with real zarith.
 rewrite al2Def; apply Rlt_le_trans with (Fulp bo radix p al1).
 unfold FtoRradix; apply RoundedModeUlp with (Closest bo radix); auto with zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
@@ -24929,9 +24537,9 @@ rewrite u2Def; apply Rlt_le_trans with (Fulp bo radix p u1).
 unfold FtoRradix; apply RoundedModeUlp with (Closest bo radix); auto with zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
 unfold Fulp; rewrite FcanonicFnormalizeEq; auto with zarith real; left; auto.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 apply Zlt_le_weak.
-case (Zle_or_lt (Fexp be1) (Zmin (Fexp u1) (Fexp al1))); auto.
+case (Zle_or_lt (Fexp be1) (Z.min (Fexp u1) (Fexp al1))); auto.
 intros; contradict Be2NonZero.
 rewrite be2Def.
 assert (FtoRradix be1=u1+al1)%R; auto with real.
@@ -24944,6 +24552,7 @@ Qed.
 
 
 Lemma gaCorrect: exists v:float, (FtoRradix v=be1-r1+be2)%R /\ (Fbounded bo v).
+Proof.
 elim gatCorrect with bo radix p a x y r1 u1 u2 al1 al2 be1; auto.
 intros v T; elim T; intros H1 T'; elim T'; intros H2 H3; clear T T'.
 case (Req_dec al2 0); intros Z1.
@@ -24983,25 +24592,25 @@ apply Rle_lt_trans with (Rabs (a * x + y - r1) + Rabs(- al2))%R;
    [apply Rabs_triang|rewrite Rabs_Ropp].
 apply Rle_lt_trans with ((powerRZ radix (Fexp be1+1))/2+(powerRZ radix (Fexp be1))/2)%R;
   [apply Rplus_le_compat|idtac].
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (Fulp bo radix p r1).
 unfold FtoRradix; apply ClosestUlp; auto with zarith.
 unfold Fulp; rewrite FcanonicFnormalizeEq; auto with zarith;[idtac|left; auto].
 apply Rle_trans with  (powerRZ radix (Fexp be1 + 1));
-  [apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith|right; simpl; field; auto with real].
+  [apply Rle_powerRZ; try apply IZR_le; auto with real zarith|right; simpl; field; auto with real].
 apply Expr1.
 apply Rle_trans with (Rabs be2).
 assert (MSB radix al2 < LSB radix be2)%Z.
 apply be2MuchSmaller; auto.
 unfold FtoRradix; repeat rewrite <- Fabs_correct; auto.
-apply Rle_trans with (FtoR radix (Float (S 0) (Zsucc (MSB radix al2))))%R.
+apply Rle_trans with (FtoR radix (Float (S 0) (Z.succ (MSB radix al2))))%R.
 apply Rlt_le; apply abs_lt_MSB; auto.
 apply Rle_trans with (FtoR radix (Float (S 0) (LSB radix be2))).
 unfold FtoR; simpl; apply Rmult_le_compat_l; auto with real.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 apply LSB_le_abs; auto.
 contradict Be2NonZero; unfold FtoRradix; apply is_Fzero_rep1; auto.
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (Fulp bo radix p be1).
 rewrite be2Def; unfold FtoRradix; apply ClosestUlp; auto with zarith.
 unfold Fulp; rewrite FcanonicFnormalizeEq; auto with zarith;[idtac|left; auto].
@@ -25011,8 +24620,8 @@ apply Rlt_le_trans with  (powerRZ radix (Fexp be1 + 1));
 apply Rlt_le_trans with  (powerRZ radix (Fexp be1 + 1) / 2 + powerRZ radix (Fexp be1+1) / 2)%R;
   [apply Rplus_lt_compat_l|right; field; auto with real].
 unfold Rdiv; apply Rmult_lt_compat_r; auto with real.
-apply Rlt_powerRZ; try apply Rlt_IZR; auto with real zarith.
-apply Rle_IZR; auto with zarith.
+apply Rlt_powerRZ; try apply IZR_lt; auto with real zarith.
+apply IZR_le; auto with zarith.
 Qed.
 
 
@@ -25121,24 +24730,24 @@ intros.
 case (Req_dec r 0); auto; intros.
 absurd (powerRZ radix (-(dExp bo)) <= Rabs f)%R; auto.
 apply Rlt_not_le; rewrite H0; rewrite Rabs_R0; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; auto with real zarith.
+apply powerRZ_lt, IZR_lt; auto with real zarith.
 apply Rle_trans with (FtoRradix (Float 1 (-(dExp bo)))).
 right; unfold FtoRradix, FtoR; simpl; ring.
 unfold FtoRradix; apply RoundAbsMonotonel with bo p (Closest bo radix) r; auto with zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
 split; simpl; auto with zarith.
-rewrite pGivesBound; apply Zle_lt_trans with (Zpower_nat radix 0); auto with zarith.
+rewrite pGivesBound; apply Z.le_lt_trans with (Zpower_nat radix 0); auto with zarith.
 apply Zpower_nat_monotone_lt; auto with zarith.
 rewrite H1; unfold FtoRradix; rewrite <- Fabs_correct; auto.
 unfold FtoR; simpl; apply Rmult_le_compat; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; auto with real zarith.
-apply Rle_IZR.
-case (Zle_lt_or_eq 0  (Zabs (Fnum g))); auto with zarith; intros.
+apply powerRZ_le, IZR_lt; auto with real zarith.
+apply IZR_le.
+case (Zle_lt_or_eq 0  (Z.abs (Fnum g))); auto with zarith; intros.
 absurd (Rabs r=0)%R.
 apply Rabs_no_R0; auto.
 rewrite H1; unfold FtoRradix; rewrite <- Fabs_correct; auto; unfold FtoR; simpl.
 rewrite <- H4; simpl; ring.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 Qed.
 
 Lemma ClosestZero2: forall (r:R) (x:float),
@@ -25165,17 +24774,17 @@ fold FtoRradix; intros n H1.
 exists (Float n (Fexp f)).
 elim H; intros H2 T; clear T.
 split; split; simpl; auto with zarith real .
-apply Zle_lt_trans with (Zabs (Fnum g)); auto with zarith; try apply H2.
-apply Zle_Rle.
+apply Z.le_lt_trans with (Z.abs (Fnum g)); auto with zarith; try apply H2.
+apply le_IZR.
 apply Rmult_le_reg_l with (powerRZ radix (Fexp g)); auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; auto with real zarith.
+apply powerRZ_lt, IZR_lt; auto with real zarith.
 apply Rle_trans with (Rabs g);[idtac| unfold FtoRradix; rewrite <- Fabs_correct; auto;
      unfold FtoR; simpl; right; ring].
 rewrite H1; unfold FtoRradix; rewrite <- Fabs_correct; auto; unfold FtoR; simpl.
 rewrite Rmult_comm; apply Rmult_le_compat_l; auto with real zarith.
-apply Rle_IZR; auto with zarith.
-apply Rle_powerRZ; try apply Rle_IZR; auto with zarith.
-apply Zle_trans with (Fexp g); auto with zarith; apply H2.
+apply IZR_le; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with zarith.
+apply Z.le_trans with (Fexp g); auto with zarith; apply H2.
 Qed.
 
 
@@ -25374,33 +24983,33 @@ fold FtoRradix; intros u2' T; elim T; intros E1 T'; elim T'; intros E2 E3; clear
 elim errorBoundedPlus with bo radix p y u2' al1; auto with zarith.
 2: fold FtoRradix; rewrite E1; rewrite <- u2Def; auto.
 rewrite E3; intros al2' T; elim T; intros F1 T'; elim T'; intros F2 F3; clear T T'.
-elim LeExpRound2 with (Zmin (Fexp y) (Fexp a+Fexp x)) (Fplus radix y u2') al1; auto.
+elim LeExpRound2 with (Z.min (Fexp y) (Fexp a+Fexp x)) (Fplus radix y u2') al1; auto.
 2: unfold FtoRradix; rewrite Fplus_correct; auto; fold FtoRradix;
      rewrite E1; rewrite <- u2Def; auto.
 2:simpl; rewrite E3; auto with zarith.
 intros al1' T; elim T; intros U1 T'; elim T'; intros U2 U3; clear T T'.
-elim LeExpRound2 with (Zmin (Fexp y) (Fexp a+Fexp x)) (Fmult a x) u1; auto with zarith.
+elim LeExpRound2 with (Z.min (Fexp y) (Fexp a+Fexp x)) (Fmult a x) u1; auto with zarith.
 2: unfold FtoRradix; rewrite Fmult_correct; auto.
 intros u1' T; elim T; intros U4 T'; elim T'; intros U5 U6; clear T T'.
-elim LeExpRound2 with (Zmin (Fexp y) (Fexp a+Fexp x)) (Fplus radix (Fmult a x) y) r1; auto with zarith.
+elim LeExpRound2 with (Z.min (Fexp y) (Fexp a+Fexp x)) (Fplus radix (Fmult a x) y) r1; auto with zarith.
 2: unfold FtoRradix; rewrite Fplus_correct; auto; rewrite Fmult_correct; auto.
-2: simpl; rewrite Zmin_sym; auto with zarith.
+2: simpl; rewrite Z.min_comm; auto with zarith.
 intros r1' T; elim T; intros U7 T'; elim T'; intros U8 U9; clear T T'.
-elim LeExpRound2 with (Zmin (Fexp y) (Fexp a+Fexp x)) (Fplus radix u1' al1') be1; auto with zarith.
+elim LeExpRound2 with (Z.min (Fexp y) (Fexp a+Fexp x)) (Fplus radix u1' al1') be1; auto with zarith.
 2: unfold FtoRradix; rewrite Fplus_correct; auto; fold FtoRradix; rewrite U5; rewrite U2; auto.
 2: simpl; apply Zmin_Zle; auto with zarith.
 intros be1' T; elim T; intros V1 T'; elim T'; intros V2 V3; clear T T'.
 elim errorBoundedPlus with bo radix p u1' al1' be1; auto with zarith.
 2: fold FtoRradix; rewrite U5; rewrite U2; auto.
 fold FtoRradix; intros be2' T; elim T; intros V4 T'; elim T'; intros V5 V6; clear T T'.
-elim LeExpRound2 with (Zmin (Fexp y) (Fexp a+Fexp x)) (Fminus radix be1' r1') gat; auto with zarith.
+elim LeExpRound2 with (Z.min (Fexp y) (Fexp a+Fexp x)) (Fminus radix be1' r1') gat; auto with zarith.
 2: unfold FtoRradix; rewrite Fminus_correct; auto; fold FtoRradix; rewrite V2; rewrite U8; auto.
 2: simpl; apply Zmin_Zle; auto with zarith.
 intros gat' T; elim T; intros V7 T'; elim T'; intros V8 V9; clear T T'.
-elim LeExpRound2 with (Zmin (Fexp y) (Fexp a+Fexp x)) (Fplus radix gat' be2') ga; auto with zarith.
+elim LeExpRound2 with (Z.min (Fexp y) (Fexp a+Fexp x)) (Fplus radix gat' be2') ga; auto with zarith.
 2: unfold FtoRradix; rewrite Fplus_correct; auto; fold FtoRradix; rewrite V8;
    rewrite V4; rewrite U5; rewrite U2; rewrite <- be2Def; auto.
-2: simpl; apply Zmin_Zle; auto with zarith.
+2: simpl; apply Zmin_Zle; lia.
 intros ga' T; elim T; intros W1 T'; elim T'; intros W2 W3; clear T T'.
 exists ga'; exists al2'; split; auto; split.
 unfold FtoRradix; rewrite F1; fold FtoRradix.
@@ -25469,6 +25078,7 @@ Qed.
 
 
 Theorem tBounded_aux: exists v:float, Fbounded bo v /\ (FtoRradix v=uh-z)%R.
+Proof.
 case (Req_dec (ph+b)%R 0);intros H1.
 exists (Fopp z); split.
 apply oppBounded; elim zDef; auto.
@@ -25489,15 +25099,15 @@ apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with (FtoR radix z);[right; simpl; field; auto with real|idtac].
 rewrite <- (Rabs_right (FtoR radix z)).
 2: apply Rle_ge; generalize zPos; auto with real.
-apply Rle_trans with (Rabs (a*x+b) / (1 - powerRZ radix (Zsucc (- p)) / 2))%R.
+apply Rle_trans with (Rabs (a*x+b) / (1 - powerRZ radix (Z.succ (- p)) / 2))%R.
 apply ClosestRoundeLeNormal with bo; auto with zarith.
-assert (0 < 1 - powerRZ radix (Zsucc (- p)) / 2)%R.
+assert (0 < 1 - powerRZ radix (Z.succ (- p)) / 2)%R.
 apply UnMoinsPos; auto with zarith.
-apply Rmult_le_reg_l with (1 - powerRZ radix (Zsucc (- p)) / 2)%R; auto with real.
+apply Rmult_le_reg_l with (1 - powerRZ radix (Z.succ (- p)) / 2)%R; auto with real.
 apply Rle_trans with (Rabs (a*x+b));[right; field; auto with real|idtac].
-assert (0 < 2 - powerRZ radix (Zsucc (- p)))%R; auto with real.
-replace (2 - powerRZ radix (Zsucc (- p)))%R with
-   (2*(1 - powerRZ radix (Zsucc (- p)) / 2))%R; auto with real.
+assert (0 < 2 - powerRZ radix (Z.succ (- p)))%R; auto with real.
+replace (2 - powerRZ radix (Z.succ (- p)))%R with
+   (2*(1 - powerRZ radix (Z.succ (- p)) / 2))%R; auto with real.
 replace 0%R with (2*0)%R; auto with real.
 field; auto with real.
 replace (a*x+b)%R with ((ph+b)+pl)%R;[idtac|rewrite plDef; ring].
@@ -25505,11 +25115,11 @@ apply Rle_trans with (Rabs (ph+b)+Rabs pl)%R;[apply Rabs_triang|idtac].
 apply Rle_trans with (Rabs (ph+b)+/ 4 * Rabs (ph + b))%R;auto with real.
 assert (0 < 4)%R;[apply Rmult_lt_0_compat; auto with real|idtac].
 apply Rle_trans with (5/4*(Rabs (ph+b)))%R;[right; field; auto with real|idtac].
-apply Rle_trans with (5/4*(Rabs (FtoR radix uh) * (1 + powerRZ radix (Zsucc (- p)) / 2)))%R.
+apply Rle_trans with (5/4*(Rabs (FtoR radix uh) * (1 + powerRZ radix (Z.succ (- p)) / 2)))%R.
 apply Rmult_le_compat_l.
 apply Rlt_le; unfold Rdiv;apply Rmult_lt_0_compat; auto with real.
 apply ClosestRoundeGeNormal with bo; auto with zarith.
-fold FtoRradix; apply Rle_trans with ((5/4*(1 + powerRZ radix (Zsucc (- p)) / 2))*Rabs uh)%R;
+fold FtoRradix; apply Rle_trans with ((5/4*(1 + powerRZ radix (Z.succ (- p)) / 2))*Rabs uh)%R;
   [right; ring|idtac].
 rewrite <- Rmult_assoc with (r3:=uh).
 pattern (FtoRradix uh) at 2; rewrite <- (Rabs_right uh).
@@ -25517,19 +25127,19 @@ pattern (FtoRradix uh) at 2; rewrite <- (Rabs_right uh).
 apply Rmult_le_compat_r; auto with real.
 apply Rabs_pos.
 apply Rmult_le_reg_l with 8%R; [apply Rmult_lt_0_compat; auto with real|idtac].
-apply Rle_trans with (10+5*powerRZ radix (Zsucc (- p)))%R;[right; field; auto with real|idtac].
-apply Rle_trans with (16-8*powerRZ radix (Zsucc (- p)))%R;[idtac|right; field; auto with real].
-apply Rplus_le_reg_l with (-10+8* powerRZ radix (Zsucc (- p)))%R.
+apply Rle_trans with (10+5*powerRZ radix (Z.succ (- p)))%R;[right; field; auto with real|idtac].
+apply Rle_trans with (16-8*powerRZ radix (Z.succ (- p)))%R;[idtac|right; field; auto with real].
+apply Rplus_le_reg_l with (-10+8* powerRZ radix (Z.succ (- p)))%R.
 ring_simplify.
 apply Rle_trans with (13* /4)%R.
 apply Rmult_le_compat_l; auto with real.
-apply Rle_trans with (powerRZ radix (Zsucc (- 3))); unfold Zsucc; auto with zarith real.
+apply Rle_trans with (powerRZ radix (Z.succ (- 3))); unfold Z.succ; auto with zarith real.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 simpl; ring_simplify (radix*1)%R.
 apply Rle_Rinv; auto with real.
-rewrite <- mult_IZR; apply Rle_IZR.
-apply Zle_trans with (2*2)%Z; auto with zarith.
+rewrite <- mult_IZR; apply IZR_le.
+apply Z.le_trans with (2*2)%Z. auto with zarith.
 apply Zmult_le_compat; auto with zarith.
 apply Rmult_le_reg_l with 4%R; auto with real.
 apply Rle_trans with 13%R;[right; field; auto with real|idtac].
@@ -25538,16 +25148,16 @@ right; ring.
 simpl; fold FtoRradix.
 rewrite <- (Rabs_right z);[idtac|apply Rle_ge; generalize zPos; auto with real].
 rewrite <- (Rabs_right uh);[idtac|apply Rle_ge; generalize uhPos; auto with real].
-assert (0 < 1 - powerRZ radix (Zsucc (- p)) / 2)%R.
+assert (0 < 1 - powerRZ radix (Z.succ (- p)) / 2)%R.
 apply UnMoinsPos; auto with zarith.
 assert (0 < 4)%R;[apply Rmult_lt_0_compat; auto with real|idtac].
 assert (0 < 3)%R;[apply Rlt_trans with 2%R; auto with real|idtac].
-apply Rle_trans with  (Rabs (ph+b) / (1 - powerRZ radix (Zsucc (- p)) / 2))%R.
+apply Rle_trans with  (Rabs (ph+b) / (1 - powerRZ radix (Z.succ (- p)) / 2))%R.
 unfold FtoRradix; apply ClosestRoundeLeNormal with bo; auto with zarith.
-apply Rmult_le_reg_l with (1 - powerRZ radix (Zsucc (- p)) / 2)%R; auto with real.
+apply Rmult_le_reg_l with (1 - powerRZ radix (Z.succ (- p)) / 2)%R; auto with real.
 apply Rle_trans with (Rabs (ph+b));[right; field; auto with real|idtac].
-replace (2 - powerRZ radix (Zsucc (- p)))%R with
-  (2* (1 - powerRZ radix (Zsucc (- p)) / 2))%R;[idtac|field].
+replace (2 - powerRZ radix (Z.succ (- p)))%R with
+  (2* (1 - powerRZ radix (Z.succ (- p)) / 2))%R;[idtac|field].
 apply prod_neq_R0; auto with real.
 apply Rle_trans with ((4/3)*(Rabs (a*x+b)))%R.
 apply Rmult_le_reg_l with (3/4)%R.
@@ -25558,29 +25168,29 @@ apply Rle_trans with (/4*Rabs (ph+b)+Rabs (a*x+b))%R;[idtac|right; field; auto w
 pattern (ph+b)%R at 1; replace (ph+b)%R with (-(pl)+(a*x+b))%R;[idtac|rewrite plDef; ring].
 apply Rle_trans with (Rabs (-pl)+Rabs (a*x+b))%R;
    [apply Rabs_triang|rewrite Rabs_Ropp; auto with real].
-apply Rle_trans with (4/3*(Rabs z * (1 + powerRZ radix (Zsucc (- p)) / 2)))%R.
+apply Rle_trans with (4/3*(Rabs z * (1 + powerRZ radix (Z.succ (- p)) / 2)))%R.
 apply Rmult_le_compat_l; auto with real.
 apply Rlt_le; unfold Rdiv; apply Rmult_lt_0_compat; auto with real.
 unfold FtoRradix; apply ClosestRoundeGeNormal with bo; auto with zarith.
-apply Rle_trans with ((4 / 3 * (1 + powerRZ radix (Zsucc (- p)) / 2))*(Rabs z))%R;
+apply Rle_trans with ((4 / 3 * (1 + powerRZ radix (Z.succ (- p)) / 2))*(Rabs z))%R;
   [right; ring|idtac].
 rewrite <- Rmult_assoc with (r3:=Rabs z).
 apply Rmult_le_compat_r; auto with real.
 apply Rabs_pos.
 apply Rmult_le_reg_l with 6%R; [apply  Rmult_lt_0_compat; auto with real|idtac].
-apply Rle_trans with (8+4*powerRZ radix (Zsucc (- p)))%R;[right; field; auto with real|idtac].
-apply Rle_trans with (12-6*powerRZ radix (Zsucc (- p)))%R;[idtac|right; field; auto with real].
-apply Rplus_le_reg_l with (-8+6* powerRZ radix (Zsucc (- p)))%R.
+apply Rle_trans with (8+4*powerRZ radix (Z.succ (- p)))%R;[right; field; auto with real|idtac].
+apply Rle_trans with (12-6*powerRZ radix (Z.succ (- p)))%R;[idtac|right; field; auto with real].
+apply Rplus_le_reg_l with (-8+6* powerRZ radix (Z.succ (- p)))%R.
 ring_simplify.
 apply Rle_trans with (10* /4)%R.
 apply Rmult_le_compat_l; auto with real.
-apply Rle_trans with (powerRZ radix (Zsucc (- 3))); unfold Zsucc; auto with zarith real.
+apply Rle_trans with (powerRZ radix (Z.succ (- 3))); unfold Z.succ; auto with zarith real.
 apply Rle_powerRZ; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 simpl; ring_simplify (radix*1)%R; auto with real zarith.
 apply Rle_Rinv; auto with real.
-rewrite <- mult_IZR; apply Rle_IZR.
-apply Zle_trans with (2*2)%Z; auto with zarith.
+rewrite <- mult_IZR; apply IZR_le.
+apply Z.le_trans with (2*2)%Z. auto with zarith.
 apply Zmult_le_compat; auto with zarith.
 apply Rmult_le_reg_l with 4%R; auto with real.
 apply Rle_trans with 10%R;[right; field; auto with real|idtac].
@@ -25603,36 +25213,38 @@ assert (Rabs (ph+b) < 2* powerRZ radix (Fexp ph))%R.
 apply Rmult_lt_reg_l with (/4)%R; auto with real.
 assert (0 < 4)%R; auto with real.
 apply Rlt_le_trans with (1:=H2).
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (Fulp bo radix p ph).
 rewrite plDef; unfold FtoRradix; apply ClosestUlp; auto with zarith.
 rewrite CanonicFulp; auto with zarith.
 unfold FtoR; right; simpl; field; auto with real.
 left; auto.
 assert (Fexp ph -1 <= Fexp b)%Z.
-apply Zle_trans with (Fexp (Float (Zpos (vNum bo)-2*radix) (Fexp ph -1)));
+apply Z.le_trans with (Fexp (Float (Zpos (vNum bo)-2*radix) (Fexp ph -1)));
    [simpl; auto with zarith|idtac].
 assert (0 < Zpos (vNum bo)-2*radix )%Z.
 assert (2*radix <  Zpos (vNum bo))%Z; auto with zarith.
-rewrite pGivesBound; apply Zle_lt_trans with (Zpower_nat radix 2); auto with zarith.
+rewrite pGivesBound; apply Z.le_lt_trans with (Zpower_nat radix 2); auto with zarith.
 unfold Zpower_nat; simpl (nat_rect _ _ _ _).
 ring_simplify (radix*1)%Z; apply Zmult_le_compat_r; auto with zarith.
-apply Zpower_nat_monotone_lt; omega.
+apply Zpower_nat_monotone_lt; lia.
 apply Fcanonic_Rle_Zle with radix bo p; auto with zarith.
 left; split;[split|idtac]; auto with zarith.
-apply Zle_lt_trans with  (Zabs (Zpos (vNum bo) - 2 * radix)); auto with zarith.
-simpl; auto with zarith.
-apply Zle_trans with (Zabs (radix * (Zpos (vNum bo) - 2 * radix))); auto with zarith.
-rewrite Zabs_Zmult; repeat rewrite Zabs_eq; auto with zarith.
-apply Zle_trans with (2* (Zpos (vNum bo) - 2 * radix))%Z; auto with zarith.
+unfold Fnum.
+apply Z.le_lt_trans with  (Z.abs (Zpos (vNum bo) - 2 * radix)); lia.
+simpl; lia.
+apply Z.le_trans with (Z.abs (radix * (Zpos (vNum bo) - 2 * radix))); auto with zarith.
+rewrite Zabs_Zmult; repeat rewrite Z.abs_eq; auto with zarith.
+apply Z.le_trans with (2* (Zpos (vNum bo) - 2 * radix))%Z; auto with zarith.
 apply Zplus_le_reg_l with (4*radix)%Z.
-apply Zle_trans with (Zpos (vNum bo)+ Zpos (vNum bo))%Z; auto with zarith.
+apply Z.le_trans with (Zpos (vNum bo)+ Zpos (vNum bo))%Z; auto with zarith.
 assert (4*radix <= Zpos (vNum bo))%Z; auto with zarith.
-rewrite pGivesBound; apply Zle_trans with (Zpower_nat radix 3); auto with zarith.
+rewrite pGivesBound; apply Z.le_trans with (Zpower_nat radix 3); auto with zarith.
 unfold Zpower_nat; simpl (nat_rect _ _ _ _).
-ring_simplify (radix*1)%Z; rewrite Zmult_assoc; apply Zmult_le_compat_r; auto with zarith.
-apply Zle_trans with (2*radix)%Z; auto with zarith.
-apply Zpower_nat_monotone_le; omega.
+ring_simplify (radix*1)%Z; rewrite Zmult_assoc; apply Zmult_le_compat_r.
+apply Z.le_trans with (2*radix)%Z; auto with zarith; lia.
+lia.
+apply Zpower_nat_monotone_le; lia.
 fold FtoRradix; apply Rplus_le_reg_l with (2*powerRZ radix (Fexp ph))%R.
 apply Rle_trans with (Rabs (ph + b)+Rabs b)%R; auto with real.
 apply Rle_trans with (Rabs ph).
@@ -25644,29 +25256,29 @@ unfold FtoR, Fabs.
 simpl (Fexp (Float (Zpos (vNum bo) - 2 * radix) (Fexp ph - 1))).
 simpl  (Fexp
          (Float
-            (Zabs (Fnum (Float (Zpos (vNum bo) - 2 * radix) (Fexp ph - 1))))
+            (Z.abs (Fnum (Float (Zpos (vNum bo) - 2 * radix) (Fexp ph - 1))))
             (Fexp ph - 1))).
 replace (Fnum
-      (Float (Zabs (Fnum (Float (Zpos (vNum bo) - 2 * radix) (Fexp ph - 1))))
-         (Fexp ph - 1))) with  (Zabs (Zpos (vNum bo) - 2 * radix)); auto with zarith.
-simpl  (Fnum (Float (Zabs (Fnum ph)) (Fexp ph))).
-simpl (Fexp (Float (Zabs (Fnum ph)) (Fexp ph))).
-apply Rle_trans with ((2+ ( Zabs (Zpos (vNum bo) - 2 * radix))/radix)*powerRZ radix (Fexp ph))%R.
+      (Float (Z.abs (Fnum (Float (Zpos (vNum bo) - 2 * radix) (Fexp ph - 1))))
+         (Fexp ph - 1))) with  (Z.abs (Zpos (vNum bo) - 2 * radix)); auto with zarith.
+simpl  (Fnum (Float (Z.abs (Fnum ph)) (Fexp ph))).
+simpl (Fexp (Float (Z.abs (Fnum ph)) (Fexp ph))).
+apply Rle_trans with ((2+ ( Z.abs (Zpos (vNum bo) - 2 * radix))/radix)*powerRZ radix (Fexp ph))%R.
 unfold Zminus; rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; ring_simplify (radix*1)%R.
 right; field; auto with real zarith.
 apply IZR_neq; auto with zarith.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rmult_le_reg_l with radix; auto with real zarith.
-apply Rlt_IZR; omega.
+apply IZR_lt; lia.
 apply Rle_trans with (IZR (Zpos (vNum bo))).
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 unfold Zminus; rewrite plus_IZR; rewrite Ropp_Ropp_IZR; rewrite mult_IZR.
 right; simpl; field; try apply IZR_neq; auto with real zarith.
 elim Nph; intros.
-apply Rle_trans with  (IZR (Zabs (radix * Fnum ph))); auto with real zarith.
-apply Rle_IZR; auto.
-right; rewrite Zabs_Zmult; rewrite mult_IZR; rewrite Zabs_eq; auto with zarith real.
+apply Rle_trans with  (IZR (Z.abs (radix * Fnum ph))); auto with real zarith.
+apply IZR_le; auto.
+right; rewrite Zabs_Zmult; rewrite mult_IZR; rewrite Z.abs_eq; auto with zarith real.
 assert (exists uh':float,  (FtoRradix uh'=ph+b)%R /\ (Fbounded bo uh') /\ (Fexp uh'=Fexp ph-1)%Z).
 unfold FtoRradix; apply BoundedL with p (Fplus radix ph b); auto with zarith.
 simpl; apply Zmin_Zle; auto with zarith.
@@ -25674,10 +25286,10 @@ apply Fplus_correct; auto with zarith.
 fold FtoRradix; apply Rlt_le_trans with (1:=H).
 apply Rle_trans with  (powerRZ radix (Fexp ph+1));
   [rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl|apply Rle_powerRZ; auto with real zarith].
-2: apply Rle_IZR; omega.
+2: apply IZR_le; lia.
 ring_simplify (radix*1)%R; rewrite Rmult_comm; apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply IZR_le; lia.
 elim H3; clear H3; intros uh' T; elim T; intros H5 T'; elim T'; intros H6 H7; clear T T'.
 assert (FtoRradix uh=uh').
 unfold FtoRradix; apply sym_eq.
@@ -25692,7 +25304,7 @@ elim LeExpRound2 with bo radix p (Fexp a+Fexp x)%Z (Fplus radix (Fplus radix ph 
 2: rewrite Fplus_correct; auto with zarith;rewrite Fplus_correct; auto with zarith.
 2: fold FtoRradix; rewrite H8.
 2: ring_simplify (ph + (a * x - ph) + b)%R; auto with real.
-2: simpl; apply Zmin_Zle; auto with zarith.
+2: simpl; apply Zmin_Zle; lia.
 fold FtoRradix; intros z' T; elim T; intros H15 T'; elim T'; intros H16 H17; clear T T'.
 cut ( exists v : float,  (FtoRradix v = uh - z)%R /\ Fbounded bo v /\ (Fexp v=Fexp a+Fexp x)%Z).
 intros T; elim T; intros v T1; elim T1; intros T2 T3; elim T3; intros; exists v; split; auto.
@@ -25705,12 +25317,12 @@ apply Rlt_le_trans with (powerRZ radix (Fexp ph));
 fold FtoRradix; rewrite H3; rewrite H5.
 replace (ph+b-z)%R with ((a*x+b-z)+-pl)%R;[idtac|rewrite plDef; ring].
 apply Rle_lt_trans with (Rabs (a*x+b-z)+Rabs (-pl))%R;[apply Rabs_triang|rewrite Rabs_Ropp].
-apply Rmult_lt_reg_l with (INR 2); auto with real zarith.
-apply Rle_lt_trans with  (S 1 * Rabs (a * x + b - z) + S 1*Rabs pl)%R;[right; ring|idtac].
+apply Rmult_lt_reg_l with 2%R; auto with real zarith.
+apply Rle_lt_trans with  (2 * Rabs (a * x + b - z) + S 1*Rabs pl)%R;[right; ring|idtac].
 apply Rlt_le_trans with  (powerRZ radix (Fexp ph)+powerRZ radix (Fexp ph))%R;
   [idtac|simpl;right; ring].
-cut (S 1 * Rabs (a * x + b - z) < powerRZ radix (Fexp ph))%R;[intros I1|idtac].
-cut (S 1 * Rabs (pl) <= powerRZ radix (Fexp ph))%R;[intros I2; auto with real|idtac].
+cut (2 * Rabs (a * x + b - z) < powerRZ radix (Fexp ph))%R;[intros I1|idtac].
+cut (2 * Rabs (pl) <= powerRZ radix (Fexp ph))%R;[intros I2; auto with real|idtac].
 apply Rle_trans with (Fulp bo radix p ph).
 rewrite plDef; unfold FtoRradix; apply ClosestUlp; auto with zarith.
 rewrite CanonicFulp; auto with zarith real.
@@ -25720,38 +25332,39 @@ apply Rle_lt_trans with (Fulp bo radix p z).
 unfold FtoRradix; apply ClosestUlp; auto with zarith.
 rewrite CanonicFulp; auto with zarith real.
 2: left; auto.
-2: apply Rle_IZR; omega.
+2: apply IZR_le; lia.
 unfold FtoR; simpl; ring_simplify (1*powerRZ radix (Fexp z))%R.
 apply Rlt_powerRZ; auto with real zarith.
-apply Rlt_IZR; omega.
-apply Zle_lt_trans with (Fexp ph-1)%Z; auto with zarith.
+apply IZR_lt; lia.
+apply Z.le_lt_trans with (Fexp ph-1)%Z; auto with zarith.
 assert (Fbounded bo (Float (3*radix) (Fexp ph-1))).
 split; [idtac|simpl; auto with zarith].
-apply Zle_lt_trans with (Zabs (3*radix)); auto with zarith.
-rewrite Zabs_Zmult; repeat rewrite Zabs_eq; auto with zarith.
-rewrite pGivesBound; apply Zlt_le_trans with (Zpower_nat radix 3); auto with zarith.
+apply Z.le_lt_trans with (Z.abs (3*radix)); auto with zarith.
+rewrite Zabs_Zmult; repeat rewrite Z.abs_eq; auto with zarith.
+rewrite pGivesBound; apply Z.lt_le_trans with (Zpower_nat radix 3); auto with zarith.
 unfold Zpower_nat; simpl (nat_rect _ _ _ _)%Z.
-rewrite Zmult_comm; ring_simplify (radix*1)%Z; apply Zmult_lt_compat_l; auto with zarith.
-apply Zlt_le_trans with (2*2)%Z; auto with zarith.
-apply Zle_trans with (2*radix)%Z; auto with zarith.
-apply Zpower_nat_monotone_le; omega.
-apply Zle_trans with (Fexp (Float (3*radix) (Fexp ph-1))); auto with zarith.
-apply Zle_trans with (Fexp (Fnormalize radix bo p (Float (3*radix) (Fexp ph-1)))).
+rewrite Zmult_comm; ring_simplify (radix*1)%Z; apply Zmult_lt_compat_l.
+auto with zarith.
+apply Z.lt_le_trans with (2*2)%Z. auto with zarith.
+apply Z.le_trans with (2*radix)%Z; auto with zarith.
+apply Zpower_nat_monotone_le; lia.
+apply Z.le_trans with (Fexp (Float (3*radix) (Fexp ph-1))); auto with zarith.
+apply Z.le_trans with (Fexp (Fnormalize radix bo p (Float (3*radix) (Fexp ph-1)))).
 apply Fcanonic_Rle_Zle with radix bo p; auto with zarith.
 left; auto.
 apply FnormalizeCanonic; auto with zarith.
 rewrite FnormalizeCorrect; auto.
 apply Rle_trans with  (FtoR radix (Float (3 * radix) (Fexp ph - 1)));
   [idtac|rewrite <- Fabs_correct; auto; unfold FtoR].
-2: simpl; rewrite Zabs_eq; auto with zarith real.
-2: apply Zle_trans with (3*radix)%Z; auto with zarith.
+2: simpl; rewrite Z.abs_eq; auto with zarith real.
+2: apply Z.le_trans with (3*radix)%Z; auto with zarith.
 apply RoundAbsMonotoner with bo p (Closest bo radix) (a*x+b)%R; auto with zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
 replace (a*x+b)%R with ((ph+b)+pl)%R;[idtac|rewrite plDef; ring].
 apply Rle_trans with (Rabs (ph+b)+Rabs pl)%R;[apply Rabs_triang|idtac].
 apply Rle_trans with (2 * powerRZ radix (Fexp ph)+/2*powerRZ radix (Fexp ph))%R;
   [apply Rplus_le_compat; auto with real|idtac].
-apply Rmult_le_reg_l with (INR 2); auto with real zarith.
+apply Rmult_le_reg_l with 2%R; auto with real zarith.
 apply Rle_trans with (Fulp bo radix p ph).
 rewrite plDef; unfold FtoRradix; apply ClosestUlp; auto with zarith.
 rewrite CanonicFulp; auto with zarith.
@@ -25765,14 +25378,12 @@ apply Rle_trans with (3*powerRZ radix (Fexp ph))%R;
   | Z0 => 0%Z
   | Zpos y' => Zpos ((y' + xO y'))
   | Zneg y' => Zneg ((y' + xO y')) end)) with (3*radix)%R;[field; auto with real zarith|idtac].
-2: apply IZR_neq; omega.
+2: apply IZR_neq; lia.
 2: apply trans_eq with (IZR (3*radix)); auto with real zarith; rewrite mult_IZR; simpl; ring.
-2: apply IZR_neq; omega.
-apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_trans with (2+1)%R; auto with real.
-apply Rplus_le_compat_l; apply Rle_trans with (/1)%R; auto with real.
-right; ring.
+2: apply IZR_neq; lia.
+apply Rmult_le_compat_r.
+apply powerRZ_le, IZR_lt; lia.
+lra.
 apply FcanonicLeastExp with radix bo p; auto with zarith.
 rewrite FnormalizeCorrect; auto with real zarith.
 apply FnormalizeCanonic; auto with zarith.
@@ -25780,39 +25391,39 @@ assert (0 < pPred (vNum bo))%Z.
 apply pPredMoreThanOne with radix p; auto with zarith.
 assert (Fbounded bo (Float (pPred (vNum bo)) (Fexp a+Fexp x+p))).
 split; simpl; auto with zarith.
-rewrite Zabs_eq;[unfold pPred|idtac]; auto with zarith.
-apply Zle_trans with (Fexp (Float (pPred (vNum bo)) (Fexp a+Fexp x+p))); auto with zarith.
+rewrite Z.abs_eq;[unfold pPred|idtac]; auto with zarith.
+apply Z.le_trans with (Fexp (Float (pPred (vNum bo)) (Fexp a+Fexp x+p))); auto with zarith.
 apply Fcanonic_Rle_Zle with radix bo p; auto with zarith.
 left; auto.
 left; split; auto.
-simpl; rewrite Zabs_Zmult; repeat rewrite Zabs_eq; auto with zarith.
-apply Zle_trans with (2* pPred (vNum bo))%Z; auto with zarith.
-unfold pPred, Zpred; apply Zplus_le_reg_l with 2%Z.
-apply Zle_trans with (Zpos (vNum bo) + Zpos (vNum bo))%Z; auto with zarith.
+simpl; rewrite Zabs_Zmult; repeat rewrite Z.abs_eq; auto with zarith.
+apply Z.le_trans with (2* pPred (vNum bo))%Z; auto with zarith.
+unfold pPred, Z.pred; apply Zplus_le_reg_l with 2%Z.
+apply Z.le_trans with (Zpos (vNum bo) + Zpos (vNum bo))%Z; auto with zarith.
 assert (2 <= Zpos (vNum bo))%Z; auto with zarith.
-rewrite pGivesBound; apply Zle_trans with (Zpower_nat radix 1); auto with zarith.
+rewrite pGivesBound; apply Z.le_trans with (Zpower_nat radix 1); auto with zarith.
 unfold Zpower_nat; simpl; auto with zarith.
-apply Zpower_nat_monotone_le; omega.
+apply Zpower_nat_monotone_le; lia.
 apply Rle_trans with  (FtoR radix (Float (pPred (vNum bo)) (Fexp a + Fexp x + p))).
 2: right; rewrite <- Fabs_correct; auto; unfold FtoR; simpl;
-    rewrite Zabs_eq; auto with real zarith.
+    rewrite Z.abs_eq; auto with real zarith.
 apply RoundAbsMonotoner with bo p (Closest bo radix) (a*x)%R; auto with zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
 rewrite Rabs_mult; unfold FtoRradix; repeat rewrite <- Fabs_correct; auto.
 unfold FtoR; simpl; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
-apply Rle_trans with  (Zabs (Fnum a) *
-    (powerRZ radix (Fexp a) * powerRZ radix (Fexp x) * Zabs (Fnum x)))%R;[right; ring|idtac].
+apply Rle_trans with  (Z.abs (Fnum a) *
+    (powerRZ radix (Fexp a) * powerRZ radix (Fexp x) * Z.abs (Fnum x)))%R;[right; ring|idtac].
 apply Rmult_le_compat; auto with real zarith.
-apply Rle_IZR; auto with zarith.
-apply Rle_trans with (0*Zabs (Fnum x))%R; auto with real.
+apply IZR_le; auto with zarith.
+apply Rle_trans with (0*Z.abs (Fnum x))%R; auto with real.
 apply Rmult_le_compat_r; auto with real zarith.
-apply Rle_IZR; auto with zarith.
-apply Rlt_le; apply Rmult_lt_0_compat; auto with real zarith; apply powerRZ_lt, Rlt_IZR; omega.
+apply IZR_le; auto with zarith.
+apply Rlt_le; apply Rmult_lt_0_compat; auto with real zarith; apply powerRZ_lt, IZR_lt; lia.
 elim Fa; intros; unfold pPred; apply IZR_le; auto with real zarith.
 apply Rmult_le_compat_l; auto with real zarith.
-apply Rlt_le; apply Rmult_lt_0_compat; auto with real zarith; apply powerRZ_lt, Rlt_IZR; omega.
+apply Rlt_le; apply Rmult_lt_0_compat; auto with real zarith; apply powerRZ_lt, IZR_lt; lia.
 apply Rle_trans with (IZR (Zpos (vNum bo))).
-apply Rle_IZR; elim Fx; intros; auto with real zarith.
+apply IZR_le; elim Fx; intros; lia.
 rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real.
 Qed.
 
@@ -25972,30 +25583,30 @@ rewrite Rabs_Ropp; apply Rlt_le; unfold FtoRradix.
 apply RoundedModeUlp with (Closest bo radix); auto with zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
 apply Rle_trans with (1:=H0).
-apply Rle_trans with (Rabs (FtoR radix w) * powerRZ radix (Zsucc (- p)))%R.
+apply Rle_trans with (Rabs (FtoR radix w) * powerRZ radix (Z.succ (- p)))%R.
 apply FulpLe2; auto with zarith.
 elim M2; auto.
 rewrite FcanonicFnormalizeEq; auto with zarith.
 left; auto.
 fold FtoRradix; apply Rle_trans with
-  ((3*(powerRZ radix (Zsucc (-p))*Rabs z))* powerRZ radix (Zsucc (- p)))%R.
-2: unfold Zsucc; replace (2-2*p)%Z with (1+1+-p+-p)%Z; auto with zarith.
+  ((3*(powerRZ radix (Z.succ (-p))*Rabs z))* powerRZ radix (Z.succ (- p)))%R.
+2: unfold Z.succ; replace (2-2*p)%Z with (1+1+-p+-p)%Z; auto with zarith.
 2: repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; right; ring.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (3*Fulp bo radix p z)%R.
 2: apply Rmult_le_compat_l; auto with real zarith.
 2: rewrite Rmult_comm; unfold FtoRradix; apply FulpLe2; auto with zarith.
 2: elim M1; auto.
 2: rewrite FcanonicFnormalizeEq; auto with zarith; left; auto.
-assert (0 < 1- powerRZ radix (Zsucc (- p)))%R.
-assert (powerRZ radix (Zsucc (- p)) < 1)%R; auto with real.
-apply Rlt_le_trans with (powerRZ radix (Zsucc (-1))); unfold Zsucc; auto with zarith real.
-apply Rlt_powerRZ; try apply Rlt_IZR; omega.
+assert (0 < 1- powerRZ radix (Z.succ (- p)))%R.
+assert (powerRZ radix (Z.succ (- p)) < 1)%R; auto with real.
+apply Rlt_le_trans with (powerRZ radix (Z.succ (-1))); unfold Z.succ; auto with zarith real.
+apply Rlt_powerRZ; try apply IZR_lt; lia.
 now apply Rlt_Rminus.
-apply Rmult_le_reg_l with (1- powerRZ radix (Zsucc (- p)))%R; auto with real.
+apply Rmult_le_reg_l with (1- powerRZ radix (Z.succ (- p)))%R; auto with real.
 apply Rle_trans with (Fulp bo radix p z).
-apply Rplus_le_reg_l with (powerRZ radix (Zsucc (- p))*Rabs w)%R.
+apply Rplus_le_reg_l with (powerRZ radix (Z.succ (- p))*Rabs w)%R.
 apply Rle_trans with (Rabs w);[right; ring|idtac].
 pattern (FtoRradix w) at 1; replace (FtoRradix w) with ((z+w-(a*x+b))+((a*x+b)-z))%R;
   [idtac|ring].
@@ -26010,32 +25621,32 @@ apply RoundedModeUlp with (Closest bo radix); auto with zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
 apply Rle_trans with (1*Fulp bo radix p z)%R; auto with real.
 unfold Fulp; rewrite <- Rmult_assoc; apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rplus_le_reg_l with (-1+3*powerRZ radix (Zsucc (- p)))%R.
-apply Rle_trans with (3 * powerRZ radix (Zsucc (- p)))%R;[right; ring|idtac].
-ring_simplify ( -1 + 3 * powerRZ radix (Zsucc (- p)) +
-    (1 - powerRZ radix (Zsucc (- p))) * 3)%R.
+apply powerRZ_le, IZR_lt; lia.
+apply Rplus_le_reg_l with (-1+3*powerRZ radix (Z.succ (- p)))%R.
+apply Rle_trans with (3 * powerRZ radix (Z.succ (- p)))%R;[right; ring|idtac].
+ring_simplify ( -1 + 3 * powerRZ radix (Z.succ (- p)) +
+    (1 - powerRZ radix (Z.succ (- p))) * 3)%R.
 apply Rle_trans with (powerRZ radix 0); auto with real zarith.
-apply Rle_trans with (powerRZ radix (2+Zsucc (-p))); auto with real zarith.
-2: unfold Zsucc; apply Rle_powerRZ; auto with real zarith.
-2: apply Rle_IZR; omega.
+apply Rle_trans with (powerRZ radix (2+Z.succ (-p))); auto with real zarith.
+2: unfold Z.succ; apply Rle_powerRZ; auto with real zarith.
+2: apply IZR_le; lia.
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-ring_simplify (radix*1)%R; apply Rle_trans with 4%R; auto with real zarith.
-rewrite <- mult_IZR; apply Rle_IZR.
-apply Zle_trans with (2*2)%Z; auto with zarith.
+apply powerRZ_le, IZR_lt; lia.
+ring_simplify (radix*1)%R; apply Rle_trans with 4%R. auto with real zarith.
+rewrite <- mult_IZR; apply IZR_le.
+apply Z.le_trans with (2*2)%Z. auto with zarith.
 apply Zmult_le_compat; auto with zarith.
 simpl; auto with real.
 apply Rmult_le_compat_r; auto with real.
 apply Rabs_pos.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with  (3 * radix / 2)%R; auto with real.
 apply Rmult_le_reg_l with (IZR 2); auto with real zarith.
 apply Rle_trans with (radix*3)%R;[apply Rmult_le_compat_r; auto with real zarith|
       right; simpl; field; auto with real].
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply Rle_trans with (3 * radix / 2+0)%R; auto with real.
 Qed.
 
@@ -26051,8 +25662,8 @@ apply Rabs_pos.
 apply Rlt_le; apply Rmult_lt_0_compat; auto with real zarith.
 apply Rle_lt_trans with (0+0)%R; auto with real; apply Rplus_lt_compat; auto with real.
 unfold Rdiv;repeat  apply Rmult_lt_0_compat; auto with real zarith.
-apply Rlt_IZR; omega.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply IZR_lt; lia.
+apply powerRZ_lt, IZR_lt; lia.
 apply sym_eq; apply trans_eq with (z+w-uh-(pl+ul))%R;[rewrite plDef; rewrite ulDef; ring|idtac].
 rewrite I2; rewrite Case1; simpl.
 ring_simplify.
@@ -26082,8 +25693,8 @@ apply Rabs_pos.
 apply Rlt_le; apply Rmult_lt_0_compat; auto with real zarith.
 apply Rle_lt_trans with (0+0)%R; auto with real; apply Rplus_lt_compat; auto with real.
 unfold Rdiv;repeat  apply Rmult_lt_0_compat; auto with real zarith.
-apply Rlt_IZR; omega.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply IZR_lt; lia.
+apply powerRZ_lt, IZR_lt; lia.
 assert (a*x+b=0)%R.
 apply ClosestZero1 with bo radix p z (Fplus radix (Fmult a x) b); auto with zarith.
 rewrite Fplus_correct; auto; rewrite Fmult_correct; fold FtoRradix; auto with real.
@@ -26139,7 +25750,7 @@ exists (Float (nNormMin radix p) (Fexp f)); auto.
 elim H1; clear H1; intros f' H1.
 assert (Fbounded bo f').
 rewrite H1; split; simpl; auto with zarith.
-rewrite Zabs_eq.
+rewrite Z.abs_eq.
 apply ZltNormMinVnum; auto with zarith.
 apply Zlt_le_weak; apply nNormPos; auto with zarith.
 assert (Fnormal radix bo f').
@@ -26148,16 +25759,16 @@ rewrite H1; simpl; rewrite <- PosNormMin with radix bo p; auto with zarith.
 assert (f' <= Fabs f)%R.
 rewrite H1; unfold FtoRradix, FtoR; simpl.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-assert  (nNormMin radix p <= Zabs (Fnum f))%Z; try apply Rle_IZR; auto with real zarith.
+apply powerRZ_le, IZR_lt; lia.
+assert  (nNormMin radix p <= Z.abs (Fnum f))%Z; try apply IZR_le; auto with real zarith.
 apply pNormal_absolu_min with bo; auto with zarith.
-apply Rle_trans with (f'-powerRZ radix (Zpred (Fexp f))/2)%R.
-right; rewrite H1; unfold FtoRradix, FtoR, Zpred, Zminus; simpl.
+apply Rle_trans with (f'-powerRZ radix (Z.pred (Fexp f))/2)%R.
+right; rewrite H1; unfold FtoRradix, FtoR, Z.pred, Zminus; simpl.
 rewrite powerRZ_add with (n:=Fexp f); try apply IZR_neq; auto with real zarith; simpl; ring_simplify (radix*1)%R.
 replace (IZR (nNormMin radix p)) with (powerRZ radix (p + -1)).
 field; try apply IZR_neq; auto with real zarith.
 unfold nNormMin; rewrite Zpower_nat_Z_powerRZ; rewrite inj_pred; auto with real zarith.
-case (Rle_or_lt (f' - powerRZ radix (Zpred (Fexp f)) / 2) (Rabs r));
+case (Rle_or_lt (f' - powerRZ radix (Z.pred (Fexp f)) / 2) (Rabs r));
   auto; intros I.
 absurd (Rabs (Fabs f - Rabs r) <= Rabs ((FPred bo radix p f') - Rabs r))%R.
 2: assert (K: (Closest bo radix (Rabs r) (Fabs f))).
@@ -26169,12 +25780,12 @@ rewrite Rabs_left1.
 rewrite Rabs_right with  (Fabs f - Rabs r)%R.
 apply Rplus_lt_reg_r with (Rabs r+(FPred bo radix p f'))%R.
 ring_simplify.
-apply Rlt_le_trans with (2*(f' - powerRZ radix (Zpred (Fexp f)) / 2))%R.
+apply Rlt_le_trans with (2*(f' - powerRZ radix (Z.pred (Fexp f)) / 2))%R.
 apply Rmult_lt_compat_l; auto with real.
 apply Rle_trans with (f'+ FPred bo radix p f')%R; auto with real.
-apply Rle_trans with (2*f'- powerRZ radix (Zpred (Fexp f)))%R;
+apply Rle_trans with (2*f'- powerRZ radix (Z.pred (Fexp f)))%R;
    [right; field; auto with real|idtac].
-apply Rplus_le_reg_l with (-f'- FPred bo radix p f'+ powerRZ radix (Zpred (Fexp f)))%R.
+apply Rplus_le_reg_l with (-f'- FPred bo radix p f'+ powerRZ radix (Z.pred (Fexp f)))%R.
 ring_simplify.
 right; apply trans_eq with (FtoRradix (Fminus radix f' (FPred bo radix p f'))).
 unfold FtoRradix; rewrite Fminus_correct; auto with real zarith.
@@ -26189,7 +25800,7 @@ apply Rlt_le_trans with (1:=I).
 apply Rle_trans with (Fabs f-0)%R; auto with real; unfold Rminus;
   apply Rplus_le_compat; auto with real zarith.
 apply Ropp_le_contravar; unfold Rdiv; apply Rlt_le; apply Rmult_lt_0_compat; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 left; apply Rlt_Rminus; auto.
 assert ((FPred bo radix p f' <= Rabs r))%R; auto with real.
 2: apply Rle_trans with (Rabs r-Rabs r)%R; unfold Rminus; auto with real.
@@ -26260,12 +25871,12 @@ unfold Fulp; repeat rewrite FcanonicFnormalizeEq; auto with zarith.
 2: left; auto.
 2: left; auto.
 apply Rle_trans with  (powerRZ radix (Fexp uh+1));
-  [apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith; generalize LeExp1; auto with zarith|
+  [apply Rle_powerRZ; try apply IZR_le; auto with real zarith; generalize LeExp1; auto with zarith|
       rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; right;ring].
 apply Rlt_le; unfold FtoRradix.
 apply RoundedModeUlp with (Closest bo radix); auto with zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
-apply Zle_trans with (Fexp (Float (Fnum z) (Fexp z+1))); auto with zarith.
+apply Z.le_trans with (Fexp (Float (Fnum z) (Fexp z+1))); auto with zarith.
 apply Fcanonic_Rle_Zle with radix bo p; auto with zarith.
 left; auto.
 elim Nz; intros A1 A2; elim A1; intros.
@@ -26273,27 +25884,27 @@ left; split;[split|idtac];simpl; auto with zarith.
 fold FtoRradix; apply Rle_trans with (radix*Rabs z)%R.
 2: unfold FtoRradix; repeat rewrite <- Fabs_correct; auto; unfold FtoR; simpl.
 2: rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; right; ring.
-apply Rmult_le_reg_l with (1-(1+radix)*powerRZ radix (Zsucc (-p)))%R.
-assert ((1+radix) * powerRZ radix (Zsucc (-p)) < 1)%R; auto with real.
+apply Rmult_le_reg_l with (1-(1+radix)*powerRZ radix (Z.succ (-p)))%R.
+assert ((1+radix) * powerRZ radix (Z.succ (-p)) < 1)%R; auto with real.
 2: apply Rlt_Rminus; auto.
-apply Rlt_le_trans with ((radix*radix)*powerRZ radix (Zsucc (-p)))%R;
+apply Rlt_le_trans with ((radix*radix)*powerRZ radix (Z.succ (-p)))%R;
    [apply Rmult_lt_compat_r; auto with real zarith|idtac].
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply Rlt_le_trans with (radix+radix)%R; auto with real.
-apply Rplus_lt_compat_r, Rlt_IZR; auto with zarith.
-apply Rle_trans with (2*radix)%R; [right; ring|apply Rmult_le_compat_r; auto with real zarith]; apply Rle_IZR; omega.
-apply Rle_trans with (powerRZ radix (2+Zsucc (-p)));
+apply Rplus_lt_compat_r, IZR_lt; auto with zarith.
+apply Rle_trans with (2*radix)%R; [right; ring|apply Rmult_le_compat_r; auto with real zarith]; apply IZR_le; lia.
+apply Rle_trans with (powerRZ radix (2+Z.succ (-p)));
   [right; rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; ring|idtac].
 apply Rle_trans with (powerRZ radix 0); auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; auto with zarith.
-apply Rle_trans with (Rabs uh-(1+radix)*(Rabs uh*powerRZ radix (Zsucc (-p))))%R;
+apply Rle_powerRZ; try apply IZR_le; auto with zarith.
+apply Rle_trans with (Rabs uh-(1+radix)*(Rabs uh*powerRZ radix (Z.succ (-p))))%R;
     [right; ring|idtac].
 apply Rle_trans with (Rabs uh-(1+radix)*Fulp bo radix p uh)%R;
   [unfold Rminus;apply Rplus_le_compat_l|idtac].
 apply Ropp_le_contravar; apply Rmult_le_compat_l; auto with real.
 apply Rle_trans with (1+0)%R; try apply Rplus_le_compat_l; auto with real.
 apply Rle_trans with 1%R; auto with real.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 unfold FtoRradix; apply FulpLe2; auto with zarith.
 elim uhDef; auto.
 rewrite FcanonicFnormalizeEq; auto with zarith; left; auto.
@@ -26303,35 +25914,35 @@ ring_simplify.
 apply Rle_trans with (Rabs uh - Rabs z)%R;[right; ring|idtac].
 apply Rle_trans with (Rabs (uh-z));[apply Rabs_triang_inv|idtac].
 apply Rle_trans with (1:=H); right; ring.
-apply Rle_trans with (Rabs z+(Rabs z*powerRZ radix (Zsucc (-p))))%R;
+apply Rle_trans with (Rabs z+(Rabs z*powerRZ radix (Z.succ (-p))))%R;
   [apply Rplus_le_compat_l|idtac].
 unfold FtoRradix; apply FulpLe2; auto with zarith.
 elim zDef; auto.
 rewrite FcanonicFnormalizeEq; auto with zarith; left; auto.
 rewrite <- Rmult_assoc.
-apply Rle_trans with ((1+ powerRZ radix (Zsucc (- p)))*Rabs z)%R;
+apply Rle_trans with ((1+ powerRZ radix (Z.succ (- p)))*Rabs z)%R;
   [right; ring|apply Rmult_le_compat_r; auto with real].
 apply Rabs_pos.
-apply Rplus_le_reg_l with (-1+(1+radix)*radix*powerRZ radix (Zsucc (- p)))%R.
-apply Rle_trans with ((1+radix+radix*radix)*powerRZ radix (Zsucc (- p)))%R;[right; ring|idtac].
+apply Rplus_le_reg_l with (-1+(1+radix)*radix*powerRZ radix (Z.succ (- p)))%R.
+apply Rle_trans with ((1+radix+radix*radix)*powerRZ radix (Z.succ (- p)))%R;[right; ring|idtac].
 apply Rle_trans with (radix-1)%R;[idtac|right; ring].
-apply Rle_trans with ((radix*radix*radix)*powerRZ radix (Zsucc (-p)))%R;
+apply Rle_trans with ((radix*radix*radix)*powerRZ radix (Z.succ (-p)))%R;
    [apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (radix+radix+radix*radix)%R; auto with real.
-apply Rplus_le_compat_r, Rplus_le_compat_r, Rle_IZR; omega.
+apply Rplus_le_compat_r, Rplus_le_compat_r, IZR_le; lia.
 apply Rle_trans with ((2+radix)*radix)%R;
    [right; ring|apply Rmult_le_compat_r; auto with real zarith].
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply Rle_trans with (radix+radix)%R; auto with real.
-apply Rplus_le_compat_r, Rle_IZR; omega.
+apply Rplus_le_compat_r, IZR_le; lia.
 apply Rle_trans with (2*radix)%R;
-   [right; ring|apply Rmult_le_compat_r; auto with real zarith]; apply Rle_IZR; omega.
-apply Rle_trans with (powerRZ radix (3+Zsucc (-p)));
+   [right; ring|apply Rmult_le_compat_r; auto with real zarith]; apply IZR_le; lia.
+apply Rle_trans with (powerRZ radix (3+Z.succ (-p)));
   [right; rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; ring|idtac].
 apply Rle_trans with (powerRZ radix 0); auto with real zarith.
-unfold Zsucc; apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
-assert (2 <= radix)%R by (apply Rle_IZR; auto with zarith).
+unfold Z.succ; apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
+assert (2 <= radix)%R by (apply IZR_le; auto with zarith).
 simpl; apply Rplus_le_reg_l with 1%R; auto with real.
 ring_simplify (1 + (radix - 1))%R; auto with real.
 Qed.
@@ -26343,9 +25954,9 @@ absurd (powerRZ radix (p+Fexp z) <= Rabs z)%R.
 apply Rlt_not_le.
 unfold FtoRradix; rewrite <- Fabs_correct; auto; unfold FtoR; simpl.
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; apply Rmult_lt_compat_r; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 elim Nz; intros A1 A2; elim A1; intros.
-apply Rlt_le_trans with (IZR (Zpos (vNum bo))); try apply Rlt_IZR; auto with zarith real.
+apply Rlt_le_trans with (IZR (Zpos (vNum bo))); try apply IZR_lt; auto with zarith real.
 right; rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real.
 apply Rle_trans with (FtoRradix (Float 1 (p+Fexp z))).
 right; unfold FtoRradix, FtoR; simpl; ring.
@@ -26366,42 +25977,42 @@ apply Rle_trans with ((powerRZ radix (p + 1) - radix/ 2 ) * powerRZ radix (Fexp 
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 apply Rle_trans with ((powerRZ radix (p + 1) - radix / 2-powerRZ radix p+1)*
    powerRZ radix (Fexp z))%R;[apply Rmult_le_compat_r; auto with real zarith|right; ring].
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 case (Zle_lt_or_eq 2 radix); auto with zarith; intros I.
 assert (3 <= radix)%Z; auto with zarith.
-assert (3 <= radix)%R; try apply Rle_IZR; auto with real zarith.
+assert (3 <= radix)%R; try apply IZR_le; auto with real zarith.
 apply Rplus_le_reg_l with (radix/2-1-powerRZ radix p)%R.
 ring_simplify.
 unfold Rminus; rewrite Rplus_comm.
 apply Rle_trans with (0+radix/2)%R; auto with real.
 apply Rle_trans with (0+radix*1)%R; unfold Rdiv; auto with real.
-apply Rplus_le_compat_l; apply Rmult_le_compat_l; try apply Rle_IZR; auto with real zarith.
+apply Rplus_le_compat_l; apply Rmult_le_compat_l; try apply IZR_le; auto with real zarith.
 apply Rle_trans with (/1)%R; auto with real.
 apply Rle_trans with (powerRZ radix 1);[simpl; right; ring|idtac].
 apply Rle_trans with (powerRZ radix p);auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; omega.
+apply Rle_powerRZ; try apply IZR_le; lia.
 apply Rle_trans with (- 2*powerRZ radix p + powerRZ radix p * (3))%R;
   [right; ring|auto with real].
 rewrite powerRZ_add; auto with real zarith.
 apply Rplus_le_compat_l; apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 simpl; ring_simplify (radix*1)%R; auto with real.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 right; rewrite <- I; rewrite powerRZ_add; auto with real zarith; simpl.
 field; auto with real.
 unfold Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl.
 ring_simplify (radix*1)%R; right; field; auto with real.
-apply IZR_neq; omega.
+apply IZR_neq; lia.
 unfold Rminus; apply Rplus_le_compat.
 replace (Fexp ph) with (Fexp z+2)%Z; auto with real zarith.
 apply Ropp_le_contravar; apply Rmult_le_compat_l.
 assert (1 <= powerRZ radix p)%R; auto with real.
 apply Rle_trans with (powerRZ radix 0); auto with real zarith.
-apply Rle_powerRZ; try apply Rle_IZR; omega.
+apply Rle_powerRZ; try apply IZR_le; lia.
 apply Rplus_le_reg_l with 1%R.
 ring_simplify (1+0)%R; apply Rle_trans with (1:=H1); right; ring.
-apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
-apply Zle_trans with (Fexp uh -1)%Z; auto with zarith.
+apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
+apply Z.le_trans with (Fexp uh -1)%Z; auto with zarith.
 case (Zle_or_lt (Fexp b) (Fexp uh-1)); auto with zarith; intros.
 absurd (FtoRradix ul=0); auto with real.
 elim errorBoundedPlus with bo radix p ph b uh; auto with zarith.
@@ -26409,7 +26020,7 @@ elim errorBoundedPlus with bo radix p ph b uh; auto with zarith.
 fold FtoRradix; intros ul' T; elim T; intros H2 T'; elim T'; intros; clear T T'.
 rewrite ulDef; rewrite <- H2.
 absurd (Fexp uh < Fexp uh)%Z; auto with zarith.
-apply Zle_lt_trans with (Fexp ul'); auto with zarith.
+apply Z.le_lt_trans with (Fexp ul'); try lia.
 apply ClosestErrorExpStrict with bo radix p (ph+b)%R; auto with zarith.
 elim uhDef; auto.
 fold FtoRradix; rewrite H2; rewrite <- ulDef; auto with real.
@@ -26419,10 +26030,10 @@ assert (-dExp bo <= Fexp uh)%Z; auto with zarith.
 elim uhDef; intros I1 I2; elim I1; auto.
 apply Ropp_le_contravar; unfold FtoRradix; rewrite <- Fabs_correct; auto.
 unfold FtoR; simpl; apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 elim Fb; intros.
-apply Rle_trans with (Zpred (Zpos (vNum bo))); try apply Rle_IZR; auto with real zarith.
-right; unfold Zpred, Zminus; rewrite plus_IZR; rewrite pGivesBound; simpl.
+apply Rle_trans with (Z.pred (Zpos (vNum bo))); try apply IZR_le; auto with real zarith.
+right; unfold Z.pred, Zminus; rewrite plus_IZR; rewrite pGivesBound; simpl.
 rewrite Zpower_nat_Z_powerRZ; auto with real.
 Qed.
 
@@ -26431,7 +26042,7 @@ Qed.
 Lemma LeExp: (powerRZ radix (Fexp ph)+powerRZ radix (Fexp uh) <= 2*powerRZ radix (Fexp z+1))%R.
 apply Rle_trans with (powerRZ radix (Fexp z + 1)+
    powerRZ radix (Fexp z + 1))%R;[idtac|right; ring].
-apply Rplus_le_compat; apply Rle_powerRZ; try apply Rle_IZR; auto with real zarith.
+apply Rplus_le_compat; apply Rle_powerRZ; try apply IZR_le; auto with real zarith.
 generalize LeExp1; generalize LeExp2; generalize LeExp3; intros.
 case (Zle_lt_or_eq _ _ H0); intros; auto with zarith.
 generalize LeExp1; generalize LeExp2; generalize LeExp3; intros; auto.
@@ -26440,13 +26051,14 @@ Qed.
 
 
 Lemma vLe_aux: (Rabs (pl+ul) <= powerRZ radix (Fexp z)*radix)%R.
+Proof.
 apply Rle_trans with (powerRZ radix (Fexp z+1));
   [idtac|rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl; right; ring].
 apply Rle_trans with (Rabs pl+Rabs ul)%R;[apply Rabs_triang|idtac].
 apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with  (powerRZ radix (Fexp ph)+powerRZ radix (Fexp uh))%R;
   [idtac|apply LeExp].
-apply Rle_trans with (INR 2*Rabs pl+INR 2*Rabs ul)%R;[simpl; right; ring|idtac].
+apply Rle_trans with (2*Rabs pl+2*Rabs ul)%R;[simpl; right; ring|idtac].
 apply Rplus_le_compat.
 apply Rle_trans with (Fulp bo radix p ph).
 rewrite plDef; unfold FtoRradix; apply ClosestUlp; auto with zarith.
@@ -26464,14 +26076,15 @@ rewrite H.
 unfold FtoRradix; apply RoundAbsMonotoner with bo p (Closest bo radix) (pl+ul)%R; auto with zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
 elim zDef; intros I1 I2; elim I1; intros; split; simpl; auto with zarith.
-rewrite Zabs_eq; auto with zarith.
-apply Zlt_trans with (pPred (vNum bo));
+rewrite Z.abs_eq; auto with zarith.
+apply Z.lt_trans with (pPred (vNum bo));
  [apply pPredMoreThanRadix with p|unfold pPred]; auto with zarith.
 fold FtoRradix; rewrite <- H; apply vLe_aux.
 Qed.
 
 
 Lemma tLe: (Rabs t <= powerRZ radix (Fexp z)*(radix+1))%R.
+Proof.
 replace (FtoRradix t) with (uh-z)%R.
 replace (uh-z)%R with ((a*x+b-z)+(-(a*x-ph)+-((ph+b)-uh)))%R;[idtac|ring].
 apply Rle_trans with (Rabs (a*x+b-z)+Rabs ( - (a * x - ph) + - (ph + b - uh)))%R;
@@ -26489,7 +26102,7 @@ rewrite Rabs_Ropp; rewrite Rabs_Ropp.
 apply Rmult_le_reg_l with 2%R; auto with real.
 apply Rle_trans with  (powerRZ radix (Fexp ph)+powerRZ radix (Fexp uh))%R;
   [idtac|apply LeExp].
-apply Rle_trans with (INR 2*Rabs (a*x-ph)+INR 2*Rabs (ph+b-uh))%R;[simpl; right; ring|idtac].
+apply Rle_trans with (2*Rabs (a*x-ph)+2*Rabs (ph+b-uh))%R;[simpl; right; ring|idtac].
 apply Rplus_le_compat.
 apply Rle_trans with (Fulp bo radix p ph).
 unfold FtoRradix; apply ClosestUlp; auto with zarith.
@@ -26517,16 +26130,17 @@ rewrite H.
 unfold FtoRradix; apply RoundAbsMonotoner with bo p (Closest bo radix) (t+v)%R; auto with zarith.
 apply ClosestRoundedModeP with p; auto with zarith.
 elim zDef; intros I1 I2; elim I1; intros; split; [idtac|simpl; auto with zarith].
-apply Zle_lt_trans with (Zabs (2*radix+1)); auto with zarith.
-rewrite Zabs_eq; auto with zarith.
-apply Zlt_le_trans with (2*radix+radix)%Z; auto with zarith.
-apply Zle_trans with (3*radix)%Z; auto with zarith.
-rewrite pGivesBound; apply Zle_trans with (Zpower_nat radix 3); auto with zarith.
+apply Z.le_lt_trans with (Z.abs (2*radix+1)); auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
+apply Z.lt_le_trans with (2*radix+radix)%Z; auto with zarith.
+apply Z.le_trans with (3*radix)%Z; auto with zarith.
+rewrite pGivesBound; apply Z.le_trans with (Zpower_nat radix 3); auto with zarith.
 unfold Zpower_nat; simpl (nat_rect _ _ _ _)%Z.
-rewrite Zmult_comm; apply Zmult_le_compat_l; auto with zarith.
-ring_simplify (radix*1)%Z; apply Zle_trans with (2*2)%Z; auto with zarith.
+rewrite Zmult_comm; apply Zmult_le_compat_l.
+ring_simplify (radix*1)%Z; apply Z.le_trans with (2*2)%Z. auto with zarith.
 apply Zmult_le_compat; auto with zarith.
-apply Zpower_nat_monotone_le; omega.
+auto with zarith.
+apply Zpower_nat_monotone_le; lia.
 fold FtoRradix; rewrite <- H.
 apply Rle_trans with (Rabs t+Rabs v)%R;[apply Rabs_triang|idtac].
 generalize tLe; generalize vLe; intros.
@@ -26536,6 +26150,7 @@ Qed.
 
 
 Theorem ErrFmaApprox_2_aux: (Rabs (z+w-(a*x+b)) <= (3*radix/2+/2)*powerRZ radix (2-2*p)*Rabs z)%R.
+Proof.
 replace (z+w-(a*x+b))%R with ((t-(uh-z))+-(t+v-w)+-(pl+ul-v))%R;
   [idtac|rewrite ulDef; rewrite plDef; ring].
 pattern (FtoRradix t) at 1; replace (FtoRradix t) with (uh-z)%R.
@@ -26549,32 +26164,32 @@ replace (uh - z - (uh - z) + - (t + v - w) + - (pl + ul - v))%R with
    (-((t + v - w)+(pl + ul - v)))%R;[rewrite Rabs_Ropp|ring].
 apply Rle_trans with (Rabs (t+v-w)+Rabs (pl+ul-v))%R;[apply Rabs_triang|idtac].
 apply Rmult_le_reg_l with 2%R; auto with real.
-apply Rle_trans with (INR 2*Rabs (t + v - w) + INR 2*Rabs (pl + ul - v))%R;[right; simpl; ring|idtac].
+apply Rle_trans with (2*Rabs (t + v - w) + 2*Rabs (pl + ul - v))%R;[right; simpl; ring|idtac].
 apply Rle_trans with ((Fulp bo radix p w)+(Fulp bo radix p v))%R.
 apply Rplus_le_compat; unfold FtoRradix; apply ClosestUlp; auto with zarith.
-apply Rle_trans with (Rabs w*powerRZ radix (Zsucc (-p))+Rabs v*powerRZ radix (Zsucc (-p)))%R.
+apply Rle_trans with (Rabs w*powerRZ radix (Z.succ (-p))+Rabs v*powerRZ radix (Z.succ (-p)))%R.
 apply Rplus_le_compat; unfold FtoRradix; apply FulpLe2; auto with zarith.
 elim wDef; auto.
 rewrite FcanonicFnormalizeEq; auto with zarith; left; auto.
 elim vDef; auto.
 rewrite FcanonicFnormalizeEq; auto with zarith; left; auto.
-apply Rle_trans with (powerRZ radix (Zsucc (-p))*(Rabs w+Rabs v))%R;[right; ring|idtac].
+apply Rle_trans with (powerRZ radix (Z.succ (-p))*(Rabs w+Rabs v))%R;[right; ring|idtac].
 generalize wLe; generalize vLe; intros.
-apply Rle_trans with (powerRZ radix (Zsucc (-p))*(powerRZ radix (Fexp z) * (2 * radix + 1) +
+apply Rle_trans with (powerRZ radix (Z.succ (-p))*(powerRZ radix (Fexp z) * (2 * radix + 1) +
          powerRZ radix (Fexp z) *radix))%R; [apply Rmult_le_compat_l; auto with real zarith|idtac].
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_trans with  ((3*radix+1)*(powerRZ radix (Zsucc (- p))*(powerRZ radix (Fexp z))))%R;
+apply powerRZ_le, IZR_lt; lia.
+apply Rle_trans with  ((3*radix+1)*(powerRZ radix (Z.succ (- p))*(powerRZ radix (Fexp z))))%R;
    [right; ring|idtac].
 apply Rle_trans with ((3 * radix + 1) * (powerRZ radix (2- 2*p) *Rabs z))%R;
    [idtac|right; field; auto with real].
 apply Rmult_le_compat_l; auto with real zarith.
 apply Rle_trans with (0+1)%R; auto with real.
 assert (0 < 3*radix)%R; auto with real.
-apply Rmult_lt_0_compat; try apply Rlt_IZR; auto with real zarith.
-replace (2-2*p)%Z with (Zsucc (-p)+Zsucc (-p))%Z;[idtac|unfold Zsucc; ring].
+apply Rmult_lt_0_compat; try apply IZR_lt; auto with real zarith.
+replace (2-2*p)%Z with (Z.succ (-p)+Z.succ (-p))%Z;[idtac|unfold Z.succ; ring].
 rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
 rewrite Rmult_assoc; apply Rmult_le_compat_l; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (Fulp bo radix p z).
 unfold Fulp;rewrite FcanonicFnormalizeEq; auto with zarith real; left; auto.
 unfold FtoRradix; rewrite Rmult_comm; apply FulpLe2; auto with zarith.
@@ -26629,6 +26244,7 @@ Hypothesis Case2: ~(FtoRradix ul=0)%R.
 
 
 Theorem ErrFmaApprox_2: (Rabs (z+w-(a*x+b)) <= (3*radix/2+/2)*powerRZ radix (2-2*p)*Rabs z)%R.
+Proof.
 case Nv;  intros I5.
 case Nz;  intros I3.
 case Nph; intros I1.
@@ -26637,24 +26253,24 @@ case Nw;  intros I4.
 unfold FtoRradix; apply ErrFmaApprox_2_aux with bo ph pl uh ul t v; auto.
 (*w=0 -> eps <= v-ul-pl=/2 ulp(v)=radix/2*beta^e_z *)
 replace (z + w - (a * x + b))%R with (-(ul+pl-v))%R.
-apply Rmult_le_reg_l with (INR 2); auto with real zarith; rewrite Rabs_Ropp.
+apply Rmult_le_reg_l with 2; auto with real zarith; rewrite Rabs_Ropp.
 apply Rle_trans with (Fulp bo radix p v).
 unfold FtoRradix; apply ClosestUlp; auto with zarith.
 rewrite Rplus_comm; auto with real.
-apply Rle_trans with (Rabs v * powerRZ radix (Zsucc (- p)))%R;
+apply Rle_trans with (Rabs v * powerRZ radix (Z.succ (- p)))%R;
  [unfold FtoRradix; apply FulpLe2; auto with zarith|idtac].
 elim vDef; auto.
 rewrite FcanonicFnormalizeEq; auto with zarith; left; auto.
 assert (Rabs v <= powerRZ radix (Fexp z) * radix)%R.
 unfold FtoRradix; apply vLe with bo p a x b ph pl uh ul; auto.
-apply Rle_trans with ((powerRZ radix (Fexp z) * radix)* powerRZ radix (Zsucc (- p)))%R;
+apply Rle_trans with ((powerRZ radix (Fexp z) * radix)* powerRZ radix (Z.succ (- p)))%R;
    [apply Rmult_le_compat_r; auto with real zarith|idtac].
-apply powerRZ_le, Rlt_IZR; omega.
-apply Rle_trans with ((Rabs z * powerRZ radix (Zsucc (- p)))* radix * powerRZ radix (Zsucc (- p)))%R.
+apply powerRZ_le, IZR_lt; lia.
+apply Rle_trans with ((Rabs z * powerRZ radix (Z.succ (- p)))* radix * powerRZ radix (Z.succ (- p)))%R.
 apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rmult_le_compat_r; auto with real zarith.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 apply Rle_trans with (Fulp bo radix p z).
 unfold Fulp; rewrite FcanonicFnormalizeEq; auto with zarith real; left; auto.
 unfold FtoRradix; apply FulpLe2; auto with zarith.
@@ -26662,15 +26278,15 @@ elim zDef; auto.
 rewrite FcanonicFnormalizeEq; auto with zarith real; left; auto.
 apply Rle_trans with (radix*powerRZ radix (2 - 2 * p) * Rabs z)%R.
 replace (2-2*p)%Z with (1+1-p-p)%Z;[idtac|ring].
-unfold Zsucc, Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl.
+unfold Z.succ, Zminus; repeat rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl.
 ring_simplify (radix*1)%R; right; ring.
 rewrite <- Rmult_assoc; apply Rmult_le_compat_r; auto with real.
 apply Rabs_pos.
 rewrite <- Rmult_assoc; apply Rmult_le_compat_r; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply Rle_trans with (3*radix+1)%R;[idtac|right; simpl; field; auto with real].
 apply Rle_trans with (1*radix+0)%R;[right; ring|apply Rplus_le_compat; auto with real zarith].
-apply Rmult_le_compat_r; try apply Rle_IZR; omega.
+apply Rmult_le_compat_r; try apply IZR_le; lia.
 rewrite ulDef; rewrite plDef.
 assert (t+v=0)%R.
 apply ClosestZero1 with bo radix p w (Fplus radix t v); auto with zarith.
@@ -26734,8 +26350,8 @@ apply Rabs_pos.
 apply Rlt_le; apply Rmult_lt_0_compat; auto with real zarith.
 apply Rle_lt_trans with (0+0)%R; auto with real; apply Rplus_lt_compat; auto with real.
 unfold Rdiv;repeat  apply Rmult_lt_0_compat; auto with real zarith.
-apply Rlt_IZR; omega.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply IZR_lt; lia.
+apply powerRZ_lt, IZR_lt; lia.
 apply sym_eq; apply trans_eq with (z+w-uh-(pl+ul))%R;[rewrite plDef; rewrite ulDef; ring|idtac].
 assert (pl+ul=0)%R.
 elim errorBoundedPlus with bo radix p ph b uh; auto with zarith.
@@ -26842,7 +26458,7 @@ Variable precision : nat.
 
 Let radix := 2%Z.
 
-Let TMTO : (1 < radix)%Z := TwoMoreThanOne.
+Let TMTO : (1 < radix)%Z := eq_refl.
 
 Let FtoRradix := FtoR radix.
 Local Coercion FtoRradix  : float >-> R.
@@ -27342,44 +26958,45 @@ Local Coercion FtoRradix : float >-> R.
 
 Theorem exp_ln_powerRZ :
  forall u v : Z, (0 < u)%Z -> (exp (ln u * v) = powerRZ u v)%R.
+Proof.
 intros u v H1.
 cut (forall e f : nat, (0 < e)%Z -> exp (ln e * f) = powerRZ e f).
 intros H2.
 case (Zle_or_lt 0 v); intros H3.
-replace u with (Z_of_nat (Zabs_nat u));
+replace u with (Z_of_nat (Z.abs_nat u));
  [ idtac | apply inj_abs; auto with zarith ].
-replace v with (Z_of_nat (Zabs_nat v)); [ idtac | apply inj_abs; auto ].
-repeat rewrite <- INR_IZR_INZ; apply H2.
+replace v with (Z_of_nat (Z.abs_nat v)); [ idtac | apply inj_abs; auto ].
+apply H2.
 rewrite inj_abs; auto with zarith.
-replace v with (- Zabs_nat v)%Z.
+replace v with (- Z.abs_nat v)%Z.
 rewrite <- Rinv_powerRZ; auto with zarith real.
-replace u with (Z_of_nat (Zabs_nat u));
+replace u with (Z_of_nat (Z.abs_nat u));
  [ idtac | apply inj_abs; auto with zarith ].
-rewrite Ropp_Ropp_IZR; rewrite Ropp_mult_distr_r_reverse; rewrite exp_Ropp;
- repeat rewrite <- INR_IZR_INZ.
+rewrite Ropp_Ropp_IZR; rewrite Ropp_mult_distr_r_reverse; rewrite exp_Ropp.
 rewrite H2; auto with real.
 rewrite inj_abs; auto with zarith.
-apply Rgt_not_eq, Rlt_IZR; auto with real.
+apply Rgt_not_eq, IZR_lt; auto with real.
 rewrite <- Zabs_absolu; rewrite <- Zabs_Zopp.
-rewrite Zabs_eq; auto with zarith.
+rewrite Z.abs_eq; auto with zarith.
 intros e f H2.
 induction  f as [| f Hrecf].
 simpl in |- *; ring_simplify (ln e * 0)%R; apply exp_0.
 replace (ln e * S f)%R with (ln e * f + ln e)%R.
 rewrite exp_plus; rewrite Hrecf; rewrite exp_ln; auto with real zarith.
+2: now apply IZR_lt.
 replace (Z_of_nat (S f)) with (f + 1)%Z.
 rewrite powerRZ_add; try apply IZR_neq; simpl; auto with real zarith.
 rewrite inj_S; auto with zarith.
-replace (INR (S f)) with (f + 1)%R; [ ring | idtac ].
+replace (IZR (S f)) with (f + 1)%R; [ ring | idtac ].
 apply trans_eq with (IZR (f + 1)).
-rewrite plus_IZR; simpl in |- *; rewrite <- INR_IZR_INZ; auto with real.
-apply trans_eq with (IZR (Zsucc f)); auto with zarith real.
-rewrite <- inj_S; rewrite <- INR_IZR_INZ; auto with zarith real.
+rewrite plus_IZR; simpl in |- *; auto with real.
+apply trans_eq with (IZR (Z.succ f)); auto with zarith real.
+rewrite <- inj_S; auto with zarith real.
 Qed.
 
 Theorem ln_radix_pos : (0 < ln radix)%R.
 rewrite <- ln_1.
-apply ln_increasing; try apply Rlt_IZR; auto with real zarith.
+apply ln_increasing; try apply IZR_lt; auto with real zarith.
 Qed.
 
 Theorem exp_le_inv : forall x y : R, (exp x <= exp y)%R -> (x <= y)%R.
@@ -27395,29 +27012,29 @@ right; auto with real.
 Qed.
 
 Theorem firstNormalPos_eq :
- FtoRradix (firstNormalPos radix b p) = powerRZ radix (Zpred p + - dExp b).
+ FtoRradix (firstNormalPos radix b p) = powerRZ radix (Z.pred p + - dExp b).
 Proof.
 unfold firstNormalPos, nNormMin, FtoRradix, FtoR in |- *; simpl.
 rewrite Zpower_nat_Z_powerRZ; rewrite powerRZ_add; try apply IZR_neq; auto with real zarith.
-replace (Z_of_nat (pred p)) with (Zpred p);
+replace (Z_of_nat (pred p)) with (Z.pred p);
  [ ring | rewrite inj_pred; auto with zarith ].
 Qed.
 
 
 (** Results about the ineger rounding down *)
 
-Definition IRNDD (r : R) := Zpred (up r).
+Definition IRNDD (r : R) := Z.pred (up r).
 
 Theorem IRNDD_correct1 : forall r : R, (IRNDD r <= r)%R.
 intros r; unfold IRNDD in |- *.
 generalize (archimed r); intros T; elim T; intros H1 H2; clear T.
-unfold Zpred in |- *; apply Rplus_le_reg_l with (1 + - r)%R.
+unfold Z.pred in |- *; apply Rplus_le_reg_l with (1 + - r)%R.
 ring_simplify (1 + - r + r)%R.
 apply Rle_trans with (2 := H2).
 rewrite plus_IZR; right; simpl in |- *; ring.
 Qed.
 
-Theorem IRNDD_correct2 : forall r : R, (r < Zsucc (IRNDD r))%R.
+Theorem IRNDD_correct2 : forall r : R, (r < Z.succ (IRNDD r))%R.
 intros r; unfold IRNDD in |- *.
 generalize (archimed r); intros T; elim T; intros H1 H2; clear T.
 rewrite <- Zsucc_pred; auto.
@@ -27426,7 +27043,7 @@ Qed.
 Theorem IRNDD_correct3 : forall r : R, (r - 1 < IRNDD r)%R.
 intros r; unfold IRNDD in |- *.
 generalize (archimed r); intros T; elim T; intros H1 H2; clear T.
-unfold Zpred, Rminus in |- *; rewrite plus_IZR; simpl in |- *; auto with real.
+unfold Z.pred, Rminus in |- *; rewrite plus_IZR; simpl in |- *; auto with real.
 Qed.
 
 
@@ -27441,7 +27058,7 @@ Qed.
 
 
 Theorem IRNDD_eq :
- forall (r : R) (z : Z), (z <= r)%R -> (r < Zsucc z)%R -> IRNDD r = z.
+ forall (r : R) (z : Z), (z <= r)%R -> (r < Z.succ z)%R -> IRNDD r = z.
 intros r z H1 H2.
 cut (IRNDD r - z < 1)%Z;
  [ intros H3 | apply lt_IZR; rewrite <- Z_R_minus; simpl in |- * ].
@@ -27456,15 +27073,15 @@ apply Rplus_lt_compat_l, Ropp_lt_contravar.
 apply IRNDD_correct3.
 unfold Rminus in |- *; apply Rle_lt_trans with (r + - z)%R; auto with real.
 apply Rplus_le_compat_r; apply IRNDD_correct1.
-apply Rlt_le_trans with (Zsucc z + - z)%R; auto with real; right;
- unfold Zsucc in |- *; rewrite plus_IZR; simpl in |- *;
+apply Rlt_le_trans with (Z.succ z + - z)%R; auto with real; right;
+ unfold Z.succ in |- *; rewrite plus_IZR; simpl in |- *;
  ring.
 Qed.
 
 Theorem IRNDD_projector : forall z : Z, IRNDD z = z.
 intros z.
 apply IRNDD_eq; auto with zarith real.
-apply Rlt_IZR; omega.
+apply IZR_lt; lia.
 Qed.
 
 
@@ -27473,7 +27090,7 @@ Qed.
 Definition RND_Min_Pos (r : R) :=
   match Rle_dec (firstNormalPos radix b p) r with
   | left _ =>
-      let e := IRNDD (ln r / ln radix + (- Zpred p)%Z) in
+      let e := IRNDD (ln r / ln radix + (- Z.pred p)%Z) in
       Float (IRNDD (r * powerRZ radix (- e))) e
   | right _ => Float (IRNDD (r * powerRZ radix (dExp b))) (- dExp b)
   end.
@@ -27494,18 +27111,19 @@ rewrite Rabs_right;
  | apply Rle_ge; apply IRNDD_pos; apply Rmult_le_pos; auto with real zarith ].
 apply Rle_lt_trans with (1 := IRNDD_correct1 (r * powerRZ radix (- e))).
 apply Rmult_lt_reg_l with (powerRZ radix e); auto with zarith real.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 rewrite Rmult_comm; rewrite Rmult_assoc.
 rewrite <- powerRZ_add; try apply IZR_neq; auto with zarith real.
 rewrite <- powerRZ_add; try apply IZR_neq; auto with zarith real.
 apply Rle_lt_trans with (2 := H3); ring_simplify (- e + e)%Z; simpl in |- *; right;
  ring.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 Qed.
 
 
 Theorem RND_Min_Pos_canonic :
  forall r : R, (0 <= r)%R -> Fcanonic radix b (RND_Min_Pos r).
+Proof.
 intros r H1; unfold RND_Min_Pos in |- *.
 generalize ln_radix_pos; intros W.
 case (Rle_dec (firstNormalPos radix b p) r); intros H2.
@@ -27514,17 +27132,17 @@ cut (0 < r)%R; [ intros V | idtac ].
     auto with real zarith.
 left; split.
 apply RND_Min_Pos_bounded_aux; auto.
-apply Zgt_succ_le; apply Zlt_gt.
+apply Zgt_succ_le; apply Z.lt_gt.
 apply lt_IZR.
 apply
- Rle_lt_trans with (2 := IRNDD_correct2 (ln r / ln radix + (- Zpred p)%Z)).
-apply Rplus_le_reg_l with (Zpred p).
+ Rle_lt_trans with (2 := IRNDD_correct2 (ln r / ln radix + (- Z.pred p)%Z)).
+apply Rplus_le_reg_l with (Z.pred p).
 apply Rmult_le_reg_l with (ln radix).
 apply ln_radix_pos.
 apply Rle_trans with (ln r).
 apply exp_le_inv.
 rewrite exp_ln; auto.
-replace (Zpred p + (- dExp b)%Z)%R with (IZR (Zpred p + - dExp b)).
+replace (Z.pred p + (- dExp b)%Z)%R with (IZR (Z.pred p + - dExp b)).
 rewrite exp_ln_powerRZ; auto with zarith.
 apply Rle_trans with (2 := H2).
 rewrite firstNormalPos_eq; auto with real.
@@ -27535,34 +27153,33 @@ pattern r at 1 in |- *; rewrite <- (exp_ln r); auto.
 apply exp_increasing.
 rewrite plus_IZR.
 apply
- Rle_lt_trans with (ln radix * (ln r / ln radix + (- Zpred p)%Z - 1 + p))%R.
-rewrite Ropp_Ropp_IZR; unfold Zpred in |- *; rewrite plus_IZR; simpl in |- *.
-repeat rewrite <- INR_IZR_INZ; right; field; auto with real.
+ Rle_lt_trans with (ln radix * (ln r / ln radix + (- Z.pred p)%Z - 1 + p))%R.
+rewrite Ropp_Ropp_IZR; unfold Z.pred in |- *; rewrite plus_IZR; simpl in |- *.
+right; field; auto with real.
 apply Rmult_lt_compat_l; auto with real.
-repeat rewrite <- INR_IZR_INZ.
 apply Rplus_lt_compat_r; auto with real.
 apply IRNDD_correct3.
 simpl in |- *; rewrite pGivesBound; apply le_IZR; simpl in |- *.
-2: apply powerRZ_lt, Rlt_IZR; omega.
-rewrite Zpower_nat_Z_powerRZ; rewrite Zabs_eq.
+2: apply powerRZ_lt, IZR_lt; lia.
+rewrite Zpower_nat_Z_powerRZ; rewrite Z.abs_eq.
 2: apply le_IZR; rewrite mult_IZR; simpl in |- *.
 2: apply Rmult_le_pos.
-2: apply Rle_IZR; auto with real zarith.
+2: apply IZR_le; auto with real zarith.
 2: apply IRNDD_pos; apply Rmult_le_pos; auto with real zarith.
-2: apply powerRZ_le, Rlt_IZR; omega.
+2: apply powerRZ_le, IZR_lt; lia.
 rewrite mult_IZR; pattern (Z_of_nat p) at 1 in |- *;
- replace (Z_of_nat p) with (1 + Zpred p)%Z.
-2: unfold Zpred in |- *; ring.
+ replace (Z_of_nat p) with (1 + Z.pred p)%Z.
+2: unfold Z.pred in |- *; ring.
 rewrite powerRZ_add; try apply IZR_neq; auto with zarith real; simpl in |- *; ring_simplify (radix * 1)%R.
 apply Rmult_le_compat_l; auto with zarith real.
-apply Rle_IZR; omega.
+apply IZR_le; lia.
 rewrite <- inj_pred; auto with zarith.
 rewrite <- Zpower_nat_Z_powerRZ; apply IZR_le.
-apply Zgt_succ_le; apply Zlt_gt; apply lt_IZR; rewrite Ropp_Ropp_IZR.
+apply Zgt_succ_le; apply Z.lt_gt; apply lt_IZR; rewrite Ropp_Ropp_IZR.
 apply
  Rle_lt_trans
   with (r * powerRZ radix (- IRNDD (ln r / ln radix + - pred p)))%R.
-2: repeat rewrite <- INR_IZR_INZ; apply IRNDD_correct2.
+2: apply IRNDD_correct2.
 rewrite <- exp_ln_powerRZ; auto with zarith.
 rewrite Zpower_nat_Z_powerRZ; rewrite Ropp_Ropp_IZR.
 apply Rle_trans with (r * exp (ln radix * - (ln r / ln radix + - pred p)))%R.
@@ -27570,44 +27187,44 @@ pattern r at 1 in |- *; rewrite <- (exp_ln r); auto; rewrite <- exp_plus.
 replace (ln r + ln radix * - (ln r / ln radix + - pred p))%R with
  (ln radix * pred p)%R.
 2: field; auto with real.
-rewrite INR_IZR_INZ; rewrite exp_ln_powerRZ; auto with real zarith.
+rewrite exp_ln_powerRZ; auto with real zarith.
 apply Rmult_le_compat_l; auto with real.
 apply exp_monotone; auto with real.
 apply Rmult_le_compat_l; auto with real.
 apply Ropp_le_contravar; apply IRNDD_correct1.
-cut (r < powerRZ radix (Zpred p + - dExp b))%R; [ intros H3 | idtac ].
+cut (r < powerRZ radix (Z.pred p + - dExp b))%R; [ intros H3 | idtac ].
 2: rewrite <- firstNormalPos_eq; auto with real.
 right; split.
 pattern (dExp b) at 2 in |- *;
  replace (Z_of_N (dExp b)) with (- - dExp b)%Z; auto with zarith.
 apply RND_Min_Pos_bounded_aux; auto with zarith.
-apply Rlt_trans with (1 := H3); apply Rlt_powerRZ; try apply Rlt_IZR; auto with real zarith.
+apply Rlt_trans with (1 := H3); apply Rlt_powerRZ; try apply IZR_lt; auto with real zarith.
 split; [ simpl in |- *; auto | idtac ].
 simpl in |- *; rewrite pGivesBound; apply lt_IZR.
 rewrite Zpower_nat_Z_powerRZ; rewrite <- Rabs_Zabs.
 rewrite mult_IZR; rewrite Rabs_right;
  [ idtac
  | apply Rle_ge; apply Rmult_le_pos].
-2: apply Rle_IZR; omega.
+2: apply IZR_le; lia.
 2: apply IRNDD_pos; apply Rmult_le_pos; auto with real zarith.
-2: apply powerRZ_le, Rlt_IZR; omega.
+2: apply powerRZ_le, IZR_lt; lia.
 apply Rle_lt_trans with (radix * (r * powerRZ radix (dExp b)))%R;
  auto with real zarith.
-apply Rmult_le_compat_l; try apply Rle_IZR; auto with zarith.
+apply Rmult_le_compat_l; try apply IZR_le; auto with zarith.
 apply IRNDD_correct1.
 apply
  Rlt_le_trans
   with
-    (radix * (powerRZ radix (Zpred p + - dExp b) * powerRZ radix (dExp b)))%R;
+    (radix * (powerRZ radix (Z.pred p + - dExp b) * powerRZ radix (dExp b)))%R;
  auto with real zarith.
 apply Rmult_lt_compat_l.
-apply Rlt_IZR; omega.
+apply IZR_lt; lia.
 apply Rmult_lt_compat_r; auto with real.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 rewrite <- powerRZ_add; try apply IZR_neq; auto with zarith real.
 pattern (IZR radix) at 1 in |- *; replace (IZR radix) with (powerRZ radix 1);
  [ rewrite <- powerRZ_add; try apply IZR_neq | simpl in |- * ]; auto with zarith real;
- unfold Zpred in |- *.
+ unfold Z.pred in |- *.
 ring_simplify (1 + (p + -1 + - dExp b + dExp b))%Z; auto with real.
 Qed.
 
@@ -27619,23 +27236,23 @@ unfold FtoRradix, FtoR in |- *; simpl in |- *.
 apply
  Rle_trans
   with
-    (r * powerRZ radix (- IRNDD (ln r / ln radix + (- Zpred p)%Z)) *
-     powerRZ radix (IRNDD (ln r / ln radix + (- Zpred p)%Z)))%R;
+    (r * powerRZ radix (- IRNDD (ln r / ln radix + (- Z.pred p)%Z)) *
+     powerRZ radix (IRNDD (ln r / ln radix + (- Z.pred p)%Z)))%R;
  auto with real.
 apply Rmult_le_compat_r.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply IRNDD_correct1.
 rewrite Rmult_assoc; rewrite <- powerRZ_add; try apply IZR_neq; auto with real zarith.
 ring_simplify
-    (- IRNDD (ln r / ln radix + (- Zpred p)%Z) +
-     IRNDD (ln r / ln radix + (- Zpred p)%Z))%Z; simpl in |- *;
+    (- IRNDD (ln r / ln radix + (- Z.pred p)%Z) +
+     IRNDD (ln r / ln radix + (- Z.pred p)%Z))%Z; simpl in |- *;
  auto with real.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 apply
  Rle_trans with (r * powerRZ radix (dExp b) * powerRZ radix (- dExp b))%R;
  auto with real.
 apply Rmult_le_compat_r.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply IRNDD_correct1.
 rewrite Rmult_assoc; rewrite <- powerRZ_add; try apply IZR_neq; auto with real zarith.
 ring_simplify (dExp b + - dExp b)%Z; simpl in |- *; auto with real.
@@ -27672,18 +27289,18 @@ unfold FtoRradix, FtoR in |- *; simpl in |- *.
 apply
  Rle_lt_trans
   with
-    ((s * powerRZ radix (- IRNDD (ln s / ln radix + (- Zpred p)%Z)) - 1) *
-     powerRZ radix (IRNDD (ln s / ln radix + (- Zpred p)%Z)) +
-     powerRZ radix (IRNDD (ln s / ln radix + (- Zpred p)%Z)))%R;
+    ((s * powerRZ radix (- IRNDD (ln s / ln radix + (- Z.pred p)%Z)) - 1) *
+     powerRZ radix (IRNDD (ln s / ln radix + (- Z.pred p)%Z)) +
+     powerRZ radix (IRNDD (ln s / ln radix + (- Z.pred p)%Z)))%R;
  auto with real.
 right; ring_simplify.
 rewrite Rmult_assoc; rewrite <- powerRZ_add; try apply IZR_neq; auto with zarith real.
 ring_simplify
-    (-IRNDD (ln s / ln radix + (- Zpred p)%Z) +
-      IRNDD (ln s / ln radix + (- Zpred p)%Z))%Z;
+    (-IRNDD (ln s / ln radix + (- Z.pred p)%Z) +
+      IRNDD (ln s / ln radix + (- Z.pred p)%Z))%Z;
    simpl; ring.
 apply Rplus_lt_compat_r; apply Rmult_lt_compat_r.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply IRNDD_correct3.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 apply
@@ -27695,33 +27312,34 @@ right; ring_simplify.
 rewrite Rmult_assoc; rewrite <- powerRZ_add; try apply IZR_neq; auto with zarith real.
 ring_simplify (dExp b + -dExp b)%Z; simpl in |- *; ring.
 apply Rplus_lt_compat_r; apply Rmult_lt_compat_r.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 apply IRNDD_correct3.
 replace (powerRZ radix (Fexp (RND_Min_Pos s))) with
- (FtoR radix (Float 1%nat (Fexp (RND_Min_Pos s))));
+ (FtoR radix (Float 1 (Fexp (RND_Min_Pos s))));
  [ idtac | unfold FtoR in |- *; simpl in |- *; ring ].
 rewrite <- FSuccDiff1 with b radix p (RND_Min_Pos s); auto with zarith.
 rewrite Fminus_correct; auto with zarith; fold FtoRradix in |- *; ring.
 cut (- nNormMin radix p < Fnum (RND_Min_Pos s))%Z; auto with zarith.
-apply Zlt_le_trans with 0%Z.
+apply Z.lt_le_trans with 0%Z.
 replace 0%Z with (- (0))%Z; unfold nNormMin in |- *; auto with arith zarith.
-apply Zlt_Zopp, Zpower_nat_less; omega.
+apply Zlt_Zopp, Zpower_nat_less; lia.
 apply le_IZR; unfold RND_Min_Pos in |- *;
  case (Rle_dec (firstNormalPos radix b p) s); intros H1;
  simpl in |- *; apply IRNDD_pos; apply Rmult_le_pos;
  auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
+apply powerRZ_le, IZR_lt; lia.
 Qed.
 
 
 Theorem RND_Min_Pos_projector :
  forall f : float,
  (0 <= f)%R -> Fcanonic radix b f -> FtoRradix (RND_Min_Pos f) = f.
+Proof.
 intros f H1 H2.
 unfold RND_Min_Pos in |- *; case (Rle_dec (firstNormalPos radix b p) f);
  intros H3.
-replace (IRNDD (ln f / ln radix + (- Zpred p)%Z)) with (Fexp f).
+replace (IRNDD (ln f / ln radix + (- Z.pred p)%Z)) with (Fexp f).
 replace (f * powerRZ radix (- Fexp f))%R with (IZR (Fnum f)).
 rewrite IRNDD_projector; unfold FtoRradix, FtoR in |- *; simpl in |- *; ring.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
@@ -27733,7 +27351,7 @@ apply sym_eq; apply IRNDD_eq.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 rewrite ln_mult; auto with real zarith.
 unfold Rdiv in |- *; rewrite Rmult_plus_distr_r.
-apply Rle_trans with (Zpred p + Fexp f + (- Zpred p)%Z)%R;
+apply Rle_trans with (Z.pred p + Fexp f + (- Z.pred p)%Z)%R;
  [ rewrite Ropp_Ropp_IZR; right; ring | idtac ].
 apply Rplus_le_compat_r; apply Rplus_le_compat.
 apply Rmult_le_reg_l with (ln radix); [ auto with real | idtac ].
@@ -27743,17 +27361,17 @@ rewrite exp_ln; auto.
 rewrite exp_ln_powerRZ; auto with zarith.
 case H2; intros T; elim T; intros C1 C2.
 apply Rmult_le_reg_l with radix; auto with real zarith.
-apply Rlt_IZR; omega.
+apply IZR_lt; lia.
 apply Rle_trans with (IZR (Zpos (vNum b)));
  [ right; rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ | idtac ].
-pattern (Z_of_nat p) at 2 in |- *; replace (Z_of_nat p) with (1 + Zpred p)%Z;
+pattern (Z_of_nat p) at 2 in |- *; replace (Z_of_nat p) with (1 + Z.pred p)%Z;
  [ rewrite powerRZ_add; try apply IZR_neq; auto with real zarith; simpl in |- *; ring
- | unfold Zpred in |- *; ring ].
+ | unfold Z.pred in |- *; ring ].
 rewrite <- (Rabs_right (radix * Fnum f)); auto with real zarith.
 rewrite <- mult_IZR; rewrite Rabs_Zabs; auto with real zarith.
-apply Rle_IZR; auto.
+apply IZR_le; auto.
 apply Rle_ge; apply Rmult_le_pos; auto with real.
-apply Rle_IZR; auto with real zarith.
+apply IZR_le; auto with real zarith.
 contradict H3; apply Rlt_not_le; unfold FtoRradix in |- *;
  apply FsubnormalLtFirstNormalPos; auto with zarith.
 apply Rmult_le_reg_l with (ln radix); [ auto with real | idtac ].
@@ -27761,15 +27379,15 @@ apply Rle_trans with (ln (powerRZ radix (Fexp f)));
  [ idtac | right; field; auto with real ].
 rewrite <- exp_ln_powerRZ; auto with zarith.
 rewrite ln_exp; auto with real.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 unfold FtoRradix, FtoR in |- *; simpl in |- *.
 rewrite ln_mult; auto with real zarith.
 rewrite <- exp_ln_powerRZ; auto with zarith.
 rewrite ln_exp; auto with real.
 unfold Rdiv in |- *; rewrite Rmult_plus_distr_r.
-apply Rlt_le_trans with (p + Fexp f + (- Zpred p)%Z)%R.
-2: rewrite Ropp_Ropp_IZR; unfold Zsucc, Zpred in |- *;
-    repeat rewrite plus_IZR; repeat rewrite <- INR_IZR_INZ;
+apply Rlt_le_trans with (p + Fexp f + (- Z.pred p)%Z)%R.
+2: rewrite Ropp_Ropp_IZR; unfold Z.succ, Z.pred in |- *;
+    repeat rewrite plus_IZR;
     simpl in |- *; right; ring.
 replace (ln radix * Fexp f * / ln radix)%R with (IZR (Fexp f));
  [ idtac | field; auto with real ].
@@ -27779,21 +27397,21 @@ apply Rle_lt_trans with (ln (Fnum f));
  [ right; field; auto with real | idtac ].
 apply exp_lt_inv.
 rewrite exp_ln; auto.
-rewrite INR_IZR_INZ; rewrite exp_ln_powerRZ; auto with zarith.
+rewrite exp_ln_powerRZ; auto with zarith.
 apply Rlt_le_trans with (IZR (Zpos (vNum b))).
 rewrite <- (Rabs_right (IZR (Fnum f))); auto with real.
-rewrite Rabs_Zabs; apply Rlt_IZR; cut (Fbounded b f);
+rewrite Rabs_Zabs; apply IZR_lt; cut (Fbounded b f);
  auto with real zarith.
 intros T; apply T.
 apply FcanonicBound with radix; auto.
 apply Rle_ge; auto with real.
 right; rewrite pGivesBound; rewrite Zpower_nat_Z_powerRZ; auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
-apply Rlt_IZR.
+apply powerRZ_lt, IZR_lt; lia.
+apply IZR_lt.
 apply LtR0Fnum with radix; auto with zarith; fold FtoRradix in |- *.
 apply Rlt_le_trans with (2 := H3); rewrite firstNormalPos_eq;
  auto with real zarith.
-apply powerRZ_lt, Rlt_IZR; omega.
+apply powerRZ_lt, IZR_lt; lia.
 case H2; intros T; elim T; intros C1 C2.
 absurd (firstNormalPos radix b p <= f)%R; auto with real.
 unfold FtoRradix in |- *; apply FnormalLtFirstNormalPos; auto with zarith.
@@ -27825,11 +27443,11 @@ apply FnormalizeCanonic; auto with zarith.
 apply Rle_trans with 0%R; auto with real.
 unfold RND_Min_Pos in |- *; case (Rle_dec (firstNormalPos radix b p) r);
  intros H5; unfold FtoRradix, FtoR in |- *; simpl in |- *;
- apply Rmult_le_pos; auto with real zarith; try apply powerRZ_le, Rlt_IZR; try omega.
+ apply Rmult_le_pos; auto with real zarith; try apply powerRZ_le, IZR_lt; try lia.
 apply IRNDD_pos; apply Rmult_le_pos; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 apply IRNDD_pos; apply Rmult_le_pos; auto with real zarith.
-apply powerRZ_le, Rlt_IZR; omega.
+apply powerRZ_le, IZR_lt; lia.
 Qed.
 
 
