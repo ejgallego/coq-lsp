@@ -41,4 +41,4 @@ end
 val guess : debug:bool -> cmdline:CmdLine.t -> t
 
 (** [apply libname w] will prepare Coq for a new file [libname] on workspace [w] *)
-val apply : libname:Names.DirPath.t -> t -> unit
+val apply : uri:string -> t -> unit
