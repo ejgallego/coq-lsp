@@ -24,21 +24,18 @@ module Util = struct
   let asts_of_doc doc = List.filter_map Fleche.Doc.Node.ast doc.Fleche.Doc.nodes
 end
 
-let mk_range = Lsp.JFleche.Types.Range.to_yojson
-
-let mk_syminfo file (name, _path, kind, range) : Yojson.Safe.t =
-  `Assoc
-    [ ("name", `String name)
-    ; ("kind", `Int kind)
-    ; (* function *)
-      ("location", `Assoc [ ("uri", `String file); ("range", mk_range range) ])
-    ]
+open Lsp.JFleche
 
 let symbols ~lines ~(doc : Fleche.Doc.t) =
   let uri = doc.uri in
   let f loc id =
-    let range = Fleche.Coq_utils.to_range ~lines loc in
-    mk_syminfo uri (Names.Id.to_string id, "", 12, range)
+    let name = Names.Id.to_string id in
+    let kind = 12 in
+    let location =
+      let range = Fleche.Coq_utils.to_range ~lines loc in
+      { Location.uri; range }
+    in
+    SymInfo.(to_yojson { name; kind; location })
   in
   let ast = Util.asts_of_doc doc in
   let slist = Coq.Ast.grab_definitions f ast in
@@ -63,42 +60,16 @@ let hover ~doc ~point =
     if show_loc_info then range_string ^ "\n___\n" ^ info_string
     else info_string
   in
-  `Assoc
-    ([ ( "contents"
-       , `Assoc
-           [ ("kind", `String "markdown"); ("value", `String hover_string) ] )
-     ]
-    @ Option.cata (fun range -> [ ("range", mk_range range) ]) [] range_span)
+  let contents = { HoverContents.kind = "markdown"; value = hover_string } in
+  let range = range_span in
+  HoverInfo.(to_yojson { contents; range })
 
 (* Replace by ppx when we can print goals properly in the client *)
-let mko f b = Option.cata (fun b -> `String (f b)) `Null b
+let mk_message (_loc, _lvl, msg) = msg
 
-let mk_hyp { Coq.Goals.names; def; ty } : Yojson.Safe.t =
-  let names = List.map (fun id -> `String (Names.Id.to_string id)) names in
-  let def = mko Pp.string_of_ppcmds def in
-  let ty = Pp.string_of_ppcmds ty in
-  `Assoc [ ("names", `List names); ("def", def); ("ty", `String ty) ]
-
-let mk_goal { Coq.Goals.info = _; ty; hyps } : Yojson.Safe.t =
-  let ty = Pp.string_of_ppcmds ty in
-  `Assoc [ ("ty", `String ty); ("hyps", `List (List.map mk_hyp hyps)) ]
-
-let mkl gs = `List (List.map mk_goal gs)
-let mk_stack (l1, l2) : Yojson.Safe.t = `List [ mkl l1; mkl l2 ]
-
-let mk_goals { Coq.Goals.goals; stack; bullet; shelf; given_up } =
-  `Assoc
-    [ ("goals", mkl goals)
-    ; ("stack", `List (List.map mk_stack stack))
-    ; ("bullet", mko Pp.string_of_ppcmds bullet)
-    ; ("shelf", mkl shelf)
-    ; ("given_up", mkl given_up)
-    ]
-
-let mk_goals = Option.cata mk_goals `Null
-let mk_message (_loc, _lvl, msg) = `String (Pp.string_of_ppcmds msg)
-let mk_messages m = List.map mk_message m
-let mk_messages = Option.cata mk_messages []
+let mk_messages node =
+  Option.map Fleche.Doc.Node.messages node
+  |> Option.cata (List.map mk_message) []
 
 let mk_error node =
   let open Fleche in
@@ -106,8 +77,8 @@ let mk_error node =
   match
     List.filter (fun d -> d.Diagnostic.severity < 2) node.Doc.Node.diags
   with
-  | [] -> []
-  | e :: _ -> [ ("error", `String e.Diagnostic.message) ]
+  | [] -> None
+  | e :: _ -> Some e.Diagnostic.message
 
 let goals_mode =
   if !Fleche.Config.v.goal_after_tactic then Fleche.Info.PrevIfEmpty
@@ -117,18 +88,13 @@ let goals ~doc ~point =
   let open Fleche in
   let goals = Info.LC.goals ~doc ~point goals_mode in
   let node = Info.LC.node ~doc ~point Exact in
-  let messages = Option.map Doc.Node.messages node in
-  let error = Option.cata mk_error [] node in
-  `Assoc
-    ([ ( "textDocument"
-       , `Assoc [ ("uri", `String doc.uri); ("version", `Int doc.version) ] )
-     ; ( "position"
-       , `Assoc [ ("line", `Int (fst point)); ("character", `Int (snd point)) ]
-       )
-     ; ("goals", mk_goals goals)
-     ; ("messages", `List (mk_messages messages))
-     ]
-    @ error)
+  let messages = mk_messages node in
+  let error = Option.bind node mk_error in
+  let position =
+    Fleche.Types.Point.{ line = fst point; character = snd point; offset = -1 }
+  in
+  Lsp.JFleche.mk_goals ~uri:doc.uri ~version:doc.version ~position ~goals
+    ~messages ~error
 
 let completion ~doc ~point:_ =
   let f _loc id = `Assoc [ ("label", `String Names.Id.(to_string id)) ] in

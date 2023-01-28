@@ -15,6 +15,8 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module Pp = JCoq.Pp
+
 module Config = struct
   type t = [%import: Fleche.Config.t] [@@deriving yojson]
 end
@@ -69,3 +71,55 @@ let mk_progress ~uri ~version processing =
   let textDocument = { Base.VersionedTextDocument.uri; version } in
   let params = Progress.to_yojson { Progress.textDocument; processing } in
   Base.mk_notification ~method_:"$/coq/fileProgress" ~params
+
+module GoalsAnswer = struct
+  type t =
+    { textDocument : Base.VersionedTextDocument.t
+    ; position : Types.Point.t
+    ; goals : string JCoq.Goals.reified_goal JCoq.Goals.goals option
+    ; messages : string list
+    ; error : string option
+    }
+  [@@deriving yojson]
+end
+
+let mk_goals ~uri ~version ~position ~goals ~messages ~error =
+  let f rg = Coq.Goals.map_reified_goal ~f:Pp.to_string rg in
+  let goals = Option.map (Coq.Goals.map_goals ~f) goals in
+  let messages = List.map Pp.to_string messages in
+  let error = Option.map Pp.to_string error in
+  GoalsAnswer.to_yojson
+    { textDocument = { uri; version }; position; goals; messages; error }
+
+module Location = struct
+  type t =
+    { uri : string
+    ; range : Types.Range.t
+    }
+  [@@deriving yojson]
+end
+
+module SymInfo = struct
+  type t =
+    { name : string
+    ; kind : int
+    ; location : Location.t
+    }
+  [@@deriving yojson]
+end
+
+module HoverContents = struct
+  type t =
+    { kind : string
+    ; value : string
+    }
+  [@@deriving yojson]
+end
+
+module HoverInfo = struct
+  type t =
+    { contents : HoverContents.t
+    ; range : Types.Range.t option
+    }
+  [@@deriving yojson]
+end

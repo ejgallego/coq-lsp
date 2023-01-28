@@ -20,6 +20,10 @@ module Config : sig
 end
 
 module Types : sig
+  module Point : sig
+    type t = Fleche.Types.Point.t [@@deriving yojson]
+  end
+
   module Range : sig
     type t = Fleche.Types.Range.t [@@deriving yojson]
   end
@@ -30,3 +34,56 @@ val mk_diagnostics :
 
 val mk_progress :
   uri:string -> version:int -> Fleche.Progress.Info.t list -> Yojson.Safe.t
+
+module GoalsAnswer : sig
+  type t =
+    { textDocument : Base.VersionedTextDocument.t
+    ; position : Types.Point.t
+    ; goals : string JCoq.Goals.reified_goal JCoq.Goals.goals option
+    ; messages : string list
+    ; error : string option
+    }
+  [@@deriving yojson]
+end
+
+val mk_goals :
+     uri:string
+  -> version:int
+  -> position:Fleche.Types.Point.t
+  -> goals:Coq.Goals.reified_pp option
+  -> messages:Pp.t list
+  -> error:Pp.t option
+  -> Yojson.Safe.t
+
+module Location : sig
+  type t =
+    { uri : string
+    ; range : Types.Range.t
+    }
+  [@@deriving yojson]
+end
+
+module SymInfo : sig
+  type t =
+    { name : string
+    ; kind : int
+    ; location : Location.t
+    }
+  [@@deriving yojson]
+end
+
+module HoverContents : sig
+  type t =
+    { kind : string
+    ; value : string
+    }
+  [@@deriving yojson]
+end
+
+module HoverInfo : sig
+  type t =
+    { contents : HoverContents.t
+    ; range : Types.Range.t option
+    }
+  [@@deriving yojson]
+end
