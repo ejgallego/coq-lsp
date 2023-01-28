@@ -33,13 +33,31 @@ module Types = struct
   module Diagnostic = struct
     module Libnames = Serlib.Ser_libnames
 
-    module Extra = struct
-      type t = [%import: Fleche.Types.Diagnostic.Extra.t] [@@deriving yojson]
-    end
+    (* Current Flèche diagnostic is not LSP-standard compliant, this one is *)
+    type t =
+      { range : Range.t
+      ; severity : int
+      ; message : string
+      }
+    [@@deriving yojson]
 
-    type t = [%import: Fleche.Types.Diagnostic.t] [@@deriving yojson]
+    let to_yojson
+        { Fleche.Types.Diagnostic.range; severity; message; extra = _ } =
+      let message = Pp.to_string message in
+      to_yojson { range; severity; message }
   end
 end
+
+let mk_diagnostics ~uri ~version ld : Yojson.Safe.t =
+  let diags = List.map Types.Diagnostic.to_yojson ld in
+  let params =
+    `Assoc
+      [ ("uri", `String uri)
+      ; ("version", `Int version)
+      ; ("diagnostics", `List diags)
+      ]
+  in
+  Base.mk_notification ~method_:"textDocument/publishDiagnostics" ~params
 
 module Progress = struct
   module Info = struct
@@ -55,17 +73,6 @@ module Progress = struct
     }
   [@@deriving yojson]
 end
-
-let mk_diagnostics ~uri ~version ld : Yojson.Safe.t =
-  let diags = List.map Types.Diagnostic.to_yojson ld in
-  let params =
-    `Assoc
-      [ ("uri", `String uri)
-      ; ("version", `Int version)
-      ; ("diagnostics", `List diags)
-      ]
-  in
-  Base.mk_notification ~method_:"textDocument/publishDiagnostics" ~params
 
 let mk_progress ~uri ~version processing =
   let textDocument = { Base.VersionedTextDocument.uri; version } in
