@@ -1,13 +1,10 @@
 COQ_BUILD_CONTEXT=../_build/default/coq
 
-CORE_PKG_SET= \
-coq-lsp.install \
-vendor/coq/coq-core.install \
-vendor/coq-serapi/coq-serapi.install \
-
 PKG_SET= \
-$(CORE_PKG_SET) \
+vendor/coq/coq-core.install \
 vendor/coq/coq-stdlib.install \
+vendor/coq-serapi/coq-serapi.install \
+coq-lsp.install
 
 # Get the ocamlformat version from the .ocamlformat file
 OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
@@ -20,10 +17,6 @@ ocaml-lsp-server
 .PHONY: build
 build: coq_boot
 	dune build $(DUNEOPT) $(PKG_SET)
-
-.PHONY: build-nostdlib
-build-nostdlib: coq_boot
-	dune build $(DUNEOPT) $(CORE_PKG_SET)
 
 .PHONY: check
 check: coq_boot
@@ -41,10 +34,10 @@ watch: coq_boot
 build-all: coq_boot
 	dune build $(DUNEOPT) @all
 
-
-COQ_CONFIGURE_PREFIX=$(PWD)/_build/install/default/
 coq/config/coq_config.ml:
 	cd vendor/coq \
+	&& ./configure -no-ask -prefix $(shell pwd)/_build/install/default/ \
+		-native-compiler no \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
 
