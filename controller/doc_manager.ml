@@ -144,7 +144,9 @@ let diags_of_doc doc =
 
 let send_diags ~ofmt ~doc =
   let diags = diags_of_doc doc in
-  let diags = Lsp_util.lsp_of_diags ~uri:doc.uri ~version:doc.version diags in
+  let diags =
+    Lsp.JFleche.mk_diagnostics ~uri:doc.uri ~version:doc.version diags
+  in
   LIO.send_json ofmt @@ diags
 
 module Check = struct

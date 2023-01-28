@@ -13,7 +13,7 @@ module CallBack : sig
            ofmt:Format.formatter
         -> uri:string
         -> version:int
-        -> (Types.Range.t * int) list
+        -> Progress.Info.t list
         -> unit
     }
 
@@ -39,6 +39,6 @@ module Report : sig
        ofmt:Format.formatter
     -> uri:string
     -> version:int
-    -> (Types.Range.t * int) list
+    -> Progress.Info.t list
     -> unit
 end

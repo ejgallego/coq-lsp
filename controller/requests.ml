@@ -24,13 +24,14 @@ module Util = struct
   let asts_of_doc doc = List.filter_map Fleche.Doc.Node.ast doc.Fleche.Doc.nodes
 end
 
+let mk_range = Lsp.JFleche.Types.Range.to_yojson
+
 let mk_syminfo file (name, _path, kind, range) : Yojson.Safe.t =
   `Assoc
     [ ("name", `String name)
     ; ("kind", `Int kind)
     ; (* function *)
-      ( "location"
-      , `Assoc [ ("uri", `String file); ("range", Lsp.Base.mk_range range) ] )
+      ("location", `Assoc [ ("uri", `String file); ("range", mk_range range) ])
     ]
 
 let symbols ~lines ~(doc : Fleche.Doc.t) =
@@ -67,9 +68,7 @@ let hover ~doc ~point =
        , `Assoc
            [ ("kind", `String "markdown"); ("value", `String hover_string) ] )
      ]
-    @ Option.cata
-        (fun range -> [ ("range", Lsp.Base.mk_range range) ])
-        [] range_span)
+    @ Option.cata (fun range -> [ ("range", mk_range range) ]) [] range_span)
 
 (* Replace by ppx when we can print goals properly in the client *)
 let mko f b = Option.cata (fun b -> `String (f b)) `Null b

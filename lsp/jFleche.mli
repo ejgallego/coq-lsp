@@ -10,17 +10,23 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019 MINES ParisTech -- LGPL 2.1+                          *)
+(* Copyright 2019-2023 Inria -- LGPL 2.1+                               *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module ProgressInfo : sig
-  type t =
-    { range : Lsp.Base.range
-    ; kind : int
-    }
+module Config : sig
+  type t = Fleche.Config.t [@@deriving yojson]
 end
 
-val lsp_of_progress :
-  uri:string -> version:int -> ProgressInfo.t list -> Yojson.Safe.t
+module Types : sig
+  module Range : sig
+    type t = Fleche.Types.Range.t [@@deriving yojson]
+  end
+end
+
+val mk_diagnostics :
+  uri:string -> version:int -> Fleche.Types.Diagnostic.t list -> Yojson.Safe.t
+
+val mk_progress :
+  uri:string -> version:int -> Fleche.Progress.Info.t list -> Yojson.Safe.t

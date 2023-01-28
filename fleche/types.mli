@@ -32,7 +32,7 @@ end
 module Range : sig
   type t =
     { start : Point.t
-    ; end_ : Point.t
+    ; end_ : Point.t [@key "end"]
     }
 
   val pp : Format.formatter -> t -> unit
@@ -52,6 +52,6 @@ module Diagnostic : sig
     { range : Range.t
     ; severity : int
     ; message : string
-    ; extra : Extra.t list
+    ; extra : Extra.t list option
     }
 end
