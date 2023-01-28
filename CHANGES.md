@@ -26,6 +26,8 @@
    resumption, still cached sentences will display the cached timing
    tho (@ejgallego, #257)
  - Set Coq library name correctly (@ejgallego, #260)
+ - `_CoqProject` file is now detected using LSP client `rootPath`
+   (@ejgallego, #261)
 
 # coq-lsp 0.1.3: Event
 ----------------------
