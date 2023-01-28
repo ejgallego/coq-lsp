@@ -27,12 +27,14 @@ let goals_mode =
 
 let goals ~doc ~point =
   let open Fleche in
+  let uri, version = (doc.Doc.uri, doc.version) in
+  let textDocument = Lsp.Doc.VersionedTextDocument.{ uri; version } in
+  let position =
+    Lang.Point.{ line = fst point; character = snd point; offset = -1 }
+  in
   let goals = Info.LC.goals ~doc ~point goals_mode in
   let node = Info.LC.node ~doc ~point Exact in
   let messages = mk_messages node in
   let error = Option.bind node mk_error in
-  let position =
-    Lang.Point.{ line = fst point; character = snd point; offset = -1 }
-  in
-  Lsp.JFleche.mk_goals ~uri:doc.uri ~version:doc.version ~position ~goals
-    ~messages ~error
+  Lsp.JFleche.GoalsAnswer.(
+    to_yojson { textDocument; position; goals; messages; error })

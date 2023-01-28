@@ -11,9 +11,9 @@ import {
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 import { LanguageClient } from "vscode-languageclient/node";
-import { GoalRequest, GoalAnswer } from "../lib/types";
+import { GoalRequest, GoalAnswer, PpString } from "../lib/types";
 
-const infoReq = new RequestType<GoalRequest, GoalAnswer<string>, void>(
+const infoReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
   "proof/goals"
 );
 
@@ -83,7 +83,7 @@ export class InfoPanel {
   }
 
   // notify the info panel that we have fresh goals to render
-  requestDisplay(goals: GoalAnswer<string>) {
+  requestDisplay(goals: GoalAnswer<PpString>) {
     this.postMessage("renderGoals", goals);
   }
 

@@ -53,7 +53,7 @@ module Goals = struct
   type 'a goals = 'a Coq.Goals.goals
 
   let goals_to_yojson f g =
-    let pp x = `String (Pp.string_of_ppcmds x) in
+    let pp x = Pp.to_yojson x in
     Goals_.to_ g |> Goals_.to_yojson f pp
 
   type reified_pp = Pp.t reified_goal goals [@@deriving to_yojson]

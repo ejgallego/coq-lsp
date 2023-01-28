@@ -68,7 +68,7 @@ module Message = struct
     }
   [@@deriving yojson]
 
-  let map ~f { range; level; text } =
+  let _map ~f { range; level; text } =
     let text = f text in
     { range; level; text }
 end
@@ -77,20 +77,12 @@ module GoalsAnswer = struct
   type t =
     { textDocument : Doc.VersionedTextDocument.t
     ; position : Lang.Point.t
-    ; goals : string JCoq.Goals.reified_goal JCoq.Goals.goals option
-    ; messages : string Message.t list
-    ; error : string option [@default None]
+    ; goals : JCoq.Goals.reified_pp option
+    ; messages : Pp.t Message.t list
+    ; error : Pp.t option [@default None]
     }
   [@@deriving to_yojson]
 end
-
-let mk_goals ~uri ~version ~position ~goals ~messages ~error =
-  let f rg = Coq.Goals.map_reified_goal ~f:Pp.to_string rg in
-  let goals = Option.map (Coq.Goals.map_goals ~f) goals in
-  let messages = List.map (Message.map ~f:Pp.to_string) messages in
-  let error = Option.map Pp.to_string error in
-  GoalsAnswer.to_yojson
-    { textDocument = { uri; version }; position; goals; messages; error }
 
 (** {1 document/definition} *)
 module LocationLink = struct
@@ -102,8 +94,8 @@ module LocationLink = struct
     }
   [@@deriving yojson]
 end
-(** {1} DocumentSymbols *)
 
+(** {1 DocumentSymbols} *)
 module DocumentSymbol = struct
   type t =
     { name : string
@@ -137,7 +129,7 @@ module SymInfo = struct
   [@@deriving yojson]
 end
 
-(** {1} Hover *)
+(** {1 Hover} *)
 
 module HoverContents = struct
   type t =
@@ -155,7 +147,7 @@ module HoverInfo = struct
   [@@deriving yojson]
 end
 
-(** {1} Completion *)
+(** {1 Completion} *)
 
 module LabelDetails = struct
   type t = { detail : string } [@@deriving yojson]

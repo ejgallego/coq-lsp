@@ -37,23 +37,13 @@ module GoalsAnswer : sig
   type t =
     { textDocument : Doc.VersionedTextDocument.t
     ; position : Lang.Point.t
-    ; goals : string JCoq.Goals.reified_goal JCoq.Goals.goals option
-    ; messages : string Message.t list
-    ; error : string option [@default None]
+    ; goals : Coq.Goals.reified_pp option
+    ; messages : Pp.t Message.t list
+    ; error : Pp.t option [@default None]
     }
   [@@deriving to_yojson]
 end
 
-val mk_goals :
-     uri:Lang.LUri.File.t
-  -> version:int
-  -> position:Lang.Point.t
-  -> goals:Coq.Goals.reified_pp option
-  -> messages:Pp.t Message.t list
-  -> error:Pp.t option
-  -> Yojson.Safe.t
-
-(** Generic *)
 module Location : sig
   type t =
     { uri : Lang.LUri.File.t

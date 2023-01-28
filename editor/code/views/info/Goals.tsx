@@ -1,19 +1,19 @@
 import objectHash from "object-hash";
-import { ReactEventHandler, useEffect, useRef, useState } from "react";
-import { Hyp, Goal, GoalConfig } from "../../lib/types";
+import { Hyp, Goal, GoalConfig, PpString } from "../../lib/types";
 import { CoqPp } from "./CoqPp";
 import { Details } from "./Details";
+import { useLayoutEffect, useRef } from "react";
+import { FormatPrettyPrint } from "../../lib/format-pprint/js/main";
+import $ from "jquery";
 
 import "./media/goals.css";
 
-// to replace by CoqPp | string
-type CoqPp = string;
-type CoqId = string;
+type CoqId = PpString;
 
-function Hyp({ hyp: { names, def, ty } }: { hyp: Hyp<CoqPp> }) {
+function Hyp({ hyp: { names, def, ty } }: { hyp: Hyp<PpString> }) {
   let className = "coq-hypothesis" + (def ? " coq-has-def" : "");
   let mkLabel = (id: CoqId) => <label>{id}</label>;
-  let mkdef = (pp?: CoqPp) =>
+  let mkdef = (pp?: PpString) =>
     pp ? (
       <span className="def">
         <CoqPp content={pp} inline={true} />
@@ -30,7 +30,8 @@ function Hyp({ hyp: { names, def, ty } }: { hyp: Hyp<CoqPp> }) {
     </div>
   );
 }
-type HypsP = { hyps: Hyp<string>[] };
+
+type HypsP = { hyps: Hyp<PpString>[] };
 function Hyps({ hyps }: HypsP) {
   return (
     <>
@@ -42,13 +43,19 @@ function Hyps({ hyps }: HypsP) {
   );
 }
 
-type GoalP = { goal: Goal<string>; idx: number; open: boolean };
+type GoalP = { goal: Goal<PpString>; idx: number; open: boolean };
 
 function Goal({ goal, idx, open }: GoalP) {
   const className = open ? undefined : "aside";
 
+  // https://beta.reactjs.org/learn/manipulating-the-dom-with-refs
+  const ref: React.LegacyRef<HTMLDivElement> | null = useRef(null);
+  useLayoutEffect(() => {
+    if (ref.current) FormatPrettyPrint.adjustBreaks($(ref.current));
+  });
+
   return (
-    <div className="coq-goal-env">
+    <div className="coq-goal-env" ref={ref}>
       <Details summary={`Goal (${idx})`} open={open}>
         <div style={{ paddingTop: "1ex" }} />
         <Hyps hyps={goal.hyps} />
@@ -62,11 +69,11 @@ function Goal({ goal, idx, open }: GoalP) {
 }
 
 type GoalsListP = {
-  goals: Goal<string>[];
+  goals: Goal<PpString>[];
   header: string;
   show_on_empty: boolean;
   open: boolean;
-  bullet_msg?: string;
+  bullet_msg?: PpString;
 };
 
 function GoalsList({
@@ -85,7 +92,11 @@ function GoalsList({
           <p className="no-goals">
             No more goals
             <br />
-            {bullet_msg ? <p className="aside">{bullet_msg}</p> : null}
+            {bullet_msg ? (
+              <div className="aside">
+                <CoqPp content={bullet_msg} inline={true} />
+              </div>
+            ) : null}
           </p>
         </div>
       );
@@ -104,7 +115,10 @@ function GoalsList({
     </Details>
   );
 }
-type StackSummaryP = { idx: number; stack: [Goal<CoqPp>[], Goal<CoqPp>[]][] };
+type StackSummaryP = {
+  idx: number;
+  stack: [Goal<PpString>[], Goal<PpString>[]][];
+};
 
 function StackGoals({ idx, stack }: StackSummaryP) {
   let count = stack.length;
@@ -130,7 +144,7 @@ function StackGoals({ idx, stack }: StackSummaryP) {
   );
 }
 
-type GoalsParams = { goals?: GoalConfig<string> };
+type GoalsParams = { goals?: GoalConfig<PpString> };
 
 export function Goals({ goals }: GoalsParams) {
   if (!goals) {
@@ -138,7 +152,7 @@ export function Goals({ goals }: GoalsParams) {
   }
 
   return (
-    <div className="goalsEnv">
+    <div className="goal-panel">
       <GoalsList
         goals={goals.goals}
         header={"Goals"}
