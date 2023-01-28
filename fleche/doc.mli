@@ -1,19 +1,8 @@
 (************************************************************************)
-(*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
-(* <O___,, *       (see CREDITS file for the list of authors)           *)
-(*   \VV/  **************************************************************)
-(*    //   *    This file is distributed under the terms of the         *)
-(*         *     GNU Lesser General Public License Version 2.1          *)
-(*         *     (see LICENSE file for the text of the license)         *)
-(************************************************************************)
-
-(************************************************************************)
-(* Coq Language Server Protocol                                         *)
+(* Flèche => document manager: Document                                 *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
-(************************************************************************)
-(* Status: Experimental                                                 *)
 (************************************************************************)
 
 module Node : sig
@@ -24,9 +13,10 @@ module Node : sig
       ; time : float option
       ; mw_prev : float
       ; mw_after : float
+      ; stats : Stats.t  (** Info about cumulative stats *)
       }
 
-    val print : stats:Stats.t -> t -> string
+    val print : t -> string
   end
 
   module Message : sig
@@ -80,7 +70,6 @@ type t = private
   ; nodes : Node.t list
   ; diags_dirty : bool
   ; completed : Completion.t
-  ; stats : Stats.t  (** Info about cumulative document stats *)
   }
 
 (** Note, [create] calls Coq but it is not cached in the Memo.t table *)
