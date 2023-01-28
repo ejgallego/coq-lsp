@@ -48,7 +48,7 @@ jobs:
         run: opam exec -- make opam-deps
 
       - name: 🧱 Build coq-lsp
-        run: opam exec -- make build
+        run: opam exec -- make build-nostdlib
 
   build-nix:
     name: Nix
