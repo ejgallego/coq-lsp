@@ -85,4 +85,4 @@ let doc_init ~root_state ~workspace ~libname () =
   Vernacstate.freeze_interp_state ~marshallable:false |> State.of_coq
 
 let doc_init ~root_state ~workspace ~libname =
-  Protect.eval ~f:(doc_init ~root_state ~workspace ~libname) ()
+  Protect.eval ~pure:true ~f:(doc_init ~root_state ~workspace ~libname) ()

@@ -27,6 +27,6 @@ let coq_interp ~st cmd =
   Vernacinterp.interp ~st cmd |> State.of_coq
 
 let interp ~st cmd =
-  Protect.eval cmd ~f:(fun cmd ->
+  Protect.eval cmd ~pure:true ~f:(fun cmd ->
       let res = coq_interp ~st cmd in
       { Info.res })
