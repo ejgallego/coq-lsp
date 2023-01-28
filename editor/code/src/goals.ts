@@ -57,7 +57,7 @@ export class InfoPanel {
         <title>Coq's info panel</title>
     </head>
     <body>
-    <div id="coq-info-body">
+    <div id="root">
     </div>
     </body>
     </html>`;

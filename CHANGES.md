@@ -19,6 +19,7 @@
    fixes #224)
  - In `_CoqProject`, `-impredicative-set` is now parsed correctly
    (@artagnon, #241)
+ - InfoView is not written in React (@ejgallego, #223)
 
 # coq-lsp 0.1.3: Event
 ----------------------
