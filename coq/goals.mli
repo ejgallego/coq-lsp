@@ -16,7 +16,7 @@
 (************************************************************************)
 
 type 'a hyp =
-  { names : Names.Id.t list
+  { names : string list  (** This will become [Names.Id.t list] in 0.2.0 *)
   ; def : 'a option
   ; ty : 'a
   }

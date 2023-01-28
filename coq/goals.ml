@@ -16,7 +16,7 @@
 (************************************************************************)
 
 type 'a hyp =
-  { names : Names.Id.t list
+  { names : string list
   ; def : 'a option
   ; ty : 'a
   }
@@ -65,17 +65,18 @@ module CDC = Context.Compacted.Declaration
 
 type cdcl = Constr.compacted_declaration
 
+let binder_name n = Context.binder_name n |> Names.Id.to_string
+
 let to_tuple ppx : cdcl -> 'pc hyp =
   let open CDC in
   let ppx t = ppx (EConstr.of_constr t) in
   function
   | LocalAssum (idl, tm) ->
-    { names = List.map Context.binder_name idl; def = None; ty = ppx tm }
+    let names = List.map binder_name idl in
+    { names; def = None; ty = ppx tm }
   | LocalDef (idl, tdef, tm) ->
-    { names = List.map Context.binder_name idl
-    ; def = Some (ppx tdef)
-    ; ty = ppx tm
-    }
+    let names = List.map binder_name idl in
+    { names; def = Some (ppx tdef); ty = ppx tm }
 
 (** gets a hypothesis *)
 let get_hyp (ppx : EConstr.t -> 'pc) (_sigma : Evd.evar_map) (hdecl : cdcl) :
