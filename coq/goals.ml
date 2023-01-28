@@ -21,6 +21,11 @@ type 'a hyp =
   ; ty : 'a
   }
 
+let map_hyp ~f { names; def; ty } =
+  let def = Option.map f def in
+  let ty = f ty in
+  { names; def; ty }
+
 type info =
   { evar : Evar.t
   ; name : Names.Id.t option
@@ -32,6 +37,11 @@ type 'a reified_goal =
   ; hyps : 'a hyp list
   }
 
+let map_reified_goal ~f { info; ty; hyps } =
+  let ty = f ty in
+  let hyps = List.map (map_hyp ~f) hyps in
+  { info; ty; hyps }
+
 type 'a goals =
   { goals : 'a list
   ; stack : ('a list * 'a list) list
@@ -39,6 +49,13 @@ type 'a goals =
   ; shelf : 'a list
   ; given_up : 'a list
   }
+
+let map_goals ~f { goals; stack; bullet; shelf; given_up } =
+  let goals = List.map f goals in
+  let stack = List.map (fun (s, r) -> (List.map f s, List.map f r)) stack in
+  let shelf = List.map f shelf in
+  let given_up = List.map f given_up in
+  { goals; stack; bullet; shelf; given_up }
 
 type reified_pp = Pp.t reified_goal goals
 

@@ -51,7 +51,7 @@ module Diagnostic = struct
   type t =
     { range : Range.t
     ; severity : int
-    ; message : string
+    ; message : Pp.t
     ; extra : Extra.t list option
     }
 end

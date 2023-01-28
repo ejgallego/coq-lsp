@@ -15,19 +15,19 @@ module Util = struct
     | h :: _ -> h
 
   let mk_diag ?extra range severity message =
-    let message = Pp.string_of_ppcmds message in
     Types.Diagnostic.{ range; severity; message; extra }
 
   (* ast-dependent error diagnostic generation *)
-  let mk_error_diagnostic ~range ~msg ~ast =
+  let extra_diagnostics_of_ast ast =
     match (Coq.Ast.to_coq ast).v with
     | Vernacexpr.{ expr = VernacRequire (prefix, _export, module_refs); _ } ->
       let refs = List.map fst module_refs in
-      let extra =
-        Some [ Types.Diagnostic.Extra.FailedRequire { prefix; refs } ]
-      in
-      mk_diag ?extra range 1 msg
-    | _ -> mk_diag range 1 msg
+      Some [ Types.Diagnostic.Extra.FailedRequire { prefix; refs } ]
+    | _ -> None
+
+  let mk_error_diagnostic ~range ~msg ~ast =
+    let extra = extra_diagnostics_of_ast ast in
+    mk_diag ?extra range 1 msg
 
   let feed_to_diag ~drange (range, severity, message) =
     let range = Option.default drange range in

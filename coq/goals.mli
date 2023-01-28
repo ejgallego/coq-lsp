@@ -32,6 +32,8 @@ type 'a reified_goal =
   ; hyps : 'a hyp list
   }
 
+val map_reified_goal : f:('a -> 'b) -> 'a reified_goal -> 'b reified_goal
+
 type 'a goals =
   { goals : 'a list
   ; stack : ('a list * 'a list) list
@@ -39,6 +41,8 @@ type 'a goals =
   ; shelf : 'a list
   ; given_up : 'a list
   }
+
+val map_goals : f:('a -> 'b) -> 'a goals -> 'b goals
 
 type reified_pp = Pp.t reified_goal goals
 
