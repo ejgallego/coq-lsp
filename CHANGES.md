@@ -20,6 +20,8 @@
  - In `_CoqProject`, `-impredicative-set` is now parsed correctly
    (@artagnon, #241)
  - InfoView is not written in React (@ejgallego, #223)
+ - `debug` option in the client / protocol that will enable Coq's backtraces
+   (@Alizter, @ejgallego, #217, #248)
 
 # coq-lsp 0.1.3: Event
 ----------------------

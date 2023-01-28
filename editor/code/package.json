@@ -143,6 +143,11 @@
             "default": "messages",
             "description": "Traces the communication between VS Code and the language server."
           },
+          "coq-lsp.debug": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable Debug in Coq Server, usually this will produce backtraces on errors"
+          },
           "coq-lsp.path": {
             "type": "string",
             "default": "coq-lsp",

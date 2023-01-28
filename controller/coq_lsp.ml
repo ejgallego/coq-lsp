@@ -281,6 +281,7 @@ let rec lsp_init_loop ic ofmt ~cmdline ~debug : Coq.Workspace.t =
     Rq.answer ~ofmt ~id result;
     LIO.logMessage ~lvl:3 ~message:"Server initialized";
     (* Workspace initialization *)
+    let debug = debug || !Fleche.Config.v.debug in
     let workspace = Coq.Workspace.guess ~cmdline ~debug in
     log_workspace workspace;
     workspace
