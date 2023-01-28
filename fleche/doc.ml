@@ -1,18 +1,16 @@
 (************************************************************************)
-(* Coq Language Server Protocol                                         *)
+(* Flèche => document manager: Document                                 *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2022 Inria           -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
-(************************************************************************)
-(* Status: Experimental                                                 *)
 (************************************************************************)
 
 (* Should be moved to the right place *)
 module Util = struct
-  let hd_opt ~default l =
+  let hd_opt l =
     match l with
-    | [] -> default
-    | h :: _ -> h
+    | [] -> None
+    | h :: _ -> Some h
 
   let mk_diag ?extra range severity message =
     Types.Diagnostic.{ range; severity; message; extra }
@@ -120,16 +118,18 @@ module Node = struct
       ; time : float option
       ; mw_prev : float
       ; mw_after : float
+      ; stats : Stats.t  (** Info about cumulative stats *)
       }
 
-    let make ?(cache_hit = false) ~parsing_time ?time ~mw_prev ~mw_after () =
-      { cache_hit; parsing_time; time; mw_prev; mw_after }
+    let make ?(cache_hit = false) ~parsing_time ?time ~mw_prev ~mw_after ~stats
+        () =
+      { cache_hit; parsing_time; time; mw_prev; mw_after; stats }
 
     let pp_time fmt = function
       | None -> Format.fprintf fmt "N/A"
       | Some time -> Format.fprintf fmt "%.4f" time
 
-    let print ~stats { cache_hit; parsing_time; time; mw_prev; mw_after } =
+    let print { cache_hit; parsing_time; time; mw_prev; mw_after; stats } =
       let cptime = Stats.get_f stats ~kind:Stats.Kind.Parsing in
       let cetime = Stats.get_f stats ~kind:Stats.Kind.Exec in
       let memo_info =
@@ -220,7 +220,6 @@ type t =
   ; nodes : Node.t list
   ; diags_dirty : bool  (** Used to optimize `eager_diagnostics` *)
   ; completed : Completion.t
-  ; stats : Stats.t  (** Info about cumulative stats *)
   }
 
 let mk_doc root_state workspace =
@@ -231,19 +230,21 @@ let mk_doc root_state workspace =
 let init_fname ~uri = Loc.InFile { dirpath = None; file = uri }
 let init_loc ~uri = Loc.initial (init_fname ~uri)
 
-let process_init_feedback range state messages =
+let process_init_feedback ~stats range state messages =
   if not (CList.is_empty messages) then
     let diags, messages = Util.diags_of_messages ~drange:range messages in
     let parsing_time = 0.0 in
     let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
-    let info = Node.Info.make ~parsing_time ~mw_prev ~mw_after:mw_prev () in
+    let info =
+      Node.Info.make ~parsing_time ~mw_prev ~mw_after:mw_prev ~stats ()
+    in
     [ { Node.range; ast = None; state; diags; messages; info } ]
   else []
 
 let create ~state ~workspace ~uri ~version ~contents =
+  let () = Stats.reset () in
   let { Coq.Protect.E.r; feedback } = mk_doc state workspace in
   Coq.Protect.R.map r ~f:(fun root ->
-      let stats = Stats.zero () in
       let init_loc = init_loc ~uri in
       let contents = Contents.make ~uri ~raw:contents in
       let lines = contents.lines in
@@ -251,7 +252,8 @@ let create ~state ~workspace ~uri ~version ~contents =
       let feedback =
         List.map (Node.Message.feedback_to_message ~lines) feedback
       in
-      let nodes = process_init_feedback init_range root feedback in
+      let stats = Stats.dump () in
+      let nodes = process_init_feedback ~stats init_range root feedback in
       let diags_dirty = not (CList.is_empty nodes) in
       { uri
       ; contents
@@ -260,7 +262,6 @@ let create ~state ~workspace ~uri ~version ~contents =
       ; nodes
       ; diags_dirty
       ; completed = Stopped init_range
-      ; stats
       })
 
 let recover_up_to_offset ~init_range doc offset =
@@ -297,16 +298,16 @@ let compute_common_prefix ~init_range ~contents (prev : t) =
 let bump_version ~init_range ~version ~contents doc =
   (* When a new document, we resume checking from a common prefix *)
   let nodes, completed = compute_common_prefix ~init_range ~contents doc in
-  (* uri, root_state, and stats remain the same, stats should not! *)
-  (* XXX: make the stats structure incremental *)
-  let stats = doc.stats in
-  { doc with
-    version
+  (* Important: uri, root remain the same *)
+  let uri = doc.uri in
+  let root = doc.root in
+  { uri
+  ; version
+  ; root
   ; nodes
   ; contents
   ; diags_dirty = true (* EJGA: Is it worth to optimize this? *)
   ; completed
-  ; stats
   }
 
 let bump_version ~version ~contents doc =
@@ -343,7 +344,6 @@ let send_eager_diagnostics ~ofmt ~uri ~version ~doc =
   else doc
 
 let set_completion ~completed doc = { doc with completed }
-let set_stats ~stats doc = { doc with stats }
 
 (* We approximate the remnants of the document. It would be easier if instead of
    reporting what is missing, we would report what is done, but for now we are
@@ -402,8 +402,9 @@ let interp_and_info ~parsing_time ~st ast =
     Memo.interp_command ~st ast
   in
   let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in
+  let stats = Stats.dump () in
   let info =
-    Node.Info.make ~cache_hit ~parsing_time ~time ~mw_prev ~mw_after ()
+    Node.Info.make ~cache_hit ~parsing_time ~time ~mw_prev ~mw_after ~stats ()
   in
   (res, info)
 
@@ -465,8 +466,11 @@ let unparseable_node ~range ~parsing_diags ~parsing_feedback ~state
     Util.diags_of_messages ~drange:range parsing_feedback
   in
   let diags = fb_diags @ parsing_diags in
+  let stats = Stats.dump () in
   let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
-  let info = Node.Info.make ~parsing_time ~mw_prev ~mw_after:mw_prev () in
+  let info =
+    Node.Info.make ~parsing_time ~mw_prev ~mw_after:mw_prev ~stats ()
+  in
   { Node.range; ast = None; diags; messages; state; info }
 
 let assemble_diags ~range ~parsing_diags ~parsing_feedback ~diags ~feedback =
@@ -624,14 +628,15 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
   | [] -> ()
   | n :: _ ->
     Io.Log.trace "resume" ("last node :" ^ Types.Range.to_string n.range));
-  let st =
-    Util.hd_opt ~default:doc.root
-      (List.map (fun { Node.state; _ } -> state) doc.nodes)
+  let last_node = Util.hd_opt doc.nodes in
+  let st, stats =
+    Option.cata
+      (fun { Node.state; info = { stats; _ }; _ } -> (state, stats))
+      (doc.root, Stats.zero ())
+      last_node
   in
-  Stats.restore doc.stats;
+  Stats.restore stats;
   let doc = stm doc st last_tok in
-  let stats = Stats.dump () in
-  let doc = set_stats ~stats doc in
   (* Set the document to "finished" mode: reverse the node list *)
   let doc = { doc with nodes = List.rev doc.nodes } in
   doc

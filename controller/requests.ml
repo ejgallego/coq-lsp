@@ -50,10 +50,9 @@ let hover ~doc ~point =
       (Format.pp_print_option ~none Fleche.Types.Range.pp)
       range_span
   in
-  let stats = doc.stats in
   let info_string =
     Fleche.Info.LC.info ~doc ~point Exact
-    |> Option.map (Fleche.Doc.Node.Info.print ~stats)
+    |> Option.map Fleche.Doc.Node.Info.print
     |> Option.default "no info"
   in
   let hover_string =
