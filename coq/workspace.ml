@@ -157,7 +157,7 @@ let apply ~uri
   Declaremods.start_library (dirpath_of_uri ~uri);
   load_objs require_libs
 
-let workspace_from_coqproject ~coqlib ~debug : t =
+let workspace_from_coqproject ~coqlib ~debug cp_file : t =
   (* Io.Log.error "init" "Parsing _CoqProject"; *)
   let open CoqProject_file in
   let to_vo_loadpath f implicit =
@@ -173,7 +173,7 @@ let workspace_from_coqproject ~coqlib ~debug : t =
     }
   in
   let { r_includes; q_includes; ml_includes; extra_args; _ } =
-    read_project_file ~warning_fn:(fun _ -> ()) "_CoqProject"
+    read_project_file ~warning_fn:(fun _ -> ()) cp_file
   in
   let ml_include_path = List.map (fun f -> f.thing.path) ml_includes in
   let vo_path = List.map (fun f -> to_vo_loadpath f.thing false) q_includes in
@@ -206,7 +206,8 @@ let workspace_from_cmdline ~debug
   let w = default ~implicit ~coqlib ~kind ~debug in
   add_loadpaths w ~vo_load_path ~ml_include_path
 
-let guess ~debug ~cmdline =
-  if Sys.file_exists "_CoqProject" then
-    workspace_from_coqproject ~coqlib:cmdline.CmdLine.coqlib ~debug
+let guess ~debug ~cmdline ~dir =
+  let cp_file = Filename.concat dir "_CoqProject" in
+  if Sys.file_exists cp_file then
+    workspace_from_coqproject ~coqlib:cmdline.CmdLine.coqlib ~debug cp_file
   else workspace_from_cmdline ~debug cmdline
