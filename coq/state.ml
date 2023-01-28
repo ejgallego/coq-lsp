@@ -85,6 +85,7 @@ module Proof = struct
 end
 
 let lemmas ~st = st.Vernacstate.lemmas
+let program ~st = NeList.head st.Vernacstate.program |> Declare.OblState.view
 
 let drop_proofs ~st =
   let open Vernacstate in

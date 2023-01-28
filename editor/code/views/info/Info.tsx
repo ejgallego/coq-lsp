@@ -12,6 +12,7 @@ import { FileInfo } from "./FileInfo";
 import { Goals } from "./Goals";
 import { Messages } from "./Messages";
 import { ErrorBrowser } from "./ErrorBrowser";
+import { Program } from "./Program";
 
 // First part, which should be split out is the protocol definition, second part is the UI.
 function doWaitingForInfo(info: GoalRequest) {
@@ -69,6 +70,7 @@ export function InfoPanel() {
   return (
     <FileInfo textDocument={goals.textDocument} position={goals.position}>
       <Goals goals={goals.goals} />
+      <Program program={goals.program} />
       <Messages messages={goals.messages} />
       <ErrorBrowser error={goals.error} />
     </FileInfo>
