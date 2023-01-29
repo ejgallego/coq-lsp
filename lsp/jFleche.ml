@@ -18,6 +18,10 @@
 module Pp = JCoq.Pp
 
 module Config = struct
+  module Unicode_completion = struct
+    type t = [%import: Fleche.Config.Unicode_completion.t] [@@deriving yojson]
+  end
+
   type t = [%import: Fleche.Config.t] [@@deriving yojson]
 end
 
@@ -127,6 +131,30 @@ module HoverInfo = struct
   type t =
     { contents : HoverContents.t
     ; range : Types.Range.t option
+    }
+  [@@deriving yojson]
+end
+
+module LabelDetails = struct
+  type t = { detail : string } [@@deriving yojson]
+end
+
+module TextEditReplace = struct
+  type t =
+    { insert : Types.Range.t
+    ; replace : Types.Range.t
+    ; newText : string
+    }
+  [@@deriving yojson]
+end
+
+module CompletionData = struct
+  type t =
+    { label : string
+    ; insertText : string option
+    ; labelDetails : LabelDetails.t option
+    ; textEdit : TextEditReplace.t option
+    ; commitCharacters : string list option
     }
   [@@deriving yojson]
 end

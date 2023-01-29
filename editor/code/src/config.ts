@@ -9,6 +9,7 @@ export interface CoqLspServerConfig {
   show_notices_as_diagnostics: boolean;
   admit_on_bad_qed: boolean;
   debug: boolean;
+  unicode_completion: "off" | "normal" | "extended";
 }
 
 export namespace CoqLspServerConfig {
@@ -25,6 +26,7 @@ export namespace CoqLspServerConfig {
       show_notices_as_diagnostics: wsConfig.show_notices_as_diagnostics,
       admit_on_bad_qed: wsConfig.admit_on_bad_qed,
       debug: wsConfig.debug,
+      unicode_completion: wsConfig.unicode_completion,
     };
   }
 }

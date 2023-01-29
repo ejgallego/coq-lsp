@@ -29,3 +29,6 @@ let sched_wakeup = false || all
 
 (* Request event queue *)
 let request_delay = true || all
+
+(* Competion *)
+let completion = false || all

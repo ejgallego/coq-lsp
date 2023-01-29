@@ -20,10 +20,6 @@ type document_request =
 
 type position_request = doc:Fleche.Doc.t -> point:int * int -> Yojson.Safe.t
 
-module Util = struct
-  let asts_of_doc doc = List.filter_map Fleche.Doc.Node.ast doc.Fleche.Doc.nodes
-end
-
 open Lsp.JFleche
 
 let symbols ~lines ~(doc : Fleche.Doc.t) =
@@ -37,7 +33,7 @@ let symbols ~lines ~(doc : Fleche.Doc.t) =
     in
     SymInfo.(to_yojson { name; kind; location })
   in
-  let ast = Util.asts_of_doc doc in
+  let ast = Fleche.Doc.asts doc in
   let slist = Coq.Ast.grab_definitions f ast in
   `List slist
 
@@ -94,9 +90,3 @@ let goals ~doc ~point =
   in
   Lsp.JFleche.mk_goals ~uri:doc.uri ~version:doc.version ~position ~goals
     ~messages ~error
-
-let completion ~doc ~point:_ =
-  let f _loc id = `Assoc [ ("label", `String Names.Id.(to_string id)) ] in
-  let ast = Util.asts_of_doc doc in
-  let clist = Coq.Ast.grab_definitions f ast in
-  `List clist

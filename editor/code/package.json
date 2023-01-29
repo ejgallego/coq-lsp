@@ -173,6 +173,22 @@
             "description": "If a `Qed.` command fails, admit the proof automatically."
           }
         }
+      },
+      {
+        "title": "Input",
+        "type": "object",
+        "properties": {
+          "coq-lsp.unicode_completion": {
+            "type": "string",
+            "default": "normal",
+            "enum": [
+              "off",
+              "normal",
+              "extended"
+            ],
+            "description": "Enable Server-Side Unicode Completion. Coq-lsp provides two character sets, a regular one, and an extended one with more than 1000 symbols."
+          }
+        }
       }
     ]
   },
