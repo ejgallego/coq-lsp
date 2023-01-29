@@ -22,6 +22,7 @@ like to:
 - allow users to click links from the view to go to particular source points
 - make hypothesis sortable
 - support goal diff
+- welcome screen
 
 ## Workspace management
 
