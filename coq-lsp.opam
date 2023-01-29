@@ -26,8 +26,9 @@ depends: [
   "yojson"       { >= "1.7.0" }
 
   # Uncomment this for releases
-  "coq"          { >= "8.17" < "8.18" }
-  "coq-serapi"   { >= "8.17+rc1+0.17.1" < "8.18" }
+  "coq"           { >= "8.16.0" & < "8.17" }
+  "coq-serapi"    { >= "8.16.0+0.16.2" & < "8.17" }
+  "camlp-streams" { >= "5.0" }
 ]
 
 build: [ [ "dune" "build" "-p" name "-j" jobs ] ]
