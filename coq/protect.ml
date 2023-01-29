@@ -1,9 +1,9 @@
 module Error = struct
-  type payload = Loc.t option * Pp.t
+  type 'l payload = 'l option * Pp.t
 
-  type t =
-    | User of payload
-    | Anomaly of payload
+  type 'l t =
+    | User of 'l payload
+    | Anomaly of 'l payload
 
   let map ~f = function
     | User e -> User (f e)
@@ -11,8 +11,8 @@ module Error = struct
 end
 
 module R = struct
-  type 'a t =
-    | Completed of ('a, Error.t) result
+  type ('a, 'l) t =
+    | Completed of ('a, 'l Error.t) result
     | Interrupted (* signal sent, eval didn't complete *)
 
   let map ~f = function
@@ -22,7 +22,8 @@ module R = struct
 
   let map_error ~f = function
     | Completed (Error e) -> Completed (Error (Error.map ~f e))
-    | res -> res
+    | Completed (Ok r) -> Completed (Ok r)
+    | Interrupted -> Interrupted
 
   let map_loc ~f =
     let f (loc, msg) = (Option.map f loc, msg) in
@@ -44,9 +45,9 @@ let eval_exn ~f x =
     else R.Completed (Error (User (loc, msg)))
 
 module E = struct
-  type 'a t =
-    { r : 'a R.t
-    ; feedback : Message.t list
+  type ('a, 'l) t =
+    { r : ('a, 'l) R.t
+    ; feedback : 'l Message.t list
     }
 
   let map ~f { r; feedback } = { r = R.map ~f r; feedback }
@@ -56,7 +57,7 @@ module E = struct
     { r = R.map_loc ~f r; feedback = List.map (map_message ~f) feedback }
 end
 
-let fb_queue : Message.t list ref = ref []
+let fb_queue : Loc.t Message.t list ref = ref []
 
 (* Eval with reified exceptions and feedback *)
 let eval ~f x =

@@ -3,6 +3,7 @@
   // for the documentation about the extensions.json format
   "recommendations": [
     "ms-vscode.vscode-typescript-tslint-plugin",
-    "guidotapia2.unicode-math-vscode"
+    "guidotapia2.unicode-math-vscode",
+    "connor4312.esbuild-problem-matchers"
   ]
 }

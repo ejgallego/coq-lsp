@@ -1,61 +1,30 @@
-import { throttle } from "throttle-debounce";
 import {
   window,
   commands,
+  extensions,
   ExtensionContext,
   workspace,
-  ViewColumn,
-  Uri,
   TextEditor,
-  OverviewRulerLane,
-  WorkspaceConfiguration,
+  TextEditorSelectionChangeEvent,
+  TextEditorSelectionChangeKind,
 } from "vscode";
-import * as vscode from "vscode";
-import { Range } from "vscode-languageclient";
 import {
   LanguageClient,
   ServerOptions,
   LanguageClientOptions,
   RevealOutputChannelOn,
 } from "vscode-languageclient/node";
-import { GoalPanel } from "./goals";
-import { coqFileProgress } from "./progress";
 
-enum ShowGoalsOnCursorChange {
-  Never = 0,
-  OnMouse = 1,
-  OnMouseAndKeyboard = 2,
-  OnMouseKeyboardCommand = 3,
-}
-
-interface CoqLspServerConfig {
-  client_version: string;
-  eager_diagnostics: boolean;
-  ok_diagnostics: boolean;
-  goal_after_tactic: boolean;
-  show_coq_info_messages: boolean;
-  show_notices_as_diagnostics: boolean;
-  admit_on_bad_qed: boolean;
-}
-
-interface CoqLspClientConfig {
-  show_goals_on: ShowGoalsOnCursorChange;
-}
+import { CoqLspClientConfig, CoqLspServerConfig } from "./config";
+import { InfoPanel } from "./goals";
+import { FileProgressManager } from "./progress";
 
 let config: CoqLspClientConfig;
 let client: LanguageClient;
-let goalPanel: GoalPanel | null;
-
-export function panelFactory(context: ExtensionContext) {
-  let panel = window.createWebviewPanel("goals", "Goals", ViewColumn.Two, {});
-  panel.onDidDispose(() => {
-    goalPanel = null;
-  });
-  const styleUri = panel.webview.asWebviewUri(
-    Uri.joinPath(context.extensionUri, "media", "styles.css")
-  );
-  return new GoalPanel(client, panel, styleUri);
-}
+// Lifetime of the info panel == extension lifetime.
+let infoPanel: InfoPanel;
+// Lifetime of the fileProgress setup == client lifetime
+let fileProgress: FileProgressManager;
 
 export function activate(context: ExtensionContext): void {
   window.showInformationMessage("Coq LSP Extension: Going to activate!");
@@ -71,25 +40,32 @@ export function activate(context: ExtensionContext): void {
     );
     context.subscriptions.push(disposable);
   }
+  function checkForVSCoq() {
+    let vscoq = extensions.getExtension("maximedenes.vscoq");
+    if (vscoq?.isActive) {
+      window.showErrorMessage(
+        "Coq LSP Extension: VSCoq extension has been detected, you need to deactivate it for coq-lsp to work properly.",
+        { modal: false, detail: "thanks for your understanding" },
+        { title: "Understood" }
+      );
+    }
+  }
+
   const restart = () => {
     if (client) {
       client.stop();
-      if (goalPanel) goalPanel.dispose();
+      infoPanel.dispose();
+      fileProgress.dispose();
     }
 
-    // EJGA: didn't find a way to make CoqLspConfig a subclass of WorkspaceConfiguration
-    // despite that class being open. Would be nice to avoid this copy indeed.
     const wsConfig = workspace.getConfiguration("coq-lsp");
-    config = { show_goals_on: wsConfig.show_goals_on };
-    const initializationOptions: CoqLspServerConfig = {
-      client_version: context.extension.packageJSON.version,
-      eager_diagnostics: wsConfig.eager_diagnostics,
-      ok_diagnostics: wsConfig.ok_diagnostics,
-      goal_after_tactic: wsConfig.goal_after_tactic,
-      show_coq_info_messages: wsConfig.show_coq_info_messages,
-      show_notices_as_diagnostics: wsConfig.show_notices_as_diagnostics,
-      admit_on_bad_qed: wsConfig.admit_on_bad_qed,
-    };
+    config = CoqLspClientConfig.create(wsConfig);
+
+    let client_version = context.extension.packageJSON.version;
+    const initializationOptions = CoqLspServerConfig.create(
+      client_version,
+      wsConfig
+    );
 
     const clientOptions: LanguageClientOptions = {
       documentSelector: [{ scheme: "file", language: "coq" }],
@@ -111,65 +87,33 @@ export function activate(context: ExtensionContext): void {
     );
     client.start();
 
-    client.onNotification(coqFileProgress, (params) => {
-      let ranges = params.processing
-        .map((fp) => rangeProto2Code(fp.range))
-        .filter((r) => !r.isEmpty);
-      updateDecos(params.textDocument.uri, ranges);
-    });
-
-    // XXX: Fix this mess with the lifetime of the panel
-    goalPanel = panelFactory(context);
+    fileProgress = new FileProgressManager(client);
   };
 
-  const progressDecoration = window.createTextEditorDecorationType({
-    overviewRulerColor: "rgba(255,165,0,0.5)",
-    overviewRulerLane: OverviewRulerLane.Left,
-  });
+  // Start of extension activation:
 
-  const updateDecos = throttle(
-    200,
-    function (uri: string, ranges: vscode.Range[]) {
-      for (const editor of window.visibleTextEditors) {
-        if (editor.document.uri.toString() == uri) {
-          editor.setDecorations(progressDecoration, ranges);
-        }
-      }
-    }
-  );
+  // Check VSCoq is not installed
+  checkForVSCoq();
 
-  const rangeProto2Code = function (r: Range) {
-    return new vscode.Range(
-      r.start.line,
-      r.start.character,
-      r.end.line,
-      r.end.character
-    );
-  };
-  const checkPanelAlive = () => {
-    if (!goalPanel) {
-      goalPanel = panelFactory(context);
-    }
-  };
+  // InfoPanel setup.
+  infoPanel = new InfoPanel(context.extensionUri);
+  context.subscriptions.push(infoPanel);
 
   const goals = (editor: TextEditor) => {
-    checkPanelAlive();
     let uri = editor.document.uri;
     let version = editor.document.version;
     let position = editor.selection.active;
-    if (goalPanel) {
-      goalPanel.update(uri, version, position);
-    }
+    infoPanel.updateFromServer(client, uri, version, position);
   };
 
-  let disposable = window.onDidChangeTextEditorSelection(
-    (evt: vscode.TextEditorSelectionChangeEvent) => {
+  let goalsHook = window.onDidChangeTextEditorSelection(
+    (evt: TextEditorSelectionChangeEvent) => {
       if (evt.textEditor.document.languageId != "coq") return;
 
       const kind =
-        evt.kind == vscode.TextEditorSelectionChangeKind.Mouse
+        evt.kind == TextEditorSelectionChangeKind.Mouse
           ? 1
-          : evt.kind == vscode.TextEditorSelectionChangeKind.Keyboard
+          : evt.kind == TextEditorSelectionChangeKind.Keyboard
           ? 2
           : evt.kind
           ? evt.kind
@@ -185,7 +129,7 @@ export function activate(context: ExtensionContext): void {
     }
   );
 
-  context.subscriptions.push(disposable);
+  context.subscriptions.push(goalsHook);
 
   coqCommand("restart", restart);
   coqEditorCommand("goals", goals);

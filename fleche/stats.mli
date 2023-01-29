@@ -13,6 +13,7 @@ val reset : unit -> unit
 
 type t
 
+val zero : unit -> t
 val dump : unit -> t
 val restore : t -> unit
 val get_f : t -> kind:Kind.t -> float

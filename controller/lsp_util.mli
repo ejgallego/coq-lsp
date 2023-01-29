@@ -15,11 +15,12 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val lsp_of_diags :
-  uri:string -> version:int -> Fleche.Types.Diagnostic.t list -> Yojson.Safe.t
+module ProgressInfo : sig
+  type t =
+    { range : Lsp.Base.range
+    ; kind : int
+    }
+end
 
 val lsp_of_progress :
-     uri:string
-  -> version:int
-  -> (Fleche.Types.Range.t * int) list
-  -> Yojson.Safe.t
+  uri:string -> version:int -> ProgressInfo.t list -> Yojson.Safe.t

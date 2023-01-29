@@ -1,3 +1,10 @@
+module Unicode_completion = struct
+  type t =
+    | Off
+    | Normal
+    | Extended
+end
+
 type t =
   { mem_stats : bool [@default false]
         (** [mem_stats] Call [Obj.reachable_words] for every sentence. This is
@@ -21,6 +28,10 @@ type t =
             when a [Qed] fails: one is not to add the constant to the state, the
             other one is admit it. We find the second behavior more useful, but
             YMMV. *)
+  ; debug : bool [@default false]
+        (** Enable debug on Coq side, including backtraces *)
+  ; unicode_completion : Unicode_completion.t
+        [@default Unicode_completion.Normal]
   }
 
 let default =
@@ -33,6 +44,8 @@ let default =
   ; show_coq_info_messages = false
   ; show_notices_as_diagnostics = false
   ; admit_on_bad_qed = true
+  ; debug = false
+  ; unicode_completion = Normal
   }
 
 let v = ref default

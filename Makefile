@@ -30,7 +30,7 @@ watch: coq_boot
 build-all: coq_boot
 	dune build $(DUNEOPT) @all
 
-coq/config/coq_config.ml:
+vendor/coq/config/coq_config.ml:
 	cd vendor/coq \
 	&& ./configure -no-ask -prefix $(shell pwd)/_build/install/default/ \
 		-native-compiler no \
@@ -80,7 +80,7 @@ submodules-deinit:
 # Build the vscode extension
 .PHONY: extension
 extension:
-	cd editor/code && npm i && npm run compile
+	cd editor/code && npm i && npm run vscode:prepublish
 
 # Run prettier
 .PHONY: ts-fmt

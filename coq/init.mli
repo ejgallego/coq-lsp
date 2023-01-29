@@ -32,5 +32,5 @@ val coq_init : coq_opts -> State.t
 val doc_init :
      root_state:State.t
   -> workspace:Workspace.t
-  -> libname:Names.DirPath.t
-  -> State.t Protect.E.t
+  -> uri:string
+  -> (State.t, Loc.t) Protect.E.t

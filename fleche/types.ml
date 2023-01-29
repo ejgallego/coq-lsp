@@ -22,6 +22,9 @@ module Point = struct
     ; character : int
     ; offset : int
     }
+
+  let pp fmt { line; character; offset } =
+    Format.fprintf fmt "{ l: %d, c: %d | o: %d }" line character offset
 end
 
 module Range = struct
@@ -29,6 +32,11 @@ module Range = struct
     { start : Point.t
     ; end_ : Point.t
     }
+
+  let pp fmt { start; end_ } =
+    Format.fprintf fmt "(@[%a@]--@[%a@])" Point.pp start Point.pp end_
+
+  let to_string r = Format.asprintf "%a" pp r
 end
 
 module Diagnostic = struct
@@ -43,20 +51,7 @@ module Diagnostic = struct
   type t =
     { range : Range.t
     ; severity : int
-    ; message : string
-    ; extra : Extra.t list
+    ; message : Pp.t
+    ; extra : Extra.t list option
     }
 end
-
-let to_range (p : Loc.t) : Range.t =
-  let Loc.{ line_nb; line_nb_last; bol_pos; bol_pos_last; bp; ep; _ } = p in
-  let start_line = line_nb - 1 in
-  let start_col = bp - bol_pos in
-  let end_line = line_nb_last - 1 in
-  let end_col = ep - bol_pos_last in
-  Range.
-    { start = { line = start_line; character = start_col; offset = bp }
-    ; end_ = { line = end_line; character = end_col; offset = ep }
-    }
-
-let to_orange = Option.map to_range

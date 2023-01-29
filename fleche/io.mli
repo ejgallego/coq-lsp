@@ -13,7 +13,7 @@ module CallBack : sig
            ofmt:Format.formatter
         -> uri:string
         -> version:int
-        -> (Types.Range.t * int) list
+        -> Progress.Info.t list
         -> unit
     }
 
@@ -24,7 +24,7 @@ module Log : sig
   val trace : string -> ?extra:string -> string -> unit
 
   (** For unexpected feedback *)
-  val feedback : Coq.Message.t list -> unit
+  val feedback : Loc.t Coq.Message.t list -> unit
 end
 
 module Report : sig
@@ -39,6 +39,6 @@ module Report : sig
        ofmt:Format.formatter
     -> uri:string
     -> version:int
-    -> (Types.Range.t * int) list
+    -> Progress.Info.t list
     -> unit
 end
