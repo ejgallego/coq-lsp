@@ -28,8 +28,8 @@
  - Set Coq library name correctly (@ejgallego, #260)
  - `_CoqProject` file is now detected using LSP client `rootPath`
    (@ejgallego, #261)
- - Press `\` to trigger Unicode completion by the server. This
-   behavior is configurable, with "off", "regular", and extended
+ - You can press `\` to trigger Unicode completion by the server. This
+   behavior is configurable, with "off", "regular", and "extended"
    settings (@artagnon, @Alizter, ejgallego, #219).
 
 # coq-lsp 0.1.3: Event
