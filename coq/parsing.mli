@@ -5,7 +5,7 @@ module Parsable : sig
   val loc : t -> Loc.t
 end
 
-val parse : st:State.t -> Parsable.t -> Ast.t option Protect.E.t
+val parse : st:State.t -> Parsable.t -> (Ast.t option, Loc.t) Protect.E.t
 val discard_to_dot : Parsable.t -> unit
 
 val bp_ : int ref

@@ -16,10 +16,10 @@
 (************************************************************************)
 
 module Check : sig
-  (** Check a document, or yield if there is none pending; it will send progress
-      and diagnostics notifications to [ofmt]. Will return the list of requests
-      that are ready to execute. *)
-  val check_or_yield : ofmt:Format.formatter -> Int.Set.t
+  (** Check pending documents, return [None] if there is none pending, or
+      [Some rqs] the list of requests ready to execute after the check. Sends
+      progress and diagnostics notifications to [ofmt]. *)
+  val maybe_check : ofmt:Format.formatter -> Int.Set.t option
 end
 
 (** Create a document *)
@@ -43,9 +43,13 @@ exception AbortRequest
 val find_doc : uri:string -> Fleche.Doc.t
 
 (** Add a request to be served when the document is completed *)
-val serve_on_completion : uri:string -> id:int -> unit
+val add_on_completion : uri:string -> id:int -> unit
+
+val remove_on_completion : uri:string -> id:int -> unit
 
 (** Add a request to be served when the document point data is available, for
     now, we allow a single request like that. Maybe returns the id of the
     previous request which should now be cancelled. *)
-val serve_if_point : uri:string -> id:int -> point:int * int -> int option
+val add_on_point : uri:string -> id:int -> point:int * int -> unit
+
+val remove_on_point : uri:string -> id:int -> point:int * int -> unit

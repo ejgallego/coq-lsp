@@ -1,3 +1,37 @@
+# coq-lsp 0.1.4: View
+---------------------
+
+ - Support for OCaml 4.11 (@ejgallego, #184)
+ - The keybinding alt+enter in VSCode is now correctly scoped to be
+   only active on Coq files (@artagnon, #188)
+ - Support Unicode files (@ejgallego, #200, fixes #193, fixes #197)
+ - The info view is now script enabled and does client-side
+   rendering. It is also now bundled with esbuild as part of the build
+   process (@artagnon, @ejgallego, #171)
+ - The no-op `--std` argument to the `coq-lsp` binary has been
+   removed, beware of your setup in the extension settings
+   (@ejgallego, #208)
+ - Settings for the VSCode extension are now categorized (@Alizter, #212)
+ - `GoalAnswer`s now include the proof "stack" and better hypothesis
+   information, changes are compatible with 0.1.3 `GoalAnswer` version
+   (@ejgallego, #237)
+ - Focus is now preserved when the info view pops up (@artagnon, #242,
+   fixes #224)
+ - In `_CoqProject`, `-impredicative-set` is now parsed correctly
+   (@artagnon, #241)
+ - InfoView is not written in React (@ejgallego, #223)
+ - `debug` option in the client / protocol that will enable Coq's backtraces
+   (@Alizter, @ejgallego, #217, #248)
+ - Full document stats are now correctly computed on checking
+   resumption, still cached sentences will display the cached timing
+   tho (@ejgallego, #257)
+ - Set Coq library name correctly (@ejgallego, #260)
+ - `_CoqProject` file is now detected using LSP client `rootPath`
+   (@ejgallego, #261)
+ - Press `\` to trigger Unicode completion by the server. This
+   behavior is configurable, with "off", "regular", and extended
+   settings (@artagnon, @Alizter, ejgallego, #219).
+
 # coq-lsp 0.1.3: Event
 ----------------------
 

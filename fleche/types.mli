@@ -15,19 +15,28 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+(** ATTENTION: [character] is a Unicode caracter position, thus from Coq that
+    usually requires conversion, as it will report the column offset in bytes.
+    But [offset] is in bytes for now, as our downstream clients prefer this
+    format. *)
 module Point : sig
   type t =
     { line : int
     ; character : int
     ; offset : int
     }
+
+  val pp : Format.formatter -> t -> unit
 end
 
 module Range : sig
   type t =
     { start : Point.t
-    ; end_ : Point.t
+    ; end_ : Point.t [@key "end"]
     }
+
+  val pp : Format.formatter -> t -> unit
+  val to_string : t -> string
 end
 
 module Diagnostic : sig
@@ -42,12 +51,7 @@ module Diagnostic : sig
   type t =
     { range : Range.t
     ; severity : int
-    ; message : string
-    ; extra : Extra.t list
+    ; message : Pp.t
+    ; extra : Extra.t list option
     }
 end
-
-(** XXX specific to Coq *)
-val to_range : Loc.t -> Range.t
-
-val to_orange : Loc.t option -> Range.t option

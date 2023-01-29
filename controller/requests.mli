@@ -15,10 +15,11 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type document_request = doc:Fleche.Doc.t -> Yojson.Safe.t
+type document_request =
+  lines:string Array.t -> doc:Fleche.Doc.t -> Yojson.Safe.t
+
 type position_request = doc:Fleche.Doc.t -> point:int * int -> Yojson.Safe.t
 
 val symbols : document_request
 val hover : position_request
 val goals : position_request
-val completion : position_request

@@ -1,0 +1,6 @@
+body {
+  font-size: var(--vscode-editor-font-size);
+  /* font-size: medium */
+  font-family: var(--vscode-editor-font-family);
+  /* font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
+}

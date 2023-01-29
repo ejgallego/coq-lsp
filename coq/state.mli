@@ -17,7 +17,7 @@ val lemmas : st:t -> Proof.t option
 
 (** Execute a command in state [st]. Unfortunately this can produce anomalies as
     Coq state setting is imperative, so we need to wrap it in protect. *)
-val in_state : st:t -> f:('a -> 'b) -> 'a -> 'b Protect.E.t
+val in_state : st:t -> f:('a -> 'b) -> 'a -> ('b, Loc.t) Protect.E.t
 
 (** Drop the proofs from the state *)
 val drop_proofs : st:t -> t
@@ -25,8 +25,9 @@ val drop_proofs : st:t -> t
 (** Admit an ongoing proof *)
 val admit : st:t -> t
 
-(* Extra *)
+(** Extra / interanl *)
 val marshal_in : in_channel -> t
+
 val marshal_out : out_channel -> t -> unit
 val of_coq : Vernacstate.t -> t
 val to_coq : t -> Vernacstate.t

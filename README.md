@@ -1,37 +1,51 @@
 ## Coq LSP
 
-The `coq-lsp` project aims to provide a lightweight, pure [Language Server
-Protocol](https://microsoft.github.io/language-server-protocol/)
-server implementation for the Coq proof assistant, as well as to serve
-as a framework for interface experimentation.
+`coq-lsp` is a [Language
+Server](https://microsoft.github.io/language-server-protocol/) and [Visual
+Studio Code](https://code.visualstudio.com/) extension for the [Coq Proof
+Assistant](https://coq.inria.fr).
 
-**Warning**: This project is at an _early_ stage, and it has **known bugs**,
-see the issue tracker for more information.
+Key [features](#Features) of `coq-lsp` are continuous and incremental document
+checking, advanced error recovery, markdown support, positional goals and
+information panel, performance data, and more.
 
-Contributions are very welcome, but please **first coordinate** with the dev
-team in Zulip before writing any code, as the code evolves pretty quickly.
+`coq-lsp` aims to provide a seamless, modern interactive theorem proving
+experience, as well as to serve as a platform for research and UI integration
+with other projects.
 
-## Development Channel
+### Installation
 
-Our development channel can be found at [Coq's
-Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp), don't hesitate
-to stop by.
+In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md) the
+`coq-lsp` server, and the Visual Studio Code extension:
 
-## Installation
+#### Server
 
-- `coq-lsp` server: `opam install coq-lsp`
+- **opam**: `opam install coq-lsp`
+- **Nix** (coming soon)
+- **Coq Platform** (coming soon)
+- [Do it yourself!](#server-1)
 
-## Clients
+#### **Visual Studio Code**:
+- Official Marketplace: https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
+- Open VSX: https://open-vsx.org/extension/ejgallego/coq-lsp
 
-- Visual Studio Code:
-  https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
-- GNU Emacs: `M-x eglot [Enter] coq-lsp [Enter]`
-
-## FAQ
+### FAQ
 
 See our [list of frequently-asked questions](./etc/FAQ.md).
 
-## Troubleshooting
+### Contributing
+
+Contributions are very welcome! Feel free to chat with the dev team in Zulip, or
+just use the standard GitHub facilities. We will soon publish a thing of
+interesting projects for `coq-lsp` in case you are looking for ideas.
+
+### Development Channel
+
+`coq-lsp` development channel it at [Coq's
+Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp), don't hesitate
+to stop by.
+
+### Troubleshooting
 
 - Most problems can be resolved by restarting `coq-lsp`, in Visual Studio Code,
   `Ctrl+Shift+P` will give you access to the `coq-lsp.restart` command.
@@ -40,6 +54,10 @@ See our [list of frequently-asked questions](./etc/FAQ.md).
 - As of today, `coq-lsp` may have trouble when more than one file is open at
   the same time, this is a problem upstream. For now, you are advised to
   work on a single file if this problem appears.
+- If you install `coq-lsp` simultaneously with VSCoq, VSCode gets confused and
+  neither of them will work. Help with resolving this
+  [issue](https://github.com/ejgallego/coq-lsp/issues/183) is extremely
+  appreciated!
 
 ## Features
 
@@ -122,40 +140,10 @@ to interact with Coq.
 Towards this goal, `coq-lsp` extends and will eventually replace `coq-serapi`,
 which has been used by many to that purpose.
 
-## Planned features
+### Planned features
 
-### Jump to definition
-
-In progress, pending on https://github.com/coq/coq/pull/16261
-
-### Proof skipping
-
-Configure which proofs to skip or delay, to make your document workflow more
-reactive.
-
-### Contextual continuous checking
-
-Check only what is visible, _à la_ Isabelle.
-
-### Server-side Completion Help
-
-### "Semantic" goal and document printing
-
-### LaTeX document support
-
-### Workspace Integration
-
-Don't worry about ever having to build your project again, `coq-lsp` will
-detect your workspace and build setup, and will keep everything up to date
-automatically.
-
-### Responsible elaboration and refinement
-
-Supporting inlays and Lean-style info view.
-
-### "Computational", Jupyter-style Documents
-
-### Suggestions / Search panel
+See [planned features and contribution ideas](etc/ContributionIdeas.md) for a
+list of things we plan to do, and tasks that you could take over.
 
 ## Protocol Notes
 
@@ -168,11 +156,9 @@ Check [the `coq-lsp` protocol documentation](etc/doc/PROTOCOL.md) for more detai
 ### Server:
 
 To build the server, you'll need and environment with the dependencies stated
-in `coq-lsp.opam`. [Opam](https://opam.ocaml.org/) users can do `opam install
---deps-only .`.
+in `coq-lsp.opam`.
 
-Once you have done that, do `make`, and the server will be build under
-`_build/install/default/bin/`
+`make` will build the server at `_build/install/default/bin/coq-lsp`
 
 ### Nix
 
@@ -190,23 +176,43 @@ You can use this flake in other flakes or Nix derviations.
 
 ### Visual Studio Code:
 
-Run `npm install && npm run compile` in `editor/code`.
+There are two ways to work with the VS Code extension: you can let VS Code
+itself take care of building it (preferred setup), or you can build it manually.
+
+First, run `npm install` in `editor/code`:
 
 ```sh
-(cd editor/code && npm i && npm run compile)
+(cd editor/code && npm i)
 ```
 
-Now you can launch VS Code through `dune exec -- code -n`, this will setup the
-right environment variables such as `PATH` and `OCAMLPATH`.
+That will setup the required packages as it is usual. You can run `package.json`
+scripts the usual way:
 
-Now, run the extension normally using the left "Run and Debug" panel in Visual
-Studio Code.
+```sh
+(cd editor/code && npm run typecheck) # typecheck the project
+(cd editor/code && npm run compile) # fast dev-transpile (no typecheck)
+```
+
+If you want to work with VS Code, these commands are not necessary, VS Code will
+build the project automatically.
+
+Launch VS Code using `dune exec -- code -n editor/code`, which will setup the
+right environment variables such as `PATH` and `OCAMLPATH`, so the `coq-lsp`
+binary can be found by VS Code. If you have installed `coq-lsp` globally, you
+don't need `dune exec`, and can just run `code -n editor/code`.
+
+Once in VS Code, you can launch the extension normally using the left "Run and
+Debug" panel in Visual Studio Code, or the F5 keybinding.
+
+You can of course install the extension in your `~/.vscode/` folder if so you
+desire.
 
 ### Emacs
 
-You can use this mode with [eglot](https://joaotavora.github.io/eglot/) with
-`$path_to_server --std`. Note that `--std` is needed otherwise eglot may choke
-due to extra messages.
+You can use `coq-lsp` with [eglot](https://joaotavora.github.io/eglot/).
+
+If you find any trouble using `eglot` or `lsp-mode` with coq-lsp, please don't
+hesitate to open an issue, Emacs support is a goal of `coq-lsp`.
 
 ### Roadmap
 
@@ -261,7 +267,6 @@ for their help and advice.
 
 As noted above, the original implementation was based on the Lambdapi LSP
 server, thanks to all our collaborators in that project!
-
 
 <!-- Local Variables: -->
 <!-- mode: Markdown -->

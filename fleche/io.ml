@@ -11,7 +11,7 @@ module CallBack = struct
            ofmt:Format.formatter
         -> uri:string
         -> version:int
-        -> (Types.Range.t * int) list
+        -> Progress.Info.t list
         -> unit
     }
 

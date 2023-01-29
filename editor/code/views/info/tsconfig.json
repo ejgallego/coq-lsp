@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig-base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "ESNext",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
+    "jsx": "react-jsx"
+  },
+  "include": ["**/*.ts", "**/*.tsx", "../../lib/**/*"]
+}

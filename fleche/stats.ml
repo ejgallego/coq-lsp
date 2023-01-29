@@ -19,6 +19,7 @@ let find kind = Hashtbl.find_opt stats kind |> Option.default 0.0
 
 type t = float * float * float
 
+let zero () = (0.0, 0.0, 0.0)
 let dump () = (find Kind.Hashing, find Kind.Parsing, find Kind.Exec)
 
 let restore (h, p, e) =

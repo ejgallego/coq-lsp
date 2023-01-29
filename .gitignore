@@ -2,12 +2,6 @@ _build
 _opam
 .merlin
 *.install
-log-*.txt
-
 .git-ps
 
 *.cache
-
-editor/code/out
-
-result

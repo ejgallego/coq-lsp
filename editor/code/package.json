@@ -1,8 +1,8 @@
 {
   "name": "coq-lsp",
-  "displayName": "coq-lsp",
+  "displayName": "Coq LSP",
   "description": "Coq LSP provides native vsCode support for checking Coq proof documents",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "contributors": [
     "Emilio Jesús Gallego Arias <e@x80.org>",
     "Ali Caglayan <alizter@gmail.com>",
@@ -70,40 +70,14 @@
         "command": "coq-lsp.goals",
         "key": "alt+enter",
         "mac": "meta+enter",
-        "when": "editorFocus"
+        "when": "editorTextFocus && editorLangId == coq"
       }
     ],
     "configuration": [
       {
+        "title": "Diagnostics",
         "type": "object",
-        "title": "Coq LSP configuration",
         "properties": {
-          "coq-lsp.trace.server": {
-            "scope": "window",
-            "type": "string",
-            "enum": [
-              "off",
-              "messages",
-              "verbose"
-            ],
-            "default": "messages",
-            "description": "Traces the communication between VS Code and the language server."
-          },
-          "coq-lsp.path": {
-            "type": "string",
-            "default": "coq-lsp",
-            "description": "Path to the coq-lsp binary, by default, search in PATH"
-          },
-          "coq-lsp.args": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "default": [
-              "--std"
-            ],
-            "description": "Arguments to the coq-lsp server"
-          },
           "coq-lsp.eager_diagnostics": {
             "type": "boolean",
             "default": true,
@@ -114,11 +88,6 @@
             "default": false,
             "description": "Send a diagnostic for sentences that are Ok; this can choke vsCode easily due to too many diagnostics"
           },
-          "coq-lsp.goal_after_tactic": {
-            "type": "boolean",
-            "default": false,
-            "description": "When showing goals and the cursor is in a tactic, if false, show goals before executing the tactic, if true, show goals after"
-          },
           "coq-lsp.show_coq_info_messages": {
             "type": "boolean",
             "default": false,
@@ -128,6 +97,17 @@
             "type": "boolean",
             "default": false,
             "description": "Show Coq's \"Notice\" messages as diagnostics, such as `About` and `Search` output."
+          }
+        }
+      },
+      {
+        "title": "Goals and Info Panel",
+        "type": "object",
+        "properties": {
+          "coq-lsp.goal_after_tactic": {
+            "type": "boolean",
+            "default": false,
+            "description": "When showing goals and the cursor is in a tactic, if false, show goals before executing the tactic, if true, show goals after"
           },
           "coq-lsp.show_goals_on": {
             "type": "number",
@@ -145,11 +125,68 @@
               "Show on click and on cursor movement",
               "Show on click, cursor, and command movement"
             ]
+          }
+        }
+      },
+      {
+        "title": "Language Server Binary",
+        "type": "object",
+        "properties": {
+          "coq-lsp.trace.server": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "off",
+              "messages",
+              "verbose"
+            ],
+            "default": "messages",
+            "description": "Traces the communication between VS Code and the language server."
           },
+          "coq-lsp.debug": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable Debug in Coq Server, usually this will produce backtraces on errors"
+          },
+          "coq-lsp.path": {
+            "type": "string",
+            "default": "coq-lsp",
+            "description": "Path to the coq-lsp binary, by default, search in PATH"
+          },
+          "coq-lsp.args": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Arguments to the coq-lsp server"
+          }
+        }
+      },
+      {
+        "title": "Proof Checking",
+        "type": "object",
+        "properties": {
           "coq-lsp.admit_on_bad_qed": {
             "type": "boolean",
             "default": true,
             "description": "If a `Qed.` command fails, admit the proof automatically."
+          }
+        }
+      },
+      {
+        "title": "Input",
+        "type": "object",
+        "properties": {
+          "coq-lsp.unicode_completion": {
+            "type": "string",
+            "default": "normal",
+            "enum": [
+              "off",
+              "normal",
+              "extended"
+            ],
+            "description": "Enable Server-Side Unicode Completion. Coq-lsp provides two character sets, a regular one, and an extended one with more than 1000 symbols."
           }
         }
       }
@@ -157,24 +194,30 @@
   },
   "devDependencies": {
     "@types/node": "^16.11.7",
+    "@types/object-hash": "^3.0.2",
+    "@types/react": "^18.0.27",
+    "@types/react-dom": "^18.0.10",
     "@types/throttle-debounce": "^5.0.0",
     "@types/vscode": "^1.73.0",
+    "@types/vscode-webview": "^1.57.1",
     "esbuild": "^0.16.13",
     "prettier": "^2.8.1",
     "typescript": "^4.9.4"
   },
   "dependencies": {
+    "object-hash": "^3.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "throttle-debounce": "^5.0.0",
-    "vscode-languageclient": "^8.0.2"
+    "vscode-languageclient": "^8.0.2",
+    "vscode-languageserver-types": "^3.17.2"
   },
   "main": "./out/src/client.js",
   "scripts": {
-    "vscode:prepublish": "npm run esbuild-base -- --minify",
-    "esbuild-base": "esbuild ./src/client.ts --bundle --outfile=out/src/client.js --external:vscode --format=cjs --platform=node",
-    "esbuild": "npm run esbuild-base -- --sourcemap",
-    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
-    "compile": "tsc -p ./",
-    "test-compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "vscode:prepublish": "npm run typecheck && npm run esbuild -- --minify --sourcemap=no",
+    "esbuild": "node esbuild.mjs",
+    "typecheck": "tsc -b",
+    "compile": "npm run esbuild",
+    "watch": "npm run esbuild -- --watch"
   }
 }

@@ -24,9 +24,10 @@ type t =
   ; indices_matter : bool
   ; impredicative_set : bool
   ; kind : string
+  ; debug : bool
   }
 
-let default ~implicit ~coqlib ~kind =
+let default ~implicit ~coqlib ~kind ~debug =
   let mk_path prefix = coqlib ^ "/" ^ prefix in
   let mk_lp ~ml ~root ~dir ~implicit =
     { Loadpath.unix_path = mk_path dir
@@ -51,6 +52,7 @@ let default ~implicit ~coqlib ~kind =
   ; indices_matter = false
   ; impredicative_set = false
   ; kind
+  ; debug
   }
 
 let add_loadpaths base ~vo_load_path ~ml_include_path =
@@ -92,7 +94,7 @@ let rec parse_args args init w =
   | [] -> (init, w)
   | "-indices-matter" :: rest ->
     parse_args rest init { w with indices_matter = true }
-  | "-impredicative-nset" :: rest ->
+  | "-impredicative-set" :: rest ->
     parse_args rest init { w with impredicative_set = true }
   | "-noinit" :: rest -> parse_args rest false w
   | _ :: rest ->
@@ -110,8 +112,34 @@ let load_objs libs =
   in
   List.(iter rq_file (rev libs))
 
+(* We need to compute this with the right load path *)
+let dirpath_of_file f =
+  let ldir0 =
+    try
+      let lp = Loadpath.find_load_path (Filename.dirname f) in
+      Loadpath.logical lp
+    with Not_found -> Libnames.default_root_prefix
+  in
+  let f =
+    try Filename.chop_extension (Filename.basename f)
+    with Invalid_argument _ -> f
+  in
+  let id = Names.Id.of_string f in
+  let ldir = Libnames.add_dirpath_suffix ldir0 id in
+  ldir
+
+let dirpath_of_uri ~uri =
+  let file =
+    if String.length uri > 8 then
+      (* Remove "file:///" *)
+      let l = String.length uri - 7 in
+      String.(sub uri 7 l)
+    else uri
+  in
+  dirpath_of_file file
+
 (* NOTE: Use exhaustive match below to avoid bugs by skipping fields *)
-let apply ~libname
+let apply ~uri
     { coqlib = _
     ; vo_load_path
     ; ml_include_path
@@ -119,15 +147,17 @@ let apply ~libname
     ; indices_matter
     ; impredicative_set
     ; kind = _
+    ; debug
     } =
+  if debug then CDebug.set_flags "backtrace";
   Global.set_indices_matter indices_matter;
   Global.set_impredicative_set impredicative_set;
   List.iter Mltop.add_ml_dir ml_include_path;
   List.iter Loadpath.add_vo_path vo_load_path;
-  Declaremods.start_library libname;
+  Declaremods.start_library (dirpath_of_uri ~uri);
   load_objs require_libs
 
-let workspace_from_coqproject ~coqlib : t =
+let workspace_from_coqproject ~coqlib ~debug cp_file : t =
   (* Io.Log.error "init" "Parsing _CoqProject"; *)
   let open CoqProject_file in
   let to_vo_loadpath f implicit =
@@ -143,7 +173,7 @@ let workspace_from_coqproject ~coqlib : t =
     }
   in
   let { r_includes; q_includes; ml_includes; extra_args; _ } =
-    read_project_file ~warning_fn:(fun _ -> ()) "_CoqProject"
+    read_project_file ~warning_fn:(fun _ -> ()) cp_file
   in
   let ml_include_path = List.map (fun f -> f.thing.path) ml_includes in
   let vo_path = List.map (fun f -> to_vo_loadpath f.thing false) q_includes in
@@ -154,7 +184,7 @@ let workspace_from_coqproject ~coqlib : t =
   let args = List.map (fun f -> f.thing) extra_args in
   let implicit = true in
   let kind = Filename.concat (Sys.getcwd ()) "_CoqProject" in
-  let workspace = default ~coqlib ~implicit ~kind in
+  let workspace = default ~coqlib ~implicit ~kind ~debug in
   let init, workspace = parse_args args true workspace in
   let workspace =
     if not init then { workspace with require_libs = [] } else workspace
@@ -169,13 +199,15 @@ module CmdLine = struct
     }
 end
 
-let workspace_from_cmdline { CmdLine.coqlib; vo_load_path; ml_include_path } =
+let workspace_from_cmdline ~debug
+    { CmdLine.coqlib; vo_load_path; ml_include_path } =
   let kind = "Command-line arguments" in
   let implicit = true in
-  let w = default ~implicit ~coqlib ~kind in
+  let w = default ~implicit ~coqlib ~kind ~debug in
   add_loadpaths w ~vo_load_path ~ml_include_path
 
-let guess ~cmdline =
-  if Sys.file_exists "_CoqProject" then
-    workspace_from_coqproject ~coqlib:cmdline.CmdLine.coqlib
-  else workspace_from_cmdline cmdline
+let guess ~debug ~cmdline ~dir =
+  let cp_file = Filename.concat dir "_CoqProject" in
+  if Sys.file_exists cp_file then
+    workspace_from_coqproject ~coqlib:cmdline.CmdLine.coqlib ~debug cp_file
+  else workspace_from_cmdline ~debug cmdline

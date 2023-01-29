@@ -18,14 +18,14 @@ license: "LGPL-2.1-or-later"
 doc: "https://ejgallego.github.io/coq-lsp/"
 
 depends: [
-  "ocaml"        { >= "4.12.0" }
+  "ocaml"        { >= "4.11.0" }
   "dune"         { >= "3.2"  }
 
   # lsp dependencies
   "cmdliner"     { >= "1.1.0" }
   "yojson"       { >= "1.7.0" }
 
-  # Not yet required, install Coq deps instead
+  # Uncomment this for releases
   "coq"            {         >= "8.16.0" & < "8.17" }
   "coq-serapi"     {         >= "8.16.0+0.16.2" & < "8.17" }
   "camlp-streams"  {         >= "5.0"               }

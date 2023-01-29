@@ -1,4 +1,19 @@
+# Misc
 **/*~
+.prettierignore
+.gitignore
+.vscode/
+
+# Source files
 **/*.ts
-**/tsconfig.json
-node_modules
+
+# Build setup
+node_modules/
+esbuild.mjs
+**/tsconfig*.json
+**/*.tsbuildinfo
+
+# Info view
+views/info/media/
+
+# Perf view
