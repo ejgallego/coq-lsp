@@ -14,12 +14,12 @@ let parse ~st ps = Protect.eval ~f:(parse ~st) ps
 (* Read the input stream until a dot or a "end of proof" token is encountered *)
 let parse_to_terminator : unit Pcoq.Entry.t =
   (* type 'a parser_fun = { parser_fun : te LStream.t -> 'a } *)
-  let rec dot kwstate st =
-    match Gramlib.LStream.next kwstate st with
+  let rec dot st =
+    match Gramlib.LStream.next st with
     | Tok.KEYWORD ("." | "..." | "Qed" | "Defined" | "Admitted") | Tok.BULLET _
       -> ()
     | Tok.EOI -> ()
-    | _ -> dot kwstate st
+    | _ -> dot st
   in
   Pcoq.Entry.of_parser "Coqtoplevel.dot" { parser_fun = dot }
 
