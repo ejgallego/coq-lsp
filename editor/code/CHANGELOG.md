@@ -3,9 +3,16 @@
 
 - The keybinding alt+enter in VSCode is now correctly scoped to be
   only active on Coq files.
-- Display an error message when VSCoq is detected to be active, as
-  they won't work well together.
+- Display an error message when the VSCoq extension is detected to be
+  active, as `coq-lsp` and VSCoq don't work well together.
+- Display an error message when the client and server versions don't
+  match.
 - [server-side] Support Unicode files
+- [server-side] Unicode completion on `\`, configurable in settings.
+- New infoview panel based on React.
+- New option in settings to enable Coq Debug mode (and backtraces)
+- Fixes a bug that made some `CoqProject` files not to be properly
+  detected.
 
 # coq-lsp 0.1.3: Event
 ----------------------
