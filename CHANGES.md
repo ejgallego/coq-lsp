@@ -1,6 +1,13 @@
 # coq-lsp 0.1.5: Form
 ---------------------
 
+ - Fix a bug when trying to complete in an empty file (@ejgallego,
+   #270)
+ - Fix a bug with the position reported by the `$/coq/fileProgress`
+   notification
+ - Fix messages panel rendering after the port to React (@ejgallego,
+   #272)
+
 # coq-lsp 0.1.4: View
 ---------------------
 
