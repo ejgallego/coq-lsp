@@ -1,40 +1,52 @@
-## Planned Features
+# Roadmap
 
-This is preliminary list of things we are planning to implement.
+For now the main focus of the project to write clean and maintainable
+code, and to provide a smooth user experience.
 
-We will soon add more idea for "first contributions" to this project.
+This includes providing feedback upstream so the Coq API can be
+tailored to provide a good interactive experience.
 
-### Jump to definition
+We are actively looking for contributors, please read first [the
+contributing guide](../CONTRIBUTING.md).
 
-In progress, pending on https://github.com/coq/coq/pull/16261
+Here are some project ideas:
 
-### Workspace Integration
+## UI design
 
-`coq-lsp` will detect your workspace and build setup, and will keep
-everything up to date automatically.
+The [info view panel](../editor/code/views/info/index.tsx) can use many
+improvements in the are of UI design and layout. In particular, we'd
+like to:
 
-### Proof skipping
+- incorporate search and filters bar
+- improve rendering of Goals and Coq terms
+- allow users to click links from the view to go to particular source points
+- make hypothesis sortable
+- support goal diff
 
-Configure which proofs to skip or delay, to make your document workflow more
-reactive.
+## Workspace management
 
-### Contextual continuous checking
+- Provide a left panel for workspace information
+- Auto build of workspace files
+- Jump to definition: That's in progress, pending on https://github.com/coq/coq/pull/16261
+- Workspace search: be able to search on the whole workspace without loading the files.
 
-Check only what is visible, _à la_ Isabelle.
+## Checking engine
 
-### Server-side Completion Help
+- Allow to skip proofs, configure which ones to skip
+- Contextual continuous checking: Check only what is visible, _à la_ Isabelle.
 
-### "Semantic" goal and document printing
+## "Semantic" goal and document printing
 
 Based on the `coq-layout-engine` project.
 
-### LaTeX document support
+## LaTeX document support
+
+- support `.lv` literate Coq LaTeX documents
+
+### "Computational", Jupyter-style Documents
+
+- support Jupyter-style notebooks
 
 ### Responsible elaboration and refinement
 
 Supporting inlays and Lean-style info view.
-
-### "Computational", Jupyter-style Documents
-
-### Suggestions / Search panel
-
