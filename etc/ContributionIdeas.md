@@ -35,6 +35,10 @@ like to:
 - Allow to skip proofs, configure which ones to skip
 - Contextual continuous checking: Check only what is visible, _à la_ Isabelle.
 
+## LTAC Debugging
+
+- "Debug Adapter Protocol" for LTAC
+
 ## "Semantic" goal and document printing
 
 Based on the `coq-layout-engine` project.
