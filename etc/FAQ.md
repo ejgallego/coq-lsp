@@ -25,14 +25,14 @@ editor supporting this protocol.
 ## How is `coq-lsp` different from VSCoq?
 
 [VSCoq](https://github.com/coq-community/vscoq) was developed by C.J.
-Siegbell and at the time was an impressive achievement. The key
-difference between `VSCoq` and `coq-lsp` is how the VSCode client
-communicates with Coq.
+Siegbell (and later maintained by a team of volunteers) and at the
+time was an impressive achievement. The key difference between `VSCoq`
+and `coq-lsp` is how the VSCode client communicates with Coq.
 
 `VSCoq` communicates with Coq using the `coqidetop` server, which
 implements a XML protocol providing basic operations over documents.
 
-In `coq-lsp` case, VSCode and Coq communicate using the LSP protocol,
+In `coq-lsp` case, VS Code and Coq communicate using the LSP protocol,
 plus a set of custom extensions. This is possible thanks to a new
 `coq-lsp` language server, which is an extended Coq binary taking
 advantage of improved Coq APIs.
@@ -48,7 +48,7 @@ maintenance challenges.
 A key problem when implementing a language server for Coq is the fact
 that Coq APIs were not meant for reactive UIs.
 
-For `coq-lsp`, we have done a year-long effort to significantly
+For `coq-lsp`, we have done a years-long effort to significantly
 improve Coq's base APIs, which has resulted in a much more lightweight
 client implementation and a more capable server.
 
