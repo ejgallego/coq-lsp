@@ -37,6 +37,32 @@ module Types = struct
   module Diagnostic = struct
     module Libnames = Serlib.Ser_libnames
 
+    (* LSP Ranges, a bit different from Fleche's ranges as points don't include
+       offsets *)
+    module Point = struct
+      type t =
+        { line : int
+        ; character : int
+        }
+      [@@deriving yojson]
+
+      let conv { Fleche.Types.Point.line; character; offset = _ } =
+        { line; character }
+    end
+
+    module Range = struct
+      type t =
+        { start : Point.t
+        ; end_ : Point.t [@key "end"]
+        }
+      [@@deriving yojson]
+
+      let conv { Fleche.Types.Range.start; end_ } =
+        let start = Point.conv start in
+        let end_ = Point.conv end_ in
+        { start; end_ }
+    end
+
     (* Current Flèche diagnostic is not LSP-standard compliant, this one is *)
     type t =
       { range : Range.t
@@ -48,6 +74,7 @@ module Types = struct
     let to_yojson
         { Fleche.Types.Diagnostic.range; severity; message; extra = _ } =
       let message = Pp.to_string message in
+      let range = Range.conv range in
       to_yojson { range; severity; message }
   end
 end
