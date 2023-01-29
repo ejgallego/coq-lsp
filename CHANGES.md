@@ -7,6 +7,8 @@
    notification
  - Fix messages panel rendering after the port to React (@ejgallego,
    #272)
+ - Fix non-compliance with LSP range type due to extra `offset` field
+   (@ejgallego, #271)
 
 # coq-lsp 0.1.4: View
 ---------------------
