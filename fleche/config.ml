@@ -1,6 +1,7 @@
 module Unicode_completion = struct
   type t =
     | Off
+    | Internal_small
     | Normal
     | Extended
 end
