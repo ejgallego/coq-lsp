@@ -45,9 +45,12 @@ let rec nth_aux s i n = if n = 0 then i else nth_aux s (next s i) (n - 1)
 let nth s n = nth_aux s 0 n
 
 (* end of camomille *)
+
+(* That's a tricky one, if the char we are requesting is out of bounds, then we
+   return the last index, 0 in the case line is empty. *)
 let byte_of_char ~line ~char =
   let ll = length line in
-  if ll <= char then ll else nth line char
+  if ll <= char then if ll = 0 then 0 else nth line ll - 1 else nth line char
 
 let find_char line byte =
   let rec f index n_chars =
