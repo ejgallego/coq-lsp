@@ -64,7 +64,12 @@ function CoqPp({ content, inline }: { content: string; inline: boolean }) {
 }
 
 function Message({ message }: { message: string }) {
-  return <CoqPp content={message} inline={true} />;
+  let key = objectHash(message);
+  return (
+    <li key={key}>
+      <CoqPp content={message} inline={true} />
+    </li>
+  );
 }
 
 type FileInfoParams = PropsWithChildren<GoalRequest>;
@@ -186,10 +191,12 @@ function Messages({ messages }: MessageParams) {
   let open = count > 0;
   return (
     <Details summary={`Messages (${count})`} open={open}>
-      {messages.map((value, idx) => {
-        let key = objectHash(value);
-        return <Message key={key} message={value} />;
-      })}
+      <ul className="messageList">
+        {messages.map((value, idx) => {
+          let key = objectHash(value);
+          return <Message key={key} message={value} />;
+        })}
+      </ul>
     </Details>
   );
 }
