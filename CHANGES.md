@@ -1,4 +1,4 @@
-# coq-lsp 0.1.4: Form
+# coq-lsp 0.1.5: Form
 ---------------------
 
 # coq-lsp 0.1.4: View
