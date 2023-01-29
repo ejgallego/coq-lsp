@@ -63,23 +63,23 @@ let unicode_list point : Yojson.Safe.t list =
   (* Coq's CList.map is tail-recursive *)
   CList.map (mk_unicode_completion_item point) ulist
 
-let get_line_at_point ~(doc : Fleche.Doc.t) ~point =
-  (* Guard against bad line number *)
-  let line, _char = point in
-  let line = min line doc.contents.last.line in
-  let line = Array.get doc.contents.lines line in
-  if Fleche.Debug.completion then Lsp.Io.trace "completion" ("line: " ^ line);
-  line
+let validate_line ~(doc : Fleche.Doc.t) ~line =
+  if Array.length doc.contents.lines > line then
+    Some (Array.get doc.contents.lines line)
+  else None
+
+(* This returns a byte-based char offset for the line *)
+let validate_position ~doc ~point =
+  let line, char = point in
+  Option.bind (validate_line ~doc ~line) (fun line ->
+      Option.bind (Fleche.Utf8.index_of_char ~line ~char) (fun index ->
+          Some (String.get line index)))
 
 let get_char_at_point ~(doc : Fleche.Doc.t) ~point =
-  let _line, char = point in
-  if char >= 1 then (
-    let char = char - 1 in
-    let line = get_line_at_point ~doc ~point in
-    let index = Fleche.Utf8.byte_of_char ~line ~char in
-    if Fleche.Debug.completion then
-      Lsp.Io.trace "completion" ("index: " ^ string_of_int index);
-    Some (String.get line index))
+  let line, char = point in
+  if char >= 1 then
+    let point = (line, char - 1) in
+    validate_position ~doc ~point
   else (* Can't get previous char *)
     None
 

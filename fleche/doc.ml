@@ -174,8 +174,7 @@ module Contents = struct
     ; text : string
           (** That's the text to be sent to the prover, already processed,
               encoded in UTF-8 *)
-    ; last : Types.Point.t
-          (** Last point of [text], you can derive n_lines from here *)
+    ; last : Types.Point.t  (** Last point of [text] *)
     ; lines : string Array.t  (** [text] split in lines *)
     }
 
@@ -184,8 +183,7 @@ module Contents = struct
     let lines = CString.split_on_char '\n' text |> Array.of_list in
     let n_lines = Array.length lines in
     let last_line = if n_lines < 1 then "" else Array.get lines (n_lines - 1) in
-    let last_line_col = String.length last_line in
-    let character = Utf8.char_of_byte ~line:last_line ~byte:last_line_col in
+    let character = Utf8.length last_line in
     (Types.Point.{ line = n_lines - 1; character; offset }, lines)
 
   let make ~uri ~raw =
@@ -651,14 +649,19 @@ let log_doc_completion (completed : Completion.t) =
 (* Rebuild a Coq loc from a range, this used to be done using [CLexer.after] but
    due to Fleche now being 100% based on unicode locations we implement our
    own *)
+let debug_loc_after line (r : Types.Range.t) =
+  if Debug.unicode then
+    Io.Log.trace "loc_after"
+      (Format.asprintf "str: '%s' | char: %d" line r.end_.character)
+
 let loc_after ~lines ~uri (r : Types.Range.t) =
   let line_nb_last = r.end_.line + 1 in
   let end_index =
     let line = Array.get lines r.end_.line in
-    if Debug.unicode then
-      Io.Log.trace "loc_after"
-        (Format.asprintf "str: '%s' | char: %d" line r.end_.character);
-    Utf8.byte_of_char ~line ~char:r.end_.character
+    debug_loc_after line r;
+    match Utf8.index_of_char ~line ~char:r.end_.character with
+    | None -> String.length line
+    | Some index -> index
   in
   let bol_pos_last = r.end_.offset - end_index in
   { Loc.fname = init_fname ~uri

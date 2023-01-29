@@ -48,22 +48,23 @@ let nth s n = nth_aux s 0 n
 
 (* That's a tricky one, if the char we are requesting is out of bounds, then we
    return the last index, 0 in the case line is empty. *)
-let byte_of_char ~line ~char =
-  let ll = length line in
-  if ll <= char then if ll = 0 then 0 else nth line ll - 1 else nth line char
+let index_of_char ~line ~char =
+  if char < length line then Some (nth line char) else None
 
 let find_char line byte =
   let rec f index n_chars =
     let next_index = next line index in
     if next_index > byte then n_chars else f next_index (n_chars + 1)
   in
-  if String.length line <= byte then length line else f 0 0
+  if byte < String.length line then Some (f 0 0) else None
 
-let char_of_byte ~line ~byte =
+let char_of_index ~line ~byte =
   if Debug.unicode then
-    Io.Log.trace "get_last_text"
+    Io.Log.trace "char_of_index"
       (Format.asprintf "str: '%s' | byte: %d" line byte);
-  let res = find_char line byte in
-  if Debug.unicode then
-    Io.Log.trace "get_last_text" (Format.asprintf "char: %d" res);
-  res
+  let char = find_char line byte in
+  (if Debug.unicode then
+   match char with
+   | None -> Io.Log.trace "get_last_text" "failed"
+   | Some char -> Io.Log.trace "get_last_text" (Format.asprintf "char: %d" char));
+  char
