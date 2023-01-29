@@ -56,6 +56,7 @@ let unicode_list point : Yojson.Safe.t list =
   let ulist =
     match !Fleche.Config.v.unicode_completion with
     | Off -> []
+    | Internal_small -> Unicode_bindings.small
     | Normal -> Unicode_bindings.normal
     | Extended -> Unicode_bindings.extended
   in
