@@ -75,7 +75,7 @@
 
           flakeFormatter = true;
 
-          settings.global.excludes = ["./vendor/**"];
+          settings.global.excludes = ["./vendor/**" "controller-js/js_stub/**"];
 
           programs.alejandra.enable = true;
           programs.ocamlformat = {

@@ -47,6 +47,8 @@ build-all: coq_boot
 vendor/coq:
 	$(error Submodules not initialized, please do "make submodules-init")
 
+COQVM=yes
+
 # We set -libdir due to a Coq bug on win32, see
 # https://github.com/coq/coq/pull/17289 , this can be removed once we
 # drop support for Coq 8.16
@@ -55,6 +57,7 @@ vendor/coq/config/coq_config.ml: vendor/coq
 	&& cd vendor/coq \
 	&& ./configure -no-ask -prefix "$$EPATH/_build/install/default/" \
 	        -libdir "$$EPATH/_build/install/default/lib/coq" \
+	        -bytecode-compiler $(COQVM) \
 		-native-compiler no \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
@@ -71,6 +74,13 @@ winconfig:
 		-native-compiler no \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
+
+
+.PHONY: js
+js: COQVM = no
+js: coq_boot
+	dune build --profile=release controller-js/coq_lsp_worker.bc.cjs
+	mkdir -p editor/code/out/ && cp -a controller-js/coq_lsp_worker.bc.cjs editor/code/out/coq_lsp_worker.bc.js
 
 .PHONY: coq_boot
 coq_boot: vendor/coq/config/coq_config.ml
