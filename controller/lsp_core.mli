@@ -11,16 +11,34 @@
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module ProgressInfo : sig
+(** This is the platform-independent code for the implementation of the Flèche
+    LSP interface, BEWARE of deps, this must be able to run in a Web Worker
+    context *)
+
+module State : sig
   type t =
-    { range : Lsp.Base.range
-    ; kind : int
+    { root_state : Coq.State.t
+    ; workspace : Coq.Workspace.t
     }
 end
 
-val lsp_of_progress :
-  uri:string -> version:int -> ProgressInfo.t list -> Yojson.Safe.t
+exception Lsp_exit
+
+(** Lsp special init loop *)
+val lsp_init_loop :
+     in_channel
+  -> Format.formatter
+  -> cmdline:Coq.Workspace.CmdLine.t
+  -> debug:bool
+  -> Coq.Workspace.t
+
+(** Dispatch an LSP request or notification, requests may be postponed. *)
+val dispatch_message :
+  ofmt:Format.formatter -> state:State.t -> Lsp.Base.Message.t -> unit
+
+(** Serve postponed requests in the set, they can be stale *)
+val serve_postponed_requests : ofmt:Format.formatter -> Int.Set.t -> unit
