@@ -84,12 +84,13 @@ let get_hyp (ppx : EConstr.t -> 'pc) (_sigma : Evd.evar_map) (hdecl : cdcl) :
   to_tuple ppx hdecl
 
 (** gets the constr associated to the type of the current goal *)
-let get_goal_type (ppx : EConstr.t -> 'pc) (env : Environ.env) (sigma : Evd.evar_map) (g : Evar.t) :
-    _ =
+let get_goal_type (ppx : EConstr.t -> 'pc) (env : Environ.env)
+    (sigma : Evd.evar_map) (g : Evar.t) : _ =
   let (EvarInfo evi) = Evd.find sigma g in
-  let concl = match Evd.evar_body evi with
-  | Evd.Evar_empty -> Evd.evar_concl evi
-  | Evd.Evar_defined body -> Retyping.get_type_of env sigma body
+  let concl =
+    match Evd.evar_body evi with
+    | Evd.Evar_empty -> Evd.evar_concl evi
+    | Evd.Evar_defined body -> Retyping.get_type_of env sigma body
   in
   ppx concl
 
