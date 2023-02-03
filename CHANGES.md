@@ -9,6 +9,8 @@
    #272)
  - Fix non-compliance with LSP range type due to extra `offset` field
    (@ejgallego, #271)
+ - The goal display now numbers goals starting with 1 instead of 0
+   (@artagnon, #277)
 
 # coq-lsp 0.1.4: View
 ---------------------
