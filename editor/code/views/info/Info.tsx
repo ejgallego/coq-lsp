@@ -113,7 +113,7 @@ function Hyps({ hyps }: HypsP) {
 type GoalP = { goal: Goal<string>; idx: number };
 
 function Goal({ goal, idx }: GoalP) {
-  let open = idx == 0;
+  let open = idx == 1;
   return (
     <Details summary={`Goal (${idx})`} open={open}>
       <div className="goalDiv">
@@ -145,7 +145,7 @@ function GoalsList({ goals, header, open, show_on_empty }: GoalsListP) {
     <Details summary={`${header} (${count})`} open={open}>
       {goals.map((value, idx) => {
         let key = objectHash(value);
-        return <Goal key={key} goal={value} idx={idx} />;
+        return <Goal key={key} goal={value} idx={idx + 1} />;
       })}
     </Details>
   );
