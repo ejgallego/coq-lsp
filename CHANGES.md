@@ -11,6 +11,8 @@
    (@ejgallego, #271)
  - The goal display now numbers goals starting with 1 instead of 0
    (@artagnon, #277)
+ - Markdown Coq code blocks now must specify "coq" as a language
+   (@ejgallego, #280)
 
 # coq-lsp 0.1.4: View
 ---------------------
