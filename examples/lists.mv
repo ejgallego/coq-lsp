@@ -4,12 +4,12 @@
 - Coq will recognize the code snippets as Coq
 - You will be able to save the document and link to other documents soon
 
-```
+```coq
 From Coq Require Import List.
 Import ListNotations.
 ```
 
-```
+```coq
 Lemma rev_snoc_cons A :
   forall (x : A) (l : list A), rev (l ++ [x]) = x :: rev l.
 Proof.
@@ -20,7 +20,7 @@ Qed.
 ```
 
 Try to update _above_ and **below**:
-```
+```coq
 Theorem rev_rev A : forall (l : list A), rev (rev l) = l.
 Proof.
   induction l.

@@ -67,7 +67,9 @@ module Util = struct
     match l with
     | [] -> []
     | l :: ls ->
-      if String.equal "```" l then gen l :: md_map_lines (not coq) ls
+      (* opening vs closing a markdown block *)
+      let code_marker = if coq then "```" else "```coq" in
+      if String.equal code_marker l then gen l :: md_map_lines (not coq) ls
       else (if coq then l else gen l) :: md_map_lines coq ls
 
   let markdown_process text =
