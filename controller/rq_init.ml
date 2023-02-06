@@ -38,7 +38,23 @@ let check_client_version client_version : unit =
     in
     LIO.logMessage ~lvl:1 ~message
 
+let determine_workspace_root ~params =
+  let rootPath = ostring_field "rootPath" params in
+  let rootUri = ostring_field "rootUri" params in
+  (* XXX: enable when we advertise workspace folders support in the server *)
+  let _wsFolders = List.assoc_opt "workspaceFolders" params in
+  match (rootPath, rootUri) with
+  | None, None -> "./"
+  | _, Some uri ->
+    (* XXX Likely this will need fixing for the web extension support *)
+    if String.length uri > 8 then
+      let l = String.length uri - 7 in
+      String.(sub uri 7 l)
+    else uri
+  | Some dir, None -> dir
+
 let do_initialize ~params =
+  let dir = determine_workspace_root ~params in
   let trace =
     ostring_field "trace" params
     |> option_cata LIO.TraceValue.of_string LIO.TraceValue.Off
@@ -63,11 +79,12 @@ let do_initialize ~params =
           ] )
     ]
   in
-  `Assoc
-    [ ("capabilities", `Assoc capabilities)
-    ; ( "serverInfo"
-      , `Assoc
-          [ ("name", `String "coq-lsp (C) Inria 2022-2023")
-          ; ("version", `String Version.server)
-          ] )
-    ]
+  ( `Assoc
+      [ ("capabilities", `Assoc capabilities)
+      ; ( "serverInfo"
+        , `Assoc
+            [ ("name", `String "coq-lsp (C) Inria 2022-2023")
+            ; ("version", `String Version.server)
+            ] )
+      ]
+  , dir )
