@@ -154,13 +154,13 @@ let do_shutdown ~params:_ = RAction.ok `Null
 
 let do_open ~state params =
   let document = dict_field "textDocument" params in
-  let uri, version, contents =
+  let uri, version, raw =
     ( string_field "uri" document
     , int_field "version" document
     , string_field "text" document )
   in
   let root_state, workspace = State.(state.root_state, state.workspace) in
-  Doc_manager.create ~root_state ~workspace ~uri ~contents ~version
+  Doc_manager.create ~root_state ~workspace ~uri ~raw ~version
 
 let do_change ~ofmt params =
   let document = dict_field "textDocument" params in
@@ -177,8 +177,8 @@ let do_change ~ofmt params =
       "more than one change unsupported due to sync method, ignoring";
     ()
   | change :: _ ->
-    let contents = string_field "text" change in
-    let invalid_rq = Doc_manager.change ~uri ~version ~contents in
+    let raw = string_field "text" change in
+    let invalid_rq = Doc_manager.change ~ofmt ~uri ~version ~raw in
     let code = -32802 in
     let message = "Request got old in server" in
     Int.Set.iter (Rq.cancel ~ofmt ~code ~message) invalid_rq

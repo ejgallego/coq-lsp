@@ -67,13 +67,18 @@ module Handle = struct
   let pt_ids l = List.map (fun (id, _) -> id) l |> Int.Set.of_list
 
   (* Clear requests *)
+  let clear_requests ~uri =
+    match Hashtbl.find_opt doc_table uri with
+    | None -> Int.Set.empty
+    | Some { cp_requests; pt_requests; doc } ->
+      let invalid_reqs = Int.Set.union cp_requests (pt_ids pt_requests) in
+      Hashtbl.replace doc_table uri
+        { doc; cp_requests = Int.Set.empty; pt_requests = [] };
+      invalid_reqs
+
+  (* Clear requests and update doc *)
   let update_doc_version ~(doc : Fleche.Doc.t) =
-    let invalid_reqs =
-      match Hashtbl.find_opt doc_table doc.uri with
-      | None -> Int.Set.empty
-      | Some { cp_requests; pt_requests; _ } ->
-        Int.Set.union cp_requests (pt_ids pt_requests)
-    in
+    let invalid_reqs = clear_requests ~uri:doc.uri in
     Hashtbl.replace doc_table doc.uri
       { doc; cp_requests = Int.Set.empty; pt_requests = [] };
     invalid_reqs
@@ -183,10 +188,8 @@ module Check = struct
   let schedule ~uri = pending := Some uri
 end
 
-let create ~root_state ~workspace ~uri ~contents ~version =
-  let r =
-    Fleche.Doc.create ~state:root_state ~workspace ~uri ~contents ~version
-  in
+let create ~root_state ~workspace ~uri ~raw ~version =
+  let r = Fleche.Doc.create ~state:root_state ~workspace ~uri ~raw ~version in
   match r with
   | Completed (Result.Ok doc) ->
     Handle.create ~uri ~doc;
@@ -205,7 +208,7 @@ let create ~root_state ~workspace ~uri ~contents ~version =
 (* Can't wait for the day this goes away *)
 let tainted = ref false
 
-let create ~root_state ~workspace ~uri ~contents ~version =
+let create ~root_state ~workspace ~uri ~raw ~version =
   if !tainted then
     (* Warn about Coq bug *)
     let message =
@@ -216,19 +219,36 @@ let create ~root_state ~workspace ~uri ~contents ~version =
     in
     LIO.logMessage ~lvl:2 ~message
   else tainted := true;
-  create ~root_state ~workspace ~uri ~contents ~version
+  create ~root_state ~workspace ~uri ~raw ~version
 
-let change ~uri ~version ~contents =
+let send_error_for_content ~ofmt ~uri ~version e =
+  let open Fleche.Types in
+  let start = Point.{ line = 0; character = 0; offset = 0 } in
+  let end_ = Point.{ line = 0; character = 1; offset = 1 } in
+  let range = Range.{ start; end_ } in
+  let message = Pp.(str "Error in document conversion: " ++ str e) in
+  let d =
+    Fleche.Types.Diagnostic.{ range; severity = 0; message; extra = None }
+  in
+  let diags = Lsp.JFleche.mk_diagnostics ~uri ~version [ d ] in
+  LIO.send_json ofmt @@ diags
+
+let change ~ofmt ~uri ~version ~raw =
   let doc = Handle.find_doc ~uri in
   if version > doc.version then (
     LIO.trace "bump file" (uri ^ " / version: " ^ string_of_int version);
     let tb = Unix.gettimeofday () in
-    let doc = Fleche.Doc.bump_version ~version ~contents doc in
-    let diff = Unix.gettimeofday () -. tb in
-    LIO.trace "bump file took" (Format.asprintf "%f" diff);
-    let invalid_reqs = Handle.update_doc_version ~doc in
-    Check.schedule ~uri;
-    invalid_reqs)
+    match Fleche.Doc.bump_version ~version ~raw doc with
+    | Fleche.Contents.R.Error e ->
+      (* Send diagnostics for content conversion *)
+      send_error_for_content ~ofmt ~uri ~version e;
+      Handle.clear_requests ~uri
+    | Fleche.Contents.R.Ok doc ->
+      let diff = Unix.gettimeofday () -. tb in
+      LIO.trace "bump file took" (Format.asprintf "%f" diff);
+      let invalid_reqs = Handle.update_doc_version ~doc in
+      Check.schedule ~uri;
+      invalid_reqs)
   else
     (* That's a weird case, get got changes without a version bump? Do nothing
        for now *)

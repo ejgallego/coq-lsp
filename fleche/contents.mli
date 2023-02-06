@@ -15,4 +15,14 @@ type t = private
   ; lines : string Array.t  (** [text] split in lines *)
   }
 
-val make : uri:string -> raw:string -> t
+module R : sig
+  type 'a t = private
+    | Ok of 'a
+    | Error of string
+        (** We want to replace the string by a proper diagnostic we can send to
+            the client *)
+
+  val map : f:('a -> 'b) -> 'a t -> 'b t
+end
+
+val make : uri:string -> raw:string -> t R.t

@@ -200,8 +200,7 @@ let create ~state ~workspace ~uri ~version ~contents =
   let { Coq.Protect.E.r; feedback } = mk_doc state workspace uri in
   Coq.Protect.R.map r ~f:(fun root ->
       let init_loc = init_loc ~uri in
-      let contents = Contents.make ~uri ~raw:contents in
-      let lines = contents.lines in
+      let lines = contents.Contents.lines in
       let init_range = Coq_utils.to_range ~lines init_loc in
       let feedback =
         List.map (Node.Message.feedback_to_message ~lines) feedback
@@ -217,6 +216,11 @@ let create ~state ~workspace ~uri ~version ~contents =
       ; diags_dirty
       ; completed = Stopped init_range
       })
+
+let create ~state ~workspace ~uri ~version ~raw =
+  match Contents.make ~uri ~raw with
+  | Error e -> Coq.Protect.R.error (Pp.str e)
+  | Ok contents -> create ~state ~workspace ~uri ~version ~contents
 
 let recover_up_to_offset ~init_range doc offset =
   Io.Log.trace "prefix"
@@ -264,8 +268,7 @@ let bump_version ~init_range ~version ~contents doc =
   ; completed
   }
 
-let bump_version ~version ~contents doc =
-  let contents = Contents.make ~uri:doc.uri ~raw:contents in
+let bump_version ~version ~(contents : Contents.t) doc =
   let init_loc = init_loc ~uri:doc.uri in
   let init_range = Coq_utils.to_range ~lines:contents.lines init_loc in
   match doc.completed with
@@ -280,6 +283,12 @@ let bump_version ~version ~contents doc =
     ; completed = Stopped init_range
     }
   | Stopped _ | Yes _ -> bump_version ~init_range ~version ~contents doc
+
+let bump_version ~version ~raw doc =
+  let contents = Contents.make ~uri:doc.uri ~raw in
+  Contents.R.map
+    ~f:(fun contents -> bump_version ~version ~contents doc)
+    contents
 
 let add_node ~node doc =
   let diags_dirty = if node.Node.diags <> [] then true else doc.diags_dirty in

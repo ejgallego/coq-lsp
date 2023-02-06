@@ -16,6 +16,7 @@ module R : sig
     | Completed of ('a, 'l Error.t) result
     | Interrupted (* signal sent, eval didn't complete *)
 
+  val error : Pp.t -> ('a, 'l) t
   val map : f:('a -> 'b) -> ('a, 'l) t -> ('b, 'l) t
 
   val map_error :

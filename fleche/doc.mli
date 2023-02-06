@@ -69,12 +69,12 @@ val create :
   -> workspace:Coq.Workspace.t
   -> uri:string
   -> version:int
-  -> contents:string
+  -> raw:string
   -> (t, Loc.t) Coq.Protect.R.t
 
 (** Update the contents of a document, updating the right structures for
     incremental checking. *)
-val bump_version : version:int -> contents:string -> t -> t
+val bump_version : version:int -> raw:string -> t -> t Contents.R.t
 
 (** Checking targets, this specifies what we expect check to reach *)
 module Target : sig

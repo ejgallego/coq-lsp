@@ -44,7 +44,20 @@ let get_last_text text =
   let character = Utf8.length last_line in
   (Types.Point.{ line = n_lines - 1; character; offset }, lines)
 
+module R = struct
+  (** We want to replace the string by a proper diagnostic we can send to the
+      client *)
+  type 'a t =
+    | Ok of 'a
+    | Error of string
+  [@@warning "-37"]
+
+  let map ~f = function
+    | Ok x -> Ok (f x)
+    | Error e -> Error e
+end
+
 let make ~uri ~raw =
   let text = process_contents ~uri ~contents:raw in
   let last, lines = get_last_text text in
-  { raw; text; last; lines }
+  R.Ok { raw; text; last; lines }
