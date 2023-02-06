@@ -23,7 +23,6 @@ In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md) the
 - **opam**: `opam install coq-lsp`
 - **Nix**: 
    - In nixpkgs: [#213397](https://github.com/NixOS/nixpkgs/pull/213397)
-   - In this repository: `nix build .?submodules=1` 
    - In your flake: 
    ```nix 
    inputs.coq-lsp = { type = "git"; url = "github:ejgallego/coq-lsp"; submodules = true; };
