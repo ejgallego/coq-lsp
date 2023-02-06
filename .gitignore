@@ -5,3 +5,7 @@ _opam
 .git-ps
 
 *.cache
+
+.direnv
+/result
+
