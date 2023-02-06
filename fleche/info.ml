@@ -18,8 +18,8 @@
 module type Point = sig
   type t
 
-  val in_range : ?range:Types.Range.t -> t -> bool
-  val gt_range : ?range:Types.Range.t -> t -> bool
+  val in_range : ?range:Lang.Range.t -> t -> bool
+  val gt_range : ?range:Lang.Range.t -> t -> bool
 
   type offset_table = string
 
@@ -59,7 +59,7 @@ module LineCol : Point with type t = int * int = struct
     match range with
     | None -> false
     | Some r ->
-      let line1 = r.Types.Range.start.line in
+      let line1 = r.Lang.Range.start.line in
       let col1 = r.start.character in
       let line2 = r.end_.line in
       let col2 = r.end_.character in
@@ -73,7 +73,7 @@ module LineCol : Point with type t = int * int = struct
     match range with
     | None -> false
     | Some r ->
-      let line1 = r.Types.Range.start.line in
+      let line1 = r.Lang.Range.start.line in
       let col1 = r.start.character in
       let line2 = r.end_.line in
       let col2 = r.end_.character in
@@ -89,13 +89,13 @@ module Offset : Point with type t = int = struct
     match range with
     | None -> false
     | Some range ->
-      range.Types.Range.start.offset <= point
-      && point < range.Types.Range.end_.offset
+      range.Lang.Range.start.offset <= point
+      && point < range.Lang.Range.end_.offset
 
   let gt_range ?range point =
     match range with
     | None -> false
-    | Some range -> point < range.Types.Range.start.offset
+    | Some range -> point < range.Lang.Range.start.offset
 
   let to_offset off _ = off
   let to_string off = string_of_int off
@@ -114,7 +114,7 @@ module type S = sig
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
 
   val node : (approx, Doc.Node.t) query
-  val range : (approx, Types.Range.t) query
+  val range : (approx, Lang.Range.t) query
   val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
   val messages : (approx, Doc.Node.Message.t list) query

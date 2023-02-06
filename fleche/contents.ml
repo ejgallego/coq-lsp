@@ -51,7 +51,7 @@ type t =
   ; text : string
         (** That's the text to be sent to the prover, already processed, encoded
             in UTF-8 *)
-  ; last : Types.Point.t  (** Last point of [text] *)
+  ; last : Lang.Point.t  (** Last point of [text] *)
   ; lines : string Array.t  (** [text] split in lines *)
   }
 
@@ -61,7 +61,7 @@ let get_last_text text =
   let n_lines = Array.length lines in
   let last_line = if n_lines < 1 then "" else Array.get lines (n_lines - 1) in
   let character = Utf8.length last_line in
-  (Types.Point.{ line = n_lines - 1; character; offset }, lines)
+  (Lang.Point.{ line = n_lines - 1; character; offset }, lines)
 
 let make ~uri ~raw =
   match process_contents ~uri ~raw with

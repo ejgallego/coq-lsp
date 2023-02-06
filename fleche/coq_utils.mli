@@ -15,6 +15,6 @@
 (************************************************************************)
 
 (** Specific to Coq *)
-val to_range : lines:string array -> Loc.t -> Types.Range.t
+val to_range : lines:string array -> Loc.t -> Lang.Range.t
 
-val to_orange : lines:string array -> Loc.t option -> Types.Range.t option
+val to_orange : lines:string array -> Loc.t option -> Lang.Range.t option

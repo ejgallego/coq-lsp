@@ -5,7 +5,7 @@ module CallBack = struct
            ofmt:Format.formatter
         -> uri:string
         -> version:int
-        -> Types.Diagnostic.t list
+        -> Lang.Diagnostic.t list
         -> unit
     ; send_fileProgress :
            ofmt:Format.formatter

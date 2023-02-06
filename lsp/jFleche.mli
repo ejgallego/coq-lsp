@@ -19,26 +19,13 @@ module Config : sig
   type t = Fleche.Config.t [@@deriving yojson]
 end
 
-module Types : sig
-  module Point : sig
-    type t = Fleche.Types.Point.t [@@deriving yojson]
-  end
-
-  module Range : sig
-    type t = Fleche.Types.Range.t [@@deriving yojson]
-  end
-end
-
-val mk_diagnostics :
-  uri:string -> version:int -> Fleche.Types.Diagnostic.t list -> Yojson.Safe.t
-
 val mk_progress :
   uri:string -> version:int -> Fleche.Progress.Info.t list -> Yojson.Safe.t
 
 module GoalsAnswer : sig
   type t =
     { textDocument : Base.VersionedTextDocument.t
-    ; position : Types.Point.t
+    ; position : Lang.Point.t
     ; goals : string JCoq.Goals.reified_goal JCoq.Goals.goals option
     ; messages : string list
     ; error : string option
@@ -49,7 +36,7 @@ end
 val mk_goals :
      uri:string
   -> version:int
-  -> position:Fleche.Types.Point.t
+  -> position:Lang.Point.t
   -> goals:Coq.Goals.reified_pp option
   -> messages:Pp.t list
   -> error:Pp.t option
@@ -58,7 +45,7 @@ val mk_goals :
 module Location : sig
   type t =
     { uri : string
-    ; range : Types.Range.t
+    ; range : Lang.Range.t
     }
   [@@deriving yojson]
 end
@@ -83,7 +70,7 @@ end
 module HoverInfo : sig
   type t =
     { contents : HoverContents.t
-    ; range : Types.Range.t option
+    ; range : Lang.Range.t option
     }
   [@@deriving yojson]
 end
@@ -94,8 +81,8 @@ end
 
 module TextEditReplace : sig
   type t =
-    { insert : Types.Range.t
-    ; replace : Types.Range.t
+    { insert : Lang.Range.t
+    ; replace : Lang.Range.t
     ; newText : string
     }
   [@@deriving yojson]

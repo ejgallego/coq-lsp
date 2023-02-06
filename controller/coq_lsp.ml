@@ -94,8 +94,7 @@ let lsp_cb =
     { trace = LIO.trace
     ; send_diagnostics =
         (fun ~ofmt ~uri ~version diags ->
-          Lsp.JFleche.mk_diagnostics ~uri ~version diags
-          |> Lsp.Io.send_json ofmt)
+          Lsp.JLang.mk_diagnostics ~uri ~version diags |> Lsp.Io.send_json ofmt)
     ; send_fileProgress =
         (fun ~ofmt ~uri ~version progress ->
           Lsp.JFleche.mk_progress ~uri ~version progress

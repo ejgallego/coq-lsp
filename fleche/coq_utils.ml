@@ -24,7 +24,7 @@ let char_of_index ~lines ~line ~byte =
     | None -> Utf8.length line
   else 0
 
-let to_range ~lines (p : Loc.t) : Types.Range.t =
+let to_range ~lines (p : Loc.t) : Lang.Range.t =
   let Loc.{ line_nb; line_nb_last; bol_pos; bol_pos_last; bp; ep; _ } = p in
 
   let start_line = line_nb - 1 in
@@ -36,7 +36,7 @@ let to_range ~lines (p : Loc.t) : Types.Range.t =
 
   let start_col = char_of_index ~lines ~line:start_line ~byte:start_col in
   let end_col = char_of_index ~lines ~line:end_line ~byte:end_col in
-  Types.Range.
+  Lang.Range.
     { start = { line = start_line; character = start_col; offset = bp }
     ; end_ = { line = end_line; character = end_col; offset = ep }
     }
