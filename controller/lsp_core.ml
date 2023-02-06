@@ -228,8 +228,8 @@ let do_position_request ~postpone ~params ~handler =
     let message = "Document is not ready" in
     RAction.error (code, message)
 
-let do_hover = do_position_request ~postpone:false ~handler:Requests.hover
-let do_goals = do_position_request ~postpone:true ~handler:Requests.goals
+let do_hover = do_position_request ~postpone:false ~handler:Rq_hover.hover
+let do_goals = do_position_request ~postpone:true ~handler:Rq_goals.goals
 
 let do_completion =
   do_position_request ~postpone:true ~handler:Rq_completion.completion
