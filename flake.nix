@@ -9,7 +9,7 @@
   }:
     flake-parts.lib.mkFlake {inherit inputs;} {
       systems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
-      imports = [treefmt.flakeModule];
+      imports = [treefmt.flakeModule ./editor/code/flakeModule.nix];
       flake.self = self;
       perSystem = {
         config,
@@ -55,7 +55,6 @@
 
           programs.alejandra.enable = true;
           programs.ocamlformat.enable = true;
-          programs.prettier.enable = true;
         };
 
         devShells.default = pkgs.mkShell {
@@ -63,7 +62,7 @@
 
           packages = builtins.attrValues {
             inherit (config.treefmt.build) wrapper;
-            inherit (pkgs) nodejs dune_3;
+            inherit (pkgs) dune_3;
             inherit (ocamlPackages) ocaml ocaml-lsp;
           };
         };
@@ -74,9 +73,11 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     treefmt.url = "github:numtide/treefmt-nix";
 
+    napalm.url = "github:nix-community/napalm";
+
     flake-compat = {
-      flake = false;
       url = "github:edolstra/flake-compat";
+      flake = false;
     };
 
     coq-serapi = {

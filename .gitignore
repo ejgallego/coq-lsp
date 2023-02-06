@@ -7,5 +7,5 @@ _opam
 *.cache
 
 .direnv
-/result
+result
 
