@@ -88,8 +88,8 @@ jobs:
       - run: npm ci
       - run: npx --yes vsce ls
 
-  fmt-ocamlfmt:
-    name: Format with ocamlfmt
+  treefmt:
+    name: Format
     runs-on: ubuntu-latest
     steps:
       - name: 🔭 Checkout code
@@ -98,21 +98,5 @@ jobs:
           submodules: recursive
       - name: ❄️ Setup Nix
         uses: cachix/install-nix-action@v18
-      - name: 📐 Format with ocamlfmt
-        run: nix develop .#fmt -c make fmt
-
-  fmt-prettier:
-    name: Format with prettier
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./editor/code
-    steps:
-      - name: 🔭 Checkout code
-        uses: actions/checkout@v3
-      - name: 🚀 Setup node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-      - run: npm ci
-      - run: npx prettier -c .
+      - name: 📐 Format with alejandra, ocamlformat, prettier
+        run: nix fmt
