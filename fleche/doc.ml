@@ -61,27 +61,6 @@ module Util = struct
     Memo.CacheStats.reset ();
     Stats.reset ()
 
-  let gen l = String.make (String.length l) ' '
-
-  let rec md_map_lines coq l =
-    match l with
-    | [] -> []
-    | l :: ls ->
-      (* opening vs closing a markdown block *)
-      let code_marker = if coq then "```" else "```coq" in
-      if String.equal code_marker l then gen l :: md_map_lines (not coq) ls
-      else (if coq then l else gen l) :: md_map_lines coq ls
-
-  let markdown_process text =
-    let lines = String.split_on_char '\n' text in
-    let lines = md_map_lines false lines in
-    String.concat "\n" lines
-
-  let process_contents ~uri ~contents =
-    let ext = Filename.extension uri in
-    let is_markdown = String.equal ext ".mv" in
-    if is_markdown then markdown_process contents else contents
-
   let safe_sub s pos len =
     if pos < 0 || len < 0 || pos > String.length s - len then (
       let s = String.sub s 0 (Stdlib.min 20 String.(length s - 1)) in
@@ -170,30 +149,6 @@ module Node = struct
   let info { info; _ } = info
 end
 
-module Contents = struct
-  type t =
-    { raw : string  (** That's the original, unprocessed document text *)
-    ; text : string
-          (** That's the text to be sent to the prover, already processed,
-              encoded in UTF-8 *)
-    ; last : Types.Point.t  (** Last point of [text] *)
-    ; lines : string Array.t  (** [text] split in lines *)
-    }
-
-  let get_last_text text =
-    let offset = String.length text in
-    let lines = CString.split_on_char '\n' text |> Array.of_list in
-    let n_lines = Array.length lines in
-    let last_line = if n_lines < 1 then "" else Array.get lines (n_lines - 1) in
-    let character = Utf8.length last_line in
-    (Types.Point.{ line = n_lines - 1; character; offset }, lines)
-
-  let make ~uri ~raw =
-    let text = Util.process_contents ~uri ~contents:raw in
-    let last, lines = get_last_text text in
-    { raw; text; last; lines }
-end
-
 module Completion = struct
   type t =
     | Yes of Types.Range.t  (** Location of the last token in the document *)
@@ -245,8 +200,7 @@ let create ~state ~workspace ~uri ~version ~contents =
   let { Coq.Protect.E.r; feedback } = mk_doc state workspace uri in
   Coq.Protect.R.map r ~f:(fun root ->
       let init_loc = init_loc ~uri in
-      let contents = Contents.make ~uri ~raw:contents in
-      let lines = contents.lines in
+      let lines = contents.Contents.lines in
       let init_range = Coq_utils.to_range ~lines init_loc in
       let feedback =
         List.map (Node.Message.feedback_to_message ~lines) feedback
@@ -262,6 +216,11 @@ let create ~state ~workspace ~uri ~version ~contents =
       ; diags_dirty
       ; completed = Stopped init_range
       })
+
+let create ~state ~workspace ~uri ~version ~raw =
+  match Contents.make ~uri ~raw with
+  | Error e -> Coq.Protect.R.error (Pp.str e)
+  | Ok contents -> create ~state ~workspace ~uri ~version ~contents
 
 let recover_up_to_offset ~init_range doc offset =
   Io.Log.trace "prefix"
@@ -309,8 +268,7 @@ let bump_version ~init_range ~version ~contents doc =
   ; completed
   }
 
-let bump_version ~version ~contents doc =
-  let contents = Contents.make ~uri:doc.uri ~raw:contents in
+let bump_version ~version ~(contents : Contents.t) doc =
   let init_loc = init_loc ~uri:doc.uri in
   let init_range = Coq_utils.to_range ~lines:contents.lines init_loc in
   match doc.completed with
@@ -325,6 +283,12 @@ let bump_version ~version ~contents doc =
     ; completed = Stopped init_range
     }
   | Stopped _ | Yes _ -> bump_version ~init_range ~version ~contents doc
+
+let bump_version ~version ~raw doc =
+  let contents = Contents.make ~uri:doc.uri ~raw in
+  Contents.R.map
+    ~f:(fun contents -> bump_version ~version ~contents doc)
+    contents
 
 let add_node ~node doc =
   let diags_dirty = if node.Node.diags <> [] then true else doc.diags_dirty in

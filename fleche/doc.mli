@@ -40,19 +40,6 @@ module Node : sig
   val info : t -> Info.t
 end
 
-module Contents : sig
-  type t = private
-    { raw : string
-          (** That's the original, unprocessed document text, including markdown *)
-    ; text : string
-          (** That's the text to be sent to the prover, already processed, and
-              stripped from markdown, encoded in UTF-8 *)
-    ; last : Types.Point.t
-          (** Last point of [text], you can derive n_lines from here *)
-    ; lines : string Array.t  (** [text] split in lines *)
-    }
-end
-
 module Completion : sig
   type t = private
     | Yes of Types.Range.t  (** Location of the last token in the document *)
@@ -82,12 +69,12 @@ val create :
   -> workspace:Coq.Workspace.t
   -> uri:string
   -> version:int
-  -> contents:string
+  -> raw:string
   -> (t, Loc.t) Coq.Protect.R.t
 
 (** Update the contents of a document, updating the right structures for
     incremental checking. *)
-val bump_version : version:int -> contents:string -> t -> t
+val bump_version : version:int -> raw:string -> t -> t Contents.R.t
 
 (** Checking targets, this specifies what we expect check to reach *)
 module Target : sig

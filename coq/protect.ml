@@ -15,6 +15,8 @@ module R = struct
     | Completed of ('a, 'l Error.t) result
     | Interrupted (* signal sent, eval didn't complete *)
 
+  let error e = Completed (Error (Error.User (None, e)))
+
   let map ~f = function
     | Completed (Result.Ok r) -> Completed (Result.Ok (f r))
     | Completed (Result.Error r) -> Completed (Result.Error r)

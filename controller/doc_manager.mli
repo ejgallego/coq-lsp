@@ -24,15 +24,17 @@ end
 
 (** Create a document *)
 val create :
-     root_state:Coq.State.t
+     ofmt:Format.formatter
+  -> root_state:Coq.State.t
   -> workspace:Coq.Workspace.t
   -> uri:string
-  -> contents:string
+  -> raw:string
   -> version:int
   -> unit
 
 (** Update a document, returns the list of not valid requests *)
-val change : uri:string -> version:int -> contents:string -> Int.Set.t
+val change :
+  ofmt:Format.formatter -> uri:string -> version:int -> raw:string -> Int.Set.t
 
 (** Close a document *)
 val close : uri:string -> unit
