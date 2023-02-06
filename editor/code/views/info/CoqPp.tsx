@@ -6,7 +6,7 @@ export function CoqPp({
   inline: boolean;
 }) {
   if (inline) {
-    return <code>{content}</code>;
+    return <code style={{ whiteSpace: "pre" }}>{content}</code>;
   } else {
     return <pre>{content}</pre>;
   }
