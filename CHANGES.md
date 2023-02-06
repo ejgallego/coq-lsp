@@ -41,6 +41,9 @@
    (@ejgallego, #313, fixes #187)
  - Display Coq info and debug messages in info panel (@ejgallego,
    #314, fixes #308)
+ - Goal display handles background goals better, showing preview,
+   goals stack, and focusing information (@ejgallego, #290, fixes
+   #288, based on jsCoq code by Shachar Itzhaky)
 
 # coq-lsp 0.1.4: View
 ---------------------

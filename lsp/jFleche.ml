@@ -68,7 +68,7 @@ module GoalsAnswer = struct
     ; messages : string list
     ; error : string option
     }
-  [@@deriving yojson]
+  [@@deriving to_yojson]
 end
 
 let mk_goals ~uri ~version ~position ~goals ~messages ~error =

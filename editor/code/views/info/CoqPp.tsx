@@ -1,3 +1,5 @@
+import "./media/coqpp.css";
+
 export function CoqPp({
   content,
   inline,
@@ -8,6 +10,6 @@ export function CoqPp({
   if (inline) {
     return <code style={{ whiteSpace: "pre" }}>{content}</code>;
   } else {
-    return <pre>{content}</pre>;
+    return <pre className="coqpp">{content}</pre>;
   }
 }

@@ -24,6 +24,7 @@ let rec pp_opt d =
 module Pp = struct
   include Serlib.Ser_pp
 
+  let string_of_ppcmds = Pp.string_of_ppcmds
   let to_string = Pp.string_of_ppcmds
   let to_yojson x = to_yojson (pp_opt x)
 end
@@ -35,6 +36,25 @@ module Goals = struct
   type 'a reified_goal = [%import: 'a Coq.Goals.reified_goal]
   [@@deriving yojson]
 
-  type 'a goals = [%import: 'a Coq.Goals.goals] [@@deriving yojson]
-  type reified_pp = Pp.t reified_goal goals [@@deriving yojson]
+  module Goals_ = struct
+    type ('a, 'pp) t =
+      { goals : 'a list
+      ; stack : ('a list * 'a list) list
+      ; bullet : 'pp option
+      ; shelf : 'a list
+      ; given_up : 'a list
+      }
+    [@@deriving yojson]
+
+    let to_ { Coq.Goals.goals; stack; bullet; shelf; given_up } =
+      { goals; stack; bullet; shelf; given_up }
+  end
+
+  type 'a goals = 'a Coq.Goals.goals
+
+  let goals_to_yojson f g =
+    let pp x = `String (Pp.string_of_ppcmds x) in
+    Goals_.to_ g |> Goals_.to_yojson f pp
+
+  type reified_pp = Pp.t reified_goal goals [@@deriving to_yojson]
 end
