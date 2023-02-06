@@ -3,6 +3,8 @@ import { Hyp, Goal, GoalConfig } from "../../lib/types";
 import { CoqPp } from "./CoqPp";
 import { Details } from "./Details";
 
+import "./media/goals.css";
+
 function Hyp({ hyp }: { hyp: Hyp<string> }) {
   return (
     <div className="hypothesis">
