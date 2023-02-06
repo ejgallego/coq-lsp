@@ -7,6 +7,12 @@ function Hyp({ hyp }: { hyp: Hyp<string> }) {
   return (
     <div className="hypothesis">
       <label className="hname">{hyp.names.join(",")}</label>
+      {hyp.def ? (
+        <span className="hdef">
+          {" "}
+          := <CoqPp content={hyp.def} inline={true} />{" "}
+        </span>
+      ) : null}
       <label className="sep"> : </label>
       <span className="htype">
         <CoqPp content={hyp.ty} inline={true} />
