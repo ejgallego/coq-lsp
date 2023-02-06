@@ -20,31 +20,31 @@ module Node : sig
   end
 
   module Message : sig
-    type t = Types.Range.t option * int * Pp.t
+    type t = Lang.Range.t option * int * Pp.t
   end
 
   type t = private
-    { range : Types.Range.t
+    { range : Lang.Range.t
     ; ast : Coq.Ast.t option  (** Ast of node *)
     ; state : Coq.State.t  (** (Full) State of node *)
-    ; diags : Types.Diagnostic.t list  (** Diagnostics associated to the node *)
+    ; diags : Lang.Diagnostic.t list  (** Diagnostics associated to the node *)
     ; messages : Message.t list
     ; info : Info.t
     }
 
-  val range : t -> Types.Range.t
+  val range : t -> Lang.Range.t
   val ast : t -> Coq.Ast.t option
   val state : t -> Coq.State.t
-  val diags : t -> Types.Diagnostic.t list
+  val diags : t -> Lang.Diagnostic.t list
   val messages : t -> Message.t list
   val info : t -> Info.t
 end
 
 module Completion : sig
   type t = private
-    | Yes of Types.Range.t  (** Location of the last token in the document *)
-    | Stopped of Types.Range.t  (** Location of the last valid token *)
-    | Failed of Types.Range.t  (** Critical failure, like an anomaly *)
+    | Yes of Lang.Range.t  (** Location of the last token in the document *)
+    | Stopped of Lang.Range.t  (** Location of the last valid token *)
+    | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
 end
 
 (** A Flèche document is basically a [node list], which is a crude form of a
@@ -84,7 +84,7 @@ module Target : sig
 
   (** [reached ~range (line,col)] checks if [(line,col)] are before [range]'s
       end. *)
-  val reached : range:Types.Range.t -> int * int -> bool
+  val reached : range:Lang.Range.t -> int * int -> bool
 end
 
 (** [check ~ofmt ~target ~doc ()], [target] will have Flèche stop after the

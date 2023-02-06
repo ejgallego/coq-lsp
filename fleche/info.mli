@@ -19,8 +19,8 @@
 module type Point = sig
   type t
 
-  val in_range : ?range:Types.Range.t -> t -> bool
-  val gt_range : ?range:Types.Range.t -> t -> bool
+  val in_range : ?range:Lang.Range.t -> t -> bool
+  val gt_range : ?range:Lang.Range.t -> t -> bool
 
   (** [to_offset] will help to resolve a position from for example (line,col) to
       an offset, but in some case requires a lookup method. *)
@@ -45,7 +45,7 @@ module type S = sig
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
 
   val node : (approx, Doc.Node.t) query
-  val range : (approx, Types.Range.t) query
+  val range : (approx, Lang.Range.t) query
   val ast : (approx, Coq.Ast.t) query
   val goals : (approx, Coq.Goals.reified_pp) query
   val messages : (approx, Doc.Node.Message.t list) query

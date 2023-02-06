@@ -16,6 +16,7 @@
 (************************************************************************)
 
 module Pp = JCoq.Pp
+module Lang = JLang
 
 module Config = struct
   module Unicode_completion = struct
@@ -25,77 +26,9 @@ module Config = struct
   type t = [%import: Fleche.Config.t] [@@deriving yojson]
 end
 
-module Types = struct
-  module Point = struct
-    type t = [%import: Fleche.Types.Point.t] [@@deriving yojson]
-  end
-
-  module Range = struct
-    type t = [%import: Fleche.Types.Range.t] [@@deriving yojson]
-  end
-
-  module Diagnostic = struct
-    module Libnames = Serlib.Ser_libnames
-
-    (* LSP Ranges, a bit different from Fleche's ranges as points don't include
-       offsets *)
-    module Point = struct
-      type t =
-        { line : int
-        ; character : int
-        }
-      [@@deriving yojson]
-
-      let conv { Fleche.Types.Point.line; character; offset = _ } =
-        { line; character }
-    end
-
-    module Range = struct
-      type t =
-        { start : Point.t
-        ; end_ : Point.t [@key "end"]
-        }
-      [@@deriving yojson]
-
-      let conv { Fleche.Types.Range.start; end_ } =
-        let start = Point.conv start in
-        let end_ = Point.conv end_ in
-        { start; end_ }
-    end
-
-    (* Current Flèche diagnostic is not LSP-standard compliant, this one is *)
-    type t =
-      { range : Range.t
-      ; severity : int
-      ; message : string
-      }
-    [@@deriving yojson]
-
-    let to_yojson
-        { Fleche.Types.Diagnostic.range; severity; message; extra = _ } =
-      let message = Pp.to_string message in
-      let range = Range.conv range in
-      to_yojson { range; severity; message }
-  end
-end
-
-let mk_diagnostics ~uri ~version ld : Yojson.Safe.t =
-  let diags = List.map Types.Diagnostic.to_yojson ld in
-  let params =
-    `Assoc
-      [ ("uri", `String uri)
-      ; ("version", `Int version)
-      ; ("diagnostics", `List diags)
-      ]
-  in
-  Base.mk_notification ~method_:"textDocument/publishDiagnostics" ~params
-
 module Progress = struct
   module Info = struct
-    type t =
-      [%import:
-        (Fleche.Progress.Info.t[@with Fleche.Types.Range.t := Types.Range.t])]
-    [@@deriving yojson]
+    type t = [%import: Fleche.Progress.Info.t] [@@deriving yojson]
   end
 
   type t =
@@ -113,7 +46,7 @@ let mk_progress ~uri ~version processing =
 module GoalsAnswer = struct
   type t =
     { textDocument : Base.VersionedTextDocument.t
-    ; position : Types.Point.t
+    ; position : Lang.Point.t
     ; goals : string JCoq.Goals.reified_goal JCoq.Goals.goals option
     ; messages : string list
     ; error : string option
@@ -132,7 +65,7 @@ let mk_goals ~uri ~version ~position ~goals ~messages ~error =
 module Location = struct
   type t =
     { uri : string
-    ; range : Types.Range.t
+    ; range : Lang.Range.t
     }
   [@@deriving yojson]
 end
@@ -157,7 +90,7 @@ end
 module HoverInfo = struct
   type t =
     { contents : HoverContents.t
-    ; range : Types.Range.t option
+    ; range : Lang.Range.t option
     }
   [@@deriving yojson]
 end
@@ -168,8 +101,8 @@ end
 
 module TextEditReplace = struct
   type t =
-    { insert : Types.Range.t
-    ; replace : Types.Range.t
+    { insert : Lang.Range.t
+    ; replace : Lang.Range.t
     ; newText : string
     }
   [@@deriving yojson]

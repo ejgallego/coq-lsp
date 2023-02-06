@@ -32,7 +32,7 @@ let mk_completion_list ~incomplete ~items : Yojson.Safe.t =
   `Assoc [ ("isIncomplete", `Bool incomplete); ("items", `List items) ]
 
 let mk_edit (line, character) newText =
-  let open Fleche.Types in
+  let open Lang in
   let insert =
     Range.
       { start = { Point.line; character = character - 1; offset = -1 }

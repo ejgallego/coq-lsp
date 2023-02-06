@@ -17,7 +17,7 @@
 
 module Info = struct
   type t =
-    { range : Types.Range.t
+    { range : Lang.Range.t
     ; kind : int
     }
   [@@deriving yojson]

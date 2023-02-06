@@ -42,9 +42,7 @@ let hover ~doc ~point =
   let range_span = Fleche.Info.LC.range ~doc ~point Exact in
   let range_string =
     let none fmt () = Format.fprintf fmt "no ast" in
-    Format.asprintf "%a"
-      (Format.pp_print_option ~none Fleche.Types.Range.pp)
-      range_span
+    Format.asprintf "%a" (Format.pp_print_option ~none Lang.Range.pp) range_span
   in
   let info_string =
     Fleche.Info.LC.info ~doc ~point Exact
@@ -68,7 +66,7 @@ let mk_messages node =
 
 let mk_error node =
   let open Fleche in
-  let open Fleche.Types in
+  let open Lang in
   match
     List.filter (fun d -> d.Diagnostic.severity < 2) node.Doc.Node.diags
   with
@@ -86,7 +84,7 @@ let goals ~doc ~point =
   let messages = mk_messages node in
   let error = Option.bind node mk_error in
   let position =
-    Fleche.Types.Point.{ line = fst point; character = snd point; offset = -1 }
+    Lang.Point.{ line = fst point; character = snd point; offset = -1 }
   in
   Lsp.JFleche.mk_goals ~uri:doc.uri ~version:doc.version ~position ~goals
     ~messages ~error

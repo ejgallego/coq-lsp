@@ -10,7 +10,7 @@ type t = private
   ; text : string
         (** That's the text to be sent to the prover, already processed, and
             stripped from markdown, encoded in UTF-8 *)
-  ; last : Types.Point.t
+  ; last : Lang.Point.t
         (** Last point of [text], you can derive n_lines from here *)
   ; lines : string Array.t  (** [text] split in lines *)
   }
