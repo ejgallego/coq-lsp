@@ -241,6 +241,7 @@ let normal =
   ; ("\\rfloor", "⌋")
   ; ("\\rhd", "⊳")
   ; ("\\rho", "ρ")
+  ; ("\\to", "→")
   ; ("\\rightarrow", "→")
   ; ("\\rightarrowtail", "↣")
   ; ("\\rightharpoondown", "⇁")
