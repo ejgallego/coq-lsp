@@ -35,6 +35,19 @@ In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md) the
 #### **Visual Studio Code**:
 - Official Marketplace: https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
 - Open VSX: https://open-vsx.org/extension/ejgallego/coq-lsp
+- Nix: 
+```nix
+inputs.coq-lsp = { type = "git"; url = "github:ejgallego/coq-lsp"; submodules = true; };
+...
+programs.vscode = {
+  enable = true;
+  extensions = with pkgs.vscode-extensions; [
+    ...
+    inputs.coq-lsp.packages.${pkgs.system}.vscode-extension
+    ...
+  ];
+}; 
+```
 
 ### FAQ
 

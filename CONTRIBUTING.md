@@ -61,9 +61,12 @@ You can also use the regular `dune build @check` etc... targets.
 
 #### Nix
 
-We have a Nix flake that you can use. For development, simply run `nix develop`.
+We have a Nix flake that you can use. For development, simply run `nix develop` for server development.
+otherwise for client development we expose separate shells, e.g client-vscode so `nix develop .#client-vscode`.
 
-If you wish to do `nix build` or compose this flake from another project, you
+you can view the list of packages and devShells exposed by `nix flake show`
+
+If you wish to do `nix build`, you
 will need to use the .?submodules=1` trick, since we use submodules here for
 vendoring. For example, building requires:
 
@@ -71,7 +74,8 @@ vendoring. For example, building requires:
 nix build .?submodules=1
 ```
 
-You can use this flake in other flakes or Nix derivations.
+This currently only applies to building the default package (coq-lsp), which is the server. 
+Clients don't have specific submodules as of yet.
 
 #### Releasing
 
