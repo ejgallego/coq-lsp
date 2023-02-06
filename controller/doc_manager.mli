@@ -24,7 +24,8 @@ end
 
 (** Create a document *)
 val create :
-     root_state:Coq.State.t
+     ofmt:Format.formatter
+  -> root_state:Coq.State.t
   -> workspace:Coq.Workspace.t
   -> uri:string
   -> raw:string

@@ -290,14 +290,14 @@ let rec lsp_init_loop ic ofmt ~cmdline ~debug : Coq.Workspace.t =
     lsp_init_loop ic ofmt ~cmdline ~debug
 
 (** Dispatching *)
-let dispatch_notification ofmt ~state ~method_ ~params : unit =
+let dispatch_notification ~ofmt ~state ~method_ ~params : unit =
   match method_ with
   (* Lifecycle *)
   | "exit" -> raise Lsp_exit
   (* setTrace *)
   | "$/setTrace" -> do_trace params
   (* Document lifetime *)
-  | "textDocument/didOpen" -> do_open ~state params
+  | "textDocument/didOpen" -> do_open ~ofmt ~state params
   | "textDocument/didChange" -> do_change ~ofmt params
   | "textDocument/didClose" -> do_close ~ofmt params
   | "textDocument/didSave" -> Cache.save_to_disk ()
@@ -341,6 +341,6 @@ let dispatch_request ~ofmt ~id ~method_ ~params =
 let dispatch_message ~ofmt ~state (com : LSP.Message.t) =
   match com with
   | Notification { method_; params } ->
-    dispatch_notification ofmt ~state ~method_ ~params
+    dispatch_notification ~ofmt ~state ~method_ ~params
   | Request { id; method_; params } ->
     dispatch_request ~ofmt ~id ~method_ ~params

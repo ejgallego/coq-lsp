@@ -4,6 +4,18 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module R = struct
+  (** We want to replace the string by a proper diagnostic we can send to the
+      client *)
+  type 'a t =
+    | Ok of 'a
+    | Error of string
+
+  let map ~f = function
+    | Ok x -> Ok (f x)
+    | Error e -> Error e
+end
+
 module Markdown = struct
   let gen l = String.make (String.length l) ' '
 
@@ -22,10 +34,17 @@ module Markdown = struct
     String.concat "\n" lines
 end
 
-let process_contents ~uri ~contents =
+module WaterProof = struct
+  let process _raw = R.Error "waterproof parsing not yet supported"
+end
+
+let process_contents ~uri ~raw =
   let ext = Filename.extension uri in
-  let is_markdown = String.equal ext ".mv" in
-  if is_markdown then Markdown.process contents else contents
+  match ext with
+  | ".v" -> R.Ok raw
+  | ".mv" -> R.Ok (Markdown.process raw)
+  | ".wpn" -> WaterProof.process raw
+  | _ -> R.Error "unknown file format"
 
 type t =
   { raw : string  (** That's the original, unprocessed document text *)
@@ -44,20 +63,9 @@ let get_last_text text =
   let character = Utf8.length last_line in
   (Types.Point.{ line = n_lines - 1; character; offset }, lines)
 
-module R = struct
-  (** We want to replace the string by a proper diagnostic we can send to the
-      client *)
-  type 'a t =
-    | Ok of 'a
-    | Error of string
-  [@@warning "-37"]
-
-  let map ~f = function
-    | Ok x -> Ok (f x)
-    | Error e -> Error e
-end
-
 let make ~uri ~raw =
-  let text = process_contents ~uri ~contents:raw in
-  let last, lines = get_last_text text in
-  R.Ok { raw; text; last; lines }
+  match process_contents ~uri ~raw with
+  | R.Error e -> R.Error e
+  | R.Ok text ->
+    let last, lines = get_last_text text in
+    R.Ok { raw; text; last; lines }

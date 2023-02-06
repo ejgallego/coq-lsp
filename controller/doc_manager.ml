@@ -162,8 +162,7 @@ module Check = struct
     Option.cata target_of_pt_handle Fleche.Doc.Target.End
       (List.nth_opt pt_requests 0)
 
-  let completed ~uri =
-    let doc = Handle.find_doc ~uri in
+  let completed ~(doc : Fleche.Doc.t) =
     match doc.completed with
     | Yes _ | Failed _ -> true
     | Stopped _ -> false
@@ -178,7 +177,7 @@ module Check = struct
       let requests = Handle.update_doc_info ~handle ~doc in
       send_diags ~ofmt ~doc;
       (* Only if completed! *)
-      if completed ~uri then pending := None;
+      if completed ~doc then pending := None;
       requests
     | None ->
       LIO.trace "Check.check" ("file " ^ uri ^ " not available");
@@ -188,7 +187,18 @@ module Check = struct
   let schedule ~uri = pending := Some uri
 end
 
-let create ~root_state ~workspace ~uri ~raw ~version =
+let send_error_permanent_fail ~ofmt ~uri ~version message =
+  let open Fleche.Types in
+  let start = Point.{ line = 0; character = 0; offset = 0 } in
+  let end_ = Point.{ line = 0; character = 1; offset = 1 } in
+  let range = Range.{ start; end_ } in
+  let d =
+    Fleche.Types.Diagnostic.{ range; severity = 0; message; extra = None }
+  in
+  let diags = Lsp.JFleche.mk_diagnostics ~uri ~version [ d ] in
+  LIO.send_json ofmt @@ diags
+
+let create ~ofmt ~root_state ~workspace ~uri ~raw ~version =
   let r = Fleche.Doc.create ~state:root_state ~workspace ~uri ~raw ~version in
   match r with
   | Completed (Result.Ok doc) ->
@@ -202,13 +212,14 @@ let create ~root_state ~workspace ~uri ~raw ~version =
     let message =
       Format.asprintf "Fleche.Doc.create, internal error: @[%a@]" Pp.pp_with msg
     in
-    LIO.logMessage ~lvl:1 ~message
+    LIO.logMessage ~lvl:1 ~message;
+    send_error_permanent_fail ~ofmt ~uri ~version (Pp.str message)
   | Interrupted -> ()
 
 (* Can't wait for the day this goes away *)
 let tainted = ref false
 
-let create ~root_state ~workspace ~uri ~raw ~version =
+let create ~ofmt ~root_state ~workspace ~uri ~raw ~version =
   if !tainted then
     (* Warn about Coq bug *)
     let message =
@@ -219,40 +230,36 @@ let create ~root_state ~workspace ~uri ~raw ~version =
     in
     LIO.logMessage ~lvl:2 ~message
   else tainted := true;
-  create ~root_state ~workspace ~uri ~raw ~version
+  create ~ofmt ~root_state ~workspace ~uri ~raw ~version
 
-let send_error_for_content ~ofmt ~uri ~version e =
-  let open Fleche.Types in
-  let start = Point.{ line = 0; character = 0; offset = 0 } in
-  let end_ = Point.{ line = 0; character = 1; offset = 1 } in
-  let range = Range.{ start; end_ } in
-  let message = Pp.(str "Error in document conversion: " ++ str e) in
-  let d =
-    Fleche.Types.Diagnostic.{ range; severity = 0; message; extra = None }
-  in
-  let diags = Lsp.JFleche.mk_diagnostics ~uri ~version [ d ] in
-  LIO.send_json ofmt @@ diags
+let change ~ofmt ~(doc : Fleche.Doc.t) ~raw =
+  let uri, version = (doc.uri, doc.version) in
+  LIO.trace "bump file" (uri ^ " / version: " ^ string_of_int version);
+  let tb = Unix.gettimeofday () in
+  match Fleche.Doc.bump_version ~version ~raw doc with
+  | Fleche.Contents.R.Error e ->
+    (* Send diagnostics for content conversion *)
+    let message = Pp.(str "Error in document conversion: " ++ str e) in
+    send_error_permanent_fail ~ofmt ~uri ~version message;
+    Handle.clear_requests ~uri
+  | Fleche.Contents.R.Ok doc ->
+    let diff = Unix.gettimeofday () -. tb in
+    LIO.trace "bump file took" (Format.asprintf "%f" diff);
+    let invalid_reqs = Handle.update_doc_version ~doc in
+    Check.schedule ~uri;
+    invalid_reqs
 
 let change ~ofmt ~uri ~version ~raw =
-  let doc = Handle.find_doc ~uri in
-  if version > doc.version then (
-    LIO.trace "bump file" (uri ^ " / version: " ^ string_of_int version);
-    let tb = Unix.gettimeofday () in
-    match Fleche.Doc.bump_version ~version ~raw doc with
-    | Fleche.Contents.R.Error e ->
-      (* Send diagnostics for content conversion *)
-      send_error_for_content ~ofmt ~uri ~version e;
-      Handle.clear_requests ~uri
-    | Fleche.Contents.R.Ok doc ->
-      let diff = Unix.gettimeofday () -. tb in
-      LIO.trace "bump file took" (Format.asprintf "%f" diff);
-      let invalid_reqs = Handle.update_doc_version ~doc in
-      Check.schedule ~uri;
-      invalid_reqs)
-  else
-    (* That's a weird case, get got changes without a version bump? Do nothing
-       for now *)
+  match Handle.find_opt ~uri with
+  | None ->
+    LIO.trace "DocHandle.find" ("file " ^ uri ^ " not available");
     Int.Set.empty
+  | Some { doc; _ } ->
+    if version > doc.version then change ~ofmt ~doc ~raw
+    else
+      (* That's a weird case, get got changes without a version bump? Do nothing
+         for now *)
+      Int.Set.empty
 
 let close = Handle.close
 let find_doc = Handle.find_doc
