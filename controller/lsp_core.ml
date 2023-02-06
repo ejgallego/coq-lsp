@@ -270,12 +270,11 @@ let rec lsp_init_loop ic ofmt ~cmdline ~debug : Coq.Workspace.t =
   | LSP.Message.Request { method_ = "initialize"; id; params } ->
     (* At this point logging is allowed per LSP spec *)
     LIO.logMessage ~lvl:3 ~message:"Initializing server";
-    let result = Rq_init.do_initialize ~params |> Result.ok in
-    Rq.answer ~ofmt ~id result;
+    let result, dir = Rq_init.do_initialize ~params in
+    Rq.answer ~ofmt ~id (Result.ok result);
     LIO.logMessage ~lvl:3 ~message:"Server initialized";
     (* Workspace initialization *)
     let debug = debug || !Fleche.Config.v.debug in
-    let dir = string_field "rootPath" params in
     let workspace = Coq.Workspace.guess ~cmdline ~debug ~dir in
     log_workspace workspace;
     workspace

@@ -15,6 +15,10 @@
    (@ejgallego, #280)
  - Hypothesis with bodies are now correctly displayed (@ejgallego,
    #296, fixes #293, report by Ali Caglayan)
+ - `coq-lsp` incorrectly required the optional `rootPath`
+   initialization parameter, moreover it ignored `rootUri` if present
+   which goes against the LSP spec (@ejgallego, #295, report by Alex
+   Sanchez-Stern)
 
 # coq-lsp 0.1.4: View
 ---------------------
