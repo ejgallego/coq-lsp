@@ -11,18 +11,32 @@
         mkdir $out
         ${lib.getExe pkgs.vsce} package -o $out/$name.zip > /dev/null 2>&1
       '';
+
+      passthru = let
+        attrs = builtins.fromJSON (builtins.readFile ./package.json);
+      in {
+        extPublisher = attrs.publisher;
+        extName = attrs.name;
+        extVersion = attrs.version;
+        extId = with attrs; "${publisher}.${name}";
+      };
     };
 
-    packages.vscode-extension = pkgs.vscode-utils.buildVscodeExtension rec {
-      inherit (config.packages.vsix) name;
+    packages.vscode-extension = let
+      vsix = config.packages.vsix;
+    in
+      pkgs.vscode-utils.buildVscodeExtension
+      {
+        inherit (vsix) name;
 
-      vscodeExtPublisher = "ejgallego";
-      vscodeExtName = name;
+        version = vsix.extVersion;
 
-      vscodeExtUniqueId = "${vscodeExtPublisher}.${vscodeExtName}";
+        vscodeExtPublisher = vsix.extPublisher;
+        vscodeExtName = vsix.extName;
+        vscodeExtUniqueId = vsix.extId;
 
-      src = "${config.packages.vsix}/${name}.zip";
-    };
+        src = "${vsix}/${vsix.name}.zip";
+      };
 
     devShells.client-vscode = pkgs.mkShell {
       packages = builtins.attrValues {
