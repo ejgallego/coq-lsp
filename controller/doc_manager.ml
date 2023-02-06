@@ -230,8 +230,8 @@ let create ~ofmt ~root_state ~workspace ~uri ~raw ~version =
   else tainted := true;
   create ~ofmt ~root_state ~workspace ~uri ~raw ~version
 
-let change ~ofmt ~(doc : Fleche.Doc.t) ~raw =
-  let uri, version = (doc.uri, doc.version) in
+let change ~ofmt ~(doc : Fleche.Doc.t) ~version ~raw =
+  let uri = doc.uri in
   LIO.trace "bump file" (uri ^ " / version: " ^ string_of_int version);
   let tb = Unix.gettimeofday () in
   match Fleche.Doc.bump_version ~version ~raw doc with
@@ -253,7 +253,7 @@ let change ~ofmt ~uri ~version ~raw =
     LIO.trace "DocHandle.find" ("file " ^ uri ^ " not available");
     Int.Set.empty
   | Some { doc; _ } ->
-    if version > doc.version then change ~ofmt ~doc ~raw
+    if version > doc.version then change ~ofmt ~doc ~version ~raw
     else
       (* That's a weird case, get got changes without a version bump? Do nothing
          for now *)
