@@ -61,27 +61,6 @@ module Util = struct
     Memo.CacheStats.reset ();
     Stats.reset ()
 
-  let gen l = String.make (String.length l) ' '
-
-  let rec md_map_lines coq l =
-    match l with
-    | [] -> []
-    | l :: ls ->
-      (* opening vs closing a markdown block *)
-      let code_marker = if coq then "```" else "```coq" in
-      if String.equal code_marker l then gen l :: md_map_lines (not coq) ls
-      else (if coq then l else gen l) :: md_map_lines coq ls
-
-  let markdown_process text =
-    let lines = String.split_on_char '\n' text in
-    let lines = md_map_lines false lines in
-    String.concat "\n" lines
-
-  let process_contents ~uri ~contents =
-    let ext = Filename.extension uri in
-    let is_markdown = String.equal ext ".mv" in
-    if is_markdown then markdown_process contents else contents
-
   let safe_sub s pos len =
     if pos < 0 || len < 0 || pos > String.length s - len then (
       let s = String.sub s 0 (Stdlib.min 20 String.(length s - 1)) in
@@ -168,30 +147,6 @@ module Node = struct
   let diags { diags; _ } = diags
   let messages { messages; _ } = messages
   let info { info; _ } = info
-end
-
-module Contents = struct
-  type t =
-    { raw : string  (** That's the original, unprocessed document text *)
-    ; text : string
-          (** That's the text to be sent to the prover, already processed,
-              encoded in UTF-8 *)
-    ; last : Types.Point.t  (** Last point of [text] *)
-    ; lines : string Array.t  (** [text] split in lines *)
-    }
-
-  let get_last_text text =
-    let offset = String.length text in
-    let lines = CString.split_on_char '\n' text |> Array.of_list in
-    let n_lines = Array.length lines in
-    let last_line = if n_lines < 1 then "" else Array.get lines (n_lines - 1) in
-    let character = Utf8.length last_line in
-    (Types.Point.{ line = n_lines - 1; character; offset }, lines)
-
-  let make ~uri ~raw =
-    let text = Util.process_contents ~uri ~contents:raw in
-    let last, lines = get_last_text text in
-    { raw; text; last; lines }
 end
 
 module Completion = struct
