@@ -48,7 +48,7 @@ module Completion : sig
 end
 
 (** A Flèche document is basically a [node list], which is a crude form of a
-    meta-data map [Loc.t -> data], where for now [data] is the contents of
+    meta-data map [Range.t -> data], where for now [data] is the contents of
     [Node.t]. *)
 type t = private
   { uri : string
