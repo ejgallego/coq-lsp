@@ -33,8 +33,8 @@ type info =
 
 type 'a reified_goal =
   { info : info
-  ; ty : 'a
   ; hyps : 'a hyp list
+  ; ty : 'a
   }
 
 let map_reified_goal ~f { info; ty; hyps } =

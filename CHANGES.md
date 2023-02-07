@@ -13,6 +13,9 @@
    (@artagnon, #277, report by Hugo Herbelin)
  - Markdown Coq code blocks now must specify "coq" as a language
    (@ejgallego, #280)
+ - Server is now more strict w.r.t. what URIs it will accept for
+   documents, see protocol documentation (@ejgallego, #286, reported
+   by Alex Sanchez-Stern)
  - Hypothesis with bodies are now correctly displayed (@ejgallego,
    #296, fixes #293, report by Ali Caglayan)
  - `coq-lsp` incorrectly required the optional `rootPath`
@@ -47,7 +50,8 @@
  - Full document stats are now correctly computed on checking
    resumption, still cached sentences will display the cached timing
    tho (@ejgallego, #257)
- - Set Coq library name correctly (@ejgallego, #260)
+ - Set Coq library name correctly from URI, note this makes the server
+   to accept less URIs (@ejgallego, #260)
  - `_CoqProject` file is now detected using LSP client `rootPath`
    (@ejgallego, #261)
  - You can press `\` to trigger Unicode completion by the server. This

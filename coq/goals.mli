@@ -28,8 +28,8 @@ type info =
 
 type 'a reified_goal =
   { info : info
-  ; ty : 'a
   ; hyps : 'a hyp list
+  ; ty : 'a
   }
 
 val map_reified_goal : f:('a -> 'b) -> 'a reified_goal -> 'b reified_goal

@@ -50,6 +50,22 @@ If a feature doesn't appear here it usually means it is not planned in the short
 |-----------------------------------|---------|------------------------------------------------------------|
 
 
+### URIs accepted by coq-lsp
+
+`coq-lsp` only accepts `file:///` URIs; moreover, the URIs sent to the
+server must be able to be mapped back to a Coq library name, so a
+fully-checked file can be saved to a `.vo` for example.
+
+Don't hesitate to open an issue if you need support for different kind
+of URIs in your application / client.
+
+Additionally, `coq-lsp` will use the extension of the file in the URI
+to determine the content type. Supported extensions are:
+- `.v`: File will be interpreted as a regular Coq vernacular file,
+- `.mv`: File will be interpreted as a markdown file, and code
+  snippets between `coq` markdown code blocks will be interpreted as
+  Coq code.
+
 ## Extensions to the LSP specification
 
 As of today, `coq-lsp` implements two extensions to the LSP spec. Note
@@ -68,14 +84,14 @@ interface GoalRequest {
 Answer to the request is a `Goal[]` object, where
 ```typescript
 interface Hyp<Pp> {
-  names: Pp;
+  names: Pp[];
   def?: Pp;
   ty: Pp;
 }
 
 interface Goal<Pp> {
-  ty: Pp;
   hyps: Hyp<Pp>[];
+  ty: Pp;
 }
 
 interface GoalConfig<Pp> {
@@ -93,12 +109,39 @@ interface GoalAnswer<Pp> {
   messages: Pp[];
   error?: Pp;
 }
-
 ```
 
 which can be then rendered by the client in way that is desired.
 
-`proof/goals` was first used in the lambdapi-lsp server implementation, and we adapted it to `coq-lsp`.
+The main objects of interest are:
+- `Hyp`: This represents a pair of hypothesis names and type,
+  additionally with a body as obtained with `set` or `pose` tactics
+- `Goal`: Contains a Coq goal: a pair of hypothesis and the goal's type
+- `GoalConfig`: This is the main object for goals information, `goals`
+  contains the current list of foreground goals, `stack` contains a
+  list of focused goals, where each element of the list represents a
+  focus position (like a zipper); see below for an example. `shelf`
+  and `given_up` contain goals in the `shelf` (a kind of goal hiding
+  from tactics) and admitted ones.
+- `GoalAnswer`: In addition to the goals at point, `GoalAnswer`
+  contains messages associated to this position and the top error if pertinent.
+
+An example for `stack` is the following Coq script:
+```coq
+t. (* Produces 5 goals *)
+- t1.
+- t2.
+- t3. (* Produces 3 goals *)
+  + f1.
+  + f2. (* <- current focus *)
+  + f3.
+- t4.
+- t5.
+```
+In this case, the stack will be `[ ["f1"], ["f3"] ; [ "t2"; "t1" ], [ "t4" ; "t5" ]]`.
+
+`proof/goals` was first used in the lambdapi-lsp server
+implementation, and we adapted it to `coq-lsp`.
 
 #### Changelog
 
