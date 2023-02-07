@@ -299,6 +299,7 @@ let do_document_request ~params ~handler =
 
 let do_symbols = do_document_request ~handler:Rq_symbols.symbols
 let do_document = do_document_request ~handler:Rq_document.request
+let do_save_vo = do_document_request ~handler:Rq_save.request
 let do_lens = do_document_request ~handler:Rq_lens.request
 
 let do_trace params =
@@ -404,6 +405,8 @@ let dispatch_request ~method_ ~params : RAction.t =
   | "textDocument/codeLens" -> do_lens ~params
   (* Proof-specific stuff *)
   | "proof/goals" -> do_goals ~params
+  (* Proof-specific stuff *)
+  | "coq/saveVo" -> do_save_vo ~params
   (* Coq specific stuff *)
   | "coq/getDocument" -> do_document ~params
   (* Generic handler *)

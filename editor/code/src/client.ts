@@ -21,7 +21,11 @@ import {
   RequestType,
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
-import { FlecheDocumentParams, FlecheDocument } from "../lib/types";
+import {
+  FlecheDocumentParams,
+  FlecheDocument,
+  FlecheSaveParams,
+} from "../lib/types";
 import { CoqLspClientConfig, CoqLspServerConfig } from "./config";
 import { InfoPanel } from "./goals";
 import { FileProgressManager } from "./progress";
@@ -208,7 +212,7 @@ export function activate(context: ExtensionContext): void {
     "coq/getDocument"
   );
 
-  let getDocument = (editor: TextEditor) => {
+  const getDocument = (editor: TextEditor) => {
     let uri = editor.document.uri;
     let version = editor.document.version;
     let textDocument = VersionedTextDocumentIdentifier.create(
@@ -218,6 +222,29 @@ export function activate(context: ExtensionContext): void {
     let params: FlecheDocumentParams = { textDocument };
     client.sendRequest(docReq, params).then((fd) => console.log(fd));
   };
+
+  const saveReq = new RequestType<FlecheDocumentParams, void, void>(
+    "coq/saveVo"
+  );
+
+  const saveDocument = (editor: TextEditor) => {
+    let uri = editor.document.uri;
+    let version = editor.document.version;
+    let textDocument = VersionedTextDocumentIdentifier.create(
+      uri.toString(),
+      version
+    );
+    let params: FlecheSaveParams = { textDocument };
+    client
+      .sendRequest(saveReq, params)
+      .then(() => console.log("document saved", uri.toString()))
+      .catch((error) => {
+        let err_message = error.toString();
+        console.log(`error in save: ${err_message}`);
+        window.showErrorMessage(err_message);
+      });
+  };
+
   const createEnableButton = () => {
     lspStatusItem = window.createStatusBarItem(
       "coq-lsp.enable",
@@ -261,6 +288,7 @@ export function activate(context: ExtensionContext): void {
 
   coqEditorCommand("goals", goals);
   coqEditorCommand("document", getDocument);
+  coqEditorCommand("save", saveDocument);
 
   createEnableButton();
 

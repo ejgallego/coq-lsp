@@ -52,3 +52,6 @@ val guess : debug:bool -> cmdline:CmdLine.t -> dir:string -> t
 
 (** [apply libname w] will prepare Coq for a new file [libname] on workspace [w] *)
 val apply : uri:Lang.LUri.File.t -> t -> unit
+
+(** *)
+val dirpath_of_uri : uri:Lang.LUri.File.t -> Names.DirPath.t

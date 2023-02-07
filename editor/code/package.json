@@ -104,6 +104,10 @@
       {
         "command": "coq-lsp.document",
         "title": "Coq LSP: Get document in serialized format, print in console"
+      },
+      {
+        "command": "coq-lsp.save",
+        "title": "Coq LSP: Save .vo file for the current buffer"
       }
     ],
     "keybindings": [

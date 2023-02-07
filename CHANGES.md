@@ -54,6 +54,9 @@
  - Info on memory and time is now disabled by default, new option
    `coq-lsp.stats_on_hover_option` to re-enable it (@ejgallego, #412,
    fixes #398).
+ - `coq-lsp` can now save `.vo` files for files opened in the
+   editor. Use the new "Save to .vo" command, or the new protocol
+   `coq/saveVo` request (@ejgallego, #417, fixes #339)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
