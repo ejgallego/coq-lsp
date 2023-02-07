@@ -155,10 +155,12 @@ implementation, and we adapted it to `coq-lsp`.
 
 As of today, the output format type parameter `Pp` is controlled by
 the server option `pp_type : number`, see `package.json` for different
-values. `0` is guaranteed to be `Pp = string`.
+values. `0` is guaranteed to be `Pp = string`. Prior to 0.1.6 `string`
+was the default.
 
 #### Changelog
 
+- v0.1.6: the `Pp` parameter can now be either Coq's `Pp.t` type or `string` (default)
 - v0.1.5: message type does now include range and level
 - v0.1.4: goal type generic, the `stacks` and `def` fields appear, compatible v0.1.3 clients
 - v0.1.3: send full goal configuration with shelf, given_up, versioned identifier for document
