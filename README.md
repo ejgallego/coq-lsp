@@ -172,13 +172,14 @@ Check [the `coq-lsp` protocol documentation](etc/doc/PROTOCOL.md) for more detai
 
 The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
 
-- This server forked from our previous LSP implementation in for the
-  [Lambdapi](https://github.com/Deducteam/lambdapi) by Emilio J. Gallego Arias,
-  Frédéric Blanqui, Rodolphe Lepigre, and others.
+- This server forked from our previous LSP implementation for the
+  [Lambdapi](https://github.com/Deducteam/lambdapi) proof assistant, written by
+  Emilio J. Gallego Arias, Frédéric Blanqui, Rodolphe Lepigre, and others; the
+  initial port to Coq was done by Emilio J. Gallego Arias and Vicent Laporte.
 
 - Syntax files in editor/code are partially derived from
   [VSCoq](https://github.com/siegebell/vscoq) by Christian J. Bell, distributed
-  under the terms of the MIT license (see ./vsc-galinas/License-vscoq.text).
+  under the terms of the MIT license (see ./editor/code/License-vscoq.text).
 
 ## Acknowledgments
 
