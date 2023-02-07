@@ -168,6 +168,10 @@ Check [the `coq-lsp` protocol documentation](etc/doc/PROTOCOL.md) for more detai
 - Shachar Itzhaky (Technion)
 - Ramkumar Ramachandra (Inria Paris)
 
+### Past contributors
+
+- Vincent Laporte (Inria)
+
 ## Licensing information
 
 The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
