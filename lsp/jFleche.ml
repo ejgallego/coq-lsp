@@ -20,7 +20,24 @@ module Lang = JLang
 
 module Config = struct
   module Unicode_completion = struct
-    type t = [%import: Fleche.Config.Unicode_completion.t] [@@deriving yojson]
+    type t = [%import: Fleche.Config.Unicode_completion.t]
+
+    let to_yojson = function
+      | Off -> `String "off"
+      | Internal_small -> `String "internal"
+      | Normal -> `String "normal"
+      | Extended -> `String "extended"
+
+    let of_yojson (j : Yojson.Safe.t) : (t, string) Result.t =
+      match j with
+      | `String "off" -> Ok Off
+      | `String "internal" -> Ok Internal_small
+      | `String "normal" -> Ok Normal
+      | `String "extended" -> Ok Extended
+      | _ ->
+        Error
+          "Fleche.Config.Unicode_completion.t: expected one of \
+           [off,normal,extended]"
   end
 
   type t = [%import: Fleche.Config.t] [@@deriving yojson]
