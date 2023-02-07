@@ -22,6 +22,9 @@
    initialization parameter, moreover it ignored `rootUri` if present
    which goes against the LSP spec (@ejgallego, #295, report by Alex
    Sanchez-Stern)
+ - `coq-lsp` will now reject opening multiple files when the
+   underlying Coq version is buggy (@ejgallego, fixes #275, fixes
+   #281)
 
 # coq-lsp 0.1.4: View
 ---------------------

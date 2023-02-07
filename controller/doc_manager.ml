@@ -135,7 +135,7 @@ module Handle = struct
       in
       let handle = { handle with pt_requests = delayed } in
       (handle, pt_ids fullfilled)
-    | Failed _ -> (handle, Int.Set.empty)
+    | Failed _ | FailedPermanent _ -> (handle, Int.Set.empty)
 
   (* trigger pending incremental requests *)
   let update_doc_info ~handle ~(doc : Fleche.Doc.t) =
@@ -164,7 +164,7 @@ module Check = struct
 
   let completed ~(doc : Fleche.Doc.t) =
     match doc.completed with
-    | Yes _ | Failed _ -> true
+    | Yes _ | Failed _ | FailedPermanent _ -> true
     | Stopped _ -> false
 
   (* Notification handling; reply is optional / asynchronous *)
@@ -214,21 +214,41 @@ let create ~ofmt ~root_state ~workspace ~uri ~raw ~version =
     send_error_permanent_fail ~ofmt ~uri ~version (Pp.str message)
   | Interrupted -> ()
 
+(* Set this to false for < 8.18, we could parse the version but not worth it. *)
+let sane_coq_base_version = true
+
+let sane_coq_branch =
+  CString.string_contains ~where:Coq_config.version ~what:"+lsp"
+
+(* for testing in master, set this to true *)
+let force_single_mode = false
+
+let sane_coq_version =
+  (sane_coq_base_version || sane_coq_branch) && not force_single_mode
+
 (* Can't wait for the day this goes away *)
 let tainted = ref false
 
 let create ~ofmt ~root_state ~workspace ~uri ~raw ~version =
-  if !tainted then
-    (* Warn about Coq bug *)
+  if !tainted && not sane_coq_version then (
+    (* Error due to Coq bug *)
     let message =
       "You have opened two or more Coq files simultaneously in the server\n\
-       Unfortunately Coq's parser doesn't properly support that setup yet\n\
-       If you see some strange parsing errors please close all files but one\n\
-       Then restart the coq-lsp server; sorry for the inconveniencies"
+       Unfortunately Coq's < 8.18 doesn't properly support that setup yet\n\
+       You'll need to close all files but one, and restart the server.\n\n\
+       Check coq-lsp webpage (Working with multiple files section) for\n\
+       instructions on how to install a fixed branch for earlier Coq versions."
     in
-    LIO.logMessage ~lvl:2 ~message
-  else tainted := true;
-  create ~ofmt ~root_state ~workspace ~uri ~raw ~version
+    LIO.logMessage ~lvl:1 ~message;
+    (match
+       Fleche.Doc.create_failed_permanent ~state:root_state ~uri ~raw ~version
+     with
+    | Fleche.Contents.R.Error _e -> ()
+    | Ok doc -> Handle.create ~uri ~doc);
+    send_error_permanent_fail ~ofmt ~uri ~version (Pp.str message))
+  else (
+    tainted := true;
+    create ~ofmt ~root_state ~workspace ~uri ~raw ~version)
 
 let change ~ofmt ~(doc : Fleche.Doc.t) ~version ~raw =
   let uri = doc.uri in

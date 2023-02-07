@@ -52,20 +52,30 @@ the best ideas will arise from using `coq-lsp` in your own Coq projects.
 Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp), don't hesitate
 to stop by; both users and developers are welcome.
 
-### Troubleshooting
+### Troubleshooting and Known Problems
 
-- Most problems can be resolved by restarting `coq-lsp`, in Visual Studio Code,
+- Some problems can be resolved by restarting `coq-lsp`, in Visual Studio Code,
   `Ctrl+Shift+P` will give you access to the `coq-lsp.restart` command.
-- In VSCode, the "Output" window will have a "Coq LSP Server Events"
-  channel which should contain some important information.
-- As of today, `coq-lsp` may have trouble when more than one file is open at the
-  same time, this is a problem upstream. For now, you are advised to work on a
-  single file if this problem appears. This problem is fixed in **Coq 8.18**.
+- In VSCode, the "Output" window will have a "Coq LSP Server Events" channel
+  which should contain some important information; the content of this channel
+  is controlled by the `Coq LSP > Trace: Server` option.
 - If you install `coq-lsp` simultaneously with VSCoq, VSCode gets confused and
-  neither of them may work. `coq-lsp` will warn about that, help with improving
-  this [issue](https://github.com/ejgallego/coq-lsp/issues/183) is appreciated!
-- Some clients may send request completions with a stale document, this will
-  make completion not to work; we are investigating this issue.
+  neither of them may work. `coq-lsp` will warn about that. If you know how to
+  improve this, don't hesitate to get in touch with us.
+- VS Code may send request completions with a stale document, this will be fixed
+  in a new upstream release, c.f. https://github.com/ejgallego/coq-lsp/issues/273
+
+#### Working with multiple files
+
+`coq-lsp` can't work with more than one file at the same time, due to problems
+with parsing state management upstream. This was fixed in Coq `master` branch
+(to become **Coq 8.18**).
+
+As this is very inconvenient, we do provide a fixed Coq branch that you can
+install using `opam pin`:
+
+- For Coq 8.17: `opam pin add coq-lsp https://github.com/ejgallego/coq.git#v8.17+lsp`
+- For Coq 8.16: `opam pin add coq-lsp https://github.com/ejgallego/coq.git#v8.16+lsp`
 
 ## Features
 

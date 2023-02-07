@@ -154,14 +154,17 @@ module Completion = struct
     | Yes of Lang.Range.t  (** Location of the last token in the document *)
     | Stopped of Lang.Range.t  (** Location of the last valid token *)
     | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
+    | FailedPermanent of Lang.Range.t
+        (** Temporal Coq hack, avoids any computation *)
 
   let range = function
-    | Yes range | Stopped range | Failed range -> range
+    | Yes range | Stopped range | Failed range | FailedPermanent range -> range
 
   let to_string = function
     | Yes _ -> "fully checked"
     | Stopped _ -> "stopped"
     | Failed _ -> "failed"
+    | FailedPermanent _ -> "refused to create due to Coq parsing bug"
 end
 
 (* Private. A doc is a list of nodes for now. The first element in the list is
@@ -222,6 +225,21 @@ let create ~state ~workspace ~uri ~version ~raw =
   | Error e -> Coq.Protect.R.error (Pp.str e)
   | Ok contents -> create ~state ~workspace ~uri ~version ~contents
 
+let create_failed_permanent ~state ~uri ~version ~raw =
+  Contents.make ~uri ~raw
+  |> Contents.R.map ~f:(fun contents ->
+         let lines = contents.Contents.lines in
+         let init_loc = init_loc ~uri in
+         let range = Coq_utils.to_range ~lines init_loc in
+         { uri
+         ; contents
+         ; version
+         ; root = state
+         ; nodes = []
+         ; diags_dirty = true
+         ; completed = FailedPermanent range
+         })
+
 let recover_up_to_offset ~init_range doc offset =
   Io.Log.trace "prefix"
     (Format.asprintf "common prefix offset found at %d" offset);
@@ -274,6 +292,7 @@ let bump_version ~version ~(contents : Contents.t) doc =
   match doc.completed with
   (* We can do better, but we need to handle the case where the anomaly is when
      restoring / executing the first sentence *)
+  | FailedPermanent _ -> doc
   | Failed _ ->
     { doc with
       version
@@ -665,7 +684,7 @@ let check ~ofmt ~target ~doc () =
   | Yes _ ->
     Io.Log.trace "check" "resuming, completed=yes, nothing to do";
     doc
-  | Failed _ ->
+  | FailedPermanent _ | Failed _ ->
     Io.Log.trace "check" "can't resume, failed=yes, nothing to do";
     doc
   | Stopped last_tok ->

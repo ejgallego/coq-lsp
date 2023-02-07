@@ -205,7 +205,7 @@ let request_in_range ~(doc : Fleche.Doc.t) ~version (line, col) =
   let in_range =
     match doc.completed with
     | Yes _ -> true
-    | Failed range | Stopped range ->
+    | Failed range | FailedPermanent range | Stopped range ->
       Fleche.Doc.Target.reached ~range (line, col)
   in
   let in_range =
@@ -240,7 +240,7 @@ let do_document_request ~params ~handler =
   let lines = doc.contents.lines in
   match doc.completed with
   | Yes _ -> RAction.ok (handler ~lines ~doc)
-  | Stopped _ | Failed _ ->
+  | Stopped _ | Failed _ | FailedPermanent _ ->
     Postpone (PendingRequest.DocRequest { uri; handler })
 
 let do_symbols = do_document_request ~handler:Requests.symbols
