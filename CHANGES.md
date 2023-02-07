@@ -27,6 +27,7 @@
    #281)
  - Fix bug when parsing client option for unicode completion
    (@ejgallego #301)
+ - Support unicode characters in filenames (@artagnon, #302)
 
 # coq-lsp 0.1.4: View
 ---------------------
