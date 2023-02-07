@@ -25,6 +25,8 @@
  - `coq-lsp` will now reject opening multiple files when the
    underlying Coq version is buggy (@ejgallego, fixes #275, fixes
    #281)
+ - Fix bug when parsing client option for unicode completion
+   (@ejgallego #301)
 
 # coq-lsp 0.1.4: View
 ---------------------
