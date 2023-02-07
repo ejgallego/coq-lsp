@@ -1,21 +1,17 @@
-import React, { PropsWithChildren, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   VersionedTextDocumentIdentifier,
   Position,
 } from "vscode-languageserver-types";
-import {
-  Goal,
-  GoalAnswer,
-  GoalConfig,
-  GoalRequest,
-  Hyp,
-} from "../../lib/types";
-import objectHash from "object-hash";
-import "./media/info.css";
-import { Details } from "./Details";
-import { Message } from "./Message";
-import { CoqPp } from "./CoqPp";
+import { GoalAnswer, GoalRequest } from "../../lib/types";
+
+// import "./media/info.css";
+
+// Main panel components
+import { FileInfo } from "./FileInfo";
 import { Goals } from "./Goals";
+import { Messages } from "./Messages";
+import { ErrorBrowser } from "./ErrorBrowser";
 
 // First part, which should be split out is the protocol definition, second part is the UI.
 function doWaitingForInfo(info: GoalRequest) {
@@ -44,49 +40,6 @@ interface InfoError {
 }
 interface CoqMessageEvent extends MessageEvent {
   data: RenderGoals | WaitingForInfo | InfoError;
-}
-
-type FileInfoParams = PropsWithChildren<GoalRequest>;
-function FileInfo({ textDocument, position, children }: FileInfoParams) {
-  let uri = textDocument.uri.split("/").at(-1);
-  let line = position.line + 1;
-  let character = position.character + 1;
-  let summary = (
-    <span>
-      {uri}:{line}:{character}
-    </span>
-  );
-
-  return <Details summary={summary}>{children}</Details>;
-}
-
-type MessageParams = { messages: string[] };
-
-function Messages({ messages }: MessageParams) {
-  let count = messages.length;
-  let open = count > 0;
-  return (
-    <Details summary={`Messages (${count})`} open={open}>
-      <ul className="messageList">
-        {messages.map((value, idx) => {
-          let key = objectHash(value);
-          return <Message key={key} message={value} />;
-        })}
-      </ul>
-    </Details>
-  );
-}
-
-type ErrorBrowserParams = { error?: string };
-
-function ErrorBrowser({ error }: ErrorBrowserParams) {
-  if (!error) return null;
-
-  return (
-    <Details summary={"Error Browser"}>
-      <CoqPp content={error} inline={false} />
-    </Details>
-  );
 }
 
 export function InfoPanel() {

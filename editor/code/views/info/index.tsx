@@ -5,7 +5,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 
 import InfoPanel from "./Info";
-import "./media/styles.css";
+import "./media/index.css";
 
 interface CoqInfoViewState {}
 const vscode: WebviewApi<CoqInfoViewState> = acquireVsCodeApi();
