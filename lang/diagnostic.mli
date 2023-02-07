@@ -18,3 +18,5 @@ type t =
   ; message : Pp.t
   ; extra : Extra.t list option
   }
+
+val is_error : t -> bool

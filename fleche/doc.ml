@@ -566,14 +566,25 @@ let log_beyond_target last_tok target =
     ("target reached " ^ Lang.Range.to_string last_tok);
   Io.Log.trace "beyond_target" ("target is " ^ pr_target target)
 
+let max_errors_node ~state ~range =
+  let msg = Pp.str "Maximum number of errors reached" in
+  let parsing_diags = [ Util.mk_diag range 1 msg ] in
+  unparseable_node ~range ~parsing_diags ~parsing_feedback:[] ~state
+    ~parsing_time:0.0
+
 (* main interpretation loop *)
 let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
-  let rec stm doc st (last_tok : Lang.Range.t) =
+  let rec stm doc st (last_tok : Lang.Range.t) acc_errors =
     (* Reporting of progress and diagnostics (if dirty) *)
     let doc = send_eager_diagnostics ~ofmt ~uri ~version ~doc in
     report_progress ~ofmt ~doc last_tok;
     if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
-    if beyond_target last_tok target then
+    if acc_errors > !Config.v.max_errors then
+      let completed = Completion.Failed last_tok in
+      let node = max_errors_node ~state:st ~range:last_tok in
+      let doc = add_node ~node doc in
+      set_completion ~completed doc
+    else if beyond_target last_tok target then
       let () = log_beyond_target last_tok target in
       (* We set to Completed.Yes when we have reached the EOI *)
       let completed =
@@ -599,8 +610,9 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
         let doc = add_node ~node doc in
         set_completion ~completed doc
       | Continue { state; last_tok; node } ->
+        let n_errors = CList.count Lang.Diagnostic.is_error node.Node.diags in
         let doc = add_node ~node doc in
-        stm doc state last_tok
+        stm doc state last_tok (acc_errors + n_errors)
   in
   (* Set the document to "internal" mode, stm expects the node list to be in
      reveresed order *)
@@ -618,7 +630,7 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
       last_node
   in
   Stats.restore stats;
-  let doc = stm doc st last_tok in
+  let doc = stm doc st last_tok 0 in
   (* Set the document to "finished" mode: reverse the node list *)
   let doc = { doc with nodes = List.rev doc.nodes } in
   doc

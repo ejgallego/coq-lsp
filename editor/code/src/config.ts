@@ -10,6 +10,7 @@ export interface CoqLspServerConfig {
   admit_on_bad_qed: boolean;
   debug: boolean;
   unicode_completion: "off" | "normal" | "extended";
+  max_errors: number;
 }
 
 export namespace CoqLspServerConfig {
@@ -27,6 +28,7 @@ export namespace CoqLspServerConfig {
       admit_on_bad_qed: wsConfig.admit_on_bad_qed,
       debug: wsConfig.debug,
       unicode_completion: wsConfig.unicode_completion,
+      max_errors: wsConfig.max_errors,
     };
   }
 }
