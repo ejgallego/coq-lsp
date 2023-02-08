@@ -97,6 +97,11 @@
             "type": "boolean",
             "default": false,
             "description": "Show Coq's \"Notice\" messages as diagnostics, such as `About` and `Search` output."
+          },
+          "coq-lsp.max_errors": {
+            "type": "number",
+            "default": 150,
+            "description": "Maximum number of errors per file, after that, coq-lsp will stop checking the file."
           }
         }
       },

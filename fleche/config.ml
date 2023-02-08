@@ -33,6 +33,7 @@ type t =
         (** Enable debug on Coq side, including backtraces *)
   ; unicode_completion : Unicode_completion.t
         [@default Unicode_completion.Normal]
+  ; max_errors : int [@default 150]
   }
 
 let default =
@@ -47,6 +48,7 @@ let default =
   ; admit_on_bad_qed = true
   ; debug = false
   ; unicode_completion = Normal
+  ; max_errors = 150
   }
 
 let v = ref default
