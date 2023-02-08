@@ -7,5 +7,6 @@ _opam
 *.cache
 
 .direnv
+# Nix build will produce this
 result
 
