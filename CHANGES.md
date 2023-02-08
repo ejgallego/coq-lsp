@@ -27,6 +27,8 @@
    #281)
  - Fix bug when parsing client option for unicode completion
    (@ejgallego #301)
+ - Stop checking documents after a maximum number of errors,
+   user-configurable (by default 150) (@ejgallego, #303)
 
 # coq-lsp 0.1.4: View
 ---------------------
