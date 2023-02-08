@@ -56,7 +56,16 @@
           settings.global.excludes = ["./vendor/**"];
 
           programs.alejandra.enable = true;
-          programs.ocamlformat.enable = true;
+          programs.ocamlformat = {
+            enable = true;
+            package =
+              pkgs
+              ."ocamlformat_${
+                builtins.replaceStrings ["."] ["_"]
+                (lib.last (lib.findFirst (option: builtins.head option == "version") []
+                    (builtins.map (n: lib.splitString "=" n) (lib.splitString "\n" (builtins.readFile ./.ocamlformat)))))
+              }";
+          };
         };
 
         devShells.default = pkgs.mkShell {
