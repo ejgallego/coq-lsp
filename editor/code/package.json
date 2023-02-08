@@ -46,6 +46,16 @@
           ".mv"
         ],
         "configuration": "./coq.configuration.json"
+      },
+      {
+        "id": "coqmarkdown",
+        "aliases": [
+          "Coq Markdown"
+        ],
+        "extensions": [
+          ".mv"
+        ],
+        "configuration": "./coq.configuration.json"
       }
     ],
     "grammars": [
@@ -53,6 +63,21 @@
         "language": "coq",
         "scopeName": "source.coq",
         "path": "./syntaxes/coq.json"
+      },
+      {
+        "language": "coqmarkdown",
+        "scopeName": "source.coqmarkdown",
+        "path": "./syntaxes/coqmarkdown.json"
+      },
+      {
+        "scopeName": "markdown.coq.codeblock",
+        "path": "./syntaxes/markdown-coq-codeblock.json",
+        "injectTo": [
+          "text.html.markdown"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.block.coq": "coq"
+        }
       }
     ],
     "commands": [
@@ -70,7 +95,7 @@
         "command": "coq-lsp.goals",
         "key": "alt+enter",
         "mac": "meta+enter",
-        "when": "editorTextFocus && editorLangId == coq"
+        "when": "editorTextFocus && (editorLangId == coq || editorLangId == coqmarkdown"
       }
     ],
     "configuration": [
