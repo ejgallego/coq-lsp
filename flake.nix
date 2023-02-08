@@ -10,7 +10,7 @@
     flake-parts.lib.mkFlake {inherit inputs;} {
       systems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
       imports = [treefmt.flakeModule ./editor/code/flakeModule.nix];
-      flake.self = self;
+
       perSystem = {
         config,
         pkgs,
@@ -52,6 +52,8 @@
           projectRootFile = "dune-project";
 
           flakeFormatter = true;
+
+          settings.global.excludes = ["./vendor/**"];
 
           programs.alejandra.enable = true;
           programs.ocamlformat.enable = true;
