@@ -17,6 +17,7 @@
         lib,
         ...
       }: let
+        l = lib // builtins;
         coq_8_17 = pkgs.coqPackages_8_17;
         coqPackages = coq_8_17.coqPackages;
         ocamlPackages = coq_8_17.coq.ocamlPackages;
@@ -42,7 +43,7 @@
                 src = inputs.coq-serapi;
               });
           in
-            builtins.attrValues {
+            l.attrValues {
               inherit serapi;
               inherit (ocamlPackages) yojson cmdliner;
             };
@@ -61,9 +62,9 @@
             package =
               pkgs
               ."ocamlformat_${
-                builtins.replaceStrings ["."] ["_"]
-                (lib.last (lib.findFirst (option: builtins.head option == "version") []
-                    (builtins.map (n: lib.splitString "=" n) (lib.splitString "\n" (builtins.readFile ./.ocamlformat)))))
+                l.replaceStrings ["."] ["_"]
+                (l.last (l.findFirst (option: l.head option == "version") []
+                    (l.map (n: l.splitString "=" n) (l.splitString "\n" (l.readFile ./.ocamlformat)))))
               }";
           };
         };
@@ -71,7 +72,7 @@
         devShells.default = pkgs.mkShell {
           inputsFrom = [config.packages.coq-lsp];
 
-          packages = builtins.attrValues {
+          packages = l.attrValues {
             inherit (config.treefmt.build) wrapper;
             inherit (pkgs) dune_3;
             inherit (ocamlPackages) ocaml ocaml-lsp;

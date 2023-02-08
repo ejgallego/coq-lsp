@@ -42,6 +42,8 @@
       packages = builtins.attrValues {
         inherit (pkgs) nodejs;
         inherit (pkgs.nodePackages) typescript typescript-language-server;
+
+        inherit (config.treefmt.build) wrapper;
       };
     };
 
