@@ -61,8 +61,8 @@ You can also use the regular `dune build @check` etc... targets.
 
 #### Nix
 
-We have a Nix flake that you can use. For development, simply run `nix develop` for server development.
-otherwise for client development we expose separate shells, e.g client-vscode so `nix develop .#client-vscode`.
+We have a Nix flake that you can use. For development, in the case of the server, simply run `nix develop`.
+In the case of the client, we expose separate shells, e.g client-vscode, would be `nix develop .#client-vscode` (this can be done on top of the original `nix develop`)
 
 You can view the list of packages and devShells that are exposed
 by running `nix flake show`.
