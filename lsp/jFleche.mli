@@ -20,11 +20,14 @@ module Config : sig
 end
 
 val mk_progress :
-  uri:string -> version:int -> Fleche.Progress.Info.t list -> Yojson.Safe.t
+     uri:Lang.LUri.File.t
+  -> version:int
+  -> Fleche.Progress.Info.t list
+  -> Yojson.Safe.t
 
 module GoalsAnswer : sig
   type t =
-    { textDocument : Base.VersionedTextDocument.t
+    { textDocument : Doc.VersionedTextDocument.t
     ; position : Lang.Point.t
     ; goals : string JCoq.Goals.reified_goal JCoq.Goals.goals option
     ; messages : string list
@@ -34,7 +37,7 @@ module GoalsAnswer : sig
 end
 
 val mk_goals :
-     uri:string
+     uri:Lang.LUri.File.t
   -> version:int
   -> position:Lang.Point.t
   -> goals:Coq.Goals.reified_pp option
@@ -44,7 +47,7 @@ val mk_goals :
 
 module Location : sig
   type t =
-    { uri : string
+    { uri : Lang.LUri.File.t
     ; range : Lang.Range.t
     }
   [@@deriving yojson]

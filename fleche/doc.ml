@@ -171,7 +171,7 @@ end
    assumed to be the tip of the document. The initial document is the empty
    list. *)
 type t =
-  { uri : string
+  { uri : Lang.LUri.File.t
   ; version : int
   ; contents : Contents.t
   ; root : Coq.State.t
@@ -184,7 +184,11 @@ let mk_doc root_state workspace uri =
   Coq.Init.doc_init ~root_state ~workspace ~uri
 
 let asts doc = List.filter_map Node.ast doc.nodes
-let init_fname ~uri = Loc.InFile { dirpath = None; file = uri }
+
+let init_fname ~uri =
+  let file = Lang.LUri.File.to_string_file uri in
+  Loc.InFile { dirpath = None; file }
+
 let init_loc ~uri = Loc.initial (init_fname ~uri)
 
 let process_init_feedback ~stats range state messages =

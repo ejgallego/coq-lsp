@@ -25,4 +25,4 @@ module R : sig
   val map : f:('a -> 'b) -> 'a t -> 'b t
 end
 
-val make : uri:string -> raw:string -> t R.t
+val make : uri:Lang.LUri.File.t -> raw:string -> t R.t

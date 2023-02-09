@@ -39,13 +39,16 @@ module Handle = struct
     let ly, cy = y in
     lx > ly || (lx = ly && cx > cy)
 
-  let doc_table : (string, t) Hashtbl.t = Hashtbl.create 39
+  let doc_table : (Lang.LUri.File.t, t) Hashtbl.t = Hashtbl.create 39
 
   let create ~uri ~doc =
     (match Hashtbl.find_opt doc_table uri with
     | None -> ()
     | Some _ ->
-      LIO.trace "do_open" ("file " ^ uri ^ " not properly closed by client"));
+      LIO.trace "do_open"
+        ("file "
+        ^ Lang.LUri.File.to_string_uri uri
+        ^ " not properly closed by client"));
     Hashtbl.add doc_table uri
       { doc; cp_requests = Int.Set.empty; pt_requests = [] }
 
@@ -55,7 +58,8 @@ module Handle = struct
     match Hashtbl.find_opt doc_table uri with
     | Some h -> h
     | None ->
-      LIO.trace "DocHandle.find" ("file " ^ uri ^ " not available");
+      LIO.trace "DocHandle.find"
+        ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
       raise AbortRequest
 
   let find_opt ~uri = Hashtbl.find_opt doc_table uri
@@ -180,7 +184,8 @@ module Check = struct
       if completed ~doc then pending := None;
       requests
     | None ->
-      LIO.trace "Check.check" ("file " ^ uri ^ " not available");
+      LIO.trace "Check.check"
+        ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
       Int.Set.empty
 
   let maybe_check ~ofmt = Option.map (fun uri -> check ~ofmt ~uri) !pending
@@ -252,7 +257,8 @@ let create ~ofmt ~root_state ~workspace ~uri ~raw ~version =
 
 let change ~ofmt ~(doc : Fleche.Doc.t) ~version ~raw =
   let uri = doc.uri in
-  LIO.trace "bump file" (uri ^ " / version: " ^ string_of_int version);
+  LIO.trace "bump file"
+    (Lang.LUri.File.to_string_uri uri ^ " / version: " ^ string_of_int version);
   let tb = Unix.gettimeofday () in
   match Fleche.Doc.bump_version ~version ~raw doc with
   | Fleche.Contents.R.Error e ->
@@ -270,7 +276,8 @@ let change ~ofmt ~(doc : Fleche.Doc.t) ~version ~raw =
 let change ~ofmt ~uri ~version ~raw =
   match Handle.find_opt ~uri with
   | None ->
-    LIO.trace "DocHandle.find" ("file " ^ uri ^ " not available");
+    LIO.trace "DocHandle.find"
+      ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
     Int.Set.empty
   | Some { doc; _ } ->
     if version > doc.version then change ~ofmt ~doc ~version ~raw

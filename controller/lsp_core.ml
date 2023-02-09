@@ -45,11 +45,11 @@ module LSP = Lsp.Base
 module PendingRequest = struct
   type t =
     | DocRequest of
-        { uri : string
+        { uri : Lang.LUri.File.t
         ; handler : Requests.document_request
         }
     | PosRequest of
-        { uri : string
+        { uri : Lang.LUri.File.t
         ; point : int * int
         ; handler : Requests.position_request
         }
@@ -159,6 +159,8 @@ let do_open ~state params =
     , int_field "version" document
     , string_field "text" document )
   in
+  (* XXX: fix this *)
+  let uri = Lang.LUri.(File.of_uri (of_string uri)) |> Result.get_ok in
   let root_state, workspace = State.(state.root_state, state.workspace) in
   Doc_manager.create ~root_state ~workspace ~uri ~raw ~version
 
@@ -167,6 +169,8 @@ let do_change ~ofmt params =
   let uri, version =
     (string_field "uri" document, int_field "version" document)
   in
+  (* XXX: fix this *)
+  let uri = Lang.LUri.(File.of_uri (of_string uri)) |> Result.get_ok in
   let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
   match changes with
   | [] ->
@@ -186,11 +190,15 @@ let do_change ~ofmt params =
 let do_close ~ofmt:_ params =
   let document = dict_field "textDocument" params in
   let uri = string_field "uri" document in
+  (* XXX: fix this *)
+  let uri = Lang.LUri.(File.of_uri (of_string uri)) |> Result.get_ok in
   Doc_manager.close ~uri
 
 let get_textDocument params =
   let document = dict_field "textDocument" params in
   let uri = string_field "uri" document in
+  (* XXX fix this *)
+  let uri = Lang.LUri.(File.of_uri (of_string uri)) |> Result.get_ok in
   let doc = Doc_manager.find_doc ~uri in
   (uri, doc)
 

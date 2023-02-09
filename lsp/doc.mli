@@ -5,19 +5,10 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module Point : sig
-  type t = Lang.Point.t [@@deriving yojson]
+module VersionedTextDocument : sig
+  type t =
+    { uri : Lang.LUri.File.t
+    ; version : int
+    }
+  [@@deriving yojson]
 end
-
-module Range : sig
-  type t = Lang.Range.t [@@deriving yojson]
-end
-
-module LUri : sig
-  module File : sig
-    type t = Lang.LUri.File.t [@@deriving yojson]
-  end
-end
-
-val mk_diagnostics :
-  uri:Lang.LUri.File.t -> version:int -> Lang.Diagnostic.t list -> Yojson.Safe.t

@@ -1,4 +1,4 @@
 (library
  (name lang)
  (public_name coq-lsp.lang)
- (libraries coq-core.library))
+ (libraries uri coq-core.library))
