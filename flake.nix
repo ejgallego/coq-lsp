@@ -33,6 +33,10 @@
 
           src = self.outPath;
 
+          nativeBuildInputs = l.attrValues {
+            inherit (ocamlPackages) menhir;
+          };
+
           propagatedBuildInputs = let
             serapi =
               (coqPackages.lib.overrideCoqDerivation {
@@ -45,7 +49,7 @@
           in
             l.attrValues {
               inherit serapi;
-              inherit (ocamlPackages) yojson cmdliner;
+              inherit (ocamlPackages) yojson cmdliner uri;
             };
         };
 
