@@ -114,7 +114,7 @@ let load_objs libs =
 
 (* We need to compute this with the right load path *)
 let dirpath_of_uri ~uri =
-  let f = Uri.pct_decode (Uri.path (Uri.of_string uri)) in
+  let f = Lang.LUri.File.to_string_file uri in
   let ldir0 =
     try
       let lp = Loadpath.find_load_path (Filename.dirname f) in

@@ -109,7 +109,7 @@ module WaterProof = struct
 end
 
 let process_contents ~uri ~raw =
-  let ext = Filename.extension uri in
+  let ext = Lang.LUri.File.extension uri in
   match ext with
   | ".v" -> R.Ok raw
   | ".mv" -> R.Ok (Markdown.process raw)

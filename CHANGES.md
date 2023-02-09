@@ -36,6 +36,9 @@
  - coq-lsp now understands a basic version of Coq Waterproof files
    (.wpn) Note that we don't associate to them by default, as to allow
    the waterproof extension to take over the files (@ejgallego, #306)
+ - URI validation is now more strict, and some further bugs should be
+   solved; note still this can be an issue on some client settings
+   (@ejgallego, #313, fixes #187)
 
 # coq-lsp 0.1.4: View
 ---------------------

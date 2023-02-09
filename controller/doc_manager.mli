@@ -27,31 +27,35 @@ val create :
      ofmt:Format.formatter
   -> root_state:Coq.State.t
   -> workspace:Coq.Workspace.t
-  -> uri:string
+  -> uri:Lang.LUri.File.t
   -> raw:string
   -> version:int
   -> unit
 
 (** Update a document, returns the list of not valid requests *)
 val change :
-  ofmt:Format.formatter -> uri:string -> version:int -> raw:string -> Int.Set.t
+     ofmt:Format.formatter
+  -> uri:Lang.LUri.File.t
+  -> version:int
+  -> raw:string
+  -> Int.Set.t
 
 (** Close a document *)
-val close : uri:string -> unit
+val close : uri:Lang.LUri.File.t -> unit
 
 exception AbortRequest
 
 (** [find_doc ~uri] , raises AbortRequest if [uri] is invalid *)
-val find_doc : uri:string -> Fleche.Doc.t
+val find_doc : uri:Lang.LUri.File.t -> Fleche.Doc.t
 
 (** Add a request to be served when the document is completed *)
-val add_on_completion : uri:string -> id:int -> unit
+val add_on_completion : uri:Lang.LUri.File.t -> id:int -> unit
 
-val remove_on_completion : uri:string -> id:int -> unit
+val remove_on_completion : uri:Lang.LUri.File.t -> id:int -> unit
 
 (** Add a request to be served when the document point data is available, for
     now, we allow a single request like that. Maybe returns the id of the
     previous request which should now be cancelled. *)
-val add_on_point : uri:string -> id:int -> point:int * int -> unit
+val add_on_point : uri:Lang.LUri.File.t -> id:int -> point:int * int -> unit
 
-val remove_on_point : uri:string -> id:int -> point:int * int -> unit
+val remove_on_point : uri:Lang.LUri.File.t -> id:int -> point:int * int -> unit

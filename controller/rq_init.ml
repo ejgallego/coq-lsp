@@ -38,20 +38,21 @@ let check_client_version client_version : unit =
     in
     LIO.logMessage ~lvl:1 ~message
 
-let determine_workspace_root ~params =
-  let rootPath = ostring_field "rootPath" params in
-  let rootUri = ostring_field "rootUri" params in
+let default_workspace_root = "."
+let parse_furi x = Lang.LUri.of_string x |> Lang.LUri.File.of_uri
+
+let determine_workspace_root ~params : string =
+  let rootPath = ostring_field "rootPath" params |> Option.map parse_furi in
+  let rootUri = ostring_field "rootUri" params |> Option.map parse_furi in
   (* XXX: enable when we advertise workspace folders support in the server *)
   let _wsFolders = List.assoc_opt "workspaceFolders" params in
   match (rootPath, rootUri) with
-  | None, None -> "./"
-  | _, Some uri ->
-    (* XXX Likely this will need fixing for the web extension support *)
-    if String.length uri > 8 then
-      let l = String.length uri - 7 in
-      String.(sub uri 7 l)
-    else uri
-  | Some dir, None -> dir
+  | None, None -> default_workspace_root
+  | _, Some (Ok dir_uri) -> Lang.LUri.File.to_string_file dir_uri
+  | Some (Ok dir_uri), None -> Lang.LUri.File.to_string_file dir_uri
+  | Some (Error msg), _ | _, Some (Error msg) ->
+    LIO.trace "init" ("uri parsing failed: " ^ msg);
+    default_workspace_root
 
 let do_initialize ~params =
   let dir = determine_workspace_root ~params in

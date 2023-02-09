@@ -16,6 +16,24 @@ module Range = struct
   [@@deriving yojson]
 end
 
+module LUri = struct
+  module File = struct
+    type t = Lang.LUri.File.t
+
+    let to_yojson uri = `String (Lang.LUri.File.to_string_uri uri)
+    let invalid_uri msg obj = raise (Yojson.Safe.Util.Type_error (msg, obj))
+
+    let of_yojson uri =
+      match uri with
+      | `String uri as obj -> (
+        let uri = Lang.LUri.of_string uri in
+        match Lang.LUri.File.of_uri uri with
+        | Result.Ok t -> Result.Ok t
+        | Result.Error msg -> invalid_uri ("failed to parse uri: " ^ msg) obj)
+      | obj -> invalid_uri "expected uri string, got json object" obj
+  end
+end
+
 module Diagnostic = struct
   module Libnames = Serlib.Ser_libnames
 
@@ -60,6 +78,7 @@ end
 
 let mk_diagnostics ~uri ~version ld : Yojson.Safe.t =
   let diags = List.map Diagnostic.to_yojson ld in
+  let uri = Lang.LUri.File.to_string_uri uri in
   let params =
     `Assoc
       [ ("uri", `String uri)

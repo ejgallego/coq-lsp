@@ -53,7 +53,7 @@ end
     meta-data map [Range.t -> data], where for now [data] is the contents of
     [Node.t]. *)
 type t = private
-  { uri : string
+  { uri : Lang.LUri.File.t
   ; version : int
   ; contents : Contents.t
   ; root : Coq.State.t
@@ -69,7 +69,7 @@ val asts : t -> Coq.Ast.t list
 val create :
      state:Coq.State.t
   -> workspace:Coq.Workspace.t
-  -> uri:string
+  -> uri:Lang.LUri.File.t
   -> version:int
   -> raw:string
   -> (t, Loc.t) Coq.Protect.R.t
@@ -95,4 +95,8 @@ val check : ofmt:Format.formatter -> target:Target.t -> doc:t -> unit -> t
 
 (** This is internal, to workaround the Coq multiple-docs problem *)
 val create_failed_permanent :
-  state:Coq.State.t -> uri:string -> version:int -> raw:string -> t Contents.R.t
+     state:Coq.State.t
+  -> uri:Lang.LUri.File.t
+  -> version:int
+  -> raw:string
+  -> t Contents.R.t
