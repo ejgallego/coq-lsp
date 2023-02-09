@@ -1,0 +1,28 @@
+{
+  "fileTypes": [],
+  "scopeName": "markdown.coq.codeblock",
+  "injectionSelector": "L:markup.fenced_code.block.markdown",
+  "patterns": [
+    {
+      "include": "#coq-code-block"
+    }
+  ],
+  "repository": {
+    "coq-code-block": {
+      "begin": "coq(\\s+[^`~]*)?$",
+      "end": "(^|\\G)(?=\\s*[`~]{3,}\\s*$)",
+      "patterns": [
+        {
+          "begin": "(^|\\G)(\\s*)(.*)",
+          "while": "(^|\\G)(?!\\s*([`~]{3,})\\s*$)",
+          "contentName": "meta.embedded.block.coq",
+          "patterns": [
+            {
+              "include": "source.coq"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
