@@ -27,6 +27,7 @@
    #281)
  - Fix bug when parsing client option for unicode completion
    (@ejgallego #301)
+ - Support unicode characters in filenames (@artagnon, #302)
  - Stop checking documents after a maximum number of errors,
    user-configurable (by default 150) (@ejgallego, #303)
 
