@@ -16,6 +16,17 @@ module R = struct
     | Error e -> Error e
 end
 
+module Util = struct
+  (** Builds a string that contains the right white-space padding between two
+      points *)
+  let build_whitespace prev cur =
+    let l_p, c_p, o_p = Lang.Point.(prev.line, prev.character, prev.offset) in
+    let l_c, c_c, o_c = Lang.Point.(cur.line, cur.character, cur.offset) in
+    let nl = l_c - l_p in
+    let nc, padding = if l_p = l_c then (c_c - c_p, 0) else (c_c, o_c - o_p) in
+    String.make padding ' ' ^ String.make nl '\n' ^ String.make nc ' '
+end
+
 module Markdown = struct
   let gen l = String.make (String.length l) ' '
 
@@ -35,7 +46,66 @@ module Markdown = struct
 end
 
 module WaterProof = struct
-  let process _raw = R.Error "waterproof parsing not yet supported"
+  open Fleche_waterproof.Json
+
+  let wp_error msg = R.Error (Format.asprintf "Waterproof parsing: %s" msg)
+
+  let code_block block =
+    match block with
+    | { CAst.v = Assoc dict; _ } -> (
+      match find "type" dict with
+      | Some { CAst.v = String "code"; _ } -> (
+        match find "text" dict with
+        | Some { CAst.v = String coq_span; range } -> Some (range, coq_span)
+        | _ -> None)
+      | _ -> None)
+    | _ -> None
+
+  (* Needed to support "text": "\nfoo. bar." in Waterproof files *)
+  let new_to_space = function
+    | '\n' -> ' '
+    | x -> x
+
+  let coq_block_to_span (contents, last_point) (range, coq) =
+    let range_text = Util.build_whitespace last_point range.Lang.Range.start in
+    let last_point = range.Lang.Range.end_ in
+    let coq = String.map new_to_space coq in
+    (contents ^ range_text ^ coq, last_point)
+
+  let block_pos (range, _) = Format.asprintf "%a" Lang.Range.pp range
+  let waterproof_debug = false
+
+  let from_blocks blocks =
+    let start_point = Lang.Point.{ line = 0; character = 0; offset = 0 } in
+    let code_blocks = List.filter_map code_block blocks in
+    let code_pos = List.map block_pos code_blocks in
+    let contents, _ =
+      List.fold_left coq_block_to_span ("", start_point) code_blocks
+    in
+    (if waterproof_debug then
+     let msg =
+       "pos:\n" ^ String.concat "\n" code_pos ^ "\nContents:\n" ^ contents
+     in
+     Io.Log.trace "waterproof" msg);
+    R.Ok contents
+
+  let from_json json =
+    match json with
+    | CAst.{ v = Assoc dict; _ } -> (
+      match find "blocks" dict with
+      | None -> wp_error "blocks field not found"
+      | Some blocks -> (
+        match blocks with
+        | { CAst.v = List blocks; _ } -> from_blocks blocks
+        | _ -> wp_error "blocks not a list"))
+    | _ -> wp_error "top-level object not a dictionary"
+
+  let process raw =
+    let lexbuf = Lexing.from_string raw in
+    match Fleche_waterproof.(Ljson.prog Tjson.read) lexbuf with
+    | None -> R.Ok ""
+    | Some json -> from_json json
+    | exception _ -> wp_error "parsing failed"
 end
 
 let process_contents ~uri ~raw =

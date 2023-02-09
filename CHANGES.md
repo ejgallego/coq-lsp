@@ -33,6 +33,9 @@
  - Coq Markdown files (.mv extension) are now highlighted properly
    using both Coq and Markdown syntax rules (@4ever2, #307)
  - Goal view now supports find (@Alizter, #309, closes #305)
+ - coq-lsp now understands a basic version of Coq Waterproof files
+   (.wpn) Note that we don't associate to them by default, as to allow
+   the waterproof extension to take over the files (@ejgallego, #306)
 
 # coq-lsp 0.1.4: View
 ---------------------
