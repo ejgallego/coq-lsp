@@ -1,5 +1,5 @@
 {
-  description = "A language server (LSP) for the theorem prover, coq";
+  description = "A language server (LSP) for the coq theorem prover";
 
   outputs = inputs @ {
     self,
@@ -59,13 +59,7 @@
           programs.alejandra.enable = true;
           programs.ocamlformat = {
             enable = true;
-            package =
-              pkgs
-              ."ocamlformat_${
-                l.replaceStrings ["."] ["_"]
-                (l.last (l.findFirst (option: l.head option == "version") []
-                    (l.map (n: l.splitString "=" n) (l.splitString "\n" (l.readFile ./.ocamlformat)))))
-              }";
+            configFile = ./.ocamlformat;
           };
         };
 
