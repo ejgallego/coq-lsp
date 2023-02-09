@@ -31,7 +31,7 @@ export class InfoPanel {
   }
 
   panelFactory() {
-    let webviewOpts: WebviewOptions = { enableScripts: true };
+    let webviewOpts = { enableScripts: true, enableFindWidget: true };
     this.panel = window.createWebviewPanel(
       "goals",
       "Goals",
