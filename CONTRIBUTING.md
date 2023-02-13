@@ -37,7 +37,24 @@ license.
 
 ### Submitting a contribution, opening an issue.
 
-Please use the github standard interfaces to do so.
+Please use the github standard interfaces to do so. When you submit a
+pull-request, you agree to share your code under `coq-lsp` license.
+
+We have a set of tags to classify pull requests and issues, we try to
+use them as much as possible. As of today, GitHub requires some
+permissions for regular users to be able to manipulate this meta-data,
+let us know if you need access.
+
+### Changelog
+
+We require an entry in `CHANGES.md` for all changes of relevance; note
+that as of today, `CHANGES.md` is the canonical changelog for _both_
+the server and the client.
+
+The client changelog that is used by the VS Code marketplace is at
+`editor/code/CHANGELOG.md`, but you should not modify it, as of today
+we will generate it from the relevant entries in `CHANGES.md` at
+release time.
 
 ## Server guide
 
