@@ -39,6 +39,8 @@
  - URI validation is now more strict, and some further bugs should be
    solved; note still this can be an issue on some client settings
    (@ejgallego, #313, fixes #187)
+ - Display Coq info and debug messages in info panel (@ejgallego,
+   #314, fixes #308)
 
 # coq-lsp 0.1.4: View
 ---------------------

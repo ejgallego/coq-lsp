@@ -32,11 +32,14 @@ module Util = struct
     mk_diag range severity message
 
   let diags_of_messages ~drange fbs =
-    let diags, messages = List.partition (fun (_, lvl, _) -> lvl < 3) fbs in
-    let diags =
-      if !Config.v.show_notices_as_diagnostics then
-        diags @ List.filter (fun (_, lvl, _) -> lvl = 3) fbs
-      else diags
+    (* TODO, replace this by a cutoff level *)
+    let cutoff =
+      if !Config.v.show_coq_info_messages then 5
+      else if !Config.v.show_notices_as_diagnostics then 4
+      else 3
+    in
+    let diags, messages =
+      List.partition (fun (_, lvl, _) -> lvl < cutoff) fbs
     in
     (List.map (feed_to_diag ~drange) diags, messages)
 

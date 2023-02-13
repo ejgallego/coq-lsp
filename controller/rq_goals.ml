@@ -6,7 +6,13 @@
 (************************************************************************)
 
 (* Replace by ppx when we can print goals properly in the client *)
-let mk_message (_loc, _lvl, msg) = msg
+let mk_message (_loc, lvl, msg) =
+  let hdr =
+    if lvl = 4 then Pp.str "[info ] "
+    else if lvl = 5 then Pp.str "[debug] "
+    else Pp.mt ()
+  in
+  Pp.(hdr ++ msg)
 
 let mk_messages node =
   Option.map Fleche.Doc.Node.messages node
