@@ -33,7 +33,7 @@ module GoalsAnswer : sig
     ; messages : string list
     ; error : string option
     }
-  [@@deriving yojson]
+  [@@deriving to_yojson]
 end
 
 val mk_goals :

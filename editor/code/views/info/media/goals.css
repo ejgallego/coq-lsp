@@ -1,30 +1,60 @@
-.hname {
-  color: var(--vscode-editorLineNumber-foreground);
+/* previously named .coq-env in jsCoq */
+.coq-goal-env hr {
+  margin: 0.5em 0;
+  border: 1px inset;
 }
 
-.htype {
-  color: var(--vscode-editor-foreground);
+.coq-hypothesis {
+  margin-bottom: 2px;
 }
 
-.numGoal {
-  color: var(--vscode-editorLineNumber-foreground);
+.coq-hypothesis > label {
+  font-weight: normal; /* override bootstrap */
+  margin: 0;
 }
 
-.goal {
-  color: var(--vscode-editor-foreground);
+.coq-hypothesis > label::after {
+  content: ",";
+  margin-right: 0.25em;
 }
 
-.sep,
-hr {
-  color: var(--vscode-editorRuler-foreground);
+.coq-hypothesis > label:last-of-type::after,
+.coq-hypothesis > span.def::after {
+  content: ":";
+  margin: 0 0.5em;
 }
 
-.goalDiv {
-  margin-left: 0.5ex;
-  margin-top: 0.5ex;
+.coq-hypothesis.coq-has-def > label:last-of-type::after {
+  content: ":=";
+  margin: 0 0.5em;
+  color: #777;
 }
 
-.goalsEnv {
-  margin-top: 1ex;
-  margin-bottom: 1ex;
+.coq-hypothesis > label ~ div {
+  display: inline-table; /* this is used to indent hypothesis at their labels */
+  table-layout: fixed;
+}
+
+p.num-goals,
+p.no-goals {
+  margin-top: 0.2em;
+  margin-bottom: 1em;
+  white-space: normal;
+}
+
+div.aside,
+p.aside {
+  white-space: normal;
+  color: #777;
+}
+
+p.num-goals + p.aside {
+  margin-top: -1em;
+  margin-bottom: 1em;
+}
+
+.coq-goal-env {
+  padding-top: 1ex;
+  padding-bottom: 1ex;
+  white-space: pre;
 }

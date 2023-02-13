@@ -1,25 +1,32 @@
 import objectHash from "object-hash";
+import { ReactEventHandler, useEffect, useRef, useState } from "react";
 import { Hyp, Goal, GoalConfig } from "../../lib/types";
 import { CoqPp } from "./CoqPp";
 import { Details } from "./Details";
 
 import "./media/goals.css";
 
-function Hyp({ hyp }: { hyp: Hyp<string> }) {
-  return (
-    <div className="hypothesis">
-      <label className="hname">{hyp.names.join(",")}</label>
-      {hyp.def ? (
-        <span className="hdef">
-          {" "}
-          := <CoqPp content={hyp.def} inline={true} />{" "}
-        </span>
-      ) : null}
-      <label className="sep"> : </label>
-      <span className="htype">
-        <CoqPp content={hyp.ty} inline={true} />
+// to replace by CoqPp | string
+type CoqPp = string;
+type CoqId = string;
+
+function Hyp({ hyp: { names, def, ty } }: { hyp: Hyp<CoqPp> }) {
+  let className = "coq-hypothesis" + (def ? " coq-has-def" : "");
+  let mkLabel = (id: CoqId) => <label>{id}</label>;
+  let mkdef = (pp?: CoqPp) =>
+    pp ? (
+      <span className="def">
+        <CoqPp content={pp} inline={true} />
       </span>
-      <br />
+    ) : null;
+
+  return (
+    <div className={className}>
+      {names.map(mkLabel)}
+      {mkdef(def)}
+      <div>
+        <CoqPp content={ty} inline={true} />
+      </div>
     </div>
   );
 }
@@ -35,22 +42,22 @@ function Hyps({ hyps }: HypsP) {
   );
 }
 
-type GoalP = { goal: Goal<string>; idx: number };
+type GoalP = { goal: Goal<string>; idx: number; open: boolean };
 
-function Goal({ goal, idx }: GoalP) {
-  let open = idx == 1;
+function Goal({ goal, idx, open }: GoalP) {
+  const className = open ? undefined : "aside";
+
   return (
-    <Details summary={`Goal (${idx})`} open={open}>
-      <div className="goalDiv">
+    <div className="coq-goal-env">
+      <Details summary={`Goal (${idx})`} open={open}>
+        <div style={{ paddingTop: "1ex" }} />
         <Hyps hyps={goal.hyps} />
         <hr />
-        <div className="pp_goals">
-          <span className="goal">
-            <CoqPp content={goal.ty} inline={false} />
-          </span>
-        </div>
+      </Details>
+      <div style={{ marginLeft: "1ex" }} className={className}>
+        <CoqPp content={goal.ty} inline={false} />
       </div>
-    </Details>
+    </div>
   );
 }
 
@@ -59,20 +66,67 @@ type GoalsListP = {
   header: string;
   show_on_empty: boolean;
   open: boolean;
+  bullet_msg?: string;
 };
 
-function GoalsList({ goals, header, open, show_on_empty }: GoalsListP) {
+function GoalsList({
+  goals,
+  header,
+  open,
+  show_on_empty,
+  bullet_msg,
+}: GoalsListP) {
   let count = goals.length;
 
-  if (count == 0 && !show_on_empty) return null;
+  if (count == 0) {
+    if (show_on_empty) {
+      return (
+        <div>
+          <p className="no-goals">
+            No more goals
+            <br />
+            {bullet_msg ? <p className="aside">{bullet_msg}</p> : null}
+          </p>
+        </div>
+      );
+    } else {
+      return null;
+    }
+  }
 
   return (
     <Details summary={`${header} (${count})`} open={open}>
       {goals.map((value, idx) => {
         let key = objectHash(value);
-        return <Goal key={key} goal={value} idx={idx + 1} />;
+        let open = idx === 0 && show_on_empty;
+        return <Goal key={key} goal={value} idx={idx + 1} open={open} />;
       })}
     </Details>
+  );
+}
+type StackSummaryP = { idx: number; stack: [Goal<CoqPp>[], Goal<CoqPp>[]][] };
+
+function StackGoals({ idx, stack }: StackSummaryP) {
+  let count = stack.length;
+  if (count <= idx) return null;
+
+  const [l, r] = stack[idx];
+  const goals = l.concat(r);
+  let level_indicator =
+    idx === 0 ? "the same bullet level" : `the -${idx} bullet level`;
+
+  return (
+    <div>
+      <GoalsList
+        goals={goals}
+        header={`Remaining goals at ${level_indicator}`}
+        open={true}
+        show_on_empty={false}
+      />
+      <div style={{ marginLeft: "0.5ex" }}>
+        <StackGoals idx={idx + 1} stack={stack} />
+      </div>
+    </div>
   );
 }
 
@@ -90,7 +144,11 @@ export function Goals({ goals }: GoalsParams) {
         header={"Goals"}
         show_on_empty={true}
         open={true}
+        bullet_msg={goals.bullet}
       />
+      <div style={{ marginLeft: "0.5ex" }}>
+        <StackGoals idx={0} stack={goals.stack} />
+      </div>
       <div style={{ marginLeft: "0.5ex" }}>
         <GoalsList
           goals={goals.shelf}
