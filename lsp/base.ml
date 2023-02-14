@@ -77,11 +77,3 @@ let mk_notification ~method_ ~params =
     ; ("method", `String method_)
     ; ("params", params)
     ]
-
-module VersionedTextDocument = struct
-  type t =
-    { uri : string
-    ; version : int
-    }
-  [@@deriving yojson]
-end

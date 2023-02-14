@@ -18,7 +18,7 @@
 module F = Format
 module J = Yojson.Safe
 
-let read_request_raw ic =
+let read_raw_request ic =
   let cl = input_line ic in
   let sin = Scanf.Scanning.from_string cl in
   let raw_obj =
@@ -40,8 +40,8 @@ let read_request_raw ic =
 
 exception ReadError of string
 
-let read_request ic =
-  try read_request_raw ic with
+let read_raw_request ic =
+  try read_raw_request ic with
   (* if the end of input is encountered while some more characters are needed to
      read the current conversion specification, or the lsp server closes *)
   | End_of_file -> raise (ReadError "EOF")
@@ -116,3 +116,13 @@ let trace_object hdr obj =
   trace hdr message
 
 let () = log := trace_object
+
+(** Misc helpers *)
+let rec read_request ic =
+  let com = read_raw_request ic in
+  if Fleche.Debug.read then trace_object "read" com;
+  match Base.Message.from_yojson com with
+  | Ok msg -> msg
+  | Error msg ->
+    trace "read_request" ("error: " ^ msg);
+    read_request ic

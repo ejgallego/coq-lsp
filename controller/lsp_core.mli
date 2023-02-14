@@ -15,43 +15,30 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-(* XXX: ejgallego, do we start lines at 0? *)
-module Point = struct
+(** This is the platform-independent code for the implementation of the Flèche
+    LSP interface, BEWARE of deps, this must be able to run in a Web Worker
+    context *)
+
+module State : sig
   type t =
-    { line : int
-    ; character : int
-    ; offset : int
-    }
-
-  let pp fmt { line; character; offset } =
-    Format.fprintf fmt "{ l: %d, c: %d | o: %d }" line character offset
-end
-
-module Range = struct
-  type t =
-    { start : Point.t
-    ; end_ : Point.t
-    }
-
-  let pp fmt { start; end_ } =
-    Format.fprintf fmt "(@[%a@]--@[%a@])" Point.pp start Point.pp end_
-
-  let to_string r = Format.asprintf "%a" pp r
-end
-
-module Diagnostic = struct
-  module Extra = struct
-    type t =
-      | FailedRequire of
-          { prefix : Libnames.qualid option
-          ; refs : Libnames.qualid list
-          }
-  end
-
-  type t =
-    { range : Range.t
-    ; severity : int
-    ; message : Pp.t
-    ; extra : Extra.t list option
+    { root_state : Coq.State.t
+    ; workspace : Coq.Workspace.t
     }
 end
+
+exception Lsp_exit
+
+(** Lsp special init loop *)
+val lsp_init_loop :
+     in_channel
+  -> Format.formatter
+  -> cmdline:Coq.Workspace.CmdLine.t
+  -> debug:bool
+  -> Coq.Workspace.t
+
+(** Dispatch an LSP request or notification, requests may be postponed. *)
+val dispatch_message :
+  ofmt:Format.formatter -> state:State.t -> Lsp.Base.Message.t -> unit
+
+(** Serve postponed requests in the set, they can be stale *)
+val serve_postponed_requests : ofmt:Format.formatter -> Int.Set.t -> unit

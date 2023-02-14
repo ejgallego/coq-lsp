@@ -113,7 +113,8 @@ let load_objs libs =
   List.(iter rq_file (rev libs))
 
 (* We need to compute this with the right load path *)
-let dirpath_of_file f =
+let dirpath_of_uri ~uri =
+  let f = Lang.LUri.File.to_string_file uri in
   let ldir0 =
     try
       let lp = Loadpath.find_load_path (Filename.dirname f) in
@@ -127,16 +128,6 @@ let dirpath_of_file f =
   let id = Names.Id.of_string f in
   let ldir = Libnames.add_dirpath_suffix ldir0 id in
   ldir
-
-let dirpath_of_uri ~uri =
-  let file =
-    if String.length uri > 8 then
-      (* Remove "file:///" *)
-      let l = String.length uri - 7 in
-      String.(sub uri 7 l)
-    else uri
-  in
-  dirpath_of_file file
 
 (* NOTE: Use exhaustive match below to avoid bugs by skipping fields *)
 let apply ~uri

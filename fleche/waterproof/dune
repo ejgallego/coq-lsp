@@ -1,0 +1,9 @@
+(library
+ (name fleche_waterproof)
+ (public_name coq-lsp.fleche.waterproof)
+ (libraries lang))
+
+(menhir
+ (modules ljson))
+
+(ocamllex tjson)

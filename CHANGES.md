@@ -1,3 +1,50 @@
+# coq-lsp 0.1.5: Form
+---------------------
+
+ - Fix a bug when trying to complete in an empty file (@ejgallego,
+   #270)
+ - Fix a bug with the position reported by the `$/coq/fileProgress`
+   notification
+ - Fix messages panel rendering after the port to React (@ejgallego,
+   #272)
+ - Fix non-compliance with LSP range type due to extra `offset` field
+   (@ejgallego, #271)
+ - The goal display now numbers goals starting with 1 instead of 0
+   (@artagnon, #277, report by Hugo Herbelin)
+ - Markdown Coq code blocks now must specify "coq" as a language
+   (@ejgallego, #280)
+ - Server is now more strict w.r.t. what URIs it will accept for
+   documents, see protocol documentation (@ejgallego, #286, reported
+   by Alex Sanchez-Stern)
+ - Hypothesis with bodies are now correctly displayed (@ejgallego,
+   #296, fixes #293, report by Ali Caglayan)
+ - `coq-lsp` incorrectly required the optional `rootPath`
+   initialization parameter, moreover it ignored `rootUri` if present
+   which goes against the LSP spec (@ejgallego, #295, report by Alex
+   Sanchez-Stern)
+ - `coq-lsp` will now reject opening multiple files when the
+   underlying Coq version is buggy (@ejgallego, fixes #275, fixes
+   #281)
+ - Fix bug when parsing client option for unicode completion
+   (@ejgallego #301)
+ - Support unicode characters in filenames (@artagnon, #302)
+ - Stop checking documents after a maximum number of errors,
+   user-configurable (by default 150) (@ejgallego, #303)
+ - Coq Markdown files (.mv extension) are now highlighted properly
+   using both Coq and Markdown syntax rules (@4ever2, #307)
+ - Goal view now supports find (@Alizter, #309, closes #305)
+ - coq-lsp now understands a basic version of Coq Waterproof files
+   (.wpn) Note that we don't associate to them by default, as to allow
+   the waterproof extension to take over the files (@ejgallego, #306)
+ - URI validation is now more strict, and some further bugs should be
+   solved; note still this can be an issue on some client settings
+   (@ejgallego, #313, fixes #187)
+ - Display Coq info and debug messages in info panel (@ejgallego,
+   #314, fixes #308)
+ - Goal display handles background goals better, showing preview,
+   goals stack, and focusing information (@ejgallego, #290, fixes
+   #288, based on jsCoq code by Shachar Itzhaky)
+
 # coq-lsp 0.1.4: View
 ---------------------
 
@@ -25,7 +72,8 @@
  - Full document stats are now correctly computed on checking
    resumption, still cached sentences will display the cached timing
    tho (@ejgallego, #257)
- - Set Coq library name correctly (@ejgallego, #260)
+ - Set Coq library name correctly from URI, note this makes the server
+   to accept less URIs (@ejgallego, #260)
  - `_CoqProject` file is now detected using LSP client `rootPath`
    (@ejgallego, #261)
  - You can press `\` to trigger Unicode completion by the server. This
