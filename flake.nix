@@ -1,5 +1,5 @@
 {
-  description = "A language server (LSP) for the coq theorem prover";
+  description = "A language server (LSP) for the Coq theorem prover";
 
   outputs = inputs @ {
     self,
