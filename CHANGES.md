@@ -43,7 +43,7 @@
    #314, fixes #308)
  - Goal display handles background goals better, showing preview,
    goals stack, and focusing information (@ejgallego, #290, fixes
-   #288, based on jsCoq code by Shachar Itzhaky)
+   #288, fixes #304, based on jsCoq code by Shachar Itzhaky)
  - Warnings are now printed in the info view messages panel
    (@ejgallego, #315, fixes #195)
  - Info protocol messages now have location and level
