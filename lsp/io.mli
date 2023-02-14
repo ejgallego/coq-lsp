@@ -18,7 +18,10 @@
 (** JSON-RPC input/output *)
 
 (** Read a JSON-RPC request from channel *)
-val read_request : in_channel -> Yojson.Safe.t
+val read_raw_request : in_channel -> Yojson.Safe.t
+
+(** *)
+val read_request : in_channel -> Base.Message.t
 
 exception ReadError of string
 

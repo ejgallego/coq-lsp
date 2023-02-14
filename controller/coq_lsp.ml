@@ -15,343 +15,14 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module F = Format
-module J = Yojson.Safe
+(* This is the native-specific Code for the implementation of the event queue
+   based in OCaml threads. *)
+
 module U = Yojson.Safe.Util
-
-let int_field name dict = U.to_int List.(assoc name dict)
-let dict_field name dict = U.to_assoc List.(assoc name dict)
-let list_field name dict = U.to_list List.(assoc name dict)
-let string_field name dict = U.to_string List.(assoc name dict)
-let oint_field name dict = Option.map U.to_int (List.assoc_opt name dict)
-
-(* LSP loop internal state, mainly the stuff needed to create a new document.
-   Note that we could [apply] [workspace] to the root_state, but for now we keep
-   the flexibility for a server to work with different workspaces. *)
-module State = struct
-  type t =
-    { root_state : Coq.State.t
-    ; workspace : Coq.Workspace.t
-    }
-end
-
 module LIO = Lsp.Io
 module LSP = Lsp.Base
-
-module PendingRequest = struct
-  type t =
-    | DocRequest of
-        { uri : string
-        ; handler : Requests.document_request
-        }
-    | PosRequest of
-        { uri : string
-        ; point : int * int
-        ; handler : Requests.position_request
-        }
-
-  (* Debug printing *)
-  let data fmt = function
-    | DocRequest { uri = _; handler = _ } -> Format.fprintf fmt "{k:doc}"
-    | PosRequest { uri = _; point; handler = _ } ->
-      Format.fprintf fmt "{k:pos | l: %d, c: %d}" (fst point) (snd point)
-
-  let postpone ~id pr =
-    match pr with
-    | DocRequest { uri; _ } -> Doc_manager.add_on_completion ~uri ~id
-    | PosRequest { uri; point; _ } -> Doc_manager.add_on_point ~uri ~id ~point
-
-  let cancel ~id pr =
-    match pr with
-    | DocRequest { uri; _ } -> Doc_manager.remove_on_completion ~uri ~id
-    | PosRequest { uri; point; _ } ->
-      Doc_manager.remove_on_point ~uri ~id ~point
-
-  let serve pr =
-    match pr with
-    | DocRequest { uri; handler } ->
-      let doc = Doc_manager.find_doc ~uri in
-      let lines = doc.contents.lines in
-      handler ~lines ~doc
-    | PosRequest { uri; point; handler } ->
-      let doc = Doc_manager.find_doc ~uri in
-      handler ~point ~doc
-end
-
-(* main module with [answer, postpone, cancel, serve] methods *)
-module Rq = struct
-  (* Answer a request *)
-  let answer ~ofmt ~id result =
-    (match result with
-    | Result.Ok result -> LSP.mk_reply ~id ~result
-    | Error (code, message) -> LSP.mk_request_error ~id ~code ~message)
-    |> LIO.send_json ofmt
-
-  (* private to the Rq module *)
-  let _rtable : (int, PendingRequest.t) Hashtbl.t = Hashtbl.create 673
-
-  let postpone ~id (pr : PendingRequest.t) =
-    if Fleche.Debug.request_delay then
-      LIO.trace "request" ("postponing rq : " ^ string_of_int id);
-    PendingRequest.postpone ~id pr;
-    Hashtbl.add _rtable id pr
-
-  (* Consumes a request, if alive, it answers mandatorily *)
-  let consume_ ~ofmt ~f id =
-    match Hashtbl.find_opt _rtable id with
-    | Some pr ->
-      Hashtbl.remove _rtable id;
-      f pr |> answer ~ofmt ~id
-    | None ->
-      LIO.trace "can't consume cancelled request: " (string_of_int id);
-      ()
-
-  let cancel ~ofmt ~code ~message id : unit =
-    (* fail the request, do cleanup first *)
-    let f pr =
-      let () = PendingRequest.cancel ~id pr in
-      Error (code, message)
-    in
-    consume_ ~ofmt ~f id
-
-  let debug_serve id pr =
-    if Fleche.Debug.request_delay then
-      LIO.trace "serving"
-        (Format.asprintf "rq: %d | %a" id PendingRequest.data pr)
-
-  let serve ~ofmt id =
-    let f pr =
-      debug_serve id pr;
-      Result.ok (PendingRequest.serve pr)
-    in
-    consume_ ~ofmt ~f id
-end
-
-module RAction = struct
-  type t =
-    | ServeNow of (Yojson.Safe.t, int * string) Result.t
-    | Postpone of PendingRequest.t
-
-  let ok r = ServeNow (Ok r)
-  let error (code, msg) = ServeNow (Error (code, msg))
-end
-
-let action_request ~ofmt ~id action =
-  match action with
-  | RAction.ServeNow r -> Rq.answer ~ofmt ~id r
-  | RAction.Postpone p -> Rq.postpone ~id p
-
-let serve_postponed_requests ~ofmt rl = Int.Set.iter (Rq.serve ~ofmt) rl
-
-(***********************************************************************)
-(* Start of protocol handlers *)
-
-let do_shutdown ~params:_ = RAction.ok `Null
-
-let do_open ~state params =
-  let document = dict_field "textDocument" params in
-  let uri, version, contents =
-    ( string_field "uri" document
-    , int_field "version" document
-    , string_field "text" document )
-  in
-  let root_state, workspace = State.(state.root_state, state.workspace) in
-  Doc_manager.create ~root_state ~workspace ~uri ~contents ~version
-
-let do_change ~ofmt params =
-  let document = dict_field "textDocument" params in
-  let uri, version =
-    (string_field "uri" document, int_field "version" document)
-  in
-  let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
-  match changes with
-  | [] ->
-    LIO.trace "do_change" "no change in changes? ignoring";
-    ()
-  | _ :: _ :: _ ->
-    LIO.trace "do_change"
-      "more than one change unsupported due to sync method, ignoring";
-    ()
-  | change :: _ ->
-    let contents = string_field "text" change in
-    let invalid_rq = Doc_manager.change ~uri ~version ~contents in
-    let code = -32802 in
-    let message = "Request got old in server" in
-    Int.Set.iter (Rq.cancel ~ofmt ~code ~message) invalid_rq
-
-let do_close ~ofmt:_ params =
-  let document = dict_field "textDocument" params in
-  let uri = string_field "uri" document in
-  Doc_manager.close ~uri
-
-let get_textDocument params =
-  let document = dict_field "textDocument" params in
-  let uri = string_field "uri" document in
-  let doc = Doc_manager.find_doc ~uri in
-  (uri, doc)
-
-let get_position params =
-  let pos = dict_field "position" params in
-  let line, character = (int_field "line" pos, int_field "character" pos) in
-  (line, character)
-
-let request_in_range ~(doc : Fleche.Doc.t) ~version (line, col) =
-  (* EJGA: I'd be nice to better share the code between postponement here and
-     request wake-up in [Doc_manager] (note how both call [Target.reached] *)
-  let in_range =
-    match doc.completed with
-    | Yes _ -> true
-    | Failed range | Stopped range ->
-      Fleche.Doc.Target.reached ~range (line, col)
-  in
-  let in_range =
-    match version with
-    | None -> in_range
-    | Some version -> doc.version >= version && in_range
-  in
-  in_range
-
-let do_position_request ~postpone ~params ~handler =
-  let uri, doc = get_textDocument params in
-  let version = dict_field "textDocument" params |> oint_field "version" in
-  let point = get_position params in
-  let in_range = request_in_range ~doc ~version point in
-  match (in_range, postpone) with
-  | true, _ -> RAction.ok (handler ~doc ~point)
-  | false, true -> Postpone (PosRequest { uri; point; handler })
-  | false, false ->
-    let code = -32802 in
-    let message = "Document is not ready" in
-    RAction.error (code, message)
-
-let do_hover = do_position_request ~postpone:false ~handler:Requests.hover
-let do_goals = do_position_request ~postpone:true ~handler:Requests.goals
-
-let do_completion =
-  do_position_request ~postpone:true ~handler:Rq_completion.completion
-
-(* Requires the full document to be processed *)
-let do_document_request ~params ~handler =
-  let uri, doc = get_textDocument params in
-  let lines = doc.contents.lines in
-  match doc.completed with
-  | Yes _ -> RAction.ok (handler ~lines ~doc)
-  | Stopped _ | Failed _ ->
-    Postpone (PendingRequest.DocRequest { uri; handler })
-
-let do_symbols = do_document_request ~handler:Requests.symbols
-
-let do_trace params =
-  let trace = string_field "value" params in
-  LIO.set_trace_value (LIO.TraceValue.of_string trace)
-
-let do_cancel ~ofmt ~params =
-  let id = int_field "id" params in
-  let code = -32800 in
-  let message = "Cancelled by client" in
-  Rq.cancel ~ofmt ~code ~message id
-
-(***********************************************************************)
-
-(** Misc helpers *)
-let rec read_request ic =
-  let com = LIO.read_request ic in
-  if Fleche.Debug.read then LIO.trace_object "read" com;
-  match LSP.Message.from_yojson com with
-  | Ok msg -> msg
-  | Error msg ->
-    LIO.trace "read_request" ("error: " ^ msg);
-    read_request ic
-
-(***********************************************************************)
-
-(** LSP Init routine *)
-exception Lsp_exit
-
-let log_workspace w =
-  let message, extra = Coq.Workspace.describe w in
-  LIO.trace "workspace" "initialized" ~extra;
-  LIO.logMessage ~lvl:3 ~message
-
-let rec lsp_init_loop ic ofmt ~cmdline ~debug : Coq.Workspace.t =
-  match read_request ic with
-  | LSP.Message.Request { method_ = "initialize"; id; params } ->
-    (* At this point logging is allowed per LSP spec *)
-    LIO.logMessage ~lvl:3 ~message:"Initializing server";
-    let result = Rq_init.do_initialize ~params |> Result.ok in
-    Rq.answer ~ofmt ~id result;
-    LIO.logMessage ~lvl:3 ~message:"Server initialized";
-    (* Workspace initialization *)
-    let debug = debug || !Fleche.Config.v.debug in
-    let dir = string_field "rootPath" params in
-    let workspace = Coq.Workspace.guess ~cmdline ~debug ~dir in
-    log_workspace workspace;
-    workspace
-  | LSP.Message.Request { id; _ } ->
-    (* per spec *)
-    LSP.mk_request_error ~id ~code:(-32002) ~message:"server not initialized"
-    |> LIO.send_json ofmt;
-    lsp_init_loop ic ofmt ~cmdline ~debug
-  | LSP.Message.Notification { method_ = "exit"; params = _ } -> raise Lsp_exit
-  | LSP.Message.Notification _ ->
-    (* We can't log before getting the initialize message *)
-    lsp_init_loop ic ofmt ~cmdline ~debug
-
-(** Dispatching *)
-let dispatch_notification ofmt ~state ~method_ ~params : unit =
-  match method_ with
-  (* Lifecycle *)
-  | "exit" -> raise Lsp_exit
-  (* setTrace *)
-  | "$/setTrace" -> do_trace params
-  (* Document lifetime *)
-  | "textDocument/didOpen" -> do_open ~state params
-  | "textDocument/didChange" -> do_change ~ofmt params
-  | "textDocument/didClose" -> do_close ~ofmt params
-  | "textDocument/didSave" -> Cache.save_to_disk ()
-  (* Cancel Request *)
-  | "$/cancelRequest" -> do_cancel ~ofmt ~params
-  (* NOOPs *)
-  | "initialized" -> ()
-  (* Generic handler *)
-  | msg -> LIO.trace "no_handler" msg
-
-let dispatch_request ~method_ ~params : RAction.t =
-  match method_ with
-  (* Lifecyle *)
-  | "initialize" ->
-    LIO.trace "dispatch_request" "duplicate initialize request! Rejecting";
-    (* XXX what's the error code here *)
-    RAction.error (-32600, "Invalid Request: server already initialized")
-  | "shutdown" -> do_shutdown ~params
-  (* Symbols and info about the document *)
-  | "textDocument/completion" -> do_completion ~params
-  | "textDocument/documentSymbol" -> do_symbols ~params
-  | "textDocument/hover" -> do_hover ~params
-  (* Proof-specific stuff *)
-  | "proof/goals" -> do_goals ~params
-  (* Generic handler *)
-  | msg ->
-    LIO.trace "no_handler" msg;
-    RAction.error (-32601, "method not found")
-
-let dispatch_request ofmt ~id ~method_ ~params =
-  dispatch_request ~method_ ~params |> action_request ~ofmt ~id
-
-let dispatch_request ofmt ~id ~method_ ~params =
-  try dispatch_request ofmt ~id ~method_ ~params
-  with Doc_manager.AbortRequest ->
-    (* -32603 = internal error *)
-    let code = -32603 in
-    let message = "Internal Document Request Queue Error" in
-    Rq.cancel ~ofmt ~code ~message id
-
-let dispatch_message ofmt ~state (com : LSP.Message.t) =
-  match com with
-  | Notification { method_; params } ->
-    dispatch_notification ofmt ~state ~method_ ~params
-  | Request { id; method_; params } ->
-    dispatch_request ofmt ~id ~method_ ~params
+open Controller
+open Lsp_core
 
 (***********************************************************************)
 (* The queue strategy is: we keep pending document checks in Doc_manager, they
@@ -382,7 +53,7 @@ let dispatch_or_resume_check ~ofmt ~state =
     LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
     (* We let Coq work normally now *)
     Control.interrupt := false;
-    dispatch_message ofmt ~state com
+    dispatch_message ~ofmt ~state com
 
 (* Wrapper for the top-level call *)
 let dispatch_or_resume_check ~ofmt ~state =
@@ -423,8 +94,7 @@ let lsp_cb =
     { trace = LIO.trace
     ; send_diagnostics =
         (fun ~ofmt ~uri ~version diags ->
-          Lsp.JFleche.mk_diagnostics ~uri ~version diags
-          |> Lsp.Io.send_json ofmt)
+          Lsp.JLang.mk_diagnostics ~uri ~version diags |> Lsp.Io.send_json ofmt)
     ; send_fileProgress =
         (fun ~ofmt ~uri ~version progress ->
           Lsp.JFleche.mk_progress ~uri ~version progress
@@ -445,12 +115,7 @@ let add_message lvl loc msg q =
 
 let mk_fb_handler q Feedback.{ contents; _ } =
   match contents with
-  | Message (((Error | Warning | Notice) as lvl), loc, msg) ->
-    add_message lvl loc msg q
-  | Message ((Info as lvl), loc, msg) ->
-    if !Fleche.Config.v.show_coq_info_messages then add_message lvl loc msg q
-    else ()
-  | Message (Debug, _loc, _msg) -> ()
+  | Message (lvl, loc, msg) -> add_message lvl loc msg q
   | _ -> ()
 
 let coq_init ~fb_queue ~debug =
@@ -462,7 +127,7 @@ let coq_init ~fb_queue ~debug =
 let lsp_main bt coqlib vo_load_path ml_include_path =
   (* We output to stdout *)
   let ic = stdin in
-  let oc = F.std_formatter in
+  let oc = Format.std_formatter in
 
   (* Set log channels *)
   LIO.set_log_channel oc;
@@ -482,7 +147,7 @@ let lsp_main bt coqlib vo_load_path ml_include_path =
 
   (* Read JSON-RPC messages and push them to the queue *)
   let rec read_loop () =
-    let msg = read_request ic in
+    let msg = LIO.read_request ic in
     process_input msg;
     read_loop ()
   in
@@ -591,4 +256,4 @@ let main () =
   let ecode = Cmd.eval lsp_cmd in
   exit ecode
 
-let _ = main ()
+let () = main ()

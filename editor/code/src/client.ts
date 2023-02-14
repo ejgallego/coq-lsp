@@ -68,7 +68,10 @@ export function activate(context: ExtensionContext): void {
     );
 
     const clientOptions: LanguageClientOptions = {
-      documentSelector: [{ scheme: "file", language: "coq" }],
+      documentSelector: [
+        { scheme: "file", language: "coq" },
+        { scheme: "file", language: "coqmarkdown" },
+      ],
       outputChannelName: "Coq LSP Server Events",
       revealOutputChannelOn: RevealOutputChannelOn.Info,
       initializationOptions,
@@ -108,7 +111,11 @@ export function activate(context: ExtensionContext): void {
 
   let goalsHook = window.onDidChangeTextEditorSelection(
     (evt: TextEditorSelectionChangeEvent) => {
-      if (evt.textEditor.document.languageId != "coq") return;
+      if (
+        evt.textEditor.document.languageId != "coq" &&
+        evt.textEditor.document.languageId != "coqmarkdown"
+      )
+        return;
 
       const kind =
         evt.kind == TextEditorSelectionChangeKind.Mouse

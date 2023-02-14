@@ -6,6 +6,7 @@
 
 # Source files
 **/*.ts
+**/*.tsx
 
 # Build setup
 node_modules/

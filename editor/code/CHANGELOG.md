@@ -1,3 +1,8 @@
+# coq-lsp 0.1.5: Form
+----------------------
+
+- Improved syntax highligting of coq markdown files
+
 # coq-lsp 0.1.4: View
 ----------------------
 

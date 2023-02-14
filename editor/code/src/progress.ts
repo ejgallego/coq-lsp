@@ -63,7 +63,10 @@ export class FileProgressManager {
   });
   private cleanDecos() {
     for (const editor of window.visibleTextEditors) {
-      if (editor.document.languageId === "coq") {
+      if (
+        editor.document.languageId === "coq" ||
+        editor.document.languageId === "coqmarkdown"
+      ) {
         editor.setDecorations(progressDecoration, []);
       }
     }

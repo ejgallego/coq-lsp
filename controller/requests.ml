@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (************************************************************************)
-(* Coq Language Server Protocol                                         *)
+(* Coq Language Server Protocol -- Requests                             *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
 (* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
@@ -36,57 +36,3 @@ let symbols ~lines ~(doc : Fleche.Doc.t) =
   let ast = Fleche.Doc.asts doc in
   let slist = Coq.Ast.grab_definitions f ast in
   `List slist
-
-let hover ~doc ~point =
-  let show_loc_info = true in
-  let range_span = Fleche.Info.LC.range ~doc ~point Exact in
-  let range_string =
-    let none fmt () = Format.fprintf fmt "no ast" in
-    Format.asprintf "%a"
-      (Format.pp_print_option ~none Fleche.Types.Range.pp)
-      range_span
-  in
-  let info_string =
-    Fleche.Info.LC.info ~doc ~point Exact
-    |> Option.map Fleche.Doc.Node.Info.print
-    |> Option.default "no info"
-  in
-  let hover_string =
-    if show_loc_info then range_string ^ "\n___\n" ^ info_string
-    else info_string
-  in
-  let contents = { HoverContents.kind = "markdown"; value = hover_string } in
-  let range = range_span in
-  HoverInfo.(to_yojson { contents; range })
-
-(* Replace by ppx when we can print goals properly in the client *)
-let mk_message (_loc, _lvl, msg) = msg
-
-let mk_messages node =
-  Option.map Fleche.Doc.Node.messages node
-  |> Option.cata (List.map mk_message) []
-
-let mk_error node =
-  let open Fleche in
-  let open Fleche.Types in
-  match
-    List.filter (fun d -> d.Diagnostic.severity < 2) node.Doc.Node.diags
-  with
-  | [] -> None
-  | e :: _ -> Some e.Diagnostic.message
-
-let goals_mode =
-  if !Fleche.Config.v.goal_after_tactic then Fleche.Info.PrevIfEmpty
-  else Fleche.Info.Prev
-
-let goals ~doc ~point =
-  let open Fleche in
-  let goals = Info.LC.goals ~doc ~point goals_mode in
-  let node = Info.LC.node ~doc ~point Exact in
-  let messages = mk_messages node in
-  let error = Option.bind node mk_error in
-  let position =
-    Fleche.Types.Point.{ line = fst point; character = snd point; offset = -1 }
-  in
-  Lsp.JFleche.mk_goals ~uri:doc.uri ~version:doc.version ~position ~goals
-    ~messages ~error

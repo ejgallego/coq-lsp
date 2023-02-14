@@ -35,14 +35,6 @@ module Message : sig
   val params : t -> (string * Yojson.Safe.t) list
 end
 
-module VersionedTextDocument : sig
-  type t =
-    { uri : string
-    ; version : int
-    }
-  [@@deriving yojson]
-end
-
 (** Build notification *)
 val mk_notification : method_:string -> params:Yojson.Safe.t -> Yojson.Safe.t
 

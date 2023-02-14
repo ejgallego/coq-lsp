@@ -13,14 +13,14 @@ module Util = struct
     | h :: _ -> Some h
 
   let mk_diag ?extra range severity message =
-    Types.Diagnostic.{ range; severity; message; extra }
+    Lang.Diagnostic.{ range; severity; message; extra }
 
   (* ast-dependent error diagnostic generation *)
   let extra_diagnostics_of_ast ast =
     match (Coq.Ast.to_coq ast).v with
     | Vernacexpr.{ expr = VernacRequire (prefix, _export, module_refs); _ } ->
       let refs = List.map fst module_refs in
-      Some [ Types.Diagnostic.Extra.FailedRequire { prefix; refs } ]
+      Some [ Lang.Diagnostic.Extra.FailedRequire { prefix; refs } ]
     | _ -> None
 
   let mk_error_diagnostic ~range ~msg ~ast =
@@ -32,11 +32,14 @@ module Util = struct
     mk_diag range severity message
 
   let diags_of_messages ~drange fbs =
-    let diags, messages = List.partition (fun (_, lvl, _) -> lvl < 3) fbs in
-    let diags =
-      if !Config.v.show_notices_as_diagnostics then
-        diags @ List.filter (fun (_, lvl, _) -> lvl = 3) fbs
-      else diags
+    (* TODO, replace this by a cutoff level *)
+    let cutoff =
+      if !Config.v.show_coq_info_messages then 5
+      else if !Config.v.show_notices_as_diagnostics then 4
+      else 3
+    in
+    let diags, messages =
+      List.partition (fun (_, lvl, _) -> lvl < cutoff) fbs
     in
     (List.map (feed_to_diag ~drange) diags, messages)
 
@@ -61,25 +64,6 @@ module Util = struct
     Memo.CacheStats.reset ();
     Stats.reset ()
 
-  let gen l = String.make (String.length l) ' '
-
-  let rec md_map_lines coq l =
-    match l with
-    | [] -> []
-    | l :: ls ->
-      if String.equal "```" l then gen l :: md_map_lines (not coq) ls
-      else (if coq then l else gen l) :: md_map_lines coq ls
-
-  let markdown_process text =
-    let lines = String.split_on_char '\n' text in
-    let lines = md_map_lines false lines in
-    String.concat "\n" lines
-
-  let process_contents ~uri ~contents =
-    let ext = Filename.extension uri in
-    let is_markdown = String.equal ext ".mv" in
-    if is_markdown then markdown_process contents else contents
-
   let safe_sub s pos len =
     if pos < 0 || len < 0 || pos > String.length s - len then (
       let s = String.sub s 0 (Stdlib.min 20 String.(length s - 1)) in
@@ -101,7 +85,7 @@ module DDebug = struct
     Io.Log.trace "coq"
       ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast))
 
-  let resume (last_tok : Types.Range.t) version =
+  let resume (last_tok : Lang.Range.t) version =
     Io.Log.trace "check"
       Format.(
         asprintf "resuming [v: %d], from: %d l: %d" version last_tok.end_.offset
@@ -145,17 +129,17 @@ module Node = struct
   end
 
   module Message = struct
-    type t = Types.Range.t option * int * Pp.t
+    type t = Lang.Range.t option * int * Pp.t
 
     let feedback_to_message ~lines (loc, lvl, msg) =
       (Coq_utils.to_orange ~lines loc, lvl, msg)
   end
 
   type t =
-    { range : Types.Range.t
+    { range : Lang.Range.t
     ; ast : Coq.Ast.t option  (** Ast of node *)
     ; state : Coq.State.t  (** (Full) State of node *)
-    ; diags : Types.Diagnostic.t list
+    ; diags : Lang.Diagnostic.t list
     ; messages : Message.t list
     ; info : Info.t
     }
@@ -168,52 +152,29 @@ module Node = struct
   let info { info; _ } = info
 end
 
-module Contents = struct
-  type t =
-    { raw : string  (** That's the original, unprocessed document text *)
-    ; text : string
-          (** That's the text to be sent to the prover, already processed,
-              encoded in UTF-8 *)
-    ; last : Types.Point.t
-          (** Last point of [text], you can derive n_lines from here *)
-    ; lines : string Array.t  (** [text] split in lines *)
-    }
-
-  let get_last_text text =
-    let offset = String.length text in
-    let lines = CString.split_on_char '\n' text |> Array.of_list in
-    let n_lines = Array.length lines in
-    let last_line = if n_lines < 1 then "" else Array.get lines (n_lines - 1) in
-    let last_line_col = String.length last_line in
-    let character = Utf8.char_of_byte ~line:last_line ~byte:last_line_col in
-    (Types.Point.{ line = n_lines - 1; character; offset }, lines)
-
-  let make ~uri ~raw =
-    let text = Util.process_contents ~uri ~contents:raw in
-    let last, lines = get_last_text text in
-    { raw; text; last; lines }
-end
-
 module Completion = struct
   type t =
-    | Yes of Types.Range.t  (** Location of the last token in the document *)
-    | Stopped of Types.Range.t  (** Location of the last valid token *)
-    | Failed of Types.Range.t  (** Critical failure, like an anomaly *)
+    | Yes of Lang.Range.t  (** Location of the last token in the document *)
+    | Stopped of Lang.Range.t  (** Location of the last valid token *)
+    | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
+    | FailedPermanent of Lang.Range.t
+        (** Temporal Coq hack, avoids any computation *)
 
   let range = function
-    | Yes range | Stopped range | Failed range -> range
+    | Yes range | Stopped range | Failed range | FailedPermanent range -> range
 
   let to_string = function
     | Yes _ -> "fully checked"
     | Stopped _ -> "stopped"
     | Failed _ -> "failed"
+    | FailedPermanent _ -> "refused to create due to Coq parsing bug"
 end
 
 (* Private. A doc is a list of nodes for now. The first element in the list is
    assumed to be the tip of the document. The initial document is the empty
    list. *)
 type t =
-  { uri : string
+  { uri : Lang.LUri.File.t
   ; version : int
   ; contents : Contents.t
   ; root : Coq.State.t
@@ -226,7 +187,11 @@ let mk_doc root_state workspace uri =
   Coq.Init.doc_init ~root_state ~workspace ~uri
 
 let asts doc = List.filter_map Node.ast doc.nodes
-let init_fname ~uri = Loc.InFile { dirpath = None; file = uri }
+
+let init_fname ~uri =
+  let file = Lang.LUri.File.to_string_file uri in
+  Loc.InFile { dirpath = None; file }
+
 let init_loc ~uri = Loc.initial (init_fname ~uri)
 
 let process_init_feedback ~stats range state messages =
@@ -245,8 +210,7 @@ let create ~state ~workspace ~uri ~version ~contents =
   let { Coq.Protect.E.r; feedback } = mk_doc state workspace uri in
   Coq.Protect.R.map r ~f:(fun root ->
       let init_loc = init_loc ~uri in
-      let contents = Contents.make ~uri ~raw:contents in
-      let lines = contents.lines in
+      let lines = contents.Contents.lines in
       let init_range = Coq_utils.to_range ~lines init_loc in
       let feedback =
         List.map (Node.Message.feedback_to_message ~lines) feedback
@@ -263,6 +227,26 @@ let create ~state ~workspace ~uri ~version ~contents =
       ; completed = Stopped init_range
       })
 
+let create ~state ~workspace ~uri ~version ~raw =
+  match Contents.make ~uri ~raw with
+  | Error e -> Coq.Protect.R.error (Pp.str e)
+  | Ok contents -> create ~state ~workspace ~uri ~version ~contents
+
+let create_failed_permanent ~state ~uri ~version ~raw =
+  Contents.make ~uri ~raw
+  |> Contents.R.map ~f:(fun contents ->
+         let lines = contents.Contents.lines in
+         let init_loc = init_loc ~uri in
+         let range = Coq_utils.to_range ~lines init_loc in
+         { uri
+         ; contents
+         ; version
+         ; root = state
+         ; nodes = []
+         ; diags_dirty = true
+         ; completed = FailedPermanent range
+         })
+
 let recover_up_to_offset ~init_range doc offset =
   Io.Log.trace "prefix"
     (Format.asprintf "common prefix offset found at %d" offset);
@@ -272,7 +256,7 @@ let recover_up_to_offset ~init_range doc offset =
     | n :: ns ->
       if Debug.scan then
         Io.Log.trace "scan"
-          (Format.asprintf "consider node at %a" Types.Range.pp n.Node.range);
+          (Format.asprintf "consider node at %a" Lang.Range.pp n.Node.range);
       if n.range.end_.offset >= offset then (List.rev acc_nodes, acc_range)
       else find (n :: acc_nodes) n.range ns
   in
@@ -290,7 +274,7 @@ let compute_common_prefix ~init_range ~contents (prev : t) =
   in
   let common_idx = match_or_stop 0 in
   let nodes, range = recover_up_to_offset ~init_range prev common_idx in
-  Io.Log.trace "prefix" ("resuming from " ^ Types.Range.to_string range);
+  Io.Log.trace "prefix" ("resuming from " ^ Lang.Range.to_string range);
   let completed = Completion.Stopped range in
   (nodes, completed)
 
@@ -309,13 +293,13 @@ let bump_version ~init_range ~version ~contents doc =
   ; completed
   }
 
-let bump_version ~version ~contents doc =
-  let contents = Contents.make ~uri:doc.uri ~raw:contents in
+let bump_version ~version ~(contents : Contents.t) doc =
   let init_loc = init_loc ~uri:doc.uri in
   let init_range = Coq_utils.to_range ~lines:contents.lines init_loc in
   match doc.completed with
   (* We can do better, but we need to handle the case where the anomaly is when
      restoring / executing the first sentence *)
+  | FailedPermanent _ -> doc
   | Failed _ ->
     { doc with
       version
@@ -325,6 +309,12 @@ let bump_version ~version ~contents doc =
     ; completed = Stopped init_range
     }
   | Stopped _ | Yes _ -> bump_version ~init_range ~version ~contents doc
+
+let bump_version ~version ~raw doc =
+  let contents = Contents.make ~uri:doc.uri ~raw in
+  Contents.R.map
+    ~f:(fun contents -> bump_version ~version ~contents doc)
+    contents
 
 let add_node ~node doc =
   let diags_dirty = if node.Node.diags <> [] then true else doc.diags_dirty in
@@ -351,12 +341,12 @@ let set_completion ~completed doc = { doc with completed }
    As we are quite dynamic (for now) in terms of what we observe of the document
    (basically we observe it linearly), we must compute the final position with a
    bit of a hack. *)
-let compute_progress end_ (last_done : Types.Range.t) =
+let compute_progress end_ (last_done : Lang.Range.t) =
   let start = last_done.end_ in
-  let range = Types.Range.{ start; end_ } in
+  let range = Lang.Range.{ start; end_ } in
   { Progress.Info.range; kind = 1 }
 
-let report_progress ~doc (last_tok : Types.Range.t) =
+let report_progress ~doc (last_tok : Lang.Range.t) =
   let progress = compute_progress doc.contents.last last_tok in
   Io.Report.fileProgress ~uri:doc.uri ~version:doc.version [ progress ]
 
@@ -389,7 +379,7 @@ let state_recovery_heuristic doc st v =
   (* Drop the top proof state if we reach a faulty Qed. *)
   | Vernacexpr.VernacEndProof _ ->
     let st, range = find_recovery_for_failed_qed ~default:st doc.nodes in
-    let loc_msg = Option.cata Types.Range.to_string "no loc" range in
+    let loc_msg = Option.cata Lang.Range.to_string "no loc" range in
     Io.Log.trace "recovery" (loc_msg ^ " " ^ Memo.input_info (v, st));
     st
   | _ -> st
@@ -419,8 +409,8 @@ let clexer_after loc =
 type parse_action =
   | EOF of Completion.t (* completed *)
   | Skip of
-      Types.Range.t
-      * Types.Range.t (* span of the skipped sentence + last valid token *)
+      Lang.Range.t
+      * Lang.Range.t (* span of the skipped sentence + last valid token *)
   | Process of Coq.Ast.t (* success! *)
 
 (* Returns parse_action, diags, parsing_time *)
@@ -463,10 +453,10 @@ type document_action =
   | Stop of Completion.t * Node.t
   | Continue of
       { state : Coq.State.t
-      ; last_tok : Types.Range.t
+      ; last_tok : Lang.Range.t
       ; node : Node.t
       }
-  | Interrupted of Types.Range.t
+  | Interrupted of Lang.Range.t
 
 let unparseable_node ~range ~parsing_diags ~parsing_feedback ~state
     ~parsing_time =
@@ -580,13 +570,13 @@ module Target = struct
     | End
     | Position of int * int
 
-  let reached ~(range : Types.Range.t) (line, col) =
+  let reached ~(range : Lang.Range.t) (line, col) =
     let reached_line = range.end_.line in
     let reached_col = range.end_.character in
     line < reached_line || (line = reached_line && col <= reached_col)
 end
 
-let beyond_target (range : Types.Range.t) target =
+let beyond_target (range : Lang.Range.t) target =
   match target with
   | Target.End -> false
   | Position (cut_line, cut_col) -> Target.reached ~range (cut_line, cut_col)
@@ -597,17 +587,28 @@ let pr_target = function
 
 let log_beyond_target last_tok target =
   Io.Log.trace "beyond_target"
-    ("target reached " ^ Types.Range.to_string last_tok);
+    ("target reached " ^ Lang.Range.to_string last_tok);
   Io.Log.trace "beyond_target" ("target is " ^ pr_target target)
+
+let max_errors_node ~state ~range =
+  let msg = Pp.str "Maximum number of errors reached" in
+  let parsing_diags = [ Util.mk_diag range 1 msg ] in
+  unparseable_node ~range ~parsing_diags ~parsing_feedback:[] ~state
+    ~parsing_time:0.0
 
 (* main interpretation loop *)
 let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
-  let rec stm doc st (last_tok : Types.Range.t) =
+  let rec stm doc st (last_tok : Lang.Range.t) acc_errors =
     (* Reporting of progress and diagnostics (if dirty) *)
     let doc = send_eager_diagnostics ~ofmt ~uri ~version ~doc in
     report_progress ~ofmt ~doc last_tok;
     if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
-    if beyond_target last_tok target then
+    if acc_errors > !Config.v.max_errors then
+      let completed = Completion.Failed last_tok in
+      let node = max_errors_node ~state:st ~range:last_tok in
+      let doc = add_node ~node doc in
+      set_completion ~completed doc
+    else if beyond_target last_tok target then
       let () = log_beyond_target last_tok target in
       (* We set to Completed.Yes when we have reached the EOI *)
       let completed =
@@ -633,8 +634,9 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
         let doc = add_node ~node doc in
         set_completion ~completed doc
       | Continue { state; last_tok; node } ->
+        let n_errors = CList.count Lang.Diagnostic.is_error node.Node.diags in
         let doc = add_node ~node doc in
-        stm doc state last_tok
+        stm doc state last_tok (acc_errors + n_errors)
   in
   (* Set the document to "internal" mode, stm expects the node list to be in
      reveresed order *)
@@ -643,7 +645,7 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
   (match doc.nodes with
   | [] -> ()
   | n :: _ ->
-    Io.Log.trace "resume" ("last node :" ^ Types.Range.to_string n.range));
+    Io.Log.trace "resume" ("last node :" ^ Lang.Range.to_string n.range));
   let last_node = Util.hd_opt doc.nodes in
   let st, stats =
     Option.cata
@@ -652,7 +654,7 @@ let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
       last_node
   in
   Stats.restore stats;
-  let doc = stm doc st last_tok in
+  let doc = stm doc st last_tok 0 in
   (* Set the document to "finished" mode: reverse the node list *)
   let doc = { doc with nodes = List.rev doc.nodes } in
   doc
@@ -662,20 +664,25 @@ let log_doc_completion (completed : Completion.t) =
   let range = Completion.range completed in
   let status = Completion.to_string completed in
   Format.asprintf "done [%.2f]: document %s with pos %a" timestamp status
-    Types.Range.pp range
+    Lang.Range.pp range
   |> Io.Log.trace "check"
 
 (* Rebuild a Coq loc from a range, this used to be done using [CLexer.after] but
    due to Fleche now being 100% based on unicode locations we implement our
    own *)
-let loc_after ~lines ~uri (r : Types.Range.t) =
+let debug_loc_after line (r : Lang.Range.t) =
+  if Debug.unicode then
+    Io.Log.trace "loc_after"
+      (Format.asprintf "str: '%s' | char: %d" line r.end_.character)
+
+let loc_after ~lines ~uri (r : Lang.Range.t) =
   let line_nb_last = r.end_.line + 1 in
   let end_index =
     let line = Array.get lines r.end_.line in
-    if Debug.unicode then
-      Io.Log.trace "loc_after"
-        (Format.asprintf "str: '%s' | char: %d" line r.end_.character);
-    Utf8.byte_of_char ~line ~char:r.end_.character
+    debug_loc_after line r;
+    match Utf8.index_of_char ~line ~char:r.end_.character with
+    | None -> String.length line
+    | Some index -> index
   in
   let bol_pos_last = r.end_.offset - end_index in
   { Loc.fname = init_fname ~uri
@@ -688,7 +695,7 @@ let loc_after ~lines ~uri (r : Types.Range.t) =
   }
 
 (** Setup parser and call the main routine *)
-let resume_check ~ofmt ~(last_tok : Types.Range.t) ~doc ~target =
+let resume_check ~ofmt ~(last_tok : Lang.Range.t) ~doc ~target =
   let uri, version, contents = (doc.uri, doc.version, doc.contents) in
   (* Compute resume point, basically [CLexer.after] + stream setup *)
   let lines = doc.contents.lines in
@@ -714,7 +721,7 @@ let check ~ofmt ~target ~doc () =
   | Yes _ ->
     Io.Log.trace "check" "resuming, completed=yes, nothing to do";
     doc
-  | Failed _ ->
+  | FailedPermanent _ | Failed _ ->
     Io.Log.trace "check" "can't resume, failed=yes, nothing to do";
     doc
   | Stopped last_tok ->

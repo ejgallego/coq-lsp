@@ -24,6 +24,10 @@ depends: [
   # lsp dependencies
   "cmdliner"     { >= "1.1.0" }
   "yojson"       { >= "1.7.0" }
+  "uri"                 { >= "4.2.0"    }
+
+  # waterproof parser
+  "menhir"       { >= "20220210" }
 
   # Uncomment this for releases
   "coq"           { >= "8.16.0" & < "8.17" }

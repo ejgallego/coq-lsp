@@ -39,7 +39,10 @@ type char = int
 type index = int
 
 (** Byte index to UTF-8 character position *)
-val char_of_byte : line:string -> byte:index -> char
+val char_of_index : line:string -> byte:index -> char option
 
 (** UTF-8 Char to byte index position *)
-val byte_of_char : line:string -> char:char -> index
+val index_of_char : line:string -> char:char -> index option
+
+(** Lenght in utf-8 chars *)
+val length : string -> char

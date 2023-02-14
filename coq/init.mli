@@ -32,5 +32,5 @@ val coq_init : coq_opts -> State.t
 val doc_init :
      root_state:State.t
   -> workspace:Workspace.t
-  -> uri:string
+  -> uri:Lang.LUri.File.t
   -> (State.t, Loc.t) Protect.E.t
