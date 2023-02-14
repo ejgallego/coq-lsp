@@ -21,13 +21,33 @@ In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md) the
 #### Server
 
 - **opam**: `opam install coq-lsp`
-- **Nix** (coming soon)
+- **Nix**: 
+   - In nixpkgs: [#213397](https://github.com/NixOS/nixpkgs/pull/213397)
+   - In your flake: 
+   ```nix 
+   inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
+   ...
+   coq-lsp.packages.${system}.default
+   ```
 - **Coq Platform** (coming soon)
 - [Do it yourself!](#server-1)
 
 #### **Visual Studio Code**:
 - Official Marketplace: https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
 - Open VSX: https://open-vsx.org/extension/ejgallego/coq-lsp
+- Nix: 
+```nix
+inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
+...
+programs.vscode = {
+  enable = true;
+  extensions = with pkgs.vscode-extensions; [
+    ...
+    inputs.coq-lsp.packages.${pkgs.system}.vscode-extension
+    ...
+  ];
+}; 
+```
 
 #### **Neovim**:
 - Experimental client by Jaehwang Jung: https://github.com/tomtomjhj/coq-lsp.nvim
