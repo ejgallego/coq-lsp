@@ -22,10 +22,18 @@ let mk_completion ~label ?insertText ?labelDetails ?textEdit ?commitCharacters
   CompletionData.(
     to_yojson { label; insertText; labelDetails; textEdit; commitCharacters })
 
+let grab_definitions ~f asts =
+  List.filter_map (fun (ast, st) -> Coq.Ast.definition_info ~st ast) asts
+  |> List.concat |> List.filter_map f
+
 let build_doc_idents ~doc : Yojson.Safe.t list =
-  let f _loc id = mk_completion ~label:Names.Id.(to_string id) () in
-  let ast = Fleche.Doc.asts doc in
-  let clist = Coq.Ast.grab_definitions f ast in
+  let f { Coq.Ast.Info.name; _ } =
+    match name.v with
+    | Anonymous -> None
+    | Name id -> Some (mk_completion ~label:Names.Id.(to_string id) ())
+  in
+  let asts = Fleche.Doc.asts_with_st doc in
+  let clist = grab_definitions ~f asts in
   clist
 
 let mk_completion_list ~incomplete ~items : Yojson.Safe.t =

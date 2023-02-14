@@ -167,6 +167,7 @@ module Node = struct
   let diags { diags; _ } = diags
   let messages { messages; _ } = messages
   let info { info; _ } = info
+  let with_state f n = Option.map (fun x -> (x, n.state)) (f n)
 end
 
 module Completion = struct
@@ -204,6 +205,7 @@ let mk_doc root_state workspace uri =
   Coq.Init.doc_init ~root_state ~workspace ~uri
 
 let asts doc = List.filter_map Node.ast doc.nodes
+let asts_with_st doc = List.filter_map Node.(with_state ast) doc.nodes
 
 let init_fname ~uri =
   let file = Lang.LUri.File.to_string_file uri in

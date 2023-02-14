@@ -1,4 +1,4 @@
-module Vernacexpr = Serlib.Ser_vernacexpr
+(* module Vernacexpr = Serlib.Ser_vernacexpr *)
 
 type t = Vernacexpr.vernac_control
 
@@ -13,65 +13,48 @@ let loc { CAst.loc; _ } = loc
 let print x =
   try Ppvernac.pr_vernac x with _ -> Pp.str "XXX Coq printer crashed"
 
-let match_coq_def f v : _ list =
-  let open Vernacexpr in
-  let ndecls =
-    (* TODO: (co)fixpoint, instance, assumption *)
-    match v.CAst.v.expr with
-    | VernacDefinition (_, (CAst.{ loc = Some loc; v = name }, _), _) ->
-      Nameops.Name.fold_left (fun _ id -> [ (loc, id) ]) [] name
-    | VernacStartTheoremProof (_, ndecls) ->
-      let f_id = function
-        | (CAst.{ loc = None; _ }, _), _ -> None
-        | (CAst.{ loc = Some loc; v }, _), _ -> Some (loc, v)
-      in
-      CList.map_filter f_id ndecls
-    | _ -> []
-  in
-  CList.map (fun (loc, id) -> f loc id) ndecls
+module Kinds = struct
+  (* LSP kinds *)
+  let _file = 1
+  let _module_ = 2
+  let _namespace = 3
+  let _package = 4
+  let class_ = 5
+  let method_ = 6
+  let _property = 7
+  let field = 8
+  let _constructor = 9
+  let enum = 10
+  let _interface = 11
+  let function_ = 12
+  let variable = 13
+  let _constant = 14
+  let _string = 15
+  let _number = 16
+  let _boolean = 17
+  let _array = 18
+  let _object = 19
+  let _key = 20
+  let _null = 21
+  let enumMember = 22
+  let struct_ = 23
+  let _event = 24
+  let _operator = 25
+  let _typeParameter = 26
+end
 
-(* | VernacLoad (_, _) -> (??) | VernacSyntaxExtension (_, _) -> (??) |
-   VernacOpenCloseScope (_, _) -> (??) | VernacDeclareScope _ -> (??) |
-   VernacDelimiters (_, _) -> (??) | VernacBindScope (_, _) -> (??) |
-   VernacInfix (_, _, _) -> (??) | VernacNotation (_, _, _) -> (??) |
-   VernacNotationAddFormat (_, _, _) -> (??) | VernacDeclareCustomEntry _ ->
-   (??) | VernacEndProof _ -> (??) | VernacExactProof _ -> (??) |
-   VernacAssumption (_, _, _) -> (??) | VernacInductive (_, _, _, _) -> (??) |
-   VernacFixpoint (_, _) -> (??) | VernacCoFixpoint (_, _) -> (??) |
-   VernacScheme _ -> (??) | VernacCombinedScheme (_, _) -> (??) | VernacUniverse
-   _ -> (??) | VernacConstraint _ -> (??) | VernacBeginSection _ -> (??) |
-   VernacEndSegment _ -> (??) | VernacRequire (_, _, _) -> (??) | VernacImport
-   (_, _) -> (??) | VernacCanonical _ -> (??) | VernacCoercion (_, _, _) -> (??)
-   | VernacIdentityCoercion (_, _, _) -> (??) | VernacNameSectionHypSet (_, _)
-   -> (??) | VernacInstance (_, _, _, _) -> (??) | VernacDeclareInstance (_, _,
-   _) -> (??) | VernacContext _ -> (??) | VernacExistingInstance _ -> (??) |
-   VernacExistingClass _ -> (??) | VernacDeclareModule (_, _, _, _) -> (??) |
-   VernacDefineModule (_, _, _, _, _) -> (??) | VernacDeclareModuleType (_, _,
-   _, _) -> (??) | VernacInclude _ -> (??) | VernacSolveExistential (_, _) ->
-   (??) | VernacAddLoadPath (_, _, _) -> (??) | VernacRemoveLoadPath _ -> (??) |
-   VernacAddMLPath (_, _) -> (??) | VernacDeclareMLModule _ -> (??) |
-   VernacChdir _ -> (??) | VernacWriteState _ -> (??) | VernacRestoreState _ ->
-   (??) | VernacResetName _ -> (??) | VernacResetInitial -> (??) | VernacBack _
-   -> (??) | VernacBackTo _ -> (??) | VernacCreateHintDb (_, _) -> (??) |
-   VernacRemoveHints (_, _) -> (??) | VernacHints (_, _) -> (??) |
-   VernacSyntacticDefinition (_, _, _) -> (??) | VernacArguments (_, _, _, _, _)
-   -> (??) | VernacReserve _ -> (??) | VernacGeneralizable _ -> (??) |
-   VernacSetOpacity _ -> (??) | VernacSetStrategy _ -> (??) | VernacUnsetOption
-   (_, _) -> (??) | VernacSetOption (_, _, _) -> (??) | VernacAddOption (_, _)
-   -> (??) | VernacRemoveOption (_, _) -> (??) | VernacMemOption (_, _) -> (??)
-   | VernacPrintOption _ -> (??) | VernacCheckMayEval (_, _, _) -> (??) |
-   VernacGlobalCheck _ -> (??) | VernacDeclareReduction (_, _) -> (??) |
-   VernacPrint _ -> (??) | VernacSearch (_, _, _) -> (??) | VernacLocate _ ->
-   (??) | VernacRegister (_, _) -> (??) | VernacPrimitive (_, _, _) -> (??) |
-   VernacComments _ -> (??) | VernacAbort _ -> (??) | VernacAbortAll -> (??) |
-   VernacRestart -> (??) | VernacUndo _ -> (??) | VernacUndoTo _ -> (??) |
-   VernacFocus _ -> (??) | VernacUnfocus -> (??) | VernacUnfocused -> (??) |
-   VernacBullet _ -> (??) | VernacSubproof _ -> (??) | VernacEndSubproof -> (??)
-   | VernacShow _ -> (??) | VernacCheckGuard -> (??) | VernacProof (_, _) ->
-   (??) | VernacProofMode _ -> (??) | VernacExtend (_, _) -> (??)) *)
+module Info = struct
+  type 'l t =
+    { range : 'l
+    ; name : Names.Name.t CAst.t
+    ; kind : int
+    ; detail : string option (* usually the type *)
+    ; children : 'l t list option
+    }
 
-let grab_definitions f nodes =
-  List.fold_left (fun acc s -> match_coq_def f s @ acc) [] nodes
+  let make ~range ~name ~kind ?detail ?children () =
+    { range; name; kind; detail; children }
+end
 
 let marshal_in ic : t = Marshal.from_channel ic
 let marshal_out oc v = Marshal.to_channel oc v []
@@ -92,3 +75,124 @@ let pp_loc ?(print_file = false) fmt loc =
 
 let loc_to_string ?print_file loc =
   Format.asprintf "%a" (pp_loc ?print_file) loc
+
+open CAst
+open Vernacexpr
+
+let inductive_detail = function
+  | Inductive_kw -> (Kinds.enum, "Inductive")
+  | CoInductive -> (Kinds.enum, "CoInductive")
+  | Variant -> (Kinds.struct_, "Variant")
+  | Record -> (Kinds.struct_, "Record")
+  | Structure -> (Kinds.struct_, "Structure")
+  | Class _ -> (Kinds.class_, "Class")
+
+let assumption_detail = function
+  | Decls.Definitional -> "Variable"
+  | Logical -> "Axiom"
+  | Conjectural -> "Parameter"
+  | Context -> "Context"
+
+let definition_detail = function
+  | Decls.Definition -> "Definition"
+  | Coercion -> "Coercion"
+  | SubClass -> "SubClass"
+  | CanonicalStructure -> "CanonicalStructure"
+  | Example -> "Example"
+  | Fixpoint -> "Fixpoint"
+  | CoFixpoint -> "CoFixpoint"
+  | Scheme -> "Scheme"
+  | StructureComponent -> "StructureComponent"
+  | IdentityCoercion -> "IdentityCoercion"
+  | Instance -> "Instance"
+  | Method -> "Method"
+  | Let -> "Let"
+
+let theorem_detail = function
+  | Decls.Theorem -> "Theorem"
+  | Lemma -> "Lemma"
+  | Fact -> "Fact"
+  | Remark -> "Remark"
+  | Property -> "Property"
+  | Proposition -> "Proposition"
+  | Corollary -> "Corollary"
+
+let mk_name = CAst.map (fun id -> Names.Name id)
+
+let constructor_info ((_, (id, _typ)) : constructor_expr) =
+  let range = Option.get id.loc in
+  let name = mk_name id in
+  Info.make ~range ~name ~kind:Kinds.enumMember ()
+
+let local_decl_expr_info ~kind (l : local_decl_expr) =
+  let name =
+    match l with
+    | AssumExpr (ln, _, _) -> ln
+    | DefExpr (ln, _, _, _) -> ln
+  in
+  let range = Option.get name.loc in
+  Info.make ~range ~name ~kind ()
+
+let projection_info ((ld, _) : local_decl_expr * record_field_attr) =
+  local_decl_expr_info ~kind:Kinds.field ld
+
+let inductive_info ~range ikind (expr, _) =
+  let (_, (id, _)), _, _, cons = expr in
+  let name = mk_name id in
+  match cons with
+  | Constructors ci ->
+    let children = List.map constructor_info ci in
+    let kind, detail = inductive_detail ikind in
+    Info.make ~range ~name ~kind ~detail ~children ()
+  | RecordDecl (_, pi, _) ->
+    let children = List.map projection_info pi in
+    let kind, detail = inductive_detail ikind in
+    Info.make ~range ~name ~kind ~detail ~children ()
+
+let inductives_info ~range ikind idecls =
+  match idecls with
+  | [] -> None
+  | inds -> Some (List.map (inductive_info ~range ikind) inds)
+
+let ident_decl_info ~kind ~detail (lident, _) =
+  let range = Option.get lident.loc in
+  let name = mk_name lident in
+  Info.make ~range ~name ~detail ~kind ()
+
+let assumption_info kind (_, (ids, _)) =
+  let detail = assumption_detail kind in
+  let kind = Kinds.variable in
+  List.map (ident_decl_info ~kind ~detail) ids
+
+let fixpoint_info ~range { fname; _ } =
+  let name = mk_name fname in
+  Info.make ~range ~name ~kind:Kinds.function_ ()
+
+let definition_info ~st:_ CAst.{ loc; v } : _ Info.t list option =
+  let open Vernacexpr in
+  match loc with
+  | None -> None
+  | Some range -> (
+    (* TODO: sections *)
+    match v.expr with
+    | VernacDefinition ((_, kind), (name, _), _) ->
+      let detail = definition_detail kind in
+      let kind = Kinds.function_ in
+      Some [ Info.make ~range ~name ~detail ~kind () ]
+    | VernacStartTheoremProof (kind, ndecls) -> (
+      let detail = theorem_detail kind in
+      let kind = Kinds.function_ in
+      match ndecls with
+      | ((id, _), _) :: _ ->
+        let name = mk_name id in
+        Some [ Info.make ~range ~name ~detail ~kind () ]
+      | [] -> None)
+    | VernacInductive (ikind, idecls) -> inductives_info ~range ikind idecls
+    | VernacAssumption ((_, kind), _, ids) ->
+      Some (List.concat_map (assumption_info kind) ids)
+    | VernacFixpoint (_, f_expr) ->
+      Some (List.map (fixpoint_info ~range) f_expr)
+    | VernacInstance ((name, _), _, _, _, _) ->
+      let kind = Kinds.method_ in
+      Some [ Info.make ~range ~name ~kind () ]
+    | _ -> None)
