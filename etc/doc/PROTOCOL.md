@@ -102,11 +102,17 @@ interface GoalConfig<Pp> {
   given_up : Goal<Pp>[];
 }
 
+export interface Message<Pp> {
+  range?: Range;
+  level : number;
+  text : Pp
+}
+
 interface GoalAnswer<Pp> {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
   goals?: GoalConfig<Pp>;
-  messages: Pp[];
+  messages: Pp[] | Message<Pp>[];
   error?: Pp;
 }
 ```
@@ -145,6 +151,7 @@ implementation, and we adapted it to `coq-lsp`.
 
 #### Changelog
 
+- v0.1.5: message type does now include range and level
 - v0.1.4: goal type generic, the `stacks` and `def` fields appear, compatible v0.1.3 clients
 - v0.1.3: send full goal configuration with shelf, given_up, versioned identifier for document
 - v0.1.2: include messages and optional error in the request response

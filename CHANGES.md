@@ -44,8 +44,10 @@
  - Goal display handles background goals better, showing preview,
    goals stack, and focusing information (@ejgallego, #290, fixes
    #288, based on jsCoq code by Shachar Itzhaky)
- - Warnings are not printed in the info view messages panel
-   (@ejgallego, #, fixes #195)
+ - Warnings are now printed in the info view messages panel
+   (@ejgallego, #315, fixes #195)
+ - Info protocol messages now have location and level
+   (@ejgallego, #315)
 
 # coq-lsp 0.1.4: View
 ---------------------

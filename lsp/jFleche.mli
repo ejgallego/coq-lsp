@@ -25,12 +25,20 @@ val mk_progress :
   -> Fleche.Progress.Info.t list
   -> Yojson.Safe.t
 
+module Message : sig
+  type 'a t =
+    { range : JLang.Range.t option
+    ; level : int
+    ; text : 'a
+    }
+end
+
 module GoalsAnswer : sig
   type t =
     { textDocument : Doc.VersionedTextDocument.t
     ; position : Lang.Point.t
     ; goals : string JCoq.Goals.reified_goal JCoq.Goals.goals option
-    ; messages : string list
+    ; messages : string Message.t list
     ; error : string option
     }
   [@@deriving to_yojson]
@@ -41,7 +49,7 @@ val mk_goals :
   -> version:int
   -> position:Lang.Point.t
   -> goals:Coq.Goals.reified_pp option
-  -> messages:Pp.t list
+  -> messages:Pp.t Message.t list
   -> error:Pp.t option
   -> Yojson.Safe.t
 
