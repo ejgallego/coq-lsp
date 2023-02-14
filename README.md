@@ -29,6 +29,9 @@ In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md) the
 - Official Marketplace: https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
 - Open VSX: https://open-vsx.org/extension/ejgallego/coq-lsp
 
+#### **Neovim**:
+- Experimental client by Jaehwang Jung: https://github.com/tomtomjhj/coq-lsp.nvim
+
 ### FAQ
 
 See our [list of frequently-asked questions](./etc/FAQ.md).
