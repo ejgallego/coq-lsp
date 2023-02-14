@@ -98,7 +98,7 @@ let in_state ~st ~f a =
   in
   Protect.eval ~f a
 
-let admit ~st =
+let admit ~st () =
   let () = Vernacstate.unfreeze_interp_state st in
   match st.Vernacstate.lemmas with
   | None -> st
@@ -110,6 +110,4 @@ let admit ~st =
     let st = Vernacstate.freeze_interp_state ~marshallable:false in
     { st with lemmas; program }
 
-(* TODO: implement protect once error recovery supports a failing recovery
-   execution *)
-(* let admit ~st = Protect.eval ~f:(admit ~st) () *)
+let admit ~st = Protect.eval ~f:(admit ~st) ()

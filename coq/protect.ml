@@ -57,6 +57,8 @@ module E = struct
 
   let map_loc ~f { r; feedback } =
     { r = R.map_loc ~f r; feedback = List.map (map_message ~f) feedback }
+
+  let ok v = { r = Completed (Ok v); feedback = [] }
 end
 
 let fb_queue : Loc.t Message.t list ref = ref []
