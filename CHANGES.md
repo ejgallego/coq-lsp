@@ -57,6 +57,10 @@
    #174, fixes #121, #122)
  - [internal] Error recovery can now execute full Coq commands as to
    amend states, required for #319 (@ejallego, #320)
+ - Auto-admit the previous bullet goal when a new bullet cannot be
+   opened due to an unsolved previous bullet. This also works for {}
+   focusing operators. This is very useful when navigating bulleted
+   proofs (@ejgallego, @Alizter, #319, fixes #300)
 
 # coq-lsp 0.1.4: View
 ---------------------

@@ -35,6 +35,7 @@ module E : sig
 
   val map : f:('a -> 'b) -> ('a, 'l) t -> ('b, 'l) t
   val map_loc : f:('l -> 'm) -> ('a, 'l) t -> ('a, 'm) t
+  val bind : f:('a -> ('b, 'l) t) -> ('a, 'l) t -> ('b, 'l) t
   val ok : 'a -> ('a, 'l) t
 end
 

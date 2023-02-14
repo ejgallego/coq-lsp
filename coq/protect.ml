@@ -46,11 +46,25 @@ let eval_exn ~f x =
     if CErrors.is_anomaly e then R.Completed (Error (Anomaly (loc, msg)))
     else R.Completed (Error (User (loc, msg)))
 
+let _bind_exn ~f x =
+  match x with
+  | R.Interrupted -> R.Interrupted
+  | R.Completed (Error e) -> R.Completed (Error e)
+  | R.Completed (Ok r) -> f r
+
+let fb_queue : Loc.t Message.t list ref = ref []
+
 module E = struct
   type ('a, 'l) t =
     { r : ('a, 'l) R.t
     ; feedback : 'l Message.t list
     }
+
+  let eval ~f x =
+    let r = eval_exn ~f x in
+    let feedback = List.rev !fb_queue in
+    let () = fb_queue := [] in
+    { r; feedback }
 
   let map ~f { r; feedback } = { r = R.map ~f r; feedback }
   let map_message ~f (loc, lvl, msg) = (Option.map f loc, lvl, msg)
@@ -58,14 +72,16 @@ module E = struct
   let map_loc ~f { r; feedback } =
     { r = R.map_loc ~f r; feedback = List.map (map_message ~f) feedback }
 
+  let bind ~f { r; feedback } =
+    match r with
+    | R.Interrupted -> { r = R.Interrupted; feedback }
+    | R.Completed (Error e) -> { r = R.Completed (Error e); feedback }
+    | R.Completed (Ok r) ->
+      let { r; feedback = fb2 } = f r in
+      { r; feedback = feedback @ fb2 }
+
   let ok v = { r = Completed (Ok v); feedback = [] }
 end
 
-let fb_queue : Loc.t Message.t list ref = ref []
-
 (* Eval with reified exceptions and feedback *)
-let eval ~f x =
-  let r = eval_exn ~f x in
-  let feedback = List.rev !fb_queue in
-  let () = fb_queue := [] in
-  { E.r; feedback }
+let eval ~f x = E.eval ~f x

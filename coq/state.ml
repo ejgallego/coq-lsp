@@ -76,6 +76,8 @@ let mode ~st =
 
 let parsing ~st = st.Vernacstate.parsing
 
+module Proof_ = Proof
+
 module Proof = struct
   type t = Vernacstate.LemmaStack.t
 
@@ -111,3 +113,14 @@ let admit ~st () =
     { st with lemmas; program }
 
 let admit ~st = Protect.eval ~f:(admit ~st) ()
+
+let admit_goal ~st () =
+  let () = Vernacstate.unfreeze_interp_state st in
+  match st.Vernacstate.lemmas with
+  | None -> st
+  | Some lemmas ->
+    let f pf = Declare.Proof.by Proofview.give_up pf |> fst in
+    let lemmas = Some (Vernacstate.LemmaStack.map_top ~f lemmas) in
+    { st with lemmas }
+
+let admit_goal ~st = Protect.eval ~f:(admit_goal ~st) ()
