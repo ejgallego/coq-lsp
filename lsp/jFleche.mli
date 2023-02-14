@@ -53,6 +53,26 @@ val mk_goals :
   -> error:Pp.t option
   -> Yojson.Safe.t
 
+(** Generic *)
+module Location : sig
+  type t =
+    { uri : Lang.LUri.File.t
+    ; range : Lang.Range.t
+    }
+  [@@deriving yojson]
+end
+
+(** {1 document/definition} *)
+module LocationLink : sig
+  type t =
+    { originSelectionRange : Lang.Range.t option [@default None]
+    ; targetUri : Lang.LUri.File.t
+    ; targetRange : Lang.Range.t
+    ; targetSelectionRange : Lang.Range.t
+    }
+  [@@deriving yojson]
+end
+
 (** {1 DocumentSymbols} *)
 
 module DocumentSymbol : sig
@@ -65,15 +85,6 @@ module DocumentSymbol : sig
     ; range : Lang.Range.t
     ; selectionRange : Lang.Range.t
     ; children : t list option [@default None]
-    }
-  [@@deriving yojson]
-end
-
-(** Not used as of today, superseded by DocumentSymbol *)
-module Location : sig
-  type t =
-    { uri : Lang.LUri.File.t
-    ; range : Lang.Range.t
     }
   [@@deriving yojson]
 end

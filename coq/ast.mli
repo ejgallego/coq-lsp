@@ -4,6 +4,16 @@ val loc : t -> Loc.t option
 val hash : t -> int
 val compare : t -> t -> int
 
+module Id : sig
+  type t
+
+  val of_string : string -> t
+  val of_coq : Names.Id.t -> t
+
+  module Set : CSet.S with type elt = t
+  module Map : CMap.ExtS with type key = t and module Set := Set
+end
+
 (** Information about the Ast, to move to lang *)
 module Info : sig
   type 'l t =

@@ -92,6 +92,16 @@ let mk_goals ~uri ~version ~position ~goals ~messages ~error =
   GoalsAnswer.to_yojson
     { textDocument = { uri; version }; position; goals; messages; error }
 
+(** {1 document/definition} *)
+module LocationLink = struct
+  type t =
+    { originSelectionRange : Lang.Range.t option [@default None]
+    ; targetUri : Lang.LUri.File.t
+    ; targetRange : Lang.Range.t
+    ; targetSelectionRange : Lang.Range.t
+    }
+  [@@deriving yojson]
+end
 (** {1} DocumentSymbols *)
 
 module DocumentSymbol = struct

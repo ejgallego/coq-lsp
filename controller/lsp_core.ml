@@ -238,6 +238,9 @@ let do_position_request ~postpone ~params ~handler =
 let do_hover = do_position_request ~postpone:false ~handler:Rq_hover.hover
 let do_goals = do_position_request ~postpone:true ~handler:Rq_goals.goals
 
+let do_definition =
+  do_position_request ~postpone:true ~handler:Rq_definition.request
+
 let do_completion =
   do_position_request ~postpone:true ~handler:Rq_completion.completion
 
@@ -323,6 +326,7 @@ let dispatch_request ~method_ ~params : RAction.t =
   | "shutdown" -> do_shutdown ~params
   (* Symbols and info about the document *)
   | "textDocument/completion" -> do_completion ~params
+  | "textDocument/definition" -> do_definition ~params
   | "textDocument/documentSymbol" -> do_symbols ~params
   | "textDocument/hover" -> do_hover ~params
   (* Proof-specific stuff *)
