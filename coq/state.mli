@@ -23,7 +23,7 @@ val in_state : st:t -> f:('a -> 'b) -> 'a -> ('b, Loc.t) Protect.E.t
 val drop_proofs : st:t -> t
 
 (** Admit an ongoing proof *)
-val admit : st:t -> t
+val admit : st:t -> (t, Loc.t) Protect.E.t
 
 (** Extra / interanl *)
 val marshal_in : in_channel -> t

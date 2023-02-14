@@ -378,18 +378,18 @@ let parse_stm ~st ps =
 
 let rec find_recovery_for_failed_qed ~default nodes =
   match nodes with
-  | [] -> (default, None)
+  | [] -> Coq.Protect.E.ok (default, None)
   | { Node.ast = None; _ } :: ns -> find_recovery_for_failed_qed ~default ns
   | { ast = Some ast; state; range; _ } :: ns -> (
     match (Coq.Ast.to_coq ast).CAst.v.Vernacexpr.expr with
     | Vernacexpr.VernacStartTheoremProof _ -> (
       if !Config.v.admit_on_bad_qed then
-        let state = Memo.interp_admitted ~st:state in
-        (state, Some range)
+        Memo.interp_admitted ~st:state
+        |> Coq.Protect.E.map ~f:(fun state -> (state, Some range))
       else
         match ns with
-        | [] -> (default, None)
-        | n :: _ -> (n.state, Some n.range))
+        | [] -> Coq.Protect.E.ok (default, None)
+        | n :: _ -> Coq.Protect.E.ok (n.state, Some n.range))
     | _ -> find_recovery_for_failed_qed ~default ns)
 
 (* Simple heuristic for Qed. *)
@@ -397,11 +397,12 @@ let state_recovery_heuristic doc st v =
   match (Coq.Ast.to_coq v).CAst.v.Vernacexpr.expr with
   (* Drop the top proof state if we reach a faulty Qed. *)
   | Vernacexpr.VernacEndProof _ ->
-    let st, range = find_recovery_for_failed_qed ~default:st doc.nodes in
-    let loc_msg = Option.cata Lang.Range.to_string "no loc" range in
-    Io.Log.trace "recovery" (loc_msg ^ " " ^ Memo.input_info (v, st));
-    st
-  | _ -> st
+    find_recovery_for_failed_qed ~default:st doc.nodes
+    |> Coq.Protect.E.map ~f:(fun (st, range) ->
+           let loc_msg = Option.cata Lang.Range.to_string "no loc" range in
+           Io.Log.trace "recovery" (loc_msg ^ " " ^ Memo.input_info (v, st));
+           st)
+  | _ -> Coq.Protect.E.ok st
 
 let interp_and_info ~parsing_time ~st ast =
   let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
@@ -507,6 +508,14 @@ let strategy_of_coq_err ~node ~state ~last_tok = function
   | Coq.Protect.Error.Anomaly _ -> Stop (Failed last_tok, node)
   | User _ -> Continue { state; last_tok; node }
 
+(* XXX: This should be refined. *)
+let recovery_interp ~doc ~st ~ast =
+  let { Coq.Protect.E.r; feedback = _ } = state_recovery_heuristic doc st ast in
+  match r with
+  | Interrupted -> st
+  | Completed (Ok st) -> st
+  | Completed (Error _) -> st
+
 let node_of_coq_result ~doc ~range ~ast ~st ~parsing_diags ~parsing_feedback
     ~feedback ~info last_tok res =
   match res with
@@ -521,7 +530,7 @@ let node_of_coq_result ~doc ~range ~ast ~st ~parsing_diags ~parsing_feedback
   | Error (User (err_range, msg) as coq_err) ->
     let err_range = Option.default range err_range in
     let err_diags = [ Util.mk_error_diagnostic ~range:err_range ~msg ~ast ] in
-    let recovery_st = state_recovery_heuristic doc st ast in
+    let recovery_st = recovery_interp ~doc ~st ~ast in
     let node =
       parsed_node ~range ~ast ~state:recovery_st ~parsing_diags
         ~parsing_feedback ~diags:err_diags ~feedback ~info

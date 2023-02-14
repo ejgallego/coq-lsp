@@ -55,6 +55,8 @@
    will now be properly represented, as well as constructors for
    inductive types, projections for records, etc...  (@ejgallego,
    #174, fixes #121, #122)
+ - [internal] Error recovery can now execute full Coq commands as to
+   amend states, required for #319 (@ejallego, #320)
 
 # coq-lsp 0.1.4: View
 ---------------------
