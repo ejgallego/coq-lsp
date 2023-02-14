@@ -31,6 +31,22 @@ module Util = struct
     let range = Option.default drange range in
     mk_diag range severity message
 
+  type partition_kind =
+    | Left
+    | Both
+    | Right
+
+  let partition ~f l =
+    let rec part l r = function
+      | [] -> (List.rev l, List.rev r)
+      | x :: xs -> (
+        match f x with
+        | Left -> part (x :: l) r xs
+        | Both -> part (x :: l) (x :: l) xs
+        | Right -> part l (x :: r) xs)
+    in
+    part [] [] l
+
   let diags_of_messages ~drange fbs =
     (* TODO, replace this by a cutoff level *)
     let cutoff =
@@ -38,9 +54,10 @@ module Util = struct
       else if !Config.v.show_notices_as_diagnostics then 4
       else 3
     in
-    let diags, messages =
-      List.partition (fun (_, lvl, _) -> lvl < cutoff) fbs
+    let f (_, lvl, _) =
+      if lvl = 2 then Both else if lvl < cutoff then Left else Right
     in
+    let diags, messages = partition ~f fbs in
     (List.map (feed_to_diag ~drange) diags, messages)
 
   let build_span start_loc end_loc =

@@ -8,11 +8,12 @@
 (* Replace by ppx when we can print goals properly in the client *)
 let mk_message (_loc, lvl, msg) =
   let hdr =
-    if lvl = 4 then Pp.str "[info ] "
-    else if lvl = 5 then Pp.str "[debug] "
+    if lvl = 2 then Pp.str "[warning] "
+    else if lvl = 4 then Pp.str "[info   ] "
+    else if lvl = 5 then Pp.str "[debug  ] "
     else Pp.mt ()
   in
-  Pp.(hdr ++ msg)
+  Pp.(hdr ++ hov 0 msg)
 
 let mk_messages node =
   Option.map Fleche.Doc.Node.messages node
