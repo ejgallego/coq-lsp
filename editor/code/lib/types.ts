@@ -1,6 +1,7 @@
 import {
   VersionedTextDocumentIdentifier,
   Position,
+  Range,
 } from "vscode-languageserver-types";
 
 export interface Hyp<Pp> {
@@ -22,11 +23,17 @@ export interface GoalConfig<Pp> {
   given_up: Goal<Pp>[];
 }
 
+export interface Message<Pp> {
+  range?: Range;
+  level: number;
+  text: Pp;
+}
+
 export interface GoalAnswer<Pp> {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
   goals?: GoalConfig<Pp>;
-  messages: Pp[];
+  messages: Pp[] | Message<Pp>[];
   error?: Pp;
 }
 

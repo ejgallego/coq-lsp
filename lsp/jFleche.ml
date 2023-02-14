@@ -60,12 +60,25 @@ let mk_progress ~uri ~version processing =
   let params = Progress.to_yojson { Progress.textDocument; processing } in
   Base.mk_notification ~method_:"$/coq/fileProgress" ~params
 
+module Message = struct
+  type 'a t =
+    { range : JLang.Range.t option
+    ; level : int
+    ; text : 'a
+    }
+  [@@deriving yojson]
+
+  let map ~f { range; level; text } =
+    let text = f text in
+    { range; level; text }
+end
+
 module GoalsAnswer = struct
   type t =
     { textDocument : Doc.VersionedTextDocument.t
     ; position : Lang.Point.t
     ; goals : string JCoq.Goals.reified_goal JCoq.Goals.goals option
-    ; messages : string list
+    ; messages : string Message.t list
     ; error : string option
     }
   [@@deriving to_yojson]
@@ -74,7 +87,7 @@ end
 let mk_goals ~uri ~version ~position ~goals ~messages ~error =
   let f rg = Coq.Goals.map_reified_goal ~f:Pp.to_string rg in
   let goals = Option.map (Coq.Goals.map_goals ~f) goals in
-  let messages = List.map Pp.to_string messages in
+  let messages = List.map (Message.map ~f:Pp.to_string) messages in
   let error = Option.map Pp.to_string error in
   GoalsAnswer.to_yojson
     { textDocument = { uri; version }; position; goals; messages; error }
