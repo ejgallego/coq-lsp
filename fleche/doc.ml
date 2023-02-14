@@ -402,6 +402,15 @@ let state_recovery_heuristic doc st v =
            let loc_msg = Option.cata Lang.Range.to_string "no loc" range in
            Io.Log.trace "recovery" (loc_msg ^ " " ^ Memo.input_info (v, st));
            st)
+  (* If a new focus (or unfocusing) fails, admit the proof and try
+     again *)
+  | Vernacexpr.VernacBullet _
+  | Vernacexpr.VernacEndSubproof ->
+    Io.Log.trace "recovery" "bullet";
+    Coq.State.admit_goal ~st
+    |> Coq.Protect.E.bind ~f:(fun st ->
+           Coq.Interp.interp ~st v
+           |> Coq.Protect.E.map ~f:(fun { Coq.Interp.Info.res } -> res))
   | _ -> Coq.Protect.E.ok st
 
 let interp_and_info ~parsing_time ~st ast =
