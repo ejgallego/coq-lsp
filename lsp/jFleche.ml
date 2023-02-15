@@ -16,6 +16,7 @@
 (************************************************************************)
 
 module Pp = JCoq.Pp
+module Ast = JCoq.Ast
 module Lang = JLang
 
 module Config = struct
@@ -171,4 +172,28 @@ module CompletionData = struct
     ; commitCharacters : string list option [@default None]
     }
   [@@deriving yojson]
+end
+
+module CompletionStatus = struct
+  type t =
+    { status : [ `Yes | `Stopped | `Failed ]
+    ; range : Lang.Range.t
+    }
+  [@@deriving yojson]
+end
+
+module RangedSpan = struct
+  type t =
+    { range : Lang.Range.t
+    ; span : Ast.t option [@default None]
+    }
+  [@@deriving to_yojson]
+end
+
+module FlecheDocument = struct
+  type t =
+    { spans : RangedSpan.t list
+    ; completed : CompletionStatus.t
+    }
+  [@@deriving to_yojson]
 end

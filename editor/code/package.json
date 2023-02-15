@@ -88,6 +88,10 @@
       {
         "command": "coq-lsp.goals",
         "title": "Coq LSP: Show Goals at Point"
+      },
+      {
+        "command": "coq-lsp.document",
+        "title": "Coq LSP: Get document in serialized format, print in console"
       }
     ],
     "keybindings": [

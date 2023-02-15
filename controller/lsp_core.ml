@@ -253,6 +253,7 @@ let do_document_request ~params ~handler =
     Postpone (PendingRequest.DocRequest { uri; handler })
 
 let do_symbols = do_document_request ~handler:Rq_symbols.symbols
+let do_document = do_document_request ~handler:Rq_document.request
 
 let do_trace params =
   let trace = string_field "value" params in
@@ -336,6 +337,8 @@ let dispatch_request ~method_ ~params : RAction.t =
   | "textDocument/hover" -> do_hover ~params
   (* Proof-specific stuff *)
   | "proof/goals" -> do_goals ~params
+  (* Coq specific stuff *)
+  | "coq/getDocument" -> do_document ~params
   (* Generic handler *)
   | msg ->
     LIO.trace "no_handler" msg;
