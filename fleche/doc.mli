@@ -6,6 +6,13 @@
 (************************************************************************)
 
 module Node : sig
+  module Ast : sig
+    type t =
+      { v : Coq.Ast.t
+      ; ast_info : Lang.Range.t Coq.Ast.Info.t list option
+      }
+  end
+
   module Info : sig
     type t = private
       { cache_hit : bool
@@ -25,7 +32,7 @@ module Node : sig
 
   type t = private
     { range : Lang.Range.t
-    ; ast : Coq.Ast.t option  (** Ast of node *)
+    ; ast : Ast.t option  (** Ast of node *)
     ; state : Coq.State.t  (** (Full) State of node *)
     ; diags : Lang.Diagnostic.t list  (** Diagnostics associated to the node *)
     ; messages : Message.t list
@@ -33,7 +40,7 @@ module Node : sig
     }
 
   val range : t -> Lang.Range.t
-  val ast : t -> Coq.Ast.t option
+  val ast : t -> Ast.t option
   val state : t -> Coq.State.t
   val diags : t -> Lang.Diagnostic.t list
   val messages : t -> Message.t list
@@ -63,9 +70,7 @@ type t = private
   }
 
 (** Return the list of all asts in the doc *)
-val asts : t -> Coq.Ast.t list
-
-val asts_with_st : t -> (Coq.Ast.t * Coq.State.t) list
+val asts : t -> Node.Ast.t list
 
 (** Note, [create] calls Coq but it is not cached in the Memo.t table *)
 val create :

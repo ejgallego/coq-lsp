@@ -75,8 +75,7 @@ module PendingRequest = struct
     match pr with
     | DocRequest { uri; handler } ->
       let doc = Doc_manager.find_doc ~uri in
-      let lines = doc.contents.lines in
-      handler ~lines ~doc
+      handler ~doc
     | PosRequest { uri; point; handler } ->
       let doc = Doc_manager.find_doc ~uri in
       handler ~point ~doc
@@ -245,9 +244,8 @@ let do_completion =
 (* Requires the full document to be processed *)
 let do_document_request ~params ~handler =
   let uri, doc = get_textDocument params in
-  let lines = doc.contents.lines in
   match doc.completed with
-  | Yes _ -> RAction.ok (handler ~lines ~doc)
+  | Yes _ -> RAction.ok (handler ~doc)
   | Stopped _ | Failed _ | FailedPermanent _ ->
     Postpone (PendingRequest.DocRequest { uri; handler })
 

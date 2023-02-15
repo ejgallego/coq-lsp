@@ -116,7 +116,7 @@ Proof.
   2:{ apply pow_nonzero; assumption. }
   unfold Rsqr; ring.
 Qed.
-
+Definition muuu := 3.
 (**********)
 Lemma continuity_cos : continuity cos.
 Proof.
@@ -348,6 +348,9 @@ intros a n lower upper; apply pre_cos_bound.
   replace ((PI/2) * 2) with PI by field.
   generalize PI_4; intros; lra.
 Qed.
+
+
+
 (**********)
 Lemma neg_cos : forall x:R, cos (x + PI) = - cos x.
 Proof.

@@ -59,12 +59,13 @@ let find_char line byte =
   if byte < String.length line then Some (f 0 0) else None
 
 let char_of_index ~line ~byte =
-  if Debug.unicode then
-    Io.Log.trace "char_of_index"
-      (Format.asprintf "str: '%s' | byte: %d" line byte);
+  (* if Debug.unicode then *)
+  (*   Io.Log.trace "char_of_index" *)
+  (*     (Format.asprintf "str: '%s' | byte: %d" line byte); *)
   let char = find_char line byte in
-  (if Debug.unicode then
-   match char with
-   | None -> Io.Log.trace "get_last_text" "failed"
-   | Some char -> Io.Log.trace "get_last_text" (Format.asprintf "char: %d" char));
+  (* (if Debug.unicode then *)
+  (*  match char with *)
+  (*  | None -> Io.Log.trace "get_last_text" "failed" *)
+  (* | Some char -> Io.Log.trace "get_last_text" (Format.asprintf "char: %d"
+     char)); *)
   char
