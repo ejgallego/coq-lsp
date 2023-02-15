@@ -34,20 +34,20 @@ type 'a reified_goal =
 
 val map_reified_goal : f:('a -> 'b) -> 'a reified_goal -> 'b reified_goal
 
-type 'a goals =
+type ('a, 'pp) goals =
   { goals : 'a list
   ; stack : ('a list * 'a list) list
-  ; bullet : Pp.t option
+  ; bullet : 'pp option
   ; shelf : 'a list
   ; given_up : 'a list
   }
 
-val map_goals : f:('a -> 'b) -> 'a goals -> 'b goals
+val map_goals : f:('a -> 'b) -> ('a, 'pp) goals -> ('b, 'pp) goals
 
-type reified_pp = Pp.t reified_goal goals
+type 'pp reified_pp = ('pp reified_goal, 'pp) goals
 
 (** Stm-independent goal processor *)
 val reify :
-     ppx:(Environ.env -> Evd.evar_map -> EConstr.t -> 'a)
+     ppx:(Environ.env -> Evd.evar_map -> EConstr.t -> 'pp)
   -> State.Proof.t
-  -> 'a reified_goal goals
+  -> ('pp reified_goal, Pp.t) goals

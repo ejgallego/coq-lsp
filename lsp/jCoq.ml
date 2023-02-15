@@ -50,11 +50,9 @@ module Goals = struct
       { goals; stack; bullet; shelf; given_up }
   end
 
-  type 'a goals = 'a Coq.Goals.goals
+  type ('a, 'pp) goals = ('a, 'pp) Coq.Goals.goals
 
-  let goals_to_yojson f g =
-    let pp x = `String (Pp.string_of_ppcmds x) in
-    Goals_.to_ g |> Goals_.to_yojson f pp
+  let goals_to_yojson f pp g = Goals_.to_ g |> Goals_.to_yojson f pp
 
-  type reified_pp = Pp.t reified_goal goals [@@deriving to_yojson]
+  type 'pp reified_pp = ('pp reified_goal, 'pp) goals [@@deriving to_yojson]
 end

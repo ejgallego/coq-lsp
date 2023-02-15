@@ -34,6 +34,9 @@ type t =
   ; unicode_completion : Unicode_completion.t
         [@default Unicode_completion.Normal]
   ; max_errors : int [@default 150]
+  ; pp_type : int [@default 0]
+        (** Pretty-printing type in Info Panel Request, 0 = string; 1 = Pp.t; 2
+            = Coq Layout Engine *)
   }
 
 let default =
@@ -49,6 +52,7 @@ let default =
   ; debug = false
   ; unicode_completion = Normal
   ; max_errors = 150
+  ; pp_type = 0
   }
 
 let v = ref default

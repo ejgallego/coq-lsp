@@ -41,3 +41,15 @@ export interface GoalRequest {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
 }
+
+export type Pp =
+  | ["Pp_empty"]
+  | ["Pp_string", string]
+  | ["Pp_glue", Pp[]]
+  | ["Pp_box", any, Pp]
+  | ["Pp_tag", any, Pp]
+  | ["Pp_print_break", number, number]
+  | ["Pp_force_newline"]
+  | ["Pp_comment", string[]];
+
+export type PpString = Pp | string;

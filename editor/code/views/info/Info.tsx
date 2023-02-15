@@ -3,7 +3,7 @@ import {
   VersionedTextDocumentIdentifier,
   Position,
 } from "vscode-languageserver-types";
-import { GoalAnswer, GoalRequest } from "../../lib/types";
+import { GoalAnswer, GoalRequest, PpString } from "../../lib/types";
 
 // import "./media/info.css";
 
@@ -21,14 +21,16 @@ function doWaitingForInfo(info: GoalRequest) {
 function doInfoError(e: any) {
   console.log("doInfoError", e);
 }
-let initGoals: GoalAnswer<string> = {
+
+let initGoals: GoalAnswer<PpString> = {
   textDocument: VersionedTextDocumentIdentifier.create("Welcome to coq-lsp", 0),
   position: Position.create(0, 0),
   messages: [],
 };
+
 interface RenderGoals {
   method: "renderGoals";
-  params: GoalAnswer<string>;
+  params: GoalAnswer<PpString>;
 }
 interface WaitingForInfo {
   method: "waitingForInfo";
@@ -43,7 +45,7 @@ interface CoqMessageEvent extends MessageEvent {
 }
 
 export function InfoPanel() {
-  let [goals, setGoals] = useState<GoalAnswer<string>>(initGoals);
+  let [goals, setGoals] = useState<GoalAnswer<PpString>>(initGoals);
 
   function infoViewDispatch(event: CoqMessageEvent) {
     switch (event.data.method) {

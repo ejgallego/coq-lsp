@@ -1,3 +1,97 @@
 pre.coqpp {
   margin: 0;
 }
+
+/* For the Pp printer */
+div.Pp_box {
+  display: inline;
+}
+
+div.Pp_box[data-margin="1"] {
+  margin-left: 0.75em;
+}
+
+div.Pp_box[data-margin="2"] {
+  margin-left: 1.5em;
+}
+
+div.Pp_box[data-mode="horizontal"] {
+  cursor: text;
+}
+
+/*
+ * Adjust line breaks and indentation to appear in appropriate modes:
+ * - Vertical mode or horizontal when line is broken: hide spaces, show br and indents.
+ * - Horizontal mode when line not broken: show spaces, hide br and indents.
+ */
+div.Pp_box .Pp_break.br > span.spaces,
+div.Pp_box[data-mode="vertical"] > .Pp_break > span.spaces {
+  display: none;
+}
+
+div.Pp_box:not([data-mode="vertical"]) > .Pp_break:not(.br) > br,
+div.Pp_box:not([data-mode="vertical"]) > .Pp_break:not(.br) > span.indent,
+div.Pp_box:not([data-mode="vertical"]) > .Pp_break:not(.br) > span.prev-indent {
+  display: none;
+}
+
+.goal > div.Pp_box[data-mode="vertical"],
+.goal > div.Pp_box[data-mode="vertical"] > div.Pp_box[data-mode="vertical"] {
+  display: block;
+}
+
+.constr\.evar {
+  color: #e399ff;
+}
+
+.constr\.keyword {
+  color: #11aeea;
+}
+
+.constr\.notation {
+  color: #ff6666;
+}
+
+.constr\.path {
+  color: #1ce715;
+}
+
+.constr\.reference {
+  color: #6d7ccc;
+}
+
+.constr\.type {
+  color: #aabb22;
+}
+
+.constr\.variable {
+  color: #7fbfff;
+}
+
+.module\.definition {
+  color: #777ddd;
+}
+
+.module\.keyword {
+  color: #dd862f;
+}
+
+.tactic\.keyword {
+  color: #9674b8;
+}
+
+.tactic\.primitive {
+  color: #c0c0c0;
+}
+
+.tactic\.string {
+  color: #99ff99;
+}
+
+.constr\.reference:hover,
+.constr\.type:hover,
+.constr\.variable:hover,
+.constr\.notation:hover {
+  background: rgba(204, 255, 1, 0.25);
+  box-shadow: 0 0 4px 1px rgba(204, 255, 1, 0.5);
+}
