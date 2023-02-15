@@ -17,7 +17,8 @@ end
 
 (** [make_info ~st ast] Compute info about a possible definition in [ast], we
     need [~st] to compute the type. *)
-val make_info : st:State.t -> t -> Loc.t Info.t list option
+val make_info :
+  st:State.t -> lines:string array -> t -> Lang.Range.t Info.t list option
 
 (** Printing *)
 val print : t -> Pp.t

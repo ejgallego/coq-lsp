@@ -79,7 +79,7 @@ let validate_line ~(doc : Fleche.Doc.t) ~line =
 let validate_position ~doc ~point =
   let line, char = point in
   Option.bind (validate_line ~doc ~line) (fun line ->
-      Option.bind (Fleche.Utf8.index_of_char ~line ~char) (fun index ->
+      Option.bind (Coq.Utf8.index_of_char ~line ~char) (fun index ->
           Some (String.get line index)))
 
 let get_char_at_point ~(doc : Fleche.Doc.t) ~point =

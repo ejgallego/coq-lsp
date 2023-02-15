@@ -9,7 +9,7 @@ module Node : sig
   module Ast : sig
     type t =
       { v : Coq.Ast.t
-      ; ast_info : Loc.t Coq.Ast.Info.t list option
+      ; ast_info : Lang.Range.t Coq.Ast.Info.t list option
       }
   end
 
@@ -71,7 +71,6 @@ type t = private
 
 (** Return the list of all asts in the doc *)
 val asts : t -> Node.Ast.t list
-(* val asts_with_st : t -> (Node.Ast.t * Coq.State.t) list *)
 
 (** Note, [create] calls Coq but it is not cached in the Memo.t table *)
 val create :

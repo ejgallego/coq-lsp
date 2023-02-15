@@ -67,7 +67,7 @@ module Node = struct
   module Ast = struct
     type t =
       { v : Coq.Ast.t
-      ; ast_info : Loc.t Coq.Ast.Info.t list option
+      ; ast_info : Lang.Range.t Coq.Ast.Info.t list option
       }
 
     let to_coq { v; _ } = Coq.Ast.to_coq v
@@ -110,7 +110,7 @@ module Node = struct
     type t = Lang.Range.t option * int * Pp.t
 
     let feedback_to_message ~lines (loc, lvl, msg) =
-      (Coq_utils.to_orange ~lines loc, lvl, msg)
+      (Coq.Utils.to_orange ~lines loc, lvl, msg)
   end
 
   type t =
@@ -216,7 +216,6 @@ let mk_doc root_state workspace uri =
   Coq.Init.doc_init ~root_state ~workspace ~uri
 
 let asts doc = List.filter_map Node.ast doc.nodes
-(* let asts_with_st doc = List.filter_map Node.(with_state ast) doc.nodes *)
 
 let init_fname ~uri =
   let file = Lang.LUri.File.to_string_file uri in
@@ -241,7 +240,7 @@ let create ~state ~workspace ~uri ~version ~contents =
   Coq.Protect.R.map r ~f:(fun root ->
       let init_loc = init_loc ~uri in
       let lines = contents.Contents.lines in
-      let init_range = Coq_utils.to_range ~lines init_loc in
+      let init_range = Coq.Utils.to_range ~lines init_loc in
       let feedback =
         List.map (Node.Message.feedback_to_message ~lines) feedback
       in
@@ -267,7 +266,7 @@ let create_failed_permanent ~state ~uri ~version ~raw =
   |> Contents.R.map ~f:(fun contents ->
          let lines = contents.Contents.lines in
          let init_loc = init_loc ~uri in
-         let range = Coq_utils.to_range ~lines init_loc in
+         let range = Coq.Utils.to_range ~lines init_loc in
          { uri
          ; contents
          ; version
@@ -325,7 +324,7 @@ let bump_version ~init_range ~version ~contents doc =
 
 let bump_version ~version ~(contents : Contents.t) doc =
   let init_loc = init_loc ~uri:doc.uri in
-  let init_range = Coq_utils.to_range ~lines:contents.lines init_loc in
+  let init_range = Coq.Utils.to_range ~lines:contents.lines init_loc in
   match doc.completed with
   (* We can do better, but we need to handle the case where the anomaly is when
      restoring / executing the first sentence *)
@@ -446,7 +445,7 @@ type parse_action =
 let parse_action ~lines ~st last_tok doc_handle =
   let start_loc = Coq.Parsing.Parsable.loc doc_handle |> CLexer.after in
   let parse_res, time = parse_stm ~st doc_handle in
-  let f = Coq_utils.to_range ~lines in
+  let f = Coq.Utils.to_range ~lines in
   let { Coq.Protect.E.r; feedback } = Coq.Protect.E.map_loc ~f parse_res in
   match r with
   | Coq.Protect.R.Interrupted -> (EOF (Stopped last_tok), [], feedback, time)
@@ -457,7 +456,7 @@ let parse_action ~lines ~st last_tok doc_handle =
          EOF, the below trick doesn't work. That will involved updating the type
          of `main_entry` *)
       let last_tok = Coq.Parsing.Parsable.loc doc_handle in
-      let last_tok = Coq_utils.to_range ~lines last_tok in
+      let last_tok = Coq.Utils.to_range ~lines last_tok in
       (EOF (Yes last_tok), [], feedback, time)
     | Ok (Some ast) ->
       let () = if Debug.parsing then DDebug.parsed_sentence ~ast in
@@ -472,9 +471,9 @@ let parse_action ~lines ~st last_tok doc_handle =
       let parse_diags = [ Diags.make err_range 1 msg ] in
       Coq.Parsing.discard_to_dot doc_handle;
       let last_tok = Coq.Parsing.Parsable.loc doc_handle in
-      let last_tok_range = Coq_utils.to_range ~lines last_tok in
+      let last_tok_range = Coq.Utils.to_range ~lines last_tok in
       let span_loc = Util.build_span start_loc last_tok in
-      let span_range = Coq_utils.to_range ~lines span_loc in
+      let span_range = Coq.Utils.to_range ~lines span_loc in
       (Skip (span_range, last_tok_range), parse_diags, feedback, time))
 
 (* Result of node-building action *)
@@ -576,7 +575,7 @@ let document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
   | Process ast -> (
     let lines = doc.contents.lines in
     let process_res, info = interp_and_info ~parsing_time ~st ast in
-    let f = Coq_utils.to_range ~lines in
+    let f = Coq.Utils.to_range ~lines in
     let { Coq.Protect.E.r; feedback } = Coq.Protect.E.map_loc ~f process_res in
     match r with
     | Coq.Protect.R.Interrupted ->
@@ -584,12 +583,14 @@ let document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
       Interrupted last_tok
     | Coq.Protect.R.Completed res ->
       let ast_loc = Coq.Ast.loc ast |> Option.get in
-      let ast_range = Coq_utils.to_range ~lines ast_loc in
-      let ast = Node.Ast.{ v = ast; ast_info = Coq.Ast.make_info ~st ast } in
+      let ast_range = Coq.Utils.to_range ~lines ast_loc in
+      let ast =
+        Node.Ast.{ v = ast; ast_info = Coq.Ast.make_info ~lines ~st ast }
+      in
       (* The evaluation by Coq fully completed, then we can resume checking from
          this point then, hence the new last valid token last_tok_new *)
       let last_tok_new = Coq.Parsing.Parsable.loc doc_handle in
-      let last_tok_new = Coq_utils.to_range ~lines last_tok_new in
+      let last_tok_new = Coq.Utils.to_range ~lines last_tok_new in
       node_of_coq_result ~doc ~range:ast_range ~ast ~st ~parsing_diags
         ~parsing_feedback ~feedback ~info last_tok_new res)
 
@@ -708,7 +709,7 @@ let loc_after ~lines ~uri (r : Lang.Range.t) =
   let end_index =
     let line = Array.get lines r.end_.line in
     debug_loc_after line r;
-    match Utf8.index_of_char ~line ~char:r.end_.character with
+    match Coq.Utf8.index_of_char ~line ~char:r.end_.character with
     | None -> String.length line
     | Some index -> index
   in
