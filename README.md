@@ -1,5 +1,7 @@
 ## Coq LSP
 
+[![Github CI][ci-badge]][ci-link]
+
 `coq-lsp` is a [Language
 Server](https://microsoft.github.io/language-server-protocol/) and [Visual
 Studio Code](https://code.visualstudio.com/) extension for the [Coq Proof
@@ -232,3 +234,6 @@ server, thanks to all the collaborators in that project!
 <!-- mode: Markdown -->
 <!-- fill-column: 80 -->
 <!-- End: -->
+
+[ci-badge]: https://github.com/ejgallego/coq-lsp/actions/workflows/build.yml/badge.svg
+[ci-link]: https://github.com/ejgallego/coq-lsp/actions/workflows/build.yml
