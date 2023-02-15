@@ -119,7 +119,7 @@ let hover ~doc ~point =
       | Some typ ->
         let id = Names.Id.to_string id in
         let typ = Pp.string_of_ppcmds typ in
-        Format.asprintf "```coq\n%s: %s\n```\n___\n%s" id typ hover_string)
+        Format.asprintf "```coq\n%s : %s\n```\n___\n%s" id typ hover_string)
     | None -> hover_string
   in
   let contents = { HoverContents.kind = "markdown"; value = hover_string } in

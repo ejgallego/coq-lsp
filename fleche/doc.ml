@@ -89,21 +89,15 @@ module Node = struct
 
     let pp_time fmt = function
       | None -> Format.fprintf fmt "N/A"
-      | Some time -> Format.fprintf fmt "%.4f" time
+      | Some time -> Format.fprintf fmt "%.3f" time
 
     let print { cache_hit; parsing_time; time; mw_prev; mw_after; stats } =
       let cptime = Stats.get_f stats ~kind:Stats.Kind.Parsing in
       let cetime = Stats.get_f stats ~kind:Stats.Kind.Exec in
-      let memo_info =
-        Format.asprintf
-          "| Cache Hit: %b | Parse (s/c): %.4f / %.2f | Exec (s/c): %a / %.2f |"
-          cache_hit parsing_time cptime pp_time time cetime
-      in
-      let mem_info =
-        Format.asprintf "| major words: %a | diff %a |" Util.pp_words mw_after
-          Util.pp_words (mw_after -. mw_prev)
-      in
-      memo_info ^ "\n___\n" ^ mem_info
+      Format.asprintf
+        "Cached: %b | P: %.3f / %.2f | E: %a / %.2f | M: %a | Diff: %a"
+        cache_hit parsing_time cptime pp_time time cetime Util.pp_words mw_after
+        Util.pp_words (mw_after -. mw_prev)
   end
 
   module Message = struct
