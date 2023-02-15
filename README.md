@@ -19,23 +19,23 @@ with other projects.
 
 - [Coq LSP](#coq-lsp)
   - [Table of Contents](#table-of-contents)
-  - [Installation](#installation)
+  - [🛠️ Installation](#️-installation)
     - [**Server**](#server)
     - [**Visual Studio Code**](#visual-studio-code)
     - [**Neovim**](#neovim)
-  - [Discussion Channel](#discussion-channel)
-  - [Features](#features)
-    - [Incremental Compilation and Continuous Document Checking](#incremental-compilation-and-continuous-document-checking)
-    - [Smart, Cache-Aware Error Recovery](#smart-cache-aware-error-recovery)
-    - [Whole-Document Goal Display](#whole-document-goal-display)
-    - [Markdown Support](#markdown-support)
-    - [Document Outline](#document-outline)
-    - [Detailed Timing and Memory Statistics](#detailed-timing-and-memory-statistics)
-    - [Client-Side Configuration Options](#client-side-configuration-options)
-    - [Reusability, Standards, Modularity](#reusability-standards-modularity)
-    - [A Platform for Research!](#a-platform-for-research)
-  - [FAQ](#faq)
-  - [Troubleshooting and Known Problems](#troubleshooting-and-known-problems)
+  - [🗣️ Discussion Channel](#️-discussion-channel)
+  - [🎁 Features](#-features)
+    - [⏩ Incremental Compilation and Continuous Document Checking](#-incremental-compilation-and-continuous-document-checking)
+    - [🧠 Smart, Cache-Aware Error Recovery](#-smart-cache-aware-error-recovery)
+    - [🥅 Whole-Document Goal Display](#-whole-document-goal-display)
+    - [🗒️ Markdown Support](#️-markdown-support)
+    - [👥 Document Outline](#-document-outline)
+    - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
+    - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
+    - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
+    - [🔎 A Platform for Research!](#-a-platform-for-research)
+  - [❓FAQ](#faq)
+  - [⁉️ Troubleshooting and Known Problems](#️-troubleshooting-and-known-problems)
     - [Working With Multiple Files](#working-with-multiple-files)
     - [Planned Features](#planned-features)
   - [Protocol Documentation](#protocol-documentation)
@@ -45,10 +45,10 @@ with other projects.
   - [Licensing Information](#licensing-information)
   - [Acknowledgments](#acknowledgments)
 
-## Installation
+## 🛠️ Installation
 
 In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md) the
-`coq-lsp` server, and the Visual Studio Code extension:
+`coq-lsp` and a suitable client. We recommend the Visual Studio Code Extension.
 
 ### **Server**
 
@@ -84,15 +84,15 @@ programs.vscode = {
 ### **Neovim**
 - Experimental client by Jaehwang Jung: https://github.com/tomtomjhj/coq-lsp.nvim
 
-## Discussion Channel
+## 🗣️ Discussion Channel
 
 `coq-lsp` discussion channel it at [Coq's
 Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp), don't hesitate
 to stop by; both users and developers are welcome.
 
-## Features
+## 🎁 Features
 
-### Incremental Compilation and Continuous Document Checking
+### ⏩ Incremental Compilation and Continuous Document Checking
 
 Edit your file, and `coq-lsp` will try to re-check only what is necessary,
 continuously. No more dreaded `Ctrl-C Ctrl-N`! Rechecking tries to be smart,
@@ -106,7 +106,7 @@ restart your proof session where you left it at the last time.
 Incremental support is undergoing refinement, if `coq-lsp` rechecks when it
 should not, please file a bug!
 
-### Smart, Cache-Aware Error Recovery
+### 🧠 Smart, Cache-Aware Error Recovery
 
 `coq-lsp` won't stop checking on errors, but supports (and encourages) working
 with proof documents that are only partially working. Moreover, error recovery
@@ -115,14 +115,22 @@ integrates with the incremental cache, and will recognize proof structure.
 You can edit without fear inside a `Proof. ... Qed.`, the rest of the document
 won't be rechecked, unless the proof is completed.
 
-### Whole-Document Goal Display
+<img alt="Smart error recovery" height="286px" src="etc/img/lsp-errors.gif"/>
+
+Furthermore, you can leave bullets and focused goals unfinished, and `coq-lsp`
+will automatically admit them for you.
+
+### 🥅 Whole-Document Goal Display
 
 Press `Alt+Enter` (or `Cmd+Enter` in Mac) to show goals at point in a side
 panel.
 
 <img alt="Whole-Document Goal Display" height="286px" src="etc/img/lsp-goals.gif"/>
 
-### Markdown Support
+The panel will also include goals that you have given up or shelved. This panel
+will also show the current info about open bullets and their goals.
+
+### 🗒️ Markdown Support
 
 Open a markdown file with a `.mv` extension, `coq-lsp` will check the code parts
 that are enclosed into `coq` language blocks! `coq-lsp` places human-friendly
@@ -130,21 +138,24 @@ documents at the core of its design ideas.
 
 <img alt="Coq + Markdown Editing" height="286px" src="etc/img/lsp-markdown.gif"/>
 
-### Document Outline
+### 👥 Document Outline
 
 `coq-lsp` supports document outline and code folding, allowing you to jump
-directly to definitions in the document.
+directly to definitions in the document. Many of the Coq vernacular commands
+like `Definition`, `Theorem`, `Lemma`, etc. will be recognized as document
+symbols which you can navigate to or see the outline of.
 
-<img alt="Document Outline Demo" height="286px" src="etc/img/lsp-outline.gif"/>
 
-### Detailed Timing and Memory Statistics
+<img alt="Document Outline Demo" height="286px" src="etc/img/lsp-outline.gif"/> <img alt="Document Symbols" height="286px" src="etc/img/lsp-doc-symbols.png"/>
+
+### ⏱️ Detailed Timing and Memory Statistics
 
 Hover over any Coq sentence, `coq-lsp` will display detailed memory and timing
 statistics.
 
 <img alt="Stats on Hover" height="286px" src="etc/img/lsp-hover.gif"/>
 
-### Client-Side Configuration Options
+### 🔧 Client-Side Configuration Options
 
 `coq-lsp` is configurable, and tries to adapt to your own workflow. What to do
 when a proof doesn't check, admit or ignore? You decide!
@@ -153,7 +164,7 @@ See the `coq-lsp` extension configuration in VSCode for options available.
 
 <img alt="Configuration screen" height="286px" src="etc/img/lsp-config.png"/>
 
-### Reusability, Standards, Modularity
+### ♻️ Reusability, Standards, Modularity
 
 The incremental document checking library of `coq-lsp` has been designed to be
 reusable by other projects written in OCaml and with needs for document
@@ -162,7 +173,7 @@ validation UI, as well as by other Coq projects such as jsCoq.
 Moreover, we are strongly based on standards, aiming for the least possible
 extensions.
 
-### A Platform for Research!
+### 🔎 A Platform for Research!
 
 A key `coq-lsp` goal is to serve as central platform for researchers in
 Human-Computer-Interaction, Machine Learning, and Software Engineering willing
@@ -171,11 +182,11 @@ to interact with Coq.
 Towards this goal, `coq-lsp` extends and will eventually replace `coq-serapi`,
 which has been used by many to that purpose.
 
-## FAQ
+## ❓FAQ
 
 See our [list of frequently-asked questions](./etc/FAQ.md).
 
-## Troubleshooting and Known Problems
+## ⁉️ Troubleshooting and Known Problems
 
 - Some problems can be resolved by restarting `coq-lsp`, in Visual Studio Code,
   `Ctrl+Shift+P` will give you access to the `coq-lsp.restart` command.
