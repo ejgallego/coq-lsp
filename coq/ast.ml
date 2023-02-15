@@ -18,6 +18,7 @@ module Id = struct
 
   let of_string = Names.Id.of_string
   let of_coq x = x
+  let to_coq x = x
 
   module Set = Names.Id.Set
   module Map = Names.Id.Map

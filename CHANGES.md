@@ -64,6 +64,8 @@
  - Store Ast.Info.t incrementally (@ejgallego, #337, fixes #316)
  - Basic jump to definition support; due to lack of workspace
    metadata, this only works inside the same file (@ejgallego, #318)
+ - Show type of identifiers at point on hover (@ejgallego, #321, cc:
+   #164)
 
 # coq-lsp 0.1.4: View
 ---------------------
