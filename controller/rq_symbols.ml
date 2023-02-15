@@ -26,13 +26,11 @@ let rec mk_syminfo ~lines info =
 let mk_syminfo ~lines info =
   mk_syminfo ~lines info |> Lsp.JFleche.DocumentSymbol.to_yojson
 
-let definition_info (ast, st) = Coq.Ast.definition_info ~st ast
+let definition_info { Fleche.Doc.Node.Ast.ast_info; _ } = ast_info
 
 let symbols ~lines ~(doc : Fleche.Doc.t) =
   let definfo =
-    Fleche.Doc.asts_with_st doc
-    |> List.filter_map definition_info
-    |> List.concat
+    Fleche.Doc.asts doc |> List.filter_map definition_info |> List.concat
   in
   let result = List.map (mk_syminfo ~lines) definfo in
   `List result

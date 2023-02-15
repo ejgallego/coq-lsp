@@ -61,6 +61,7 @@
    opened due to an unsolved previous bullet. This also works for {}
    focusing operators. This is very useful when navigating bulleted
    proofs (@ejgallego, @Alizter, #319, fixes #300)
+ - Store Ast.Info.t incrementally (@ejgallego, #337, fixes #316)
 
 # coq-lsp 0.1.4: View
 ---------------------

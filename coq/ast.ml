@@ -173,7 +173,7 @@ let fixpoint_info ~range { fname; _ } =
   let detail = "Fixpoint" in
   Info.make ~range ~name ~detail ~kind:Kinds.function_ ()
 
-let definition_info ~st:_ CAst.{ loc; v } : _ Info.t list option =
+let make_info ~st:_ CAst.{ loc; v } : _ Info.t list option =
   let open Vernacexpr in
   match loc with
   | None -> None
