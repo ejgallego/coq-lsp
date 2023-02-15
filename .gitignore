@@ -7,6 +7,8 @@ _opam
 *.cache
 
 .direnv
-# Nix build will produce this
+
+# Nix
 result
+nix/profiles/
 

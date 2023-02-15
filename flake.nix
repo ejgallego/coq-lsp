@@ -72,7 +72,7 @@
 
           packages = l.attrValues {
             inherit (config.treefmt.build) wrapper;
-            inherit (pkgs) dune_3;
+            inherit (pkgs) dune_3 nodejs;
             inherit (ocamlPackages) ocaml ocaml-lsp;
           };
         };
