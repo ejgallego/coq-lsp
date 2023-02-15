@@ -23,6 +23,7 @@ with other projects.
   - [🥅 Whole-Document Goal Display](#-whole-document-goal-display)
   - [🗒️ Markdown Support](#️-markdown-support)
   - [👥 Document Outline](#-document-outline)
+  - [🔎 Document Hover](#-document-hover)
   - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
   - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
   - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
@@ -100,6 +101,12 @@ symbols which you can navigate to or see the outline of.
 
 
 <img alt="Document Outline Demo" height="286px" src="etc/img/lsp-outline.gif"/> <img alt="Document Symbols" height="286px" src="etc/img/lsp-doc-symbols.png"/>
+
+### 🔎 Document Hover
+
+Hovering over a Coq identifier will show its type.
+
+<img alt="Types on Hover" height="286px" src="etc/img/lsp-hover-2.gif"/>
 
 ### ⏱️ Detailed Timing and Memory Statistics
 
