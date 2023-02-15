@@ -50,7 +50,7 @@ let mk_edit (line, character) newText =
   TextEditReplace.{ insert; replace; newText }
 
 let unicode_commit_chars =
-  [ " "; "("; ")"; ","; "."; "-" ]
+  [ " "; "("; ")"; ","; "."; "-"; "'" ]
   @ [ "0"; "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"; "9" ]
 
 let mk_unicode_completion_item point (label, newText) =
