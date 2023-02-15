@@ -6,13 +6,7 @@
 (************************************************************************)
 
 (* Replace by ppx when we can print goals properly in the client *)
-let mk_message (_loc, lvl, msg) =
-  let hdr =
-    if lvl = 4 then Pp.str "[info ] "
-    else if lvl = 5 then Pp.str "[debug] "
-    else Pp.mt ()
-  in
-  Pp.(hdr ++ msg)
+let mk_message (range, level, text) = Lsp.JFleche.Message.{ range; level; text }
 
 let mk_messages node =
   Option.map Fleche.Doc.Node.messages node

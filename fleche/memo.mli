@@ -11,7 +11,7 @@ end
 val interp_command :
   st:Coq.State.t -> Coq.Ast.t -> Coq.State.t Coq.Interp.interp_result Stats.t
 
-val interp_admitted : st:Coq.State.t -> Coq.State.t
+val interp_admitted : st:Coq.State.t -> (Coq.State.t, Loc.t) Coq.Protect.E.t
 
 (** Stats *)
 val mem_stats : unit -> int

@@ -24,7 +24,7 @@ depends: [
   # lsp dependencies
   "cmdliner"     { >= "1.1.0" }
   "yojson"       { >= "1.7.0" }
-  "uri"                 { >= "4.2.0"    }
+  "uri"          { >= "4.2.0" }
 
   # waterproof parser
   "menhir"       { >= "20220210" }

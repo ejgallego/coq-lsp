@@ -16,7 +16,7 @@
  - Server is now more strict w.r.t. what URIs it will accept for
    documents, see protocol documentation (@ejgallego, #286, reported
    by Alex Sanchez-Stern)
- - Hypothesis with bodies are now correctly displayed (@ejgallego,
+ - Hypotheses with bodies are now correctly displayed (@ejgallego,
    #296, fixes #293, report by Ali Caglayan)
  - `coq-lsp` incorrectly required the optional `rootPath`
    initialization parameter, moreover it ignored `rootUri` if present
@@ -43,7 +43,29 @@
    #314, fixes #308)
  - Goal display handles background goals better, showing preview,
    goals stack, and focusing information (@ejgallego, #290, fixes
-   #288, based on jsCoq code by Shachar Itzhaky)
+   #288, fixes #304, based on jsCoq code by Shachar Itzhaky)
+ - Warnings are now printed in the info view messages panel
+   (@ejgallego, #315, fixes #195)
+ - Info protocol messages now have location and level
+   (@ejgallego, #315)
+ - Warnings are not printed in the info view messages panel
+   (@ejgallego, #, fixes #195)
+ - Improved `documentSymbol` return type for newer `DocumentSymbol[]`
+   hierarchical symbol support. This means that sections and modules
+   will now be properly represented, as well as constructors for
+   inductive types, projections for records, etc...  (@ejgallego,
+   #174, fixes #121, #122)
+ - [internal] Error recovery can now execute full Coq commands as to
+   amend states, required for #319 (@ejallego, #320)
+ - Auto-admit the previous bullet goal when a new bullet cannot be
+   opened due to an unsolved previous bullet. This also works for {}
+   focusing operators. This is very useful when navigating bulleted
+   proofs (@ejgallego, @Alizter, #319, fixes #300)
+ - Store Ast.Info.t incrementally (@ejgallego, #337, fixes #316)
+ - Basic jump to definition support; due to lack of workspace
+   metadata, this only works inside the same file (@ejgallego, #318)
+ - Show type of identifiers at point on hover (@ejgallego, #321, cc:
+   #164)
 
 # coq-lsp 0.1.4: View
 ---------------------

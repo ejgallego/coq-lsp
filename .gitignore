@@ -5,3 +5,8 @@ _opam
 .git-ps
 
 *.cache
+
+.direnv
+# Nix build will produce this
+result
+

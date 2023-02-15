@@ -15,24 +15,5 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type document_request =
-  lines:string Array.t -> doc:Fleche.Doc.t -> Yojson.Safe.t
-
+type document_request = doc:Fleche.Doc.t -> Yojson.Safe.t
 type position_request = doc:Fleche.Doc.t -> point:int * int -> Yojson.Safe.t
-
-open Lsp.JFleche
-
-let symbols ~lines ~(doc : Fleche.Doc.t) =
-  let uri = doc.uri in
-  let f loc id =
-    let name = Names.Id.to_string id in
-    let kind = 12 in
-    let location =
-      let range = Fleche.Coq_utils.to_range ~lines loc in
-      { Location.uri; range }
-    in
-    SymInfo.(to_yojson { name; kind; location })
-  in
-  let ast = Fleche.Doc.asts doc in
-  let slist = Coq.Ast.grab_definitions f ast in
-  `List slist
