@@ -116,7 +116,7 @@ module type S = sig
   val node : (approx, Doc.Node.t) query
   val range : (approx, Lang.Range.t) query
   val ast : (approx, Doc.Node.Ast.t) query
-  val goals : (approx, Coq.Goals.reified_pp) query
+  val goals : (approx, Pp.t Coq.Goals.reified_pp) query
   val messages : (approx, Doc.Node.Message.t list) query
   val info : (approx, Doc.Node.Info.t) query
   val completion : (string, string list) query

@@ -74,12 +74,12 @@ module Message = struct
 end
 
 module GoalsAnswer = struct
-  type t =
+  type 'pp t =
     { textDocument : Doc.VersionedTextDocument.t
     ; position : Lang.Point.t
-    ; goals : JCoq.Goals.reified_pp option
-    ; messages : Pp.t Message.t list
-    ; error : Pp.t option [@default None]
+    ; goals : 'pp JCoq.Goals.reified_pp option
+    ; messages : 'pp Message.t list
+    ; error : 'pp option [@default None]
     }
   [@@deriving to_yojson]
 end
