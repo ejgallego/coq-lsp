@@ -122,19 +122,23 @@ let mk_name = CAst.map (fun id -> Names.Name id)
 let constructor_info ((_, (id, _typ)) : constructor_expr) =
   let range = Option.get id.loc in
   let name = mk_name id in
-  Info.make ~range ~name ~kind:Kinds.enumMember ()
+  let detail = "Constructor" in
+  let kind = Kinds.enumMember in
+  Info.make ~range ~name ~detail ~kind ()
 
-let local_decl_expr_info ~kind (l : local_decl_expr) =
+let local_decl_expr_info ~kind ~detail (l : local_decl_expr) =
   let name =
     match l with
     | AssumExpr (ln, _, _) -> ln
     | DefExpr (ln, _, _, _) -> ln
   in
   let range = Option.get name.loc in
-  Info.make ~range ~name ~kind ()
+  Info.make ~range ~name ~kind ~detail ()
 
 let projection_info ((ld, _) : local_decl_expr * record_field_attr) =
-  local_decl_expr_info ~kind:Kinds.field ld
+  let kind = Kinds.field in
+  let detail = "Field" in
+  local_decl_expr_info ~detail ~kind ld
 
 let inductive_info ~range ikind (expr, _) =
   let (_, (id, _)), _, _, cons = expr in
@@ -166,7 +170,8 @@ let assumption_info kind (_, (ids, _)) =
 
 let fixpoint_info ~range { fname; _ } =
   let name = mk_name fname in
-  Info.make ~range ~name ~kind:Kinds.function_ ()
+  let detail = "Fixpoint" in
+  Info.make ~range ~name ~detail ~kind:Kinds.function_ ()
 
 let definition_info ~st:_ CAst.{ loc; v } : _ Info.t list option =
   let open Vernacexpr in
@@ -194,5 +199,6 @@ let definition_info ~st:_ CAst.{ loc; v } : _ Info.t list option =
       Some (List.map (fixpoint_info ~range) f_expr)
     | VernacInstance ((name, _), _, _, _, _) ->
       let kind = Kinds.method_ in
-      Some [ Info.make ~range ~name ~kind () ]
+      let detail = "Instance" in
+      Some [ Info.make ~range ~name ~kind ~detail () ]
     | _ -> None)
