@@ -16,7 +16,7 @@
  - Server is now more strict w.r.t. what URIs it will accept for
    documents, see protocol documentation (@ejgallego, #286, reported
    by Alex Sanchez-Stern)
- - Hypothesis with bodies are now correctly displayed (@ejgallego,
+ - Hypotheses with bodies are now correctly displayed (@ejgallego,
    #296, fixes #293, report by Ali Caglayan)
  - `coq-lsp` incorrectly required the optional `rootPath`
    initialization parameter, moreover it ignored `rootUri` if present
