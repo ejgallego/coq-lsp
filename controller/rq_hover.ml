@@ -59,7 +59,7 @@ let info_of_constructor env cr =
   ctype
 
 let info_of_id env sigma id =
-  let qid = Libnames.qualid_of_ident id in
+  let qid = Libnames.qualid_of_string id in
   (* try locate the kind of object the name refers to *)
   try
     let lid = Nametab.locate qid in
@@ -73,7 +73,9 @@ let info_of_id env sigma id =
       info_of_constructor env cr |> Printer.pr_type_env env sigma)
     |> fun x -> Some x
   with _ -> (
-    try Some (info_of_var env id |> Printer.pr_type_env env sigma)
+    try
+      let id = Names.Id.of_string id in
+      Some (info_of_var env id |> Printer.pr_type_env env sigma)
     with _ -> None)
 
 let info_of_id ~st id =
@@ -113,11 +115,9 @@ let hover ~doc ~point =
   let hover_string =
     match Rq_common.get_id_at_point ~doc ~point with
     | Some id -> (
-      let id = Coq.Ast.Id.to_coq id in
       match info_of_id_at_point ~doc ~point id with
       | None -> hover_string
       | Some typ ->
-        let id = Names.Id.to_string id in
         let typ = Pp.string_of_ppcmds typ in
         Format.asprintf "```coq\n%s : %s\n```\n___\n%s" id typ hover_string)
     | None -> hover_string

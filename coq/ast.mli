@@ -15,21 +15,10 @@ module Id : sig
   module Map : CMap.ExtS with type key = t and module Set := Set
 end
 
-(** Information about the Ast, to move to lang *)
-module Info : sig
-  type 'l t =
-    { range : 'l
-    ; name : Names.Name.t CAst.t
-    ; kind : int
-    ; detail : string option (* usually the type *)
-    ; children : 'l t list option
-    }
-end
-
 (** [make_info ~st ast] Compute info about a possible definition in [ast], we
     need [~st] to compute the type. *)
 val make_info :
-  st:State.t -> lines:string array -> t -> Lang.Range.t Info.t list option
+  st:State.t -> lines:string array -> t -> Lang.Ast.Info.t list option
 
 (** Printing *)
 val print : t -> Pp.t
