@@ -54,19 +54,6 @@ module Kinds = struct
   let _typeParameter = 26
 end
 
-module Info = struct
-  type 'l t =
-    { range : 'l
-    ; name : Names.Name.t CAst.t
-    ; kind : int
-    ; detail : string option (* usually the type *)
-    ; children : 'l t list option
-    }
-
-  let make ~range ~name ~kind ?detail ?children () =
-    { range; name; kind; detail; children }
-end
-
 let marshal_in ic : t = Marshal.from_channel ic
 let marshal_out oc v = Marshal.to_channel oc v []
 
@@ -128,25 +115,38 @@ let theorem_detail = function
   | Proposition -> "Proposition"
   | Corollary -> "Corollary"
 
-let mk_name = CAst.map (fun id -> Names.Name id)
+let name_to_string = function
+  | Names.Anonymous -> None
+  | Names.Name id -> Some (Names.Id.to_string id)
+
+let mk_name ~lines (id : Names.lname) : Lang.Ast.Name.t Lang.With_range.t =
+  CAst.with_loc_val
+    (fun ?loc id ->
+      let loc = Option.get loc in
+      let range = Utils.to_range ~lines loc in
+      let v = name_to_string id in
+      Lang.With_range.{ range; v })
+    id
+
+let mk_id ~lines (id : Names.lident) =
+  CAst.map (fun id -> Names.Name id) id |> mk_name ~lines
 
 let constructor_info ~lines ((_, (id, _typ)) : constructor_expr) =
   let range = Option.get id.loc in
   let range = Utils.to_range ~lines range in
-  let name = mk_name id in
+  let name = mk_id ~lines id in
   let detail = "Constructor" in
   let kind = Kinds.enumMember in
-  Info.make ~range ~name ~detail ~kind ()
+  Lang.Ast.Info.make ~range ~name ~detail ~kind ()
 
 let local_decl_expr_info ~lines ~kind ~detail (l : local_decl_expr) =
   let name =
     match l with
-    | AssumExpr (ln, _, _) -> ln
-    | DefExpr (ln, _, _, _) -> ln
+    | AssumExpr (ln, _, _) -> mk_name ~lines ln
+    | DefExpr (ln, _, _, _) -> mk_name ~lines ln
   in
-  let range = Option.get name.loc in
-  let range = Utils.to_range ~lines range in
-  Info.make ~range ~name ~kind ~detail ()
+  let range = name.range in
+  Lang.Ast.Info.make ~range ~name ~kind ~detail ()
 
 let projection_info ~lines ((ld, _) : local_decl_expr * record_field_attr) =
   let kind = Kinds.field in
@@ -155,16 +155,16 @@ let projection_info ~lines ((ld, _) : local_decl_expr * record_field_attr) =
 
 let inductive_info ~lines ~range ikind (expr, _) =
   let (_, (id, _)), _, _, cons = expr in
-  let name = mk_name id in
+  let name = mk_id ~lines id in
   match cons with
   | Constructors ci ->
     let children = List.map (constructor_info ~lines) ci in
     let kind, detail = inductive_detail ikind in
-    Info.make ~range ~name ~kind ~detail ~children ()
+    Lang.Ast.Info.make ~range ~name ~kind ~detail ~children ()
   | RecordDecl (_, pi, _) ->
     let children = List.map (projection_info ~lines) pi in
     let kind, detail = inductive_detail ikind in
-    Info.make ~range ~name ~kind ~detail ~children ()
+    Lang.Ast.Info.make ~range ~name ~kind ~detail ~children ()
 
 let inductives_info ~lines ~range ikind idecls =
   match idecls with
@@ -174,20 +174,20 @@ let inductives_info ~lines ~range ikind idecls =
 let ident_decl_info ~lines ~kind ~detail (lident, _) =
   let range = Option.get lident.loc in
   let range = Utils.to_range ~lines range in
-  let name = mk_name lident in
-  Info.make ~range ~name ~detail ~kind ()
+  let name = mk_id ~lines lident in
+  Lang.Ast.Info.make ~range ~name ~detail ~kind ()
 
 let assumption_info ~lines kind (_, (ids, _)) =
   let detail = assumption_detail kind in
   let kind = Kinds.variable in
   List.map (ident_decl_info ~lines ~kind ~detail) ids
 
-let fixpoint_info ~range { fname; _ } =
-  let name = mk_name fname in
+let fixpoint_info ~lines ~range { fname; _ } =
+  let name = mk_id ~lines fname in
   let detail = "Fixpoint" in
-  Info.make ~range ~name ~detail ~kind:Kinds.function_ ()
+  Lang.Ast.Info.make ~range ~name ~detail ~kind:Kinds.function_ ()
 
-let make_info ~st:_ ~lines CAst.{ loc; v } : _ Info.t list option =
+let make_info ~st:_ ~lines CAst.{ loc; v } : Lang.Ast.Info.t list option =
   let open Vernacexpr in
   match loc with
   | None -> None
@@ -196,25 +196,27 @@ let make_info ~st:_ ~lines CAst.{ loc; v } : _ Info.t list option =
     (* TODO: sections *)
     match v.expr with
     | VernacDefinition ((_, kind), (name, _), _) ->
+      let name = mk_name ~lines name in
       let detail = definition_detail kind in
       let kind = Kinds.function_ in
-      Some [ Info.make ~range ~name ~detail ~kind () ]
+      Some [ Lang.Ast.Info.make ~range ~name ~detail ~kind () ]
     | VernacStartTheoremProof (kind, ndecls) -> (
       let detail = theorem_detail kind in
       let kind = Kinds.function_ in
       match ndecls with
       | ((id, _), _) :: _ ->
-        let name = mk_name id in
-        Some [ Info.make ~range ~name ~detail ~kind () ]
+        let name = mk_id ~lines id in
+        Some [ Lang.Ast.Info.make ~range ~name ~detail ~kind () ]
       | [] -> None)
     | VernacInductive (ikind, idecls) ->
       inductives_info ~lines ~range ikind idecls
     | VernacAssumption ((_, kind), _, ids) ->
       Some (List.concat_map (assumption_info ~lines kind) ids)
     | VernacFixpoint (_, f_expr) ->
-      Some (List.map (fixpoint_info ~range) f_expr)
+      Some (List.map (fixpoint_info ~lines ~range) f_expr)
     | VernacInstance ((name, _), _, _, _, _) ->
+      let name = mk_name ~lines name in
       let kind = Kinds.method_ in
       let detail = "Instance" in
-      Some [ Info.make ~range ~name ~kind ~detail () ]
+      Some [ Lang.Ast.Info.make ~range ~name ~kind ~detail () ]
     | _ -> None)

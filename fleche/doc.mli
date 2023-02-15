@@ -9,7 +9,7 @@ module Node : sig
   module Ast : sig
     type t =
       { v : Coq.Ast.t
-      ; ast_info : Lang.Range.t Coq.Ast.Info.t list option
+      ; ast_info : Lang.Ast.Info.t list option
       }
   end
 
@@ -63,7 +63,7 @@ type t = private
   { uri : Lang.LUri.File.t
   ; version : int
   ; contents : Contents.t
-  ; toc : Lang.Range.t Coq.Ast.Id.Map.t
+  ; toc : Lang.Range.t CString.Map.t
   ; root : Coq.State.t
   ; nodes : Node.t list
   ; diags_dirty : bool

@@ -5,4 +5,4 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val get_id_at_point : doc:Fleche.Doc.t -> point:int * int -> Coq.Ast.Id.t option
+val get_id_at_point : doc:Fleche.Doc.t -> point:int * int -> string option

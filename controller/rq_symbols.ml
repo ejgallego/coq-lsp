@@ -6,11 +6,10 @@
 (************************************************************************)
 
 let rec mk_syminfo info =
-  let Coq.Ast.Info.{ range; name; kind; detail; children } = info in
-  let { CAst.loc = _name_loc; v = name } = name in
-  let name = Names.Name.print name |> Pp.string_of_ppcmds in
+  let Lang.Ast.Info.{ range; name; kind; detail; children } = info in
+  let { Lang.With_range.range = selectionRange; v = name } = name in
+  let name = Option.default "_" name in
   let children = Option.map (List.map mk_syminfo) children in
-  let selectionRange = range in
   (* Need to fix this at coq.ast level *)
   (* let selectionRange = Option.get name_loc in *)
   Lsp.JFleche.DocumentSymbol.

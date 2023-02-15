@@ -67,7 +67,7 @@ module Node = struct
   module Ast = struct
     type t =
       { v : Coq.Ast.t
-      ; ast_info : Lang.Range.t Coq.Ast.Info.t list option
+      ; ast_info : Lang.Ast.Info.t list option
       }
 
     let to_coq { v; _ } = Coq.Ast.to_coq v
@@ -200,7 +200,7 @@ type t =
   { uri : Lang.LUri.File.t
   ; version : int
   ; contents : Contents.t
-  ; toc : Lang.Range.t Coq.Ast.Id.Map.t
+  ; toc : Lang.Range.t CString.Map.t
   ; root : Coq.State.t
   ; nodes : Node.t list
   ; diags_dirty : bool  (** Used to optimize `eager_diagnostics` *)
@@ -215,10 +215,10 @@ let asts doc = List.filter_map Node.ast doc.nodes
 (* TOC handling *)
 
 (* XXX add children *)
-let add_toc_info toc { Coq.Ast.Info.name; range; children = _; _ } =
+let add_toc_info toc { Lang.Ast.Info.name; range; children = _; _ } =
   match name.v with
-  | Names.Anonymous -> toc
-  | Names.Name id -> Coq.Ast.Id.(Map.add (of_coq id) range toc)
+  | None -> toc
+  | Some id -> CString.Map.add id range toc
 
 let update_toc_info toc ast_info = List.fold_left add_toc_info toc ast_info
 
@@ -229,8 +229,7 @@ let update_toc_node toc node =
   | Some { Node.Ast.ast_info = Some ast_info; _ } ->
     update_toc_info toc ast_info
 
-let rebuild_toc nodes =
-  List.fold_left update_toc_node Coq.Ast.Id.Map.empty nodes
+let rebuild_toc nodes = List.fold_left update_toc_node CString.Map.empty nodes
 
 let init_fname ~uri =
   let file = Lang.LUri.File.to_string_file uri in
@@ -260,7 +259,7 @@ let create ~state ~workspace ~uri ~version ~contents =
         List.map (Node.Message.feedback_to_message ~lines) feedback
       in
       let stats = Stats.dump () in
-      let toc = Coq.Ast.Id.Map.empty in
+      let toc = CString.Map.empty in
       let nodes = process_init_feedback ~stats init_range root feedback in
       let diags_dirty = not (CList.is_empty nodes) in
       { uri
@@ -286,7 +285,7 @@ let create_failed_permanent ~state ~uri ~version ~raw =
          let range = Coq.Utils.to_range ~lines init_loc in
          { uri
          ; contents
-         ; toc = Coq.Ast.Id.Map.empty
+         ; toc = CString.Map.empty
          ; version
          ; root = state
          ; nodes = []
