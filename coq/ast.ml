@@ -13,6 +13,16 @@ let loc { CAst.loc; _ } = loc
 let print x =
   try Ppvernac.pr_vernac x with _ -> Pp.str "XXX Coq printer crashed"
 
+module Id = struct
+  type t = Names.Id.t
+
+  let of_string = Names.Id.of_string
+  let of_coq x = x
+
+  module Set = Names.Id.Set
+  module Map = Names.Id.Map
+end
+
 module Kinds = struct
   (* LSP kinds *)
   let _file = 1

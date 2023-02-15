@@ -63,6 +63,7 @@ type t = private
   { uri : Lang.LUri.File.t
   ; version : int
   ; contents : Contents.t
+  ; toc : Lang.Range.t Coq.Ast.Id.Map.t
   ; root : Coq.State.t
   ; nodes : Node.t list
   ; diags_dirty : bool

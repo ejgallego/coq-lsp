@@ -78,6 +78,7 @@ let do_initialize ~params =
           [ ("triggerCharacters", `List [ `String "\\" ])
           ; ("resolveProvider", `Bool false)
           ] )
+    ; ("definitionProvider", `Bool true)
     ]
   in
   ( `Assoc

@@ -206,6 +206,7 @@ type t =
   { uri : Lang.LUri.File.t
   ; version : int
   ; contents : Contents.t
+  ; toc : Lang.Range.t Coq.Ast.Id.Map.t
   ; root : Coq.State.t
   ; nodes : Node.t list
   ; diags_dirty : bool  (** Used to optimize `eager_diagnostics` *)
@@ -216,6 +217,26 @@ let mk_doc root_state workspace uri =
   Coq.Init.doc_init ~root_state ~workspace ~uri
 
 let asts doc = List.filter_map Node.ast doc.nodes
+
+(* TOC handling *)
+
+(* XXX add children *)
+let add_toc_info toc { Coq.Ast.Info.name; range; children = _; _ } =
+  match name.v with
+  | Names.Anonymous -> toc
+  | Names.Name id -> Coq.Ast.Id.(Map.add (of_coq id) range toc)
+
+let update_toc_info toc ast_info = List.fold_left add_toc_info toc ast_info
+
+let update_toc_node toc node =
+  match Node.ast node with
+  | None -> toc
+  | Some { Node.Ast.ast_info = None; _ } -> toc
+  | Some { Node.Ast.ast_info = Some ast_info; _ } ->
+    update_toc_info toc ast_info
+
+let rebuild_toc nodes =
+  List.fold_left update_toc_node Coq.Ast.Id.Map.empty nodes
 
 let init_fname ~uri =
   let file = Lang.LUri.File.to_string_file uri in
@@ -245,10 +266,12 @@ let create ~state ~workspace ~uri ~version ~contents =
         List.map (Node.Message.feedback_to_message ~lines) feedback
       in
       let stats = Stats.dump () in
+      let toc = Coq.Ast.Id.Map.empty in
       let nodes = process_init_feedback ~stats init_range root feedback in
       let diags_dirty = not (CList.is_empty nodes) in
       { uri
       ; contents
+      ; toc
       ; version
       ; root
       ; nodes
@@ -269,6 +292,7 @@ let create_failed_permanent ~state ~uri ~version ~raw =
          let range = Coq.Utils.to_range ~lines init_loc in
          { uri
          ; contents
+         ; toc = Coq.Ast.Id.Map.empty
          ; version
          ; root = state
          ; nodes = []
@@ -303,13 +327,14 @@ let compute_common_prefix ~init_range ~contents (prev : t) =
   in
   let common_idx = match_or_stop 0 in
   let nodes, range = recover_up_to_offset ~init_range prev common_idx in
+  let toc = rebuild_toc nodes in
   Io.Log.trace "prefix" ("resuming from " ^ Lang.Range.to_string range);
   let completed = Completion.Stopped range in
-  (nodes, completed)
+  (nodes, completed, toc)
 
 let bump_version ~init_range ~version ~contents doc =
   (* When a new document, we resume checking from a common prefix *)
-  let nodes, completed = compute_common_prefix ~init_range ~contents doc in
+  let nodes, completed, toc = compute_common_prefix ~init_range ~contents doc in
   (* Important: uri, root remain the same *)
   let uri = doc.uri in
   let root = doc.root in
@@ -318,6 +343,7 @@ let bump_version ~init_range ~version ~contents doc =
   ; root
   ; nodes
   ; contents
+  ; toc
   ; diags_dirty = true (* EJGA: Is it worth to optimize this? *)
   ; completed
   }
@@ -347,7 +373,8 @@ let bump_version ~version ~raw doc =
 
 let add_node ~node doc =
   let diags_dirty = if node.Node.diags <> [] then true else doc.diags_dirty in
-  { doc with nodes = node :: doc.nodes; diags_dirty }
+  let toc = update_toc_node doc.toc node in
+  { doc with nodes = node :: doc.nodes; toc; diags_dirty }
 
 let concat_diags doc = List.concat_map (fun node -> node.Node.diags) doc.nodes
 

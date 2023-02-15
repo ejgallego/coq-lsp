@@ -74,6 +74,8 @@ Record network :=
  ; send : time -> address -> time -> bool
  }.
 
+Definition ab := 3.
+
 Lemma broken1 : False.
 Proof. admit.
 Qed.

@@ -62,6 +62,8 @@
    focusing operators. This is very useful when navigating bulleted
    proofs (@ejgallego, @Alizter, #319, fixes #300)
  - Store Ast.Info.t incrementally (@ejgallego, #337, fixes #316)
+ - Basic jump to definition support; due to lack of workspace
+   metadata, this only works inside the same file (@ejgallego, #318)
 
 # coq-lsp 0.1.4: View
 ---------------------
