@@ -1,4 +1,5 @@
 let bp_ = ref 0
+
 let undamage_jf loc =
   Loc.
     { loc with
@@ -22,6 +23,7 @@ end
 
 module Parsable = struct
   include Pcoq.Parsable
+
   let loc = PCoqHack.loc
 end
 
@@ -32,8 +34,7 @@ let parse ~st ps =
      coq_protect *)
   Control.check_for_interrupt ();
   Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
-  |> Option.map (fun { CAst.loc; v } ->
-      CAst.make ?loc:(undamage_jf_opt loc) v)
+  |> Option.map (fun { CAst.loc; v } -> CAst.make ?loc:(undamage_jf_opt loc) v)
   |> Option.map Ast.of_coq
 
 let parse ~st ps = Protect.eval ~f:(parse ~st) ps
