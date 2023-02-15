@@ -75,8 +75,7 @@ module PendingRequest = struct
     match pr with
     | DocRequest { uri; handler } ->
       let doc = Doc_manager.find_doc ~uri in
-      let lines = doc.contents.lines in
-      handler ~lines ~doc
+      handler ~doc
     | PosRequest { uri; point; handler } ->
       let doc = Doc_manager.find_doc ~uri in
       handler ~point ~doc
@@ -239,19 +238,21 @@ let do_position_request ~postpone ~params ~handler =
 let do_hover = do_position_request ~postpone:false ~handler:Rq_hover.hover
 let do_goals = do_position_request ~postpone:true ~handler:Rq_goals.goals
 
+let do_definition =
+  do_position_request ~postpone:true ~handler:Rq_definition.request
+
 let do_completion =
   do_position_request ~postpone:true ~handler:Rq_completion.completion
 
 (* Requires the full document to be processed *)
 let do_document_request ~params ~handler =
   let uri, doc = get_textDocument params in
-  let lines = doc.contents.lines in
   match doc.completed with
-  | Yes _ -> RAction.ok (handler ~lines ~doc)
+  | Yes _ -> RAction.ok (handler ~doc)
   | Stopped _ | Failed _ | FailedPermanent _ ->
     Postpone (PendingRequest.DocRequest { uri; handler })
 
-let do_symbols = do_document_request ~handler:Requests.symbols
+let do_symbols = do_document_request ~handler:Rq_symbols.symbols
 
 let do_trace params =
   let trace = string_field "value" params in
@@ -325,6 +326,7 @@ let dispatch_request ~method_ ~params : RAction.t =
   | "shutdown" -> do_shutdown ~params
   (* Symbols and info about the document *)
   | "textDocument/completion" -> do_completion ~params
+  | "textDocument/definition" -> do_definition ~params
   | "textDocument/documentSymbol" -> do_symbols ~params
   | "textDocument/hover" -> do_hover ~params
   (* Proof-specific stuff *)

@@ -22,8 +22,11 @@ val in_state : st:t -> f:('a -> 'b) -> 'a -> ('b, Loc.t) Protect.E.t
 (** Drop the proofs from the state *)
 val drop_proofs : st:t -> t
 
-(** Admit an ongoing proof *)
-val admit : st:t -> t
+(** Fully admit an ongoing proof *)
+val admit : st:t -> (t, Loc.t) Protect.E.t
+
+(** Admit the current sub-goal *)
+val admit_goal : st:t -> (t, Loc.t) Protect.E.t
 
 (** Extra / interanl *)
 val marshal_in : in_channel -> t

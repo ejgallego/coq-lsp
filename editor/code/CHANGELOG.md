@@ -1,7 +1,24 @@
 # coq-lsp 0.1.5: Form
 ----------------------
 
-- Improved syntax highligting of coq markdown files
+ - General bugfix and quality-of-life release.
+ - Markdown Coq code blocks now must specify "coq" as a language
+ - Improved syntax highlighting of Coq markdown files
+ - Info panel has been greatly improved
+ - Bugfix on message display after the port to React
+ - Hover will display type of identifier at point
+ - Jump to definition support
+ - Goal display handles background goals better, showing preview,
+   goals stack, and focusing information
+ - The goal display now numbers goals starting with 1 instead of 0
+ - Hypotheses with bodies are now correctly displayed
+ - Support unicode characters in filenames
+ - Stop checking documents after a maximum number of errors (user configurable)
+ - Goal view now supports find
+ - Display Coq warnings, info and debug messages in info panel
+ - Improved outline view, with more details and types
+ - Server greatly improved with better error heuristics, see server
+   changelog for more information
 
 # coq-lsp 0.1.4: View
 ----------------------

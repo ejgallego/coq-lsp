@@ -3,7 +3,33 @@ type t
 val loc : t -> Loc.t option
 val hash : t -> int
 val compare : t -> t -> int
-val grab_definitions : (Loc.t -> Names.Id.t -> 'a) -> t list -> 'a list
+
+module Id : sig
+  type t
+
+  val of_string : string -> t
+  val of_coq : Names.Id.t -> t
+  val to_coq : t -> Names.Id.t
+
+  module Set : CSet.S with type elt = t
+  module Map : CMap.ExtS with type key = t and module Set := Set
+end
+
+(** Information about the Ast, to move to lang *)
+module Info : sig
+  type 'l t =
+    { range : 'l
+    ; name : Names.Name.t CAst.t
+    ; kind : int
+    ; detail : string option (* usually the type *)
+    ; children : 'l t list option
+    }
+end
+
+(** [make_info ~st ast] Compute info about a possible definition in [ast], we
+    need [~st] to compute the type. *)
+val make_info :
+  st:State.t -> lines:string array -> t -> Lang.Range.t Info.t list option
 
 (** Printing *)
 val print : t -> Pp.t

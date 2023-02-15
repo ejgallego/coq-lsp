@@ -130,7 +130,7 @@ let get_last_text text =
   let lines = CString.split_on_char '\n' text |> Array.of_list in
   let n_lines = Array.length lines in
   let last_line = if n_lines < 1 then "" else Array.get lines (n_lines - 1) in
-  let character = Utf8.length last_line in
+  let character = Coq.Utf8.length last_line in
   (Lang.Point.{ line = n_lines - 1; character; offset }, lines)
 
 let make ~uri ~raw =

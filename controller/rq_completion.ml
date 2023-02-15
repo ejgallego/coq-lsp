@@ -22,11 +22,18 @@ let mk_completion ~label ?insertText ?labelDetails ?textEdit ?commitCharacters
   CompletionData.(
     to_yojson { label; insertText; labelDetails; textEdit; commitCharacters })
 
+let grab_definitions ~doc ~f =
+  let asts = Fleche.Doc.asts doc in
+  let df { Fleche.Doc.Node.Ast.ast_info; _ } = ast_info in
+  List.filter_map df asts |> List.concat |> List.filter_map f
+
 let build_doc_idents ~doc : Yojson.Safe.t list =
-  let f _loc id = mk_completion ~label:Names.Id.(to_string id) () in
-  let ast = Fleche.Doc.asts doc in
-  let clist = Coq.Ast.grab_definitions f ast in
-  clist
+  let f { Coq.Ast.Info.name; _ } =
+    match name.v with
+    | Anonymous -> None
+    | Name id -> Some (mk_completion ~label:Names.Id.(to_string id) ())
+  in
+  grab_definitions ~doc ~f
 
 let mk_completion_list ~incomplete ~items : Yojson.Safe.t =
   `Assoc [ ("isIncomplete", `Bool incomplete); ("items", `List items) ]
@@ -72,7 +79,7 @@ let validate_line ~(doc : Fleche.Doc.t) ~line =
 let validate_position ~doc ~point =
   let line, char = point in
   Option.bind (validate_line ~doc ~line) (fun line ->
-      Option.bind (Fleche.Utf8.index_of_char ~line ~char) (fun index ->
+      Option.bind (Coq.Utf8.index_of_char ~line ~char) (fun index ->
           Some (String.get line index)))
 
 let get_char_at_point ~(doc : Fleche.Doc.t) ~point =

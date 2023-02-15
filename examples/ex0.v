@@ -36,7 +36,7 @@ Definition hola := 3.
 
 Inductive event : Type :=
   | R of nat
-  | S of nat. 
+  | S of nat.  
 
 Record pair_emilio := {
   fst : nat;
@@ -73,6 +73,8 @@ Record network :=
  ; payload : Type
  ; send : time -> address -> time -> bool
  }.
+
+Definition ab := 3.
 
 Lemma broken1 : False.
 Proof. admit.

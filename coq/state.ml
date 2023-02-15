@@ -76,6 +76,8 @@ let mode ~st =
 
 let parsing ~st = st.Vernacstate.parsing
 
+module Proof_ = Proof
+
 module Proof = struct
   type t = Vernacstate.LemmaStack.t
 
@@ -98,7 +100,7 @@ let in_state ~st ~f a =
   in
   Protect.eval ~f a
 
-let admit ~st =
+let admit ~st () =
   let () = Vernacstate.unfreeze_interp_state st in
   match st.Vernacstate.lemmas with
   | None -> st
@@ -110,6 +112,15 @@ let admit ~st =
     let st = Vernacstate.freeze_interp_state ~marshallable:false in
     { st with lemmas; program }
 
-(* TODO: implement protect once error recovery supports a failing recovery
-   execution *)
-(* let admit ~st = Protect.eval ~f:(admit ~st) () *)
+let admit ~st = Protect.eval ~f:(admit ~st) ()
+
+let admit_goal ~st () =
+  let () = Vernacstate.unfreeze_interp_state st in
+  match st.Vernacstate.lemmas with
+  | None -> st
+  | Some lemmas ->
+    let f pf = Declare.Proof.by Proofview.give_up pf |> fst in
+    let lemmas = Some (Vernacstate.LemmaStack.map_top ~f lemmas) in
+    { st with lemmas }
+
+let admit_goal ~st = Protect.eval ~f:(admit_goal ~st) ()

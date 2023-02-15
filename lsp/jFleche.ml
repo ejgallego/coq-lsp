@@ -60,13 +60,26 @@ let mk_progress ~uri ~version processing =
   let params = Progress.to_yojson { Progress.textDocument; processing } in
   Base.mk_notification ~method_:"$/coq/fileProgress" ~params
 
+module Message = struct
+  type 'a t =
+    { range : JLang.Range.t option
+    ; level : int
+    ; text : 'a
+    }
+  [@@deriving yojson]
+
+  let map ~f { range; level; text } =
+    let text = f text in
+    { range; level; text }
+end
+
 module GoalsAnswer = struct
   type t =
     { textDocument : Doc.VersionedTextDocument.t
     ; position : Lang.Point.t
     ; goals : string JCoq.Goals.reified_goal JCoq.Goals.goals option
-    ; messages : string list
-    ; error : string option
+    ; messages : string Message.t list
+    ; error : string option [@default None]
     }
   [@@deriving to_yojson]
 end
@@ -74,11 +87,38 @@ end
 let mk_goals ~uri ~version ~position ~goals ~messages ~error =
   let f rg = Coq.Goals.map_reified_goal ~f:Pp.to_string rg in
   let goals = Option.map (Coq.Goals.map_goals ~f) goals in
-  let messages = List.map Pp.to_string messages in
+  let messages = List.map (Message.map ~f:Pp.to_string) messages in
   let error = Option.map Pp.to_string error in
   GoalsAnswer.to_yojson
     { textDocument = { uri; version }; position; goals; messages; error }
 
+(** {1 document/definition} *)
+module LocationLink = struct
+  type t =
+    { originSelectionRange : Lang.Range.t option [@default None]
+    ; targetUri : Lang.LUri.File.t
+    ; targetRange : Lang.Range.t
+    ; targetSelectionRange : Lang.Range.t
+    }
+  [@@deriving yojson]
+end
+(** {1} DocumentSymbols *)
+
+module DocumentSymbol = struct
+  type t =
+    { name : string
+    ; detail : string option [@default None]
+    ; kind : int
+    ; tags : int list option [@default None]
+    ; deprecated : bool option [@default None]
+    ; range : Lang.Range.t
+    ; selectionRange : Lang.Range.t
+    ; children : t list option [@default None]
+    }
+  [@@deriving yojson]
+end
+
+(** Not used as of today, superseded by DocumentSymbol *)
 module Location = struct
   type t =
     { uri : Lang.LUri.File.t
@@ -87,6 +127,7 @@ module Location = struct
   [@@deriving yojson]
 end
 
+(** Not used as of today, superseded by DocumentSymbol *)
 module SymInfo = struct
   type t =
     { name : string
@@ -95,6 +136,8 @@ module SymInfo = struct
     }
   [@@deriving yojson]
 end
+
+(** {1} Hover *)
 
 module HoverContents = struct
   type t =
@@ -107,10 +150,12 @@ end
 module HoverInfo = struct
   type t =
     { contents : HoverContents.t
-    ; range : Lang.Range.t option
+    ; range : Lang.Range.t option [@default None]
     }
   [@@deriving yojson]
 end
+
+(** {1} Completion *)
 
 module LabelDetails = struct
   type t = { detail : string } [@@deriving yojson]
@@ -128,10 +173,10 @@ end
 module CompletionData = struct
   type t =
     { label : string
-    ; insertText : string option
-    ; labelDetails : LabelDetails.t option
-    ; textEdit : TextEditReplace.t option
-    ; commitCharacters : string list option
+    ; insertText : string option [@default None]
+    ; labelDetails : LabelDetails.t option [@default None]
+    ; textEdit : TextEditReplace.t option [@default None]
+    ; commitCharacters : string list option [@default None]
     }
   [@@deriving yojson]
 end
