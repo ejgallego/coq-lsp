@@ -155,6 +155,21 @@
               "Show on click and on cursor movement",
               "Show on click, cursor, and command movement"
             ]
+          },
+          "coq-lsp.pp_type": {
+            "type": "number",
+            "default": 1,
+            "description": "Method to Print Coq Terms",
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "enumDescriptions": [
+              "Print to string",
+              "Use jsCoq's Pp rich layout printer",
+              "Coq Layout Engine (experimental)"
+            ]
           }
         }
       },

@@ -4,6 +4,8 @@
  - The info / goal view now uses jsCoq's client-side rendering, with
    better highlighting and layout rendering (@artagnon, @ejgallego,
    #143, fixes #96)
+ - Printing method is now configurable by the user (@ejgallego, #143,
+   fixes #321)
 
 # coq-lsp 0.1.5: Form
 ---------------------

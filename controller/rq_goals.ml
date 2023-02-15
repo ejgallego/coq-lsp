@@ -36,6 +36,9 @@ let goals ~doc ~point =
   let node = Info.LC.node ~doc ~point Exact in
   let messages = mk_messages node in
   let error = Option.bind node mk_error in
-  let pp = Lsp.JCoq.Pp.to_yojson in
+  let pp pp =
+    if !Fleche.Config.v.pp_type = 1 then Lsp.JCoq.Pp.to_yojson pp
+    else `String (Pp.string_of_ppcmds pp)
+  in
   Lsp.JFleche.GoalsAnswer.(
     to_yojson pp { textDocument; position; goals; messages; error })

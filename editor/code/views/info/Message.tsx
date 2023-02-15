@@ -9,8 +9,12 @@ export function Message({
   message: PpString | Message<PpString>;
 }) {
   let key = objectHash(message);
-  let text = (typeof message === "string") ? message :
-    (typeof message === "object" && ("text" in message) ? message.text : message);
+  let text =
+    typeof message === "string"
+      ? message
+      : typeof message === "object" && "text" in message
+      ? message.text
+      : message;
 
   return (
     <li key={key}>
