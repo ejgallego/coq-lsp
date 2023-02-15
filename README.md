@@ -1,4 +1,4 @@
-## Coq LSP
+# Coq LSP
 
 [![Github CI][ci-badge]][ci-link]
 
@@ -15,12 +15,42 @@ information panel, performance data, and more.
 experience, as well as to serve as a platform for research and UI integration
 with other projects.
 
-### Installation
+## Table of Contents
+
+- [Coq LSP](#coq-lsp)
+  - [Table of Contents](#table-of-contents)
+  - [Installation](#installation)
+    - [**Server**](#server)
+    - [**Visual Studio Code**](#visual-studio-code)
+    - [**Neovim**](#neovim)
+  - [Discussion Channel](#discussion-channel)
+  - [Features](#features)
+    - [Incremental Compilation and Continuous Document Checking](#incremental-compilation-and-continuous-document-checking)
+    - [Smart, Cache-Aware Error Recovery](#smart-cache-aware-error-recovery)
+    - [Whole-Document Goal Display](#whole-document-goal-display)
+    - [Markdown Support](#markdown-support)
+    - [Document Outline](#document-outline)
+    - [Detailed Timing and Memory Statistics](#detailed-timing-and-memory-statistics)
+    - [Client-Side Configuration Options](#client-side-configuration-options)
+    - [Reusability, Standards, Modularity](#reusability-standards-modularity)
+    - [A Platform for Research!](#a-platform-for-research)
+  - [FAQ](#faq)
+  - [Troubleshooting and Known Problems](#troubleshooting-and-known-problems)
+    - [Working With Multiple Files](#working-with-multiple-files)
+    - [Planned Features](#planned-features)
+  - [Protocol Documentation](#protocol-documentation)
+  - [Contributing](#contributing)
+  - [Team](#team)
+    - [Past Contributors](#past-contributors)
+  - [Licensing Information](#licensing-information)
+  - [Acknowledgments](#acknowledgments)
+
+## Installation
 
 In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md) the
 `coq-lsp` server, and the Visual Studio Code extension:
 
-#### Server
+### **Server**
 
 - **opam**: `opam install coq-lsp`
 - **Nix**: 
@@ -34,7 +64,7 @@ In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md) the
 - **Coq Platform** (coming soon)
 - [Do it yourself!](#server-1)
 
-#### **Visual Studio Code**:
+### **Visual Studio Code**
 - Official Marketplace: https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
 - Open VSX: https://open-vsx.org/extension/ejgallego/coq-lsp
 - Nix: 
@@ -51,60 +81,18 @@ programs.vscode = {
 }; 
 ```
 
-#### **Neovim**:
+### **Neovim**
 - Experimental client by Jaehwang Jung: https://github.com/tomtomjhj/coq-lsp.nvim
 
-### FAQ
-
-See our [list of frequently-asked questions](./etc/FAQ.md).
-
-### Contributing
-
-Contributions are very welcome! Feel free to chat with the dev team in
-[Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp) for any
-question, or just go ahead and hack.
-
-We have a [contributing guide](CONTRIBUTING.md), which includes a description of
-the organization of the codebase, developer workflow, and more.
-
-Here is a [list of project ideas](etc/ContributionIdeas.md) that could be of
-help in case you are looking for contribution ideas, tho we are convinced that
-the best ideas will arise from using `coq-lsp` in your own Coq projects.
-
-### Discussion Channel
+## Discussion Channel
 
 `coq-lsp` discussion channel it at [Coq's
 Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp), don't hesitate
 to stop by; both users and developers are welcome.
 
-### Troubleshooting and Known Problems
-
-- Some problems can be resolved by restarting `coq-lsp`, in Visual Studio Code,
-  `Ctrl+Shift+P` will give you access to the `coq-lsp.restart` command.
-- In VSCode, the "Output" window will have a "Coq LSP Server Events" channel
-  which should contain some important information; the content of this channel
-  is controlled by the `Coq LSP > Trace: Server` option.
-- If you install `coq-lsp` simultaneously with VSCoq, VSCode gets confused and
-  neither of them may work. `coq-lsp` will warn about that. If you know how to
-  improve this, don't hesitate to get in touch with us.
-- VS Code may send request completions with a stale document, this will be fixed
-  in a new upstream release, c.f. https://github.com/ejgallego/coq-lsp/issues/273
-
-#### Working with multiple files
-
-`coq-lsp` can't work with more than one file at the same time, due to problems
-with parsing state management upstream. This was fixed in Coq `master` branch
-(to become **Coq 8.18**).
-
-As this is very inconvenient, we do provide a fixed Coq branch that you can
-install using `opam pin`:
-
-- For Coq 8.17: `opam pin add coq-lsp https://github.com/ejgallego/coq.git#v8.17+lsp`
-- For Coq 8.16: `opam pin add coq-lsp https://github.com/ejgallego/coq.git#v8.16+lsp`
-
 ## Features
 
-### Incremental compilation and continuous document checking:
+### Incremental Compilation and Continuous Document Checking
 
 Edit your file, and `coq-lsp` will try to re-check only what is necessary,
 continuously. No more dreaded `Ctrl-C Ctrl-N`! Rechecking tries to be smart,
@@ -118,7 +106,7 @@ restart your proof session where you left it at the last time.
 Incremental support is undergoing refinement, if `coq-lsp` rechecks when it
 should not, please file a bug!
 
-### Smart, Cache-aware Error recovery
+### Smart, Cache-Aware Error Recovery
 
 `coq-lsp` won't stop checking on errors, but supports (and encourages) working
 with proof documents that are only partially working. Moreover, error recovery
@@ -134,7 +122,7 @@ panel.
 
 <img alt="Whole-Document Goal Display" height="286px" src="etc/img/lsp-goals.gif"/>
 
-### Markdown support
+### Markdown Support
 
 Open a markdown file with a `.mv` extension, `coq-lsp` will check the code parts
 that are enclosed into `coq` language blocks! `coq-lsp` places human-friendly
@@ -142,21 +130,21 @@ documents at the core of its design ideas.
 
 <img alt="Coq + Markdown Editing" height="286px" src="etc/img/lsp-markdown.gif"/>
 
-### Document outline:
+### Document Outline
 
 `coq-lsp` supports document outline and code folding, allowing you to jump
 directly to definitions in the document.
 
 <img alt="Document Outline Demo" height="286px" src="etc/img/lsp-outline.gif"/>
 
-### Detailed timing and memory stats
+### Detailed Timing and Memory Statistics
 
 Hover over any Coq sentence, `coq-lsp` will display detailed memory and timing
 statistics.
 
 <img alt="Stats on Hover" height="286px" src="etc/img/lsp-hover.gif"/>
 
-### Client-side configuration options
+### Client-Side Configuration Options
 
 `coq-lsp` is configurable, and tries to adapt to your own workflow. What to do
 when a proof doesn't check, admit or ignore? You decide!
@@ -165,7 +153,7 @@ See the `coq-lsp` extension configuration in VSCode for options available.
 
 <img alt="Configuration screen" height="286px" src="etc/img/lsp-config.png"/>
 
-### Reusability, standards, modularity
+### Reusability, Standards, Modularity
 
 The incremental document checking library of `coq-lsp` has been designed to be
 reusable by other projects written in OCaml and with needs for document
@@ -174,7 +162,7 @@ validation UI, as well as by other Coq projects such as jsCoq.
 Moreover, we are strongly based on standards, aiming for the least possible
 extensions.
 
-### A Platform for Research !
+### A Platform for Research!
 
 A key `coq-lsp` goal is to serve as central platform for researchers in
 Human-Computer-Interaction, Machine Learning, and Software Engineering willing
@@ -183,7 +171,42 @@ to interact with Coq.
 Towards this goal, `coq-lsp` extends and will eventually replace `coq-serapi`,
 which has been used by many to that purpose.
 
-### Planned features
+## FAQ
+
+See our [list of frequently-asked questions](./etc/FAQ.md).
+
+## Troubleshooting and Known Problems
+
+- Some problems can be resolved by restarting `coq-lsp`, in Visual Studio Code,
+  `Ctrl+Shift+P` will give you access to the `coq-lsp.restart` command.
+- In VSCode, the "Output" window will have a "Coq LSP Server Events" channel
+  which should contain some important information; the content of this channel
+  is controlled by the `Coq LSP > Trace: Server` option.
+- If you install `coq-lsp` simultaneously with VSCoq, VSCode gets confused and
+  neither of them may work. `coq-lsp` will warn about that. If you know how to
+  improve this, don't hesitate to get in touch with us.
+- VS Code may send request completions with a stale document, this will be fixed
+  in a new upstream release, c.f. https://github.com/ejgallego/coq-lsp/issues/273
+
+### Working With Multiple Files
+
+`coq-lsp` can't work with more than one file at the same time, due to problems
+with parsing state management upstream. This was fixed in Coq `master` branch
+(to become **Coq 8.18**).
+
+As this is very inconvenient, we do provide a fixed Coq branch that you can
+install using `opam pin`:
+
+- For Coq 8.17:
+  ```
+  opam pin add coq-lsp https://github.com/ejgallego/coq.git#v8.17+lsp
+  ```
+- For Coq 8.16:
+  ```
+  opam pin add coq-lsp https://github.com/ejgallego/coq.git#v8.16+lsp
+  ```
+
+### Planned Features
 
 See [planned features and contribution ideas](etc/ContributionIdeas.md) for a
 list of things we'd like to happen.
@@ -196,6 +219,19 @@ plus some extensions specific to Coq.
 
 Check [the `coq-lsp` protocol documentation](etc/doc/PROTOCOL.md) for more details.
 
+## Contributing
+
+Contributions are very welcome! Feel free to chat with the dev team in
+[Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp) for any
+question, or just go ahead and hack.
+
+We have a [contributing guide](CONTRIBUTING.md), which includes a description of
+the organization of the codebase, developer workflow, and more.
+
+Here is a [list of project ideas](etc/ContributionIdeas.md) that could be of
+help in case you are looking for contribution ideas, tho we are convinced that
+the best ideas will arise from using `coq-lsp` in your own Coq projects.
+
 ## Team
 
 - Ali Caglayan (co-coordinator)
@@ -203,11 +239,11 @@ Check [the `coq-lsp` protocol documentation](etc/doc/PROTOCOL.md) for more detai
 - Shachar Itzhaky (Technion)
 - Ramkumar Ramachandra (Inria Paris)
 
-### Past contributors
+### Past Contributors
 
 - Vincent Laporte (Inria)
 
-## Licensing information
+## Licensing Information
 
 The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
 
@@ -230,10 +266,10 @@ for their help and advice.
 As noted above, the original implementation was based on the Lambdapi LSP
 server, thanks to all the collaborators in that project!
 
+[ci-badge]: https://github.com/ejgallego/coq-lsp/actions/workflows/build.yml/badge.svg
+[ci-link]: https://github.com/ejgallego/coq-lsp/actions/workflows/build.yml
+
 <!-- Local Variables: -->
 <!-- mode: Markdown -->
 <!-- fill-column: 80 -->
 <!-- End: -->
-
-[ci-badge]: https://github.com/ejgallego/coq-lsp/actions/workflows/build.yml/badge.svg
-[ci-link]: https://github.com/ejgallego/coq-lsp/actions/workflows/build.yml
