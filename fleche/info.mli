@@ -51,6 +51,7 @@ module type S = sig
   val messages : (approx, Doc.Node.Message.t list) query
   val info : (approx, Doc.Node.Info.t) query
   val completion : (string, string list) query
+  val in_state : st:Coq.State.t -> f:('a -> 'b option) -> 'a -> 'b option
 end
 
 module LC : S with module P := LineCol

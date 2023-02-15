@@ -96,11 +96,11 @@ module Node = struct
       let cetime = Stats.get_f stats ~kind:Stats.Kind.Exec in
       let memo_info =
         Format.asprintf
-          "Cache Hit: %b | Parse (s/c): %.4f / %.2f | Exec (s/c): %a / %.2f"
+          "| Cache Hit: %b | Parse (s/c): %.4f / %.2f | Exec (s/c): %a / %.2f |"
           cache_hit parsing_time cptime pp_time time cetime
       in
       let mem_info =
-        Format.asprintf "major words: %a | diff %a" Util.pp_words mw_after
+        Format.asprintf "| major words: %a | diff %a |" Util.pp_words mw_after
           Util.pp_words (mw_after -. mw_prev)
       in
       memo_info ^ "\n___\n" ^ mem_info
