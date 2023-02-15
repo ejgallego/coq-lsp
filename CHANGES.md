@@ -6,6 +6,7 @@
    #143, fixes #96)
  - Printing method is now configurable by the user (@ejgallego, #143,
    fixes #321)
+ - Trigger completion on quote char "'" (@ejgallego, #)
 
 # coq-lsp 0.1.5: Form
 ---------------------
