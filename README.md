@@ -1,4 +1,4 @@
-# Coq LSP
+# Coq LSP <!-- omit in toc -->
 
 [![Github CI][ci-badge]][ci-link]
 
@@ -15,80 +15,33 @@ information panel, performance data, and more.
 experience, as well as to serve as a platform for research and UI integration
 with other projects.
 
-## Table of Contents
+## Table of Contents <!-- omit in toc -->
 
-- [Coq LSP](#coq-lsp)
-  - [Table of Contents](#table-of-contents)
-  - [🛠️ Installation](#️-installation)
-    - [**Server**](#server)
-    - [**Visual Studio Code**](#visual-studio-code)
-    - [**Neovim**](#neovim)
-  - [🗣️ Discussion Channel](#️-discussion-channel)
-  - [🎁 Features](#-features)
-    - [⏩ Incremental Compilation and Continuous Document Checking](#-incremental-compilation-and-continuous-document-checking)
-    - [🧠 Smart, Cache-Aware Error Recovery](#-smart-cache-aware-error-recovery)
-    - [🥅 Whole-Document Goal Display](#-whole-document-goal-display)
-    - [🗒️ Markdown Support](#️-markdown-support)
-    - [👥 Document Outline](#-document-outline)
-    - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
-    - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
-    - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
-    - [🔎 A Platform for Research!](#-a-platform-for-research)
-  - [❓FAQ](#faq)
-  - [⁉️ Troubleshooting and Known Problems](#️-troubleshooting-and-known-problems)
-    - [Working With Multiple Files](#working-with-multiple-files)
-    - [Planned Features](#planned-features)
-  - [Protocol Documentation](#protocol-documentation)
-  - [Contributing](#contributing)
-  - [Team](#team)
-    - [Past Contributors](#past-contributors)
-  - [Licensing Information](#licensing-information)
-  - [Acknowledgments](#acknowledgments)
-
-## 🛠️ Installation
-
-In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md) the
-`coq-lsp` and a suitable client. We recommend the Visual Studio Code Extension.
-
-### **Server**
-
-- **opam**: `opam install coq-lsp`
-- **Nix**: 
-   - In nixpkgs: [#213397](https://github.com/NixOS/nixpkgs/pull/213397)
-   - In your flake: 
-   ```nix 
-   inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
-   ...
-   coq-lsp.packages.${system}.default
-   ```
-- **Coq Platform** (coming soon)
-- [Do it yourself!](#server-1)
-
-### **Visual Studio Code**
-- Official Marketplace: https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
-- Open VSX: https://open-vsx.org/extension/ejgallego/coq-lsp
-- Nix: 
-```nix
-inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
-...
-programs.vscode = {
-  enable = true;
-  extensions = with pkgs.vscode-extensions; [
-    ...
-    inputs.coq-lsp.packages.${pkgs.system}.vscode-extension
-    ...
-  ];
-}; 
-```
-
-### **Neovim**
-- Experimental client by Jaehwang Jung: https://github.com/tomtomjhj/coq-lsp.nvim
-
-## 🗣️ Discussion Channel
-
-`coq-lsp` discussion channel it at [Coq's
-Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp), don't hesitate
-to stop by; both users and developers are welcome.
+- [🎁 Features](#-features)
+  - [⏩ Incremental Compilation and Continuous Document Checking](#-incremental-compilation-and-continuous-document-checking)
+  - [🧠 Smart, Cache-Aware Error Recovery](#-smart-cache-aware-error-recovery)
+  - [🥅 Whole-Document Goal Display](#-whole-document-goal-display)
+  - [🗒️ Markdown Support](#️-markdown-support)
+  - [👥 Document Outline](#-document-outline)
+  - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
+  - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
+  - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
+  - [🔎 A Platform for Research!](#-a-platform-for-research)
+- [🛠️ Installation](#️-installation)
+  - [Server](#server)
+  - [Visual Studio Code](#visual-studio-code)
+  - [Neovim](#neovim)
+- [🗣️ Discussion Channel](#️-discussion-channel)
+- [❓FAQ](#faq)
+- [⁉️ Troubleshooting and Known Problems](#️-troubleshooting-and-known-problems)
+  - [Working With Multiple Files](#working-with-multiple-files)
+- [📔 Planned Features](#-planned-features)
+- [📕 Protocol Documentation](#-protocol-documentation)
+- [🤸 Contributing](#-contributing)
+- [🌐 Team](#-team)
+  - [Past Contributors](#past-contributors)
+- [©️ Licensing Information](#️-licensing-information)
+- [👏 Acknowledgments](#-acknowledgments)
 
 ## 🎁 Features
 
@@ -182,6 +135,54 @@ to interact with Coq.
 Towards this goal, `coq-lsp` extends and will eventually replace `coq-serapi`,
 which has been used by many to that purpose.
 
+## 🛠️ Installation
+
+In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md)
+`coq-lsp` and a suitable client. We recommend the Visual Studio Code Extension.
+
+### Server
+
+- **opam**:
+  ```
+  opam install coq-lsp
+  ```
+- **Nix**: 
+   - In nixpkgs: [#213397](https://github.com/NixOS/nixpkgs/pull/213397)
+   - In your flake: 
+   ```nix 
+   inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
+   ...
+   coq-lsp.packages.${system}.default
+   ```
+- **Coq Platform** (coming soon)
+- [Do it yourself!](#server-1)
+
+### Visual Studio Code
+- Official Marketplace: https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
+- Open VSX: https://open-vsx.org/extension/ejgallego/coq-lsp
+- Nix: 
+```nix
+inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
+...
+programs.vscode = {
+  enable = true;
+  extensions = with pkgs.vscode-extensions; [
+    ...
+    inputs.coq-lsp.packages.${pkgs.system}.vscode-extension
+    ...
+  ];
+}; 
+```
+
+### Neovim
+- Experimental client by Jaehwang Jung: https://github.com/tomtomjhj/coq-lsp.nvim
+
+## 🗣️ Discussion Channel
+
+`coq-lsp` discussion channel it at [Coq's
+Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp), don't hesitate
+to stop by; both users and developers are welcome.
+
 ## ❓FAQ
 
 See our [list of frequently-asked questions](./etc/FAQ.md).
@@ -217,12 +218,12 @@ install using `opam pin`:
   opam pin add coq-lsp https://github.com/ejgallego/coq.git#v8.16+lsp
   ```
 
-### Planned Features
+## 📔 Planned Features
 
 See [planned features and contribution ideas](etc/ContributionIdeas.md) for a
 list of things we'd like to happen.
 
-## Protocol Documentation
+## 📕 Protocol Documentation
 
 `coq-lsp` mostly implements the [LSP
 Standard](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/),
@@ -230,7 +231,7 @@ plus some extensions specific to Coq.
 
 Check [the `coq-lsp` protocol documentation](etc/doc/PROTOCOL.md) for more details.
 
-## Contributing
+## 🤸 Contributing
 
 Contributions are very welcome! Feel free to chat with the dev team in
 [Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp) for any
@@ -243,7 +244,7 @@ Here is a [list of project ideas](etc/ContributionIdeas.md) that could be of
 help in case you are looking for contribution ideas, tho we are convinced that
 the best ideas will arise from using `coq-lsp` in your own Coq projects.
 
-## Team
+## 🌐 Team
 
 - Ali Caglayan (co-coordinator)
 - Emilio J. Gallego Arias (Inria Paris, co-coordinator)
@@ -254,7 +255,7 @@ the best ideas will arise from using `coq-lsp` in your own Coq projects.
 
 - Vincent Laporte (Inria)
 
-## Licensing Information
+## ©️ Licensing Information
 
 The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
 
@@ -267,12 +268,12 @@ The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
   [VSCoq](https://github.com/siegebell/vscoq) by Christian J. Bell, distributed
   under the terms of the MIT license (see ./editor/code/License-vscoq.text).
 
-## Acknowledgments
+## 👏 Acknowledgments
 
 Work on this server has been made possible thanks to many discussions,
 inspirations, and sharing of ideas from colleagues. In particular, we'd like to
-thank Rudi Grinberg, Andrey Mokhov, Clément Pit-Claudel, and Makarius Wenzel
-for their help and advice.
+thank Rudi Grinberg, Andrey Mokhov, Clément Pit-Claudel, and Makarius Wenzel for
+their help and advice.
 
 As noted above, the original implementation was based on the Lambdapi LSP
 server, thanks to all the collaborators in that project!
