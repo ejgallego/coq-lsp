@@ -274,7 +274,14 @@ let log_workspace w =
   LIO.trace "workspace" "initialized" ~extra;
   LIO.logMessage ~lvl:3 ~message
 
-let version () = Version.server
+let version () =
+  let dev_version =
+    match Build_info.V1.version () with
+    | None -> "NA"
+    | Some bi -> Build_info.V1.Version.to_string bi
+  in
+  Format.asprintf "version %s, dev: %s, Coq version: %s" Version.server
+    dev_version Coq_config.version
 
 let rec lsp_init_loop ic ofmt ~cmdline ~debug : Coq.Workspace.t =
   match LIO.read_request ic with

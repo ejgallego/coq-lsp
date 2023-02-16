@@ -1,7 +1,7 @@
 (library
  (name controller)
  (modules :standard \ coq_lsp)
- (libraries coq fleche lsp))
+ (libraries coq fleche lsp dune-build-info))
 
 (executable
  (name coq_lsp)
