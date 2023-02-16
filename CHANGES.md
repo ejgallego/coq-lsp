@@ -1,3 +1,8 @@
+# coq-lsp 0.1.5.1: Path
+-----------------------
+
+ - Fix handling of `COQPATH` and `OCAMLPATH` (@ejgallego, #364)
+
 # coq-lsp 0.1.5: Form
 ---------------------
 
