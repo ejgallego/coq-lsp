@@ -238,6 +238,17 @@
             "description": "Enable Server-Side Unicode Completion. Coq-lsp provides two character sets, a regular one, and an extended one with more than 1000 symbols."
           }
         }
+      },
+      {
+        "title": "Coq Editor",
+        "type": "object",
+        "properties": {
+          "coq-lsp.updateIgnores": {
+            "type": "boolean",
+            "default": true,
+            "description": "Automatically ignore Coq object files in the workspace (.vo, .vos, ...)"
+          }
+        }
       }
     ]
   },
