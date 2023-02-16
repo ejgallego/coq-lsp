@@ -273,6 +273,13 @@ let do_definition =
 let do_completion =
   do_position_request ~postpone:true ~handler:Rq_completion.completion
 
+(* Diagnostics *)
+let do_diagnostics ~params =
+  let _params =
+    Lsp.Core.DocumentDiagnosticParams.of_yojson (`Assoc params)
+  in
+  RAction.now (Ok `Null)
+
 (* Requires the full document to be processed *)
 let do_document_request ~params ~handler =
   let uri = Helpers.get_uri params in
@@ -379,6 +386,8 @@ let dispatch_request ~method_ ~params : Rq.Action.t =
     (* XXX what's the error code here *)
     Rq.Action.error (-32600, "Invalid Request: server already initialized")
   | "shutdown" -> do_shutdown
+  (* diagnostics *)
+  | "textDocument/diagnostic" -> do_diagnostics ~params
   (* Symbols and info about the document *)
   | "textDocument/completion" -> do_completion ~params
   | "textDocument/definition" -> do_definition ~params
