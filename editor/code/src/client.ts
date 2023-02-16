@@ -54,6 +54,20 @@ export function activate(context: ExtensionContext): void {
       );
     }
   }
+  // Hide .vo, .aux files, etc...
+  let activationConfig = workspace.getConfiguration();
+  let updateIgnores = activationConfig.get("coq-lsp.updateIgnores") ?? true;
+  if (updateIgnores) {
+    let fexc: any = activationConfig.get("files.exclude");
+    activationConfig.update("files.exclude", {
+      "**/*.vo": true,
+      "**/*.vok": true,
+      "**/*.vos": true,
+      "**/*.aux": true,
+      "**/*.glob": true,
+      ...fexc,
+    });
+  }
 
   const restart = () => {
     if (client) {

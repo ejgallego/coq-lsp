@@ -11,11 +11,13 @@
  - New request `coq/getDocument` to get serialized full document
    contents. Thanks to Clément Pit-Claudel for feedback and ideas.
    (@ejgallego, #350)
+ - Auto-ignore Coq object files; can be disabled in config
+   (@ejgallego, #365)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
 
- - Fix handling of `COQPATH` and `OCAMLPATH` (@ejgallego, #)
+ - Fix handling of `COQPATH` and `OCAMLPATH` (@ejgallego, #364)
 
 # coq-lsp 0.1.5: Form
 ---------------------
