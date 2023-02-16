@@ -132,3 +132,28 @@ module CompletionData : sig
     }
   [@@deriving yojson]
 end
+
+(** Coq-lsp-specific *)
+module CompletionStatus : sig
+  type t =
+    { status : [ `Yes | `Stopped | `Failed ]
+    ; range : Lang.Range.t
+    }
+  [@@deriving yojson]
+end
+
+module RangedSpan : sig
+  type t =
+    { range : Lang.Range.t
+    ; span : Coq.Ast.t option [@default None]
+    }
+  [@@deriving to_yojson]
+end
+
+module FlecheDocument : sig
+  type t =
+    { spans : RangedSpan.t list
+    ; completed : CompletionStatus.t
+    }
+  [@@deriving to_yojson]
+end

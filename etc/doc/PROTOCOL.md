@@ -201,3 +201,45 @@ interface CoqFileProgressParams {
 #### Changelog
 
 - v0.1.1: exact copy from Lean protocol (spec under Apache License)
+
+### Document Ast Request
+
+The `coq/getDocument` request returns a serialized version of Fleche's
+document. It is modelled after LSP's standard
+`textDocument/documentSymbol`, but returns instead the full document
+contents as understood by Flèche.
+
+Caveats: Flèche notion of document is evolving, in particular you
+should not assume that the document will remain a list, but it will
+become a tree at some point.
+
+```typescript
+interface FlecheDocumentParams {
+    textDocument: VersionedTextDocumentIdentifier;
+}
+```
+
+```typescript
+// Status of the document, Yes if fully checked, range contains the last seen lexical token
+interface CompletionStatus {
+    status : ['Yes' | 'Stopped' | 'Failed']
+    range : Range
+};
+
+// Implementation-specific span information, for now the serialized Ast if present.
+type SpanInfo = any;
+
+interface RangedSpan {
+    range : Range;
+    span?: SpanInfo
+};
+
+interface FlecheDocument {
+    spans: RangedSpan[];
+    completed : CompletionStatus
+};
+```
+
+#### Changelog
+
+- v0.1.6: initial version

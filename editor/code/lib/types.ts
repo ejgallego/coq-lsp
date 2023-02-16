@@ -53,3 +53,26 @@ export type Pp =
   | ["Pp_comment", string[]];
 
 export type PpString = Pp | string;
+
+export interface FlecheDocumentParams {
+  textDocument: VersionedTextDocumentIdentifier;
+}
+
+// Status of the document, Yes if fully checked, range contains the last seen lexical token
+interface CompletionStatus {
+  status: ["Yes" | "Stopped" | "Failed"];
+  range: Range;
+}
+
+// Implementation-specific span information, for now the serialized Ast if present.
+type SpanInfo = any;
+
+interface RangedSpan {
+  range: Range;
+  span?: SpanInfo;
+}
+
+export interface FlecheDocument {
+  spans: RangedSpan[];
+  completed: CompletionStatus;
+}

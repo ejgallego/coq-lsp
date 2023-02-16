@@ -8,6 +8,9 @@
    fixes #321)
  - Trigger completion on quote char "'" (@ejgallego, #350)
  - Fix typo on keybinding config for show goals (@tomtomjhj, #357)
+ - New request `coq/getDocument` to get serialized full document
+   contents. Thanks to Clément Pit-Claudel for feedback and ideas.
+   (@ejgallego, #350)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------

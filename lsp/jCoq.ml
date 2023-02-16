@@ -56,3 +56,10 @@ module Goals = struct
 
   type 'pp reified_pp = ('pp reified_goal, 'pp) goals [@@deriving to_yojson]
 end
+
+module Ast = struct
+  type t = Coq.Ast.t
+
+  let to_yojson x =
+    Serlib.Ser_vernacexpr.vernac_control_to_yojson (Coq.Ast.to_coq x)
+end
