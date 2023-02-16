@@ -406,32 +406,43 @@ let parse_stm ~st ps =
   let f ps = Coq.Parsing.parse ~st ps in
   Stats.record ~kind:Stats.Kind.Parsing ~f ps
 
-let rec find_recovery_for_failed_qed ~default nodes =
+(* Returns node before / after, will be replaced by the right structure, we can
+   also do dynamic by looking at proof state *)
+let rec find_proof_start nodes =
   match nodes with
-  | [] -> Coq.Protect.E.ok (default, None)
-  | { Node.ast = None; _ } :: ns -> find_recovery_for_failed_qed ~default ns
-  | { ast = Some ast; state; range; _ } :: ns -> (
+  | [] -> None
+  | { Node.ast = None; _ } :: ns -> find_proof_start ns
+  | ({ ast = Some ast; _ } as n) :: ns -> (
     match (Node.Ast.to_coq ast).CAst.v.Vernacexpr.expr with
-    | Vernacexpr.VernacStartTheoremProof _ -> (
-      if !Config.v.admit_on_bad_qed then
-        Memo.interp_admitted ~st:state
-        |> Coq.Protect.E.map ~f:(fun state -> (state, Some range))
-      else
-        match ns with
-        | [] -> Coq.Protect.E.ok (default, None)
-        | n :: _ -> Coq.Protect.E.ok (n.state, Some n.range))
-    | _ -> find_recovery_for_failed_qed ~default ns)
+    | Vernacexpr.VernacStartTheoremProof _ -> Some (n, Util.hd_opt ns)
+    | _ -> find_proof_start ns)
+
+let recovery_for_failed_qed ~default nodes =
+  match find_proof_start nodes with
+  | None -> Coq.Protect.E.ok (default, None)
+  | Some ({ range; state; _ }, prev) -> (
+    if !Config.v.admit_on_bad_qed then
+      Memo.interp_admitted ~st:state
+      |> Coq.Protect.E.map ~f:(fun state -> (state, Some range))
+    else
+      match prev with
+      | None -> Coq.Protect.E.ok (default, None)
+      | Some { state; range; _ } -> Coq.Protect.E.ok (state, Some range))
+
+let log_qed_recovery v =
+  Coq.Protect.E.map ~f:(fun (st, range) ->
+      let loc_msg = Option.cata Lang.Range.to_string "no loc" range in
+      Io.Log.trace "recovery"
+        ("success" ^ loc_msg ^ " " ^ Memo.input_info (v, st));
+      st)
 
 (* Simple heuristic for Qed. *)
 let state_recovery_heuristic doc st v =
   match (Node.Ast.to_coq v).CAst.v.Vernacexpr.expr with
   (* Drop the top proof state if we reach a faulty Qed. *)
   | Vernacexpr.VernacEndProof _ ->
-    find_recovery_for_failed_qed ~default:st doc.nodes
-    |> Coq.Protect.E.map ~f:(fun (st, range) ->
-           let loc_msg = Option.cata Lang.Range.to_string "no loc" range in
-           Io.Log.trace "recovery" (loc_msg ^ " " ^ Memo.input_info (v.v, st));
-           st)
+    Io.Log.trace "recovery" "qed";
+    recovery_for_failed_qed ~default:st doc.nodes |> log_qed_recovery v.v
   (* If a new focus (or unfocusing) fails, admit the proof and try again *)
   | Vernacexpr.VernacBullet _ | Vernacexpr.VernacEndSubproof ->
     Io.Log.trace "recovery" "bullet";
