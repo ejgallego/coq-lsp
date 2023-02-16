@@ -27,27 +27,36 @@ type t =
   ; debug : bool
   }
 
+(* Lib setup, XXX unify with sysinit *)
+let coq_root = Names.DirPath.make [ Libnames.coq_root ]
+let default_root = Libnames.default_root_prefix
+
+let mk_lp ~has_ml ~coq_path ~unix_path ~implicit =
+  { Loadpath.unix_path; coq_path; has_ml; implicit; recursive = true }
+
+let mk_stdlib ~implicit unix_path =
+  mk_lp ~has_ml:false ~coq_path:coq_root ~implicit ~unix_path
+
+let mk_userlib unix_path =
+  mk_lp ~has_ml:true ~coq_path:default_root ~implicit:false ~unix_path
+
 let default ~implicit ~coqlib ~kind ~debug =
-  let mk_path prefix = coqlib ^ "/" ^ prefix in
-  let mk_lp ~ml ~root ~dir ~implicit =
-    { Loadpath.unix_path = mk_path dir
-    ; coq_path = root
-    ; has_ml = ml
-    ; implicit
-    ; recursive = true
-    }
+  let mk_path_coqlib prefix = coqlib ^ "/" ^ prefix in
+  (* Setup ml_include for the core plugins *)
+  let ml_include_path =
+    let unix_path = Filename.concat coqlib "../coq-core/plugins" in
+    System.all_subdirs ~unix_path |> List.map fst
   in
-  let coq_root = Names.DirPath.make [ Libnames.coq_root ] in
-  let default_root = Libnames.default_root_prefix in
+  (* Setup vo_include path, note that has_ml=true does the job for user_contrib
+     and plugins *)
+  let userpaths = mk_path_coqlib "user-contrib" :: Envars.coqpath in
+  let user_vo_path = List.map mk_userlib userpaths in
+  let stdlib_vo_path = mk_path_coqlib "theories" |> mk_stdlib ~implicit in
+  let vo_load_path = stdlib_vo_path :: user_vo_path in
   let require_libs = [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ] in
   { coqlib
-  ; vo_load_path =
-      [ mk_lp ~ml:false ~root:coq_root ~implicit ~dir:"theories"
-      ; mk_lp ~ml:true ~root:default_root ~implicit:false ~dir:"user-contrib"
-      ]
-  ; ml_include_path =
-      (let unix_path = Filename.concat coqlib "../coq-core/plugins" in
-       System.all_subdirs ~unix_path |> List.map fst)
+  ; vo_load_path
+  ; ml_include_path
   ; require_libs
   ; indices_matter = false
   ; impredicative_set = false
@@ -129,6 +138,15 @@ let dirpath_of_uri ~uri =
   let ldir = Libnames.add_dirpath_suffix ldir0 id in
   ldir
 
+(* This is a bit messy upstream, as -I both extends Coq loadpath and OCAMLPATH
+   loadpath *)
+let findlib_init ~ml_include_path =
+  let env_ocamlpath = try [ Sys.getenv "OCAMLPATH" ] with Not_found -> [] in
+  let env_ocamlpath = ml_include_path @ env_ocamlpath in
+  let ocamlpathsep = if Sys.unix then ":" else ";" in
+  let env_ocamlpath = String.concat ocamlpathsep env_ocamlpath in
+  Findlib.init ~env_ocamlpath ()
+
 (* NOTE: Use exhaustive match below to avoid bugs by skipping fields *)
 let apply ~uri
     { coqlib = _
@@ -144,6 +162,7 @@ let apply ~uri
   Global.set_indices_matter indices_matter;
   Global.set_impredicative_set impredicative_set;
   List.iter Mltop.add_ml_dir ml_include_path;
+  findlib_init ~ml_include_path;
   List.iter Loadpath.add_vo_path vo_load_path;
   Declaremods.start_library (dirpath_of_uri ~uri);
   load_objs require_libs
