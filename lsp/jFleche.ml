@@ -174,6 +174,7 @@ module CompletionData = struct
   [@@deriving yojson]
 end
 
+(** Pull Diagnostics *)
 module CompletionStatus = struct
   type t =
     { status : [ `Yes | `Stopped | `Failed ]
@@ -187,13 +188,50 @@ module RangedSpan = struct
     { range : Lang.Range.t
     ; span : Ast.t option [@default None]
     }
-  [@@deriving to_yojson]
+  [@@deriving yojson]
 end
 
 module FlecheDocument = struct
   type t =
     { spans : RangedSpan.t list
     ; completed : CompletionStatus.t
+    }
+  [@@deriving yojson]
+end
+
+(** Pull Diagnostics *)
+module DocumentDiagnosticParams = struct
+  type t =
+    { textDocument : string
+    ; indentifier : string option [@default None]
+    ; previousResultId : string option [@default None]
+    ; workDoneToken : Base.ProgressToken.t option [@default None]
+    ; partialResultToken : Base.ProgressToken.t option [@default None]
+    }
+  [@@deriving of_yojson]
+end
+
+module FullDocumentDiagnosticReport = struct
+  type t =
+    { kind : string
+    ; resultId : string option [@default None]
+    ; items : JLang.Diagnostic.t list
+    }
+  [@@deriving to_yojson]
+end
+
+module UnchangedDocumentDiagnosticReport = struct
+  type t =
+    { kind : string
+    ; resultId : string option [@default None]
+    }
+  [@@deriving to_yojson]
+end
+
+module DocumentDiagnosticReportPartialResult = struct
+  type t =
+    { relatedDocuments :
+        (JLang.LUri.File.t * FullDocumentDiagnosticReport.t) list
     }
   [@@deriving to_yojson]
 end

@@ -157,3 +157,44 @@ module FlecheDocument : sig
     }
   [@@deriving to_yojson]
 end
+
+(** Pull Diagnostics *)
+module DocumentDiagnosticParams : sig
+  type t =
+    { textDocument : string
+    ; indentifier : string option [@default None]
+    ; previousResultId : string option [@default None]
+    ; workDoneToken : Base.ProgressToken.t option [@default None]
+    ; partialResultToken : Base.ProgressToken.t option [@default None]
+    }
+  [@@deriving of_yojson]
+end
+
+module FullDocumentDiagnosticReport : sig
+  type t =
+    { kind : string
+    ; resultId : string option [@default None]
+    ; items : JLang.Diagnostic.t list
+          (* relatedDocuments to be added in 0.2.x *)
+    }
+  [@@deriving to_yojson]
+end
+
+module UnchangedDocumentDiagnosticReport : sig
+  type t =
+    { kind : string
+    ; resultId : string option [@default None]
+    }
+  [@@deriving to_yojson]
+end
+
+(** partial result: The first literal send need to be a DocumentDiagnosticReport
+    followed by n DocumentDiagnosticReportPartialResult literals defined as
+    follows: *)
+module DocumentDiagnosticReportPartialResult : sig
+  type t =
+    { relatedDocuments :
+        (Lang.LUri.File.t * FullDocumentDiagnosticReport.t) list
+    }
+  [@@deriving to_yojson]
+end

@@ -62,4 +62,8 @@ module Ast = struct
 
   let to_yojson x =
     Serlib.Ser_vernacexpr.vernac_control_to_yojson (Coq.Ast.to_coq x)
+
+  let of_yojson x =
+    Serlib.Ser_vernacexpr.vernac_control_of_yojson x
+    |> Result.map Coq.Ast.of_coq
 end
