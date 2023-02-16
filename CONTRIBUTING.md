@@ -99,6 +99,23 @@ Clients don't have specific submodules as of yet.
 
 `coq-lsp` is released using `dune-release tag` + `dune-release`.
 
+The checklist for the release as of today is:
+
+##### Client:
+
+- update the client changelog at `editor/code/CHANGELOG.md`, commit
+- for the `main` branch: `dune release tag $coq_lsp_version`
+- check with `vsce ls` that the client contents are OK
+- `vsce publish`
+
+##### Server:
+
+- sync branches for previous Coq versions, using `git merge`, test and push to CI.
+- `dune release tag` for each `$coq_lsp_version+$coq_version`
+- `dune release` for each version that should to the main Coq repos
+- [optional] update pre-release packages to coq-opam-archive
+- [important] bump `version.ml` and `package.json` version string
+
 ### Code organization
 
 The `coq-lsp` server consists of several components, we present them bottom-up
