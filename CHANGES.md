@@ -9,6 +9,11 @@
  - Trigger completion on quote char "'" (@ejgallego, #350)
  - Fix typo on keybinding config for show goals (@tomtomjhj, #357)
 
+# coq-lsp 0.1.5.1: Path
+-----------------------
+
+ - Fix handling of `COQPATH` and `OCAMLPATH` (@ejgallego, #)
+
 # coq-lsp 0.1.5: Form
 ---------------------
 
