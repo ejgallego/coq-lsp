@@ -244,11 +244,11 @@ install using `opam pin`:
 
 - For Coq 8.17:
   ```
-  opam pin add coq-lsp https://github.com/ejgallego/coq.git#v8.17+lsp
+  opam pin add coq-core https://github.com/ejgallego/coq.git#v8.17+lsp
   ```
 - For Coq 8.16:
   ```
-  opam pin add coq-lsp https://github.com/ejgallego/coq.git#v8.16+lsp
+  opam pin add coq https://github.com/ejgallego/coq.git#v8.16+lsp
   ```
 
 ## 📔 Planned Features
