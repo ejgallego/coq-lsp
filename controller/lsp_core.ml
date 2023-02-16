@@ -274,11 +274,16 @@ let log_workspace w =
   LIO.trace "workspace" "initialized" ~extra;
   LIO.logMessage ~lvl:3 ~message
 
+let version () = Version.server
+
 let rec lsp_init_loop ic ofmt ~cmdline ~debug : Coq.Workspace.t =
   match LIO.read_request ic with
   | LSP.Message.Request { method_ = "initialize"; id; params } ->
     (* At this point logging is allowed per LSP spec *)
-    LIO.logMessage ~lvl:3 ~message:"Initializing server";
+    let message =
+      Format.asprintf "Initializing coq-lsp server %s" (version ())
+    in
+    LIO.logMessage ~lvl:3 ~message;
     let result, dir = Rq_init.do_initialize ~params in
     Rq.answer ~ofmt ~id (Result.ok result);
     LIO.logMessage ~lvl:3 ~message:"Server initialized";
