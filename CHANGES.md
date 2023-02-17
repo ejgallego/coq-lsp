@@ -16,6 +16,8 @@
  - Support workspaces with multiple roots, this is very useful for
    projects that contain several `_CoqProject` files in different
    directories (@ejgallego, #374)
+ - Add VS Code commands to start / stop the server (@ejgallego, #377,
+   cc #209)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------

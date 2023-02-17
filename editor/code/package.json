@@ -82,12 +82,16 @@
     ],
     "commands": [
       {
-        "command": "coq-lsp.restart",
-        "title": "Coq LSP: Restart the Coq Language Server"
+        "command": "coq-lsp.start",
+        "title": "Coq LSP: Start the Coq Language Server"
       },
       {
         "command": "coq-lsp.stop",
         "title": "Coq LSP: Stop the Coq Language Server"
+      },
+      {
+        "command": "coq-lsp.restart",
+        "title": "Coq LSP: Restart the Coq Language Server"
       },
       {
         "command": "coq-lsp.goals",
