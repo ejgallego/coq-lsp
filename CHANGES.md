@@ -18,6 +18,8 @@
    directories (@ejgallego, #374)
  - Add VS Code commands to start / stop the server (@ejgallego, #377,
    cc #209)
+ - Fix bug that made the server not exit on `exit` LSP notification
+   (@artagnon, @ejgallego, #375, fixes #230)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
