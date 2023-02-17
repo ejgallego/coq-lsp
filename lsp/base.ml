@@ -77,3 +77,61 @@ let mk_notification ~method_ ~params =
     ; ("method", `String method_)
     ; ("params", params)
     ]
+
+module ProgressToken : sig
+  type t =
+    | String of string
+    | Int of int
+  [@@deriving yojson]
+end = struct
+  type t =
+    | String of string
+    | Int of int
+
+  let of_yojson x =
+    match x with
+    | `String s -> Result.ok (String s)
+    | `Int i -> Result.ok (Int i)
+    | _ -> Result.error "failure to parse ProgressToken.t"
+
+  let to_yojson = function
+    | String s -> `String s
+    | Int i -> `Int i
+end
+
+module ProgressParams = struct
+  type 'a t =
+    { token : ProgressToken.t
+    ; value : 'a
+    }
+  [@@deriving yojson]
+end
+
+let mk_progress ~token ~value f =
+  let params = ProgressParams.(to_yojson f { token; value }) in
+  mk_notification ~method_:"$/progress" ~params
+
+module WorkDoneProgressBegin = struct
+  type t =
+    { kind : string
+    ; title : string
+    ; cancellable : bool option [@None]
+    ; message : string option [@None]
+    ; percentage : int option [@None]
+    }
+  [@@deriving to_yojson]
+end
+
+module WorkDoneProgressReport = struct
+  type t =
+    { kind : string
+    ; cancellable : bool option [@None]
+    ; message : string option [@None]
+    ; percentage : int option [@None]
+    }
+  [@@deriving to_yojson]
+end
+
+module WorkDoneProgressEnd = struct
+  type t = { kind : string } [@@deriving to_yojson]
+end

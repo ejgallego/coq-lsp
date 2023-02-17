@@ -19,5 +19,9 @@ module LUri : sig
   end
 end
 
+module Diagnostic : sig
+  type t = Lang.Diagnostic.t [@@deriving to_yojson]
+end
+
 val mk_diagnostics :
   uri:Lang.LUri.File.t -> version:int -> Lang.Diagnostic.t list -> Yojson.Safe.t
