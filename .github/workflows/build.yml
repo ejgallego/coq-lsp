@@ -71,7 +71,7 @@ jobs:
         uses: cachix/install-nix-action@v18
 
       - name: 🧱 Build coq-lsp
-        run: nix build .?submodules=1
+        run: nix build
 
   client-compile:
     runs-on: ubuntu-latest
