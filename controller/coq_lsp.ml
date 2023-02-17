@@ -45,7 +45,8 @@ let dispatch_or_resume_check ~ofmt ~state =
     (* This is where we make progress on document checking; kind of IDLE
        workqueue. *)
     Control.interrupt := false;
-    check_or_yield ~ofmt
+    check_or_yield ~ofmt;
+    state
   | Some com ->
     (* TODO: optimize the queue? EJGA: I've found that VS Code as a client keeps
        the queue tidy by itself, so this works fine as now *)
@@ -58,7 +59,9 @@ let dispatch_or_resume_check ~ofmt ~state =
 (* Wrapper for the top-level call *)
 let dispatch_or_resume_check ~ofmt ~state =
   try dispatch_or_resume_check ~ofmt ~state with
-  | U.Type_error (msg, obj) -> LIO.trace_object msg obj
+  | U.Type_error (msg, obj) ->
+    LIO.trace_object msg obj;
+    state
   | Lsp_exit -> raise Lsp_exit
   | exn ->
     (* Note: We should never arrive here from Coq, as every call to Coq should
@@ -72,12 +75,13 @@ let dispatch_or_resume_check ~ofmt ~state =
     (* LIO.trace "process_queue" ("exn in method: " ^ method_name); *)
     LIO.trace "print_exn [OCaml]" (Printexc.to_string exn);
     LIO.trace "print_exn [Coq  ]" Pp.(string_of_ppcmds CErrors.(iprint iexn));
-    LIO.trace "print_bt  [OCaml]" bt
+    LIO.trace "print_bt  [OCaml]" bt;
+    state
 
 let rec process_queue ofmt ~state =
   if Fleche.Debug.sched_wakeup then
     LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
-  dispatch_or_resume_check ~ofmt ~state;
+  let state = dispatch_or_resume_check ~ofmt ~state in
   process_queue ofmt ~state
 
 let process_input (com : LSP.Message.t) =
@@ -155,10 +159,10 @@ let lsp_main bt coqlib vo_load_path ml_include_path =
   (* Input/output will happen now *)
   try
     (* LSP Server server initialization *)
-    let workspace = lsp_init_loop ic oc ~cmdline ~debug in
+    let workspaces = lsp_init_loop ic oc ~cmdline ~debug in
 
     (* Core LSP loop context *)
-    let state = { State.root_state; workspace } in
+    let state = { State.root_state; cmdline; workspaces } in
 
     (* Read workspace state (noop for now) *)
     Cache.read_from_disk ();
@@ -241,7 +245,7 @@ let lsp_cmd : unit Cmd.t =
   let doc = "Coq LSP Server" in
   let man =
     [ `S "DESCRIPTION"
-    ; `P "Experimental Coq LSP server"
+    ; `P "Coq LSP server"
     ; `S "USAGE"
     ; `P "See the documentation on the project's webpage for more information"
     ]
