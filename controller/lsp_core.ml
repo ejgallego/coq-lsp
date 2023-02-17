@@ -278,7 +278,7 @@ let log_workspace w =
 let version () =
   let dev_version =
     match Build_info.V1.version () with
-    | None -> "NA"
+    | None -> "N/A"
     | Some bi -> Build_info.V1.Version.to_string bi
   in
   Format.asprintf "version %s, dev: %s, Coq version: %s" Version.server
