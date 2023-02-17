@@ -15,7 +15,7 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-open Lsp.JFleche
+open Lsp.Core
 
 let mk_completion ~label ?insertText ?labelDetails ?textEdit ?commitCharacters
     () =
