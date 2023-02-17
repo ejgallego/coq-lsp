@@ -49,7 +49,7 @@
           in
             l.attrValues {
               inherit serapi;
-              inherit (ocamlPackages) yojson cmdliner uri;
+              inherit (ocamlPackages) yojson cmdliner uri dune-build-info;
             };
         };
 
