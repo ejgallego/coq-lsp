@@ -20,6 +20,7 @@
    cc #209)
  - Fix bug that made the server not exit on `exit` LSP notification
    (@artagnon, @ejgallego, #375, fixes #230)
+ - Lay the foundation for server tests (@artagnon, #356)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------

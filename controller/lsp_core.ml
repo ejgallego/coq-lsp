@@ -193,7 +193,7 @@ let serve_postponed_requests ~ofmt rl = Int.Set.iter (Rq.serve ~ofmt) rl
 (***********************************************************************)
 (* Start of protocol handlers *)
 
-let do_shutdown ~params:_ = RAction.ok `Null
+let do_shutdown = RAction.ok `Null
 
 let do_open ~ofmt ~(state : State.t) params =
   let document = dict_field "textDocument" params in
@@ -394,7 +394,7 @@ let dispatch_request ~method_ ~params : RAction.t =
     LIO.trace "dispatch_request" "duplicate initialize request! Rejecting";
     (* XXX what's the error code here *)
     RAction.error (-32600, "Invalid Request: server already initialized")
-  | "shutdown" -> do_shutdown ~params
+  | "shutdown" -> do_shutdown
   (* Symbols and info about the document *)
   | "textDocument/completion" -> do_completion ~params
   | "textDocument/definition" -> do_definition ~params
@@ -420,7 +420,7 @@ let dispatch_request ~ofmt ~id ~method_ ~params =
     let message = "Internal Document Request Queue Error" in
     Rq.cancel ~ofmt ~code ~message id
 
-let dispatch_message ~ofmt ~state (com : LSP.Message.t) =
+let dispatch_message ~ofmt ~state (com : LSP.Message.t) : State.t =
   match com with
   | Notification { method_; params } ->
     dispatch_state_notification ~ofmt ~state ~method_ ~params
