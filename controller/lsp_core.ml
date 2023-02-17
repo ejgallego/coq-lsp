@@ -36,7 +36,7 @@ module LSP = Lsp.Base
     particular, we need:
 
     - the core root state of Coq
-    - the list of workspaces configureda
+    - the list of workspaces configured
 
     Our notion of workspace corresponds to the usual notion in Coq of "theory",
     (that is to say, a [_CoqProject] or [(coq.theory ...)] declaration), which
