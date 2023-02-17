@@ -29,18 +29,29 @@ let list_field name dict = U.to_list List.(assoc name dict)
 let string_field name dict = U.to_string List.(assoc name dict)
 let oint_field name dict = Option.map U.to_int (List.assoc_opt name dict)
 
+module LIO = Lsp.Io
+module LSP = Lsp.Base
+
 (* LSP loop internal state, mainly the stuff needed to create a new document.
    Note that we could [apply] [workspace] to the root_state, but for now we keep
    the flexibility for a server to work with different workspaces. *)
 module State = struct
   type t =
     { root_state : Coq.State.t
-    ; workspace : Coq.Workspace.t
+    ; workspaces : (string * Coq.Workspace.t) list
     }
-end
 
-module LIO = Lsp.Io
-module LSP = Lsp.Base
+  let is_in_dir ~dir ~file = CString.is_prefix dir file
+
+  let workspace_of_uri ~uri ~state =
+    let { root_state; workspaces } = state in
+    let file = Lang.LUri.File.to_string_file uri in
+    match List.find_opt (fun (dir, _) -> is_in_dir ~dir ~file) workspaces with
+    | None ->
+      LIO.logMessage ~lvl:1 ~message:"file not in workspace";
+      (root_state, snd (List.hd workspaces))
+    | Some (_, workspace) -> (root_state, workspace)
+end
 
 module PendingRequest = struct
   type t =
@@ -151,24 +162,25 @@ let serve_postponed_requests ~ofmt rl = Int.Set.iter (Rq.serve ~ofmt) rl
 
 let do_shutdown ~params:_ = RAction.ok `Null
 
-let do_open ~state params =
+let do_open ~ofmt ~(state : State.t) params =
   let document = dict_field "textDocument" params in
   let uri, version, raw =
     ( string_field "uri" document
     , int_field "version" document
     , string_field "text" document )
   in
-  (* XXX: fix this *)
-  let uri = Lang.LUri.(File.of_uri (of_string uri)) |> Result.get_ok in
-  let root_state, workspace = State.(state.root_state, state.workspace) in
-  Doc_manager.create ~root_state ~workspace ~uri ~raw ~version
+  match Lang.LUri.(File.of_uri (of_string uri)) with
+  | Ok uri ->
+    let root_state, workspace = State.workspace_of_uri ~uri ~state in
+    Doc_manager.create ~ofmt ~root_state ~workspace ~uri ~raw ~version
+  | Error _msg -> LIO.logMessage ~lvl:1 ~message:"invalid URI in do_open"
 
 let do_change ~ofmt params =
   let document = dict_field "textDocument" params in
   let uri, version =
     (string_field "uri" document, int_field "version" document)
   in
-  (* XXX: fix this *)
+  (* XXX: fix this, factor with above *)
   let uri = Lang.LUri.(File.of_uri (of_string uri)) |> Result.get_ok in
   let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
   match changes with
@@ -270,9 +282,9 @@ let do_cancel ~ofmt ~params =
 (** LSP Init routine *)
 exception Lsp_exit
 
-let log_workspace w =
+let log_workspace (dir, w) =
   let message, extra = Coq.Workspace.describe w in
-  LIO.trace "workspace" "initialized" ~extra;
+  LIO.trace "workspace" ("initialized " ^ dir) ~extra;
   LIO.logMessage ~lvl:3 ~message
 
 let version () =
@@ -284,7 +296,8 @@ let version () =
   Format.asprintf "version %s, dev: %s, Coq version: %s" Version.server
     dev_version Coq_config.version
 
-let rec lsp_init_loop ic ofmt ~cmdline ~debug : Coq.Workspace.t =
+let rec lsp_init_loop ic ofmt ~cmdline ~debug : (string * Coq.Workspace.t) list
+    =
   match LIO.read_request ic with
   | LSP.Message.Request { method_ = "initialize"; id; params } ->
     (* At this point logging is allowed per LSP spec *)
@@ -292,14 +305,16 @@ let rec lsp_init_loop ic ofmt ~cmdline ~debug : Coq.Workspace.t =
       Format.asprintf "Initializing coq-lsp server %s" (version ())
     in
     LIO.logMessage ~lvl:3 ~message;
-    let result, dir = Rq_init.do_initialize ~params in
+    let result, dirs = Rq_init.do_initialize ~params in
     Rq.answer ~ofmt ~id (Result.ok result);
     LIO.logMessage ~lvl:3 ~message:"Server initialized";
     (* Workspace initialization *)
     let debug = debug || !Fleche.Config.v.debug in
-    let workspace = Coq.Workspace.guess ~cmdline ~debug ~dir in
-    log_workspace workspace;
-    workspace
+    let workspaces =
+      List.map (fun dir -> (dir, Coq.Workspace.guess ~cmdline ~debug ~dir)) dirs
+    in
+    List.iter log_workspace workspaces;
+    workspaces
   | LSP.Message.Request { id; _ } ->
     (* per spec *)
     LSP.mk_request_error ~id ~code:(-32002) ~message:"server not initialized"
@@ -322,6 +337,8 @@ let dispatch_notification ~ofmt ~state ~method_ ~params : unit =
   | "textDocument/didChange" -> do_change ~ofmt params
   | "textDocument/didClose" -> do_close ~ofmt params
   | "textDocument/didSave" -> Cache.save_to_disk ()
+  (* Workspace *)
+  | "workspace/didChangeWorkspaceFolders" -> () (* XXX *)
   (* Cancel Request *)
   | "$/cancelRequest" -> do_cancel ~ofmt ~params
   (* NOOPs *)

@@ -155,10 +155,10 @@ let lsp_main bt coqlib vo_load_path ml_include_path =
   (* Input/output will happen now *)
   try
     (* LSP Server server initialization *)
-    let workspace = lsp_init_loop ic oc ~cmdline ~debug in
+    let workspaces = lsp_init_loop ic oc ~cmdline ~debug in
 
     (* Core LSP loop context *)
-    let state = { State.root_state; workspace } in
+    let state = { State.root_state; workspaces } in
 
     (* Read workspace state (noop for now) *)
     Cache.read_from_disk ();

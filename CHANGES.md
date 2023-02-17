@@ -13,6 +13,8 @@
    (@ejgallego, #350)
  - Auto-ignore Coq object files; can be disabled in config
    (@ejgallego, #365)
+ - Support workspaces with multiple roots, this is very useful for
+   projects that contain several `_CoqProject` files (@ejgallego, #)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------

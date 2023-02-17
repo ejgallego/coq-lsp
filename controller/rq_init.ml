@@ -12,7 +12,9 @@ let option_cata f d x =
   | None -> d
   | Some x -> f x
 
+let string_field name dict = U.to_string (List.assoc name (U.to_assoc dict))
 let ostring_field name dict = Option.map U.to_string (List.assoc_opt name dict)
+let olist_field name dict = Option.map U.to_list (List.assoc_opt name dict)
 
 let odict_field name dict =
   option_default
@@ -41,18 +43,32 @@ let check_client_version client_version : unit =
 let default_workspace_root = "."
 let parse_furi x = Lang.LUri.of_string x |> Lang.LUri.File.of_uri
 
-let determine_workspace_root ~params : string =
+(* Poor man mapM *)
+let rec result_map ls =
+  match ls with
+  | [] -> Result.ok []
+  | r :: rs ->
+    Result.bind r (fun x ->
+        Result.bind (result_map rs) (fun xs -> Result.ok (x :: xs)))
+
+let parse_furis l = List.map parse_furi l |> result_map
+let parse_wf l = List.map (string_field "uri") l |> parse_furis
+
+let determine_workspace_root ~params : string list =
   let rootPath = ostring_field "rootPath" params |> Option.map parse_furi in
   let rootUri = ostring_field "rootUri" params |> Option.map parse_furi in
   (* XXX: enable when we advertise workspace folders support in the server *)
-  let _wsFolders = List.assoc_opt "workspaceFolders" params in
-  match (rootPath, rootUri) with
-  | None, None -> default_workspace_root
-  | _, Some (Ok dir_uri) -> Lang.LUri.File.to_string_file dir_uri
-  | Some (Ok dir_uri), None -> Lang.LUri.File.to_string_file dir_uri
-  | Some (Error msg), _ | _, Some (Error msg) ->
+  let wsFolders =
+    olist_field "workspaceFolders" params |> Option.map parse_wf
+  in
+  match (rootPath, rootUri, wsFolders) with
+  | None, None, None -> [ default_workspace_root ]
+  | _, Some (Ok dir_uri), None -> [ Lang.LUri.File.to_string_file dir_uri ]
+  | Some (Ok dir_uri), None, None -> [ Lang.LUri.File.to_string_file dir_uri ]
+  | Some (Error msg), _, _ | _, Some (Error msg), _ | _, _, Some (Error msg) ->
     LIO.trace "init" ("uri parsing failed: " ^ msg);
-    default_workspace_root
+    [ default_workspace_root ]
+  | _, _, Some (Ok folders) -> List.map Lang.LUri.File.to_string_file folders
 
 let do_initialize ~params =
   let dir = determine_workspace_root ~params in
@@ -79,6 +95,14 @@ let do_initialize ~params =
           ; ("resolveProvider", `Bool false)
           ] )
     ; ("definitionProvider", `Bool true)
+    ; ( "workspace"
+      , `Assoc
+          [ ( "workspaceFolders"
+            , `Assoc
+                [ ("supported", `Bool true)
+                ; ("changeNotifications", `Bool true)
+                ] )
+          ] )
     ]
   in
   ( `Assoc
