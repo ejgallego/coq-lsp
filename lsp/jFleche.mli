@@ -34,26 +34,16 @@ module Message : sig
 end
 
 module GoalsAnswer : sig
-  type t =
+  type 'pp t =
     { textDocument : Doc.VersionedTextDocument.t
     ; position : Lang.Point.t
-    ; goals : string JCoq.Goals.reified_goal JCoq.Goals.goals option
-    ; messages : string Message.t list
-    ; error : string option [@default None]
+    ; goals : 'pp Coq.Goals.reified_pp option
+    ; messages : 'pp Message.t list
+    ; error : 'pp option [@default None]
     }
   [@@deriving to_yojson]
 end
 
-val mk_goals :
-     uri:Lang.LUri.File.t
-  -> version:int
-  -> position:Lang.Point.t
-  -> goals:Coq.Goals.reified_pp option
-  -> messages:Pp.t Message.t list
-  -> error:Pp.t option
-  -> Yojson.Safe.t
-
-(** Generic *)
 module Location : sig
   type t =
     { uri : Lang.LUri.File.t
@@ -141,4 +131,29 @@ module CompletionData : sig
     ; commitCharacters : string list option [@default None]
     }
   [@@deriving yojson]
+end
+
+(** Coq-lsp-specific *)
+module CompletionStatus : sig
+  type t =
+    { status : [ `Yes | `Stopped | `Failed ]
+    ; range : Lang.Range.t
+    }
+  [@@deriving yojson]
+end
+
+module RangedSpan : sig
+  type t =
+    { range : Lang.Range.t
+    ; span : Coq.Ast.t option [@default None]
+    }
+  [@@deriving to_yojson]
+end
+
+module FlecheDocument : sig
+  type t =
+    { spans : RangedSpan.t list
+    ; completed : CompletionStatus.t
+    }
+  [@@deriving to_yojson]
 end

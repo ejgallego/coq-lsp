@@ -28,10 +28,10 @@ let grab_definitions ~doc ~f =
   List.filter_map df asts |> List.concat |> List.filter_map f
 
 let build_doc_idents ~doc : Yojson.Safe.t list =
-  let f { Coq.Ast.Info.name; _ } =
+  let f { Lang.Ast.Info.name; _ } =
     match name.v with
-    | Anonymous -> None
-    | Name id -> Some (mk_completion ~label:Names.Id.(to_string id) ())
+    | None -> None
+    | Some id -> Some (mk_completion ~label:id ())
   in
   grab_definitions ~doc ~f
 
@@ -50,7 +50,7 @@ let mk_edit (line, character) newText =
   TextEditReplace.{ insert; replace; newText }
 
 let unicode_commit_chars =
-  [ " "; "("; ")"; ","; "."; "-" ]
+  [ " "; "("; ")"; ","; "."; "-"; "'" ]
   @ [ "0"; "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"; "9" ]
 
 let mk_unicode_completion_item point (label, newText) =

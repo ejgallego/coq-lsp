@@ -2,7 +2,7 @@
   "name": "coq-lsp",
   "displayName": "Coq LSP",
   "description": "Coq LSP provides native vsCode support for checking Coq proof documents",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "contributors": [
     "Emilio Jesús Gallego Arias <e@x80.org>",
     "Ali Caglayan <alizter@gmail.com>",
@@ -88,6 +88,10 @@
       {
         "command": "coq-lsp.goals",
         "title": "Coq LSP: Show Goals at Point"
+      },
+      {
+        "command": "coq-lsp.document",
+        "title": "Coq LSP: Get document in serialized format, print in console"
       }
     ],
     "keybindings": [
@@ -95,7 +99,7 @@
         "command": "coq-lsp.goals",
         "key": "alt+enter",
         "mac": "meta+enter",
-        "when": "editorTextFocus && (editorLangId == coq || editorLangId == coqmarkdown"
+        "when": "editorTextFocus && (editorLangId == coq || editorLangId == coqmarkdown)"
       }
     ],
     "configuration": [
@@ -154,6 +158,21 @@
               "Show on click",
               "Show on click and on cursor movement",
               "Show on click, cursor, and command movement"
+            ]
+          },
+          "coq-lsp.pp_type": {
+            "type": "number",
+            "default": 1,
+            "description": "Method to Print Coq Terms",
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "enumDescriptions": [
+              "Print to string",
+              "Use jsCoq's Pp rich layout printer",
+              "Coq Layout Engine (experimental)"
             ]
           }
         }
@@ -219,10 +238,22 @@
             "description": "Enable Server-Side Unicode Completion. Coq-lsp provides two character sets, a regular one, and an extended one with more than 1000 symbols."
           }
         }
+      },
+      {
+        "title": "Coq Editor",
+        "type": "object",
+        "properties": {
+          "coq-lsp.updateIgnores": {
+            "type": "boolean",
+            "default": true,
+            "description": "Automatically ignore Coq object files in the workspace (.vo, .vos, ...)"
+          }
+        }
       }
     ]
   },
   "devDependencies": {
+    "@types/jquery": "^3.5.16",
     "@types/node": "^16.11.7",
     "@types/object-hash": "^3.0.2",
     "@types/react": "^18.0.27",
@@ -238,6 +269,7 @@
     "object-hash": "^3.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "jquery": "^3.6.3",
     "throttle-debounce": "^5.0.0",
     "vscode-languageclient": "^8.0.2",
     "vscode-languageserver-types": "^3.17.2"

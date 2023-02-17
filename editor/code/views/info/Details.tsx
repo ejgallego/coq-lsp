@@ -8,9 +8,9 @@ export type DetailsP = PropsWithChildren<
 
 export function Details({ summary, children, open, ...rest }: DetailsP) {
   return (
-    <details style={{ marginBottom: "1ex" }} open={open ?? true} {...rest}>
+    <details open={open ?? true} {...rest}>
       <summary>{summary}</summary>
-      <div style={{ marginLeft: "1ex", marginBottom: "1ex" }}>{children}</div>
+      <div style={{ paddingLeft: "1ex", paddingBottom: "1ex" }}>{children}</div>
     </details>
   );
 }

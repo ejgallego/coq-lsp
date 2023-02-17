@@ -1,3 +1,21 @@
+# coq-lsp 0.1.6:
+---------------------
+
+ - The info / goal view now uses jsCoq's client-side rendering, with
+   better highlighting and layout rendering (@artagnon, @ejgallego,
+   #143, fixes #96)
+ - Printing method is now configurable by the user (@ejgallego, #143,
+   fixes #321)
+ - Trigger completion on quote char "'" (@ejgallego, #350)
+ - Fix typo on keybinding config for show goals (@tomtomjhj, #357)
+ - New request `coq/getDocument` to get serialized full document
+   contents. Thanks to Clément Pit-Claudel for feedback and ideas.
+   (@ejgallego, #350)
+ - Auto-ignore Coq object files; can be disabled in config
+   (@ejgallego, #365)
+ - Support workspaces with multiple roots, this is very useful for
+   projects that contain several `_CoqProject` files (@ejgallego, #)
+
 # coq-lsp 0.1.5.1: Path
 -----------------------
 
@@ -9,7 +27,7 @@
  - Fix a bug when trying to complete in an empty file (@ejgallego,
    #270)
  - Fix a bug with the position reported by the `$/coq/fileProgress`
-   notification
+   notification (#270)
  - Fix messages panel rendering after the port to React (@ejgallego,
    #272)
  - Fix non-compliance with LSP range type due to extra `offset` field
@@ -79,7 +97,7 @@
  - The keybinding alt+enter in VSCode is now correctly scoped to be
    only active on Coq files (@artagnon, #188)
  - Support Unicode files (@ejgallego, #200, fixes #193, fixes #197)
- - The info view is now script enabled and does client-side
+ - The info / goal view is now script enabled and does client-side
    rendering. It is also now bundled with esbuild as part of the build
    process (@artagnon, @ejgallego, #171)
  - The no-op `--std` argument to the `coq-lsp` binary has been

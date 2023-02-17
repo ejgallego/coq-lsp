@@ -15,6 +15,12 @@ information panel, performance data, and more.
 experience, as well as to serve as a platform for research and UI integration
 with other projects.
 
+`coq-lsp` is built on top of **Flèche**, a new document checking engine for
+formal documents, designed from our experience in
+[previous](https://github.com/ejgallego/coq-serapi/)
+[projects](https://github.com/jscoq/jscoq). Flèche is specifically optimized for
+interactive use, and provides extra features from vanilla Coq.
+
 ## Table of Contents <!-- omit in toc -->
 
 - [🎁 Features](#-features)
@@ -23,15 +29,18 @@ with other projects.
   - [🥅 Whole-Document Goal Display](#-whole-document-goal-display)
   - [🗒️ Markdown Support](#️-markdown-support)
   - [👥 Document Outline](#-document-outline)
+  - [🔎 Document Hover](#-document-hover)
   - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
   - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
   - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
   - [🔎 A Platform for Research!](#-a-platform-for-research)
 - [🛠️ Installation](#️-installation)
+  - [Supported Coq Versions](#supported-coq-versions)
   - [Server](#server)
   - [Visual Studio Code](#visual-studio-code)
   - [Neovim](#neovim)
 - [🗣️ Discussion Channel](#️-discussion-channel)
+- [☎ Weekly Calls](#-weekly-calls)
 - [❓FAQ](#faq)
 - [⁉️ Troubleshooting and Known Problems](#️-troubleshooting-and-known-problems)
   - [Working With Multiple Files](#working-with-multiple-files)
@@ -101,6 +110,12 @@ symbols which you can navigate to or see the outline of.
 
 <img alt="Document Outline Demo" height="286px" src="etc/img/lsp-outline.gif"/> <img alt="Document Symbols" height="286px" src="etc/img/lsp-doc-symbols.png"/>
 
+### 🔎 Document Hover
+
+Hovering over a Coq identifier will show its type.
+
+<img alt="Types on Hover" height="286px" src="etc/img/lsp-hover-2.gif"/>
+
 ### ⏱️ Detailed Timing and Memory Statistics
 
 Hover over any Coq sentence, `coq-lsp` will display detailed memory and timing
@@ -140,16 +155,28 @@ which has been used by many to that purpose.
 In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md)
 `coq-lsp` and a suitable client. We recommend the Visual Studio Code Extension.
 
+### Supported Coq Versions
+
+`coq-lsp` supports Coq 8.16, Coq 8.17, and Coq's `master` branch.
+
+We recommended a minimum of Coq 8.17, due to better test coverage for that
+version.  We also recommend users to install the custom Coq trees for 8.16 and
+8.17 as detailed in [Working With Multiple Files](#working-with-multiple-files)
+
+Support for older Coq versions is possible; it is possible to make `coq-lsp`
+work with Coq back to Coq 8.10/8.9. If you are interested in making that happen
+don't hesitate to get in touch with us.
+
 ### Server
 
 - **opam**:
   ```
   opam install coq-lsp
   ```
-- **Nix**: 
+- **Nix**:
    - In nixpkgs: [#213397](https://github.com/NixOS/nixpkgs/pull/213397)
-   - In your flake: 
-   ```nix 
+   - In your flake:
+   ```nix
    inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
    ...
    coq-lsp.packages.${system}.default
@@ -160,7 +187,7 @@ In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md)
 ### Visual Studio Code
 - Official Marketplace: https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
 - Open VSX: https://open-vsx.org/extension/ejgallego/coq-lsp
-- Nix: 
+- Nix:
 ```nix
 inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
 ...
@@ -171,7 +198,7 @@ programs.vscode = {
     inputs.coq-lsp.packages.${pkgs.system}.vscode-extension
     ...
   ];
-}; 
+};
 ```
 
 ### Neovim
@@ -182,6 +209,12 @@ programs.vscode = {
 `coq-lsp` discussion channel it at [Coq's
 Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp), don't hesitate
 to stop by; both users and developers are welcome.
+
+## ☎ Weekly Calls
+
+We hold (almost) weekly video conference calls, see the [Call Schedule
+Page](https://github.com/ejgallego/coq-lsp/wiki/Coq-Lsp-Calls) for more
+information. Everyone is most welcome!
 
 ## ❓FAQ
 
@@ -211,11 +244,11 @@ install using `opam pin`:
 
 - For Coq 8.17:
   ```
-  opam pin add coq-lsp https://github.com/ejgallego/coq.git#v8.17+lsp
+  opam pin add coq-core https://github.com/ejgallego/coq.git#v8.17+lsp
   ```
 - For Coq 8.16:
   ```
-  opam pin add coq-lsp https://github.com/ejgallego/coq.git#v8.16+lsp
+  opam pin add coq https://github.com/ejgallego/coq.git#v8.16+lsp
   ```
 
 ## 📔 Planned Features
