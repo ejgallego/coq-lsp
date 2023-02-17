@@ -332,7 +332,7 @@ let version () =
 let rec lsp_init_loop ic ofmt ~cmdline ~debug : (string * Coq.Workspace.t) list
     =
   match LIO.read_request ic with
-  | LSP.Message.Request { method_ = "initialize"; id; params } ->
+  | Some (LSP.Message.Request { method_ = "initialize"; id; params }) ->
     (* At this point logging is allowed per LSP spec *)
     let message =
       Format.asprintf "Initializing coq-lsp server %s" (version ())
@@ -348,13 +348,14 @@ let rec lsp_init_loop ic ofmt ~cmdline ~debug : (string * Coq.Workspace.t) list
     in
     List.iter log_workspace workspaces;
     workspaces
-  | LSP.Message.Request { id; _ } ->
+  | Some (LSP.Message.Request { id; _ }) ->
     (* per spec *)
     LSP.mk_request_error ~id ~code:(-32002) ~message:"server not initialized"
     |> LIO.send_json ofmt;
     lsp_init_loop ic ofmt ~cmdline ~debug
-  | LSP.Message.Notification { method_ = "exit"; params = _ } -> raise Lsp_exit
-  | LSP.Message.Notification _ ->
+  | Some (LSP.Message.Notification { method_ = "exit"; params = _ }) | None ->
+    raise Lsp_exit
+  | Some (LSP.Message.Notification _) ->
     (* We can't log before getting the initialize message *)
     lsp_init_loop ic ofmt ~cmdline ~debug
 
