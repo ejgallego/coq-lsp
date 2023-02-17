@@ -39,7 +39,7 @@ interface CoqMessageEvent extends MessageEvent {
 }
 
 export function InfoPanel() {
-  let [goals, setGoals] = useState<GoalAnswer<PpString>|null>();
+  let [goals, setGoals] = useState<GoalAnswer<PpString>>();
 
   function infoViewDispatch(event: CoqMessageEvent) {
     switch (event.data.method) {
@@ -63,8 +63,8 @@ export function InfoPanel() {
     window.addEventListener("message", infoViewDispatch);
     return () => window.removeEventListener("message", infoViewDispatch);
   }, []);
-  
-  if(!goals) return;
+
+  if (!goals) return null;
 
   return (
     <FileInfo textDocument={goals.textDocument} position={goals.position}>

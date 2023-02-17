@@ -40,6 +40,8 @@
  - Add children entries to the table-of-contents (@ejgallego, #394)
  - Invalidate Coq's imperative cache on error (@ejgallego, @r-muhairi,
    #395)
+ - Add status bar button to toggle server run status (@ejgallego,
+   @Alizter, #378, closes #209)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
