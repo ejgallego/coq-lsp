@@ -21,6 +21,7 @@
  - Fix bug that made the server not exit on `exit` LSP notification
    (@artagnon, @ejgallego, #375, fixes #230)
  - Lay the foundation for server tests (@artagnon, #356)
+ - Remove the `coq-lsp.ok_diagnostics` setting (@artagnon, #129)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
