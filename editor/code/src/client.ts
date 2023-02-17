@@ -68,13 +68,15 @@ export function activate(context: ExtensionContext): void {
       ...fexc,
     });
   }
-
-  const restart = () => {
+  const stop = () => {
     if (client) {
       client.stop();
       infoPanel.dispose();
       fileProgress.dispose();
     }
+  };
+  const restart = () => {
+    stop();
 
     const wsConfig = workspace.getConfiguration("coq-lsp");
     config = CoqLspClientConfig.create(wsConfig);
@@ -171,6 +173,7 @@ export function activate(context: ExtensionContext): void {
     client.sendRequest(docReq, params).then((fd) => console.log(fd));
   };
   coqCommand("restart", restart);
+  coqCommand("stop", stop);
   coqEditorCommand("goals", goals);
   coqEditorCommand("document", getDocument);
 
