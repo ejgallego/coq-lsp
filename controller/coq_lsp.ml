@@ -45,7 +45,8 @@ let dispatch_or_resume_check ~ofmt ~state =
     (* This is where we make progress on document checking; kind of IDLE
        workqueue. *)
     Control.interrupt := false;
-    check_or_yield ~ofmt
+    check_or_yield ~ofmt;
+    state
   | Some com ->
     (* TODO: optimize the queue? EJGA: I've found that VS Code as a client keeps
        the queue tidy by itself, so this works fine as now *)
@@ -57,9 +58,14 @@ let dispatch_or_resume_check ~ofmt ~state =
 
 (* Wrapper for the top-level call *)
 let dispatch_or_resume_check ~ofmt ~state =
-  try dispatch_or_resume_check ~ofmt ~state with
-  | U.Type_error (msg, obj) -> LIO.trace_object msg obj
-  | Lsp_exit -> raise Lsp_exit
+  try Some (dispatch_or_resume_check ~ofmt ~state) with
+  | U.Type_error (msg, obj) ->
+    LIO.trace_object msg obj;
+    Some state
+  | Lsp_exit ->
+    (* EJGA: Maybe remove Lsp_exit and have dispatch_or_resume_check return an
+       action? *)
+    None
   | exn ->
     (* Note: We should never arrive here from Coq, as every call to Coq should
        be wrapper in Coq.Protect. So hitting this codepath, is effectively a
@@ -72,13 +78,29 @@ let dispatch_or_resume_check ~ofmt ~state =
     (* LIO.trace "process_queue" ("exn in method: " ^ method_name); *)
     LIO.trace "print_exn [OCaml]" (Printexc.to_string exn);
     LIO.trace "print_exn [Coq  ]" Pp.(string_of_ppcmds CErrors.(iprint iexn));
-    LIO.trace "print_bt  [OCaml]" bt
+    LIO.trace "print_bt  [OCaml]" bt;
+    Some state
+
+(* Do cleanup here if necessary *)
+let exit_message () =
+  let message = "server exiting" in
+  LIO.logMessage ~lvl:1 ~message
+
+let lsp_cleanup () = exit_message ()
 
 let rec process_queue ofmt ~state =
   if Fleche.Debug.sched_wakeup then
     LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
-  dispatch_or_resume_check ~ofmt ~state;
-  process_queue ofmt ~state
+  match dispatch_or_resume_check ~ofmt ~state with
+  | None ->
+    (* As of now, we exit the whole program here, we could try an experiment to
+       invert the threads, so the I/O routine is a thread and process_queue is
+       the main driver *)
+    lsp_cleanup ();
+    (* We can't use [Thread.exit] here as the main thread will be blocked on
+       I/O *)
+    exit 0
+  | Some state -> process_queue ofmt ~state
 
 let process_input (com : LSP.Message.t) =
   if Fleche.Debug.sched_wakeup then
@@ -124,6 +146,9 @@ let coq_init ~fb_queue ~debug =
   let load_plugin = Coq.Loader.plugin_handler None in
   Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin })
 
+let exit_notification =
+  Lsp.Base.Message.(Notification { method_ = "exit"; params = [] })
+
 let lsp_main bt coqlib vo_load_path ml_include_path =
   (* We output to stdout *)
   let ic = stdin in
@@ -147,18 +172,22 @@ let lsp_main bt coqlib vo_load_path ml_include_path =
 
   (* Read JSON-RPC messages and push them to the queue *)
   let rec read_loop () =
-    let msg = LIO.read_request ic in
-    process_input msg;
-    read_loop ()
+    match LIO.read_request ic with
+    | None ->
+      (* EOF, push an exit notication to the queue *)
+      process_input exit_notification
+    | Some msg ->
+      process_input msg;
+      read_loop ()
   in
 
   (* Input/output will happen now *)
   try
     (* LSP Server server initialization *)
-    let workspace = lsp_init_loop ic oc ~cmdline ~debug in
+    let workspaces = lsp_init_loop ic oc ~cmdline ~debug in
 
     (* Core LSP loop context *)
-    let state = { State.root_state; workspace } in
+    let state = { State.root_state; cmdline; workspaces } in
 
     (* Read workspace state (noop for now) *)
     Cache.read_from_disk ();
@@ -166,14 +195,7 @@ let lsp_main bt coqlib vo_load_path ml_include_path =
     let (_ : Thread.t) = Thread.create (fun () -> process_queue oc ~state) () in
 
     read_loop ()
-  with
-  | (LIO.ReadError "EOF" | Lsp_exit) as exn ->
-    let message =
-      "server exiting"
-      ^ if exn = Lsp_exit then "" else " [uncontrolled LSP shutdown]"
-    in
-    LIO.logMessage ~lvl:1 ~message
-  | exn ->
+  with exn ->
     let bt = Printexc.get_backtrace () in
     let exn, info = Exninfo.capture exn in
     let exn_msg = Printexc.to_string exn in
@@ -181,7 +203,8 @@ let lsp_main bt coqlib vo_load_path ml_include_path =
     LIO.trace "fatal_error [coq iprint]"
       Pp.(string_of_ppcmds CErrors.(iprint (exn, info)));
     LIO.trace "server crash" (exn_msg ^ bt);
-    LIO.logMessage ~lvl:1 ~message:("server crash: " ^ exn_msg)
+    let message = "[uncontrolled LSP shutdown] server crash\n" ^ exn_msg in
+    LIO.logMessage ~lvl:1 ~message
 
 (* Arguments handling *)
 open Cmdliner
@@ -241,7 +264,7 @@ let lsp_cmd : unit Cmd.t =
   let doc = "Coq LSP Server" in
   let man =
     [ `S "DESCRIPTION"
-    ; `P "Experimental Coq LSP server"
+    ; `P "Coq LSP server"
     ; `S "USAGE"
     ; `P "See the documentation on the project's webpage for more information"
     ]

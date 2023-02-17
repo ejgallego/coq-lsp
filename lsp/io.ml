@@ -41,10 +41,10 @@ let read_raw_request ic =
 exception ReadError of string
 
 let read_raw_request ic =
-  try read_raw_request ic with
+  try Some (read_raw_request ic) with
   (* if the end of input is encountered while some more characters are needed to
      read the current conversion specification, or the lsp server closes *)
-  | End_of_file -> raise (ReadError "EOF")
+  | End_of_file -> None
   (* if the input does not match the format. *)
   | Scanf.Scan_failure msg
   (* if a conversion to a number is not possible. *)
@@ -119,10 +119,12 @@ let () = log := trace_object
 
 (** Misc helpers *)
 let rec read_request ic =
-  let com = read_raw_request ic in
-  if Fleche.Debug.read then trace_object "read" com;
-  match Base.Message.from_yojson com with
-  | Ok msg -> msg
-  | Error msg ->
-    trace "read_request" ("error: " ^ msg);
-    read_request ic
+  match read_raw_request ic with
+  | None -> None (* EOF *)
+  | Some com -> (
+    if Fleche.Debug.read then trace_object "read" com;
+    match Base.Message.from_yojson com with
+    | Ok msg -> Some msg
+    | Error msg ->
+      trace "read_request" ("error: " ^ msg);
+      read_request ic)
