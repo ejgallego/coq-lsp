@@ -5,7 +5,8 @@
 `coq-lsp` is a [Language
 Server](https://microsoft.github.io/language-server-protocol/) and [Visual
 Studio Code](https://code.visualstudio.com/) extension for the [Coq Proof
-Assistant](https://coq.inria.fr).
+Assistant](https://coq.inria.fr). Experimental support for [Vim](#vim) and
+[Neovim](#neovim) is also available in their own projects.
 
 Key [features](#Features) of `coq-lsp` are continuous and incremental document
 checking, advanced error recovery, markdown support, positional goals and
@@ -39,6 +40,7 @@ interactive use, and provides extra features from vanilla Coq.
   - [Supported Coq Versions](#supported-coq-versions)
   - [Server](#server)
   - [Visual Studio Code](#visual-studio-code)
+  - [Vim](#vim)
   - [Neovim](#neovim)
 - [🗣️ Discussion Channel](#️-discussion-channel)
 - [☎ Weekly Calls](#-weekly-calls)
@@ -208,7 +210,15 @@ programs.vscode = {
 };
 ```
 
+### Vim
+
+- Experimental [CoqTail](https://github.com/whonore/Coqtail) support by Wolf Honore: 
+  https://github.com/whonore/Coqtail/pull/323
+
+  See it in action https://asciinema.org/a/mvzqHOHfmWB2rvwEIKFjuaRIu
+
 ### Neovim
+
 - Experimental client by Jaehwang Jung: https://github.com/tomtomjhj/coq-lsp.nvim
 
 ## 🗣️ Discussion Channel
