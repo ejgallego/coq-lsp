@@ -247,8 +247,6 @@ See our [list of frequently-asked questions](./etc/FAQ.md).
 - If you install `coq-lsp` simultaneously with VSCoq, VSCode gets confused and
   neither of them may work. `coq-lsp` will warn about that. If you know how to
   improve this, don't hesitate to get in touch with us.
-- VS Code may send request completions with a stale document, this will be fixed
-  in a new upstream release, c.f. https://github.com/ejgallego/coq-lsp/issues/273
 
 ### Working With Multiple Files
 

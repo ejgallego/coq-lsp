@@ -26,6 +26,8 @@
  - Print hover types without parenthesis (@ejgallego, #384)
  - Parse identifiers with dot for hover and jump to definition
    (@ejallego, #385)
+ - Update `vscode-languageclient` to 8.1.0 (@ejgallego, @Alizter,
+   #383, fixes #273)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
