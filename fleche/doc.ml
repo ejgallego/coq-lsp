@@ -447,9 +447,7 @@ let state_recovery_heuristic doc st v =
   | Vernacexpr.VernacBullet _ | Vernacexpr.VernacEndSubproof ->
     Io.Log.trace "recovery" "bullet";
     Coq.State.admit_goal ~st
-    |> Coq.Protect.E.bind ~f:(fun st ->
-           Coq.Interp.interp ~st v.v
-           |> Coq.Protect.E.map ~f:(fun { Coq.Interp.Info.res } -> res))
+    |> Coq.Protect.E.bind ~f:(fun st -> Coq.Interp.interp ~st v.v)
   | _ -> Coq.Protect.E.ok st
 
 let interp_and_info ~parsing_time ~st ast =
@@ -559,7 +557,7 @@ let recovery_interp ~doc ~st ~ast =
 let node_of_coq_result ~doc ~range ~ast ~st ~parsing_diags ~parsing_feedback
     ~feedback ~info last_tok res =
   match res with
-  | Ok { Coq.Interp.Info.res = state } ->
+  | Ok state ->
     let node =
       parsed_node ~range ~ast ~state ~parsing_diags ~parsing_feedback ~diags:[]
         ~feedback ~info

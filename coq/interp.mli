@@ -15,10 +15,6 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module Info : sig
-  type 'a t = { res : 'a }
-end
-
-type 'a interp_result = ('a Info.t, Loc.t) Protect.E.t
+type 'a interp_result = ('a, Loc.t) Protect.E.t
 
 val interp : st:State.t -> Ast.t -> State.t interp_result
