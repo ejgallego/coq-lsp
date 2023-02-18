@@ -32,12 +32,12 @@ If a feature doesn't appear here it usually means it is not planned in the short
 | `notebookDocument/didOpen`        | No      | Planned                                                    |
 |-----------------------------------|---------|------------------------------------------------------------|
 | `textDocument/declaration`        | No      | Planned, blocked on upstream issues                        |
-| `textDocument/definition`         | No      | Planned, blocked on upstream issues (#53)                  |
+| `textDocument/definition`         | Partial | Working only locally on files for now                      |
 | `textDocument/references`         | No      | Planned, blocked on upstream issues                        |
-| `textDocument/hover`              | Yes     |                                                            |
+| `textDocument/hover`              | Yes     | Shows stats and type info of identifiers at point          |
 | `textDocument/codeLens`           | No      |                                                            |
 | `textDocument/foldingRange`       | No      |                                                            |
-| `textDocument/documentSymbol`     | Yes     | Needs more work as to provide better results               |
+| `textDocument/documentSymbol`     | Yes     | Sections and modules missing (#322)                        |
 | `textDocument/semanticTokens`     | No      | Planned                                                    |
 | `textDocument/inlineValue`        | No      | Planned                                                    |
 | `textDocument/inlayHint`          | No      | Planned                                                    |
@@ -48,7 +48,6 @@ If a feature doesn't appear here it usually means it is not planned in the short
 |-----------------------------------|---------|------------------------------------------------------------|
 | `workspace/workspaceFolders`      | No      |                                                            |
 |-----------------------------------|---------|------------------------------------------------------------|
-
 
 ### URIs accepted by coq-lsp
 
@@ -73,7 +72,8 @@ that none of them are stable yet:
 
 ### Goal Display
 
-In order to display proof goals, `coq-lsp` supports the `proof/goals` request, parameters are:
+In order to display proof goals and information at point, `coq-lsp` supports the `proof/goals` request, parameters are:
+
 ```typescript
 interface GoalRequest {
     textDocument: VersionedTextDocumentIdentifier;
@@ -82,6 +82,7 @@ interface GoalRequest {
 ```
 
 Answer to the request is a `Goal[]` object, where
+
 ```typescript
 interface Hyp<Pp> {
   names: Pp[];
@@ -149,6 +150,12 @@ In this case, the stack will be `[ ["f1"], ["f3"] ; [ "t2"; "t1" ], [ "t4" ; "t5
 `proof/goals` was first used in the lambdapi-lsp server
 implementation, and we adapted it to `coq-lsp`.
 
+#### Selecting an output format
+
+As of today, the output format type parameter `Pp` is controlled by
+the server option `pp_type : number`, see `package.json` for different
+values. `0` is guaranteed to be `Pp = string`.
+
 #### Changelog
 
 - v0.1.5: message type does now include range and level
@@ -194,3 +201,45 @@ interface CoqFileProgressParams {
 #### Changelog
 
 - v0.1.1: exact copy from Lean protocol (spec under Apache License)
+
+### Document Ast Request
+
+The `coq/getDocument` request returns a serialized version of Fleche's
+document. It is modelled after LSP's standard
+`textDocument/documentSymbol`, but returns instead the full document
+contents as understood by Flèche.
+
+Caveats: Flèche notion of document is evolving, in particular you
+should not assume that the document will remain a list, but it will
+become a tree at some point.
+
+```typescript
+interface FlecheDocumentParams {
+    textDocument: VersionedTextDocumentIdentifier;
+}
+```
+
+```typescript
+// Status of the document, Yes if fully checked, range contains the last seen lexical token
+interface CompletionStatus {
+    status : ['Yes' | 'Stopped' | 'Failed']
+    range : Range
+};
+
+// Implementation-specific span information, for now the serialized Ast if present.
+type SpanInfo = any;
+
+interface RangedSpan {
+    range : Range;
+    span?: SpanInfo
+};
+
+interface FlecheDocument {
+    spans: RangedSpan[];
+    completed : CompletionStatus
+};
+```
+
+#### Changelog
+
+- v0.1.6: initial version

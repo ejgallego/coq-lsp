@@ -14,7 +14,11 @@ import {
   LanguageClientOptions,
   RevealOutputChannelOn,
 } from "vscode-languageclient/node";
-
+import {
+  RequestType,
+  VersionedTextDocumentIdentifier,
+} from "vscode-languageclient";
+import { FlecheDocumentParams, FlecheDocument } from "../lib/types";
 import { CoqLspClientConfig, CoqLspServerConfig } from "./config";
 import { InfoPanel } from "./goals";
 import { FileProgressManager } from "./progress";
@@ -50,13 +54,29 @@ export function activate(context: ExtensionContext): void {
       );
     }
   }
-
-  const restart = () => {
-    if (client) {
+  // Hide .vo, .aux files, etc...
+  let activationConfig = workspace.getConfiguration();
+  let updateIgnores = activationConfig.get("coq-lsp.updateIgnores") ?? true;
+  if (updateIgnores) {
+    let fexc: any = activationConfig.get("files.exclude");
+    activationConfig.update("files.exclude", {
+      "**/*.vo": true,
+      "**/*.vok": true,
+      "**/*.vos": true,
+      "**/*.aux": true,
+      "**/*.glob": true,
+      ...fexc,
+    });
+  }
+  const stop = () => {
+    if (client && client.isRunning()) {
       client.stop();
       infoPanel.dispose();
       fileProgress.dispose();
     }
+  };
+  const start = () => {
+    if (client && client.isRunning()) return;
 
     const wsConfig = workspace.getConfiguration("coq-lsp");
     config = CoqLspClientConfig.create(wsConfig);
@@ -88,9 +108,14 @@ export function activate(context: ExtensionContext): void {
       serverOptions,
       clientOptions
     );
-    client.start();
 
     fileProgress = new FileProgressManager(client);
+    client.start();
+  };
+
+  const restart = () => {
+    stop();
+    start();
   };
 
   // Start of extension activation:
@@ -138,8 +163,27 @@ export function activate(context: ExtensionContext): void {
 
   context.subscriptions.push(goalsHook);
 
+  const docReq = new RequestType<FlecheDocumentParams, FlecheDocument, void>(
+    "coq/getDocument"
+  );
+
+  let getDocument = (editor: TextEditor) => {
+    let uri = editor.document.uri;
+    let version = editor.document.version;
+    let textDocument = VersionedTextDocumentIdentifier.create(
+      uri.toString(),
+      version
+    );
+    let params: FlecheDocumentParams = { textDocument };
+    client.sendRequest(docReq, params).then((fd) => console.log(fd));
+  };
+
+  coqCommand("stop", stop);
+  coqCommand("start", start);
   coqCommand("restart", restart);
+
   coqEditorCommand("goals", goals);
+  coqEditorCommand("document", getDocument);
 
   restart();
 }

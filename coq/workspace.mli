@@ -27,6 +27,12 @@ type t = private
   ; debug : bool  (** Enable backtraces *)
   }
 
+(** compare *)
+val compare : t -> t -> int
+
+(** hash *)
+val hash : t -> int
+
 (** user message, debug extra data *)
 val describe : t -> string * string
 

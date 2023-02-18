@@ -32,7 +32,7 @@ let id_from_start s start =
 let find_id s c =
   let start = find_start s c in
   Lsp.Io.trace "find_id" ("start: " ^ string_of_int start);
-  Option.map Coq.Ast.Id.of_string (id_from_start s start)
+  id_from_start s start
 
 let get_id_at_point ~doc ~point =
   let line, character = point in

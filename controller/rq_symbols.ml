@@ -6,14 +6,13 @@
 (************************************************************************)
 
 let rec mk_syminfo info =
-  let Coq.Ast.Info.{ range; name; kind; detail; children } = info in
-  let { CAst.loc = _name_loc; v = name } = name in
-  let name = Names.Name.print name |> Pp.string_of_ppcmds in
+  let Lang.Ast.Info.{ range; name; kind; detail; children } = info in
+  let { Lang.With_range.range = selectionRange; v = name } = name in
+  let name = Option.default "_" name in
   let children = Option.map (List.map mk_syminfo) children in
-  let selectionRange = range in
   (* Need to fix this at coq.ast level *)
   (* let selectionRange = Option.get name_loc in *)
-  Lsp.JFleche.DocumentSymbol.
+  Lsp.Core.DocumentSymbol.
     { name
     ; kind
     ; detail
@@ -24,7 +23,7 @@ let rec mk_syminfo info =
     ; children
     }
 
-let mk_syminfo info = mk_syminfo info |> Lsp.JFleche.DocumentSymbol.to_yojson
+let mk_syminfo info = mk_syminfo info |> Lsp.Core.DocumentSymbol.to_yojson
 let definition_info { Fleche.Doc.Node.Ast.ast_info; _ } = ast_info
 
 let symbols ~(doc : Fleche.Doc.t) =

@@ -42,10 +42,10 @@ let map_reified_goal ~f { info; ty; hyps } =
   let hyps = List.map (map_hyp ~f) hyps in
   { info; ty; hyps }
 
-type 'a goals =
+type ('a, 'pp) goals =
   { goals : 'a list
   ; stack : ('a list * 'a list) list
-  ; bullet : Pp.t option
+  ; bullet : 'pp option
   ; shelf : 'a list
   ; given_up : 'a list
   }
@@ -57,7 +57,7 @@ let map_goals ~f { goals; stack; bullet; shelf; given_up } =
   let given_up = List.map f given_up in
   { goals; stack; bullet; shelf; given_up }
 
-type reified_pp = Pp.t reified_goal goals
+type 'pp reified_pp = ('pp reified_goal, 'pp) goals
 
 (** XXX: Do we need to perform evar normalization? *)
 

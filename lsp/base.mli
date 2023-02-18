@@ -43,3 +43,47 @@ val mk_reply : id:int -> result:Yojson.Safe.t -> Yojson.Safe.t
 
 (** Fail a request *)
 val mk_request_error : id:int -> code:int -> message:string -> Yojson.Safe.t
+
+(** Progress *)
+module ProgressToken : sig
+  type t =
+    | String of string
+    | Int of int
+  [@@deriving yojson]
+end
+
+module ProgressParams : sig
+  type 'a t =
+    { token : ProgressToken.t
+    ; value : 'a
+    }
+  [@@deriving yojson]
+end
+
+val mk_progress :
+  token:ProgressToken.t -> value:'a -> ('a -> Yojson.Safe.t) -> Yojson.Safe.t
+
+module WorkDoneProgressBegin : sig
+  type t =
+    { kind : string
+    ; title : string
+    ; cancellable : bool option [@None]
+    ; message : string option [@None]
+    ; percentage : int option [@None]
+    }
+  [@@deriving to_yojson]
+end
+
+module WorkDoneProgressReport : sig
+  type t =
+    { kind : string
+    ; cancellable : bool option [@None]
+    ; message : string option [@None]
+    ; percentage : int option [@None]
+    }
+  [@@deriving to_yojson]
+end
+
+module WorkDoneProgressEnd : sig
+  type t = { kind : string } [@@deriving to_yojson]
+end

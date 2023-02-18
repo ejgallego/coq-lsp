@@ -22,7 +22,7 @@ module Util = struct
 
   let print_stats () =
     (if !Config.v.mem_stats then
-     let size = Memo.mem_stats () in
+     let size = Memo.Interp.stats () in
      Io.Log.trace "stats" (string_of_int size));
 
     Io.Log.trace "cache" (Stats.to_string ());
@@ -67,7 +67,7 @@ module Node = struct
   module Ast = struct
     type t =
       { v : Coq.Ast.t
-      ; ast_info : Lang.Range.t Coq.Ast.Info.t list option
+      ; ast_info : Lang.Ast.Info.t list option
       }
 
     let to_coq { v; _ } = Coq.Ast.to_coq v
@@ -200,25 +200,23 @@ type t =
   { uri : Lang.LUri.File.t
   ; version : int
   ; contents : Contents.t
-  ; toc : Lang.Range.t Coq.Ast.Id.Map.t
+  ; toc : Lang.Range.t CString.Map.t
   ; root : Coq.State.t
   ; nodes : Node.t list
   ; diags_dirty : bool  (** Used to optimize `eager_diagnostics` *)
   ; completed : Completion.t
   }
 
-let mk_doc root_state workspace uri =
-  Coq.Init.doc_init ~root_state ~workspace ~uri
-
+(* Flatten the list of document asts *)
 let asts doc = List.filter_map Node.ast doc.nodes
 
 (* TOC handling *)
 
 (* XXX add children *)
-let add_toc_info toc { Coq.Ast.Info.name; range; children = _; _ } =
+let add_toc_info toc { Lang.Ast.Info.name; range; children = _; _ } =
   match name.v with
-  | Names.Anonymous -> toc
-  | Names.Name id -> Coq.Ast.Id.(Map.add (of_coq id) range toc)
+  | None -> toc
+  | Some id -> CString.Map.add id range toc
 
 let update_toc_info toc ast_info = List.fold_left add_toc_info toc ast_info
 
@@ -229,8 +227,7 @@ let update_toc_node toc node =
   | Some { Node.Ast.ast_info = Some ast_info; _ } ->
     update_toc_info toc ast_info
 
-let rebuild_toc nodes =
-  List.fold_left update_toc_node Coq.Ast.Id.Map.empty nodes
+let rebuild_toc nodes = List.fold_left update_toc_node CString.Map.empty nodes
 
 let init_fname ~uri =
   let file = Lang.LUri.File.to_string_file uri in
@@ -249,6 +246,9 @@ let process_init_feedback ~stats range state messages =
     [ { Node.range; ast = None; state; diags; messages; info } ]
   else []
 
+(* Memoized call to [Coq.Init.doc_init] *)
+let mk_doc root_state workspace uri = Memo.Init.eval (root_state, workspace, uri)
+
 let create ~state ~workspace ~uri ~version ~contents =
   let () = Stats.reset () in
   let { Coq.Protect.E.r; feedback } = mk_doc state workspace uri in
@@ -260,7 +260,7 @@ let create ~state ~workspace ~uri ~version ~contents =
         List.map (Node.Message.feedback_to_message ~lines) feedback
       in
       let stats = Stats.dump () in
-      let toc = Coq.Ast.Id.Map.empty in
+      let toc = CString.Map.empty in
       let nodes = process_init_feedback ~stats init_range root feedback in
       let diags_dirty = not (CList.is_empty nodes) in
       { uri
@@ -286,7 +286,7 @@ let create_failed_permanent ~state ~uri ~version ~raw =
          let range = Coq.Utils.to_range ~lines init_loc in
          { uri
          ; contents
-         ; toc = Coq.Ast.Id.Map.empty
+         ; toc = CString.Map.empty
          ; version
          ; root = state
          ; nodes = []
@@ -407,46 +407,55 @@ let parse_stm ~st ps =
   let f ps = Coq.Parsing.parse ~st ps in
   Stats.record ~kind:Stats.Kind.Parsing ~f ps
 
-let rec find_recovery_for_failed_qed ~default nodes =
+(* Returns node before / after, will be replaced by the right structure, we can
+   also do dynamic by looking at proof state *)
+let rec find_proof_start nodes =
   match nodes with
-  | [] -> Coq.Protect.E.ok (default, None)
-  | { Node.ast = None; _ } :: ns -> find_recovery_for_failed_qed ~default ns
-  | { ast = Some ast; state; range; _ } :: ns -> (
+  | [] -> None
+  | { Node.ast = None; _ } :: ns -> find_proof_start ns
+  | ({ ast = Some ast; _ } as n) :: ns -> (
     match (Node.Ast.to_coq ast).CAst.v.Vernacexpr.expr with
-    | Vernacexpr.VernacStartTheoremProof _ -> (
-      if !Config.v.admit_on_bad_qed then
-        Memo.interp_admitted ~st:state
-        |> Coq.Protect.E.map ~f:(fun state -> (state, Some range))
-      else
-        match ns with
-        | [] -> Coq.Protect.E.ok (default, None)
-        | n :: _ -> Coq.Protect.E.ok (n.state, Some n.range))
-    | _ -> find_recovery_for_failed_qed ~default ns)
+    | Vernacexpr.VernacStartTheoremProof _ -> Some (n, Util.hd_opt ns)
+    | _ -> find_proof_start ns)
+
+let recovery_for_failed_qed ~default nodes =
+  match find_proof_start nodes with
+  | None -> Coq.Protect.E.ok (default, None)
+  | Some ({ range; state; _ }, prev) -> (
+    if !Config.v.admit_on_bad_qed then
+      Memo.Admit.eval state
+      |> Coq.Protect.E.map ~f:(fun state -> (state, Some range))
+    else
+      match prev with
+      | None -> Coq.Protect.E.ok (default, None)
+      | Some { state; range; _ } -> Coq.Protect.E.ok (state, Some range))
+
+let log_qed_recovery v =
+  Coq.Protect.E.map ~f:(fun (st, range) ->
+      let loc_msg = Option.cata Lang.Range.to_string "no loc" range in
+      Io.Log.trace "recovery"
+        ("success" ^ loc_msg ^ " " ^ Memo.Interp.input_info (st, v));
+      st)
 
 (* Simple heuristic for Qed. *)
 let state_recovery_heuristic doc st v =
   match (Node.Ast.to_coq v).CAst.v.Vernacexpr.expr with
   (* Drop the top proof state if we reach a faulty Qed. *)
   | Vernacexpr.VernacEndProof _ ->
-    find_recovery_for_failed_qed ~default:st doc.nodes
-    |> Coq.Protect.E.map ~f:(fun (st, range) ->
-           let loc_msg = Option.cata Lang.Range.to_string "no loc" range in
-           Io.Log.trace "recovery" (loc_msg ^ " " ^ Memo.input_info (v.v, st));
-           st)
+    Io.Log.trace "recovery" "qed";
+    recovery_for_failed_qed ~default:st doc.nodes |> log_qed_recovery v.v
   (* If a new focus (or unfocusing) fails, admit the proof and try again *)
   | Vernacexpr.VernacBullet _ | Vernacexpr.VernacEndSubproof ->
     Io.Log.trace "recovery" "bullet";
     Coq.State.admit_goal ~st
-    |> Coq.Protect.E.bind ~f:(fun st ->
-           Coq.Interp.interp ~st v.v
-           |> Coq.Protect.E.map ~f:(fun { Coq.Interp.Info.res } -> res))
+    |> Coq.Protect.E.bind ~f:(fun st -> Coq.Interp.interp ~st v.v)
   | _ -> Coq.Protect.E.ok st
 
 let interp_and_info ~parsing_time ~st ast =
   let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
   (* memo memory stats are disabled: slow and misleading *)
   let { Memo.Stats.res; cache_hit; memory = _; time } =
-    Memo.interp_command ~st ast
+    Memo.Interp.eval (st, ast)
   in
   let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in
   let stats = Stats.dump () in
@@ -534,12 +543,6 @@ let parsed_node ~range ~ast ~state ~parsing_diags ~parsing_feedback ~diags
   in
   { Node.range; ast = Some ast; diags; messages; state; info }
 
-let maybe_ok_diagnostics ~range =
-  if !Config.v.ok_diagnostics then
-    let ok_diag = Diags.make range 3 (Pp.str "OK") in
-    [ ok_diag ]
-  else []
-
 let strategy_of_coq_err ~node ~state ~last_tok = function
   | Coq.Protect.Error.Anomaly _ -> Stop (Failed last_tok, node)
   | User _ -> Continue { state; last_tok; node }
@@ -555,11 +558,10 @@ let recovery_interp ~doc ~st ~ast =
 let node_of_coq_result ~doc ~range ~ast ~st ~parsing_diags ~parsing_feedback
     ~feedback ~info last_tok res =
   match res with
-  | Ok { Coq.Interp.Info.res = state } ->
-    let ok_diags = maybe_ok_diagnostics ~range in
+  | Ok state ->
     let node =
-      parsed_node ~range ~ast ~state ~parsing_diags ~parsing_feedback
-        ~diags:ok_diags ~feedback ~info
+      parsed_node ~range ~ast ~state ~parsing_diags ~parsing_feedback ~diags:[]
+        ~feedback ~info
     in
     Continue { state; last_tok; node }
   | Error (Coq.Protect.Error.Anomaly (err_range, msg) as coq_err)

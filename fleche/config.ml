@@ -16,7 +16,6 @@ type t =
   ; client_version : string [@default "any"]
   ; eager_diagnostics : bool [@default true]
         (** [eager_diagnostics] Send (full) diagnostics after processing each *)
-  ; ok_diagnostics : bool [@default false]  (** Show diagnostic for OK lines *)
   ; goal_after_tactic : bool [@default false]
         (** When showing goals and the cursor is in a tactic, if false, show
             goals before executing the tactic, if true, show goals after *)
@@ -34,6 +33,9 @@ type t =
   ; unicode_completion : Unicode_completion.t
         [@default Unicode_completion.Normal]
   ; max_errors : int [@default 150]
+  ; pp_type : int [@default 0]
+        (** Pretty-printing type in Info Panel Request, 0 = string; 1 = Pp.t; 2
+            = Coq Layout Engine *)
   }
 
 let default =
@@ -41,7 +43,6 @@ let default =
   ; gc_quick_stats = true
   ; client_version = "any"
   ; eager_diagnostics = true
-  ; ok_diagnostics = false
   ; goal_after_tactic = false
   ; show_coq_info_messages = false
   ; show_notices_as_diagnostics = false
@@ -49,6 +50,7 @@ let default =
   ; debug = false
   ; unicode_completion = Normal
   ; max_errors = 150
+  ; pp_type = 0
   }
 
 let v = ref default

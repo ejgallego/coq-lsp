@@ -9,10 +9,10 @@ let request ~(doc : Fleche.Doc.t) ~point =
   Option.cata
     (fun id_at_point ->
       let { Fleche.Doc.toc; _ } = doc in
-      match Coq.Ast.Id.Map.find_opt id_at_point toc with
+      match CString.Map.find_opt id_at_point toc with
       | Some range ->
         let uri = doc.uri in
-        Lsp.JFleche.Location.({ uri; range } |> to_yojson)
+        Lsp.Core.Location.({ uri; range } |> to_yojson)
       | None -> `Null)
     `Null
     (Rq_common.get_id_at_point ~doc ~point)
