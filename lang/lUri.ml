@@ -21,4 +21,6 @@ module File = struct
   let to_string_uri { uri; _ } = Uri.to_string uri
   let to_string_file { file; _ } = file
   let extension { file; _ } = Filename.extension file
+  let hash = Hashtbl.hash
+  let compare = Stdlib.compare
 end

@@ -135,15 +135,47 @@ end
 module Admit = struct
   type t = Coq.State.t
 
-  module AC = Hashtbl.Make (Coq.State)
+  module C = Hashtbl.Make (Coq.State)
 
-  let admit_cache = AC.create 1000
+  let cache = C.create 1000
 
-  let eval st =
-    match AC.find_opt admit_cache st with
+  let eval v =
+    match C.find_opt cache v with
     | None ->
-      let admitted_st = Coq.State.admit ~st in
-      AC.add admit_cache st admitted_st;
+      let admitted_st = Coq.State.admit ~st:v in
+      C.add cache v admitted_st;
       admitted_st
     | Some admitted_st -> admitted_st
+end
+
+module Init = struct
+  module S = struct
+    type t = Coq.State.t * Coq.Workspace.t * Lang.LUri.File.t
+
+    let equal (s1, w1, u1) (s2, w2, u2) : bool =
+      if Lang.LUri.File.compare u1 u2 = 0 then
+        if Coq.Workspace.compare w1 w2 = 0 then
+          if Coq.State.compare s1 s2 = 0 then true else false
+        else false
+      else false
+
+    let hash (st, w, uri) =
+      Hashtbl.hash
+        (Coq.State.hash st, Coq.Workspace.hash w, Lang.LUri.File.hash uri)
+  end
+
+  type t = S.t
+
+  module C = Hashtbl.Make (S)
+
+  let cache = C.create 1000
+
+  let eval v =
+    match C.find_opt cache v with
+    | None ->
+      let root_state, workspace, uri = v in
+      let admitted_st = Coq.Init.doc_init ~root_state ~workspace ~uri in
+      C.add cache v admitted_st;
+      admitted_st
+    | Some res -> res
 end

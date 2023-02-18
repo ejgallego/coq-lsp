@@ -27,4 +27,10 @@ module File : sig
 
   (** Filename version, fit for OS functions *)
   val to_string_file : t -> string
+
+  (** compare *)
+  val compare : t -> t -> int
+
+  (** hash *)
+  val hash : t -> int
 end

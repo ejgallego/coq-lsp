@@ -7,6 +7,12 @@ module Stats : sig
     }
 end
 
+module Init : sig
+  type t = Coq.State.t * Coq.Workspace.t * Lang.LUri.File.t
+
+  val eval : t -> (Coq.State.t, Loc.t) Coq.Protect.E.t
+end
+
 module Interp : sig
   type t = Coq.State.t * Coq.Ast.t
 

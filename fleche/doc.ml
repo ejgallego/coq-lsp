@@ -207,9 +207,7 @@ type t =
   ; completed : Completion.t
   }
 
-let mk_doc root_state workspace uri =
-  Coq.Init.doc_init ~root_state ~workspace ~uri
-
+(* Flatten the list of document asts *)
 let asts doc = List.filter_map Node.ast doc.nodes
 
 (* TOC handling *)
@@ -247,6 +245,9 @@ let process_init_feedback ~stats range state messages =
     in
     [ { Node.range; ast = None; state; diags; messages; info } ]
   else []
+
+(* Memoized call to [Coq.Init.doc_init] *)
+let mk_doc root_state workspace uri = Memo.Init.eval (root_state, workspace, uri)
 
 let create ~state ~workspace ~uri ~version ~contents =
   let () = Stats.reset () in
