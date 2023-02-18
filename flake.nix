@@ -18,39 +18,78 @@
         ...
       }: let
         l = lib // builtins;
-        coq_8_17 = pkgs.coqPackages_8_17;
-        coqPackages = coq_8_17.coqPackages;
-        ocamlPackages = coq_8_17.coq.ocamlPackages;
+
+        coqVersion = "8.18";
+        # Builds with ocaml 5, however since ocaml 5 and ocamlPackages_5_0 aren't cached, better to use 4_14
+        ocamlPackages = pkgs.ocamlPackages;
+
+        mkDunePackage = args @ {
+          pname,
+          src,
+          ...
+        }:
+          ocamlPackages.buildDunePackage (args
+            // {
+              duneVersion = "3";
+
+              inherit pname;
+              version = "${src.lastModifiedDate}+${coqVersion}";
+
+              src = src.outPath;
+            });
+
+        coq-core = mkDunePackage {
+          pname = "coq-core";
+          src = inputs.coq;
+
+          enableParallelBuilding = true;
+
+          preConfigure = ''
+            patchShebangs dev/tools/
+          '';
+
+          prefixKey = "-prefix ";
+
+          buildPhase = ''
+            runHook preBuild
+            make dunestrap
+            dune build -p coq-core -j $NIX_BUILD_CORES
+            runHook postBuild
+          '';
+
+          installPhase = ''
+            runHook preInstall
+            dune install --prefix $out --libdir $OCAMLFIND_DESTDIR coq-core
+            runHook postInstall
+          '';
+
+          propagatedBuildInputs = with ocamlPackages; [zarith findlib];
+        };
+
+        coq-serapi = mkDunePackage {
+          pname = "coq-serapi";
+          src = inputs.coq-serapi;
+
+          propagatedBuildInputs = l.attrValues {
+            inherit coq-core;
+            inherit (ocamlPackages) cmdliner findlib sexplib ppx_import ppx_deriving ppx_sexp_conv ppx_compare ppx_hash yojson ppx_deriving_yojson;
+          };
+        };
       in {
         packages.default = config.packages.coq-lsp;
-
-        # NOTE(2023-06-02): Nix does not support top-level self submodules (yet)
-        packages.coq-lsp = ocamlPackages.buildDunePackage {
-          duneVersion = "3";
-
+        packages.coq-lsp = mkDunePackage {
           pname = "coq-lsp";
-          version = "${self.lastModifiedDate}+8.17-rc1";
 
-          src = self.outPath;
+          src = self;
 
           nativeBuildInputs = l.attrValues {
             inherit (ocamlPackages) menhir;
           };
 
-          propagatedBuildInputs = let
-            serapi =
-              (coqPackages.lib.overrideCoqDerivation {
-                  defaultVersion = "8.17.0+0.17.0";
-                }
-                coqPackages.serapi)
-              .overrideAttrs (_: {
-                src = inputs.coq-serapi;
-              });
-          in
-            l.attrValues {
-              inherit serapi;
-              inherit (ocamlPackages) yojson cmdliner uri dune-build-info ocaml findlib;
-            };
+          propagatedBuildInputs = l.attrValues {
+            inherit coq-core coq-serapi;
+            inherit (ocamlPackages) yojson cmdliner uri dune-build-info ocaml findlib;
+          };
         };
 
         treefmt.config = {
@@ -90,8 +129,13 @@
       flake = false;
     };
 
+    coq = {
+      url = "github:ejgallego/coq/8e0314415cc3cd528fc81bf11075d294179f880a";
+      flake = false;
+    };
+
     coq-serapi = {
-      url = "github:ejgallego/coq-serapi/v8.17";
+      url = "github:ejgallego/coq-serapi/9c8e91fdad0182675e0cad34bdeba54e63db86cd";
       flake = false;
     };
   };
