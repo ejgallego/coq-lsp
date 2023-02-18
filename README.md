@@ -177,7 +177,7 @@ don't hesitate to get in touch with us.
    - In nixpkgs: [#213397](https://github.com/NixOS/nixpkgs/pull/213397)
    - In your flake:
    ```nix
-   inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
+   inputs.coq-lsp.url = "github:ejgallego/coq-lsp";
    ...
    coq-lsp.packages.${system}.default
    ```
@@ -189,7 +189,7 @@ don't hesitate to get in touch with us.
 - Open VSX: https://open-vsx.org/extension/ejgallego/coq-lsp
 - Nix:
 ```nix
-inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
+inputs.coq-lsp.url = "github:ejgallego/coq-lsp";
 ...
 programs.vscode = {
   enable = true;
