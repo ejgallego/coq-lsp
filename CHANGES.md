@@ -14,7 +14,14 @@
  - Auto-ignore Coq object files; can be disabled in config
    (@ejgallego, #365)
  - Support workspaces with multiple roots, this is very useful for
-   projects that contain several `_CoqProject` files (@ejgallego, #)
+   projects that contain several `_CoqProject` files in different
+   directories (@ejgallego, #374)
+ - Add VS Code commands to start / stop the server (@ejgallego, #377,
+   cc #209)
+ - Fix bug that made the server not exit on `exit` LSP notification
+   (@artagnon, @ejgallego, #375, fixes #230)
+ - Lay the foundation for server tests (@artagnon, #356)
+ - Remove the `coq-lsp.ok_diagnostics` setting (@artagnon, #129)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------

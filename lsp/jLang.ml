@@ -63,7 +63,9 @@ module Diagnostic = struct
   end
 
   (* Current Flèche diagnostic is not LSP-standard compliant, this one is *)
-  type t =
+  type t = Lang.Diagnostic.t
+
+  type _t =
     { range : Range.t
     ; severity : int
     ; message : string
@@ -73,7 +75,7 @@ module Diagnostic = struct
   let to_yojson { Lang.Diagnostic.range; severity; message; extra = _ } =
     let message = Pp.to_string message in
     let range = Range.conv range in
-    to_yojson { range; severity; message }
+    _t_to_yojson { range; severity; message }
 end
 
 let mk_diagnostics ~uri ~version ld : Yojson.Safe.t =

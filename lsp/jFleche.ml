@@ -1,4 +1,5 @@
 (************************************************************************)
+
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
 (*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
 (* <O___,, *       (see CREDITS file for the list of authors)           *)
@@ -85,95 +86,7 @@ module GoalsAnswer = struct
   [@@deriving to_yojson]
 end
 
-(** {1 document/definition} *)
-module LocationLink = struct
-  type t =
-    { originSelectionRange : Lang.Range.t option [@default None]
-    ; targetUri : Lang.LUri.File.t
-    ; targetRange : Lang.Range.t
-    ; targetSelectionRange : Lang.Range.t
-    }
-  [@@deriving yojson]
-end
-
-(** {1 DocumentSymbols} *)
-module DocumentSymbol = struct
-  type t =
-    { name : string
-    ; detail : string option [@default None]
-    ; kind : int
-    ; tags : int list option [@default None]
-    ; deprecated : bool option [@default None]
-    ; range : Lang.Range.t
-    ; selectionRange : Lang.Range.t
-    ; children : t list option [@default None]
-    }
-  [@@deriving yojson]
-end
-
-(** Not used as of today, superseded by DocumentSymbol *)
-module Location = struct
-  type t =
-    { uri : Lang.LUri.File.t
-    ; range : Lang.Range.t
-    }
-  [@@deriving yojson]
-end
-
-(** Not used as of today, superseded by DocumentSymbol *)
-module SymInfo = struct
-  type t =
-    { name : string
-    ; kind : int
-    ; location : Location.t
-    }
-  [@@deriving yojson]
-end
-
-(** {1 Hover} *)
-
-module HoverContents = struct
-  type t =
-    { kind : string
-    ; value : string
-    }
-  [@@deriving yojson]
-end
-
-module HoverInfo = struct
-  type t =
-    { contents : HoverContents.t
-    ; range : Lang.Range.t option [@default None]
-    }
-  [@@deriving yojson]
-end
-
-(** {1 Completion} *)
-
-module LabelDetails = struct
-  type t = { detail : string } [@@deriving yojson]
-end
-
-module TextEditReplace = struct
-  type t =
-    { insert : Lang.Range.t
-    ; replace : Lang.Range.t
-    ; newText : string
-    }
-  [@@deriving yojson]
-end
-
-module CompletionData = struct
-  type t =
-    { label : string
-    ; insertText : string option [@default None]
-    ; labelDetails : LabelDetails.t option [@default None]
-    ; textEdit : TextEditReplace.t option [@default None]
-    ; commitCharacters : string list option [@default None]
-    }
-  [@@deriving yojson]
-end
-
+(** Pull Diagnostics *)
 module CompletionStatus = struct
   type t =
     { status : [ `Yes | `Stopped | `Failed ]
@@ -187,7 +100,7 @@ module RangedSpan = struct
     { range : Lang.Range.t
     ; span : Ast.t option [@default None]
     }
-  [@@deriving to_yojson]
+  [@@deriving yojson]
 end
 
 module FlecheDocument = struct
@@ -195,5 +108,5 @@ module FlecheDocument = struct
     { spans : RangedSpan.t list
     ; completed : CompletionStatus.t
     }
-  [@@deriving to_yojson]
+  [@@deriving yojson]
 end

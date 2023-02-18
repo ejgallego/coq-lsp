@@ -32,19 +32,42 @@ let oint_field name dict = Option.map U.to_int (List.assoc_opt name dict)
 module LIO = Lsp.Io
 module LSP = Lsp.Base
 
-(* LSP loop internal state, mainly the stuff needed to create a new document.
-   Note that we could [apply] [workspace] to the root_state, but for now we keep
-   the flexibility for a server to work with different workspaces. *)
+(** LSP loop internal state: mainly the data needed to create a new document. In
+    particular, we need:
+
+    - the core root state of Coq
+    - the list of workspaces configured
+
+    Our notion of workspace corresponds to the usual notion in Coq of "theory",
+    (that is to say, a [_CoqProject] or [(coq.theory ...)] declaration), which
+    is to say a set of files that share a common logical path and logical
+    mappings to other theories.
+
+    [_CoqProject]-based workspaces need an explicit global flag setup, whereas
+    dune-based ones declare dependencies on other workspaces. *)
 module State = struct
   type t =
-    { root_state : Coq.State.t
+    { cmdline : Coq.Workspace.CmdLine.t
+    ; root_state : Coq.State.t
     ; workspaces : (string * Coq.Workspace.t) list
     }
+
+  open Lsp.Workspace
+
+  let add_workspace state { WorkspaceFolder.uri; _ } =
+    let dir = Lang.LUri.File.to_string_file uri in
+    let { cmdline; workspaces; _ } = state in
+    let ws = Coq.Workspace.guess ~debug:false ~cmdline ~dir in
+    { state with workspaces = (dir, ws) :: workspaces }
+
+  let del_workspace state { WorkspaceFolder.uri; _ } =
+    let dir = Lang.LUri.File.to_string_file uri in
+    { state with workspaces = List.remove_assoc dir state.workspaces }
 
   let is_in_dir ~dir ~file = CString.is_prefix dir file
 
   let workspace_of_uri ~uri ~state =
-    let { root_state; workspaces } = state in
+    let { root_state; workspaces; _ } = state in
     let file = Lang.LUri.File.to_string_file uri in
     match List.find_opt (fun (dir, _) -> is_in_dir ~dir ~file) workspaces with
     | None ->
@@ -52,6 +75,16 @@ module State = struct
       (root_state, snd (List.hd workspaces))
     | Some (_, workspace) -> (root_state, workspace)
 end
+
+let do_changeWorkspaceFolders ~ofmt:_ ~state params =
+  let open Lsp.Workspace in
+  let { DidChangeWorkspaceFoldersParams.event } =
+    DidChangeWorkspaceFoldersParams.of_yojson (`Assoc params) |> Result.get_ok
+  in
+  let { WorkspaceFoldersChangeEvent.added; removed } = event in
+  let state = List.fold_left State.add_workspace state added in
+  let state = List.fold_left State.del_workspace state removed in
+  state
 
 module PendingRequest = struct
   type t =
@@ -160,7 +193,7 @@ let serve_postponed_requests ~ofmt rl = Int.Set.iter (Rq.serve ~ofmt) rl
 (***********************************************************************)
 (* Start of protocol handlers *)
 
-let do_shutdown ~params:_ = RAction.ok `Null
+let do_shutdown = RAction.ok `Null
 
 let do_open ~ofmt ~(state : State.t) params =
   let document = dict_field "textDocument" params in
@@ -299,7 +332,7 @@ let version () =
 let rec lsp_init_loop ic ofmt ~cmdline ~debug : (string * Coq.Workspace.t) list
     =
   match LIO.read_request ic with
-  | LSP.Message.Request { method_ = "initialize"; id; params } ->
+  | Some (LSP.Message.Request { method_ = "initialize"; id; params }) ->
     (* At this point logging is allowed per LSP spec *)
     let message =
       Format.asprintf "Initializing coq-lsp server %s" (version ())
@@ -315,13 +348,14 @@ let rec lsp_init_loop ic ofmt ~cmdline ~debug : (string * Coq.Workspace.t) list
     in
     List.iter log_workspace workspaces;
     workspaces
-  | LSP.Message.Request { id; _ } ->
+  | Some (LSP.Message.Request { id; _ }) ->
     (* per spec *)
     LSP.mk_request_error ~id ~code:(-32002) ~message:"server not initialized"
     |> LIO.send_json ofmt;
     lsp_init_loop ic ofmt ~cmdline ~debug
-  | LSP.Message.Notification { method_ = "exit"; params = _ } -> raise Lsp_exit
-  | LSP.Message.Notification _ ->
+  | Some (LSP.Message.Notification { method_ = "exit"; params = _ }) | None ->
+    raise Lsp_exit
+  | Some (LSP.Message.Notification _) ->
     (* We can't log before getting the initialize message *)
     lsp_init_loop ic ofmt ~cmdline ~debug
 
@@ -346,6 +380,15 @@ let dispatch_notification ~ofmt ~state ~method_ ~params : unit =
   (* Generic handler *)
   | msg -> LIO.trace "no_handler" msg
 
+let dispatch_state_notification ~ofmt ~state ~method_ ~params : State.t =
+  match method_ with
+  (* Workspace *)
+  | "workspace/didChangeWorkspaceFolders" ->
+    do_changeWorkspaceFolders ~ofmt ~state params
+  | _ ->
+    dispatch_notification ~ofmt ~state ~method_ ~params;
+    state
+
 let dispatch_request ~method_ ~params : RAction.t =
   match method_ with
   (* Lifecyle *)
@@ -353,7 +396,7 @@ let dispatch_request ~method_ ~params : RAction.t =
     LIO.trace "dispatch_request" "duplicate initialize request! Rejecting";
     (* XXX what's the error code here *)
     RAction.error (-32600, "Invalid Request: server already initialized")
-  | "shutdown" -> do_shutdown ~params
+  | "shutdown" -> do_shutdown
   (* Symbols and info about the document *)
   | "textDocument/completion" -> do_completion ~params
   | "textDocument/definition" -> do_definition ~params
@@ -379,9 +422,10 @@ let dispatch_request ~ofmt ~id ~method_ ~params =
     let message = "Internal Document Request Queue Error" in
     Rq.cancel ~ofmt ~code ~message id
 
-let dispatch_message ~ofmt ~state (com : LSP.Message.t) =
+let dispatch_message ~ofmt ~state (com : LSP.Message.t) : State.t =
   match com with
   | Notification { method_; params } ->
-    dispatch_notification ~ofmt ~state ~method_ ~params
+    dispatch_state_notification ~ofmt ~state ~method_ ~params
   | Request { id; method_; params } ->
-    dispatch_request ~ofmt ~id ~method_ ~params
+    dispatch_request ~ofmt ~id ~method_ ~params;
+    state

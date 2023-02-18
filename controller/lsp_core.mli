@@ -21,7 +21,8 @@
 
 module State : sig
   type t =
-    { root_state : Coq.State.t
+    { cmdline : Coq.Workspace.CmdLine.t
+    ; root_state : Coq.State.t
     ; workspaces : (string * Coq.Workspace.t) list
     }
 end
@@ -38,7 +39,7 @@ val lsp_init_loop :
 
 (** Dispatch an LSP request or notification, requests may be postponed. *)
 val dispatch_message :
-  ofmt:Format.formatter -> state:State.t -> Lsp.Base.Message.t -> unit
+  ofmt:Format.formatter -> state:State.t -> Lsp.Base.Message.t -> State.t
 
 (** Serve postponed requests in the set, they can be stale *)
 val serve_postponed_requests : ofmt:Format.formatter -> Int.Set.t -> unit

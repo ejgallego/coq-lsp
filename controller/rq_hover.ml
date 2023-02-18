@@ -5,7 +5,7 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-open Lsp.JFleche
+open Lsp.Core
 
 (* Debug parameters *)
 let show_loc_info = false

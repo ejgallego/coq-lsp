@@ -15,18 +15,11 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module Info = struct
-  type 'a t = { res : 'a }
-end
-
-type 'a interp_result = ('a Info.t, Loc.t) Protect.E.t
+type 'a interp_result = ('a, Loc.t) Protect.E.t
 
 let coq_interp ~st cmd =
   let st = State.to_coq st in
   let cmd = Ast.to_coq cmd in
   Vernacinterp.interp ~st cmd |> State.of_coq
 
-let interp ~st cmd =
-  Protect.eval cmd ~f:(fun cmd ->
-      let res = coq_interp ~st cmd in
-      { Info.res })
+let interp ~st cmd = Protect.eval cmd ~f:(coq_interp ~st)

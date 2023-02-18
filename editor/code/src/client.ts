@@ -68,13 +68,15 @@ export function activate(context: ExtensionContext): void {
       ...fexc,
     });
   }
-
-  const restart = () => {
-    if (client) {
+  const stop = () => {
+    if (client && client.isRunning()) {
       client.stop();
       infoPanel.dispose();
       fileProgress.dispose();
     }
+  };
+  const start = () => {
+    if (client && client.isRunning()) return;
 
     const wsConfig = workspace.getConfiguration("coq-lsp");
     config = CoqLspClientConfig.create(wsConfig);
@@ -106,9 +108,14 @@ export function activate(context: ExtensionContext): void {
       serverOptions,
       clientOptions
     );
-    client.start();
 
     fileProgress = new FileProgressManager(client);
+    client.start();
+  };
+
+  const restart = () => {
+    stop();
+    start();
   };
 
   // Start of extension activation:
@@ -170,7 +177,11 @@ export function activate(context: ExtensionContext): void {
     let params: FlecheDocumentParams = { textDocument };
     client.sendRequest(docReq, params).then((fd) => console.log(fd));
   };
+
+  coqCommand("stop", stop);
+  coqCommand("start", start);
   coqCommand("restart", restart);
+
   coqEditorCommand("goals", goals);
   coqEditorCommand("document", getDocument);
 
