@@ -20,7 +20,6 @@
         l = lib // builtins;
 
         coqVersion = "8.18";
-        # Builds with ocaml 5, however since ocaml 5 and ocamlPackages_5_0 aren't cached, better to use 4_14
         ocamlPackages = pkgs.ocamlPackages;
 
         mkDunePackage = args @ {
@@ -50,17 +49,8 @@
 
           prefixKey = "-prefix ";
 
-          buildPhase = ''
-            runHook preBuild
+          preBuild = ''
             make dunestrap
-            dune build -p coq-core -j $NIX_BUILD_CORES
-            runHook postBuild
-          '';
-
-          installPhase = ''
-            runHook preInstall
-            dune install --prefix $out --libdir $OCAMLFIND_DESTDIR coq-core
-            runHook postInstall
           '';
 
           propagatedBuildInputs = with ocamlPackages; [zarith findlib];
