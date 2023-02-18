@@ -30,6 +30,7 @@ interactive use, and provides extra features from vanilla Coq.
   - [🗒️ Markdown Support](#️-markdown-support)
   - [👥 Document Outline](#-document-outline)
   - [🔎 Document Hover](#-document-hover)
+  - [📁️ Multiple Workspaces](#-multiple-workspaces)
   - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
   - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
   - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
@@ -115,6 +116,12 @@ symbols which you can navigate to or see the outline of.
 Hovering over a Coq identifier will show its type.
 
 <img alt="Types on Hover" height="286px" src="etc/img/lsp-hover-2.gif"/>
+
+### 📁 Multiple Workspaces
+
+`coq-lsp` supports projects with multiple `_CoqProject` files, use the "Add
+folder to Workspace" feature of Visual Studio code or the LSP Workspace Folders
+extension to use this in your project.
 
 ### ⏱️ Detailed Timing and Memory Statistics
 
