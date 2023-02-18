@@ -22,7 +22,7 @@ let memo_cache_file = ".coq-lsp.cache"
 
 let memo_save_to_disk () =
   try
-    Fleche.Memo.save_to_disk ~file:memo_cache_file;
+    (* Fleche.Memo.save_to_disk ~file:memo_cache_file; *)
     LIO.trace "memo" "cache saved to disk"
   with exn ->
     LIO.trace "memo" (Printexc.to_string exn);
@@ -36,7 +36,7 @@ let memo_read_from_disk () =
   try
     if Sys.file_exists memo_cache_file then (
       LIO.trace "memo" "trying to load cache file";
-      Fleche.Memo.load_from_disk ~file:memo_cache_file;
+      (* Fleche.Memo.load_from_disk ~file:memo_cache_file; *)
       LIO.trace "memo" "cache file loaded")
     else LIO.trace "memo" "cache file not present"
   with exn ->

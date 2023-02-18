@@ -22,7 +22,7 @@ module Util = struct
 
   let print_stats () =
     (if !Config.v.mem_stats then
-     let size = Memo.mem_stats () in
+     let size = Memo.Interp.stats () in
      Io.Log.trace "stats" (string_of_int size));
 
     Io.Log.trace "cache" (Stats.to_string ());
@@ -422,7 +422,7 @@ let recovery_for_failed_qed ~default nodes =
   | None -> Coq.Protect.E.ok (default, None)
   | Some ({ range; state; _ }, prev) -> (
     if !Config.v.admit_on_bad_qed then
-      Memo.interp_admitted ~st:state
+      Memo.Admit.eval state
       |> Coq.Protect.E.map ~f:(fun state -> (state, Some range))
     else
       match prev with
@@ -433,7 +433,7 @@ let log_qed_recovery v =
   Coq.Protect.E.map ~f:(fun (st, range) ->
       let loc_msg = Option.cata Lang.Range.to_string "no loc" range in
       Io.Log.trace "recovery"
-        ("success" ^ loc_msg ^ " " ^ Memo.input_info (v, st));
+        ("success" ^ loc_msg ^ " " ^ Memo.Interp.input_info (st, v));
       st)
 
 (* Simple heuristic for Qed. *)
@@ -456,7 +456,7 @@ let interp_and_info ~parsing_time ~st ast =
   let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
   (* memo memory stats are disabled: slow and misleading *)
   let { Memo.Stats.res; cache_hit; memory = _; time } =
-    Memo.interp_command ~st ast
+    Memo.Interp.eval (st, ast)
   in
   let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in
   let stats = Stats.dump () in
