@@ -31,6 +31,8 @@
  - Fix typo on max_errors checking, this made coq-lsp stop on the
    number of total diagnostics, instead of only errors (@ejgallego,
    #386)
+ - Hover symbol information: hypothesis names must shadow globals of
+   the same name (@ejgallego, #391, fixes #388)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
