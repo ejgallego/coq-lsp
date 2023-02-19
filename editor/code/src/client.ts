@@ -9,6 +9,7 @@ import {
   TextEditorSelectionChangeKind,
   StatusBarAlignment,
   StatusBarItem,
+  ThemeColor,
 } from "vscode";
 import {
   LanguageClient,
@@ -226,9 +227,15 @@ export function activate(context: ExtensionContext): void {
 
   const updateStatusBar = () => {
     if (client && client.isRunning()) {
-      lspStatusItem.text = "coq-lsp (running)";
+      lspStatusItem.text = "$(check) coq-lsp (running)";
+      lspStatusItem.backgroundColor = undefined;
+      lspStatusItem.tooltip = "coq-lsp is running. Click to disable.";
     } else {
-      lspStatusItem.text = "coq-lsp (stopped)";
+      lspStatusItem.text = "$(circle-slash) coq-lsp (stopped)";
+      lspStatusItem.backgroundColor = new ThemeColor(
+        "statusBarItem.warningBackground"
+      );
+      lspStatusItem.tooltip = "coq-lsp has been disabled. Click to enable.";
     }
   };
 
@@ -244,7 +251,6 @@ export function activate(context: ExtensionContext): void {
 
   start();
 }
-
 export function deactivate(): Thenable<void> | undefined {
   if (!client) {
     return undefined;
