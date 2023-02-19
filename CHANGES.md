@@ -24,6 +24,8 @@
  - Remove the `coq-lsp.ok_diagnostics` setting (@artagnon, #129)
  - Print abbreviations on hover (@ejgallego, #384)
  - Print hover types without parenthesis (@ejgallego, #384)
+ - Parse identifiers with dot for hover and jump to definition
+   (@ejallego, #385)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
