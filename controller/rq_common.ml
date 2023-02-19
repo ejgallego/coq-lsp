@@ -10,7 +10,7 @@ let is_id_char x =
   ('a' <= x && x <= 'z')
   || ('A' <= x && x <= 'Z')
   || ('0' <= x && x <= '9')
-  || x = '_'
+  || x = '_' || x = '.'
 
 let rec find_start s c =
   if c <= 0 then 0
