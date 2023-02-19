@@ -22,6 +22,8 @@
    (@artagnon, @ejgallego, #375, fixes #230)
  - Lay the foundation for server tests (@artagnon, #356)
  - Remove the `coq-lsp.ok_diagnostics` setting (@artagnon, #129)
+ - Print abbreviations on hover (@ejgallego, #384)
+ - Print hover types without parenthesis (@ejgallego, #384)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
