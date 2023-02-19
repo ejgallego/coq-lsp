@@ -37,6 +37,7 @@
    trying to resume it if it didn't finish (@ejgallego, #392)
  - Hover symbol information: correctly handle identifiers before '.'
    and containing a quote (') themselves (@ejgallego, #393)
+ - Add children entries to the table-of-contents (@ejgallego, #394)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
