@@ -38,6 +38,8 @@
  - Hover symbol information: correctly handle identifiers before '.'
    and containing a quote (') themselves (@ejgallego, #393)
  - Add children entries to the table-of-contents (@ejgallego, #394)
+ - Invalidate Coq's imperative cache on error (@ejgallego, @r-muhairi,
+   #395)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
