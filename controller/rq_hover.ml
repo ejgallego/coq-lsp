@@ -64,15 +64,17 @@ let info_of_id env sigma id =
   let qid = Libnames.qualid_of_string id in
   (* try locate the kind of object the name refers to *)
   try
-    let lid = Nametab.locate qid in
-    (* dispatch based on type *)
-    let open Names.GlobRef in
-    (match lid with
-    | VarRef vr -> info_of_var env vr |> print_type env sigma
-    | ConstRef cr -> info_of_const env cr |> print_type env sigma
-    | IndRef ir -> info_of_ind env sigma ir
-    | ConstructRef cr -> info_of_constructor env cr |> print_type env sigma)
-    |> fun x -> Some x
+    match Nametab.locate_extended qid with
+    | TrueGlobal lid ->
+      (* dispatch based on type *)
+      let open Names.GlobRef in
+      (match lid with
+      | VarRef vr -> info_of_var env vr |> print_type env sigma
+      | ConstRef cr -> info_of_const env cr |> print_type env sigma
+      | IndRef ir -> info_of_ind env sigma ir
+      | ConstructRef cr -> info_of_constructor env cr |> print_type env sigma)
+      |> fun x -> Some x
+    | Abbrev kn -> Some (Prettyp.default_object_pr.print_abbreviation env kn)
   with _ -> (
     try
       let id = Names.Id.of_string id in
