@@ -28,6 +28,9 @@
    (@ejallego, #385)
  - Update `vscode-languageclient` to 8.1.0 (@ejgallego, @Alizter,
    #383, fixes #273)
+ - Fix typo on max_errors checking, this made coq-lsp stop on the
+   number of total diagnostics, instead of only errors (@ejgallego,
+   #386)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------

@@ -19,4 +19,4 @@ type t =
   ; extra : Extra.t list option
   }
 
-let is_error { severity; _ } = severity >= 1
+let is_error { severity; _ } = severity = 1
