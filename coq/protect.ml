@@ -38,11 +38,14 @@ let eval_exn ~f x =
     let res = f x in
     R.Completed (Ok res)
   with
-  | Sys.Break -> R.Interrupted
+  | Sys.Break ->
+    Vernacstate.invalidate_cache ();
+    R.Interrupted
   | exn ->
     let e, info = Exninfo.capture exn in
     let loc = Loc.(get_loc info) in
     let msg = CErrors.iprint (e, info) in
+    Vernacstate.invalidate_cache ();
     if CErrors.is_anomaly e then R.Completed (Error (Anomaly (loc, msg)))
     else R.Completed (Error (User (loc, msg)))
 
