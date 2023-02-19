@@ -33,6 +33,8 @@
    #386)
  - Hover symbol information: hypothesis names must shadow globals of
    the same name (@ejgallego, #391, fixes #388)
+ - De-schedule document on didClose, otherwise the scheduler will keep
+   trying to resume it if it didn't finish (@ejgallego, #392)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
