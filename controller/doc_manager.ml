@@ -158,7 +158,11 @@ let send_diags ~ofmt ~doc =
   in
   LIO.send_json ofmt @@ diags
 
-module Check = struct
+module Check : sig
+  val schedule : uri:Lang.LUri.File.t -> unit
+  val deschedule : uri:Lang.LUri.File.t -> unit
+  val maybe_check : ofmt:Format.formatter -> Int.Set.t option
+end = struct
   let pending = ref None
 
   let get_check_target pt_requests =
@@ -190,6 +194,10 @@ module Check = struct
 
   let maybe_check ~ofmt = Option.map (fun uri -> check ~ofmt ~uri) !pending
   let schedule ~uri = pending := Some uri
+
+  let deschedule ~uri =
+    if Option.compare Lang.LUri.File.compare (Some uri) !pending = 0 then
+      pending := None
 end
 
 let send_error_permanent_fail ~ofmt ~uri ~version message =
@@ -286,7 +294,12 @@ let change ~ofmt ~uri ~version ~raw =
          for now *)
       Int.Set.empty
 
-let close = Handle.close
+let close ~uri =
+  (* XXX: Our handling of the "queue" is not good, handle should take care of
+     that as to avoid desync between the queue and the handle table. *)
+  Check.deschedule ~uri;
+  Handle.close ~uri
+
 let find_doc = Handle.find_doc
 let add_on_completion ~uri ~id = Handle.attach_cp_request ~uri ~id
 let remove_on_completion ~uri ~id = Handle.remove_cp_request ~uri ~id

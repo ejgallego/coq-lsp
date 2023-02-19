@@ -19,7 +19,7 @@ doc: "https://ejgallego.github.io/coq-lsp/"
 
 depends: [
   "ocaml"        { >= "4.11.0" }
-  "dune"         { >= "3.2"  }
+  "dune"         { >= "3.2.0"  }
 
   # lsp dependencies
   "cmdliner"     { >= "1.1.0" }

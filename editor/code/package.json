@@ -94,6 +94,10 @@
         "title": "Coq LSP: Restart the Coq Language Server"
       },
       {
+        "command": "coq-lsp.toggle",
+        "title": "Coq LSP: Toggle the running status of Coq Language Server"
+      },
+      {
         "command": "coq-lsp.goals",
         "title": "Coq LSP: Show Goals at Point"
       },
@@ -274,8 +278,8 @@
     "react-dom": "^18.2.0",
     "jquery": "^3.6.3",
     "throttle-debounce": "^5.0.0",
-    "vscode-languageclient": "^8.0.2",
-    "vscode-languageserver-types": "^3.17.2"
+    "vscode-languageclient": "^8.1.0",
+    "vscode-languageserver-types": "^3.17.3"
   },
   "main": "./out/src/client.js",
   "scripts": {

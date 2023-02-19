@@ -1,11 +1,4 @@
-import {
-  Position,
-  Uri,
-  WebviewPanel,
-  window,
-  WebviewOptions,
-  ViewColumn,
-} from "vscode";
+import { Position, Uri, WebviewPanel, window, ViewColumn } from "vscode";
 import {
   RequestType,
   VersionedTextDocumentIdentifier,

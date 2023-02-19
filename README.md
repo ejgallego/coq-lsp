@@ -5,21 +5,23 @@
 `coq-lsp` is a [Language
 Server](https://microsoft.github.io/language-server-protocol/) and [Visual
 Studio Code](https://code.visualstudio.com/) extension for the [Coq Proof
-Assistant](https://coq.inria.fr).
+Assistant](https://coq.inria.fr). Experimental support for [Vim](#vim) and
+[Neovim](#neovim) is also available in their own projects.
 
 Key [features](#Features) of `coq-lsp` are continuous and incremental document
 checking, advanced error recovery, markdown support, positional goals and
 information panel, performance data, and more.
 
 `coq-lsp` aims to provide a seamless, modern interactive theorem proving
-experience, as well as to serve as a platform for research and UI integration
-with other projects.
+experience, as well as to serve as a maintainable platform for research and UI
+integration with other projects.
 
 `coq-lsp` is built on top of **Flèche**, a new document checking engine for
 formal documents, designed from our experience in
-[previous](https://github.com/ejgallego/coq-serapi/)
+[previous](https://github.com/ejgallego/coq-serapi/),
 [projects](https://github.com/jscoq/jscoq). Flèche is specifically optimized for
-interactive use, and provides extra features from vanilla Coq.
+interactive use, [SerAPI-like tooling integration](#-a-platform-for-research),
+and web native usage, providing quite a few extra features from vanilla Coq.
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -30,14 +32,17 @@ interactive use, and provides extra features from vanilla Coq.
   - [🗒️ Markdown Support](#️-markdown-support)
   - [👥 Document Outline](#-document-outline)
   - [🔎 Document Hover](#-document-hover)
+  - [📁️ Multiple Workspaces](#-multiple-workspaces)
   - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
   - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
   - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
+  - [🌐 Web native](#-web-native)
   - [🔎 A Platform for Research!](#-a-platform-for-research)
 - [🛠️ Installation](#️-installation)
   - [Supported Coq Versions](#supported-coq-versions)
   - [Server](#server)
   - [Visual Studio Code](#visual-studio-code)
+  - [Vim](#vim)
   - [Neovim](#neovim)
 - [🗣️ Discussion Channel](#️-discussion-channel)
 - [☎ Weekly Calls](#-weekly-calls)
@@ -47,7 +52,7 @@ interactive use, and provides extra features from vanilla Coq.
 - [📔 Planned Features](#-planned-features)
 - [📕 Protocol Documentation](#-protocol-documentation)
 - [🤸 Contributing](#-contributing)
-- [🌐 Team](#-team)
+- [🥷 Team](#-team)
   - [Past Contributors](#past-contributors)
 - [©️ Licensing Information](#️-licensing-information)
 - [👏 Acknowledgments](#-acknowledgments)
@@ -116,6 +121,12 @@ Hovering over a Coq identifier will show its type.
 
 <img alt="Types on Hover" height="286px" src="etc/img/lsp-hover-2.gif"/>
 
+### 📁 Multiple Workspaces
+
+`coq-lsp` supports projects with multiple `_CoqProject` files, use the "Add
+folder to Workspace" feature of Visual Studio code or the LSP Workspace Folders
+extension to use this in your project.
+
 ### ⏱️ Detailed Timing and Memory Statistics
 
 Hover over any Coq sentence, `coq-lsp` will display detailed memory and timing
@@ -141,14 +152,28 @@ validation UI, as well as by other Coq projects such as jsCoq.
 Moreover, we are strongly based on standards, aiming for the least possible
 extensions.
 
+### 🌐 Web Native!
+
+`coq-lsp` has been designed from the ground up to fully run inside your web
+browser seamlessly; our sister project, [jsCoq](https://github.com/jscoq/jscoq)
+has been already been experimentally ported to `coq-lsp`, and future releases
+will use it by default.
+
+`coq-lsp` provides an exciting new array of opportunities for jsCoq, lifting
+some limitations we inherited from Coq's lack of web native support.
+
 ### 🔎 A Platform for Research!
 
 A key `coq-lsp` goal is to serve as central platform for researchers in
 Human-Computer-Interaction, Machine Learning, and Software Engineering willing
 to interact with Coq.
 
-Towards this goal, `coq-lsp` extends and will eventually replace `coq-serapi`,
-which has been used by many to that purpose.
+Towards this goal, `coq-lsp` extends and is in the process of replacing [Coq
+SerAPI](https://github.com/ejgalleg/coqserapi), which has been used by many to
+that purpose.
+
+If you are a SerAPI user, please see our preliminary [migrating from
+SerAPI](etc/SerAPI.md) document.
 
 ## 🛠️ Installation
 
@@ -201,7 +226,15 @@ programs.vscode = {
 };
 ```
 
+### Vim
+
+- Experimental [CoqTail](https://github.com/whonore/Coqtail) support by Wolf Honore: 
+  https://github.com/whonore/Coqtail/pull/323
+
+  See it in action https://asciinema.org/a/mvzqHOHfmWB2rvwEIKFjuaRIu
+
 ### Neovim
+
 - Experimental client by Jaehwang Jung: https://github.com/tomtomjhj/coq-lsp.nvim
 
 ## 🗣️ Discussion Channel
@@ -224,14 +257,13 @@ See our [list of frequently-asked questions](./etc/FAQ.md).
 
 - Some problems can be resolved by restarting `coq-lsp`, in Visual Studio Code,
   `Ctrl+Shift+P` will give you access to the `coq-lsp.restart` command.
+  You can also start / stop the server from the status bar.
 - In VSCode, the "Output" window will have a "Coq LSP Server Events" channel
   which should contain some important information; the content of this channel
   is controlled by the `Coq LSP > Trace: Server` option.
 - If you install `coq-lsp` simultaneously with VSCoq, VSCode gets confused and
   neither of them may work. `coq-lsp` will warn about that. If you know how to
   improve this, don't hesitate to get in touch with us.
-- VS Code may send request completions with a stale document, this will be fixed
-  in a new upstream release, c.f. https://github.com/ejgallego/coq-lsp/issues/273
 
 ### Working With Multiple Files
 
@@ -277,7 +309,7 @@ Here is a [list of project ideas](etc/ContributionIdeas.md) that could be of
 help in case you are looking for contribution ideas, tho we are convinced that
 the best ideas will arise from using `coq-lsp` in your own Coq projects.
 
-## 🌐 Team
+## 🥷 Team
 
 - Ali Caglayan (co-coordinator)
 - Emilio J. Gallego Arias (Inria Paris, co-coordinator)

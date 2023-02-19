@@ -10,7 +10,7 @@ let is_id_char x =
   ('a' <= x && x <= 'z')
   || ('A' <= x && x <= 'Z')
   || ('0' <= x && x <= '9')
-  || x = '_'
+  || x = '_' || x = '\'' || x = '.'
 
 let rec find_start s c =
   if c <= 0 then 0
@@ -23,6 +23,8 @@ let id_from_start s start =
     if c >= l then c else if is_id_char s.[c] then end_of_id s (c + 1) else c
   in
   let end_ = end_of_id s start in
+  (* Correct for last dot *)
+  let end_ = if end_ > 1 && s.[end_ - 1] = '.' then end_ - 1 else end_ in
   if start < end_ then (
     let id = String.sub s start (end_ - start) in
     Lsp.Io.trace "find_id" ("found: " ^ id);
