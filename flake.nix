@@ -108,7 +108,7 @@
     };
 
     coq-serapi = {
-      url = "github:ejgallego/coq-serapi/9c8e91fdad0182675e0cad34bdeba54e63db86cd";
+      url = "github:ejgallego/coq-serapi";
       flake = false;
     };
   };
