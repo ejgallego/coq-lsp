@@ -211,12 +211,13 @@ type t =
 let asts doc = List.filter_map Node.ast doc.nodes
 
 (* TOC handling *)
-
-(* XXX add children *)
-let add_toc_info toc { Lang.Ast.Info.name; range; children = _; _ } =
-  match name.v with
-  | None -> toc
-  | Some id -> CString.Map.add id range toc
+let rec add_toc_info toc { Lang.Ast.Info.name; range; children; _ } =
+  let toc =
+    match name.v with
+    | None -> toc
+    | Some id -> CString.Map.add id range toc
+  in
+  Option.cata (List.fold_left add_toc_info toc) toc children
 
 let update_toc_info toc ast_info = List.fold_left add_toc_info toc ast_info
 

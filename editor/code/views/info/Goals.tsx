@@ -12,7 +12,7 @@ type CoqId = PpString;
 
 function Hyp({ hyp: { names, def, ty } }: { hyp: Hyp<PpString> }) {
   let className = "coq-hypothesis" + (def ? " coq-has-def" : "");
-  let mkLabel = (id: CoqId) => <label>{id}</label>;
+  let mkLabel = (id: CoqId) => <label key={objectHash(id)}>{id}</label>;
   let mkdef = (pp?: PpString) =>
     pp ? (
       <span className="def">

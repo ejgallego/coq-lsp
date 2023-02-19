@@ -52,7 +52,8 @@ export class FileProgressManager {
   }
   dispose() {
     this.fileProgress.dispose();
-    this.cleanDecos();
+    // Wait to clean due to throttle in updateDecos
+    setTimeout(this.cleanDecos, 250);
   }
   private updateDecos = throttle(200, (uri: string, ranges: Range[]) => {
     for (const editor of window.visibleTextEditors) {

@@ -22,6 +22,28 @@
    (@artagnon, @ejgallego, #375, fixes #230)
  - Lay the foundation for server tests (@artagnon, #356)
  - Remove the `coq-lsp.ok_diagnostics` setting (@artagnon, #129)
+ - Print abbreviations on hover (@ejgallego, #384)
+ - Print hover types without parenthesis (@ejgallego, #384)
+ - Parse identifiers with dot for hover and jump to definition
+   (@ejallego, #385)
+ - Update `vscode-languageclient` to 8.1.0 (@ejgallego, @Alizter,
+   #383, fixes #273)
+ - Fix typo on max_errors checking, this made coq-lsp stop on the
+   number of total diagnostics, instead of only errors (@ejgallego,
+   #386)
+ - Hover symbol information: hypothesis names must shadow globals of
+   the same name (@ejgallego, #391, fixes #388)
+ - De-schedule document on didClose, otherwise the scheduler will keep
+   trying to resume it if it didn't finish (@ejgallego, #392)
+ - Hover symbol information: correctly handle identifiers before '.'
+   and containing a quote (') themselves (@ejgallego, #393)
+ - Add children entries to the table-of-contents (@ejgallego, #394)
+ - Invalidate Coq's imperative cache on error (@ejgallego, @r-muhairi,
+   #395)
+ - Add status bar button to toggle server run status (@ejgallego,
+   @Alizter, #378, closes #209)
+ - Support for `COQLIB` and `COQCORELIB` environment variables, added
+   `--coqcorelib` command line argument (@ejgallego, #403)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------

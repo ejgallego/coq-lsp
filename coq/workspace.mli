@@ -17,6 +17,7 @@
 
 type t = private
   { coqlib : string
+  ; coqcorelib : string
   ; vo_load_path : Loadpath.vo_path list
   ; ml_include_path : string list
   ; require_libs :
@@ -39,6 +40,7 @@ val describe : t -> string * string
 module CmdLine : sig
   type t =
     { coqlib : string
+    ; coqcorelib : string
     ; vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
     }

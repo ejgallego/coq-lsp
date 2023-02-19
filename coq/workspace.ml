@@ -17,6 +17,7 @@
 
 type t =
   { coqlib : string
+  ; coqcorelib : string
   ; vo_load_path : Loadpath.vo_path list
   ; ml_include_path : string list
   ; require_libs :
@@ -43,11 +44,15 @@ let mk_stdlib ~implicit unix_path =
 let mk_userlib unix_path =
   mk_lp ~has_ml:true ~coq_path:default_root ~implicit:false ~unix_path
 
-let default ~implicit ~coqlib ~kind ~debug =
+let getenv var else_ = try Sys.getenv var with Not_found -> else_
+
+let default ~implicit ~coqcorelib ~coqlib ~kind ~debug =
+  let coqcorelib = getenv "COQCORELIB" coqcorelib in
+  let coqlib = getenv "COQLIB" coqlib in
   let mk_path_coqlib prefix = coqlib ^ "/" ^ prefix in
   (* Setup ml_include for the core plugins *)
   let ml_include_path =
-    let unix_path = Filename.concat coqlib "../coq-core/plugins" in
+    let unix_path = Filename.concat coqcorelib "plugins" in
     System.all_subdirs ~unix_path |> List.map fst
   in
   (* Setup vo_include path, note that has_ml=true does the job for user_contrib
@@ -58,6 +63,7 @@ let default ~implicit ~coqlib ~kind ~debug =
   let vo_load_path = stdlib_vo_path :: user_vo_path in
   let require_libs = [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ] in
   { coqlib
+  ; coqcorelib
   ; vo_load_path
   ; ml_include_path
   ; require_libs
@@ -153,6 +159,7 @@ let findlib_init ~ml_include_path =
 (* NOTE: Use exhaustive match below to avoid bugs by skipping fields *)
 let apply ~uri
     { coqlib = _
+    ; coqcorelib = _
     ; vo_load_path
     ; ml_include_path
     ; require_libs
@@ -170,7 +177,7 @@ let apply ~uri
   Declaremods.start_library (dirpath_of_uri ~uri);
   load_objs require_libs
 
-let workspace_from_coqproject ~coqlib ~debug cp_file : t =
+let workspace_from_coqproject ~coqcorelib ~coqlib ~debug cp_file : t =
   (* Io.Log.error "init" "Parsing _CoqProject"; *)
   let open CoqProject_file in
   let to_vo_loadpath f implicit =
@@ -197,7 +204,7 @@ let workspace_from_coqproject ~coqlib ~debug cp_file : t =
   let args = List.map (fun f -> f.thing) extra_args in
   let implicit = true in
   let kind = Filename.concat (Sys.getcwd ()) "_CoqProject" in
-  let workspace = default ~coqlib ~implicit ~kind ~debug in
+  let workspace = default ~coqlib ~coqcorelib ~implicit ~kind ~debug in
   let init, workspace = parse_args args true workspace in
   let workspace =
     if not init then { workspace with require_libs = [] } else workspace
@@ -207,20 +214,22 @@ let workspace_from_coqproject ~coqlib ~debug cp_file : t =
 module CmdLine = struct
   type t =
     { coqlib : string
+    ; coqcorelib : string
     ; vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
     }
 end
 
 let workspace_from_cmdline ~debug
-    { CmdLine.coqlib; vo_load_path; ml_include_path } =
+    { CmdLine.coqlib; coqcorelib; vo_load_path; ml_include_path } =
   let kind = "Command-line arguments" in
   let implicit = true in
-  let w = default ~implicit ~coqlib ~kind ~debug in
+  let w = default ~implicit ~coqcorelib ~coqlib ~kind ~debug in
   add_loadpaths w ~vo_load_path ~ml_include_path
 
 let guess ~debug ~cmdline ~dir =
   let cp_file = Filename.concat dir "_CoqProject" in
   if Sys.file_exists cp_file then
-    workspace_from_coqproject ~coqlib:cmdline.CmdLine.coqlib ~debug cp_file
+    let { CmdLine.coqlib; coqcorelib; _ } = cmdline in
+    workspace_from_coqproject ~coqcorelib ~coqlib ~debug cp_file
   else workspace_from_cmdline ~debug cmdline

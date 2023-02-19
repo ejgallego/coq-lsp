@@ -149,7 +149,7 @@ let coq_init ~fb_queue ~debug =
 let exit_notification =
   Lsp.Base.Message.(Notification { method_ = "exit"; params = [] })
 
-let lsp_main bt coqlib vo_load_path ml_include_path =
+let lsp_main bt coqcorelib coqlib vo_load_path ml_include_path =
   (* We output to stdout *)
   let ic = stdin in
   let oc = Format.std_formatter in
@@ -167,7 +167,7 @@ let lsp_main bt coqlib vo_load_path ml_include_path =
   let debug = bt || Fleche.Debug.backtraces in
   let root_state = coq_init ~fb_queue ~debug in
   let cmdline =
-    { Coq.Workspace.CmdLine.coqlib; vo_load_path; ml_include_path }
+    { Coq.Workspace.CmdLine.coqcorelib; coqlib; vo_load_path; ml_include_path }
   in
 
   (* Read JSON-RPC messages and push them to the queue *)
@@ -223,13 +223,18 @@ let coq_lp_conv ~implicit (unix_path, lp) =
 
 let coqlib =
   let doc =
-    "Load Coq.Init.Prelude from $(docv); plugins/ and theories/ should live \
+    "Load Coq.Init.Prelude from $(docv); theories and user-contrib should live \
      there."
   in
   Arg.(
+    value & opt string Coq_config.coqlib & info [ "coqlib" ] ~docv:"COQLIB" ~doc)
+
+let coqcorelib =
+  let doc = "Path to Coq plugin directories." in
+  Arg.(
     value
-    & opt string Coq_config.coqlib
-    & info [ "coqlib" ] ~docv:"COQPATH" ~doc)
+    & opt string (Filename.concat Coq_config.coqlib "../coq-core/")
+    & info [ "coqcorelib" ] ~docv:"COQCORELIB" ~doc)
 
 let rload_path : Loadpath.vo_path list Term.t =
   let doc =
@@ -273,7 +278,9 @@ let lsp_cmd : unit Cmd.t =
   Cmd.(
     v
       (Cmd.info "coq-lsp" ~version:Version.server ~doc ~man)
-      Term.(const lsp_main $ bt $ coqlib $ vo_load_path $ ml_include_path))
+      Term.(
+        const lsp_main $ bt $ coqcorelib $ coqlib $ vo_load_path
+        $ ml_include_path))
 
 let main () =
   let ecode = Cmd.eval lsp_cmd in
