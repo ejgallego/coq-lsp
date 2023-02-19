@@ -5,6 +5,4 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-(** Returns answer request + workspace root directory *)
-val do_initialize :
-  params:(string * Yojson.Safe.t) list -> Yojson.Safe.t * string list
+val request : Requests.document_request
