@@ -103,7 +103,7 @@
     };
 
     coq = {
-      url = "github:ejgallego/coq/8e0314415cc3cd528fc81bf11075d294179f880a";
+      url = "github:ejgallego/coq";
       flake = false;
     };
 
