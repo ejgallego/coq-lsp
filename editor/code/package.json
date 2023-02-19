@@ -94,6 +94,10 @@
         "title": "Coq LSP: Restart the Coq Language Server"
       },
       {
+        "command": "coq-lsp.toggle",
+        "title": "Coq LSP: Toggle the running status of Coq Language Server"
+      },
+      {
         "command": "coq-lsp.goals",
         "title": "Coq LSP: Show Goals at Point"
       },

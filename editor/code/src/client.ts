@@ -7,6 +7,9 @@ import {
   TextEditor,
   TextEditorSelectionChangeEvent,
   TextEditorSelectionChangeKind,
+  StatusBarAlignment,
+  StatusBarItem,
+  ThemeColor,
 } from "vscode";
 import {
   LanguageClient,
@@ -29,6 +32,8 @@ let client: LanguageClient;
 let infoPanel: InfoPanel;
 // Lifetime of the fileProgress setup == client lifetime
 let fileProgress: FileProgressManager;
+// Status Bar Button
+let lspStatusItem: StatusBarItem;
 
 export function activate(context: ExtensionContext): void {
   window.showInformationMessage("Coq LSP Extension: Going to activate!");
@@ -70,11 +75,16 @@ export function activate(context: ExtensionContext): void {
   }
   const stop = () => {
     if (client && client.isRunning()) {
-      client.stop();
-      infoPanel.dispose();
-      fileProgress.dispose();
+      client
+        .dispose(2000)
+        .then(updateStatusBar)
+        .then(() => {
+          infoPanel.dispose();
+          fileProgress.dispose();
+        });
     }
   };
+
   const start = () => {
     if (client && client.isRunning()) return;
 
@@ -110,12 +120,30 @@ export function activate(context: ExtensionContext): void {
     );
 
     fileProgress = new FileProgressManager(client);
-    client.start();
+    client
+      .start()
+      .then(updateStatusBar)
+      .then(() => {
+        if (window.activeTextEditor) {
+          goalsCall(
+            window.activeTextEditor,
+            TextEditorSelectionChangeKind.Command
+          );
+        }
+      });
   };
 
   const restart = () => {
     stop();
     start();
+  };
+
+  const toggle = () => {
+    if (client && client.isRunning()) {
+      stop();
+    } else {
+      start();
+    }
   };
 
   // Start of extension activation:
@@ -128,36 +156,44 @@ export function activate(context: ExtensionContext): void {
   context.subscriptions.push(infoPanel);
 
   const goals = (editor: TextEditor) => {
+    if (!client.isRunning()) return;
     let uri = editor.document.uri;
     let version = editor.document.version;
     let position = editor.selection.active;
     infoPanel.updateFromServer(client, uri, version, position);
   };
 
+  const goalsCall = (
+    textEditor: TextEditor,
+    callKind: TextEditorSelectionChangeKind | undefined
+  ) => {
+    if (
+      textEditor.document.languageId != "coq" &&
+      textEditor.document.languageId != "coqmarkdown"
+    )
+      return;
+
+    const kind =
+      callKind == TextEditorSelectionChangeKind.Mouse
+        ? 1
+        : callKind == TextEditorSelectionChangeKind.Keyboard
+        ? 2
+        : callKind
+        ? callKind
+        : 3;
+    // When evt.kind is null, it often means it was due to an
+    // edit, we want to re-trigger in that case
+
+    const show = kind <= config.show_goals_on;
+
+    if (show) {
+      goals(textEditor);
+    }
+  };
+
   let goalsHook = window.onDidChangeTextEditorSelection(
     (evt: TextEditorSelectionChangeEvent) => {
-      if (
-        evt.textEditor.document.languageId != "coq" &&
-        evt.textEditor.document.languageId != "coqmarkdown"
-      )
-        return;
-
-      const kind =
-        evt.kind == TextEditorSelectionChangeKind.Mouse
-          ? 1
-          : evt.kind == TextEditorSelectionChangeKind.Keyboard
-          ? 2
-          : evt.kind
-          ? evt.kind
-          : 3;
-      // When evt.kind is null, it often means it was due to an
-      // edit, we want to re-trigger in that case
-
-      const show = kind <= config.show_goals_on;
-
-      if (show) {
-        goals(evt.textEditor);
-      }
+      goalsCall(evt.textEditor, evt.kind);
     }
   );
 
@@ -177,17 +213,44 @@ export function activate(context: ExtensionContext): void {
     let params: FlecheDocumentParams = { textDocument };
     client.sendRequest(docReq, params).then((fd) => console.log(fd));
   };
+  const createEnableButton = () => {
+    lspStatusItem = window.createStatusBarItem(
+      "coq-lsp.enable",
+      StatusBarAlignment.Left,
+      0
+    );
+    lspStatusItem.command = "coq-lsp.toggle";
+    lspStatusItem.text = "coq-lsp";
+    lspStatusItem.show();
+    context.subscriptions.push(lspStatusItem);
+  };
+
+  const updateStatusBar = () => {
+    if (client && client.isRunning()) {
+      lspStatusItem.text = "$(check) coq-lsp (running)";
+      lspStatusItem.backgroundColor = undefined;
+      lspStatusItem.tooltip = "coq-lsp is running. Click to disable.";
+    } else {
+      lspStatusItem.text = "$(circle-slash) coq-lsp (stopped)";
+      lspStatusItem.backgroundColor = new ThemeColor(
+        "statusBarItem.warningBackground"
+      );
+      lspStatusItem.tooltip = "coq-lsp has been disabled. Click to enable.";
+    }
+  };
 
   coqCommand("stop", stop);
   coqCommand("start", start);
   coqCommand("restart", restart);
+  coqCommand("toggle", toggle);
 
   coqEditorCommand("goals", goals);
   coqEditorCommand("document", getDocument);
 
-  restart();
-}
+  createEnableButton();
 
+  start();
+}
 export function deactivate(): Thenable<void> | undefined {
   if (!client) {
     return undefined;

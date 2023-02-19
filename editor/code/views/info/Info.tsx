@@ -22,12 +22,6 @@ function doInfoError(e: any) {
   console.log("doInfoError", e);
 }
 
-let initGoals: GoalAnswer<PpString> = {
-  textDocument: VersionedTextDocumentIdentifier.create("Welcome to coq-lsp", 0),
-  position: Position.create(0, 0),
-  messages: [],
-};
-
 interface RenderGoals {
   method: "renderGoals";
   params: GoalAnswer<PpString>;
@@ -45,7 +39,7 @@ interface CoqMessageEvent extends MessageEvent {
 }
 
 export function InfoPanel() {
-  let [goals, setGoals] = useState<GoalAnswer<PpString>>(initGoals);
+  let [goals, setGoals] = useState<GoalAnswer<PpString>>();
 
   function infoViewDispatch(event: CoqMessageEvent) {
     switch (event.data.method) {
@@ -69,6 +63,8 @@ export function InfoPanel() {
     window.addEventListener("message", infoViewDispatch);
     return () => window.removeEventListener("message", infoViewDispatch);
   }, []);
+
+  if (!goals) return null;
 
   return (
     <FileInfo textDocument={goals.textDocument} position={goals.position}>

@@ -241,6 +241,7 @@ See our [list of frequently-asked questions](./etc/FAQ.md).
 
 - Some problems can be resolved by restarting `coq-lsp`, in Visual Studio Code,
   `Ctrl+Shift+P` will give you access to the `coq-lsp.restart` command.
+  You can also start / stop the server from the status bar.
 - In VSCode, the "Output" window will have a "Coq LSP Server Events" channel
   which should contain some important information; the content of this channel
   is controlled by the `Coq LSP > Trace: Server` option.
