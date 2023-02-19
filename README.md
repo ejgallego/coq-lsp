@@ -13,14 +13,15 @@ checking, advanced error recovery, markdown support, positional goals and
 information panel, performance data, and more.
 
 `coq-lsp` aims to provide a seamless, modern interactive theorem proving
-experience, as well as to serve as a platform for research and UI integration
-with other projects.
+experience, as well as to serve as a maintainable platform for research and UI
+integration with other projects.
 
 `coq-lsp` is built on top of **Flèche**, a new document checking engine for
 formal documents, designed from our experience in
-[previous](https://github.com/ejgallego/coq-serapi/)
+[previous](https://github.com/ejgallego/coq-serapi/),
 [projects](https://github.com/jscoq/jscoq). Flèche is specifically optimized for
-interactive use, and provides extra features from vanilla Coq.
+interactive use, [SerAPI-like tooling integration](#-a-platform-for-research),
+and web native usage, providing quite a few extra features from vanilla Coq.
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -35,6 +36,7 @@ interactive use, and provides extra features from vanilla Coq.
   - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
   - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
   - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
+  - [🌐 Web native](#-web-native)
   - [🔎 A Platform for Research!](#-a-platform-for-research)
 - [🛠️ Installation](#️-installation)
   - [Supported Coq Versions](#supported-coq-versions)
@@ -50,7 +52,7 @@ interactive use, and provides extra features from vanilla Coq.
 - [📔 Planned Features](#-planned-features)
 - [📕 Protocol Documentation](#-protocol-documentation)
 - [🤸 Contributing](#-contributing)
-- [🌐 Team](#-team)
+- [🥷 Team](#-team)
   - [Past Contributors](#past-contributors)
 - [©️ Licensing Information](#️-licensing-information)
 - [👏 Acknowledgments](#-acknowledgments)
@@ -150,14 +152,28 @@ validation UI, as well as by other Coq projects such as jsCoq.
 Moreover, we are strongly based on standards, aiming for the least possible
 extensions.
 
+### 🌐 Web Native!
+
+`coq-lsp` has been designed from the ground up to fully run inside your web
+browser seamlessly; our sister project, [jsCoq](https://github.com/jscoq/jscoq)
+has been already been experimentally ported to `coq-lsp`, and future releases
+will use it by default.
+
+`coq-lsp` provides an exciting new array of opportunities for jsCoq, lifting
+some limitations we inherited from Coq's lack of web native support.
+
 ### 🔎 A Platform for Research!
 
 A key `coq-lsp` goal is to serve as central platform for researchers in
 Human-Computer-Interaction, Machine Learning, and Software Engineering willing
 to interact with Coq.
 
-Towards this goal, `coq-lsp` extends and will eventually replace `coq-serapi`,
-which has been used by many to that purpose.
+Towards this goal, `coq-lsp` extends and is in the process of replacing [Coq
+SerAPI](https://github.com/ejgalleg/coqserapi), which has been used by many to
+that purpose.
+
+If you are a SerAPI user, please see our preliminary [migrating from
+SerAPI](etc/SerAPI.md) document.
 
 ## 🛠️ Installation
 
@@ -293,7 +309,7 @@ Here is a [list of project ideas](etc/ContributionIdeas.md) that could be of
 help in case you are looking for contribution ideas, tho we are convinced that
 the best ideas will arise from using `coq-lsp` in your own Coq projects.
 
-## 🌐 Team
+## 🥷 Team
 
 - Ali Caglayan (co-coordinator)
 - Emilio J. Gallego Arias (Inria Paris, co-coordinator)
