@@ -42,6 +42,8 @@
    #395)
  - Add status bar button to toggle server run status (@ejgallego,
    @Alizter, #378, closes #209)
+ - Support for `COQLIB` and `COQCORELIB` environment variables, added
+   `--coqcorelib` command line argument (@ejgallego, #403)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
