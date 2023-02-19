@@ -19,28 +19,19 @@
       }: let
         l = lib // builtins;
 
-        coqVersion = "8.18";
+        coqVersion = "8.18+alpha";
         ocamlPackages = pkgs.ocamlPackages;
 
-        mkDunePackage = args @ {
-          pname,
-          src,
-          ...
-        }:
+        mkDunePackageFromInput = input: args:
           ocamlPackages.buildDunePackage (args
             // {
               duneVersion = "3";
-
-              inherit pname;
-              version = "${src.lastModifiedDate}+${coqVersion}";
-
-              src = src.outPath;
+              version = "${input.lastModifiedDate}+${coqVersion}";
+              src = input.outPath;
             });
 
-        coq-core = mkDunePackage {
+        coq-core = mkDunePackageFromInput inputs.coq {
           pname = "coq-core";
-          src = inputs.coq;
-
           enableParallelBuilding = true;
 
           preConfigure = ''
@@ -48,17 +39,11 @@
           '';
 
           prefixKey = "-prefix ";
-
-          preBuild = ''
-            make dunestrap
-          '';
-
           propagatedBuildInputs = with ocamlPackages; [zarith findlib];
         };
 
-        coq-serapi = mkDunePackage {
+        coq-serapi = mkDunePackageFromInput inputs.coq-serapi {
           pname = "coq-serapi";
-          src = inputs.coq-serapi;
 
           propagatedBuildInputs = l.attrValues {
             inherit coq-core;
@@ -67,10 +52,8 @@
         };
       in {
         packages.default = config.packages.coq-lsp;
-        packages.coq-lsp = mkDunePackage {
+        packages.coq-lsp = mkDunePackageFromInput self {
           pname = "coq-lsp";
-
-          src = self;
 
           nativeBuildInputs = l.attrValues {
             inherit (ocamlPackages) menhir;
