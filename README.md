@@ -23,6 +23,8 @@ formal documents, designed from our experience in
 interactive use, [SerAPI-like tooling integration](#-a-platform-for-research),
 and web native usage, providing quite a few extra features from vanilla Coq.
 
+`coq-lsp` has support on 🐧 Linux, 🍎 macOS, and 🪟 Windows.
+
 ## Table of Contents <!-- omit in toc -->
 
 - [🎁 Features](#-features)
@@ -31,12 +33,12 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [🥅 Whole-Document Goal Display](#-whole-document-goal-display)
   - [🗒️ Markdown Support](#️-markdown-support)
   - [👥 Document Outline](#-document-outline)
-  - [🔎 Document Hover](#-document-hover)
-  - [📁️ Multiple Workspaces](#-multiple-workspaces)
+  - [🐝 Document Hover](#-document-hover)
+  - [📁 Multiple Workspaces](#-multiple-workspaces)
   - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
   - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
   - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
-  - [🌐 Web native](#-web-native)
+  - [🌐 Web Native!](#-web-native)
   - [🔎 A Platform for Research!](#-a-platform-for-research)
 - [🛠️ Installation](#️-installation)
   - [Supported Coq Versions](#supported-coq-versions)
@@ -115,7 +117,7 @@ symbols which you can navigate to or see the outline of.
 
 <img alt="Document Outline Demo" height="286px" src="etc/img/lsp-outline.gif"/> <img alt="Document Symbols" height="286px" src="etc/img/lsp-doc-symbols.png"/>
 
-### 🔎 Document Hover
+### 🐝 Document Hover
 
 Hovering over a Coq identifier will show its type.
 
