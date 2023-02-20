@@ -23,7 +23,7 @@ formal documents, designed from our experience in
 interactive use, [SerAPI-like tooling integration](#-a-platform-for-research),
 and web native usage, providing quite a few extra features from vanilla Coq.
 
-`coq-lsp` has support on 🐧 Linux, 🍎 macOS, and 🪟 Windows.
+`coq-lsp` supports 🐧 Linux, 🍎 macOS, and 🪟 Windows.
 
 ## Table of Contents <!-- omit in toc -->
 
