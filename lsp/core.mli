@@ -95,6 +95,25 @@ module CompletionData : sig
   [@@deriving yojson]
 end
 
+(** Code Lenses *)
+module Command : sig
+  type t =
+    { title : string
+    ; command : string
+    ; arguments : Yojson.Safe.t list option [@default None]
+    }
+  [@@deriving yojson]
+end
+
+module CodeLens : sig
+  type t =
+    { range : Lang.Range.t
+    ; command : Command.t option [@default None]
+    ; data : Yojson.Safe.t option [@default None]
+    }
+  [@@deriving yojson]
+end
+
 (** Pull Diagnostics *)
 module DocumentDiagnosticParams : sig
   type t =
