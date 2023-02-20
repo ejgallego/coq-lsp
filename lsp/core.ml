@@ -96,6 +96,25 @@ module CompletionData = struct
   [@@deriving yojson]
 end
 
+(** Code Lenses *)
+module Command = struct
+  type t =
+    { title : string
+    ; command : string
+    ; arguments : Yojson.Safe.t list option [@default None]
+    }
+  [@@deriving yojson]
+end
+
+module CodeLens = struct
+  type t =
+    { range : Lang.Range.t
+    ; command : Command.t option [@default None]
+    ; data : Yojson.Safe.t option [@default None]
+    }
+  [@@deriving yojson]
+end
+
 (** Pull Diagnostics *)
 module DocumentDiagnosticParams = struct
   type t =

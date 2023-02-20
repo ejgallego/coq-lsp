@@ -23,6 +23,8 @@ formal documents, designed from our experience in
 interactive use, [SerAPI-like tooling integration](#-a-platform-for-research),
 and web native usage, providing quite a few extra features from vanilla Coq.
 
+`coq-lsp` has support on 🐧 Linux, 🍎 macOS, and 🪟 Windows.
+
 ## Table of Contents <!-- omit in toc -->
 
 - [🎁 Features](#-features)
@@ -31,29 +33,29 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [🥅 Whole-Document Goal Display](#-whole-document-goal-display)
   - [🗒️ Markdown Support](#️-markdown-support)
   - [👥 Document Outline](#-document-outline)
-  - [🔎 Document Hover](#-document-hover)
-  - [📁️ Multiple Workspaces](#-multiple-workspaces)
+  - [🐝 Document Hover](#-document-hover)
+  - [📁 Multiple Workspaces](#-multiple-workspaces)
   - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
   - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
   - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
-  - [🌐 Web native](#-web-native)
+  - [🌐 Web Native!](#-web-native)
   - [🔎 A Platform for Research!](#-a-platform-for-research)
 - [🛠️ Installation](#️-installation)
-  - [Supported Coq Versions](#supported-coq-versions)
-  - [Server](#server)
-  - [Visual Studio Code](#visual-studio-code)
-  - [Vim](#vim)
-  - [Neovim](#neovim)
+  - [🏘️ Supported Coq Versions](#️-supported-coq-versions)
+  - [🏓 Server](#-server)
+  - [🫐 Visual Studio Code](#-visual-studio-code)
+  - [✅ Vim](#-vim)
+  - [🩱 Neovim](#-neovim)
 - [🗣️ Discussion Channel](#️-discussion-channel)
 - [☎ Weekly Calls](#-weekly-calls)
 - [❓FAQ](#faq)
 - [⁉️ Troubleshooting and Known Problems](#️-troubleshooting-and-known-problems)
-  - [Working With Multiple Files](#working-with-multiple-files)
+  - [📂 Working With Multiple Files](#-working-with-multiple-files)
 - [📔 Planned Features](#-planned-features)
 - [📕 Protocol Documentation](#-protocol-documentation)
 - [🤸 Contributing](#-contributing)
 - [🥷 Team](#-team)
-  - [Past Contributors](#past-contributors)
+  - [🕰️ Past Contributors](#️-past-contributors)
 - [©️ Licensing Information](#️-licensing-information)
 - [👏 Acknowledgments](#-acknowledgments)
 
@@ -115,7 +117,7 @@ symbols which you can navigate to or see the outline of.
 
 <img alt="Document Outline Demo" height="286px" src="etc/img/lsp-outline.gif"/> <img alt="Document Symbols" height="286px" src="etc/img/lsp-doc-symbols.png"/>
 
-### 🔎 Document Hover
+### 🐝 Document Hover
 
 Hovering over a Coq identifier will show its type.
 
@@ -180,7 +182,7 @@ SerAPI](etc/SerAPI.md) document.
 In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md)
 `coq-lsp` and a suitable client. We recommend the Visual Studio Code Extension.
 
-### Supported Coq Versions
+### 🏘️ Supported Coq Versions
 
 `coq-lsp` supports Coq 8.16, Coq 8.17, and Coq's `master` branch.
 
@@ -192,7 +194,7 @@ Support for older Coq versions is possible; it is possible to make `coq-lsp`
 work with Coq back to Coq 8.10/8.9. If you are interested in making that happen
 don't hesitate to get in touch with us.
 
-### Server
+### 🏓 Server
 
 - **opam**:
   ```
@@ -209,7 +211,9 @@ don't hesitate to get in touch with us.
 - **Coq Platform** (coming soon)
 - [Do it yourself!](#server-1)
 
-### Visual Studio Code
+<!-- TODO 🟣 Emacs, 🪖 Proof general, 🐔 CoqIDE -->
+
+### 🫐 Visual Studio Code
 - Official Marketplace: https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
 - Open VSX: https://open-vsx.org/extension/ejgallego/coq-lsp
 - Nix:
@@ -226,14 +230,14 @@ programs.vscode = {
 };
 ```
 
-### Vim
+### ✅ Vim
 
 - Experimental [CoqTail](https://github.com/whonore/Coqtail) support by Wolf Honore: 
   https://github.com/whonore/Coqtail/pull/323
 
   See it in action https://asciinema.org/a/mvzqHOHfmWB2rvwEIKFjuaRIu
 
-### Neovim
+### 🩱 Neovim
 
 - Experimental client by Jaehwang Jung: https://github.com/tomtomjhj/coq-lsp.nvim
 
@@ -265,7 +269,7 @@ See our [list of frequently-asked questions](./etc/FAQ.md).
   neither of them may work. `coq-lsp` will warn about that. If you know how to
   improve this, don't hesitate to get in touch with us.
 
-### Working With Multiple Files
+### 📂 Working With Multiple Files
 
 `coq-lsp` can't work with more than one file at the same time, due to problems
 with parsing state management upstream. This was fixed in Coq `master` branch
@@ -316,7 +320,7 @@ the best ideas will arise from using `coq-lsp` in your own Coq projects.
 - Shachar Itzhaky (Technion)
 - Ramkumar Ramachandra (Inria Paris)
 
-### Past Contributors
+### 🕰️ Past Contributors
 
 - Vincent Laporte (Inria)
 
