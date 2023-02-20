@@ -299,6 +299,7 @@ let do_document_request ~params ~handler =
 
 let do_symbols = do_document_request ~handler:Rq_symbols.symbols
 let do_document = do_document_request ~handler:Rq_document.request
+let do_lens = do_document_request ~handler:Rq_lens.request
 
 let do_trace params =
   let trace = string_field "value" params in
@@ -402,6 +403,7 @@ let dispatch_request ~method_ ~params : RAction.t =
   | "textDocument/definition" -> do_definition ~params
   | "textDocument/documentSymbol" -> do_symbols ~params
   | "textDocument/hover" -> do_hover ~params
+  | "textDocument/codeLens" -> do_lens ~params
   (* Proof-specific stuff *)
   | "proof/goals" -> do_goals ~params
   (* Coq specific stuff *)

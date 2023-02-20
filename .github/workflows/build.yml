@@ -32,6 +32,9 @@ jobs:
             ocaml: 5.0.x
           - os: macos-latest
             ocaml: 4.14.x
+          - name: Windows Latest
+            ocaml: 4.14
+            os: windows-latest
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
