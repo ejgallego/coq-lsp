@@ -18,6 +18,7 @@
 type t =
   { coqlib : string
   ; coqcorelib : string
+  ; ocamlpath : string option
   ; vo_load_path : Loadpath.vo_path list
   ; ml_include_path : string list
   ; require_libs :
@@ -46,7 +47,7 @@ let mk_userlib unix_path =
 
 let getenv var else_ = try Sys.getenv var with Not_found -> else_
 
-let default ~implicit ~coqcorelib ~coqlib ~kind ~debug =
+let default ~implicit ~coqcorelib ~coqlib ~ocamlpath ~kind ~debug =
   let coqcorelib = getenv "COQCORELIB" coqcorelib in
   let coqlib = getenv "COQLIB" coqlib in
   let mk_path_coqlib prefix = coqlib ^ "/" ^ prefix in
@@ -64,6 +65,7 @@ let default ~implicit ~coqcorelib ~coqlib ~kind ~debug =
   let require_libs = [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ] in
   { coqlib
   ; coqcorelib
+  ; ocamlpath
   ; vo_load_path
   ; ml_include_path
   ; require_libs
@@ -149,17 +151,23 @@ let dirpath_of_uri ~uri =
 
 (* This is a bit messy upstream, as -I both extends Coq loadpath and OCAMLPATH
    loadpath *)
-let findlib_init ~ml_include_path =
+let findlib_init ~ml_include_path ~ocamlpath =
+  let config, ocamlpath =
+    match ocamlpath with
+    | None -> (None, [])
+    | Some dir -> (Some (Filename.concat dir "findlib.conf"), [ dir ])
+  in
   let env_ocamlpath = try [ Sys.getenv "OCAMLPATH" ] with Not_found -> [] in
-  let env_ocamlpath = ml_include_path @ env_ocamlpath in
+  let env_ocamlpath = ml_include_path @ env_ocamlpath @ ocamlpath in
   let ocamlpathsep = if Sys.unix then ":" else ";" in
   let env_ocamlpath = String.concat ocamlpathsep env_ocamlpath in
-  Findlib.init ~env_ocamlpath ()
+  Findlib.init ~env_ocamlpath ?config ()
 
 (* NOTE: Use exhaustive match below to avoid bugs by skipping fields *)
 let apply ~uri
     { coqlib = _
     ; coqcorelib = _
+    ; ocamlpath
     ; vo_load_path
     ; ml_include_path
     ; require_libs
@@ -172,12 +180,13 @@ let apply ~uri
   Global.set_indices_matter indices_matter;
   Global.set_impredicative_set impredicative_set;
   List.iter Mltop.add_ml_dir ml_include_path;
-  findlib_init ~ml_include_path;
+  findlib_init ~ml_include_path ~ocamlpath;
   List.iter Loadpath.add_vo_path vo_load_path;
   Declaremods.start_library (dirpath_of_uri ~uri);
   load_objs require_libs
 
-let workspace_from_coqproject ~coqcorelib ~coqlib ~debug cp_file : t =
+let workspace_from_coqproject ~coqcorelib ~coqlib ~ocamlpath ~debug cp_file : t
+    =
   (* Io.Log.error "init" "Parsing _CoqProject"; *)
   let open CoqProject_file in
   let to_vo_loadpath f implicit =
@@ -204,7 +213,9 @@ let workspace_from_coqproject ~coqcorelib ~coqlib ~debug cp_file : t =
   let args = List.map (fun f -> f.thing) extra_args in
   let implicit = true in
   let kind = Filename.concat (Sys.getcwd ()) "_CoqProject" in
-  let workspace = default ~coqlib ~coqcorelib ~implicit ~kind ~debug in
+  let workspace =
+    default ~coqlib ~coqcorelib ~ocamlpath ~implicit ~kind ~debug
+  in
   let init, workspace = parse_args args true workspace in
   let workspace =
     if not init then { workspace with require_libs = [] } else workspace
@@ -215,21 +226,22 @@ module CmdLine = struct
   type t =
     { coqlib : string
     ; coqcorelib : string
+    ; ocamlpath : string option
     ; vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
     }
 end
 
 let workspace_from_cmdline ~debug
-    { CmdLine.coqlib; coqcorelib; vo_load_path; ml_include_path } =
+    { CmdLine.coqlib; coqcorelib; ocamlpath; vo_load_path; ml_include_path } =
   let kind = "Command-line arguments" in
   let implicit = true in
-  let w = default ~implicit ~coqcorelib ~coqlib ~kind ~debug in
+  let w = default ~implicit ~coqcorelib ~coqlib ~ocamlpath ~kind ~debug in
   add_loadpaths w ~vo_load_path ~ml_include_path
 
 let guess ~debug ~cmdline ~dir =
   let cp_file = Filename.concat dir "_CoqProject" in
   if Sys.file_exists cp_file then
-    let { CmdLine.coqlib; coqcorelib; _ } = cmdline in
-    workspace_from_coqproject ~coqcorelib ~coqlib ~debug cp_file
+    let { CmdLine.coqlib; coqcorelib; ocamlpath; _ } = cmdline in
+    workspace_from_coqproject ~coqcorelib ~coqlib ~ocamlpath ~debug cp_file
   else workspace_from_cmdline ~debug cmdline
