@@ -154,6 +154,10 @@ let lsp_main bt coqcorelib coqlib vo_load_path ml_include_path =
   let ic = stdin in
   let oc = Format.std_formatter in
 
+  (* Try to be sane w.r.t. \r\n in Windows *)
+  Stdlib.set_binary_mode_in stdin true;
+  Stdlib.set_binary_mode_out stdout true;
+
   (* Set log channels *)
   LIO.set_log_channel oc;
   Fleche.Io.CallBack.set lsp_cb;
