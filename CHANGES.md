@@ -45,6 +45,9 @@
  - Support for `COQLIB` and `COQCORELIB` environment variables, added
    `--coqcorelib` command line argument (@ejgallego, #403)
  - Protocol infrastructure for code lenses (@ejgallego, #396)
+ - Set binary more for protocol input / output (@ejgallego, #408)
+ - Allow to set `ocamlpath` from the command line (@ejgallego, #408)
+ - Windows support (@ejgallego, @jim-portegies, #408)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
