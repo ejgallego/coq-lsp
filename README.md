@@ -208,6 +208,19 @@ don't hesitate to get in touch with us.
    ...
    coq-lsp.packages.${system}.default
    ```
+- **Windows**: To install `coq-lsp` on windows, we recommend you use a cygwin
+  build, such as the [one described
+  here](https://github.com/coq/platform/blob/main/doc/README_Windows.md#installation-by-compiling-from-sources-using-opam-on-cygwin). We
+  will improve this process soon, as of today, follow these steps:
+  - `opam pin add serapi https://github.com/ejgallego/coq-serapi`
+    this will likely fail due to paths being too long, to fix this do
+    + `cd .opam/$switch/build/coq-serapi-v8.16.0+0.16.1/ && mv serlib/plugins/syntax s && dune build -p coq-serapi && dune install coq-serapi`
+  - build `coq-lsp` from source (Windows support requires release 0.1.6, usually you'll want branch 8.16)
+  - Set the path to `coq-lsp.exe` binary in VS Code settings
+  - Set the `--ocamlpath=c:\$path_to_opam\lib` argument in VS Code settings, as
+    Coq Platform ships with an unconfigured binary
+  - If the binary doesn't work, try to run it from the file explorer, often you'll
+    need to copy `libgmp-10.dll` to `C:\Windows` for it work.
 - **Coq Platform** (coming soon)
 - [Do it yourself!](#server-1)
 
