@@ -18,6 +18,7 @@
 type t = private
   { coqlib : string
   ; coqcorelib : string
+  ; ocamlpath : string option
   ; vo_load_path : Loadpath.vo_path list
   ; ml_include_path : string list
   ; require_libs :
@@ -41,6 +42,7 @@ module CmdLine : sig
   type t =
     { coqlib : string
     ; coqcorelib : string
+    ; ocamlpath : string option
     ; vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
     }

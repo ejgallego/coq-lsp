@@ -149,7 +149,7 @@ let coq_init ~fb_queue ~debug =
 let exit_notification =
   Lsp.Base.Message.(Notification { method_ = "exit"; params = [] })
 
-let lsp_main bt coqcorelib coqlib vo_load_path ml_include_path =
+let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
   (* We output to stdout *)
   let ic = stdin in
   let oc = Format.std_formatter in
@@ -171,7 +171,12 @@ let lsp_main bt coqcorelib coqlib vo_load_path ml_include_path =
   let debug = bt || Fleche.Debug.backtraces in
   let root_state = coq_init ~fb_queue ~debug in
   let cmdline =
-    { Coq.Workspace.CmdLine.coqcorelib; coqlib; vo_load_path; ml_include_path }
+    { Coq.Workspace.CmdLine.coqcorelib
+    ; coqlib
+    ; ocamlpath
+    ; vo_load_path
+    ; ml_include_path
+    }
   in
 
   (* Read JSON-RPC messages and push them to the queue *)
@@ -240,6 +245,11 @@ let coqcorelib =
     & opt string (Filename.concat Coq_config.coqlib "../coq-core/")
     & info [ "coqcorelib" ] ~docv:"COQCORELIB" ~doc)
 
+let ocamlpath =
+  let doc = "Path to OCaml's lib" in
+  Arg.(
+    value & opt (some string) None & info [ "ocamlpath" ] ~docv:"OCAMLPATH" ~doc)
+
 let rload_path : Loadpath.vo_path list Term.t =
   let doc =
     "Bind a logical loadpath LP to a directory DIR and implicitly open its \
@@ -283,7 +293,7 @@ let lsp_cmd : unit Cmd.t =
     v
       (Cmd.info "coq-lsp" ~version:Version.server ~doc ~man)
       Term.(
-        const lsp_main $ bt $ coqcorelib $ coqlib $ vo_load_path
+        const lsp_main $ bt $ coqcorelib $ coqlib $ ocamlpath $ vo_load_path
         $ ml_include_path))
 
 let main () =
