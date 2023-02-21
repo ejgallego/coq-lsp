@@ -19,4 +19,4 @@ let request ~doc =
   let { Fleche.Doc.nodes; completed; _ } = doc in
   let spans = List.map to_span nodes in
   let completed = to_completed completed in
-  Lsp.JFleche.FlecheDocument.({ spans; completed } |> to_yojson)
+  Lsp.JFleche.FlecheDocument.({ spans; completed } |> to_yojson) |> Result.ok
