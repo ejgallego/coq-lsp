@@ -49,6 +49,8 @@
  - Allow to set `ocamlpath` from the command line (@ejgallego, #408)
  - Windows support (@ejgallego, @jim-portegies, #408)
  - Scroll active goal into view (@ejgallego, #410, fixes #381)
+ - Server status icon will now react properly to fatal server errors
+   (@ejgallego, reported by @Alizter, #411, fixes #399)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------

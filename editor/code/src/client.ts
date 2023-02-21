@@ -130,6 +130,11 @@ export function activate(context: ExtensionContext): void {
             TextEditorSelectionChangeKind.Command
           );
         }
+      })
+      .catch((error) => {
+        let emsg = error.toString();
+        console.log(`Error in coq-lsp start: ${emsg}`);
+        setFailedStatuBar(emsg);
       });
   };
 
@@ -225,6 +230,8 @@ export function activate(context: ExtensionContext): void {
     context.subscriptions.push(lspStatusItem);
   };
 
+  // Ali notes about the status item text: we should keep it short
+  // We violate this on the error case, but only because it is exceptional.
   const updateStatusBar = () => {
     if (client && client.isRunning()) {
       lspStatusItem.text = "$(check) coq-lsp (running)";
@@ -237,6 +244,14 @@ export function activate(context: ExtensionContext): void {
       );
       lspStatusItem.tooltip = "coq-lsp has been disabled. Click to enable.";
     }
+  };
+
+  const setFailedStatuBar = (emsg: string) => {
+    lspStatusItem.text = "$(circle-slash) coq-lsp (failed to start)";
+    lspStatusItem.backgroundColor = new ThemeColor(
+      "statusBarItem.errorBackground"
+    );
+    lspStatusItem.tooltip = `coq-lsp couldn't start: ${emsg} Click to retry.`;
   };
 
   coqCommand("stop", stop);
