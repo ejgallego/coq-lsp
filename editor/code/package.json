@@ -138,6 +138,11 @@
             "type": "number",
             "default": 150,
             "description": "Maximum number of errors per file, after that, coq-lsp will stop checking the file."
+          },
+          "coq-lsp.show_stats_on_hover": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show timing and memory stats for a sentence on hover."
           }
         }
       },

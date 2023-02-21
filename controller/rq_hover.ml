@@ -113,7 +113,8 @@ let hover ~doc ~point =
   in
   let hover_string =
     if show_loc_info then range_string ^ "\n___\n" ^ info_string
-    else info_string
+    else if !Fleche.Config.v.show_stats_on_hover then "\n___\n" ^ info_string
+    else ""
   in
   let hover_string =
     match Rq_common.get_id_at_point ~doc ~point with
@@ -122,7 +123,7 @@ let hover ~doc ~point =
       | None -> hover_string
       | Some typ ->
         let typ = Pp.string_of_ppcmds typ in
-        Format.asprintf "```coq\n%s : %s\n```\n___\n%s" id typ hover_string)
+        Format.asprintf "```coq\n%s : %s\n```%s" id typ hover_string)
     | None -> hover_string
   in
   let contents = { HoverContents.kind = "markdown"; value = hover_string } in
