@@ -1,4 +1,4 @@
-# coq-lsp 0.1.6:
+# coq-lsp 0.1.6: Peek
 ---------------------
 
  - The info / goal view now uses jsCoq's client-side rendering, with
