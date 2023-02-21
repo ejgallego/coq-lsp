@@ -76,3 +76,7 @@ export interface FlecheDocument {
   spans: RangedSpan[];
   completed: CompletionStatus;
 }
+
+export interface FlecheSaveParams {
+  textDocument: VersionedTextDocumentIdentifier;
+}

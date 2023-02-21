@@ -35,6 +35,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [👥 Document Outline](#-document-outline)
   - [🐝 Document Hover](#-document-hover)
   - [📁 Multiple Workspaces](#-multiple-workspaces)
+  - [💾 `.vo` file saving](#-vo-file-saving)
   - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
   - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
   - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
@@ -84,6 +85,9 @@ integrates with the incremental cache, and will recognize proof structure.
 You can edit without fear inside a `Proof. ... Qed.`, the rest of the document
 won't be rechecked, unless the proof is completed.
 
+Moreover, if a lemma is not completed, `coq-lsp` will admit it automatically. No
+more `Admitted` / `Qed` churn!
+
 <img alt="Smart error recovery" height="286px" src="etc/img/lsp-errors.gif"/>
 
 Furthermore, you can leave bullets and focused goals unfinished, and `coq-lsp`
@@ -91,8 +95,9 @@ will automatically admit them for you.
 
 ### 🥅 Whole-Document Goal Display
 
-Press `Alt+Enter` (or `Cmd+Enter` in Mac) to show goals at point in a side
-panel.
+`coq-lsp` will follow the cursor movement and show underlying goals and
+messages; this is configurable in case you'd like to trigger goal display more
+conservatively.
 
 <img alt="Whole-Document Goal Display" height="286px" src="etc/img/lsp-goals.gif"/>
 
@@ -128,6 +133,14 @@ Hovering over a Coq identifier will show its type.
 `coq-lsp` supports projects with multiple `_CoqProject` files, use the "Add
 folder to Workspace" feature of Visual Studio code or the LSP Workspace Folders
 extension to use this in your project.
+
+### 💾 `.vo` file saving
+
+`coq-lsp` can save a `.vo` file of the current document as soon as it the
+checking has been completed, using the command `Coq LSP: Save file to .vo`.
+
+You can configure `coq-lsp` in settings to do this every time you save your
+`.vo` file, but this can be costly so we ship it disabled by default.
 
 ### ⏱️ Detailed Timing and Memory Statistics
 

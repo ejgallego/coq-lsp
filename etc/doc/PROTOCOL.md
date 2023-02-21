@@ -27,7 +27,7 @@ If a feature doesn't appear here it usually means it is not planned in the short
 | `textDocument/didOpen`                | Yes     | We can't reuse Memo tables yet                             |
 | `textDocument/didChange`              | Yes     | We only support `TextDocumentSyncKind.Full` for now        |
 | `textDocument/didClose`               | Partial | We'd likely want to save a `.vo` file on close if possible |
-| `textDocument/didSave`                | No      | Not clear what to do here yet                              |
+| `textDocument/didSave`                | Partial | Undergoing behavior refinement                             |
 |---------------------------------------|---------|------------------------------------------------------------|
 | `notebookDocument/didOpen`            | No      | Planned                                                    |
 |---------------------------------------|---------|------------------------------------------------------------|
@@ -246,3 +246,24 @@ interface FlecheDocument {
 #### Changelog
 
 - v0.1.6: initial version
+
+### .vo file saving
+
+Coq-lsp provides a file-save request `coq/saveVo`, which will save the
+current file to disk.
+
+Note that `coq-lsp` does not automatic trigger this on `didSave`, as
+it would produce too much disk trashing, but we are happy to implement
+usability tweaks so `.vo` files are produced when they should.
+
+```typescript
+interface FlecheSaveParams {
+    textDocument: VersionedTextDocumentIdentifier;
+}
+```
+
+The request will return `null`, or fail if not successful.
+
+#### Changelog
+
+- v0.1.6: first version
