@@ -51,6 +51,9 @@
  - Scroll active goal into view (@ejgallego, #410, fixes #381)
  - Server status icon will now react properly to fatal server errors
    (@ejgallego, reported by @Alizter, #411, fixes #399)
+ - Info on memory and time is now disabled by default, new option
+   `coq-lsp.stats_on_hover_option` to re-enable it (@ejgallego, #412,
+   fixes #398).
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
