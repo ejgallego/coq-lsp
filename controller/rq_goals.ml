@@ -42,3 +42,4 @@ let goals ~doc ~point =
   in
   Lsp.JFleche.GoalsAnswer.(
     to_yojson pp { textDocument; position; goals; messages; error })
+  |> Result.ok

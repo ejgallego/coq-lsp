@@ -128,4 +128,4 @@ let hover ~doc ~point =
   in
   let contents = { HoverContents.kind = "markdown"; value = hover_string } in
   let range = range_span in
-  HoverInfo.(to_yojson { contents; range })
+  HoverInfo.(to_yojson { contents; range }) |> Result.ok
