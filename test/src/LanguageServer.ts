@@ -1,16 +1,17 @@
-import * as cp from "child_process";
-import * as os from "os";
-import * as path from "path";
+import * as cp from "node:child_process";
+import * as os from "node:os";
+import * as path from "node:path";
+import * as fs from "node:fs";
 import * as rpc from "vscode-jsonrpc/node";
 import * as Protocol from "vscode-languageserver-protocol";
+import * as Types from "vscode-languageserver-types";
 import { URI } from "vscode-uri";
 
 let serverBin = os.platform() === "win32" ? "coq-lsp.exe" : "coq-lsp";
+let projectRoot = path.join(__dirname, "..", "..");
 
 let serverPath = path.join(
-  __dirname,
-  "..",
-  "..",
+  projectRoot,
   "_build",
   "install",
   "default",
@@ -18,14 +19,31 @@ let serverPath = path.join(
   serverBin
 );
 
+let ocamlPath = path.join(projectRoot, "_build", "install", "default", "lib");
+
 export type LanguageServer = rpc.MessageConnection;
 
 export function toURI(s: string) {
   return URI.parse(s).toString();
 }
 
+export function openExample(filename: string) {
+  let filepath = path.join(projectRoot, "examples", filename);
+  return Types.TextDocumentItem.create(
+    toURI(filepath),
+    "coq",
+    0,
+    fs.readFileSync(filepath, "utf-8")
+  );
+}
+
 export function start() {
-  let childProcess = cp.spawn(serverPath);
+  let childProcess = cp.spawn(serverPath, [], {
+    env: {
+      ...process.env,
+      OCAMLPATH: ocamlPath,
+    },
+  });
   let connection = rpc.createMessageConnection(
     new rpc.StreamMessageReader(childProcess.stdout!),
     new rpc.StreamMessageWriter(childProcess.stdin!)
@@ -42,8 +60,12 @@ export async function startAndInitialize(
 
   initializeParameters = {
     processId: process.pid,
-    rootUri: toURI(path.join(__dirname, "..", "..")),
-    workspaceFolders: [],
+    workspaceFolders: [
+      {
+        uri: toURI(projectRoot),
+        name: "coq-lsp",
+      },
+    ],
     capabilities: {
       textDocument: {
         publishDiagnostics: {
