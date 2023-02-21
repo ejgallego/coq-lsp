@@ -48,6 +48,7 @@
  - Set binary more for protocol input / output (@ejgallego, #408)
  - Allow to set `ocamlpath` from the command line (@ejgallego, #408)
  - Windows support (@ejgallego, @jim-portegies, #408)
+ - Scroll active goal into view (@ejgallego, #410, fixes #381)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------
