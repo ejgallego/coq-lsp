@@ -205,7 +205,7 @@ let send_error_permanent_fail ~ofmt ~uri ~version message =
   let start = Point.{ line = 0; character = 0; offset = 0 } in
   let end_ = Point.{ line = 0; character = 1; offset = 1 } in
   let range = Range.{ start; end_ } in
-  let d = Lang.Diagnostic.{ range; severity = 0; message; extra = None } in
+  let d = Lang.Diagnostic.{ range; severity = 1; message; extra = None } in
   let diags = Lsp.JLang.mk_diagnostics ~uri ~version [ d ] in
   LIO.send_json ofmt @@ diags
 

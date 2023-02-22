@@ -1,4 +1,4 @@
-# coq-lsp 0.1.6:
+# coq-lsp 0.1.6: Peek
 ---------------------
 
  - The info / goal view now uses jsCoq's client-side rendering, with
@@ -45,6 +45,18 @@
  - Support for `COQLIB` and `COQCORELIB` environment variables, added
    `--coqcorelib` command line argument (@ejgallego, #403)
  - Protocol infrastructure for code lenses (@ejgallego, #396)
+ - Set binary mode for protocol input / output (@ejgallego, #408)
+ - Allow to set `ocamlpath` from the command line (@ejgallego, #408)
+ - Windows support (@ejgallego, @jim-portegies, #408)
+ - Scroll active goal into view (@ejgallego, #410, fixes #381)
+ - Server status icon will now react properly to fatal server errors
+   (@ejgallego, reported by @Alizter, #411, fixes #399)
+ - Info on memory and time is now disabled by default, new option
+   `coq-lsp.stats_on_hover_option` to re-enable it (@ejgallego, #412,
+   fixes #398).
+ - `coq-lsp` can now save `.vo` files for files opened in the
+   editor. Use the new "Save to .vo" command, or the new protocol
+   `coq/saveVo` request (@ejgallego, #417, fixes #339)
 
 # coq-lsp 0.1.5.1: Path
 -----------------------

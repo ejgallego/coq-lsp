@@ -18,5 +18,4 @@ let mk_goals_lens (node : Fleche.Doc.Node.t) =
 
 (* Example lens to show goals, seems that args are not working *)
 let _goals_lens ~(doc : Fleche.Doc.t) = `List (List.map mk_goals_lens doc.nodes)
-
-let request ~doc:_ = `Null
+let request ~doc:_ = `Null |> Result.ok

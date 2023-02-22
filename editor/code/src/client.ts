@@ -21,7 +21,11 @@ import {
   RequestType,
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
-import { FlecheDocumentParams, FlecheDocument } from "../lib/types";
+import {
+  FlecheDocumentParams,
+  FlecheDocument,
+  FlecheSaveParams,
+} from "../lib/types";
 import { CoqLspClientConfig, CoqLspServerConfig } from "./config";
 import { InfoPanel } from "./goals";
 import { FileProgressManager } from "./progress";
@@ -130,6 +134,11 @@ export function activate(context: ExtensionContext): void {
             TextEditorSelectionChangeKind.Command
           );
         }
+      })
+      .catch((error) => {
+        let emsg = error.toString();
+        console.log(`Error in coq-lsp start: ${emsg}`);
+        setFailedStatuBar(emsg);
       });
   };
 
@@ -203,7 +212,7 @@ export function activate(context: ExtensionContext): void {
     "coq/getDocument"
   );
 
-  let getDocument = (editor: TextEditor) => {
+  const getDocument = (editor: TextEditor) => {
     let uri = editor.document.uri;
     let version = editor.document.version;
     let textDocument = VersionedTextDocumentIdentifier.create(
@@ -213,6 +222,29 @@ export function activate(context: ExtensionContext): void {
     let params: FlecheDocumentParams = { textDocument };
     client.sendRequest(docReq, params).then((fd) => console.log(fd));
   };
+
+  const saveReq = new RequestType<FlecheDocumentParams, void, void>(
+    "coq/saveVo"
+  );
+
+  const saveDocument = (editor: TextEditor) => {
+    let uri = editor.document.uri;
+    let version = editor.document.version;
+    let textDocument = VersionedTextDocumentIdentifier.create(
+      uri.toString(),
+      version
+    );
+    let params: FlecheSaveParams = { textDocument };
+    client
+      .sendRequest(saveReq, params)
+      .then(() => console.log("document saved", uri.toString()))
+      .catch((error) => {
+        let err_message = error.toString();
+        console.log(`error in save: ${err_message}`);
+        window.showErrorMessage(err_message);
+      });
+  };
+
   const createEnableButton = () => {
     lspStatusItem = window.createStatusBarItem(
       "coq-lsp.enable",
@@ -225,6 +257,8 @@ export function activate(context: ExtensionContext): void {
     context.subscriptions.push(lspStatusItem);
   };
 
+  // Ali notes about the status item text: we should keep it short
+  // We violate this on the error case, but only because it is exceptional.
   const updateStatusBar = () => {
     if (client && client.isRunning()) {
       lspStatusItem.text = "$(check) coq-lsp (running)";
@@ -239,6 +273,14 @@ export function activate(context: ExtensionContext): void {
     }
   };
 
+  const setFailedStatuBar = (emsg: string) => {
+    lspStatusItem.text = "$(circle-slash) coq-lsp (failed to start)";
+    lspStatusItem.backgroundColor = new ThemeColor(
+      "statusBarItem.errorBackground"
+    );
+    lspStatusItem.tooltip = `coq-lsp couldn't start: ${emsg} Click to retry.`;
+  };
+
   coqCommand("stop", stop);
   coqCommand("start", start);
   coqCommand("restart", restart);
@@ -246,6 +288,7 @@ export function activate(context: ExtensionContext): void {
 
   coqEditorCommand("goals", goals);
   coqEditorCommand("document", getDocument);
+  coqEditorCommand("save", saveDocument);
 
   createEnableButton();
 

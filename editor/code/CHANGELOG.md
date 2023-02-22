@@ -1,3 +1,24 @@
+# coq-lsp 0.1.5: Peek
+----------------------
+
+- The information / goal view now uses a new layout-aware printer; the
+  if you find any problem the old printer can be enabled in the
+  extension options.
+- Completion tweaks, for example now ' will trigger end of completion.
+- When activating the extension, coq-lsp add to workspace
+  configuration an auto-ignore for Coq object files such as .vo, .aux,
+  etc...
+- Multiple workspace support, use "Add folder to workspace" to handle
+  projects with multiple `_CoqProject` files.
+- New VS Code commands: start / stop server, save .vo file,
+  get serialized version of document.
+- `vscode-languageclient` updated to 8.1.0
+- New status bar button to toggle server run status
+- Scroll active goal into view automatically
+- Info on memory and time is now disabled by default, use option
+  `coq-lsp.stats_on_hover_option` to re-enable it
+- Server greatly improved, see server changelog for more information.
+
 # coq-lsp 0.1.5: Form
 ----------------------
 

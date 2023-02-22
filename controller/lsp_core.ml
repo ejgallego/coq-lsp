@@ -90,12 +90,12 @@ module PendingRequest = struct
   type t =
     | DocRequest of
         { uri : Lang.LUri.File.t
-        ; handler : Requests.document_request
+        ; handler : Request.document
         }
     | PosRequest of
         { uri : Lang.LUri.File.t
         ; point : int * int
-        ; handler : Requests.position_request
+        ; handler : Request.position
         }
 
   (* Debug printing *)
@@ -169,17 +169,17 @@ module Rq = struct
   let serve ~ofmt id =
     let f pr =
       debug_serve id pr;
-      Result.ok (PendingRequest.serve pr)
+      PendingRequest.serve pr
     in
     consume_ ~ofmt ~f id
 end
 
 module RAction = struct
   type t =
-    | ServeNow of (Yojson.Safe.t, int * string) Result.t
+    | ServeNow of Request.R.t
     | Postpone of PendingRequest.t
 
-  let ok r = ServeNow (Ok r)
+  let now r = ServeNow r
   let error (code, msg) = ServeNow (Error (code, msg))
 end
 
@@ -193,7 +193,7 @@ let serve_postponed_requests ~ofmt rl = Int.Set.iter (Rq.serve ~ofmt) rl
 (***********************************************************************)
 (* Start of protocol handlers *)
 
-let do_shutdown = RAction.ok `Null
+let do_shutdown = RAction.now (Ok `Null)
 
 let do_open ~ofmt ~(state : State.t) params =
   let document = dict_field "textDocument" params in
@@ -273,7 +273,7 @@ let do_position_request ~postpone ~params ~handler =
   let point = get_position params in
   let in_range = request_in_range ~doc ~version point in
   match (in_range, postpone) with
-  | true, _ -> RAction.ok (handler ~doc ~point)
+  | true, _ -> RAction.now (handler ~doc ~point)
   | false, true -> Postpone (PosRequest { uri; point; handler })
   | false, false ->
     let code = -32802 in
@@ -293,12 +293,13 @@ let do_completion =
 let do_document_request ~params ~handler =
   let uri, doc = get_textDocument params in
   match doc.completed with
-  | Yes _ -> RAction.ok (handler ~doc)
+  | Yes _ -> RAction.now (handler ~doc)
   | Stopped _ | Failed _ | FailedPermanent _ ->
     Postpone (PendingRequest.DocRequest { uri; handler })
 
 let do_symbols = do_document_request ~handler:Rq_symbols.symbols
 let do_document = do_document_request ~handler:Rq_document.request
+let do_save_vo = do_document_request ~handler:Rq_save.request
 let do_lens = do_document_request ~handler:Rq_lens.request
 
 let do_trace params =
@@ -404,6 +405,8 @@ let dispatch_request ~method_ ~params : RAction.t =
   | "textDocument/codeLens" -> do_lens ~params
   (* Proof-specific stuff *)
   | "proof/goals" -> do_goals ~params
+  (* Proof-specific stuff *)
+  | "coq/saveVo" -> do_save_vo ~params
   (* Coq specific stuff *)
   | "coq/getDocument" -> do_document ~params
   (* Generic handler *)

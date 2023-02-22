@@ -12,6 +12,12 @@ module Util = struct
     | [] -> None
     | h :: _ -> Some h
 
+  let rec last l =
+    match l with
+    | [] -> None
+    | [ x ] -> Some x
+    | _ :: xs -> last xs
+
   let build_span start_loc end_loc =
     Loc.
       { start_loc with
@@ -782,3 +788,16 @@ let check ~ofmt ~target ~doc () =
     log_doc_completion doc.completed;
     Util.print_stats ();
     doc
+
+let save ~doc =
+  match doc.completed with
+  | Yes _ ->
+    let st = Util.last doc.nodes |> Option.cata Node.state doc.root in
+    let uri = doc.uri in
+    let ldir = Coq.Workspace.dirpath_of_uri ~uri in
+    let in_file = Lang.LUri.File.to_string_file uri in
+    Coq.State.in_state ~st ~f:(fun () -> Coq.Save.save_vo ~st ~ldir ~in_file) ()
+  | _ ->
+    let error = Pp.(str "Can't save incomplete document") in
+    let r = Coq.Protect.R.error error in
+    Coq.Protect.E.{ r; feedback = [] }

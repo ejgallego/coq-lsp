@@ -31,4 +31,4 @@ let symbols ~(doc : Fleche.Doc.t) =
     Fleche.Doc.asts doc |> List.filter_map definition_info |> List.concat
   in
   let result = List.map mk_syminfo definfo in
-  `List result
+  `List result |> Result.ok

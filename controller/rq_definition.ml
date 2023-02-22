@@ -16,3 +16,4 @@ let request ~(doc : Fleche.Doc.t) ~point =
       | None -> `Null)
     `Null
     (Rq_common.get_id_at_point ~doc ~point)
+  |> Result.ok
