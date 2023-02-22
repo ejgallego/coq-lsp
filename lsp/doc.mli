@@ -19,6 +19,14 @@ module TextDocumentIdentifier : sig
   type t = { uri : Lang.LUri.File.t } [@@deriving yojson]
 end
 
+module OVersionedTextDocumentIdentifier : sig
+  type t =
+    { uri : Lang.LUri.File.t
+    ; version : int option [@default None]
+    }
+  [@@deriving yojson]
+end
+
 module VersionedTextDocumentIdentifier : sig
   type t =
     { uri : Lang.LUri.File.t

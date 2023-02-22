@@ -24,11 +24,10 @@ module J = Yojson.Safe
 module U = Yojson.Safe.Util
 
 let field name dict = List.(assoc name dict)
-let int_field name dict = U.to_int List.(assoc name dict)
-let dict_field name dict = U.to_assoc List.(assoc name dict)
-let list_field name dict = U.to_list List.(assoc name dict)
-let string_field name dict = U.to_string List.(assoc name dict)
-let oint_field name dict = Option.map U.to_int (List.assoc_opt name dict)
+let int_field name dict = U.to_int (field name dict)
+let dict_field name dict = U.to_assoc (field name dict)
+let list_field name dict = U.to_list (field name dict)
+let string_field name dict = U.to_string (field name dict)
 
 module LIO = Lsp.Io
 module LSP = Lsp.Base
@@ -203,6 +202,14 @@ let get_uri params =
   let Lsp.Doc.TextDocumentIdentifier.{ uri } = document in
   uri
 
+let get_uri_oversion params =
+  let document =
+    field "textDocument" params
+    |> Lsp.Doc.OVersionedTextDocumentIdentifier.of_yojson |> Result.get_ok
+  in
+  let Lsp.Doc.OVersionedTextDocumentIdentifier.{ uri; version } = document in
+  (uri, version)
+
 let get_uri_version params =
   let document =
     field "textDocument" params
@@ -249,6 +256,11 @@ let get_textDocument params =
   let doc = Doc_manager.find_doc ~uri in
   (uri, doc)
 
+let get_textOVersionDocument params =
+  let uri, version = get_uri_oversion params in
+  let doc = Doc_manager.find_doc ~uri in
+  (uri, version, doc)
+
 let get_position params =
   let pos = dict_field "position" params in
   let line, character = (int_field "line" pos, int_field "character" pos) in
@@ -271,9 +283,7 @@ let request_in_range ~(doc : Fleche.Doc.t) ~version (line, col) =
   in_range
 
 let do_position_request ~postpone ~params ~handler =
-  let uri, doc = get_textDocument params in
-  (* we allow version to be optional here *)
-  let version = dict_field "textDocument" params |> oint_field "version" in
+  let uri, version, doc = get_textOVersionDocument params in
   let point = get_position params in
   let in_range = request_in_range ~doc ~version point in
   match (in_range, postpone) with
