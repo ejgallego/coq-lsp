@@ -22,7 +22,7 @@ let not_available_warn fl_pkg info =
     Feedback.msg_warning
       Pp.(str "Serlib plugin: " ++ str fl_pkg
           ++ str " is not available" ++ str info ++ str "." ++ fnl ()
-          ++ str "Incremental checking for commands in this plugin will be worse.")
+          ++ str "Incremental checking for commands in this plugin will be impacted.")
 
 let check_package_exists fl_pkg =
   try
