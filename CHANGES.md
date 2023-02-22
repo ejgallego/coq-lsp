@@ -45,7 +45,7 @@
  - Support for `COQLIB` and `COQCORELIB` environment variables, added
    `--coqcorelib` command line argument (@ejgallego, #403)
  - Protocol infrastructure for code lenses (@ejgallego, #396)
- - Set binary more for protocol input / output (@ejgallego, #408)
+ - Set binary mode for protocol input / output (@ejgallego, #408)
  - Allow to set `ocamlpath` from the command line (@ejgallego, #408)
  - Windows support (@ejgallego, @jim-portegies, #408)
  - Scroll active goal into view (@ejgallego, #410, fixes #381)
