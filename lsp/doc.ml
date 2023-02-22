@@ -7,7 +7,29 @@
 
 module Lang = JLang
 
-module VersionedTextDocument = struct
+module TextDocumentItem = struct
+  type t =
+    { uri : Lang.LUri.File.t
+    ; languageId : string
+    ; version : int
+    ; text : string
+    }
+  [@@deriving yojson]
+end
+
+module TextDocumentIdentifier = struct
+  type t = { uri : Lang.LUri.File.t } [@@deriving yojson]
+end
+
+module OVersionedTextDocumentIdentifier = struct
+  type t =
+    { uri : Lang.LUri.File.t
+    ; version : int option [@default None]
+    }
+  [@@deriving yojson]
+end
+
+module VersionedTextDocumentIdentifier = struct
   type t =
     { uri : Lang.LUri.File.t
     ; version : int

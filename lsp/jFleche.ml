@@ -51,14 +51,14 @@ module Progress = struct
   end
 
   type t =
-    { textDocument : Doc.VersionedTextDocument.t
+    { textDocument : Doc.VersionedTextDocumentIdentifier.t
     ; processing : Info.t list
     }
   [@@deriving yojson]
 end
 
 let mk_progress ~uri ~version processing =
-  let textDocument = { Doc.VersionedTextDocument.uri; version } in
+  let textDocument = { Doc.VersionedTextDocumentIdentifier.uri; version } in
   let params = Progress.to_yojson { Progress.textDocument; processing } in
   Base.mk_notification ~method_:"$/coq/fileProgress" ~params
 
@@ -77,7 +77,7 @@ end
 
 module GoalsAnswer = struct
   type 'pp t =
-    { textDocument : Doc.VersionedTextDocument.t
+    { textDocument : Doc.VersionedTextDocumentIdentifier.t
     ; position : Lang.Point.t
     ; goals : 'pp JCoq.Goals.reified_pp option
     ; messages : 'pp Message.t list

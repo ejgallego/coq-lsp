@@ -28,7 +28,7 @@ let goals_mode =
 let goals ~doc ~point =
   let open Fleche in
   let uri, version = (doc.Doc.uri, doc.version) in
-  let textDocument = Lsp.Doc.VersionedTextDocument.{ uri; version } in
+  let textDocument = Lsp.Doc.VersionedTextDocumentIdentifier.{ uri; version } in
   let position =
     Lang.Point.{ line = fst point; character = snd point; offset = -1 }
   in
