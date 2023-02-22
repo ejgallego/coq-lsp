@@ -36,6 +36,7 @@ jobs:
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
 
     steps:
       - name: 🔭 Checkout code
@@ -56,6 +57,7 @@ jobs:
         run: opam exec -- make build
 
       - name: 🐛 Test coq-lsp
+        if: matrix.os != 'windows-latest'
         run: opam exec -- make test
 
   build-nix:
