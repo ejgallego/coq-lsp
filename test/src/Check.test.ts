@@ -9,11 +9,15 @@ test("Fully checks ex1.v", async () => {
       textDocument: LanguageServer.openExample("ex1.v"),
     }
   );
-  languageServer.onNotification(
-    Protocol.PublishDiagnosticsNotification.type,
-    async (params) => {
-      if (params.diagnostics.length == 0)
-        await LanguageServer.exit(languageServer);
-    }
-  );
+  let p = new Promise((resolve,reject) => {
+    languageServer.onNotification(
+      Protocol.PublishDiagnosticsNotification.type,
+      async (params) => {
+        if (params.diagnostics.length == 0)
+        resolve(params);
+        else reject(params);
+      }
+    );
+  });
+  await p.finally(()=> LanguageServer.exit(languageServer));
 });
