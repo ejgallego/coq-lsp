@@ -1,6 +1,8 @@
-# coq-lsp 0.1.8:
----------------------
+# coq-lsp 0.1.7: Just-in-time
+-----------------------------
 
+ - Improvements and clenaups on hover display, in particular we don't
+   print repeated `Notation` strings (@ejgallego, #422)
  - Don't fail on missing serlib plugins, they are indeed an
    optimization; this mostly impacts 8.16 by lowering the SerAPI
    requirements (@ejgallego, #421)

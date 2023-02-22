@@ -223,18 +223,18 @@ don't hesitate to get in touch with us.
    ```
 - **Windows**: To install `coq-lsp` on windows, we recommend you use a cygwin
   build, such as the [one described
-  here](https://github.com/coq/platform/blob/main/doc/README_Windows.md#installation-by-compiling-from-sources-using-opam-on-cygwin). We
-  will improve this process soon, as of today, follow these steps:
-  - `opam pin add serapi https://github.com/ejgallego/coq-serapi`
-    this will likely fail due to paths being too long, to fix this do
-    + `cd .opam/$switch/build/coq-serapi-v8.16.0+0.16.1/ && mv serlib/plugins/syntax s && dune build -p coq-serapi && dune install coq-serapi`
-  - build `coq-lsp` from source (Windows support requires release 0.1.6, usually you'll want branch 8.16)
+  here](https://github.com/coq/platform/blob/main/doc/README_Windows.md#installation-by-compiling-from-sources-using-opam-on-cygwin), tho
+  any OCaml env where Coq can be built should work.
+  - build `coq-lsp` from source (branch `v8.16`, which will become 0.1.7)
   - Set the path to `coq-lsp.exe` binary in VS Code settings
-  - Set the `--ocamlpath=c:\$path_to_opam\lib` argument in VS Code settings, as
-    Coq Platform ships with an unconfigured binary
-  - If the binary doesn't work, try to run it from the file explorer, often you'll
-    need to copy `libgmp-10.dll` to `C:\Windows` for it work.
+  - Set the `--ocamlpath=c:\$path_to_opam\lib` argument in VS Code settings if
+    you get a findlib error. The Coq Platform ships with an un-configured
+    binary. Note, the path should be unquoted
+  - If the binary doesn't work, try to run it from the file explorer; if you get
+    a `.dll` error you'll need to copy that dll (often `libgmp-10.dll`) to the
+    `C:\Windows` folder for `coq-lsp` to work.
 - **Coq Platform** (coming soon)
+  - See the [bug tracking coq-lsp inclusion](https://github.com/coq/platform/issues/319)
 - [Do it yourself!](#server-1)
 
 <!-- TODO 🟣 Emacs, 🪖 Proof general, 🐔 CoqIDE -->
