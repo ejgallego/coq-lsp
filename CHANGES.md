@@ -1,5 +1,5 @@
-# coq-lsp 0.1.7:
----------------------
+# coq-lsp 0.1.7: Just-in-time
+-----------------------------
 
  - Improvements and clenaups on hover display, in particular we don't
    print repeated `Notation` strings (@ejgallego, #422)
