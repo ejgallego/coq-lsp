@@ -1,8 +1,11 @@
 (* Taken from sertop / Coq *)
+let get_all_proof_names () =
+  (Vernacstate.Declare.get_all_proof_names () [@ocaml.warning "-3"])
+
 let ensure_no_pending_proofs ~in_file ~st =
   match st.Vernacstate.lemmas with
-  | Some lemmas ->
-    let pfs = Vernacstate.LemmaStack.get_all_proof_names lemmas in
+  | Some _lemmas ->
+    let pfs = get_all_proof_names () in
     CErrors.user_err
       Pp.(
         str "There are pending proofs in file "
