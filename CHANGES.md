@@ -1,3 +1,9 @@
+# coq-lsp 0.1.7:
+---------------------
+
+ - Improvements and clenaups on hover display, in particular we don't
+   print repeated `Notation` strings (@ejgallego, #422)
+
 # coq-lsp 0.1.6: Peek
 ---------------------
 
