@@ -24,6 +24,15 @@ test("Open file with wrong URI", async () => {
 
   await languageServer.initialize(initializeParameters);
 
+  languageServer.onNotification(Protocol.LogTraceNotification.type, (e) => {
+    console.log(e.message);
+    if (e.verbose) console.log(e.verbose);
+  });
+
+  languageServer.onNotification(Protocol.LogMessageNotification.type, (e) => {
+    console.log(e.message);
+  });
+
   let textDocument = Types.TextDocumentItem.create(
     "wrong_file.v",
     "coq",
@@ -37,6 +46,7 @@ test("Open file with wrong URI", async () => {
       textDocument,
     }
   );
+
   let p = new Promise<Protocol.PublishDiagnosticsParams>((resolve) => {
     languageServer.onNotification(
       Protocol.PublishDiagnosticsNotification.type,
