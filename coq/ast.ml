@@ -119,11 +119,13 @@ let name_to_string = function
   | Names.Anonymous -> None
   | Names.Name id -> Some (Names.Id.to_string id)
 
+let ud = ref (fun x -> x)
+
 let mk_name ~lines (id : Names.lname) : Lang.Ast.Name.t Lang.With_range.t =
   CAst.with_loc_val
     (fun ?loc id ->
       let loc = Option.get loc in
-      let range = Utils.to_range ~lines loc in
+      let range = Utils.to_range ~lines (!ud loc) in
       let v = name_to_string id in
       Lang.With_range.{ range; v })
     id
@@ -133,7 +135,7 @@ let mk_id ~lines (id : Names.lident) =
 
 let constructor_info ~lines ((_, (id, _typ)) : constructor_expr) =
   let range = Option.get id.loc in
-  let range = Utils.to_range ~lines range in
+  let range = Utils.to_range ~lines (!ud range) in
   let name = mk_id ~lines id in
   let detail = "Constructor" in
   let kind = Kinds.enumMember in
@@ -173,7 +175,7 @@ let inductives_info ~lines ~range ikind idecls =
 
 let ident_decl_info ~lines ~kind ~detail (lident, _) =
   let range = Option.get lident.loc in
-  let range = Utils.to_range ~lines range in
+  let range = Utils.to_range ~lines (!ud range) in
   let name = mk_id ~lines lident in
   Lang.Ast.Info.make ~range ~name ~detail ~kind ()
 

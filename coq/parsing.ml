@@ -8,7 +8,9 @@ let undamage_jf loc =
     ; ep = loc.ep - !bp_
     }
 
+let _ = Ast.ud := undamage_jf
 let undamage_jf_opt loc = Option.map undamage_jf loc
+let undamage_ast { CAst.loc; v } = CAst.make ?loc:(undamage_jf_opt loc) v
 
 module PCoqHack = struct
   type t =
@@ -34,8 +36,7 @@ let parse ~st ps =
      coq_protect *)
   Control.check_for_interrupt ();
   Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
-  |> Option.map (fun { CAst.loc; v } -> CAst.make ?loc:(undamage_jf_opt loc) v)
-  |> Option.map Ast.of_coq
+  |> Option.map undamage_ast |> Option.map Ast.of_coq
 
 let parse ~st ps = Protect.eval ~f:(parse ~st) ps
 

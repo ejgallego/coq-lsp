@@ -35,3 +35,4 @@ val marshal_out : out_channel -> t -> unit
 val to_coq : t -> Vernacexpr.vernac_control
 
 val of_coq : Vernacexpr.vernac_control -> t
+val ud : (Loc.t -> Loc.t) ref
