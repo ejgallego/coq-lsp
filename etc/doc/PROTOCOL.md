@@ -27,7 +27,7 @@ If a feature doesn't appear here it usually means it is not planned in the short
 | `textDocument/didOpen`                | Yes     | We can't reuse Memo tables yet                             |
 | `textDocument/didChange`              | Yes     | We only support `TextDocumentSyncKind.Full` for now        |
 | `textDocument/didClose`               | Partial | We'd likely want to save a `.vo` file on close if possible |
-| `textDocument/didSave`                | No      | Not clear what to do here yet                              |
+| `textDocument/didSave`                | Partial | Undergoing behavior refinement                             |
 |---------------------------------------|---------|------------------------------------------------------------|
 | `notebookDocument/didOpen`            | No      | Planned                                                    |
 |---------------------------------------|---------|------------------------------------------------------------|
@@ -155,10 +155,12 @@ implementation, and we adapted it to `coq-lsp`.
 
 As of today, the output format type parameter `Pp` is controlled by
 the server option `pp_type : number`, see `package.json` for different
-values. `0` is guaranteed to be `Pp = string`.
+values. `0` is guaranteed to be `Pp = string`. Prior to 0.1.6 `string`
+was the default.
 
 #### Changelog
 
+- v0.1.6: the `Pp` parameter can now be either Coq's `Pp.t` type or `string` (default)
 - v0.1.5: message type does now include range and level
 - v0.1.4: goal type generic, the `stacks` and `def` fields appear, compatible v0.1.3 clients
 - v0.1.3: send full goal configuration with shelf, given_up, versioned identifier for document
@@ -244,3 +246,24 @@ interface FlecheDocument {
 #### Changelog
 
 - v0.1.6: initial version
+
+### .vo file saving
+
+Coq-lsp provides a file-save request `coq/saveVo`, which will save the
+current file to disk.
+
+Note that `coq-lsp` does not automatic trigger this on `didSave`, as
+it would produce too much disk trashing, but we are happy to implement
+usability tweaks so `.vo` files are produced when they should.
+
+```typescript
+interface FlecheSaveParams {
+    textDocument: VersionedTextDocumentIdentifier;
+}
+```
+
+The request will return `null`, or fail if not successful.
+
+#### Changelog
+
+- v0.1.6: first version

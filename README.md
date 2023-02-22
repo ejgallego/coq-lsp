@@ -23,7 +23,7 @@ formal documents, designed from our experience in
 interactive use, [SerAPI-like tooling integration](#-a-platform-for-research),
 and web native usage, providing quite a few extra features from vanilla Coq.
 
-`coq-lsp` has support on 🐧 Linux, 🍎 macOS, and 🪟 Windows.
+`coq-lsp` supports 🐧 Linux, 🍎 macOS, 🪟 Windows , and ☕ JavaScript (Node/Browser)
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -35,6 +35,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [👥 Document Outline](#-document-outline)
   - [🐝 Document Hover](#-document-hover)
   - [📁 Multiple Workspaces](#-multiple-workspaces)
+  - [💾 `.vo` file saving](#-vo-file-saving)
   - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
   - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
   - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
@@ -84,6 +85,9 @@ integrates with the incremental cache, and will recognize proof structure.
 You can edit without fear inside a `Proof. ... Qed.`, the rest of the document
 won't be rechecked, unless the proof is completed.
 
+Moreover, if a lemma is not completed, `coq-lsp` will admit it automatically. No
+more `Admitted` / `Qed` churn!
+
 <img alt="Smart error recovery" height="286px" src="etc/img/lsp-errors.gif"/>
 
 Furthermore, you can leave bullets and focused goals unfinished, and `coq-lsp`
@@ -91,8 +95,9 @@ will automatically admit them for you.
 
 ### 🥅 Whole-Document Goal Display
 
-Press `Alt+Enter` (or `Cmd+Enter` in Mac) to show goals at point in a side
-panel.
+`coq-lsp` will follow the cursor movement and show underlying goals and
+messages; this is configurable in case you'd like to trigger goal display more
+conservatively.
 
 <img alt="Whole-Document Goal Display" height="286px" src="etc/img/lsp-goals.gif"/>
 
@@ -128,6 +133,14 @@ Hovering over a Coq identifier will show its type.
 `coq-lsp` supports projects with multiple `_CoqProject` files, use the "Add
 folder to Workspace" feature of Visual Studio code or the LSP Workspace Folders
 extension to use this in your project.
+
+### 💾 `.vo` file saving
+
+`coq-lsp` can save a `.vo` file of the current document as soon as it the
+checking has been completed, using the command `Coq LSP: Save file to .vo`.
+
+You can configure `coq-lsp` in settings to do this every time you save your
+`.vo` file, but this can be costly so we ship it disabled by default.
 
 ### ⏱️ Detailed Timing and Memory Statistics
 
@@ -214,11 +227,13 @@ don't hesitate to get in touch with us.
   will improve this process soon, as of today, follow these steps:
   - `opam pin add serapi https://github.com/ejgallego/coq-serapi`
     this will likely fail due to paths being too long, to fix this do
-    + `cd .opam/$switch/build/coq-serapi-v8.16.1/ && mv serlib/plugins/syntax s && dune build -p coq-serapi && dune install coq-serapi`
+    + `cd .opam/$switch/build/coq-serapi-v8.16.0+0.16.1/ && mv serlib/plugins/syntax s && dune build -p coq-serapi && dune install coq-serapi`
   - build `coq-lsp` from source (Windows support requires release 0.1.6, usually you'll want branch 8.16)
   - Set the path to `coq-lsp.exe` binary in VS Code settings
   - Set the `--ocamlpath=c:\$path_to_opam\lib` argument in VS Code settings, as
     Coq Platform ships with an unconfigured binary
+  - If the binary doesn't work, try to run it from the file explorer, often you'll
+    need to copy `libgmp-10.dll` to `C:\Windows` for it work.
 - **Coq Platform** (coming soon)
 - [Do it yourself!](#server-1)
 

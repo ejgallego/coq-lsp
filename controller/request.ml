@@ -9,11 +9,15 @@
 (************************************************************************)
 
 (************************************************************************)
-(* Coq Language Server Protocol                                         *)
+(* Coq Language Server Protocol -- Requests                             *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
 (* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type document_request = doc:Fleche.Doc.t -> Yojson.Safe.t
-type position_request = doc:Fleche.Doc.t -> point:int * int -> Yojson.Safe.t
+module R = struct
+  type t = (Yojson.Safe.t, int * string) Result.t
+end
+
+type document = doc:Fleche.Doc.t -> R.t
+type position = doc:Fleche.Doc.t -> point:int * int -> R.t

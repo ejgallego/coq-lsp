@@ -104,6 +104,10 @@
       {
         "command": "coq-lsp.document",
         "title": "Coq LSP: Get document in serialized format, print in console"
+      },
+      {
+        "command": "coq-lsp.save",
+        "title": "Coq LSP: Save .vo file for the current buffer"
       }
     ],
     "keybindings": [
@@ -138,6 +142,11 @@
             "type": "number",
             "default": 150,
             "description": "Maximum number of errors per file, after that, coq-lsp will stop checking the file."
+          },
+          "coq-lsp.show_stats_on_hover": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show timing and memory stats for a sentence on hover."
           }
         }
       },

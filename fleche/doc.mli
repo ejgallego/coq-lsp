@@ -101,6 +101,10 @@ end
     point specified there has been reached. *)
 val check : ofmt:Format.formatter -> target:Target.t -> doc:t -> unit -> t
 
+(** [save ~doc] will save [doc] .vo file. It will fail if proofs are open, or if
+    the document completion status is not [Yes] *)
+val save : doc:t -> (unit, Loc.t) Coq.Protect.E.t
+
 (** This is internal, to workaround the Coq multiple-docs problem *)
 val create_failed_permanent :
      state:Coq.State.t

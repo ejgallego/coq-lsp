@@ -36,6 +36,7 @@ type t =
   ; pp_type : int [@default 0]
         (** Pretty-printing type in Info Panel Request, 0 = string; 1 = Pp.t; 2
             = Coq Layout Engine *)
+  ; show_stats_on_hover : bool [@default false]
   }
 
 let default =
@@ -51,6 +52,7 @@ let default =
   ; unicode_completion = Normal
   ; max_errors = 150
   ; pp_type = 0
+  ; show_stats_on_hover = false
   }
 
 let v = ref default

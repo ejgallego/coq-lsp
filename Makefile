@@ -18,6 +18,10 @@ build:
 check: coq_boot
 	dune build $(DUNEOPT) @check
 
+.PHONY: test
+test: build
+	cd test && npm i && npm test
+
 .PHONY: fmt format
 fmt format:
 	dune fmt $(DUNEOPT)

@@ -50,8 +50,15 @@ function Goal({ goal, idx, open }: GoalP) {
 
   // https://beta.reactjs.org/learn/manipulating-the-dom-with-refs
   const ref: React.LegacyRef<HTMLDivElement> | null = useRef(null);
+  const tyRef: React.LegacyRef<HTMLDivElement> | null = useRef(null);
   useLayoutEffect(() => {
-    if (ref.current) FormatPrettyPrint.adjustBreaks($(ref.current));
+    if (ref.current) {
+      FormatPrettyPrint.adjustBreaks($(ref.current));
+    }
+    // See Pfff.v:17160 for tests.
+    if (tyRef.current) {
+      tyRef.current.scrollIntoView();
+    }
   });
 
   return (
@@ -61,7 +68,7 @@ function Goal({ goal, idx, open }: GoalP) {
         <Hyps hyps={goal.hyps} />
         <hr />
       </Details>
-      <div style={{ marginLeft: "1ex" }} className={className}>
+      <div style={{ marginLeft: "1ex" }} className={className} ref={tyRef}>
         <CoqPp content={goal.ty} inline={false} />
       </div>
     </div>

@@ -15,4 +15,4 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val completion : Requests.position_request
+val completion : Request.position
