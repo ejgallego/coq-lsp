@@ -55,3 +55,18 @@ let plugin_handler user_loader =
       loader [serlib_pkg]
     | None ->
       loader [fl_pkg]
+
+(* We are more liberal in the case a SerAPI plugin is not availabe, as
+   the fallbacks are "safe", tho will yield way worse incremental
+   behavior for expressions defined by the plugin *)
+let plugin_handler user_loader fl_pkg =
+  try plugin_handler user_loader fl_pkg
+  with
+    exn ->
+    let iexn = Exninfo.capture exn in
+    let exn_msg = CErrors.iprint iexn in
+    let _, fl_pkg = Mltop.PluginSpec.repr fl_pkg in
+    Feedback.msg_warning
+      Pp.(str "Loading serlib plugin: " ++ str fl_pkg
+          ++ str "failed" ++ fnl () ++ exn_msg);
+    ()
