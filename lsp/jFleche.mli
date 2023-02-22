@@ -41,7 +41,7 @@ end
 
 module GoalsAnswer : sig
   type 'pp t =
-    { textDocument : Doc.VersionedTextDocument.t
+    { textDocument : Doc.VersionedTextDocumentIdentifier.t
     ; position : Lang.Point.t
     ; goals : 'pp Coq.Goals.reified_pp option
     ; messages : 'pp Message.t list
