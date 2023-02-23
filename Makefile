@@ -22,9 +22,12 @@ build: coq_boot
 check: coq_boot
 	dune build $(DUNEOPT) @check
 
+test/node_modules: test/package.json
+	cd test && npm i
+
 .PHONY: test
-test: build
-	cd test && npm i && npm test
+test: build test/node_modules
+	cd test && npm test
 
 .PHONY: fmt format
 fmt format:
