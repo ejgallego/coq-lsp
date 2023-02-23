@@ -3,10 +3,12 @@
 
  - Improvements and clenaups on hover display, in particular we don't
    print repeated `Notation` strings (@ejgallego, #422)
-
  - Don't fail on missing serlib plugins, they are indeed an
    optimization; this mostly impacts 8.16 by lowering the SerAPI
    requirements (@ejgallego, #421)
+ - Enable web extension support. For now this will not try to start
+   the coq-lsp worker as it is now ready. (@ejgallego, #430, fixes
+   #234)
 
 # coq-lsp 0.1.6: Peek
 ---------------------

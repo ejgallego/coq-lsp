@@ -290,7 +290,8 @@
     "vscode-languageclient": "^8.1.0",
     "vscode-languageserver-types": "^3.17.3"
   },
-  "main": "./out/src/client.js",
+  "main": "./out/src/node.js",
+  "browser": "/out/src/browser.js",
   "scripts": {
     "vscode:prepublish": "npm run typecheck && npm run esbuild -- --minify --sourcemap=no",
     "esbuild": "node esbuild.mjs",
