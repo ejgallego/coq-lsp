@@ -21,8 +21,6 @@ let serverPath = path.join(
 
 let ocamlPath = path.join(projectRoot, "_build", "install", "default", "lib");
 
-export type LanguageServer = rpc.MessageConnection;
-
 export function toURI(s: string) {
   return URI.parse(s).toString();
 }
@@ -37,7 +35,14 @@ export function openExample(filename: string) {
   );
 }
 
-export function start() {
+export interface LanguageServer extends rpc.MessageConnection {
+  initialize(
+    initializeParameters?: Partial<Protocol.InitializeParams>
+  ): Promise<void>;
+  exit(): Promise<void>;
+}
+
+export function start(): LanguageServer {
   let childProcess = cp.spawn(serverPath, [], {
     env: {
       ...process.env,
@@ -50,42 +55,38 @@ export function start() {
   );
   connection.listen();
 
-  return connection as LanguageServer;
-}
-
-export async function startAndInitialize(
-  initializeParameters: Partial<Protocol.InitializeParams> = {}
-) {
-  let languageServer = start();
-
-  initializeParameters = {
-    processId: process.pid,
-    workspaceFolders: [
-      {
-        uri: toURI(projectRoot),
-        name: "coq-lsp",
-      },
-    ],
-    capabilities: {
-      textDocument: {
-        publishDiagnostics: {
-          relatedInformation: true,
+  const initialize = async (
+    initializeParameters: Partial<Protocol.InitializeParams> = {}
+  ) => {
+    initializeParameters = {
+      processId: process.pid,
+      workspaceFolders: [
+        {
+          uri: toURI(projectRoot),
+          name: "coq-lsp",
+        },
+      ],
+      capabilities: {
+        textDocument: {
+          publishDiagnostics: {
+            relatedInformation: true,
+          },
         },
       },
-    },
-    ...initializeParameters,
+      ...initializeParameters,
+    };
+    await connection.sendRequest(
+      Protocol.InitializeRequest.type,
+      initializeParameters
+    );
   };
 
-  await languageServer.sendRequest(
-    Protocol.InitializeRequest.type,
-    initializeParameters
-  );
-  return languageServer;
-}
+  const exit = async () => {
+    await connection.sendNotification(Protocol.ExitNotification.type);
+    return new Promise<void>((resolve) => {
+      connection.onClose(() => resolve(connection.dispose()));
+    });
+  };
 
-export async function exit(languageServer: LanguageServer) {
-  await languageServer.sendNotification(Protocol.ExitNotification.type);
-  return new Promise((resolve) => {
-    languageServer.onClose(() => resolve(languageServer.dispose()));
-  });
+  return { ...connection, initialize, exit };
 }
