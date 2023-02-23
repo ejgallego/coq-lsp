@@ -62,9 +62,9 @@ let map_serlib fl_pkg =
     check_package_exists serlib_name
   else None
 
-(* We are more liberal in the case a SerAPI plugin is not availabe, as
-   the fallbacks are "safe", tho will yield way worse incremental
-   behavior for expressions defined by the plugin *)
+(* We are more liberal in the case a SerAPI plugin is not availabe, as the
+   fallbacks are "safe", tho will yield way worse incremental behavior for
+   expressions defined by the plugin *)
 let safe_loader loader fl_pkg =
   try loader [fl_pkg]
   with
