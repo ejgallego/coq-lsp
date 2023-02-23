@@ -158,6 +158,11 @@ let pp_load_path fmt
   Format.fprintf fmt "Path %s ---> %s"
     (Names.DirPath.to_string coq_path)
     unix_path
+let pp_as fmt (d, dl) = Format.fprintf fmt "(%s, %a)"
+    d Format.(pp_print_list pp_print_string) dl
+
+let pp_ap fmt (dl, d) = Format.fprintf fmt "(%a, %s)"
+    Format.(pp_print_list pp_print_string) dl d
 
 let describe { coqlib; kind; vo_load_path; ml_include_path; require_libs; _ } =
   let require_msg =
@@ -172,14 +177,27 @@ let describe { coqlib; kind; vo_load_path; ml_include_path; require_libs; _ } =
       Format.(pp_print_list pp_print_string)
       ml_include_path
   in
-  ( Format.asprintf
+  let base =
+    Format.asprintf
       "@[Configuration loaded from %s@\n\
       \ - coqlib is at: %s@\n\
       \ - Modules [%s] will be loaded by default@\n\
       \ - %d Coq path directory bindings in scope; %d Coq plugin directory \
        bindings in scope@]"
-      kind coqlib require_msg n_vo n_ml
-  , extra )
+      kind coqlib require_msg n_vo n_ml in
+  let c11 = System.all_subdirs ~unix_path:coqlib in
+  let c12 = System.all_subdirs ~unix_path:(Filename.concat coqlib "..") in
+  let c13 = System.all_subdirs ~unix_path:(Filename.(concat (concat coqlib "..") "..")) in
+  let c2 = Sys.readdir coqlib in
+  let c3 = System.all_in_path c11 "Prelude.vo" in
+  let base = Format.asprintf "l1:%a@\nl2:%a@\nl3:%a@\n%a@\n%a@\n@\n%s"
+      Format.(pp_print_list pp_as) c11
+      Format.(pp_print_list pp_as) c12
+      Format.(pp_print_list pp_as) c13
+      Format.(pp_print_list pp_print_string) (Array.to_list c2)
+      Format.(pp_print_list pp_ap) c3
+      base in
+  ( base, extra )
 
 (* Require a set of libraries *)
 let load_objs libs =
