@@ -31,15 +31,15 @@ exception Lsp_exit
 
 (** Lsp special init loop *)
 val lsp_init_loop :
-     in_channel
-  -> Format.formatter
+     ifn:(unit -> Lsp.Base.Message.t option)
+  -> ofn:(Yojson.Safe.t -> unit)
   -> cmdline:Coq.Workspace.CmdLine.t
   -> debug:bool
   -> (string * Coq.Workspace.t) list
 
 (** Dispatch an LSP request or notification, requests may be postponed. *)
 val dispatch_message :
-  ofmt:Format.formatter -> state:State.t -> Lsp.Base.Message.t -> State.t
+  ofn:(Yojson.Safe.t -> unit) -> state:State.t -> Lsp.Base.Message.t -> State.t
 
 (** Serve postponed requests in the set, they can be stale *)
-val serve_postponed_requests : ofmt:Format.formatter -> Int.Set.t -> unit
+val serve_postponed_requests : ofn:(Yojson.Safe.t -> unit) -> Int.Set.t -> unit

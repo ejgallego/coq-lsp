@@ -18,6 +18,9 @@
 module F = Format
 module J = Yojson.Safe
 
+let fn = ref (fun _ -> ())
+let set_log_fn f = fn := f
+
 let read_raw_request ic =
   let cl = input_line ic in
   let sin = Scanf.Scanning.from_string cl in
@@ -83,8 +86,6 @@ module TraceValue = struct
     | Verbose -> "verbose"
 end
 
-let oc = ref F.std_formatter
-let set_log_channel c = oc := c
 let trace_value = ref TraceValue.Off
 let set_trace_value value = trace_value := value
 
@@ -92,7 +93,7 @@ let logMessage ~lvl ~message =
   let method_ = "window/logMessage" in
   let params = `Assoc [ ("type", `Int lvl); ("message", `String message) ] in
   let msg = Base.mk_notification ~method_ ~params in
-  send_json !oc msg
+  !fn msg
 
 let logTrace ~message ~extra =
   let method_ = "$/logTrace" in
@@ -102,7 +103,7 @@ let logTrace ~message ~extra =
       `Assoc [ ("message", `String message); ("verbose", `String extra) ]
     | _, _ -> `Assoc [ ("message", `String message) ]
   in
-  Base.mk_notification ~method_ ~params |> send_json !oc
+  Base.mk_notification ~method_ ~params |> !fn
 
 let trace hdr ?extra msg =
   let message = Format.asprintf "[%s]: @[%s@]" hdr msg in

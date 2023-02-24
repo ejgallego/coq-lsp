@@ -17,6 +17,9 @@
 
 (** JSON-RPC input/output *)
 
+(** Set the log function *)
+val set_log_fn : (Yojson.Safe.t -> unit) -> unit
+
 (** Read a JSON-RPC request from channel *)
 val read_raw_request : in_channel -> Yojson.Safe.t option
 
@@ -43,9 +46,6 @@ end
 
 (** Set the trace value *)
 val set_trace_value : TraceValue.t -> unit
-
-(** Set the log channel *)
-val set_log_channel : Format.formatter -> unit
 
 (** Send a [window/logMessage] notification to the client *)
 val logMessage : lvl:int -> message:string -> unit

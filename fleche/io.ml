@@ -2,13 +2,13 @@ module CallBack = struct
   type t =
     { trace : string -> ?extra:string -> string -> unit
     ; send_diagnostics :
-           ofmt:Format.formatter
+           ofn:(Yojson.Safe.t -> unit)
         -> uri:Lang.LUri.File.t
         -> version:int
         -> Lang.Diagnostic.t list
         -> unit
     ; send_fileProgress :
-           ofmt:Format.formatter
+           ofn:(Yojson.Safe.t -> unit)
         -> uri:Lang.LUri.File.t
         -> version:int
         -> Progress.Info.t list
@@ -17,8 +17,8 @@ module CallBack = struct
 
   let default =
     { trace = (fun _ ?extra:_ _ -> ())
-    ; send_diagnostics = (fun ~ofmt:_ ~uri:_ ~version:_ _ -> ())
-    ; send_fileProgress = (fun ~ofmt:_ ~uri:_ ~version:_ _ -> ())
+    ; send_diagnostics = (fun ~ofn:_ ~uri:_ ~version:_ _ -> ())
+    ; send_fileProgress = (fun ~ofn:_ ~uri:_ ~version:_ _ -> ())
     }
 
   let cb = ref default
@@ -37,9 +37,9 @@ module Log = struct
 end
 
 module Report = struct
-  let diagnostics ~ofmt ~uri ~version d =
-    !CallBack.cb.send_diagnostics ~ofmt ~uri ~version d
+  let diagnostics ~ofn ~uri ~version d =
+    !CallBack.cb.send_diagnostics ~ofn ~uri ~version d
 
-  let fileProgress ~ofmt ~uri ~version d =
-    !CallBack.cb.send_fileProgress ~ofmt ~uri ~version d
+  let fileProgress ~ofn ~uri ~version d =
+    !CallBack.cb.send_fileProgress ~ofn ~uri ~version d
 end

@@ -379,13 +379,13 @@ let add_node ~node doc =
 
 let concat_diags doc = List.concat_map (fun node -> node.Node.diags) doc.nodes
 
-let send_eager_diagnostics ~ofmt ~uri ~version ~doc =
+let send_eager_diagnostics ~ofn ~uri ~version ~doc =
   (* this is too noisy *)
   (* let proc_diag = mk_diag loc 3 (Pp.str "Processing") in *)
   (* Io.Report.diagnostics ~uri ~version (proc_diag :: doc.diags)); *)
   if doc.diags_dirty && !Config.v.eager_diagnostics then (
     let diags = concat_diags doc in
-    Io.Report.diagnostics ~ofmt ~uri ~version diags;
+    Io.Report.diagnostics ~ofn ~uri ~version diags;
     { doc with diags_dirty = false })
   else doc
 
@@ -656,11 +656,11 @@ let max_errors_node ~state ~range =
     ~parsing_time:0.0
 
 (* main interpretation loop *)
-let process_and_parse ~ofmt ~target ~uri ~version doc last_tok doc_handle =
+let process_and_parse ~ofn ~target ~uri ~version doc last_tok doc_handle =
   let rec stm doc st (last_tok : Lang.Range.t) acc_errors =
     (* Reporting of progress and diagnostics (if dirty) *)
-    let doc = send_eager_diagnostics ~ofmt ~uri ~version ~doc in
-    report_progress ~ofmt ~doc last_tok;
+    let doc = send_eager_diagnostics ~ofn ~uri ~version ~doc in
+    report_progress ~ofn ~doc last_tok;
     if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
     if acc_errors > !Config.v.max_errors then
       let completed = Completion.Failed last_tok in
@@ -754,7 +754,7 @@ let loc_after ~lines ~uri (r : Lang.Range.t) =
   }
 
 (** Setup parser and call the main routine *)
-let resume_check ~ofmt ~(last_tok : Lang.Range.t) ~doc ~target =
+let resume_check ~ofn ~(last_tok : Lang.Range.t) ~doc ~target =
   let uri, version, contents = (doc.uri, doc.version, doc.contents) in
   (* Compute resume point, basically [CLexer.after] + stream setup *)
   let lines = doc.contents.lines in
@@ -771,10 +771,10 @@ let resume_check ~ofmt ~(last_tok : Lang.Range.t) ~doc ~target =
       Coq.Parsing.Parsable.make ~loc:resume_loc
         Gramlib.Stream.(of_string ~offset processed_content)
     in
-    process_and_parse ~ofmt ~target ~uri ~version doc last_tok handle
+    process_and_parse ~ofn ~target ~uri ~version doc last_tok handle
 
 (** Check a document, if it was not completed already *)
-let check ~ofmt ~target ~doc () =
+let check ~ofn ~target ~doc () =
   match doc.completed with
   | Yes _ ->
     Io.Log.trace "check" "resuming, completed=yes, nothing to do";
@@ -784,7 +784,7 @@ let check ~ofmt ~target ~doc () =
     doc
   | Stopped last_tok ->
     DDebug.resume last_tok doc.version;
-    let doc = resume_check ~ofmt ~last_tok ~doc ~target in
+    let doc = resume_check ~ofn ~last_tok ~doc ~target in
     log_doc_completion doc.completed;
     Util.print_stats ();
     doc
