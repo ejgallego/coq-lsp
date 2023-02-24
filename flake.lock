@@ -1,19 +1,36 @@
 {
   "nodes": {
-    "coq-serapi": {
+    "coq": {
       "flake": false,
       "locked": {
-        "lastModified": 1673473454,
-        "narHash": "sha256-ZeKkbEcTfe/5X/pW+Kl4Xjcj3cdZcs06LTg4dZIuHq8=",
+        "lastModified": 1676467671,
+        "narHash": "sha256-3Raldx6C3d8gP0EU6lL9rjf+DGLWtSTLVdnFict07lg=",
         "owner": "ejgallego",
-        "repo": "coq-serapi",
-        "rev": "79880d37705b6ec08108f5e6044fd7a128923753",
+        "repo": "coq",
+        "rev": "8e0314415cc3cd528fc81bf11075d294179f880a",
         "type": "github"
       },
       "original": {
         "owner": "ejgallego",
-        "ref": "v8.17",
+        "repo": "coq",
+        "rev": "8e0314415cc3cd528fc81bf11075d294179f880a",
+        "type": "github"
+      }
+    },
+    "coq-serapi": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1676579089,
+        "narHash": "sha256-4dK0Or4wrdZ8X2OorgNVqRMt4o2bWkOmctUD2B+v9PE=",
+        "owner": "ejgallego",
         "repo": "coq-serapi",
+        "rev": "9c8e91fdad0182675e0cad34bdeba54e63db86cd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ejgallego",
+        "repo": "coq-serapi",
+        "rev": "9c8e91fdad0182675e0cad34bdeba54e63db86cd",
         "type": "github"
       }
     },
@@ -152,6 +169,7 @@
     },
     "root": {
       "inputs": {
+        "coq": "coq",
         "coq-serapi": "coq-serapi",
         "flake-compat": "flake-compat",
         "flake-parts": "flake-parts",

@@ -103,15 +103,11 @@ nix develop .#client-vscode
 You can view the list of packages and devShells that are exposed
 by running `nix flake show`.
 
-If you wish to do `nix build`, you will need to use the .?submodules=1` trick,
-since we use submodules here for vendoring. For example, building requires:
-
+To build you can do:
 ```
-nix build .?submodules=1
+nix build .
 ```
 
-This currently only applies to building the default package (coq-lsp), which is
-the server. Clients don't have specific submodules as of yet.
 
 #### Releasing
 
