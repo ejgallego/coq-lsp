@@ -18,13 +18,13 @@
 module Check : sig
   (** Check pending documents, return [None] if there is none pending, or
       [Some rqs] the list of requests ready to execute after the check. Sends
-      progress and diagnostics notifications to [ofmt]. *)
-  val maybe_check : ofmt:Format.formatter -> Int.Set.t option
+      progress and diagnostics notifications using output function [ofn]. *)
+  val maybe_check : ofn:(Yojson.Safe.t -> unit) -> Int.Set.t option
 end
 
 (** Create a document *)
 val create :
-     ofmt:Format.formatter
+     ofn:(Yojson.Safe.t -> unit)
   -> root_state:Coq.State.t
   -> workspace:Coq.Workspace.t
   -> uri:Lang.LUri.File.t
@@ -34,7 +34,7 @@ val create :
 
 (** Update a document, returns the list of not valid requests *)
 val change :
-     ofmt:Format.formatter
+     ofn:(Yojson.Safe.t -> unit)
   -> uri:Lang.LUri.File.t
   -> version:int
   -> raw:string

@@ -34,18 +34,18 @@ open Lsp_core
 (** Main event queue *)
 let request_queue = Queue.create ()
 
-let check_or_yield ~ofmt =
-  match Doc_manager.Check.maybe_check ~ofmt with
+let check_or_yield ~ofn =
+  match Doc_manager.Check.maybe_check ~ofn with
   | None -> Thread.delay 0.1
-  | Some ready -> serve_postponed_requests ~ofmt ready
+  | Some ready -> serve_postponed_requests ~ofn ready
 
-let dispatch_or_resume_check ~ofmt ~state =
+let dispatch_or_resume_check ~ofn ~state =
   match Queue.peek_opt request_queue with
   | None ->
     (* This is where we make progress on document checking; kind of IDLE
        workqueue. *)
     Control.interrupt := false;
-    check_or_yield ~ofmt;
+    check_or_yield ~ofn;
     state
   | Some com ->
     (* TODO: optimize the queue? EJGA: I've found that VS Code as a client keeps
@@ -54,11 +54,11 @@ let dispatch_or_resume_check ~ofmt ~state =
     LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
     (* We let Coq work normally now *)
     Control.interrupt := false;
-    dispatch_message ~ofmt ~state com
+    dispatch_message ~ofn ~state com
 
 (* Wrapper for the top-level call *)
-let dispatch_or_resume_check ~ofmt ~state =
-  try Some (dispatch_or_resume_check ~ofmt ~state) with
+let dispatch_or_resume_check ~ofn ~state =
+  try Some (dispatch_or_resume_check ~ofn ~state) with
   | U.Type_error (msg, obj) ->
     LIO.trace_object msg obj;
     Some state
@@ -88,10 +88,10 @@ let exit_message () =
 
 let lsp_cleanup () = exit_message ()
 
-let rec process_queue ofmt ~state =
+let rec process_queue ~ofn ~state =
   if Fleche.Debug.sched_wakeup then
     LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
-  match dispatch_or_resume_check ~ofmt ~state with
+  match dispatch_or_resume_check ~ofn ~state with
   | None ->
     (* As of now, we exit the whole program here, we could try an experiment to
        invert the threads, so the I/O routine is a thread and process_queue is
@@ -100,7 +100,7 @@ let rec process_queue ofmt ~state =
     (* We can't use [Thread.exit] here as the main thread will be blocked on
        I/O *)
     exit 0
-  | Some state -> process_queue ofmt ~state
+  | Some state -> process_queue ~ofn ~state
 
 let process_input (com : LSP.Message.t) =
   if Fleche.Debug.sched_wakeup then
@@ -115,12 +115,11 @@ let lsp_cb =
   Fleche.Io.CallBack.
     { trace = LIO.trace
     ; send_diagnostics =
-        (fun ~ofmt ~uri ~version diags ->
-          Lsp.JLang.mk_diagnostics ~uri ~version diags |> Lsp.Io.send_json ofmt)
+        (fun ~ofn ~uri ~version diags ->
+          Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)
     ; send_fileProgress =
-        (fun ~ofmt ~uri ~version progress ->
-          Lsp.JFleche.mk_progress ~uri ~version progress
-          |> Lsp.Io.send_json ofmt)
+        (fun ~ofn ~uri ~version progress ->
+          Lsp.JFleche.mk_progress ~uri ~version progress |> ofn)
     }
 
 let lvl_to_severity (lvl : Feedback.level) =
@@ -150,16 +149,15 @@ let exit_notification =
   Lsp.Base.Message.(Notification { method_ = "exit"; params = [] })
 
 let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
-  (* We output to stdout *)
-  let ic = stdin in
-  let oc = Format.std_formatter in
-
   (* Try to be sane w.r.t. \r\n in Windows *)
   Stdlib.set_binary_mode_in stdin true;
   Stdlib.set_binary_mode_out stdout true;
 
+  (* We output to stdout *)
+  let ifn () = LIO.read_request stdin in
   (* Set log channels *)
-  LIO.set_log_channel oc;
+  let ofn = LIO.send_json Format.std_formatter in
+  LIO.set_log_fn ofn;
   Fleche.Io.CallBack.set lsp_cb;
 
   (* IMPORTANT: LSP spec forbids any message from server to client before
@@ -181,7 +179,7 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
 
   (* Read JSON-RPC messages and push them to the queue *)
   let rec read_loop () =
-    match LIO.read_request ic with
+    match ifn () with
     | None ->
       (* EOF, push an exit notication to the queue *)
       process_input exit_notification
@@ -193,7 +191,7 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
   (* Input/output will happen now *)
   try
     (* LSP Server server initialization *)
-    let workspaces = lsp_init_loop ic oc ~cmdline ~debug in
+    let workspaces = lsp_init_loop ~ifn ~ofn ~cmdline ~debug in
 
     (* Core LSP loop context *)
     let state = { State.root_state; cmdline; workspaces } in
@@ -201,7 +199,9 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
     (* Read workspace state (noop for now) *)
     Cache.read_from_disk ();
 
-    let (_ : Thread.t) = Thread.create (fun () -> process_queue oc ~state) () in
+    let (_ : Thread.t) =
+      Thread.create (fun () -> process_queue ~ofn ~state) ()
+    in
 
     read_loop ()
   with exn ->
