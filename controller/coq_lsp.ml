@@ -34,10 +34,16 @@ open Lsp_core
 (** Main event queue *)
 let request_queue = Queue.create ()
 
-let check_or_yield ~ofn =
+type 'a cont =
+  | Cont of 'a
+  | Yield of 'a
+
+let check_or_yield ~ofn ~state =
   match Doc_manager.Check.maybe_check ~ofn with
-  | None -> Thread.delay 0.1
-  | Some ready -> serve_postponed_requests ~ofn ready
+  | None -> Yield state
+  | Some ready ->
+    let () = serve_postponed_requests ~ofn ready in
+    Cont state
 
 let dispatch_or_resume_check ~ofn ~state =
   match Queue.peek_opt request_queue with
@@ -45,8 +51,7 @@ let dispatch_or_resume_check ~ofn ~state =
     (* This is where we make progress on document checking; kind of IDLE
        workqueue. *)
     Control.interrupt := false;
-    check_or_yield ~ofn;
-    state
+    check_or_yield ~ofn ~state
   | Some com ->
     (* TODO: optimize the queue? EJGA: I've found that VS Code as a client keeps
        the queue tidy by itself, so this works fine as now *)
@@ -54,14 +59,14 @@ let dispatch_or_resume_check ~ofn ~state =
     LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
     (* We let Coq work normally now *)
     Control.interrupt := false;
-    dispatch_message ~ofn ~state com
+    Cont (dispatch_message ~ofn ~state com)
 
 (* Wrapper for the top-level call *)
 let dispatch_or_resume_check ~ofn ~state =
   try Some (dispatch_or_resume_check ~ofn ~state) with
   | U.Type_error (msg, obj) ->
     LIO.trace_object msg obj;
-    Some state
+    Some (Yield state)
   | Lsp_exit ->
     (* EJGA: Maybe remove Lsp_exit and have dispatch_or_resume_check return an
        action? *)
@@ -79,7 +84,7 @@ let dispatch_or_resume_check ~ofn ~state =
     LIO.trace "print_exn [OCaml]" (Printexc.to_string exn);
     LIO.trace "print_exn [Coq  ]" Pp.(string_of_ppcmds CErrors.(iprint iexn));
     LIO.trace "print_bt  [OCaml]" bt;
-    Some state
+    Some (Yield state)
 
 (* Do cleanup here if necessary *)
 let exit_message () =
@@ -100,7 +105,10 @@ let rec process_queue ~ofn ~state =
     (* We can't use [Thread.exit] here as the main thread will be blocked on
        I/O *)
     exit 0
-  | Some state -> process_queue ~ofn ~state
+  | Some (Yield state) ->
+    Thread.delay 0.1;
+    process_queue ~ofn ~state
+  | Some (Cont state) -> process_queue ~ofn ~state
 
 let process_input (com : LSP.Message.t) =
   if Fleche.Debug.sched_wakeup then
