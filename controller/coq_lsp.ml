@@ -24,63 +24,6 @@ module LSP = Lsp.Base
 open Controller
 open Lsp_core
 
-(***********************************************************************)
-(* The queue strategy is: we keep pending document checks in Doc_manager, they
-   are only resumed when the rest of requests in the queue are served.
-
-   Note that we should add a method to detect stale requests; maybe cancel them
-   when a new edit comes. *)
-
-(** Main event queue *)
-let request_queue = Queue.create ()
-
-let check_or_yield ~ofn =
-  match Doc_manager.Check.maybe_check ~ofn with
-  | None -> Thread.delay 0.1
-  | Some ready -> serve_postponed_requests ~ofn ready
-
-let dispatch_or_resume_check ~ofn ~state =
-  match Queue.peek_opt request_queue with
-  | None ->
-    (* This is where we make progress on document checking; kind of IDLE
-       workqueue. *)
-    Control.interrupt := false;
-    check_or_yield ~ofn;
-    state
-  | Some com ->
-    (* TODO: optimize the queue? EJGA: I've found that VS Code as a client keeps
-       the queue tidy by itself, so this works fine as now *)
-    ignore (Queue.pop request_queue);
-    LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
-    (* We let Coq work normally now *)
-    Control.interrupt := false;
-    dispatch_message ~ofn ~state com
-
-(* Wrapper for the top-level call *)
-let dispatch_or_resume_check ~ofn ~state =
-  try Some (dispatch_or_resume_check ~ofn ~state) with
-  | U.Type_error (msg, obj) ->
-    LIO.trace_object msg obj;
-    Some state
-  | Lsp_exit ->
-    (* EJGA: Maybe remove Lsp_exit and have dispatch_or_resume_check return an
-       action? *)
-    None
-  | exn ->
-    (* Note: We should never arrive here from Coq, as every call to Coq should
-       be wrapper in Coq.Protect. So hitting this codepath, is effectively a
-       coq-lsp internal error and should be fixed *)
-    let bt = Printexc.get_backtrace () in
-    let iexn = Exninfo.capture exn in
-    LIO.trace "process_queue"
-      (if Printexc.backtrace_status () then "bt=true" else "bt=false");
-    (* let method_name = LSP.Message.method_ com in *)
-    (* LIO.trace "process_queue" ("exn in method: " ^ method_name); *)
-    LIO.trace "print_exn [OCaml]" (Printexc.to_string exn);
-    LIO.trace "print_exn [Coq  ]" Pp.(string_of_ppcmds CErrors.(iprint iexn));
-    LIO.trace "print_bt  [OCaml]" bt;
-    Some state
-
 (* Do cleanup here if necessary *)
 let exit_message () =
   let message = "server exiting" in
@@ -100,15 +43,10 @@ let rec process_queue ~ofn ~state =
     (* We can't use [Thread.exit] here as the main thread will be blocked on
        I/O *)
     exit 0
-  | Some state -> process_queue ~ofn ~state
-
-let process_input (com : LSP.Message.t) =
-  if Fleche.Debug.sched_wakeup then
-    LIO.trace "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
-  (* TODO: this is the place to cancel pending requests that are invalid, and in
-     general, to perform queue optimizations *)
-  Queue.push com request_queue;
-  Control.interrupt := true
+  | Some (Yield state) ->
+    Thread.delay 0.1;
+    process_queue ~ofn ~state
+  | Some (Cont state) -> process_queue ~ofn ~state
 
 (* Main loop *)
 let lsp_cb =
@@ -182,9 +120,9 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
     match ifn () with
     | None ->
       (* EOF, push an exit notication to the queue *)
-      process_input exit_notification
+      enqueue_message exit_notification
     | Some msg ->
-      process_input msg;
+      enqueue_message msg;
       read_loop ()
   in
 
