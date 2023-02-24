@@ -112,6 +112,7 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
     ; ocamlpath
     ; vo_load_path
     ; ml_include_path
+    ; args = []
     }
   in
 
