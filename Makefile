@@ -18,9 +18,12 @@ build: coq_boot
 check: coq_boot
 	dune build $(DUNEOPT) @check
 
+test/node_modules: test/package.json
+	cd test && npm i
+
 .PHONY: test
-test: build
-	cd test && npm i && npm test
+test: build test/node_modules
+	cd test && npm test
 
 .PHONY: fmt format
 fmt format:
@@ -34,9 +37,11 @@ watch: coq_boot
 build-all: coq_boot
 	dune build $(DUNEOPT) @all
 
+# We set -libdir due to a Coq bug on win32, see https://github.com/coq/coq/pull/17289
 vendor/coq/config/coq_config.ml:
 	cd vendor/coq \
 	&& ./configure -no-ask -prefix $(shell pwd)/_build/install/default/ \
+	        -libdir $(shell pwd)/_build/install/default/lib/coq \
 		-native-compiler no \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune

@@ -10,15 +10,14 @@ import {
   StatusBarAlignment,
   StatusBarItem,
   ThemeColor,
+  WorkspaceConfiguration,
 } from "vscode";
+
 import {
-  LanguageClient,
-  ServerOptions,
+  BaseLanguageClient,
   LanguageClientOptions,
-  RevealOutputChannelOn,
-} from "vscode-languageclient/node";
-import {
   RequestType,
+  RevealOutputChannelOn,
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 import {
@@ -31,7 +30,7 @@ import { InfoPanel } from "./goals";
 import { FileProgressManager } from "./progress";
 
 let config: CoqLspClientConfig;
-let client: LanguageClient;
+let client: BaseLanguageClient;
 // Lifetime of the info panel == extension lifetime.
 let infoPanel: InfoPanel;
 // Lifetime of the fileProgress setup == client lifetime
@@ -39,7 +38,16 @@ let fileProgress: FileProgressManager;
 // Status Bar Button
 let lspStatusItem: StatusBarItem;
 
-export function activate(context: ExtensionContext): void {
+export type ClientFactoryType = (
+  context: ExtensionContext,
+  clientOptions: LanguageClientOptions,
+  wsConfig: WorkspaceConfiguration
+) => BaseLanguageClient;
+
+export function activateCoqLSP(
+  context: ExtensionContext,
+  clientFactory: ClientFactoryType
+): void {
   window.showInformationMessage("Coq LSP Extension: Going to activate!");
 
   function coqCommand(command: string, fn: () => void) {
@@ -111,35 +119,30 @@ export function activate(context: ExtensionContext): void {
       initializationOptions,
       markdown: { isTrusted: true, supportHtml: true },
     };
-    const serverOptions: ServerOptions = {
-      command: wsConfig.path,
-      args: wsConfig.args,
-    };
 
-    client = new LanguageClient(
-      "coq-lsp",
-      "Coq LSP Server",
-      serverOptions,
-      clientOptions
-    );
+    let cP = new Promise<BaseLanguageClient>((resolve) => {
+      client = clientFactory(context, clientOptions, wsConfig);
+      fileProgress = new FileProgressManager(client);
+      resolve(client);
+    });
 
-    fileProgress = new FileProgressManager(client);
-    client
-      .start()
-      .then(updateStatusBar)
-      .then(() => {
-        if (window.activeTextEditor) {
-          goalsCall(
-            window.activeTextEditor,
-            TextEditorSelectionChangeKind.Command
-          );
-        }
-      })
-      .catch((error) => {
-        let emsg = error.toString();
-        console.log(`Error in coq-lsp start: ${emsg}`);
-        setFailedStatuBar(emsg);
-      });
+    cP.then((client) =>
+      client
+        .start()
+        .then(updateStatusBar)
+        .then(() => {
+          if (window.activeTextEditor) {
+            goalsCall(
+              window.activeTextEditor,
+              TextEditorSelectionChangeKind.Command
+            );
+          }
+        })
+    ).catch((error) => {
+      let emsg = error.toString();
+      console.log(`Error in coq-lsp start: ${emsg}`);
+      setFailedStatuBar(emsg);
+    });
   };
 
   const restart = () => {
@@ -294,7 +297,7 @@ export function activate(context: ExtensionContext): void {
 
   start();
 }
-export function deactivate(): Thenable<void> | undefined {
+export function deactivateCoqLSP(): Thenable<void> | undefined {
   if (!client) {
     return undefined;
   }

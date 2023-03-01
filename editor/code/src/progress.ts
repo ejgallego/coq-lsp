@@ -4,7 +4,7 @@ import {
   NotificationType,
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
-import { LanguageClient } from "vscode-languageclient/node";
+import { BaseLanguageClient } from "vscode-languageclient";
 
 enum CoqFileProgressKind {
   Processing = 1,
@@ -42,7 +42,7 @@ const progressDecoration = window.createTextEditorDecorationType({
 export class FileProgressManager {
   private fileProgress: Disposable;
 
-  constructor(client: LanguageClient) {
+  constructor(client: BaseLanguageClient) {
     this.fileProgress = client.onNotification(coqFileProgress, (params) => {
       let ranges = params.processing
         .map((fp) => client.protocol2CodeConverter.asRange(fp.range))

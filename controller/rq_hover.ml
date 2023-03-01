@@ -58,7 +58,11 @@ let info_of_constructor env cr =
   in
   ctype
 
-let print_type = Printer.pr_ltype_env
+type id_info =
+  | Notation of Pp.t
+  | Def of Pp.t
+
+let print_type env sigma x = Def (Printer.pr_ltype_env env sigma x)
 
 let info_of_id env sigma id =
   let qid = Libnames.qualid_of_string id in
@@ -75,10 +79,11 @@ let info_of_id env sigma id =
         (match lid with
         | VarRef vr -> info_of_var env vr |> print_type env sigma
         | ConstRef cr -> info_of_const env cr |> print_type env sigma
-        | IndRef ir -> info_of_ind env sigma ir
+        | IndRef ir -> Def (info_of_ind env sigma ir)
         | ConstructRef cr -> info_of_constructor env cr |> print_type env sigma)
         |> fun x -> Some x
-      | Abbrev kn -> Some (Prettyp.default_object_pr.print_abbreviation env kn)
+      | Abbrev kn ->
+        Some (Notation (Prettyp.default_object_pr.print_abbreviation env kn))
     with _ -> None)
 
 let info_of_id ~st id =
@@ -94,38 +99,53 @@ let info_of_id ~st id =
   in
   info_of_id env sigma id
 
-let info_of_id_at_point ~doc ~point id =
-  let st = Fleche.Info.LC.node ~doc ~point Exact in
-  Option.bind st (fun node ->
-      let st = node.Fleche.Doc.Node.state in
-      Fleche.Info.LC.in_state ~st ~f:(info_of_id ~st) id)
+let info_of_id_at_point ~node id =
+  let st = node.Fleche.Doc.Node.state in
+  Fleche.Info.LC.in_state ~st ~f:(info_of_id ~st) id
+
+let pp_typ id = function
+  | Def typ ->
+    let typ = Pp.string_of_ppcmds typ in
+    Format.(asprintf "```coq\n%s : %s\n```" id typ)
+  | Notation nt ->
+    let nt = Pp.string_of_ppcmds nt in
+    Format.(asprintf "```coq\n%s\n```" nt)
+
+let if_bool b l = if b then [ l ] else []
+let to_list = Option.cata (fun x -> [ x ]) []
+
+let hover ~doc ~node ~point =
+  let open Fleche in
+  let range = Doc.Node.range node in
+  let info = Doc.Node.info node in
+  let range_string = Format.asprintf "%a" Lang.Range.pp range in
+  let stats_string = Doc.Node.Info.print info in
+  let type_string =
+    Option.bind (Rq_common.get_id_at_point ~doc ~point) (fun id ->
+        Option.map (pp_typ id) (info_of_id_at_point ~node id))
+  in
+  let hovers =
+    if_bool show_loc_info range_string
+    @ if_bool !Config.v.show_stats_on_hover stats_string
+    @ to_list type_string
+  in
+  match hovers with
+  | [] -> `Null
+  | hovers ->
+    let range = Some range in
+    let value = String.concat "\n___\n" hovers in
+    let contents = { HoverContents.kind = "markdown"; value } in
+    HoverInfo.(to_yojson { contents; range })
 
 let hover ~doc ~point =
-  let range_span = Fleche.Info.LC.range ~doc ~point Exact in
-  let range_string =
-    let none fmt () = Format.fprintf fmt "no ast" in
-    Format.asprintf "%a" (Format.pp_print_option ~none Lang.Range.pp) range_span
-  in
-  let info_string =
-    Fleche.Info.LC.info ~doc ~point Exact
-    |> Option.map Fleche.Doc.Node.Info.print
-    |> Option.default "no info"
-  in
-  let hover_string =
-    if show_loc_info then range_string ^ "\n___\n" ^ info_string
-    else if !Fleche.Config.v.show_stats_on_hover then "\n___\n" ^ info_string
-    else ""
-  in
-  let hover_string =
-    match Rq_common.get_id_at_point ~doc ~point with
-    | Some id -> (
-      match info_of_id_at_point ~doc ~point id with
-      | None -> hover_string
-      | Some typ ->
-        let typ = Pp.string_of_ppcmds typ in
-        Format.asprintf "```coq\n%s : %s\n```%s" id typ hover_string)
-    | None -> hover_string
-  in
-  let contents = { HoverContents.kind = "markdown"; value = hover_string } in
-  let range = range_span in
-  HoverInfo.(to_yojson { contents; range }) |> Result.ok
+  let node = Fleche.Info.LC.node ~doc ~point Exact in
+  (match node with
+  | None ->
+    if show_loc_info then
+      let contents =
+        { HoverContents.kind = "markdown"; value = "no node here" }
+      in
+      HoverInfo.(to_yojson { contents; range = None })
+    else `Null
+  | Some node -> hover ~doc ~node ~point)
+  |> Result.ok

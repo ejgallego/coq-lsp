@@ -2,7 +2,7 @@
   "name": "coq-lsp",
   "displayName": "Coq LSP",
   "description": "Coq LSP provides native vsCode support for checking Coq proof documents",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "contributors": [
     "Emilio Jesús Gallego Arias <e@x80.org>",
     "Ali Caglayan <alizter@gmail.com>",
@@ -290,7 +290,8 @@
     "vscode-languageclient": "^8.1.0",
     "vscode-languageserver-types": "^3.17.3"
   },
-  "main": "./out/src/client.js",
+  "main": "./out/src/node.js",
+  "browser": "/out/src/browser.js",
   "scripts": {
     "vscode:prepublish": "npm run typecheck && npm run esbuild -- --minify --sourcemap=no",
     "esbuild": "node esbuild.mjs",

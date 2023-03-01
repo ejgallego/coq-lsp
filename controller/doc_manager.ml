@@ -151,17 +151,17 @@ end
 let diags_of_doc doc =
   List.concat_map Fleche.Doc.Node.diags doc.Fleche.Doc.nodes
 
-let send_diags ~ofmt ~doc =
+let send_diags ~ofn ~doc =
   let diags = diags_of_doc doc in
   let diags =
     Lsp.JLang.mk_diagnostics ~uri:doc.uri ~version:doc.version diags
   in
-  LIO.send_json ofmt @@ diags
+  ofn diags
 
 module Check : sig
   val schedule : uri:Lang.LUri.File.t -> unit
   val deschedule : uri:Lang.LUri.File.t -> unit
-  val maybe_check : ofmt:Format.formatter -> Int.Set.t option
+  val maybe_check : ofn:(Yojson.Safe.t -> unit) -> Int.Set.t option
 end = struct
   let pending = ref None
 
@@ -176,14 +176,14 @@ end = struct
     | Stopped _ -> false
 
   (* Notification handling; reply is optional / asynchronous *)
-  let check ~ofmt ~uri =
+  let check ~ofn ~uri =
     LIO.trace "process_queue" "resuming document checking";
     match Handle.find_opt ~uri with
     | Some handle ->
       let target = get_check_target handle.pt_requests in
-      let doc = Fleche.Doc.check ~ofmt ~target ~doc:handle.doc () in
+      let doc = Fleche.Doc.check ~ofn ~target ~doc:handle.doc () in
       let requests = Handle.update_doc_info ~handle ~doc in
-      send_diags ~ofmt ~doc;
+      send_diags ~ofn ~doc;
       (* Only if completed! *)
       if completed ~doc then pending := None;
       requests
@@ -192,7 +192,7 @@ end = struct
         ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
       Int.Set.empty
 
-  let maybe_check ~ofmt = Option.map (fun uri -> check ~ofmt ~uri) !pending
+  let maybe_check ~ofn = Option.map (fun uri -> check ~ofn ~uri) !pending
   let schedule ~uri = pending := Some uri
 
   let deschedule ~uri =
@@ -200,16 +200,16 @@ end = struct
       pending := None
 end
 
-let send_error_permanent_fail ~ofmt ~uri ~version message =
+let send_error_permanent_fail ~ofn ~uri ~version message =
   let open Lang in
   let start = Point.{ line = 0; character = 0; offset = 0 } in
   let end_ = Point.{ line = 0; character = 1; offset = 1 } in
   let range = Range.{ start; end_ } in
   let d = Lang.Diagnostic.{ range; severity = 1; message; extra = None } in
   let diags = Lsp.JLang.mk_diagnostics ~uri ~version [ d ] in
-  LIO.send_json ofmt @@ diags
+  ofn diags
 
-let create ~ofmt ~root_state ~workspace ~uri ~raw ~version =
+let create ~ofn ~root_state ~workspace ~uri ~raw ~version =
   let r = Fleche.Doc.create ~state:root_state ~workspace ~uri ~raw ~version in
   match r with
   | Completed (Result.Ok doc) ->
@@ -224,7 +224,7 @@ let create ~ofmt ~root_state ~workspace ~uri ~raw ~version =
       Format.asprintf "Fleche.Doc.create, internal error: @[%a@]" Pp.pp_with msg
     in
     LIO.logMessage ~lvl:1 ~message;
-    send_error_permanent_fail ~ofmt ~uri ~version (Pp.str message)
+    send_error_permanent_fail ~ofn ~uri ~version (Pp.str message)
   | Interrupted -> ()
 
 (* Set this to false for < 8.18, we could parse the version but not worth it. *)
@@ -242,7 +242,7 @@ let sane_coq_version =
 (* Can't wait for the day this goes away *)
 let tainted = ref false
 
-let create ~ofmt ~root_state ~workspace ~uri ~raw ~version =
+let create ~ofn ~root_state ~workspace ~uri ~raw ~version =
   if !tainted && not sane_coq_version then (
     (* Error due to Coq bug *)
     let message =
@@ -258,12 +258,12 @@ let create ~ofmt ~root_state ~workspace ~uri ~raw ~version =
      with
     | Fleche.Contents.R.Error _e -> ()
     | Ok doc -> Handle.create ~uri ~doc);
-    send_error_permanent_fail ~ofmt ~uri ~version (Pp.str message))
+    send_error_permanent_fail ~ofn ~uri ~version (Pp.str message))
   else (
     tainted := true;
-    create ~ofmt ~root_state ~workspace ~uri ~raw ~version)
+    create ~ofn ~root_state ~workspace ~uri ~raw ~version)
 
-let change ~ofmt ~(doc : Fleche.Doc.t) ~version ~raw =
+let change ~ofn ~(doc : Fleche.Doc.t) ~version ~raw =
   let uri = doc.uri in
   LIO.trace "bump file"
     (Lang.LUri.File.to_string_uri uri ^ " / version: " ^ string_of_int version);
@@ -272,7 +272,7 @@ let change ~ofmt ~(doc : Fleche.Doc.t) ~version ~raw =
   | Fleche.Contents.R.Error e ->
     (* Send diagnostics for content conversion *)
     let message = Pp.(str "Error in document conversion: " ++ str e) in
-    send_error_permanent_fail ~ofmt ~uri ~version message;
+    send_error_permanent_fail ~ofn ~uri ~version message;
     Handle.clear_requests ~uri
   | Fleche.Contents.R.Ok doc ->
     let diff = Unix.gettimeofday () -. tb in
@@ -281,14 +281,14 @@ let change ~ofmt ~(doc : Fleche.Doc.t) ~version ~raw =
     Check.schedule ~uri;
     invalid_reqs
 
-let change ~ofmt ~uri ~version ~raw =
+let change ~ofn ~uri ~version ~raw =
   match Handle.find_opt ~uri with
   | None ->
     LIO.trace "DocHandle.find"
       ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
     Int.Set.empty
   | Some { doc; _ } ->
-    if version > doc.version then change ~ofmt ~doc ~version ~raw
+    if version > doc.version then change ~ofn ~doc ~version ~raw
     else
       (* That's a weird case, get got changes without a version bump? Do nothing
          for now *)
