@@ -9,6 +9,8 @@
  - Enable web extension support. For now this will not try to start
    the coq-lsp worker as it is now ready. (@ejgallego, #430, fixes
    #234)
+ - Fix bug that prevented "Goal after tactic" from working properly
+   (@ejgallego, #438, reported by David Ilcinkas)
 
 # coq-lsp 0.1.6: Peek
 ---------------------
