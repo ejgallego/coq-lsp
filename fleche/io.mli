@@ -4,13 +4,13 @@ module CallBack : sig
           (** Send a log message, [extra] may contain information to be shown in
               verbose mode *)
     ; send_diagnostics :
-           ofmt:Format.formatter
+           ofn:(Yojson.Safe.t -> unit)
         -> uri:Lang.LUri.File.t
         -> version:int
         -> Lang.Diagnostic.t list
         -> unit
     ; send_fileProgress :
-           ofmt:Format.formatter
+           ofn:(Yojson.Safe.t -> unit)
         -> uri:Lang.LUri.File.t
         -> version:int
         -> Progress.Info.t list
@@ -29,14 +29,14 @@ end
 
 module Report : sig
   val diagnostics :
-       ofmt:Format.formatter
+       ofn:(Yojson.Safe.t -> unit)
     -> uri:Lang.LUri.File.t
     -> version:int
     -> Lang.Diagnostic.t list
     -> unit
 
   val fileProgress :
-       ofmt:Format.formatter
+       ofn:(Yojson.Safe.t -> unit)
     -> uri:Lang.LUri.File.t
     -> version:int
     -> Progress.Info.t list

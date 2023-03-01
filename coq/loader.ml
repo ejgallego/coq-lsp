@@ -22,7 +22,7 @@ let not_available_warn fl_pkg info =
     Feedback.msg_warning
       Pp.(str "Serlib plugin: " ++ str fl_pkg
           ++ str " is not available" ++ str info ++ str "." ++ fnl ()
-          ++ str "Incremental checking for commands in this plugin will be worse.")
+          ++ str "Incremental checking for commands in this plugin will be impacted.")
 
 let check_package_exists fl_pkg =
   try
@@ -62,9 +62,9 @@ let map_serlib fl_pkg =
     check_package_exists serlib_name
   else None
 
-(* We are more liberal in the case a SerAPI plugin is not availabe, as
-   the fallbacks are "safe", tho will yield way worse incremental
-   behavior for expressions defined by the plugin *)
+(* We are more liberal in the case a SerAPI plugin is not availabe, as the
+   fallbacks are "safe", tho will yield way worse incremental behavior for
+   expressions defined by the plugin *)
 let safe_loader loader fl_pkg =
   try loader [fl_pkg]
   with

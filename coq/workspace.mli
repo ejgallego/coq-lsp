@@ -15,6 +15,13 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module Flags : sig
+  type t = private
+    { indices_matter : bool
+    ; impredicative_set : bool
+    }
+end
+
 type t = private
   { coqlib : string
   ; coqcorelib : string
@@ -23,8 +30,7 @@ type t = private
   ; ml_include_path : string list
   ; require_libs :
       (string * string option * Vernacexpr.export_with_cats option) list
-  ; indices_matter : bool
-  ; impredicative_set : bool
+  ; flags : Flags.t
   ; kind : string  (** How the workspace was built *)
   ; debug : bool  (** Enable backtraces *)
   }
@@ -45,6 +51,7 @@ module CmdLine : sig
     ; ocamlpath : string option
     ; vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
+    ; args : string list
     }
 end
 

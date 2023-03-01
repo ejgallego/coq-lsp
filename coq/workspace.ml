@@ -15,6 +15,21 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module Flags_ = Flags
+
+module Flags = struct
+  type t =
+    { indices_matter : bool
+    ; impredicative_set : bool
+    }
+
+  let default = { indices_matter = false; impredicative_set = false }
+
+  let apply { indices_matter; impredicative_set } =
+    Global.set_indices_matter indices_matter;
+    Global.set_impredicative_set impredicative_set
+end
+
 type t =
   { coqlib : string
   ; coqcorelib : string
@@ -23,8 +38,7 @@ type t =
   ; ml_include_path : string list
   ; require_libs :
       (string * string option * Vernacexpr.export_with_cats option) list
-  ; indices_matter : bool
-  ; impredicative_set : bool
+  ; flags : Flags.t
   ; kind : string
   ; debug : bool
   }
@@ -47,38 +61,71 @@ let mk_userlib unix_path =
 
 let getenv var else_ = try Sys.getenv var with Not_found -> else_
 
-let default ~implicit ~coqcorelib ~coqlib ~ocamlpath ~kind ~debug =
+let rec parse_args args init boot f =
+  match args with
+  | [] -> (init, boot, f)
+  | "-indices-matter" :: rest ->
+    parse_args rest init boot { f with Flags.indices_matter = true }
+  | "-impredicative-set" :: rest ->
+    parse_args rest init boot { f with Flags.impredicative_set = true }
+  | "-noinit" :: rest -> parse_args rest false boot f
+  | "-boot" :: rest -> parse_args rest init true f
+  | _ :: rest ->
+    (* emit warning? *)
+    parse_args rest init boot f
+
+module CmdLine = struct
+  type t =
+    { coqlib : string
+    ; coqcorelib : string
+    ; ocamlpath : string option
+    ; vo_load_path : Loadpath.vo_path list
+    ; ml_include_path : string list
+    ; args : string list
+    }
+end
+
+let make ~cmdline ~implicit ~kind ~debug =
+  let { CmdLine.coqcorelib
+      ; coqlib
+      ; ocamlpath
+      ; args
+      ; ml_include_path
+      ; vo_load_path
+      } =
+    cmdline
+  in
   let coqcorelib = getenv "COQCORELIB" coqcorelib in
   let coqlib = getenv "COQLIB" coqlib in
   let mk_path_coqlib prefix = coqlib ^ "/" ^ prefix in
+  let init, boot, flags = parse_args args true false Flags.default in
   (* Setup ml_include for the core plugins *)
-  let ml_include_path =
-    let unix_path = Filename.concat coqcorelib "plugins" in
-    System.all_subdirs ~unix_path |> List.map fst
+  let dft_ml_include_path, dft_vo_load_path =
+    if boot then ([], [])
+    else
+      let unix_path = Filename.concat coqcorelib "plugins" in
+      ( System.all_subdirs ~unix_path |> List.map fst
+      , (* Setup vo_include path, note that has_ml=true does the job for
+           user_contrib and plugins *)
+        let userpaths = mk_path_coqlib "user-contrib" :: Envars.coqpath in
+        let user_vo_path = List.map mk_userlib userpaths in
+        let stdlib_vo_path = mk_path_coqlib "theories" |> mk_stdlib ~implicit in
+        stdlib_vo_path :: user_vo_path )
   in
-  (* Setup vo_include path, note that has_ml=true does the job for user_contrib
-     and plugins *)
-  let userpaths = mk_path_coqlib "user-contrib" :: Envars.coqpath in
-  let user_vo_path = List.map mk_userlib userpaths in
-  let stdlib_vo_path = mk_path_coqlib "theories" |> mk_stdlib ~implicit in
-  let vo_load_path = stdlib_vo_path :: user_vo_path in
-  let require_libs = [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ] in
+  let require_libs =
+    if init then [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ] else []
+  in
+  let vo_load_path = dft_vo_load_path @ vo_load_path in
+  let ml_include_path = dft_ml_include_path @ ml_include_path in
   { coqlib
   ; coqcorelib
   ; ocamlpath
   ; vo_load_path
   ; ml_include_path
   ; require_libs
-  ; indices_matter = false
-  ; impredicative_set = false
+  ; flags
   ; kind
   ; debug
-  }
-
-let add_loadpaths base ~vo_load_path ~ml_include_path =
-  { base with
-    vo_load_path = base.vo_load_path @ vo_load_path
-  ; ml_include_path = base.ml_include_path @ ml_include_path
   }
 
 let pp_load_path fmt
@@ -109,24 +156,12 @@ let describe { coqlib; kind; vo_load_path; ml_include_path; require_libs; _ } =
       kind coqlib require_msg n_vo n_ml
   , extra )
 
-let rec parse_args args init w =
-  match args with
-  | [] -> (init, w)
-  | "-indices-matter" :: rest ->
-    parse_args rest init { w with indices_matter = true }
-  | "-impredicative-set" :: rest ->
-    parse_args rest init { w with impredicative_set = true }
-  | "-noinit" :: rest -> parse_args rest false w
-  | _ :: rest ->
-    (* emit warning? *)
-    parse_args rest init w
-
 (* Require a set of libraries *)
 let load_objs libs =
   let rq_file (dir, from, exp) =
     let mp = Libnames.qualid_of_string dir in
     let mfrom = Option.map Libnames.qualid_of_string from in
-    Flags.silently
+    Flags_.silently
       (Vernacentries.vernac_require mfrom exp)
       [ (mp, Vernacexpr.ImportAll) ]
   in
@@ -171,22 +206,19 @@ let apply ~uri
     ; vo_load_path
     ; ml_include_path
     ; require_libs
-    ; indices_matter
-    ; impredicative_set
+    ; flags
     ; kind = _
     ; debug
     } =
   if debug then CDebug.set_flags "backtrace";
-  Global.set_indices_matter indices_matter;
-  Global.set_impredicative_set impredicative_set;
+  Flags.apply flags;
   List.iter Mltop.add_ml_dir ml_include_path;
   findlib_init ~ml_include_path ~ocamlpath;
   List.iter Loadpath.add_vo_path vo_load_path;
   Declaremods.start_library (dirpath_of_uri ~uri);
   load_objs require_libs
 
-let workspace_from_coqproject ~coqcorelib ~coqlib ~ocamlpath ~debug cp_file : t
-    =
+let workspace_from_coqproject ~cmdline ~debug cp_file : t =
   (* Io.Log.error "init" "Parsing _CoqProject"; *)
   let open CoqProject_file in
   let to_vo_loadpath f implicit =
@@ -211,37 +243,25 @@ let workspace_from_coqproject ~coqcorelib ~coqlib ~ocamlpath ~debug cp_file : t
       (List.map (fun f -> to_vo_loadpath f.thing true) r_includes)
   in
   let args = List.map (fun f -> f.thing) extra_args in
+  let cmdline =
+    CmdLine.
+      { cmdline with
+        args = cmdline.args @ args
+      ; vo_load_path = cmdline.vo_load_path @ vo_load_path
+      ; ml_include_path = cmdline.ml_include_path @ ml_include_path
+      }
+  in
   let implicit = true in
   let kind = Filename.concat (Sys.getcwd ()) "_CoqProject" in
-  let workspace =
-    default ~coqlib ~coqcorelib ~ocamlpath ~implicit ~kind ~debug
-  in
-  let init, workspace = parse_args args true workspace in
-  let workspace =
-    if not init then { workspace with require_libs = [] } else workspace
-  in
-  add_loadpaths workspace ~vo_load_path ~ml_include_path
+  make ~cmdline ~implicit ~kind ~debug
 
-module CmdLine = struct
-  type t =
-    { coqlib : string
-    ; coqcorelib : string
-    ; ocamlpath : string option
-    ; vo_load_path : Loadpath.vo_path list
-    ; ml_include_path : string list
-    }
-end
-
-let workspace_from_cmdline ~debug
-    { CmdLine.coqlib; coqcorelib; ocamlpath; vo_load_path; ml_include_path } =
+let workspace_from_cmdline ~debug ~cmdline =
   let kind = "Command-line arguments" in
   let implicit = true in
-  let w = default ~implicit ~coqcorelib ~coqlib ~ocamlpath ~kind ~debug in
-  add_loadpaths w ~vo_load_path ~ml_include_path
+  make ~cmdline ~implicit ~kind ~debug
 
 let guess ~debug ~cmdline ~dir =
   let cp_file = Filename.concat dir "_CoqProject" in
   if Sys.file_exists cp_file then
-    let { CmdLine.coqlib; coqcorelib; ocamlpath; _ } = cmdline in
-    workspace_from_coqproject ~coqcorelib ~coqlib ~ocamlpath ~debug cp_file
-  else workspace_from_cmdline ~debug cmdline
+    workspace_from_coqproject ~cmdline ~debug cp_file
+  else workspace_from_cmdline ~debug ~cmdline

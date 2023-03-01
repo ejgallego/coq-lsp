@@ -2,8 +2,7 @@ import * as Protocol from "vscode-languageserver-protocol";
 import * as LanguageServer from "./LanguageServer";
 
 test("startup and shutdown", async () => {
-  let languageServer = LanguageServer.start();
-  await LanguageServer.exit(languageServer);
+  await LanguageServer.start().exit();
 });
 
 test("initialize with empty capabilities", async () => {
@@ -20,5 +19,5 @@ test("initialize with empty capabilities", async () => {
     initializeParameters
   );
   expect(result.capabilities).toBeTruthy();
-  await LanguageServer.exit(languageServer);
+  await languageServer.exit();
 });

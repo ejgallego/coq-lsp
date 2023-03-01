@@ -76,7 +76,7 @@ module State = struct
     | Some (_, workspace) -> (root_state, workspace)
 end
 
-let do_changeWorkspaceFolders ~ofmt:_ ~state params =
+let do_changeWorkspaceFolders ~ofn:_ ~state params =
   let open Lsp.Workspace in
   let { DidChangeWorkspaceFoldersParams.event } =
     DidChangeWorkspaceFoldersParams.of_yojson (`Assoc params) |> Result.get_ok
@@ -128,11 +128,11 @@ end
 (* main module with [answer, postpone, cancel, serve] methods *)
 module Rq = struct
   (* Answer a request *)
-  let answer ~ofmt ~id result =
+  let answer ~ofn ~id result =
     (match result with
     | Result.Ok result -> LSP.mk_reply ~id ~result
     | Error (code, message) -> LSP.mk_request_error ~id ~code ~message)
-    |> LIO.send_json ofmt
+    |> ofn
 
   (* private to the Rq module *)
   let _rtable : (int, PendingRequest.t) Hashtbl.t = Hashtbl.create 673
@@ -144,34 +144,34 @@ module Rq = struct
     Hashtbl.add _rtable id pr
 
   (* Consumes a request, if alive, it answers mandatorily *)
-  let consume_ ~ofmt ~f id =
+  let consume_ ~ofn ~f id =
     match Hashtbl.find_opt _rtable id with
     | Some pr ->
       Hashtbl.remove _rtable id;
-      f pr |> answer ~ofmt ~id
+      f pr |> answer ~ofn ~id
     | None ->
       LIO.trace "can't consume cancelled request: " (string_of_int id);
       ()
 
-  let cancel ~ofmt ~code ~message id : unit =
+  let cancel ~ofn ~code ~message id : unit =
     (* fail the request, do cleanup first *)
     let f pr =
       let () = PendingRequest.cancel ~id pr in
       Error (code, message)
     in
-    consume_ ~ofmt ~f id
+    consume_ ~ofn ~f id
 
   let debug_serve id pr =
     if Fleche.Debug.request_delay then
       LIO.trace "serving"
         (Format.asprintf "rq: %d | %a" id PendingRequest.data pr)
 
-  let serve ~ofmt id =
+  let serve ~ofn id =
     let f pr =
       debug_serve id pr;
       PendingRequest.serve pr
     in
-    consume_ ~ofmt ~f id
+    consume_ ~ofn ~f id
 end
 
 module RAction = struct
@@ -183,12 +183,12 @@ module RAction = struct
   let error (code, msg) = ServeNow (Error (code, msg))
 end
 
-let action_request ~ofmt ~id action =
+let action_request ~ofn ~id action =
   match action with
-  | RAction.ServeNow r -> Rq.answer ~ofmt ~id r
+  | RAction.ServeNow r -> Rq.answer ~ofn ~id r
   | RAction.Postpone p -> Rq.postpone ~id p
 
-let serve_postponed_requests ~ofmt rl = Int.Set.iter (Rq.serve ~ofmt) rl
+let serve_postponed_requests ~ofn rl = Int.Set.iter (Rq.serve ~ofn) rl
 
 (***********************************************************************)
 (* Start of protocol handlers *)
@@ -220,16 +220,16 @@ let get_uri_version params =
 
 let do_shutdown = RAction.now (Ok `Null)
 
-let do_open ~ofmt ~(state : State.t) params =
+let do_open ~ofn ~(state : State.t) params =
   let document =
     field "textDocument" params
     |> Lsp.Doc.TextDocumentItem.of_yojson |> Result.get_ok
   in
   let Lsp.Doc.TextDocumentItem.{ uri; version; text; _ } = document in
   let root_state, workspace = State.workspace_of_uri ~uri ~state in
-  Doc_manager.create ~ofmt ~root_state ~workspace ~uri ~raw:text ~version
+  Doc_manager.create ~ofn ~root_state ~workspace ~uri ~raw:text ~version
 
-let do_change ~ofmt params =
+let do_change ~ofn params =
   let uri, version = get_uri_version params in
   let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
   match changes with
@@ -242,12 +242,12 @@ let do_change ~ofmt params =
     ()
   | change :: _ ->
     let raw = string_field "text" change in
-    let invalid_rq = Doc_manager.change ~ofmt ~uri ~version ~raw in
+    let invalid_rq = Doc_manager.change ~ofn ~uri ~version ~raw in
     let code = -32802 in
     let message = "Request got old in server" in
-    Int.Set.iter (Rq.cancel ~ofmt ~code ~message) invalid_rq
+    Int.Set.iter (Rq.cancel ~ofn ~code ~message) invalid_rq
 
-let do_close ~ofmt:_ params =
+let do_close ~ofn:_ params =
   let uri = get_uri params in
   Doc_manager.close ~uri
 
@@ -320,11 +320,11 @@ let do_trace params =
   let trace = string_field "value" params in
   LIO.set_trace_value (LIO.TraceValue.of_string trace)
 
-let do_cancel ~ofmt ~params =
+let do_cancel ~ofn ~params =
   let id = int_field "id" params in
   let code = -32800 in
   let message = "Cancelled by client" in
-  Rq.cancel ~ofmt ~code ~message id
+  Rq.cancel ~ofn ~code ~message id
 
 (***********************************************************************)
 
@@ -345,9 +345,9 @@ let version () =
   Format.asprintf "version %s, dev: %s, Coq version: %s" Version.server
     dev_version Coq_config.version
 
-let rec lsp_init_loop ic ofmt ~cmdline ~debug : (string * Coq.Workspace.t) list
-    =
-  match LIO.read_request ic with
+let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug :
+    (string * Coq.Workspace.t) list =
+  match ifn () with
   | Some (LSP.Message.Request { method_ = "initialize"; id; params }) ->
     (* At this point logging is allowed per LSP spec *)
     let message =
@@ -355,7 +355,7 @@ let rec lsp_init_loop ic ofmt ~cmdline ~debug : (string * Coq.Workspace.t) list
     in
     LIO.logMessage ~lvl:3 ~message;
     let result, dirs = Rq_init.do_initialize ~params in
-    Rq.answer ~ofmt ~id (Result.ok result);
+    Rq.answer ~ofn ~id (Result.ok result);
     LIO.logMessage ~lvl:3 ~message:"Server initialized";
     (* Workspace initialization *)
     let debug = debug || !Fleche.Config.v.debug in
@@ -367,42 +367,42 @@ let rec lsp_init_loop ic ofmt ~cmdline ~debug : (string * Coq.Workspace.t) list
   | Some (LSP.Message.Request { id; _ }) ->
     (* per spec *)
     LSP.mk_request_error ~id ~code:(-32002) ~message:"server not initialized"
-    |> LIO.send_json ofmt;
-    lsp_init_loop ic ofmt ~cmdline ~debug
+    |> ofn;
+    lsp_init_loop ~ifn ~ofn ~cmdline ~debug
   | Some (LSP.Message.Notification { method_ = "exit"; params = _ }) | None ->
     raise Lsp_exit
   | Some (LSP.Message.Notification _) ->
     (* We can't log before getting the initialize message *)
-    lsp_init_loop ic ofmt ~cmdline ~debug
+    lsp_init_loop ~ifn ~ofn ~cmdline ~debug
 
 (** Dispatching *)
-let dispatch_notification ~ofmt ~state ~method_ ~params : unit =
+let dispatch_notification ~ofn ~state ~method_ ~params : unit =
   match method_ with
   (* Lifecycle *)
   | "exit" -> raise Lsp_exit
   (* setTrace *)
   | "$/setTrace" -> do_trace params
   (* Document lifetime *)
-  | "textDocument/didOpen" -> do_open ~ofmt ~state params
-  | "textDocument/didChange" -> do_change ~ofmt params
-  | "textDocument/didClose" -> do_close ~ofmt params
+  | "textDocument/didOpen" -> do_open ~ofn ~state params
+  | "textDocument/didChange" -> do_change ~ofn params
+  | "textDocument/didClose" -> do_close ~ofn params
   | "textDocument/didSave" -> Cache.save_to_disk ()
   (* Workspace *)
   | "workspace/didChangeWorkspaceFolders" -> () (* XXX *)
   (* Cancel Request *)
-  | "$/cancelRequest" -> do_cancel ~ofmt ~params
+  | "$/cancelRequest" -> do_cancel ~ofn ~params
   (* NOOPs *)
   | "initialized" -> ()
   (* Generic handler *)
   | msg -> LIO.trace "no_handler" msg
 
-let dispatch_state_notification ~ofmt ~state ~method_ ~params : State.t =
+let dispatch_state_notification ~ofn ~state ~method_ ~params : State.t =
   match method_ with
   (* Workspace *)
   | "workspace/didChangeWorkspaceFolders" ->
-    do_changeWorkspaceFolders ~ofmt ~state params
+    do_changeWorkspaceFolders ~ofn ~state params
   | _ ->
-    dispatch_notification ~ofmt ~state ~method_ ~params;
+    dispatch_notification ~ofn ~state ~method_ ~params;
     state
 
 let dispatch_request ~method_ ~params : RAction.t =
@@ -430,21 +430,92 @@ let dispatch_request ~method_ ~params : RAction.t =
     LIO.trace "no_handler" msg;
     RAction.error (-32601, "method not found")
 
-let dispatch_request ~ofmt ~id ~method_ ~params =
-  dispatch_request ~method_ ~params |> action_request ~ofmt ~id
+let dispatch_request ~ofn ~id ~method_ ~params =
+  dispatch_request ~method_ ~params |> action_request ~ofn ~id
 
-let dispatch_request ~ofmt ~id ~method_ ~params =
-  try dispatch_request ~ofmt ~id ~method_ ~params
+let dispatch_request ~ofn ~id ~method_ ~params =
+  try dispatch_request ~ofn ~id ~method_ ~params
   with Doc_manager.AbortRequest ->
     (* -32603 = internal error *)
     let code = -32603 in
     let message = "Internal Document Request Queue Error" in
-    Rq.cancel ~ofmt ~code ~message id
+    Rq.cancel ~ofn ~code ~message id
 
-let dispatch_message ~ofmt ~state (com : LSP.Message.t) : State.t =
+let dispatch_message ~ofn ~state (com : LSP.Message.t) : State.t =
   match com with
   | Notification { method_; params } ->
-    dispatch_state_notification ~ofmt ~state ~method_ ~params
+    dispatch_state_notification ~ofn ~state ~method_ ~params
   | Request { id; method_; params } ->
-    dispatch_request ~ofmt ~id ~method_ ~params;
+    dispatch_request ~ofn ~id ~method_ ~params;
     state
+
+(* Queue handling *)
+
+(***********************************************************************)
+(* The queue strategy is: we keep pending document checks in Doc_manager, they
+   are only resumed when the rest of requests in the queue are served.
+
+   Note that we should add a method to detect stale requests; maybe cancel them
+   when a new edit comes. *)
+
+type 'a cont =
+  | Cont of 'a
+  | Yield of 'a
+
+let check_or_yield ~ofn ~state =
+  match Doc_manager.Check.maybe_check ~ofn with
+  | None -> Yield state
+  | Some ready ->
+    let () = serve_postponed_requests ~ofn ready in
+    Cont state
+
+let request_queue = Queue.create ()
+
+let dispatch_or_resume_check ~ofn ~state =
+  match Queue.peek_opt request_queue with
+  | None ->
+    (* This is where we make progress on document checking; kind of IDLE
+       workqueue. *)
+    Control.interrupt := false;
+    check_or_yield ~ofn ~state
+  | Some com ->
+    (* TODO: optimize the queue? EJGA: I've found that VS Code as a client keeps
+       the queue tidy by itself, so this works fine as now *)
+    ignore (Queue.pop request_queue);
+    LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
+    (* We let Coq work normally now *)
+    Control.interrupt := false;
+    Cont (dispatch_message ~ofn ~state com)
+
+(* Wrapper for the top-level call *)
+let dispatch_or_resume_check ~ofn ~state =
+  try Some (dispatch_or_resume_check ~ofn ~state) with
+  | U.Type_error (msg, obj) ->
+    LIO.trace_object msg obj;
+    Some (Yield state)
+  | Lsp_exit ->
+    (* EJGA: Maybe remove Lsp_exit and have dispatch_or_resume_check return an
+       action? *)
+    None
+  | exn ->
+    (* Note: We should never arrive here from Coq, as every call to Coq should
+       be wrapper in Coq.Protect. So hitting this codepath, is effectively a
+       coq-lsp internal error and should be fixed *)
+    let bt = Printexc.get_backtrace () in
+    let iexn = Exninfo.capture exn in
+    LIO.trace "process_queue"
+      (if Printexc.backtrace_status () then "bt=true" else "bt=false");
+    (* let method_name = LSP.Message.method_ com in *)
+    (* LIO.trace "process_queue" ("exn in method: " ^ method_name); *)
+    LIO.trace "print_exn [OCaml]" (Printexc.to_string exn);
+    LIO.trace "print_exn [Coq  ]" Pp.(string_of_ppcmds CErrors.(iprint iexn));
+    LIO.trace "print_bt  [OCaml]" bt;
+    Some (Yield state)
+
+let enqueue_message (com : LSP.Message.t) =
+  if Fleche.Debug.sched_wakeup then
+    LIO.trace "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
+  (* TODO: this is the place to cancel pending requests that are invalid, and in
+     general, to perform queue optimizations *)
+  Queue.push com request_queue;
+  Control.interrupt := true

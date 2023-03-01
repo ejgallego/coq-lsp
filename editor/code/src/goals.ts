@@ -1,9 +1,9 @@
 import { Position, Uri, WebviewPanel, window, ViewColumn } from "vscode";
 import {
+  BaseLanguageClient,
   RequestType,
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
-import { LanguageClient } from "vscode-languageclient/node";
 import { GoalRequest, GoalAnswer, PpString } from "../lib/types";
 
 const infoReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
@@ -86,7 +86,7 @@ export class InfoPanel {
   }
 
   // LSP Protocol extension for Goals
-  sendGoalsRequest(client: LanguageClient, params: GoalRequest) {
+  sendGoalsRequest(client: BaseLanguageClient, params: GoalRequest) {
     this.requestSent(params);
     client.sendRequest(infoReq, params).then(
       (goals) => this.requestDisplay(goals),
@@ -95,7 +95,7 @@ export class InfoPanel {
   }
 
   updateFromServer(
-    client: LanguageClient,
+    client: BaseLanguageClient,
     uri: Uri,
     version: number,
     position: Position

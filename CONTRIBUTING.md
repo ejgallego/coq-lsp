@@ -201,6 +201,11 @@ Debug" panel in Visual Studio Code, or the F5 keybinding.
 You can of course install the extension in your `~/.vscode/` folder if so you
 desire, tho this is not recommended.
 
+### Testing the Web Extension
+
+`coq-lsp` has preliminary support to run as a "Web Extension", to test
+that, you want to use the web extension profile in the launch setup.
+
 ### Miscellaneous info
 
 - The "Restart Coq LSP server" command will be of great help while developing
