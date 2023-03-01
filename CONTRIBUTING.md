@@ -58,40 +58,44 @@ generate it from the relevant entries in `CHANGES.md` at release time.
 
 ### Compilation
 
+#### Opam/Dune
 The server project uses a standard OCaml development setup based on Opam and
 Dune.
 
-To build it, you'll need an environment with the dependencies stated in
-`coq-lsp.opam`.
+1. Install the dependencies (the complete updated list of dependencies can be found in `coq-lsp.opam`).
 
-`make` will compile the server (the `coq-lsp` binary, to be found in
+    ```sh
+    opam install cmdliner yojson uri dune-build-info menhir ocamlfind zarith sexplib ppx_deriving ppx_sexp_conv ppx_compare ppx_hash ppx_import ppx_deriving_yojson
+    ```
+
+2. Initialize submodules (as of today the `main` branch uses some submodules, which we plan to get rid of soon)
+  
+    ```sh
+    make submodules-init
+    ```
+
+3. Compile the server (the `coq-lsp` binary can be found in
 `_build/install/default/bin/coq-lsp`).
 
-As of today the `main` branch uses some submodules, be sure they are properly
-initialized (`make submodules-init`).
+    ```sh
+    make
+    ```
 
-(We plan to get rid of the submodules soon)
-
-You can also use the regular `dune build @check` etc... targets.
+Alternatively, you can also use the regular `dune build @check` etc... targets.
 
 #### Nix
 
-We have a Nix flake that you can use. For development, in the case of the
-server, simply run `nix develop`.
+We have a Nix flake that you can use. For development it suffices to run `nix develop`.
 
-If you do
+With the following line you can save the configuration in a Nix profile which will prevent the `nix store gc` from deleting the entries:
 ```
 nix develop --profile nix/profiles/dev
 ```
 
-You can save the configuration in a Nix profile which will prevent the `nix
-store gc` from deleting the entries.
-
-You can do:
+You can also use the following line to reuse the same profile:
 ```
 nix develop nix/profiles/dev
 ```
-To reuse the same profile.
 
 In the case of the client, we expose separate shells, e.g client-vscode, would
 be
@@ -103,36 +107,15 @@ nix develop .#client-vscode
 You can view the list of packages and devShells that are exposed
 by running `nix flake show`.
 
-If you wish to do `nix build`, you will need to use the .?submodules=1` trick,
+If you wish to do `nix build`, you will need to use the `.?submodules=1` trick,
 since we use submodules here for vendoring. For example, building requires:
 
 ```
 nix build .?submodules=1
 ```
 
-This currently only applies to building the default package (coq-lsp), which is
+This currently only applies to building the default package (`coq-lsp`), which is
 the server. Clients don't have specific submodules as of yet.
-
-#### Releasing
-
-`coq-lsp` is released using `dune-release tag` + `dune-release`.
-
-The checklist for the release as of today is:
-
-##### Client:
-
-- update the client changelog at `editor/code/CHANGELOG.md`, commit
-- for the `main` branch: `dune release tag $coq_lsp_version`
-- check with `vsce ls` that the client contents are OK
-- `vsce publish`
-
-##### Server:
-
-- sync branches for previous Coq versions, using `git merge`, test and push to CI.
-- `dune release tag` for each `$coq_lsp_version+$coq_version`
-- `dune release` for each version that should to the main Coq repos
-- [optional] update pre-release packages to coq-opam-archive
-- [important] bump `version.ml` and `package.json` version string
 
 ### Code organization
 
@@ -165,32 +148,44 @@ Some tips:
 
 ## VS Code Extension guide
 
-The VS Code extension is setup as a standard `npm` type-script + React package
-using `esbuild` as the bundler. The extension has a main component in
-`editor/code/src/` and some webviews components written using React under
-`editor/code/views`.
+The VS Code extension is setup as a standard `npm` Typescript + React package
+using `esbuild` as the bundler. 
 
-There are two ways to work with the VS Code extension: you can let VS Code
+### Setup 
+1. Install `esbuild`:
+    ```sh
+    npm i esbuild
+    ```
+
+Then there are two ways to work with the VS Code extension: you can let VS Code
 itself take care of building it (preferred setup), or you can build it manually.
 
-First, run `npm install` in `editor/code`:
+#### Let VS Code handle building the project
+There is nothing to be done, VS Code will build the project automatically. You can skip to launching the extension. 
 
-```sh
-(cd editor/code && npm i)
-```
+#### Manual build
+1. Move to the editor folder
+    ```sh
+    cd editor/code
+    ```
+2. Install dependencies:
+    ```sh
+    npm i
+    ```
 
-That will setup the required packages as it is usual. You can run `package.json`
-scripts the usual way:
+You can now run `package.json` scripts the usual way:
+- Typecheck the project
+    ```sh
+    npm run typecheck 
+    ```
+- Fast dev-transpile (no typecheck) 
+    ```sh
+    npm run compile
+    ```
 
-```sh
-(cd editor/code && npm run typecheck) # typecheck the project
-(cd editor/code && npm run compile) # fast dev-transpile (no typecheck)
-```
+### Launch the extension
 
-If you want to work with VS Code, these commands are not necessary, VS Code will
-build the project automatically.
-
-Launch VS Code using `dune exec -- code -n editor/code`, which will setup the
+From the toplevel directory launch VS Code using `dune exec -- code -n editor/code`, which will setup the
 right environment variables such as `PATH` and `OCAMLPATH`, so the `coq-lsp`
 binary can be found by VS Code. If you have installed `coq-lsp` globally, you
 don't need `dune exec`, and can just run `code -n editor/code`.
@@ -199,7 +194,12 @@ Once in VS Code, you can launch the extension normally using the left "Run and
 Debug" panel in Visual Studio Code, or the F5 keybinding.
 
 You can of course install the extension in your `~/.vscode/` folder if so you
-desire, tho this is not recommended.
+desire, although this is not recommended.
+
+### Code organization
+The extension is divided into two main folders:
+- `editor/code/src/`: contains the main components,
+- `editor/code/views`: contains some webviews components written using React.
 
 ### Testing the Web Extension
 
@@ -210,7 +210,7 @@ that, you want to use the web extension profile in the launch setup.
 
 - The "Restart Coq LSP server" command will be of great help while developing
   with the server.
-- We use [prettier][prettier] to automatically format files in editor/code.
+- We use [prettier][prettier] to automatically format files in `editor/code`.
   `make ts-fmt` will do this in batch mode.
 
 [prettier]: https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode
@@ -220,14 +220,37 @@ that, you want to use the web extension profile in the launch setup.
 The default build target will allow you to debug the extension by providing the
 right sourcemaps.
 
+## Releasing
+
+`coq-lsp` is released using `dune-release tag` + `dune-release`.
+
+The checklist for the release as of today is:
+
+### Client:
+
+- update the client changelog at `editor/code/CHANGELOG.md`, commit
+- for the `main` branch: `dune release tag $coq_lsp_version`
+- check with `vsce ls` that the client contents are OK
+- `vsce publish`
+
+### Server:
+
+- sync branches for previous Coq versions, using `git merge`, test and push to CI.
+- `dune release tag` for each `$coq_lsp_version+$coq_version`
+- `dune release` for each version that should to the main Coq repos
+- [optional] update pre-release packages to coq-opam-archive
+- [important] bump `version.ml` and `package.json` version string
+
+
 ## Emacs
 
 You should be able to use `coq-lsp` with
 [eglot](https://joaotavora.github.io/eglot/).
 
-If you find any trouble using `eglot` or `lsp-mode` with coq-lsp, please don't
-hesitate to open an issue, Emacs support is a goal of `coq-lsp`.
+Emacs support is a goal of `coq-lsp`, so if you find any trouble using `eglot` or `lsp-mode` with `coq-lsp`, please don't hesitate to open an issue. 
 
 # VIM
 
-`coq-lsp` should also run on VIM, VIM/NeoVIM support is a goal of `coq-lsp`
+`coq-lsp` should also run on VIM. 
+
+VIM/NeoVIM support is a goal of `coq-lsp`, so if you find any trouble using `coq-lsp` with VIM/NeoVIM, please don't hesitate to open an issue. 
