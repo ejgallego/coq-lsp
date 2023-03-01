@@ -122,22 +122,56 @@ let pp_typ id = function
     Format.(asprintf "```coq\n%s\n```" nt)
 
 let if_bool b l = if b then [ l ] else []
-let to_list = Option.cata (fun x -> [ x ]) []
+let to_list x = Option.cata (fun x -> [ x ]) [] x
+
+let info_type ~contents ~node ~point : string option =
+  Option.bind (Rq_common.get_id_at_point ~contents ~point) (fun id ->
+      Option.map (pp_typ id) (info_of_id_at_point ~node id))
+
+let extract_def ~point:_ (def : Vernacexpr.definition_expr) :
+    Constrexpr.constr_expr list =
+  match def with
+  | Vernacexpr.ProveBody (_bl, et) -> [ et ]
+  | Vernacexpr.DefineBody (_bl, _, et, eb) -> [ et ] @ to_list eb
+
+let extract_pexpr ~point:_ (pexpr : Vernacexpr.proof_expr) :
+    Constrexpr.constr_expr list =
+  let _id, (_bl, et) = pexpr in
+  [ et ]
+
+let extract ~point ast =
+  match (Coq.Ast.to_coq ast).v.expr with
+  | Vernacexpr.(VernacSynPure (VernacDefinition (_, _, expr))) ->
+    extract_def ~point expr
+  | Vernacexpr.(VernacSynPure (VernacStartTheoremProof (_, pexpr))) ->
+    List.concat_map (extract_pexpr ~point) pexpr
+  | _ -> []
+
+let ntn_key_info (_entry, key) = "notation: " ^ key
+
+let info_notation ~point (ast : Fleche.Doc.Node.Ast.t) =
+  (* XXX: Iterate over the results *)
+  match extract ~point ast.v with
+  | { CAst.v = Constrexpr.CNotation (_, key, _params); _ } :: _ ->
+    Some (ntn_key_info key)
+  | _ -> None
+
+let info_notation ~node ~point : string option =
+  Option.bind node.Fleche.Doc.Node.ast (info_notation ~point)
 
 let hover ~doc ~node ~point =
   let open Fleche in
+  let contents = doc.Fleche.Doc.contents in
   let range = Doc.Node.range node in
   let info = Doc.Node.info node in
   let range_string = Format.asprintf "%a" Lang.Range.pp range in
   let stats_string = Doc.Node.Info.print info in
-  let type_string =
-    Option.bind (Rq_common.get_id_at_point ~doc ~point) (fun id ->
-        Option.map (pp_typ id) (info_of_id_at_point ~node id))
-  in
+  let type_string = info_type ~contents ~node ~point in
+  let notation_string = info_notation ~node ~point in
   let hovers =
     if_bool show_loc_info range_string
     @ if_bool !Config.v.show_stats_on_hover stats_string
-    @ to_list type_string
+    @ to_list type_string @ to_list notation_string
   in
   match hovers with
   | [] -> `Null

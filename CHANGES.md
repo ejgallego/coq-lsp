@@ -22,6 +22,9 @@
  - Add pointers to Windows installers (@ejgallego, #559)
  - Recognize `Goal` and `Definition $id : ... .` as proof starters
    (@ejgallego, #561, reported by @Zimmi48, fixes #548)
+ - Provide basic notation information on hover. This is intended for
+   people to build their own more refined notation feedback systems
+   (@ejgallego, #)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
