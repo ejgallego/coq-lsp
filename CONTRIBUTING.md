@@ -154,7 +154,7 @@ Some tips:
 
 [ocamlformat]: https://github.com/ocaml-ppx/ocamlformat
 
-## Cliente guide (VS Code Extension)
+## Client guide (VS Code Extension)
 
 The VS Code extension is setup as a standard `npm` Typescript + React package
 using `esbuild` as the bundler. 
