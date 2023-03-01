@@ -85,24 +85,32 @@ Alternatively, you can also use the regular `dune build @check` etc... targets.
 
 #### Nix
 
-We have a Nix flake that you can use. For development it suffices to run `nix develop`.
+We have a Nix flake that you can use. 
 
-With the following line you can save the configuration in a Nix profile which will prevent the `nix store gc` from deleting the entries:
-```
-nix develop --profile nix/profiles/dev
-```
+1. Dependencies: for development it suffices to run `nix develop` to spawn a shell with the corresponding dependencies.
 
-You can also use the following line to reuse the same profile:
-```
-nix develop nix/profiles/dev
-```
+    With the following line you can save the configuration in a Nix profile which will prevent the `nix store gc` from deleting the entries:
+    ```
+    nix develop --profile nix/profiles/dev
+    ```
 
-In the case of the client, we expose separate shells, e.g client-vscode, would
-be
-```
-nix develop .#client-vscode
-```
-(this can be done on top of the original `nix develop`)
+    You can then use the following line to reuse the previous profile:
+    ```
+    nix develop nix/profiles/dev
+    ```
+
+2. Initialize submodules (as of today the `main` branch uses some submodules, which we plan to get rid of soon)
+  
+    ```sh
+    make submodules-init
+    ```
+
+3. Compile the server (the `coq-lsp` binary can be found in
+`_build/install/default/bin/coq-lsp`).
+
+    ```sh
+    make
+    ```
 
 You can view the list of packages and devShells that are exposed
 by running `nix flake show`.
@@ -152,6 +160,10 @@ The VS Code extension is setup as a standard `npm` Typescript + React package
 using `esbuild` as the bundler. 
 
 ### Setup 
+1. Navigate to the editor folder
+    ```sh
+    cd editor/code
+    ```
 1. Install `esbuild`:
     ```sh
     npm i esbuild
@@ -161,10 +173,10 @@ Then there are two ways to work with the VS Code extension: you can let VS Code
 itself take care of building it (preferred setup), or you can build it manually.
 
 #### Let VS Code handle building the project
-There is nothing to be done, VS Code will build the project automatically. You can skip to launching the extension. 
+There is nothing to be done, VS Code will build the project automatically when launching the extension. You can skip to [launching the extension](#launch-the-extension). 
 
 #### Manual build
-1. Move to the editor folder
+1. Navigate to the editor folder
     ```sh
     cd editor/code
     ```
@@ -196,6 +208,30 @@ Debug" panel in Visual Studio Code, or the F5 keybinding.
 You can of course install the extension in your `~/.vscode/` folder if so you
 desire, although this is not recommended.
 
+### Nix 
+In the case of the client we expose a separate shell, `client-vscode`, which can be spawned with the following line (this can be done on top of the original `nix develop`).
+```
+nix develop .#client-vscode
+```
+
+
+The steps to setup the client are similar to the manual build:
+1. Spawn `develop` shell 
+    ```sh
+    nix develop
+    ```
+2. Inside `develop`, spawn the `client-vscode` shell 
+    ```sh
+    nix develop .#client-vscode
+    ```
+3. Install `esbuild`
+    ```sh
+    npm i esbuild
+    ```
+4. Follow the steps in [manual build](#manual-build)
+
+You are now ready to [launch the extension](#launch-the-extension).
+
 ### Code organization
 The extension is divided into two main folders:
 - `editor/code/src/`: contains the main components,
@@ -224,7 +260,7 @@ right sourcemaps.
 
 `coq-lsp` is released using `dune-release tag` + `dune-release`.
 
-The checklist for the release as of today is:
+The checklist for the release as of today is the following:
 
 ### Client:
 
@@ -249,8 +285,8 @@ You should be able to use `coq-lsp` with
 
 Emacs support is a goal of `coq-lsp`, so if you find any trouble using `eglot` or `lsp-mode` with `coq-lsp`, please don't hesitate to open an issue. 
 
-# VIM
+## VIM
 
-`coq-lsp` should also run on VIM. 
+You should be able to use `coq-lsp` with VIM. 
 
-VIM/NeoVIM support is a goal of `coq-lsp`, so if you find any trouble using `coq-lsp` with VIM/NeoVIM, please don't hesitate to open an issue. 
+VIM support is a goal of `coq-lsp`, so if you find any trouble using `coq-lsp` with VIM, please don't hesitate to open an issue. 
