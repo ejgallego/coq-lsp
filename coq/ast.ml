@@ -2,8 +2,10 @@
 
 type t = Vernacexpr.vernac_control
 
-let hash x = Serlib.Ser_vernacexpr.hash_vernac_control x
-let compare x y = Serlib.Ser_vernacexpr.compare_vernac_control x y
+(* let hash x = Serlib.Ser_vernacexpr.hash_vernac_control x *)
+(* let compare x y = Serlib.Ser_vernacexpr.compare_vernac_control x y *)
+let hash x = Hashtbl.hash x
+let compare x y = Stdlib.compare x y
 let to_coq x = x
 let of_coq x = x
 let loc { CAst.loc; _ } = loc
@@ -163,7 +165,7 @@ let inductive_info ~lines ~range ikind (expr, _) =
     let children = List.map (constructor_info ~lines) ci in
     let kind, detail = inductive_detail ikind in
     Lang.Ast.Info.make ~range ~name ~kind ~detail ~children ()
-  | RecordDecl (_, pi, _) ->
+  | RecordDecl (_, pi) ->
     let children = List.map (projection_info ~lines) pi in
     let kind, detail = inductive_detail ikind in
     Lang.Ast.Info.make ~range ~name ~kind ~detail ~children ()

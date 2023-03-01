@@ -16,6 +16,11 @@
 (************************************************************************)
 [@@@ocamlformat "disable"]
 
+let ml_path = ref []
+
+let add_ml_path path =
+  ml_path := path :: !ml_path
+
 let list_last l = List.(nth l (length l - 1))
 
 let not_available_warn fl_pkg info =
@@ -77,12 +82,16 @@ let safe_loader loader fl_pkg =
     ()
 
 let plugin_handler user_loader =
-  let loader = Option.default (Fl_dynload.load_packages ~debug:false) user_loader in
-  let safe_loader = safe_loader loader in
-  fun fl_pkg ->
-    let _, fl_pkg = Mltop.PluginSpec.repr fl_pkg in
-    match map_serlib fl_pkg with
+  let fl_loader = Option.default (Fl_dynload.load_packages ~debug:false) user_loader in
+  let dl_loader = (List.iter Dynlink.loadfile) in
+  let fl_safe_loader = safe_loader fl_loader in
+  let dl_safe_loader = safe_loader dl_loader in
+  fun ml_mod ->
+    match map_serlib ml_mod with
     | Some serlib_pkg ->
-      safe_loader serlib_pkg
+      fl_safe_loader serlib_pkg
     | None ->
-      safe_loader fl_pkg
+      let _, ml_file = System.find_file_in_path ~warn:true !ml_path ml_mod in
+      (* Format.eprintf "Loading raw module: %s" ml_file; *)
+      dl_safe_loader ml_file
+

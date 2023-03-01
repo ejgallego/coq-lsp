@@ -28,8 +28,7 @@ type t = private
   ; ocamlpath : string option
   ; vo_load_path : Loadpath.vo_path list
   ; ml_include_path : string list
-  ; require_libs :
-      (string * string option * Vernacexpr.export_with_cats option) list
+  ; require_libs : (string * string option * bool option) list
   ; flags : Flags.t
   ; kind : string  (** How the workspace was built *)
   ; debug : bool  (** Enable backtraces *)

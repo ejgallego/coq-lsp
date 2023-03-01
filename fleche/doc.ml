@@ -138,9 +138,10 @@ module Diags = struct
   (* ast-dependent error diagnostic generation *)
   let extra_diagnostics_of_ast ast =
     match (Node.Ast.to_coq ast).v with
-    | Vernacexpr.{ expr = VernacRequire (prefix, _export, module_refs); _ } ->
-      let refs = List.map fst module_refs in
-      Some [ Lang.Diagnostic.Extra.FailedRequire { prefix; refs } ]
+    | Vernacexpr.{ expr = VernacRequire (_prefix, _export, _module_refs); _ } ->
+      (* let refs = List.map fst module_refs in *)
+      (* Some [ Lang.Diagnostic.Extra.FailedRequire { prefix; refs } ] *)
+      None
     | _ -> None
 
   let error ~range ~msg ~ast =

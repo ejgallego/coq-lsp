@@ -196,7 +196,7 @@ module Make (P : Point) : S with module P := P = struct
   let pr_extref gr =
     match gr with
     | Globnames.TrueGlobal gr -> Printer.pr_global gr
-    | Globnames.Abbrev kn -> Names.KerName.print kn
+    | Globnames.SynDef kn -> Names.KerName.print kn
 
   (* XXX This may fail when passed "foo." for example, so more sanitizing is
      needed *)

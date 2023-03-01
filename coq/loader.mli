@@ -15,7 +15,11 @@
 (* Written by Emilio J. Gallego Arias                                   *)
 (************************************************************************)
 
+(** [add_ml_path path] Adds a directory to the ML search path *)
+val add_ml_path : string -> unit
+
 (** [plugin_handler user_loader] Plugin loader that will also load the
     instrumentation plugins for serlib if those available. [user_loader] can be
     used to override the default of [Fl_dynload.load_packages] as loader. *)
-val plugin_handler : (string list -> unit) option -> Mltop.PluginSpec.t -> unit
+val plugin_handler : (string list -> unit) option -> string -> unit
+

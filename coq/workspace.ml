@@ -36,8 +36,7 @@ type t =
   ; ocamlpath : string option
   ; vo_load_path : Loadpath.vo_path list
   ; ml_include_path : string list
-  ; require_libs :
-      (string * string option * Vernacexpr.export_with_cats option) list
+  ; require_libs : (string * string option * bool option) list
   ; flags : Flags.t
   ; kind : string
   ; debug : bool
@@ -113,7 +112,7 @@ let make ~cmdline ~implicit ~kind ~debug =
         stdlib_vo_path :: user_vo_path )
   in
   let require_libs =
-    if init then [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ] else []
+    if init then [ ("Coq.Init.Prelude", None, Some false) ] else []
   in
   let vo_load_path = dft_vo_load_path @ vo_load_path in
   let ml_include_path = dft_ml_include_path @ ml_include_path in
@@ -163,7 +162,7 @@ let load_objs libs =
     let mfrom = Option.map Libnames.qualid_of_string from in
     Flags_.silently
       (Vernacentries.vernac_require mfrom exp)
-      [ (mp, Vernacexpr.ImportAll) ]
+      [ mp ]
   in
   List.(iter rq_file (rev libs))
 

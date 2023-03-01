@@ -19,11 +19,8 @@ let info_of_ind env sigma ((sp, i) : Names.Ind.t) =
     Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib)
   in
   let mip = mib.Declarations.mind_packets.(i) in
-  let paramdecls = Inductive.inductive_paramdecls (mib, u) in
-  let env_params, params =
-    Namegen.make_all_rel_context_name_different env (Evd.from_env env)
-      (EConstr.of_rel_context paramdecls)
-  in
+  let params = Inductive.inductive_paramdecls (mib, u) in
+  let env_params = Environ.push_rel_context params env in
   let nparamdecls = Context.Rel.length params in
   let args = Context.Rel.instance_list Constr.mkRel 0 params in
   let arity =
@@ -82,8 +79,8 @@ let info_of_id env sigma id =
         | IndRef ir -> Def (info_of_ind env sigma ir)
         | ConstructRef cr -> info_of_constructor env cr |> print_type env sigma)
         |> fun x -> Some x
-      | Abbrev kn ->
-        Some (Notation (Prettyp.default_object_pr.print_abbreviation env kn))
+      | SynDef kn ->
+        Some (Notation (Prettyp.default_object_pr.print_syntactic_def env kn))
     with _ -> None)
 
 let info_of_id ~st id =
