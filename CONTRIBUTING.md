@@ -65,10 +65,10 @@ Dune.
 1. Install the dependencies (the complete updated list of dependencies can be found in `coq-lsp.opam`).
 
     ```sh
-    opam install cmdliner yojson uri dune-build-info menhir ocamlfind zarith sexplib ppx_deriving ppx_sexp_conv ppx_compare ppx_hash ppx_import ppx_deriving_yojson
+    opam install --deps-only .
     ```
 
-2. Initialize submodules (as of today the `main` branch uses some submodules, which we plan to get rid of soon)
+2. Initialize submodules (the `main` branch uses some submodules, which we plan to get rid of soon. Branches `v8.x` can already skip this step.)
   
     ```sh
     make submodules-init
@@ -99,7 +99,7 @@ We have a Nix flake that you can use.
     nix develop nix/profiles/dev
     ```
 
-2. Initialize submodules (as of today the `main` branch uses some submodules, which we plan to get rid of soon)
+2. Initialize submodules (the `main` branch uses some submodules, which we plan to get rid of soon. Branches `v8.x` can already skip this step.)
   
     ```sh
     make submodules-init
@@ -154,6 +154,27 @@ Some tips:
 
 [ocamlformat]: https://github.com/ocaml-ppx/ocamlformat
 
+### Releasing
+
+`coq-lsp` is released using `dune-release tag` + `dune-release`.
+
+The checklist for the release as of today is the following:
+
+### Client:
+
+- update the client changelog at `editor/code/CHANGELOG.md`, commit
+- for the `main` branch: `dune release tag $coq_lsp_version`
+- check with `vsce ls` that the client contents are OK
+- `vsce publish`
+
+### Server:
+
+- sync branches for previous Coq versions, using `git merge`, test and push to CI.
+- `dune release tag` for each `$coq_lsp_version+$coq_version`
+- `dune release` for each version that should to the main opam repos
+- [optional] update pre-release packages to coq-opam-archive
+- [important] bump `version.ml` and `package.json` version string
+
 ## Client guide (VS Code Extension)
 
 The VS Code extension is setup as a standard `npm` Typescript + React package
@@ -164,9 +185,9 @@ using `esbuild` as the bundler.
     ```sh
     cd editor/code
     ```
-1. Install `esbuild`:
+1. Install dependencies:
     ```sh
-    npm i esbuild
+    npm i
     ```
 
 Then there are two ways to work with the VS Code extension: you can let VS Code
@@ -176,13 +197,9 @@ itself take care of building it (preferred setup), or you can build it manually.
 There is nothing to be done, VS Code will build the project automatically when launching the extension. You can skip to [launching the extension](#launch-the-extension). 
 
 #### Manual build
-1. Navigate to the editor folder
+1. Navigate to the editor folder 
     ```sh
     cd editor/code
-    ```
-2. Install dependencies:
-    ```sh
-    npm i
     ```
 
 You can now run `package.json` scripts the usual way:
@@ -224,11 +241,15 @@ The steps to setup the client are similar to the manual build:
     ```sh
     nix develop .#client-vscode
     ```
-3. Install `esbuild`
+1. Navigate to the editor folder
     ```sh
-    npm i esbuild
+    cd editor/code
     ```
-4. Follow the steps in [manual build](#manual-build)
+1. Install dependencies:
+    ```sh
+    npm i
+    ```
+4. Follow the steps in [manual build](#manual-build).
 
 You are now ready to [launch the extension](#launch-the-extension).
 
@@ -255,27 +276,6 @@ that, you want to use the web extension profile in the launch setup.
 
 The default build target will allow you to debug the extension by providing the
 right sourcemaps.
-
-## Releasing
-
-`coq-lsp` is released using `dune-release tag` + `dune-release`.
-
-The checklist for the release as of today is the following:
-
-### Client:
-
-- update the client changelog at `editor/code/CHANGELOG.md`, commit
-- for the `main` branch: `dune release tag $coq_lsp_version`
-- check with `vsce ls` that the client contents are OK
-- `vsce publish`
-
-### Server:
-
-- sync branches for previous Coq versions, using `git merge`, test and push to CI.
-- `dune release tag` for each `$coq_lsp_version+$coq_version`
-- `dune release` for each version that should to the main Coq repos
-- [optional] update pre-release packages to coq-opam-archive
-- [important] bump `version.ml` and `package.json` version string
 
 
 ## Emacs
