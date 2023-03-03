@@ -11,6 +11,8 @@
    #234)
  - Fix bug that prevented "Goal after tactic" from working properly
    (@ejgallego, #438, reported by David Ilcinkas)
+ - Message about workspace detection was printing the wrong file,
+   (@ejgallego, #444, reported by Alex Sanchez-Stern)
 
 # coq-lsp 0.1.6: Peek
 ---------------------

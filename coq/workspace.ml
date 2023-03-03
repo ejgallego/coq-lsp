@@ -251,7 +251,7 @@ let workspace_from_coqproject ~cmdline ~debug cp_file : t =
       }
   in
   let implicit = true in
-  let kind = Filename.concat (Sys.getcwd ()) "_CoqProject" in
+  let kind = cp_file in
   make ~cmdline ~implicit ~kind ~debug
 
 let workspace_from_cmdline ~debug ~cmdline =
