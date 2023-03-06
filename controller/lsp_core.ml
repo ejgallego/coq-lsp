@@ -345,10 +345,16 @@ let version () =
   Format.asprintf "version %s, dev: %s, Coq version: %s" Version.server
     dev_version Coq_config.version
 
-let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug :
-    (string * Coq.Workspace.t) list =
-  match ifn () with
-  | Some (LSP.Message.Request { method_ = "initialize"; id; params }) ->
+module Init_effect = struct
+  type t =
+    | Success of (string * Coq.Workspace.t) list
+    | Loop
+    | Exit
+end
+
+let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
+  match msg with
+  | LSP.Message.Request { method_ = "initialize"; id; params } ->
     (* At this point logging is allowed per LSP spec *)
     let message =
       Format.asprintf "Initializing coq-lsp server %s" (version ())
@@ -363,17 +369,16 @@ let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug :
       List.map (fun dir -> (dir, Coq.Workspace.guess ~cmdline ~debug ~dir)) dirs
     in
     List.iter log_workspace workspaces;
-    workspaces
-  | Some (LSP.Message.Request { id; _ }) ->
+    Success workspaces
+  | LSP.Message.Request { id; _ } ->
     (* per spec *)
     LSP.mk_request_error ~id ~code:(-32002) ~message:"server not initialized"
     |> ofn;
-    lsp_init_loop ~ifn ~ofn ~cmdline ~debug
-  | Some (LSP.Message.Notification { method_ = "exit"; params = _ }) | None ->
-    raise Lsp_exit
-  | Some (LSP.Message.Notification _) ->
+    Loop
+  | LSP.Message.Notification { method_ = "exit"; params = _ } -> Exit
+  | LSP.Message.Notification _ ->
     (* We can't log before getting the initialize message *)
-    lsp_init_loop ~ifn ~ofn ~cmdline ~debug
+    Loop
 
 (** Dispatching *)
 let dispatch_notification ~ofn ~state ~method_ ~params : unit =

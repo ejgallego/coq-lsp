@@ -30,12 +30,19 @@ end
 exception Lsp_exit
 
 (** Lsp special init loop *)
-val lsp_init_loop :
-     ifn:(unit -> Lsp.Base.Message.t option)
-  -> ofn:(Yojson.Safe.t -> unit)
+module Init_effect : sig
+  type t =
+    | Success of (string * Coq.Workspace.t) list
+    | Loop
+    | Exit
+end
+
+val lsp_init_process :
+     ofn:(Yojson.Safe.t -> unit)
   -> cmdline:Coq.Workspace.CmdLine.t
   -> debug:bool
-  -> (string * Coq.Workspace.t) list
+  -> Lsp.Base.Message.t
+  -> Init_effect.t
 
 (** Actions the scheduler requests to callers *)
 type 'a cont =
