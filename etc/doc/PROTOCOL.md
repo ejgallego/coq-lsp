@@ -269,3 +269,27 @@ The request will return `null`, or fail if not successful.
 #### Changelog
 
 - v0.1.6: first version
+
+### Performance Data Notification
+
+The `$/coq/filePerfData` notification is sent from server to client
+when the checking completes, and includes information about execution
+hotspots and memory use by sentences.
+
+```typescript
+export interface SentencePerfParams {
+    loc: Loc,
+    time: number,
+    mem, number
+}
+
+export interface DocumentPerfParams {
+  summary: string;
+  timings: SentencePerfParams[];
+}
+}
+```
+
+#### Changelog
+
+- v0.1.7: Initial version

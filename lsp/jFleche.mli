@@ -76,3 +76,20 @@ module FlecheDocument : sig
     }
   [@@deriving to_yojson]
 end
+
+module SentencePerfData : sig
+  type t =
+    { loc : JLang.Range.t
+    ; time : float
+    ; mem : float
+    }
+  [@@deriving yojson]
+end
+
+module DocumentPerfData : sig
+  type t =
+    { summary : string
+    ; timings : SentencePerfData.t list
+    }
+  [@@deriving yojson]
+end

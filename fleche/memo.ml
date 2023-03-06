@@ -66,7 +66,9 @@ module Interp = struct
   type cache = Result.t HC.t
 
   let cache : cache ref = ref (HC.create 1000)
-  let stats () = Obj.reachable_words (Obj.magic cache)
+
+  (* This is very expensive *)
+  let size () = Obj.reachable_words (Obj.magic cache)
 
   let in_cache st stm =
     let kind = CS.Kind.Hashing in

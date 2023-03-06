@@ -15,6 +15,8 @@
    (@ejgallego, #444, reported by Alex Sanchez-Stern)
  - Display the list of pending obligations in info panel (@ejgallego,
    #262)
+ - Preliminary support to display document performance data in panel
+   (@ejgallego, #181)
 
 # coq-lsp 0.1.6: Peek
 ---------------------

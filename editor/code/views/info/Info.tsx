@@ -1,8 +1,4 @@
 import React, { useEffect, useState } from "react";
-import {
-  VersionedTextDocumentIdentifier,
-  Position,
-} from "vscode-languageserver-types";
 import { GoalAnswer, GoalRequest, PpString } from "../../lib/types";
 
 // import "./media/info.css";

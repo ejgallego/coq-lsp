@@ -113,3 +113,20 @@ module FlecheDocument = struct
     }
   [@@deriving yojson]
 end
+
+module SentencePerfData = struct
+  type t =
+    { loc : JLang.Range.t
+    ; time : float
+    ; mem : float
+    }
+  [@@deriving yojson]
+end
+
+module DocumentPerfData = struct
+  type t =
+    { summary : string
+    ; timings : SentencePerfData.t list
+    }
+  [@@deriving yojson]
+end
