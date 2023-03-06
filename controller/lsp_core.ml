@@ -318,7 +318,9 @@ let do_lens = do_document_request ~handler:Rq_lens.request
 
 let do_trace params =
   let trace = string_field "value" params in
-  LIO.set_trace_value (LIO.TraceValue.of_string trace)
+  match LIO.TraceValue.of_string trace with
+  | Ok t -> LIO.set_trace_value t
+  | Error e -> LIO.trace "trace" ("invalid value: " ^ e)
 
 let do_cancel ~ofn ~params =
   let id = int_field "id" params in
@@ -342,8 +344,8 @@ let version () =
     | None -> "N/A"
     | Some bi -> Build_info.V1.Version.to_string bi
   in
-  Format.asprintf "version %s, dev: %s, Coq version: %s" Version.server
-    dev_version Coq_config.version
+  Format.asprintf "version %s, dev: %s, Coq version: %s, OS: %s" Version.server
+    dev_version Coq_config.version Sys.os_type
 
 module Init_effect = struct
   type t =

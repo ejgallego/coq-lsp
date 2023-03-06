@@ -17,6 +17,8 @@
    #262)
  - Preliminary support to display document performance data in panel
    (@ejgallego, #181)
+ - Fix cases when workspace / root URIs are `null`, as per LSP spec,
+   (#453 , reported by orilahav, fixes #283)
 
 # coq-lsp 0.1.6: Peek
 ---------------------
