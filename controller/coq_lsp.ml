@@ -86,6 +86,15 @@ let coq_init ~fb_queue ~debug =
 let exit_notification =
   Lsp.Base.Message.(Notification { method_ = "exit"; params = [] })
 
+let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug =
+  match ifn () with
+  | None -> raise Lsp_exit
+  | Some msg -> (
+    match lsp_init_process ~ofn ~cmdline ~debug msg with
+    | Init_effect.Exit -> raise Lsp_exit
+    | Init_effect.Loop -> lsp_init_loop ~ifn ~ofn ~cmdline ~debug
+    | Init_effect.Success w -> w)
+
 let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
   (* Try to be sane w.r.t. \r\n in Windows *)
   Stdlib.set_binary_mode_in stdin true;
