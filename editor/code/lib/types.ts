@@ -29,10 +29,38 @@ export interface Message<Pp> {
   text: Pp;
 }
 
+export type Id = ["Id", string];
+
+export interface Loc {
+  fname: any;
+  line_nb: number;
+  bol_pos: number;
+  line_nb_last: number;
+  bol_pos_last: number;
+  bp: number;
+  ep: number;
+}
+
+export interface Obl {
+  name: Id;
+  loc?: Loc;
+  status: [boolean, any];
+  solved: boolean;
+}
+
+export interface OblsView {
+  opaque: boolean;
+  remaining: number;
+  obligations: Obl[];
+}
+
+export type ProgramInfo = [Id, OblsView][];
+
 export interface GoalAnswer<Pp> {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
   goals?: GoalConfig<Pp>;
+  program?: ProgramInfo;
   messages: Pp[] | Message<Pp>[];
   error?: Pp;
 }

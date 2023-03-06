@@ -14,6 +14,7 @@ module Proof : sig
 end
 
 val lemmas : st:t -> Proof.t option
+val program : st:t -> Declare.OblState.View.t Names.Id.Map.t
 
 (** Execute a command in state [st]. Unfortunately this can produce anomalies as
     Coq state setting is imperative, so we need to wrap it in protect. *)

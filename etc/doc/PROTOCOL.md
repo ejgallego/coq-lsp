@@ -116,6 +116,7 @@ interface GoalAnswer<Pp> {
   goals?: GoalConfig<Pp>;
   messages: Pp[] | Message<Pp>[];
   error?: Pp;
+  program?: ProgramInfo;
 }
 ```
 
@@ -160,9 +161,10 @@ was the default.
 
 #### Changelog
 
+- v0.1.7: program information added, rest of fields compatible with 0.1.6
 - v0.1.6: the `Pp` parameter can now be either Coq's `Pp.t` type or `string` (default)
 - v0.1.5: message type does now include range and level
-- v0.1.4: goal type generic, the `stacks` and `def` fields appear, compatible v0.1.3 clients
+- v0.1.4: goal type was made generic, the `stacks` and `def` fields are not null anymore, compatible v0.1.3 clients
 - v0.1.3: send full goal configuration with shelf, given_up, versioned identifier for document
 - v0.1.2: include messages and optional error in the request response
 - v0.1.1: include position and document in the request response
