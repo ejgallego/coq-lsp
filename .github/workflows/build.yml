@@ -102,8 +102,8 @@ jobs:
       - run: npm ci
       - run: npx --yes vsce ls
 
-  treefmt:
-    name: Format
+  nix-flake-check:
+    name: Nix Flake Check
     runs-on: ubuntu-latest
     steps:
       - name: 🔭 Checkout code
@@ -112,5 +112,5 @@ jobs:
           submodules: recursive
       - name: ❄️ Setup Nix
         uses: cachix/install-nix-action@v18
-      - name: 📐 Format with alejandra, ocamlformat, prettier
-        run: nix fmt
+      - name: 📐 Run flake check
+        run: nix flake check
