@@ -19,9 +19,7 @@
 (**************************************************************************)
 
 type coq_opts =
-  { fb_handler : Feedback.feedback -> unit
-        (** callback to handle async feedback *)
-  ; load_module : string -> unit  (** callback to load cma/cmo files *)
+  { load_module : string -> unit  (** callback to load cma/cmo files *)
   ; load_plugin : Mltop.PluginSpec.t -> unit
         (** callback to load findlib packages *)
   ; debug : bool  (** Enable Coq Debug mode *)
