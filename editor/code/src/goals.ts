@@ -50,7 +50,7 @@ export class InfoPanel {
         <title>Coq's info panel</title>
     </head>
     <body>
-    <div id="root" style="height:100vh;">
+    <div id="root">
     </div>
     </body>
     </html>`;
