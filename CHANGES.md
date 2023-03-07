@@ -7,12 +7,18 @@
    optimization; this mostly impacts 8.16 by lowering the SerAPI
    requirements (@ejgallego, #421)
  - Enable web extension support. For now this will not try to start
-   the coq-lsp worker as it is now ready. (@ejgallego, #430, fixes
+   the coq-lsp worker as it is not yet built. (@ejgallego, #430, fixes
    #234)
  - Fix bug that prevented "Goal after tactic" from working properly
    (@ejgallego, #438, reported by David Ilcinkas)
  - Message about workspace detection was printing the wrong file,
    (@ejgallego, #444, reported by Alex Sanchez-Stern)
+ - Display the list of pending obligations in info panel (@ejgallego,
+   #262)
+ - Preliminary support to display document performance data in panel
+   (@ejgallego, #181)
+ - Fix cases when workspace / root URIs are `null`, as per LSP spec,
+   (#453 , reported by orilahav, fixes #283)
 
 # coq-lsp 0.1.6: Peek
 ---------------------

@@ -62,11 +62,11 @@ let pp_loc ?(print_file = false) fmt loc =
   let file =
     if print_file then
       match loc.fname with
-      | ToplevelInput -> "Toplevel input"
-      | InFile { file; _ } -> "File \"" ^ file ^ "\""
-    else "loc"
+      | ToplevelInput -> "Toplevel input: "
+      | InFile { file; _ } -> "File \"" ^ file ^ "\": "
+    else ""
   in
-  Format.fprintf fmt "%s: line: %d, col: %d -- line: %d, col: %d / {%d-%d}" file
+  Format.fprintf fmt "%sline: %d, col: %d -- line: %d, col: %d / {%d-%d}" file
     (loc.line_nb - 1) (loc.bp - loc.bol_pos) (loc.line_nb_last - 1)
     (loc.ep - loc.bol_pos_last)
     loc.bp loc.ep

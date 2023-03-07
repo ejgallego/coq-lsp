@@ -40,7 +40,7 @@ module TraceValue : sig
     | Messages
     | Verbose
 
-  val of_string : string -> t
+  val of_string : string -> (t, string) result
   val to_string : t -> string
 end
 

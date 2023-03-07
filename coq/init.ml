@@ -19,13 +19,28 @@
 (**************************************************************************)
 
 type coq_opts =
-  { fb_handler : Feedback.feedback -> unit
-        (** callback to handle async feedback *)
-  ; load_module : string -> unit  (** callback to load cma/cmo files *)
+  { load_module : string -> unit  (** callback to load cma/cmo files *)
   ; load_plugin : Mltop.PluginSpec.t -> unit
         (** callback to load findlib packages *)
   ; debug : bool  (** Enable Coq Debug mode *)
   }
+
+let lvl_to_severity (lvl : Feedback.level) =
+  match lvl with
+  | Feedback.Debug -> 5
+  | Feedback.Info -> 4
+  | Feedback.Notice -> 3
+  | Feedback.Warning -> 2
+  | Feedback.Error -> 1
+
+let add_message lvl loc msg q =
+  let lvl = lvl_to_severity lvl in
+  q := (loc, lvl, msg) :: !q
+
+let mk_fb_handler q Feedback.{ contents; _ } =
+  match contents with
+  | Message (lvl, loc, msg) -> add_message lvl loc msg q
+  | _ -> ()
 
 let coq_init opts =
   (* Core Coq initialization *)
@@ -41,7 +56,8 @@ let coq_init opts =
   (**************************************************************************)
 
   (* Initialize logging. *)
-  ignore (Feedback.add_feeder opts.fb_handler);
+  let fb_handler = mk_fb_handler Protect.fb_queue in
+  ignore (Feedback.add_feeder fb_handler);
 
   (* SerAPI plugins *)
   let load_plugin = opts.load_plugin in

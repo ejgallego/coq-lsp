@@ -19,8 +19,8 @@ module Interp : sig
   (** Interpret a command, possibly memoizing it *)
   val eval : t -> Coq.State.t Coq.Interp.interp_result Stats.t
 
-  (** Stats *)
-  val stats : unit -> int
+  (** [size ()] Return the size in words, expensive *)
+  val size : unit -> int
 
   (** debug *)
   val input_info : t -> string
@@ -34,5 +34,7 @@ end
 
 module CacheStats : sig
   val reset : unit -> unit
+
+  (** Returns the hit ratio of the cache *)
   val stats : unit -> string
 end

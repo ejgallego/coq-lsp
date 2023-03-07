@@ -28,10 +28,10 @@ module Util = struct
 
   let print_stats () =
     (if !Config.v.mem_stats then
-     let size = Memo.Interp.stats () in
+     let size = Memo.Interp.size () in
      Io.Log.trace "stats" (string_of_int size));
-
-    Io.Log.trace "cache" (Stats.to_string ());
+    let stats = Stats.dump () in
+    Io.Log.trace "cache" (Stats.to_string stats);
     Io.Log.trace "cache" (Memo.CacheStats.stats ());
     (* this requires patches to Coq *)
     (* Io.Log.error "coq parsing" (CoqParsingStats.dump ()); *)
@@ -46,11 +46,6 @@ module Util = struct
         (Format.asprintf "error for pos: %d len: %d str: %s" pos len s);
       None)
     else Some (String.sub s pos len)
-
-  let pp_words fmt w =
-    if w < 1024.0 then Format.fprintf fmt "%.0f  w" w
-    else if w < 1024.0 *. 1024.0 then Format.fprintf fmt "%.2f Kw" (w /. 1024.0)
-    else Format.fprintf fmt "%.2f Mw" (w /. (1024.0 *. 1024.0))
 end
 
 module DDebug = struct
@@ -102,8 +97,8 @@ module Node = struct
       let cetime = Stats.get_f stats ~kind:Stats.Kind.Exec in
       Format.asprintf
         "Cached: %b | P: %.3f / %.2f | E: %a / %.2f | M: %a | Diff: %a"
-        cache_hit parsing_time cptime pp_time time cetime Util.pp_words mw_after
-        Util.pp_words (mw_after -. mw_prev)
+        cache_hit parsing_time cptime pp_time time cetime Stats.pp_words
+        mw_after Stats.pp_words (mw_after -. mw_prev)
   end
 
   module Message = struct
