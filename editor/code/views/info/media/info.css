@@ -1,0 +1,13 @@
+.error-browser {
+  flex: 1 1 0%;
+}
+
+.info-panel-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.info-panel {
+  overflow: auto;
+}
