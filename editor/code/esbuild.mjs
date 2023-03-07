@@ -78,5 +78,6 @@ function viewBuild(file) {
 }
 
 var infoView = viewBuild("./views/info/index.tsx");
+var perfView = viewBuild("./views/perf/index.tsx");
 
-await Promise.all[(node, browser, infoView)];
+await Promise.all[(node, browser, infoView, perfView)];

@@ -43,7 +43,9 @@ module GoalsAnswer : sig
   type 'pp t =
     { textDocument : Doc.VersionedTextDocumentIdentifier.t
     ; position : Lang.Point.t
-    ; goals : 'pp Coq.Goals.reified_pp option
+    ; goals : 'pp Coq.Goals.reified_pp option [@default None]
+    ; program : JCoq.Declare.OblState.View.t Names.Id.Map.t option
+          [@default None]
     ; messages : 'pp Message.t list
     ; error : 'pp option [@default None]
     }
@@ -73,4 +75,21 @@ module FlecheDocument : sig
     ; completed : CompletionStatus.t
     }
   [@@deriving to_yojson]
+end
+
+module SentencePerfData : sig
+  type t =
+    { loc : JLang.Range.t
+    ; time : float
+    ; mem : float
+    }
+  [@@deriving yojson]
+end
+
+module DocumentPerfData : sig
+  type t =
+    { summary : string
+    ; timings : SentencePerfData.t list
+    }
+  [@@deriving yojson]
 end

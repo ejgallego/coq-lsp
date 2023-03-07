@@ -48,6 +48,7 @@ module type S = sig
   val range : (approx, Lang.Range.t) query
   val ast : (approx, Doc.Node.Ast.t) query
   val goals : (approx, Pp.t Coq.Goals.reified_pp) query
+  val program : (approx, Declare.OblState.View.t Names.Id.Map.t) query
   val messages : (approx, Doc.Node.Message.t list) query
   val info : (approx, Doc.Node.Info.t) query
   val completion : (string, string list) query

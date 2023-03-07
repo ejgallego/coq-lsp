@@ -1,4 +1,8 @@
 {
   "files": [],
-  "references": [{ "path": "src" }, { "path": "views/info" }]
+  "references": [
+    { "path": "src" },
+    { "path": "views/perf" },
+    { "path": "views/info" }
+  ]
 }

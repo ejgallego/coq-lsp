@@ -1,5 +1,7 @@
+module Loc = Serlib.Ser_loc
 module Names = Serlib.Ser_names
 module Evar = Serlib.Ser_evar
+module Evar_kinds = Serlib.Ser_evar_kinds
 
 let rec pp_opt d =
   let open Pp in
@@ -66,4 +68,16 @@ module Ast = struct
   let of_yojson x =
     Serlib.Ser_vernacexpr.vernac_control_of_yojson x
     |> Result.map Coq.Ast.of_coq
+end
+
+module Declare = struct
+  module OblState = struct
+    module View = struct
+      module Obl = struct
+        type t = [%import: Declare.OblState.View.Obl.t] [@@deriving to_yojson]
+      end
+
+      type t = [%import: Declare.OblState.View.t] [@@deriving to_yojson]
+    end
+  end
 end
