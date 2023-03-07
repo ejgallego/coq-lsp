@@ -85,6 +85,102 @@ module Proof = struct
 end
 
 let lemmas ~st = st.Vernacstate.lemmas
+
+module Declare_ = Declare
+
+module Declare = struct
+  open Names
+  open Constr
+
+  [@@@ocaml.warning "-34"]
+  [@@@ocaml.warning "-37"]
+
+  type 'a obligation_body =
+    | DefinedObl of 'a
+    | TermObl of constr
+
+  type fixpoint_kind =
+    | IsFixpoint of lident option list
+    | IsCoFixpoint
+
+  module Obligation = struct
+    type t =
+      { obl_name : Id.t
+      ; obl_type : types
+      ; obl_location : Evar_kinds.t Loc.located
+      ; obl_body : pconstant obligation_body option
+      ; obl_status : bool * Evar_kinds.obligation_definition_status
+      ; obl_deps : Int.Set.t
+      ; obl_tac : unit Proofview.tactic option
+      }
+  end
+
+  module ProgramDecl = struct
+    type obligations =
+      { obls : Obligation.t array
+      ; remaining : int
+      }
+
+    type 'a t =
+      { prg_cinfo : constr Declare.CInfo.t
+      ; prg_info : Declare.Info.t
+      ; prg_opaque : bool
+      ; prg_hook : 'a option
+      ; prg_body : Constr.constr
+      ; prg_uctx : UState.t
+      ; prg_obligations : obligations
+      ; prg_deps : Id.t list
+      ; prg_fixkind : fixpoint_kind option
+      ; prg_notations : Metasyntax.where_decl_notation list
+      ; prg_reduce : constr -> constr
+      }
+  end
+
+  module ProgMap = Id.Map
+
+  module OblState = struct
+    type t = prg_hook ProgramDecl.t CEphemeron.key ProgMap.t
+    and prg_hook = PrgHook of t Declare.Hook.g
+
+    module View = struct
+      module Obl = struct
+        type t =
+          { name : Names.Id.t
+          ; loc : Loc.t option
+          ; status : bool * Evar_kinds.obligation_definition_status
+          ; solved : bool
+          }
+
+        let make (o : Obligation.t) =
+          let { Obligation.obl_name; obl_location; obl_status; obl_body; _ } =
+            o
+          in
+          { name = obl_name
+          ; loc = fst obl_location
+          ; status = obl_status
+          ; solved = Option.has_some obl_body
+          }
+      end
+
+      type t =
+        { opaque : bool
+        ; remaining : int
+        ; obligations : Obl.t array
+        }
+
+      let make { ProgramDecl.prg_opaque; prg_obligations; _ } =
+        { opaque = prg_opaque
+        ; remaining = prg_obligations.remaining
+        ; obligations = Array.map Obl.make prg_obligations.obls
+        }
+
+      let make eph = CEphemeron.get eph |> make
+    end
+
+    let view s = Names.Id.Map.map View.make (Obj.magic s)
+  end
+end
+
 let program ~st = NeList.head st.Vernacstate.program |> Declare.OblState.view
 
 let drop_proofs ~st =
@@ -108,7 +204,7 @@ let admit ~st () =
   | Some lemmas ->
     let pm = NeList.head st.Vernacstate.program in
     let proof, lemmas = Vernacstate.(LemmaStack.pop lemmas) in
-    let pm = Declare.Proof.save_admitted ~pm ~proof in
+    let pm = Declare_.Proof.save_admitted ~pm ~proof in
     let program = NeList.map_head (fun _ -> pm) st.Vernacstate.program in
     let st = Vernacstate.freeze_interp_state ~marshallable:false in
     { st with lemmas; program }
@@ -120,7 +216,7 @@ let admit_goal ~st () =
   match st.Vernacstate.lemmas with
   | None -> st
   | Some lemmas ->
-    let f pf = Declare.Proof.by Proofview.give_up pf |> fst in
+    let f pf = Declare_.Proof.by Proofview.give_up pf |> fst in
     let lemmas = Some (Vernacstate.LemmaStack.map_top ~f lemmas) in
     { st with lemmas }
 

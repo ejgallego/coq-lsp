@@ -14,6 +14,30 @@ module Proof : sig
 end
 
 val lemmas : st:t -> Proof.t option
+
+module Declare : sig
+  module OblState : sig
+    module View : sig
+      module Obl : sig
+        type t = private
+          { name : Names.Id.t
+          ; loc : Loc.t option
+          ; status : bool * Evar_kinds.obligation_definition_status
+          ; solved : bool
+          }
+      end
+
+      type t = private
+        { opaque : bool
+        ; remaining : int
+        ; obligations : Obl.t array
+        }
+    end
+
+    val view : t -> View.t Names.Id.Map.t
+  end
+end
+
 val program : st:t -> Declare.OblState.View.t Names.Id.Map.t
 
 (** Execute a command in state [st]. Unfortunately this can produce anomalies as
