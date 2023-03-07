@@ -19,6 +19,8 @@
    (@ejgallego, #181)
  - Fix cases when workspace / root URIs are `null`, as per LSP spec,
    (#453 , reported by orilahav, fixes #283)
+ - Pass implicit argument information to hover printer (@ejgallego, #453,
+   fixes #448)
 
 # coq-lsp 0.1.6: Peek
 ---------------------
