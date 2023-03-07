@@ -75,10 +75,10 @@ module TraceValue = struct
     | Verbose
 
   let of_string = function
-    | "messages" -> Messages
-    | "verbose" -> Verbose
-    | "off" -> Off
-    | _ -> raise (Invalid_argument "TraceValue.parse")
+    | "messages" -> Ok Messages
+    | "verbose" -> Ok Verbose
+    | "off" -> Ok Off
+    | v -> Error ("TraceValue.parse: " ^ v)
 
   let to_string = function
     | Off -> "off"
