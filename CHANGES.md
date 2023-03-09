@@ -39,6 +39,9 @@
  - Coq's STM is not linked anymore to `coq-lsp` (@ejgallego, #511)
  - More granular options `send_perf_data` `send_diags`, `verbosity`
    will set them now (@ejgallego, #)
+ - `.mv` files for Coq Markdown now have markdown as their base mode,
+   this works better and exposes all the usual Markdown commands such
+   as preview to users (@4ever2, #519, fixes #456)
 
 # coq-lsp 0.1.6: Peek
 ---------------------
