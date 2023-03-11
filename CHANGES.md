@@ -21,6 +21,7 @@
    (#453 , reported by orilahav, fixes #283)
  - Pass implicit argument information to hover printer (@ejgallego, #453,
    fixes #448)
+ - Fix keybinding for the "Show Goals at Point" command (@4ever2, #460)
 
 # coq-lsp 0.1.6: Peek
 ---------------------
