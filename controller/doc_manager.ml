@@ -158,6 +158,13 @@ let send_diags ~ofn ~doc =
   in
   ofn diags
 
+let send_perf_data ~ofn ~(doc : Fleche.Doc.t) =
+  match doc.completed with
+  | Yes _ ->
+    let params = Perf.make doc in
+    Lsp.Base.mk_notification ~method_:"$/coq/filePerfData" ~params |> ofn
+  | _ -> ()
+
 module Check : sig
   val schedule : uri:Lang.LUri.File.t -> unit
   val deschedule : uri:Lang.LUri.File.t -> unit
@@ -184,6 +191,8 @@ end = struct
       let doc = Fleche.Doc.check ~ofn ~target ~doc:handle.doc () in
       let requests = Handle.update_doc_info ~handle ~doc in
       send_diags ~ofn ~doc;
+      (* Only if completed! *)
+      if completed ~doc then send_perf_data ~ofn ~doc;
       (* Only if completed! *)
       if completed ~doc then pending := None;
       requests
@@ -227,7 +236,7 @@ let create ~ofn ~root_state ~workspace ~uri ~raw ~version =
     send_error_permanent_fail ~ofn ~uri ~version (Pp.str message)
   | Interrupted -> ()
 
-(* Set this to false for < 8.18, we could parse the version but not worth it. *)
+(* Set this to false for < 8.17, we could parse the version but not worth it. *)
 let sane_coq_base_version = false
 
 let sane_coq_branch =

@@ -50,12 +50,23 @@ let record ~kind ~f x =
 
 let get ~kind = find kind
 
-let to_string () =
-  Format.asprintf "hashing: %f | parsing: %f | exec: %f" (find Kind.Hashing)
-    (find Kind.Parsing) (find Kind.Exec)
+let to_string (h, p, e) =
+  Format.asprintf "hashing: %f | parsing: %f | exec: %f" h p e
 
 let reset () =
   Hashtbl.remove stats Kind.Hashing;
   Hashtbl.remove stats Kind.Parsing;
   Hashtbl.remove stats Kind.Exec;
   ()
+
+let mb = 1024 * 1024
+
+let pp_words fmt w =
+  (* Format is not working great for floating point values... *)
+  let w = int_of_float w in
+  let value, spec =
+    if w < 1024 then (w, "w ")
+    else if w < mb then (w / 1024, "Kw")
+    else (w / mb, "Mw")
+  in
+  Format.fprintf fmt "@[%4d %s@]" value spec

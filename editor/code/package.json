@@ -115,9 +115,27 @@
         "command": "coq-lsp.goals",
         "key": "alt+enter",
         "mac": "meta+enter",
-        "when": "editorTextFocus && (editorLangId == coq || editorLangId == coqmarkdown)"
+        "when": "editorTextFocus && editorLangId == coq || editorTextFocus && editorLangId == coqmarkdown"
       }
     ],
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "coq-performance-report",
+          "title": "Coq",
+          "icon": "$(notebook)"
+        }
+      ]
+    },
+    "views": {
+      "coq-performance-report": [
+        {
+          "type": "webview",
+          "id": "coqPerfView",
+          "name": "Performance Report"
+        }
+      ]
+    },
     "configuration": [
       {
         "title": "Diagnostics",
@@ -282,6 +300,7 @@
     "typescript": "^4.9.4"
   },
   "dependencies": {
+    "@vscode/webview-ui-toolkit": "^1.2.1",
     "object-hash": "^3.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

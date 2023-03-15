@@ -60,31 +60,22 @@ let lsp_cb =
           Lsp.JFleche.mk_progress ~uri ~version progress |> ofn)
     }
 
-let lvl_to_severity (lvl : Feedback.level) =
-  match lvl with
-  | Feedback.Debug -> 5
-  | Feedback.Info -> 4
-  | Feedback.Notice -> 3
-  | Feedback.Warning -> 2
-  | Feedback.Error -> 1
-
-let add_message lvl loc msg q =
-  let lvl = lvl_to_severity lvl in
-  q := (loc, lvl, msg) :: !q
-
-let mk_fb_handler q Feedback.{ contents; _ } =
-  match contents with
-  | Message (lvl, loc, msg) -> add_message lvl loc msg q
-  | _ -> ()
-
-let coq_init ~fb_queue ~debug =
-  let fb_handler = mk_fb_handler fb_queue in
+let coq_init ~debug =
   let load_module = Dynlink.loadfile in
   let load_plugin = Coq.Loader.plugin_handler None in
-  Coq.Init.(coq_init { fb_handler; debug; load_module; load_plugin })
+  Coq.Init.(coq_init { debug; load_module; load_plugin })
 
 let exit_notification =
   Lsp.Base.Message.(Notification { method_ = "exit"; params = [] })
+
+let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug =
+  match ifn () with
+  | None -> raise Lsp_exit
+  | Some msg -> (
+    match lsp_init_process ~ofn ~cmdline ~debug msg with
+    | Init_effect.Exit -> raise Lsp_exit
+    | Init_effect.Loop -> lsp_init_loop ~ifn ~ofn ~cmdline ~debug
+    | Init_effect.Success w -> w)
 
 let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
   (* Try to be sane w.r.t. \r\n in Windows *)
@@ -102,10 +93,8 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
      initialize is received *)
 
   (* Core Coq initialization *)
-  let fb_queue = Coq.Protect.fb_queue in
-
   let debug = bt || Fleche.Debug.backtraces in
-  let root_state = coq_init ~fb_queue ~debug in
+  let root_state = coq_init ~debug in
   let cmdline =
     { Coq.Workspace.CmdLine.coqcorelib
     ; coqlib

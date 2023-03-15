@@ -14,14 +14,9 @@ let option_default x d =
   | None -> d
   | Some x -> x
 
-let option_cata f d x =
-  match x with
-  | None -> d
-  | Some x -> f x
-
-let string_field name dict = U.to_string (List.assoc name (U.to_assoc dict))
+let field name dict = List.(assoc name (U.to_assoc dict))
+let ofield name dict = List.(assoc_opt name dict)
 let ostring_field name dict = Option.map U.to_string (List.assoc_opt name dict)
-let olist_field name dict = Option.map U.to_list (List.assoc_opt name dict)
 
 let odict_field name dict =
   option_default
@@ -47,8 +42,13 @@ let check_client_version client_version : unit =
     in
     LIO.logMessage ~lvl:1 ~message
 
+(* Maybe this should be [cwd] ? *)
 let default_workspace_root = "."
-let parse_furi x = Lang.LUri.of_string x |> Lang.LUri.File.of_uri
+let parse_furi x = U.to_string x |> Lang.LUri.of_string |> Lang.LUri.File.of_uri
+
+let parse_null_or f = function
+  | None -> None
+  | Some l -> U.to_option f l
 
 (* Poor man mapM *)
 let rec result_map ls =
@@ -59,15 +59,13 @@ let rec result_map ls =
         Result.bind (result_map rs) (fun xs -> Result.ok (x :: xs)))
 
 let parse_furis l = List.map parse_furi l |> result_map
-let parse_wf l = List.map (string_field "uri") l |> parse_furis
+let parse_wf l = List.map (field "uri") (U.to_list l) |> parse_furis
 
 let determine_workspace_root ~params : string list =
-  let rootPath = ostring_field "rootPath" params |> Option.map parse_furi in
-  let rootUri = ostring_field "rootUri" params |> Option.map parse_furi in
-  (* XXX: enable when we advertise workspace folders support in the server *)
-  let wsFolders =
-    olist_field "workspaceFolders" params |> Option.map parse_wf
-  in
+  (* Careful: all paths fields can be present but have value `null` *)
+  let rootPath = ofield "rootPath" params |> parse_null_or parse_furi in
+  let rootUri = ofield "rootUri" params |> parse_null_or parse_furi in
+  let wsFolders = ofield "workspaceFolders" params |> parse_null_or parse_wf in
   match (rootPath, rootUri, wsFolders) with
   | None, None, None -> [ default_workspace_root ]
   | _, Some (Ok dir_uri), None -> [ Lang.LUri.File.to_string_file dir_uri ]
@@ -77,12 +75,26 @@ let determine_workspace_root ~params : string list =
     [ default_workspace_root ]
   | _, _, Some (Ok folders) -> List.map Lang.LUri.File.to_string_file folders
 
+let determine_workspace_root ~params =
+  try determine_workspace_root ~params
+  with exn ->
+    LIO.trace "init"
+      ("problem determining workspace root: " ^ Printexc.to_string exn);
+    [ default_workspace_root ]
+
+let get_trace ~params =
+  match ostring_field "trace" params with
+  | None -> LIO.TraceValue.Off
+  | Some v -> (
+    match LIO.TraceValue.of_string v with
+    | Ok t -> t
+    | Error e ->
+      LIO.trace "trace" ("invalid value: " ^ e);
+      LIO.TraceValue.Off)
+
 let do_initialize ~params =
   let dir = determine_workspace_root ~params in
-  let trace =
-    ostring_field "trace" params
-    |> option_cata LIO.TraceValue.of_string LIO.TraceValue.Off
-  in
+  let trace = get_trace ~params in
   LIO.set_trace_value trace;
   let coq_lsp_options = odict_field "initializationOptions" params in
   do_client_options coq_lsp_options;
