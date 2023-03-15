@@ -115,7 +115,7 @@
         "command": "coq-lsp.goals",
         "key": "alt+enter",
         "mac": "meta+enter",
-        "when": "editorTextFocus && (editorLangId == coq || editorLangId == coqmarkdown)"
+        "when": "editorTextFocus && editorLangId == coq || editorTextFocus && editorLangId == coqmarkdown"
       }
     ],
     "viewsContainers": {

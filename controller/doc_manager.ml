@@ -236,8 +236,8 @@ let create ~ofn ~root_state ~workspace ~uri ~raw ~version =
     send_error_permanent_fail ~ofn ~uri ~version (Pp.str message)
   | Interrupted -> ()
 
-(* Set this to false for < 8.18, we could parse the version but not worth it. *)
-let sane_coq_base_version = false
+(* Set this to false for < 8.17, we could parse the version but not worth it. *)
+let sane_coq_base_version = true
 
 let sane_coq_branch =
   CString.string_contains ~where:Coq_config.version ~what:"+lsp"
