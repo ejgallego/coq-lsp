@@ -237,7 +237,7 @@ let create ~ofn ~root_state ~workspace ~uri ~raw ~version =
   | Interrupted -> ()
 
 (* Set this to false for < 8.17, we could parse the version but not worth it. *)
-let sane_coq_base_version = true
+let sane_coq_base_version = false
 
 let sane_coq_branch =
   CString.string_contains ~where:Coq_config.version ~what:"+lsp"
