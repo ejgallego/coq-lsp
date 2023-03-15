@@ -13,6 +13,10 @@ let show_loc_info = false
 (* Taken from printmod.ml, funny stuff! *)
 let build_ind_type mip = Inductive.type_of_inductive mip
 
+type id_info =
+  | Notation of Pp.t
+  | Def of Pp.t
+
 let info_of_ind env sigma ((sp, i) : Names.Ind.t) =
   let mib = Environ.lookup_mind sp env in
   let u =
@@ -31,17 +35,28 @@ let info_of_ind env sigma ((sp, i) : Names.Ind.t) =
       (build_ind_type ((mib, mip), u))
       args
   in
-  Printer.pr_lconstr_env env_params sigma arity
+  let impargs =
+    Impargs.select_stronger_impargs
+      (Impargs.implicits_of_global (Names.GlobRef.IndRef (sp, i)))
+  in
+  let impargs = List.map Impargs.binding_kind_of_status impargs in
+  Def (Printer.pr_ltype_env ~impargs env_params sigma arity)
 
 let type_of_constant cb = cb.Declarations.const_type
 
-let info_of_const env cr =
+let info_of_const env sigma cr =
   let cdef = Environ.lookup_constant cr env in
   (* This prints the definition *)
   (* let cb = Environ.lookup_constant cr env in *)
   (* Option.cata (fun (cb,_univs,_uctx) -> Some cb ) None *)
   (*   (Global.body_of_constant_body Library.indirect_accessor cb), *)
-  type_of_constant cdef
+  let typ = type_of_constant cdef in
+  let impargs =
+    Impargs.select_stronger_impargs
+      (Impargs.implicits_of_global (Names.GlobRef.ConstRef cr))
+  in
+  let impargs = List.map Impargs.binding_kind_of_status impargs in
+  Def (Printer.pr_ltype_env env sigma ~impargs typ)
 
 let info_of_var env vr =
   let vdef = Environ.lookup_named vr env in
@@ -57,10 +72,6 @@ let info_of_constructor env cr =
     Typeops.type_of_global_in_context env (Names.GlobRef.ConstructRef cr)
   in
   ctype
-
-type id_info =
-  | Notation of Pp.t
-  | Def of Pp.t
 
 let print_type env sigma x = Def (Printer.pr_ltype_env env sigma x)
 
@@ -78,8 +89,8 @@ let info_of_id env sigma id =
         let open Names.GlobRef in
         (match lid with
         | VarRef vr -> info_of_var env vr |> print_type env sigma
-        | ConstRef cr -> info_of_const env cr |> print_type env sigma
-        | IndRef ir -> Def (info_of_ind env sigma ir)
+        | ConstRef cr -> info_of_const env sigma cr
+        | IndRef ir -> info_of_ind env sigma ir
         | ConstructRef cr -> info_of_constructor env cr |> print_type env sigma)
         |> fun x -> Some x
       | Abbrev kn ->
