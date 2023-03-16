@@ -132,7 +132,11 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
     in
 
     read_loop ()
-  with exn ->
+  with
+  | Lsp_exit ->
+    let message = "[LSP shutdown] EOF\n" in
+    LIO.logMessage ~lvl:1 ~message
+  | exn ->
     let bt = Printexc.get_backtrace () in
     let exn, info = Exninfo.capture exn in
     let exn_msg = Printexc.to_string exn in

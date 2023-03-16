@@ -71,7 +71,7 @@ module State = struct
     let file = Lang.LUri.File.to_string_file uri in
     match List.find_opt (fun (dir, _) -> is_in_dir ~dir ~file) workspaces with
     | None ->
-      LIO.logMessage ~lvl:1 ~message:"file not in workspace";
+      LIO.logMessage ~lvl:1 ~message:("file not in workspace: " ^ file);
       (root_state, snd (List.hd workspaces))
     | Some (_, workspace) -> (root_state, workspace)
 end
