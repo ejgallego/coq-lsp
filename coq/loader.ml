@@ -42,19 +42,19 @@ let check_package_exists fl_pkg =
 let map_serlib fl_pkg =
   let supported = match fl_pkg with
     (* Supported by serlib *)             (* directory   *)
-    | "coq-core.plugins.cc"               (* cc  *)
-    | "coq-core.plugins.extraction"       (* extraction  *)
-    | "coq-core.plugins.firstorder"       (* firstorder  *)
-    | "coq-core.plugins.funind"           (* funind      *)
-    | "coq-core.plugins.ltac"             (* ltac        *)
-    | "coq-core.plugins.ltac2"            (* ltac2       *)
-    | "coq-core.plugins.micromega"        (* micromega   *)
-    | "coq-core.plugins.ring"             (* ring        *)
-    | "coq-core.plugins.ssreflect"        (* ssreflect   *)
-    | "coq-core.plugins.ssrmatching"      (* ssrmatching *)
-    | "coq-core.plugins.number_string_notation" (* syntax *)
-    | "coq-core.plugins.tauto"            (* tauto *)
-    | "coq-core.plugins.zify"             (* zify *)
+    | "cc_plugin"               (* cc  *)
+    | "extraction_plugin"       (* extraction  *)
+    | "firstorder_plugin"       (* firstorder  *)
+    | "funind_plugin"           (* funind      *)
+    | "ltac_plugin"             (* ltac        *)
+    | "ltac2_plugin"            (* ltac2       *)
+    | "micromega_plugin"        (* micromega   *)
+    | "ring_plugin"             (* ring        *)
+    | "ssreflect_plugin"        (* ssreflect   *)
+    | "ssrmatching_plugin"      (* ssrmatching *)
+    | "number_plugin_string_notation" (* syntax *)
+    | "tauto_plugin"            (* tauto *)
+    | "zify_plugin"             (* zify *)
       -> true
     | _ ->
       not_available_warn fl_pkg ": serlib support is missing";

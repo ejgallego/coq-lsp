@@ -32,7 +32,7 @@ depends: [
 
   # Uncomment this for releases
   "coq"           { >= "8.15.0" & < "8.16" }
-  "coq-serapi"    { >= "8.15.0" & < "8.16" }
+  "coq-serapi"    { >= "8.15.0+0.15.3" & < "8.16" }
   "camlp-streams" { >= "5.0" }
 ]
 
