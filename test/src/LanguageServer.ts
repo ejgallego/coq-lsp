@@ -25,6 +25,11 @@ export function toURI(s: string) {
   return URI.parse(s).toString();
 }
 
+export function openExampleEphemeral(filename: string, contents: string) {
+  let filepath = path.join(projectRoot, filename);
+  return Types.TextDocumentItem.create(toURI(filepath), "coq", 0, contents);
+}
+
 export function openExample(filename: string) {
   let filepath = path.join(projectRoot, "examples", filename);
   return Types.TextDocumentItem.create(
@@ -75,6 +80,7 @@ export function start(): LanguageServer {
       },
       ...initializeParameters,
     };
+
     await connection.sendRequest(
       Protocol.InitializeRequest.type,
       initializeParameters

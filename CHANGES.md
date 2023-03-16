@@ -22,6 +22,8 @@
  - Pass implicit argument information to hover printer (@ejgallego, #453,
    fixes #448)
  - Fix keybinding for the "Show Goals at Point" command (@4ever2, #460)
+ - Alert when `rootPath` is relative (#465, @ejgallego, report by Alex
+   Sanchez-Stern)
 
 # coq-lsp 0.1.6: Peek
 ---------------------
