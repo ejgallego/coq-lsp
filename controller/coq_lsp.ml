@@ -44,7 +44,7 @@ let rec process_queue ~ofn ~state =
        I/O *)
     exit 0
   | Some (Yield state) ->
-    Thread.delay 0.1;
+    Thread.delay 0.01;
     process_queue ~ofn ~state
   | Some (Cont state) -> process_queue ~ofn ~state
 
