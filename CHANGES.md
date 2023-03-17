@@ -1,3 +1,8 @@
+# coq-lsp 0.1.8
+---------------
+ - Decrease latency of requests by ~4x by reducing threading timer
+   (fix suggested by @ejgallego, implemented by @hazardouspeach)
+
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
 
