@@ -93,7 +93,6 @@ export class InfoPanel {
   sendGoalsRequest(client: BaseLanguageClient, params: GoalRequest) {
     this.requestSent(params);
     client.sendRequest(infoReq, params).then(
-      // send message to vyzx here
       (goals) => this.requestDisplay(goals),
       (reason) => this.requestError(reason)
     );
