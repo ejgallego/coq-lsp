@@ -27,6 +27,11 @@
  - Hook coq-lsp to ViZX extension (@bhaktishh, #469)
  - `proof/goals` request now takes an optional formatting parameter
    so clients can specify it per-request (@ejgallego, @bhaktishh, #470)
+ - New command line argument `--idle-delay=$secs` that controls how
+   much an idle server will sleep before going back to request
+   processing. Default setting is `0.1`, using more aggressive
+   settings like `0.01` can decrease latency of requests by ~4x
+   (@ejgallego, @hazardouspeach, #467, #471)
 
 # coq-lsp 0.1.6: Peek
 ---------------------
