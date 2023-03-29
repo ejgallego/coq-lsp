@@ -1,4 +1,4 @@
-import { Position, Uri, WebviewPanel, window, ViewColumn } from "vscode";
+import { Position, Uri, WebviewPanel, window, ViewColumn, extensions, commands } from "vscode";
 import {
   BaseLanguageClient,
   RequestType,
@@ -78,6 +78,10 @@ export class InfoPanel {
   // notify the info panel that we have fresh goals to render
   requestDisplay(goals: GoalAnswer<PpString>) {
     this.postMessage("renderGoals", goals);
+    let vizx = extensions.getExtension("inQWIRE.vizx");
+    if (vizx?.isActive) {
+      commands.executeCommand("vizx.lspRender", goals);
+    }
   }
 
   // notify the info panel that we found an error
