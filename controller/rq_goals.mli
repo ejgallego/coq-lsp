@@ -5,8 +5,4 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type format =
-  | Pp
-  | Str
-
-val goals : pp_format:format -> Request.position
+val goals : Request.position

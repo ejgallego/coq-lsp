@@ -25,17 +25,7 @@ let get_goals_mode () =
   if !Fleche.Config.v.goal_after_tactic then Fleche.Info.PrevIfEmpty
   else Fleche.Info.Prev
 
-(** Format for goal printing *)
-type format =
-  | Pp
-  | Str
-
-let pp ~pp_format pp =
-  match pp_format with
-  | Pp -> Lsp.JCoq.Pp.to_yojson pp
-  | Str -> `String (Pp.string_of_ppcmds pp)
-
-let goals ~pp_format ~doc ~point =
+let goals ~doc ~point =
   let open Fleche in
   let uri, version = (doc.Doc.uri, doc.version) in
   let textDocument = Lsp.Doc.VersionedTextDocumentIdentifier.{ uri; version } in
@@ -48,7 +38,10 @@ let goals ~pp_format ~doc ~point =
   let node = Info.LC.node ~doc ~point Exact in
   let messages = mk_messages node in
   let error = Option.bind node mk_error in
-  let pp = pp ~pp_format in
+  let pp pp =
+    if !Fleche.Config.v.pp_type = 1 then Lsp.JCoq.Pp.to_yojson pp
+    else `String (Pp.string_of_ppcmds pp)
+  in
   Lsp.JFleche.GoalsAnswer.(
     to_yojson pp { textDocument; position; goals; program; messages; error })
   |> Result.ok

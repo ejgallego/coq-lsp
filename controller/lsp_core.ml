@@ -28,8 +28,6 @@ let int_field name dict = U.to_int (field name dict)
 let dict_field name dict = U.to_assoc (field name dict)
 let list_field name dict = U.to_list (field name dict)
 let string_field name dict = U.to_string (field name dict)
-let ofield name dict = List.(assoc_opt name dict)
-let ostring_field name dict = Option.map U.to_string (ofield name dict)
 
 module LIO = Lsp.Io
 module LSP = Lsp.Base
@@ -267,26 +265,7 @@ let do_position_request ~postpone ~params ~handler =
     (Request.Data.PosRequest { uri; handler; point; version; postpone })
 
 let do_hover = do_position_request ~postpone:false ~handler:Rq_hover.hover
-
-(* We get the format from the params *)
-let get_pp_format_from_config () =
-  match !Fleche.Config.v.pp_type with
-  | 1 -> Rq_goals.Pp
-  | _ -> Rq_goals.Str
-
-let get_pp_format params =
-  match ostring_field "pp_format" params with
-  | Some "Pp" -> Rq_goals.Pp
-  | Some "Str" -> Rq_goals.Str
-  | Some v ->
-    LIO.trace "get_pp_format" ("error in parameter: " ^ v);
-    get_pp_format_from_config ()
-  | None -> get_pp_format_from_config ()
-
-let do_goals ~params =
-  let pp_format = get_pp_format params in
-  let handler = Rq_goals.goals ~pp_format in
-  do_position_request ~postpone:true ~handler ~params
+let do_goals = do_position_request ~postpone:true ~handler:Rq_goals.goals
 
 let do_definition =
   do_position_request ~postpone:true ~handler:Rq_definition.request
