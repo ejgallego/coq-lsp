@@ -31,7 +31,7 @@ let exit_message () =
 
 let lsp_cleanup () = exit_message ()
 
-let rec process_queue ~ofn ~state =
+let rec process_queue ~delay ~ofn ~state : unit =
   if Fleche.Debug.sched_wakeup then
     LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   match dispatch_or_resume_check ~ofn ~state with
@@ -44,9 +44,9 @@ let rec process_queue ~ofn ~state =
        I/O *)
     exit 0
   | Some (Yield state) ->
-    Thread.delay 0.1;
-    process_queue ~ofn ~state
-  | Some (Cont state) -> process_queue ~ofn ~state
+    Thread.delay delay;
+    process_queue ~delay ~ofn ~state
+  | Some (Cont state) -> process_queue ~delay ~ofn ~state
 
 (* Main loop *)
 let lsp_cb =
@@ -77,7 +77,7 @@ let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug =
     | Init_effect.Loop -> lsp_init_loop ~ifn ~ofn ~cmdline ~debug
     | Init_effect.Success w -> w)
 
-let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
+let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay =
   (* Try to be sane w.r.t. \r\n in Windows *)
   Stdlib.set_binary_mode_in stdin true;
   Stdlib.set_binary_mode_out stdout true;
@@ -127,9 +127,8 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
     (* Read workspace state (noop for now) *)
     Cache.read_from_disk ();
 
-    let (_ : Thread.t) =
-      Thread.create (fun () -> process_queue ~ofn ~state) ()
-    in
+    let pfn () : unit = process_queue ~delay ~ofn ~state in
+    let (_ : Thread.t) = Thread.create pfn () in
 
     read_loop ()
   with
@@ -208,6 +207,10 @@ let ml_include_path : string list Term.t =
   Arg.(
     value & opt_all dir [] & info [ "I"; "ml-include-path" ] ~docv:"DIR" ~doc)
 
+let delay : float Term.t =
+  let doc = "Delay value in seconds when server is idle" in
+  Arg.(value & opt float 0.1 & info [ "D"; "idle-delay" ] ~docv:"DELAY" ~doc)
+
 let term_append l =
   Term.(List.(fold_right (fun t l -> const append $ t $ l) l (const [])))
 
@@ -226,7 +229,7 @@ let lsp_cmd : unit Cmd.t =
       (Cmd.info "coq-lsp" ~version:Version.server ~doc ~man)
       Term.(
         const lsp_main $ bt $ coqcorelib $ coqlib $ ocamlpath $ vo_load_path
-        $ ml_include_path))
+        $ ml_include_path $ delay))
 
 let main () =
   let ecode = Cmd.eval lsp_cmd in
