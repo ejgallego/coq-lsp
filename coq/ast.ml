@@ -195,12 +195,12 @@ let make_info ~st:_ ~lines CAst.{ loc; v } : Lang.Ast.Info.t list option =
     let range = Utils.to_range ~lines range in
     (* TODO: sections *)
     match v.expr with
-    | VernacDefinition ((_, kind), (name, _), _) ->
+    | VernacSynPure (VernacDefinition ((_, kind), (name, _), _)) ->
       let name = mk_name ~lines name in
       let detail = definition_detail kind in
       let kind = Kinds.function_ in
       Some [ Lang.Ast.Info.make ~range ~name ~detail ~kind () ]
-    | VernacStartTheoremProof (kind, ndecls) -> (
+    | VernacSynPure (VernacStartTheoremProof (kind, ndecls)) -> (
       let detail = theorem_detail kind in
       let kind = Kinds.function_ in
       match ndecls with
@@ -208,13 +208,13 @@ let make_info ~st:_ ~lines CAst.{ loc; v } : Lang.Ast.Info.t list option =
         let name = mk_id ~lines id in
         Some [ Lang.Ast.Info.make ~range ~name ~detail ~kind () ]
       | [] -> None)
-    | VernacInductive (ikind, idecls) ->
+    | VernacSynPure (VernacInductive (ikind, idecls)) ->
       inductives_info ~lines ~range ikind idecls
-    | VernacAssumption ((_, kind), _, ids) ->
+    | VernacSynPure (VernacAssumption ((_, kind), _, ids)) ->
       Some (List.concat_map (assumption_info ~lines kind) ids)
-    | VernacFixpoint (_, f_expr) ->
+    | VernacSynPure (VernacFixpoint (_, f_expr)) ->
       Some (List.map (fixpoint_info ~lines ~range) f_expr)
-    | VernacInstance ((name, _), _, _, _, _) ->
+    | VernacSynPure (VernacInstance ((name, _), _, _, _, _)) ->
       let name = mk_name ~lines name in
       let kind = Kinds.method_ in
       let detail = "Instance" in

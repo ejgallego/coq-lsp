@@ -45,25 +45,32 @@ let to_coq x = x
 (* let compare x y = compare x y *)
 let compare (x : t) (y : t) =
   let open Vernacstate in
-  let { parsing = p1
-      ; system = s1
-      ; lemmas = l1
-      ; program = g1
-      ; opaques = o1
-      ; shallow = h1
+  let { synterp = { parsing = p1; system = ss1 }
+      ; interp =
+          { system = is1
+          ; lemmas = l1
+          ; program = g1
+          ; opaques = o1
+          ; shallow = h1
+          }
       } =
     x
   in
-  let { parsing = p2
-      ; system = s2
-      ; lemmas = l2
-      ; program = g2
-      ; opaques = o2
-      ; shallow = h2
+  let { synterp = { parsing = p2; system = ss2 }
+      ; interp =
+          { system = is2
+          ; lemmas = l2
+          ; program = g2
+          ; opaques = o2
+          ; shallow = h2
+          }
       } =
     y
   in
-  if p1 == p2 && s1 == s2 && l1 == l2 && g1 == g2 && o1 == o2 && h1 == h2 then 0
+  if
+    p1 == p2 && ss1 == ss2 && is1 == is2 && l1 == l2 && g1 == g2 && o1 == o2
+    && h1 == h2
+  then 0
   else 1
 
 let equal x y = compare x y = 0
@@ -71,10 +78,10 @@ let hash x = Hashtbl.hash x
 
 let mode ~st =
   Option.map
-    (fun _ -> Vernacinterp.get_default_proof_mode ())
-    st.Vernacstate.lemmas
+    (fun _ -> Synterp.get_default_proof_mode ())
+    st.Vernacstate.interp.lemmas
 
-let parsing ~st = st.Vernacstate.parsing
+let parsing ~st = st.Vernacstate.synterp.parsing
 
 module Proof_ = Proof
 
@@ -84,44 +91,51 @@ module Proof = struct
   let to_coq x = x
 end
 
-let lemmas ~st = st.Vernacstate.lemmas
-let program ~st = NeList.head st.Vernacstate.program |> Declare.OblState.view
+let lemmas ~st = st.Vernacstate.interp.lemmas
+
+let program ~st =
+  NeList.head st.Vernacstate.interp.program |> Declare.OblState.view
 
 let drop_proofs ~st =
   let open Vernacstate in
-  { st with
-    lemmas =
-      Option.cata (fun s -> snd @@ Vernacstate.LemmaStack.pop s) None st.lemmas
-  }
+  let interp =
+    { st.interp with
+      lemmas =
+        Option.cata
+          (fun s -> snd @@ Vernacstate.LemmaStack.pop s)
+          None st.interp.lemmas
+    }
+  in
+  { st with interp }
 
 let in_state ~st ~f a =
   let f a =
-    Vernacstate.unfreeze_interp_state st;
+    Vernacstate.unfreeze_full_state st;
     f a
   in
   Protect.eval ~f a
 
 let admit ~st () =
-  let () = Vernacstate.unfreeze_interp_state st in
-  match st.Vernacstate.lemmas with
+  let () = Vernacstate.unfreeze_full_state st in
+  match st.Vernacstate.interp.lemmas with
   | None -> st
   | Some lemmas ->
-    let pm = NeList.head st.Vernacstate.program in
+    let pm = NeList.head st.Vernacstate.interp.program in
     let proof, lemmas = Vernacstate.(LemmaStack.pop lemmas) in
     let pm = Declare.Proof.save_admitted ~pm ~proof in
-    let program = NeList.map_head (fun _ -> pm) st.Vernacstate.program in
-    let st = Vernacstate.freeze_interp_state ~marshallable:false in
-    { st with lemmas; program }
+    let program = NeList.map_head (fun _ -> pm) st.Vernacstate.interp.program in
+    let st = Vernacstate.freeze_full_state ~marshallable:false in
+    { st with interp = { st.interp with lemmas; program } }
 
 let admit ~st = Protect.eval ~f:(admit ~st) ()
 
 let admit_goal ~st () =
-  let () = Vernacstate.unfreeze_interp_state st in
-  match st.Vernacstate.lemmas with
+  let () = Vernacstate.unfreeze_full_state st in
+  match st.Vernacstate.interp.lemmas with
   | None -> st
   | Some lemmas ->
     let f pf = Declare.Proof.by Proofview.give_up pf |> fst in
     let lemmas = Some (Vernacstate.LemmaStack.map_top ~f lemmas) in
-    { st with lemmas }
+    { st with interp = { st.interp with lemmas } }
 
 let admit_goal ~st = Protect.eval ~f:(admit_goal ~st) ()

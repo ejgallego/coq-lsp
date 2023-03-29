@@ -133,7 +133,10 @@ module Diags = struct
   (* ast-dependent error diagnostic generation *)
   let extra_diagnostics_of_ast ast =
     match (Node.Ast.to_coq ast).v with
-    | Vernacexpr.{ expr = VernacRequire (prefix, _export, module_refs); _ } ->
+    | Vernacexpr.
+        { expr = VernacSynterp (VernacRequire (prefix, _export, module_refs))
+        ; _
+        } ->
       let refs = List.map fst module_refs in
       Some [ Lang.Diagnostic.Extra.FailedRequire { prefix; refs } ]
     | _ -> None
@@ -417,7 +420,8 @@ let rec find_proof_start nodes =
   | { Node.ast = None; _ } :: ns -> find_proof_start ns
   | ({ ast = Some ast; _ } as n) :: ns -> (
     match (Node.Ast.to_coq ast).CAst.v.Vernacexpr.expr with
-    | Vernacexpr.VernacStartTheoremProof _ -> Some (n, Util.hd_opt ns)
+    | Vernacexpr.VernacSynPure (VernacStartTheoremProof _) ->
+      Some (n, Util.hd_opt ns)
     | _ -> find_proof_start ns)
 
 let recovery_for_failed_qed ~default nodes =
@@ -443,11 +447,11 @@ let log_qed_recovery v =
 let state_recovery_heuristic doc st v =
   match (Node.Ast.to_coq v).CAst.v.Vernacexpr.expr with
   (* Drop the top proof state if we reach a faulty Qed. *)
-  | Vernacexpr.VernacEndProof _ ->
+  | Vernacexpr.VernacSynPure (VernacEndProof _) ->
     Io.Log.trace "recovery" "qed";
     recovery_for_failed_qed ~default:st doc.nodes |> log_qed_recovery v.v
   (* If a new focus (or unfocusing) fails, admit the proof and try again *)
-  | Vernacexpr.VernacBullet _ | Vernacexpr.VernacEndSubproof ->
+  | Vernacexpr.VernacSynPure (VernacBullet _ | Vernacexpr.VernacEndSubproof) ->
     Io.Log.trace "recovery" "bullet";
     Coq.State.admit_goal ~st
     |> Coq.Protect.E.bind ~f:(fun st -> Coq.Interp.interp ~st v.v)

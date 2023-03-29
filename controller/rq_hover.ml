@@ -101,7 +101,7 @@ let info_of_id ~st id =
   let st = Coq.State.to_coq st in
   let sigma, env =
     match st with
-    | { Vernacstate.lemmas = Some pstate; _ } ->
+    | { Vernacstate.interp = { lemmas = Some pstate; _ }; _ } ->
       Vernacstate.LemmaStack.with_top pstate
         ~f:Declare.Proof.get_current_context
     | _ ->
