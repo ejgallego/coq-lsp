@@ -63,13 +63,12 @@ type 'pp reified_pp = ('pp reified_goal, 'pp) goals
 
 module CDC = Context.Compacted.Declaration
 
-type cdcl = Constr.compacted_declaration
+type cdcl = EConstr.compacted_declaration
 
 let binder_name n = Context.binder_name n |> Names.Id.to_string
 
 let to_tuple ppx : cdcl -> 'pc hyp =
   let open CDC in
-  let ppx t = ppx (EConstr.of_constr t) in
   function
   | LocalAssum (idl, tm) ->
     let names = List.map binder_name idl in
@@ -103,7 +102,7 @@ let process_goal_gen ppx sigma g : 'a reified_goal =
   let (EvarInfo evi) = Evd.find sigma g in
   let env = Evd.evar_filtered_env env evi in
   (* why is compaction neccesary... ? [eg for better display] *)
-  let ctx = Termops.compact_named_context (Environ.named_context env) in
+  let ctx = Termops.compact_named_context sigma (EConstr.named_context env) in
   let ppx = ppx env sigma in
   let hyps = List.map (get_hyp ppx sigma) ctx |> List.rev in
   let info = build_info sigma g in
