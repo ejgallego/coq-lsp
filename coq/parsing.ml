@@ -1,4 +1,8 @@
-module Parsable = Pcoq.Parsable
+module Parsable = struct
+  include Pcoq.Parsable
+
+  let make = make ?fix_loc:None
+end
 
 let parse ~st ps =
   let mode = State.mode ~st in
