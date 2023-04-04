@@ -94,7 +94,7 @@ let info_of_id env sigma id =
         | ConstructRef cr -> info_of_constructor env cr |> print_type env sigma)
         |> fun x -> Some x
       | Abbrev kn ->
-        Some (Notation (Prettyp.default_object_pr.print_abbreviation env kn))
+        Some (Notation (Prettyp.print_abbreviation env kn))
     with _ -> None)
 
 let info_of_id ~st id =
