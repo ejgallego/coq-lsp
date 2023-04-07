@@ -1,6 +1,6 @@
 (* Taken from sertop / Coq *)
 let ensure_no_pending_proofs ~in_file ~st =
-  match st.Vernacstate.lemmas with
+  match st.Vernacstate.interp.lemmas with
   | Some lemmas ->
     let pfs = Vernacstate.LemmaStack.get_all_proof_names lemmas in
     CErrors.user_err
@@ -10,7 +10,7 @@ let ensure_no_pending_proofs ~in_file ~st =
         ++ (pfs |> List.rev |> prlist_with_sep pr_comma Names.Id.print)
         ++ str ".")
   | None ->
-    let pm = st.Vernacstate.program in
+    let pm = st.Vernacstate.interp.program in
     let what_for = Pp.str ("file " ^ in_file) in
     NeList.iter
       (fun pm -> Declare.Obls.check_solved_obligations ~what_for ~pm)

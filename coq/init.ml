@@ -79,7 +79,7 @@ let coq_init opts =
   (**************************************************************************)
   (* Add root state!!                                                       *)
   (**************************************************************************)
-  Vernacstate.freeze_interp_state ~marshallable:false |> State.of_coq
+  Vernacstate.freeze_full_state ~marshallable:false |> State.of_coq
 
 (* End of core initialization *)
 
@@ -90,7 +90,7 @@ let coq_init opts =
 (* Inits the context for a document *)
 let doc_init ~root_state ~workspace ~uri () =
   (* Lsp.Io.log_error "init" "starting"; *)
-  Vernacstate.unfreeze_interp_state (State.to_coq root_state);
+  Vernacstate.unfreeze_full_state (State.to_coq root_state);
 
   (* Set load paths from workspace info. *Important*, this has to happen before
      we declare the library below as [Declaremods/Library] will infer the module
@@ -98,7 +98,7 @@ let doc_init ~root_state ~workspace ~uri () =
   Workspace.apply ~uri workspace;
 
   (* We return the state at this point! *)
-  Vernacstate.freeze_interp_state ~marshallable:false |> State.of_coq
+  Vernacstate.freeze_full_state ~marshallable:false |> State.of_coq
 
 let doc_init ~root_state ~workspace ~uri =
   Protect.eval ~f:(doc_init ~root_state ~workspace ~uri) ()
