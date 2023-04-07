@@ -20,7 +20,7 @@ module Check : sig
       [Some rqs] the list of requests ready to execute after the check. Sends
       progress and diagnostics notifications using output function [ofn]. *)
   val maybe_check :
-    ofn:(Yojson.Safe.t -> unit) -> (Int.Set.t * Fleche.Doc.t) option
+    ofn:(Yojson.Safe.t -> unit) -> concise:bool ->(Int.Set.t * Fleche.Doc.t) option
 end
 
 (** Create a document *)

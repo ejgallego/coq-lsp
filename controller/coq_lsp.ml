@@ -31,10 +31,10 @@ let exit_message () =
 
 let lsp_cleanup () = exit_message ()
 
-let rec process_queue ~delay ~ofn ~state : unit =
+let rec process_queue ~delay ~concise ~ofn ~state : unit =
   if Fleche.Debug.sched_wakeup then
     LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
-  match dispatch_or_resume_check ~ofn ~state with
+  match dispatch_or_resume_check ~ofn ~concise ~state with
   | None ->
     (* As of now, we exit the whole program here, we could try an experiment to
        invert the threads, so the I/O routine is a thread and process_queue is
@@ -45,8 +45,18 @@ let rec process_queue ~delay ~ofn ~state : unit =
     exit 0
   | Some (Yield state) ->
     Thread.delay delay;
-    process_queue ~delay ~ofn ~state
-  | Some (Cont state) -> process_queue ~delay ~ofn ~state
+    process_queue ~delay ~concise ~ofn ~state
+  | Some (Cont state) -> process_queue ~delay ~concise ~ofn ~state
+
+let concise_cb =
+  Fleche.Io.CallBack.
+  { trace =
+      (fun _hdr ?extra:_ _msg -> ())
+    ; send_diagnostics =
+        (fun ~ofn:_ ~uri:_ ~version:_ _diags -> ())
+    ; send_fileProgress =
+        (fun ~ofn:_ ~uri:_ ~version:_ _progress -> ())
+  }
 
 (* Main loop *)
 let lsp_cb =
@@ -77,7 +87,7 @@ let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug =
     | Init_effect.Loop -> lsp_init_loop ~ifn ~ofn ~cmdline ~debug
     | Init_effect.Success w -> w)
 
-let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay =
+let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay concise =
   (* Try to be sane w.r.t. \r\n in Windows *)
   Stdlib.set_binary_mode_in stdin true;
   Stdlib.set_binary_mode_out stdout true;
@@ -86,8 +96,12 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay =
   let ifn () = LIO.read_request stdin in
   (* Set log channels *)
   let ofn = LIO.send_json Format.std_formatter in
-  LIO.set_log_fn ofn;
-  Fleche.Io.CallBack.set lsp_cb;
+  if concise then
+    (LIO.set_log_fn (fun _obj -> ());
+     Fleche.Io.CallBack.set concise_cb)
+  else
+    (LIO.set_log_fn ofn;
+     Fleche.Io.CallBack.set lsp_cb);
 
   (* IMPORTANT: LSP spec forbids any message from server to client before
      initialize is received *)
@@ -127,7 +141,7 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay =
     (* Read workspace state (noop for now) *)
     Cache.read_from_disk ();
 
-    let pfn () : unit = process_queue ~delay ~ofn ~state in
+    let pfn () : unit = process_queue ~delay ~concise ~ofn ~state in
     let (_ : Thread.t) = Thread.create pfn () in
 
     read_loop ()
@@ -211,6 +225,10 @@ let delay : float Term.t =
   let doc = "Delay value in seconds when server is idle" in
   Arg.(value & opt float 0.1 & info [ "D"; "idle-delay" ] ~docv:"DELAY" ~doc)
 
+let concise =
+  let doc = "Reduce amount of printing on requests agressively" in
+  Cmdliner.Arg.(value & flag & info [ "concise" ] ~doc)
+
 let term_append l =
   Term.(List.(fold_right (fun t l -> const append $ t $ l) l (const [])))
 
@@ -229,7 +247,7 @@ let lsp_cmd : unit Cmd.t =
       (Cmd.info "coq-lsp" ~version:Version.server ~doc ~man)
       Term.(
         const lsp_main $ bt $ coqcorelib $ coqlib $ ocamlpath $ vo_load_path
-        $ ml_include_path $ delay))
+        $ ml_include_path $ delay $ concise))
 
 let main () =
   let ecode = Cmd.eval lsp_cmd in
