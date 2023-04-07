@@ -61,9 +61,9 @@ let log = ref (fun _ _ -> ())
 let send_json fmt obj =
   Mutex.lock mut;
   if Fleche.Debug.send then !log "send" obj;
-  let msg = F.asprintf "%a" J.(pretty_print ~std:true) obj in
+  let msg = J.to_string obj in
   let size = String.length msg in
-  F.fprintf fmt "Content-Length: %d\r\n\r\n%s%!" size msg;
+  F.fprintf fmt "Content-Length: %d\r\n\r\n%s\n%!" (size+1) msg;
   Mutex.unlock mut
 
 (** Logging *)
