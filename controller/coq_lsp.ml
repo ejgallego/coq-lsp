@@ -50,13 +50,10 @@ let rec process_queue ~delay ~concise ~ofn ~state : unit =
 
 let concise_cb =
   Fleche.Io.CallBack.
-  { trace =
-      (fun _hdr ?extra:_ _msg -> ())
-    ; send_diagnostics =
-        (fun ~ofn:_ ~uri:_ ~version:_ _diags -> ())
-    ; send_fileProgress =
-        (fun ~ofn:_ ~uri:_ ~version:_ _progress -> ())
-  }
+    { trace = (fun _hdr ?extra:_ _msg -> ())
+    ; send_diagnostics = (fun ~ofn:_ ~uri:_ ~version:_ _diags -> ())
+    ; send_fileProgress = (fun ~ofn:_ ~uri:_ ~version:_ _progress -> ())
+    }
 
 (* Main loop *)
 let lsp_cb =
@@ -87,7 +84,8 @@ let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug =
     | Init_effect.Loop -> lsp_init_loop ~ifn ~ofn ~cmdline ~debug
     | Init_effect.Success w -> w)
 
-let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay concise =
+let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay
+    concise =
   (* Try to be sane w.r.t. \r\n in Windows *)
   Stdlib.set_binary_mode_in stdin true;
   Stdlib.set_binary_mode_out stdout true;
@@ -96,12 +94,12 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay c
   let ifn () = LIO.read_request stdin in
   (* Set log channels *)
   let ofn = LIO.send_json Format.std_formatter in
-  if concise then
-    (LIO.set_log_fn (fun _obj -> ());
-     Fleche.Io.CallBack.set concise_cb)
-  else
-    (LIO.set_log_fn ofn;
-     Fleche.Io.CallBack.set lsp_cb);
+  if concise then (
+    LIO.set_log_fn (fun _obj -> ());
+    Fleche.Io.CallBack.set concise_cb)
+  else (
+    LIO.set_log_fn ofn;
+    Fleche.Io.CallBack.set lsp_cb);
 
   (* IMPORTANT: LSP spec forbids any message from server to client before
      initialize is received *)
