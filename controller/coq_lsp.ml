@@ -54,7 +54,7 @@ let concise_cb =
     ; send_diagnostics =
         (fun ~ofn ~uri ~version diags ->
           if List.length diags > 0 then
-          Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)
+            Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)
     ; send_fileProgress = (fun ~ofn:_ ~uri:_ ~version:_ _progress -> ())
     }
 
