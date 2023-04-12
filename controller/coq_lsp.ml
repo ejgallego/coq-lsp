@@ -51,7 +51,10 @@ let rec process_queue ~delay ~concise ~ofn ~state : unit =
 let concise_cb =
   Fleche.Io.CallBack.
     { trace = (fun _hdr ?extra:_ _msg -> ())
-    ; send_diagnostics = (fun ~ofn:_ ~uri:_ ~version:_ _diags -> ())
+    ; send_diagnostics =
+        (fun ~ofn ~uri ~version diags ->
+          if List.length diags > 0 then
+          Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)
     ; send_fileProgress = (fun ~ofn:_ ~uri:_ ~version:_ _progress -> ())
     }
 
