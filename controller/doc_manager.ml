@@ -138,12 +138,13 @@ end
 let diags_of_doc doc =
   List.concat_map Fleche.Doc.Node.diags doc.Fleche.Doc.nodes
 
-let send_diags ~ofn ~doc =
+let send_diags ~ofn ~concise ~doc =
   let diags = diags_of_doc doc in
-  let diags =
-    Lsp.JLang.mk_diagnostics ~uri:doc.uri ~version:doc.version diags
-  in
-  ofn diags
+  if List.length diags > 0 || not concise then
+    let diags =
+      Lsp.JLang.mk_diagnostics ~uri:doc.uri ~version:doc.version diags
+    in
+    ofn diags
 
 let send_perf_data ~ofn ~(doc : Fleche.Doc.t) =
   match doc.completed with
@@ -181,8 +182,8 @@ end = struct
       let target = get_check_target handle.pt_requests in
       let doc = Fleche.Doc.check ~ofn ~target ~doc:handle.doc () in
       let requests = Handle.update_doc_info ~handle ~doc in
+      send_diags ~ofn ~doc ~concise;
       if not concise then (
-        send_diags ~ofn ~doc;
         (* Only if completed! *)
         if completed ~doc then send_perf_data ~ofn ~doc);
       (* Only if completed! *)
