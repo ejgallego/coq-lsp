@@ -52,10 +52,7 @@ type 'a cont =
 (** Core scheduler: dispatch an LSP request or notification, check document and
     wake up pending requests *)
 val dispatch_or_resume_check :
-     ofn:(Yojson.Safe.t -> unit)
-  -> concise:bool
-  -> state:State.t
-  -> State.t cont option
+  ofn:(Yojson.Safe.t -> unit) -> state:State.t -> State.t cont option
 
 (** Add a message to the queue *)
 val enqueue_message : Lsp.Base.Message.t -> unit
