@@ -97,12 +97,8 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay
   let ifn () = LIO.read_request stdin in
   (* Set log channels *)
   let ofn = LIO.send_json Format.std_formatter in
-  if concise then (
-    LIO.set_log_fn (fun _obj -> ());
-    Fleche.Io.CallBack.set concise_cb)
-  else (
-    LIO.set_log_fn ofn;
-    Fleche.Io.CallBack.set lsp_cb);
+  LIO.set_log_fn ofn;
+  Fleche.Io.CallBack.set lsp_cb;
 
   (* IMPORTANT: LSP spec forbids any message from server to client before
      initialize is received *)
@@ -135,6 +131,9 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay
   try
     (* LSP Server server initialization *)
     let workspaces = lsp_init_loop ~ifn ~ofn ~cmdline ~debug in
+    if !Fleche.Config.v.verbosity < 2 then
+        (LIO.set_log_fn (fun _obj -> ());
+         Fleche.Io.CallBack.set concise_cb);
 
     (* Core LSP loop context *)
     let state = { State.root_state; cmdline; workspaces } in
