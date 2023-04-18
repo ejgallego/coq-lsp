@@ -17,9 +17,6 @@
 
 module LIO = Lsp.Io
 
-(* XXX: We need to handle this better *)
-exception AbortRequest
-
 (* Handler for document *)
 module Handle = struct
   type t =
@@ -53,17 +50,7 @@ module Handle = struct
       { doc; cp_requests = Int.Set.empty; pt_requests = [] }
 
   let close ~uri = Hashtbl.remove doc_table uri
-
-  let find ~uri =
-    match Hashtbl.find_opt doc_table uri with
-    | Some h -> h
-    | None ->
-      LIO.trace "DocHandle.find"
-        ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
-      raise AbortRequest
-
   let find_opt ~uri = Hashtbl.find_opt doc_table uri
-  let find_doc ~uri = (find ~uri).doc
 
   let _update_doc ~handle ~(doc : Fleche.Doc.t) =
     Hashtbl.replace doc_table doc.uri { handle with doc }
@@ -165,10 +152,17 @@ let send_perf_data ~ofn ~(doc : Fleche.Doc.t) =
     Lsp.Base.mk_notification ~method_:"$/coq/filePerfData" ~params |> ofn
   | _ -> ()
 
+let completed ~(doc : Fleche.Doc.t) =
+  match doc.completed with
+  | Yes _ | Failed _ | FailedPermanent _ -> true
+  | Stopped _ -> false
+
 module Check : sig
   val schedule : uri:Lang.LUri.File.t -> unit
   val deschedule : uri:Lang.LUri.File.t -> unit
-  val maybe_check : ofn:(Yojson.Safe.t -> unit) -> Int.Set.t option
+
+  val maybe_check :
+    ofn:(Yojson.Safe.t -> unit) -> (Int.Set.t * Fleche.Doc.t) option
 end = struct
   let pending = ref None
 
@@ -176,11 +170,6 @@ end = struct
     let target_of_pt_handle (_, (l, c)) = Fleche.Doc.Target.Position (l, c) in
     Option.cata target_of_pt_handle Fleche.Doc.Target.End
       (List.nth_opt pt_requests 0)
-
-  let completed ~(doc : Fleche.Doc.t) =
-    match doc.completed with
-    | Yes _ | Failed _ | FailedPermanent _ -> true
-    | Stopped _ -> false
 
   (* Notification handling; reply is optional / asynchronous *)
   let check ~ofn ~uri =
@@ -195,13 +184,13 @@ end = struct
       if completed ~doc then send_perf_data ~ofn ~doc;
       (* Only if completed! *)
       if completed ~doc then pending := None;
-      requests
+      Some (requests, doc)
     | None ->
       LIO.trace "Check.check"
         ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
-      Int.Set.empty
+      None
 
-  let maybe_check ~ofn = Option.map (fun uri -> check ~ofn ~uri) !pending
+  let maybe_check ~ofn = Option.bind !pending (fun uri -> check ~ofn ~uri)
   let schedule ~uri = pending := Some uri
 
   let deschedule ~uri =
@@ -309,8 +298,72 @@ let close ~uri =
   Check.deschedule ~uri;
   Handle.close ~uri
 
-let find_doc = Handle.find_doc
-let add_on_completion ~uri ~id = Handle.attach_cp_request ~uri ~id
-let remove_on_completion ~uri ~id = Handle.remove_cp_request ~uri ~id
-let add_on_point ~uri ~id ~point = Handle.attach_pt_request ~uri ~id ~point
-let remove_on_point ~uri ~id ~point = Handle.remove_pt_request ~uri ~id ~point
+module Request = struct
+  type request =
+    | FullDoc of { uri : Lang.LUri.File.t }
+    | PosInDoc of
+        { uri : Lang.LUri.File.t
+        ; point : int * int
+        ; version : int option
+        ; postpone : bool
+        }
+
+  type t =
+    { id : int
+    ; request : request
+    }
+
+  type action =
+    | Now of Fleche.Doc.t
+    | Postpone
+    | Cancel
+
+  let with_doc ~f ~uri =
+    match Handle.find_opt ~uri with
+    | None ->
+      LIO.trace "Request.add"
+        ("document " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
+      (* XXX Should be cancelled *)
+      Cancel
+    | Some { doc; _ } -> f doc
+
+  let request_in_range ~(doc : Fleche.Doc.t) ~version (line, col) =
+    let in_range =
+      match doc.completed with
+      | Yes _ -> true
+      | Failed range | FailedPermanent range | Stopped range ->
+        Fleche.Doc.Target.reached ~range (line, col)
+    in
+    let in_range =
+      match version with
+      | None -> in_range
+      | Some version -> doc.version >= version && in_range
+    in
+    in_range
+
+  (** Add a request to be served; returns [true] if request is added to the
+      queue , [false] if the request can be already answered. *)
+  let add { id; request } =
+    match request with
+    | FullDoc { uri } ->
+      with_doc ~uri ~f:(fun doc ->
+          if completed ~doc then Now doc
+          else (
+            Handle.attach_cp_request ~uri ~id;
+            Postpone))
+    | PosInDoc { uri; point; version; postpone } ->
+      with_doc ~uri ~f:(fun doc ->
+          let in_range = request_in_range ~doc ~version point in
+          match (in_range, postpone) with
+          | true, _ -> Now doc
+          | false, true ->
+            Handle.attach_pt_request ~uri ~id ~point;
+            Postpone
+          | false, false -> Cancel)
+
+  (** Removes the request from the list of things to wake up *)
+  let remove { id; request } =
+    match request with
+    | FullDoc { uri } -> Handle.remove_cp_request ~uri ~id
+    | PosInDoc { uri; point; _ } -> Handle.remove_pt_request ~uri ~id ~point
+end

@@ -69,7 +69,6 @@ let binder_name n = Context.binder_name n |> Names.Id.to_string
 
 let to_tuple ppx : cdcl -> 'pc hyp =
   let open CDC in
-  let ppx t = ppx (EConstr.of_constr t) in
   function
   | LocalAssum (idl, tm) ->
     let names = List.map binder_name idl in
@@ -81,6 +80,7 @@ let to_tuple ppx : cdcl -> 'pc hyp =
 (** gets a hypothesis *)
 let get_hyp (ppx : EConstr.t -> 'pc) (_sigma : Evd.evar_map) (hdecl : cdcl) :
     'pc hyp =
+  let ppx x = ppx (EConstr.of_constr x) in
   to_tuple ppx hdecl
 
 (** gets the constr associated to the type of the current goal *)

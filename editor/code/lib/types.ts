@@ -68,6 +68,7 @@ export interface GoalAnswer<Pp> {
 export interface GoalRequest {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
+  pp_format?: "Pp" | "Str";
 }
 
 export type Pp =

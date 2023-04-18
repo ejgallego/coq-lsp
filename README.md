@@ -79,30 +79,28 @@ should not, please file a bug!
 ### 🧠 Smart, Cache-Aware Error Recovery
 
 `coq-lsp` won't stop checking on errors, but supports (and encourages) working
-with proof documents that are only partially working. Moreover, error recovery
-integrates with the incremental cache, and will recognize proof structure.
+with proof documents that are only partially working. Error recovery integrates
+with the incremental cache, and does recognize proof structure.
 
 You can edit without fear inside a `Proof. ... Qed.`, the rest of the document
-won't be rechecked, unless the proof is completed.
+won't be rechecked; you can leave bullets and focused goals unfinished, and
+`coq-lsp` will automatically admit them for you.
 
-Moreover, if a lemma is not completed, `coq-lsp` will admit it automatically. No
-more `Admitted` / `Qed` churn!
+If a lemma is not completed, `coq-lsp` will admit it automatically. No more
+`Admitted` / `Qed` churn!
 
 <img alt="Smart error recovery" height="286px" src="etc/img/lsp-errors.gif"/>
-
-Furthermore, you can leave bullets and focused goals unfinished, and `coq-lsp`
-will automatically admit them for you.
 
 ### 🥅 Whole-Document Goal Display
 
 `coq-lsp` will follow the cursor movement and show underlying goals and
-messages; this is configurable in case you'd like to trigger goal display more
-conservatively.
+messages; as well as information about what goals you have given up, shelves,
+pending obligations, open bullets and their goals.
 
 <img alt="Whole-Document Goal Display" height="286px" src="etc/img/lsp-goals.gif"/>
 
-The panel will also include goals that you have given up or shelved. This panel
-will also show the current info about open bullets and their goals.
+Goal display behavior is configurable in case you'd like to trigger goal display
+more conservatively.
 
 ### 🗒️ Markdown Support
 
@@ -112,13 +110,15 @@ documents at the core of its design ideas.
 
 <img alt="Coq + Markdown Editing" height="286px" src="etc/img/lsp-markdown.gif"/>
 
+Moreover, you can use Visual Studio Code Markdown preview to render your
+markdown documents nicely!
+
 ### 👥 Document Outline
 
 `coq-lsp` supports document outline and code folding, allowing you to jump
 directly to definitions in the document. Many of the Coq vernacular commands
 like `Definition`, `Theorem`, `Lemma`, etc. will be recognized as document
 symbols which you can navigate to or see the outline of.
-
 
 <img alt="Document Outline Demo" height="286px" src="etc/img/lsp-outline.gif"/> <img alt="Document Symbols" height="286px" src="etc/img/lsp-doc-symbols.png"/>
 
@@ -127,6 +127,9 @@ symbols which you can navigate to or see the outline of.
 Hovering over a Coq identifier will show its type.
 
 <img alt="Types on Hover" height="286px" src="etc/img/lsp-hover-2.gif"/>
+
+Hover is also used to get debug information, which can be enabled in the
+preferences panel.
 
 ### 📁 Multiple Workspaces
 
@@ -193,15 +196,17 @@ SerAPI](etc/SerAPI.md) document.
 ## 🛠️ Installation
 
 In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md)
-`coq-lsp` and a suitable client. We recommend the Visual Studio Code Extension.
+`coq-lsp` and a suitable client. We recommend the Visual Studio Code Extension
+as client.
 
 ### 🏘️ Supported Coq Versions
 
-`coq-lsp` supports Coq 8.16, Coq 8.17, and Coq's `master` branch.
+`coq-lsp` supports Coq 8.15, 8.16, Coq 8.17, and Coq's `master` branch. Code for
+each Coq version can be found in the corresponding branch.
 
 We recommended a minimum of Coq 8.17, due to better test coverage for that
-version.  We also recommend users to install the custom Coq trees for 8.16 and
-8.17 as detailed in [Working With Multiple Files](#working-with-multiple-files)
+version. For 8.16, we recommend users to install the custom Coq tree as detailed
+in [Working With Multiple Files](#working-with-multiple-files)
 
 Support for older Coq versions is possible; it is possible to make `coq-lsp`
 work with Coq back to Coq 8.10/8.9. If you are interested in making that happen
@@ -298,16 +303,11 @@ See our [list of frequently-asked questions](./etc/FAQ.md).
 ### 📂 Working With Multiple Files
 
 `coq-lsp` can't work with more than one file at the same time, due to problems
-with parsing state management upstream. This was fixed in Coq `master` branch
-(to become **Coq 8.18**).
+with parsing state management upstream. This was fixed in Coq 8.17.
 
-As this is very inconvenient, we do provide a fixed Coq branch that you can
-install using `opam pin`:
+As this is very inconvenient for users in older Coq versions, we do provide a
+fixed Coq branch that you can install using `opam pin`:
 
-- For Coq 8.17:
-  ```
-  opam pin add coq-core https://github.com/ejgallego/coq.git#v8.17+lsp
-  ```
 - For Coq 8.16:
   ```
   opam pin add coq https://github.com/ejgallego/coq.git#v8.16+lsp
@@ -344,11 +344,11 @@ the best ideas will arise from using `coq-lsp` in your own Coq projects.
 - Ali Caglayan (co-coordinator)
 - Emilio J. Gallego Arias (Inria Paris, co-coordinator)
 - Shachar Itzhaky (Technion)
-- Ramkumar Ramachandra (Inria Paris)
 
 ### 🕰️ Past Contributors
 
 - Vincent Laporte (Inria)
+- Ramkumar Ramachandra (Inria Paris)
 
 ## ©️ Licensing Information
 

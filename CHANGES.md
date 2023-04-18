@@ -22,6 +22,16 @@
  - Pass implicit argument information to hover printer (@ejgallego, #453,
    fixes #448)
  - Fix keybinding for the "Show Goals at Point" command (@4ever2, #460)
+ - Alert when `rootPath` is relative (#465, @ejgallego, report by Alex
+   Sanchez-Stern)
+ - Hook coq-lsp to ViZX extension (@bhaktishh, #469)
+ - `proof/goals` request now takes an optional formatting parameter
+   so clients can specify it per-request (@ejgallego, @bhaktishh, #470)
+ - New command line argument `--idle-delay=$secs` that controls how
+   much an idle server will sleep before going back to request
+   processing. Default setting is `0.1`, using more aggressive
+   settings like `0.01` can decrease latency of requests by ~4x
+   (@ejgallego, @hazardouspeach, #467, #471)
 
 # coq-lsp 0.1.6: Peek
 ---------------------

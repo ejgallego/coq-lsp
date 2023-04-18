@@ -1,7 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { GoalAnswer, GoalRequest, PpString } from "../../lib/types";
-
-// import "./media/info.css";
 
 // Main panel components
 import { FileInfo } from "./FileInfo";
@@ -9,6 +7,15 @@ import { Goals } from "./Goals";
 import { Messages } from "./Messages";
 import { ErrorBrowser } from "./ErrorBrowser";
 import { Program } from "./Program";
+
+import "./media/info.css";
+
+// Dynamic import because the project uses CommonJS and the module is an ECMAScript module
+// Top level await is supported with other `module` options in tsconfig.json
+const VSCodeDivider = lazy(async () => {
+  const { VSCodeDivider } = await import("@vscode/webview-ui-toolkit/react");
+  return { default: VSCodeDivider };
+});
 
 // First part, which should be split out is the protocol definition, second part is the UI.
 function doWaitingForInfo(info: GoalRequest) {
@@ -64,12 +71,23 @@ export function InfoPanel() {
   if (!goals) return null;
 
   return (
-    <FileInfo textDocument={goals.textDocument} position={goals.position}>
-      <Goals goals={goals.goals} />
-      <Program program={goals.program} />
-      <Messages messages={goals.messages} />
-      <ErrorBrowser error={goals.error} />
-    </FileInfo>
+    <div className="info-panel-container">
+      <div className="info-panel">
+        <FileInfo textDocument={goals.textDocument} position={goals.position}>
+          <Goals goals={goals.goals} />
+          <Program program={goals.program} />
+          <Messages messages={goals.messages} />
+        </FileInfo>
+      </div>
+      {!goals.error ? null : (
+        <div className="error-browser">
+          <Suspense>
+            <VSCodeDivider />
+          </Suspense>
+          <ErrorBrowser error={goals.error} />
+        </div>
+      )}
+    </div>
   );
 }
 

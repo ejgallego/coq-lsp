@@ -46,11 +46,21 @@ let check_client_version client_version : unit =
 let default_workspace_root = "."
 let parse_furi x = U.to_string x |> Lang.LUri.of_string |> Lang.LUri.File.of_uri
 
+let parse_fpath x =
+  let path = U.to_string x in
+  (if Filename.is_relative path then
+   let message =
+     "rootPath is not absolute: " ^ path
+     ^ " . This is not robust, please use absolute paths or rootURI"
+   in
+   LIO.logMessage ~lvl:2 ~message);
+  Lang.LUri.of_string ("file:///" ^ path) |> Lang.LUri.File.of_uri
+
 let parse_null_or f = function
   | None -> None
   | Some l -> U.to_option f l
 
-(* Poor man mapM *)
+(* Poor's developer mapM *)
 let rec result_map ls =
   match ls with
   | [] -> Result.ok []
@@ -63,13 +73,15 @@ let parse_wf l = List.map (field "uri") (U.to_list l) |> parse_furis
 
 let determine_workspace_root ~params : string list =
   (* Careful: all paths fields can be present but have value `null` *)
-  let rootPath = ofield "rootPath" params |> parse_null_or parse_furi in
+  let rootPath = ofield "rootPath" params |> parse_null_or parse_fpath in
   let rootUri = ofield "rootUri" params |> parse_null_or parse_furi in
   let wsFolders = ofield "workspaceFolders" params |> parse_null_or parse_wf in
   match (rootPath, rootUri, wsFolders) with
-  | None, None, None -> [ default_workspace_root ]
-  | _, Some (Ok dir_uri), None -> [ Lang.LUri.File.to_string_file dir_uri ]
-  | Some (Ok dir_uri), None, None -> [ Lang.LUri.File.to_string_file dir_uri ]
+  | None, None, (None | Some (Ok [])) -> [ default_workspace_root ]
+  | _, Some (Ok dir_uri), (None | Some (Ok [])) ->
+    [ Lang.LUri.File.to_string_file dir_uri ]
+  | Some (Ok dir_uri), None, (None | Some (Ok [])) ->
+    [ Lang.LUri.File.to_string_file dir_uri ]
   | Some (Error msg), _, _ | _, Some (Error msg), _ | _, _, Some (Error msg) ->
     LIO.trace "init" ("uri parsing failed: " ^ msg);
     [ default_workspace_root ]
