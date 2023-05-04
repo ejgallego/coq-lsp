@@ -48,6 +48,16 @@ let rec process_queue ~delay ~ofn ~state : unit =
     process_queue ~delay ~ofn ~state
   | Some (Cont state) -> process_queue ~delay ~ofn ~state
 
+let concise_cb =
+  Fleche.Io.CallBack.
+    { trace = (fun _hdr ?extra:_ _msg -> ())
+    ; send_diagnostics =
+        (fun ~ofn ~uri ~version diags ->
+          if List.length diags > 0 then
+            Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)
+    ; send_fileProgress = (fun ~ofn:_ ~uri:_ ~version:_ _progress -> ())
+    }
+
 (* Main loop *)
 let lsp_cb =
   Fleche.Io.CallBack.
@@ -120,6 +130,9 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay =
   try
     (* LSP Server server initialization *)
     let workspaces = lsp_init_loop ~ifn ~ofn ~cmdline ~debug in
+    if !Fleche.Config.v.verbosity < 2 then (
+      LIO.set_log_fn (fun _obj -> ());
+      Fleche.Io.CallBack.set concise_cb);
 
     (* Core LSP loop context *)
     let state = { State.root_state; cmdline; workspaces } in
