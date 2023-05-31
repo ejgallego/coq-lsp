@@ -63,9 +63,7 @@ let compare (x : t) (y : t) =
       } =
     y
   in
-  if
-    ps1 == ps2 && is1 == is2 && l1 == l2 && g1 == g2 && o1 == o2
-    && h1 == h2
+  if ps1 == ps2 && is1 == is2 && l1 == l2 && g1 == g2 && o1 == o2 && h1 == h2
   then 0
   else 1
 
@@ -190,9 +188,7 @@ let drop_proofs ~st =
   let open Vernacstate in
   { st with
     lemmas =
-      Option.cata
-        (fun s -> snd @@ Vernacstate.LemmaStack.pop s)
-          None st.lemmas
+      Option.cata (fun s -> snd @@ Vernacstate.LemmaStack.pop s) None st.lemmas
   }
 
 let in_state ~st ~f a =

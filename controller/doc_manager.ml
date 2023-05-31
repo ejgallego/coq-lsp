@@ -140,10 +140,11 @@ let diags_of_doc doc =
 
 let send_diags ~ofn ~doc =
   let diags = diags_of_doc doc in
-  let diags =
-    Lsp.JLang.mk_diagnostics ~uri:doc.uri ~version:doc.version diags
-  in
-  ofn diags
+  if List.length diags > 0 || !Fleche.Config.v.verbosity > 1 then
+    let diags =
+      Lsp.JLang.mk_diagnostics ~uri:doc.uri ~version:doc.version diags
+    in
+    ofn diags
 
 let send_perf_data ~ofn ~(doc : Fleche.Doc.t) =
   match doc.completed with
@@ -180,8 +181,9 @@ end = struct
       let doc = Fleche.Doc.check ~ofn ~target ~doc:handle.doc () in
       let requests = Handle.update_doc_info ~handle ~doc in
       send_diags ~ofn ~doc;
-      (* Only if completed! *)
-      if completed ~doc then send_perf_data ~ofn ~doc;
+      if !Fleche.Config.v.verbosity > 1 then
+        if (* Only if completed! *)
+           completed ~doc then send_perf_data ~ofn ~doc;
       (* Only if completed! *)
       if completed ~doc then pending := None;
       Some (requests, doc)

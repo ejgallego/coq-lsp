@@ -133,10 +133,7 @@ module Diags = struct
   (* ast-dependent error diagnostic generation *)
   let extra_diagnostics_of_ast ast =
     match (Node.Ast.to_coq ast).v with
-    | Vernacexpr.
-        { expr = VernacRequire (prefix, _export, module_refs)
-        ; _
-        } ->
+    | Vernacexpr.{ expr = VernacRequire (prefix, _export, module_refs); _ } ->
       let refs = List.map fst module_refs in
       Some [ Lang.Diagnostic.Extra.FailedRequire { prefix; refs } ]
     | _ -> None
@@ -420,8 +417,7 @@ let rec find_proof_start nodes =
   | { Node.ast = None; _ } :: ns -> find_proof_start ns
   | ({ ast = Some ast; _ } as n) :: ns -> (
     match (Node.Ast.to_coq ast).CAst.v.Vernacexpr.expr with
-    | Vernacexpr.VernacStartTheoremProof _ ->
-      Some (n, Util.hd_opt ns)
+    | Vernacexpr.VernacStartTheoremProof _ -> Some (n, Util.hd_opt ns)
     | _ -> find_proof_start ns)
 
 let recovery_for_failed_qed ~default nodes =
