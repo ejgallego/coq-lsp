@@ -46,30 +46,16 @@ let to_coq x = x
 let compare (x : t) (y : t) =
   let open Vernacstate in
   let { synterp = { parsing = p1; system = ss1 }
-      ; interp =
-          { system = is1
-          ; lemmas = l1
-          ; program = g1
-          ; opaques = o1
-          ; shallow = h1
-          }
+      ; interp = { system = is1; lemmas = l1; program = g1; opaques = o1 }
       } =
     x
   in
   let { synterp = { parsing = p2; system = ss2 }
-      ; interp =
-          { system = is2
-          ; lemmas = l2
-          ; program = g2
-          ; opaques = o2
-          ; shallow = h2
-          }
+      ; interp = { system = is2; lemmas = l2; program = g2; opaques = o2 }
       } =
     y
   in
-  if
-    p1 == p2 && ss1 == ss2 && is1 == is2 && l1 == l2 && g1 == g2 && o1 == o2
-    && h1 == h2
+  if p1 == p2 && ss1 == ss2 && is1 == is2 && l1 == l2 && g1 == g2 && o1 == o2
   then 0
   else 1
 
@@ -124,7 +110,7 @@ let admit ~st () =
     let proof, lemmas = Vernacstate.(LemmaStack.pop lemmas) in
     let pm = Declare.Proof.save_admitted ~pm ~proof in
     let program = NeList.map_head (fun _ -> pm) st.Vernacstate.interp.program in
-    let st = Vernacstate.freeze_full_state ~marshallable:false in
+    let st = Vernacstate.freeze_full_state () in
     { st with interp = { st.interp with lemmas; program } }
 
 let admit ~st = Protect.eval ~f:(admit ~st) ()
