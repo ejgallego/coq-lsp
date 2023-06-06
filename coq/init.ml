@@ -79,7 +79,7 @@ let coq_init opts =
   (**************************************************************************)
   (* Add root state!!                                                       *)
   (**************************************************************************)
-  Vernacstate.freeze_full_state ~marshallable:false |> State.of_coq
+  Vernacstate.freeze_full_state () |> State.of_coq
 
 (* End of core initialization *)
 
@@ -98,7 +98,7 @@ let doc_init ~root_state ~workspace ~uri () =
   Workspace.apply ~uri workspace;
 
   (* We return the state at this point! *)
-  Vernacstate.freeze_full_state ~marshallable:false |> State.of_coq
+  Vernacstate.freeze_full_state () |> State.of_coq
 
 let doc_init ~root_state ~workspace ~uri =
   Protect.eval ~f:(doc_init ~root_state ~workspace ~uri) ()
