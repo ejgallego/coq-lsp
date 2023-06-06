@@ -39,13 +39,13 @@ depends: [
   "zarith" {>= "1.11"}
 
   # serapi deps: remove this for releases
-  "sexplib"             { >= "v0.13.0"  }
   "ppx_deriving"        { >= "4.2.1"    }
-  "ppx_sexp_conv"       { >= "v0.13.0"  }
-  "ppx_compare"         { >= "v0.13.0"  }
-  "ppx_hash"            { >= "v0.13.0"  }
-  "ppx_import"          { >= "1.5-3"    }
   "ppx_deriving_yojson" { >= "3.4"      }
+  "ppx_import"          { >= "1.5-3"    }
+  "sexplib"             { >= "v0.13.0" & < "v0.16.0" }
+  "ppx_sexp_conv"       { >= "v0.13.0" & < "v0.16.0" }
+  "ppx_compare"         { >= "v0.13.0" & < "v0.16.0" }
+  "ppx_hash"            { >= "v0.13.0" & < "v0.16.0" }
 ]
 
 build: [ [ "dune" "build" "-p" name "-j" jobs ] ]
