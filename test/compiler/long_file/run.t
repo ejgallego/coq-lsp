@@ -11,6 +11,7 @@ We now compile the challenging file:
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
+   - 0 Coq modules (.v files) known
    - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
