@@ -217,6 +217,7 @@ type t =
 
 (* Flatten the list of document asts *)
 let asts doc = List.filter_map Node.ast doc.nodes
+let diags doc = List.concat_map (fun node -> node.Node.diags) doc.nodes
 
 (* TOC handling *)
 let rec add_toc_info toc { Lang.Ast.Info.name; range; children; _ } =
@@ -379,14 +380,12 @@ let add_node ~node doc =
   let toc = update_toc_node doc.toc node in
   { doc with nodes = node :: doc.nodes; toc; diags_dirty }
 
-let concat_diags doc = List.concat_map (fun node -> node.Node.diags) doc.nodes
-
 let send_eager_diagnostics ~io ~uri ~version ~doc =
   (* this is too noisy *)
   (* let proc_diag = mk_diag loc 3 (Pp.str "Processing") in *)
   (* Io.Report.diagnostics ~uri ~version (proc_diag :: doc.diags)); *)
   if doc.diags_dirty && !Config.v.eager_diagnostics then (
-    let diags = concat_diags doc in
+    let diags = diags doc in
     Io.Report.diagnostics ~io ~uri ~version diags;
     { doc with diags_dirty = false })
   else doc

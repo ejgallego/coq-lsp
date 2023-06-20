@@ -330,8 +330,8 @@ let version () =
     | None -> "N/A"
     | Some bi -> Build_info.V1.Version.to_string bi
   in
-  Format.asprintf "version %s, dev: %s, Coq version: %s, OS: %s" Version.server
-    dev_version Coq_config.version Sys.os_type
+  Format.asprintf "version %s, dev: %s, Coq version: %s, OS: %s"
+    Fleche.Version.server dev_version Coq_config.version Sys.os_type
 
 module Init_effect = struct
   type t =

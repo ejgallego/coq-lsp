@@ -1,0 +1,4 @@
+(library
+ (name Example_plugin)
+ (public_name coq-lsp.plugin.example)
+ (libraries coq-lsp.fleche))

@@ -66,6 +66,10 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: opam exec -- make test
 
+      - name: 🐛 Test fcc
+        if: matrix.os != 'windows-latest'
+        run: opam exec -- make test-compiler
+
   build-nix:
     name: Nix
     strategy:

@@ -75,6 +75,9 @@ type t = private
 (** Return the list of all asts in the doc *)
 val asts : t -> Node.Ast.t list
 
+(** Return the list of all diags in the doc *)
+val diags : t -> Lang.Diagnostic.t list
+
 (** Create a new Coq document, this is cached! *)
 val create :
      state:Coq.State.t

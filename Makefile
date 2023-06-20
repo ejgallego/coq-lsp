@@ -29,6 +29,10 @@ test/server/node_modules: test/server/package.json
 test: build test/server/node_modules
 	cd test/server && npm test
 
+.PHONY: test-compiler
+test-compiler: build
+	OCAMLPATH=_build/install/default/lib:$$OCAMLPATH FCC_TEST=true dune runtest
+
 .PHONY: fmt format
 fmt format:
 	dune fmt $(DUNEOPT)
