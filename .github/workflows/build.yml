@@ -70,7 +70,7 @@ jobs:
     name: Nix
     strategy:
       matrix:
-        os: [macOS-latest, ubuntu-latest]
+        os: [ubuntu-latest] # Removed macOS-latest, see #501 and #502
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
