@@ -13,5 +13,6 @@ We now compile the challenging file:
      + findlib default location: [TEST_PATH]
    - coqlib is at: [TEST_PATH]
      + 2 Coq path directory bindings in scope
+     + 0 Coq modules (.v files) known from Command-line arguments listing
      + Modules [Corelib.Init.Prelude] will be loaded by default
   [message] compiling file ./test.v
