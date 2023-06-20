@@ -34,6 +34,8 @@
    (@ejgallego, @hazardouspeach, #467, #471)
  - Warnings from `_CoqProject` files are now applied (@ejgallego,
    reported by @arthuraa, #500)
+ - Be more resilient when serializing unknowns Asts (@ejgallego, #503,
+   reported by Gijs Pennings)
 
 # coq-lsp 0.1.6: Peek
 ---------------------
