@@ -32,6 +32,8 @@
    processing. Default setting is `0.1`, using more aggressive
    settings like `0.01` can decrease latency of requests by ~4x
    (@ejgallego, @hazardouspeach, #467, #471)
+ - Warnings from `_CoqProject` files are now applied (@ejgallego,
+   reported by @arthuraa, #500)
 
 # coq-lsp 0.1.6: Peek
 ---------------------

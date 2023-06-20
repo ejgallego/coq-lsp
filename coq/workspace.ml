@@ -30,6 +30,22 @@ module Flags = struct
     Global.set_impredicative_set impredicative_set
 end
 
+module Warning : sig
+  type t
+
+  val make : string -> t
+  val apply : t -> unit
+end = struct
+  type t = string
+
+  let make x = x
+  let to_string x = x
+
+  let apply w =
+    let warn = CWarnings.get_flags () in
+    CWarnings.set_flags (warn ^ to_string w)
+end
+
 type t =
   { coqlib : string
   ; coqcorelib : string
@@ -39,6 +55,7 @@ type t =
   ; require_libs :
       (string * string option * Vernacexpr.export_with_cats option) list
   ; flags : Flags.t
+  ; warnings : Warning.t list
   ; kind : string
   ; debug : bool
   }
@@ -61,18 +78,21 @@ let mk_userlib unix_path =
 
 let getenv var else_ = try Sys.getenv var with Not_found -> else_
 
-let rec parse_args args init boot f =
+let rec parse_args args init boot f w =
   match args with
-  | [] -> (init, boot, f)
+  | [] -> (init, boot, f, List.rev w)
   | "-indices-matter" :: rest ->
-    parse_args rest init boot { f with Flags.indices_matter = true }
+    parse_args rest init boot { f with Flags.indices_matter = true } w
   | "-impredicative-set" :: rest ->
-    parse_args rest init boot { f with Flags.impredicative_set = true }
-  | "-noinit" :: rest -> parse_args rest false boot f
-  | "-boot" :: rest -> parse_args rest init true f
+    parse_args rest init boot { f with Flags.impredicative_set = true } w
+  | "-noinit" :: rest -> parse_args rest false boot f w
+  | "-boot" :: rest -> parse_args rest init true f w
+  | "-w" :: warn :: rest ->
+    let warn = Warning.make warn in
+    parse_args rest init boot f (warn :: w)
   | _ :: rest ->
     (* emit warning? *)
-    parse_args rest init boot f
+    parse_args rest init boot f w
 
 module CmdLine = struct
   type t =
@@ -98,7 +118,9 @@ let make ~cmdline ~implicit ~kind ~debug =
   let coqcorelib = getenv "COQCORELIB" coqcorelib in
   let coqlib = getenv "COQLIB" coqlib in
   let mk_path_coqlib prefix = coqlib ^ "/" ^ prefix in
-  let init, boot, flags = parse_args args true false Flags.default in
+  let init, boot, flags, warnings =
+    parse_args args true false Flags.default []
+  in
   (* Setup ml_include for the core plugins *)
   let dft_ml_include_path, dft_vo_load_path =
     if boot then ([], [])
@@ -124,6 +146,7 @@ let make ~cmdline ~implicit ~kind ~debug =
   ; ml_include_path
   ; require_libs
   ; flags
+  ; warnings
   ; kind
   ; debug
   }
@@ -207,11 +230,13 @@ let apply ~uri
     ; ml_include_path
     ; require_libs
     ; flags
+    ; warnings
     ; kind = _
     ; debug
     } =
   if debug then CDebug.set_flags "backtrace";
   Flags.apply flags;
+  List.iter Warning.apply warnings;
   List.iter Mltop.add_ml_dir ml_include_path;
   findlib_init ~ml_include_path ~ocamlpath;
   List.iter Loadpath.add_vo_path vo_load_path;
