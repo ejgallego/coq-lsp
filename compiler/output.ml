@@ -74,5 +74,7 @@ let set_config ~perfData ~coq_diags_level =
       })
 
 let init ~display ~coq_diags_level ~perfData =
+  (* Don't send perfdata on quiet display *)
+  let perfData = if display = Args.Display.Quiet then false else perfData in
   set_config ~perfData ~coq_diags_level;
   set_callbacks display
