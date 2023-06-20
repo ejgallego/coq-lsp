@@ -154,27 +154,6 @@ Some tips:
 
 [ocamlformat]: https://github.com/ocaml-ppx/ocamlformat
 
-### Releasing
-
-`coq-lsp` is released using `dune-release tag` + `dune-release`.
-
-The checklist for the release as of today is the following:
-
-### Client:
-
-- update the client changelog at `editor/code/CHANGELOG.md`, commit
-- for the `main` branch: `dune release tag $coq_lsp_version`
-- check with `vsce ls` that the client contents are OK
-- `vsce publish`
-
-### Server:
-
-- sync branches for previous Coq versions, using `git merge`, test and push to CI.
-- `dune release tag` for each `$coq_lsp_version+$coq_version`
-- `dune release` for each version that should to the main opam repos
-- [optional] update pre-release packages to coq-opam-archive
-- [important] bump `version.ml` and `package.json` version string
-
 ## Client guide (VS Code Extension)
 
 The VS Code extension is setup as a standard `npm` Typescript + React package
@@ -277,16 +256,44 @@ that, you want to use the web extension profile in the launch setup.
 The default build target will allow you to debug the extension by providing the
 right sourcemaps.
 
+## Test-suite
+
+`coq-lsp` has a test-suite in the [test directory](./test), see the
+README there for more details.
+
+## Releasing
+
+`coq-lsp` is released using `dune-release tag` + `dune-release`.
+
+The checklist for the release as of today is the following:
+
+### Client:
+
+- update the client changelog at `editor/code/CHANGELOG.md`, commit
+- for the `main` branch: `dune release tag $coq_lsp_version`
+- check with `vsce ls` that the client contents are OK
+- `vsce publish`
+
+### Server:
+
+- sync branches for previous Coq versions, using `git merge`, test and push to CI.
+- `dune release tag` for each `$coq_lsp_version+$coq_version`
+- `dune release` for each version that should to the main opam repos
+- [optional] update pre-release packages to coq-opam-archive
+- [important] bump `version.ml` and `package.json` version string
 
 ## Emacs
 
 You should be able to use `coq-lsp` with
 [eglot](https://joaotavora.github.io/eglot/).
 
-Emacs support is a goal of `coq-lsp`, so if you find any trouble using `eglot` or `lsp-mode` with `coq-lsp`, please don't hesitate to open an issue. 
+Emacs support is a goal of `coq-lsp`, so if you find any trouble using
+`eglot` or `lsp-mode` with `coq-lsp`, please don't hesitate to open an
+issue.
 
 ## VIM
 
-You should be able to use `coq-lsp` with VIM. 
+You should be able to use `coq-lsp` with VIM.
 
-VIM support is a goal of `coq-lsp`, so if you find any trouble using `coq-lsp` with VIM, please don't hesitate to open an issue. 
+VIM support is a goal of `coq-lsp`, so if you find any trouble using
+`coq-lsp` with VIM, please don't hesitate to open an issue.

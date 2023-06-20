@@ -8,7 +8,7 @@ import * as Types from "vscode-languageserver-types";
 import { URI } from "vscode-uri";
 
 let serverBin = os.platform() === "win32" ? "coq-lsp.exe" : "coq-lsp";
-let projectRoot = path.join(__dirname, "..", "..");
+let projectRoot = path.join(__dirname, "..", "..", "..");
 
 let serverPath = path.join(
   projectRoot,
