@@ -46,3 +46,4 @@ module Coq : Intf = struct
 end
 
 module Mp = Limits_mp_impl
+include Coq

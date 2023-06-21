@@ -25,7 +25,7 @@ let save_diags_file ~(doc : Fleche.Doc.t) =
   Util.format_to_file ~file ~f:Output.pp_diags diags
 
 let compile_file ~cc file =
-  let { Cc.io; root_state; workspaces; default } = cc in
+  let { Cc.io; root_state; workspaces; default; token } = cc in
   let lvl = Io.Level.info in
   let message = Format.asprintf "compiling file %s@\n%!" file in
   io.message ~lvl ~message;
@@ -35,8 +35,8 @@ let compile_file ~cc file =
     let workspace = workspace_of_uri ~io ~workspaces ~uri ~default in
     let env = Doc.Env.make ~init:root_state ~workspace in
     let raw = Util.input_all file in
-    let () = Theory.create ~io ~env ~uri ~raw ~version:1 in
-    match Theory.Check.maybe_check ~io with
+    let () = Theory.create ~io ~token ~env ~uri ~raw ~version:1 in
+    match Theory.Check.maybe_check ~io ~token with
     | None -> ()
     | Some (_, doc) ->
       save_diags_file ~doc;

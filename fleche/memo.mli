@@ -13,14 +13,18 @@ module Init : sig
   (** [size ()] Return the size in words, expensive *)
   val size : unit -> int
 
-  val eval : t -> (Coq.State.t, Loc.t) Coq.Protect.E.t
+  val eval :
+    token:Coq.Limits.Token.t -> t -> (Coq.State.t, Loc.t) Coq.Protect.E.t
 end
 
 module Interp : sig
   type t = Coq.State.t * Coq.Ast.t
 
   (** Interpret a command, possibly memoizing it *)
-  val eval : t -> (Coq.State.t, Loc.t) Coq.Protect.E.t Stats.t
+  val eval :
+       token:Coq.Limits.Token.t
+    -> t
+    -> (Coq.State.t, Loc.t) Coq.Protect.E.t Stats.t
 
   (** [size ()] Return the size in words, expensive *)
   val size : unit -> int
@@ -33,7 +37,10 @@ module Require : sig
   type t = Coq.State.t * Coq.Files.t * Coq.Ast.Require.t
 
   (** Interpret a require, possibly memoizing it *)
-  val eval : t -> (Coq.State.t, Loc.t) Coq.Protect.E.t Stats.t
+  val eval :
+       token:Coq.Limits.Token.t
+    -> t
+    -> (Coq.State.t, Loc.t) Coq.Protect.E.t Stats.t
 
   (** [size ()] Return the size in words, expensive *)
   val size : unit -> int
@@ -48,7 +55,8 @@ module Admit : sig
   (** [size ()] Return the size in words, expensive *)
   val size : unit -> int
 
-  val eval : t -> (Coq.State.t, Loc.t) Coq.Protect.E.t
+  val eval :
+    token:Coq.Limits.Token.t -> t -> (Coq.State.t, Loc.t) Coq.Protect.E.t
 end
 
 module CacheStats : sig

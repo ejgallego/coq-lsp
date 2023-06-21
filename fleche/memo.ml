@@ -115,7 +115,7 @@ module type EvalType = sig
 
   type output
 
-  val eval : t -> (output, Loc.t) Coq.Protect.E.t
+  val eval : token:Coq.Limits.Token.t -> t -> (output, Loc.t) Coq.Protect.E.t
 end
 
 module SEval (E : EvalType) = struct
@@ -126,10 +126,10 @@ module SEval (E : EvalType) = struct
   let cache = HC.create 1000
   let size () = Obj.reachable_words (Obj.magic cache)
 
-  let eval v =
+  let eval ~token v =
     match HC.find_opt cache v with
     | None ->
-      let admitted_st = E.eval v in
+      let admitted_st = E.eval ~token v in
       HC.add_execution cache v admitted_st;
       admitted_st
     | Some admitted_st -> admitted_st
@@ -164,7 +164,7 @@ module CEval (E : LocEvalType) = struct
     let kind = CS.Kind.Hashing in
     CS.record ~kind ~f:(HC.find_opt !cache) i
 
-  let eval i : _ Stats.t =
+  let eval ~token i : _ Stats.t =
     let stm_loc = E.loc_of_input i in
     match in_cache i with
     | Some (cached_loc, res), time ->
@@ -176,7 +176,7 @@ module CEval (E : LocEvalType) = struct
       if Debug.cache then Io.Log.trace "memo" "cache miss";
       CacheStats.miss ();
       let kind = CS.Kind.Exec in
-      let res, time_interp = CS.record ~kind ~f:E.eval i in
+      let res, time_interp = CS.record ~kind ~f:(E.eval ~token) i in
       let () = HC.add_execution_loc !cache i (stm_loc, res) in
       let time = time_hash +. time_interp in
       Stats.make ~time res
@@ -199,7 +199,7 @@ module VernacEval = struct
 
   type output = Coq.State.t
 
-  let eval (st, stm) = Coq.Interp.interp ~st stm
+  let eval ~token (st, stm) = Coq.Interp.interp ~token ~st stm
 end
 
 module Interp = CEval (VernacEval)
@@ -227,7 +227,8 @@ module RequireEval = struct
 
   type output = Coq.State.t
 
-  let eval (st, files, stm) = Coq.Interp.Require.interp ~st files stm
+  let eval ~token (st, files, stm) =
+    Coq.Interp.Require.interp ~token ~st files stm
 end
 
 module Require = CEval (RequireEval)
@@ -237,7 +238,7 @@ module Admit = SEval (struct
 
   type output = Coq.State.t
 
-  let eval st = Coq.State.admit ~st
+  let eval ~token st = Coq.State.admit ~token ~st
 end)
 
 module InitEval = struct
@@ -256,8 +257,8 @@ module InitEval = struct
 
   type output = Coq.State.t
 
-  let eval (root_state, workspace, uri) =
-    Coq.Init.doc_init ~root_state ~workspace ~uri
+  let eval ~token (root_state, workspace, uri) =
+    Coq.Init.doc_init ~token ~root_state ~workspace ~uri
 end
 
 module Init = SEval (InitEval)

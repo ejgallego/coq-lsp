@@ -20,7 +20,7 @@ let coq_interp ~st cmd =
   let cmd = Ast.to_coq cmd in
   Vernacinterp.interp ~st cmd |> State.of_coq
 
-let interp ~st cmd = Protect.eval cmd ~f:(coq_interp ~st)
+let interp ~token ~st cmd = Protect.eval ~token cmd ~f:(coq_interp ~st)
 
 module Require = struct
   (* We could improve this Coq upstream by making the API a bit more
@@ -40,5 +40,6 @@ module Require = struct
     let () = Utils.with_control ~fn ~control ~st in
     Vernacstate.freeze_full_state () |> State.of_coq
 
-  let interp ~st files cmd = Protect.eval ~f:(interp ~st files) cmd
+  let interp ~token ~st files cmd =
+    Protect.eval ~token ~f:(interp ~st files) cmd
 end
