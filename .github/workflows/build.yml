@@ -70,7 +70,7 @@ jobs:
     name: Nix
     strategy:
       matrix:
-        os: [ubuntu-latest] # Removed macOS-latest, see #501 and #502
+        os: [ubuntu-latest, macOS-latest]
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -82,7 +82,7 @@ jobs:
           submodules: recursive
 
       - name: ❄️ Setup Nix
-        uses: cachix/install-nix-action@v18
+        uses: cachix/install-nix-action@v22
 
       - name: 🧱 Build coq-lsp
         run: nix build .?submodules=1
