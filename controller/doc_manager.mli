@@ -20,12 +20,15 @@ module Check : sig
       [Some rqs] the list of requests ready to execute after the check. Sends
       progress and diagnostics notifications using output function [ofn]. *)
   val maybe_check :
-    ofn:(Yojson.Safe.t -> unit) -> (Int.Set.t * Fleche.Doc.t) option
+       ofn:(Yojson.Safe.t -> unit)
+    -> token:Limits.Token.t
+    -> (Int.Set.t * Fleche.Doc.t) option
 end
 
 (** Create a document *)
 val create :
      ofn:(Yojson.Safe.t -> unit)
+  -> token:Limits.Token.t
   -> root_state:Coq.State.t
   -> workspace:Coq.Workspace.t
   -> uri:Lang.LUri.File.t

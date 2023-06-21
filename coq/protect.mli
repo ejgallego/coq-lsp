@@ -44,5 +44,5 @@ val fb_queue : Loc.t Message.t list ref
 
 (** Eval a function and reify the exceptions. Note [f] _must_ be pure, as in
     case of anomaly [f] may be re-executed with debug options. Beware, not
-    thread-safe! *)
-val eval : f:('i -> 'o) -> 'i -> ('o, Loc.t) E.t
+    thread-safe! [token] Does allow to interrupt the evaluation. *)
+val eval : token:Limits.Token.t -> f:('i -> 'o) -> 'i -> ('o, Loc.t) E.t

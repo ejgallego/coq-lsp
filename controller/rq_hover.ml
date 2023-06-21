@@ -109,9 +109,9 @@ let info_of_id ~st id =
   in
   info_of_id env sigma id
 
-let info_of_id_at_point ~node id =
+let info_of_id_at_point ~token ~node id =
   let st = node.Fleche.Doc.Node.state in
-  Fleche.Info.LC.in_state ~st ~f:(info_of_id ~st) id
+  Fleche.Info.LC.in_state ~token ~st ~f:(info_of_id ~st) id
 
 let pp_typ id = function
   | Def typ ->
@@ -124,7 +124,7 @@ let pp_typ id = function
 let if_bool b l = if b then [ l ] else []
 let to_list = Option.cata (fun x -> [ x ]) []
 
-let hover ~doc ~node ~point =
+let hover ~token ~doc ~node ~point =
   let open Fleche in
   let range = Doc.Node.range node in
   let info = Doc.Node.info node in
@@ -132,7 +132,7 @@ let hover ~doc ~node ~point =
   let stats_string = Doc.Node.Info.print info in
   let type_string =
     Option.bind (Rq_common.get_id_at_point ~doc ~point) (fun id ->
-        Option.map (pp_typ id) (info_of_id_at_point ~node id))
+        Option.map (pp_typ id) (info_of_id_at_point ~token ~node id))
   in
   let hovers =
     if_bool show_loc_info range_string
@@ -147,7 +147,7 @@ let hover ~doc ~node ~point =
     let contents = { HoverContents.kind = "markdown"; value } in
     HoverInfo.(to_yojson { contents; range })
 
-let hover ~doc ~point =
+let hover ~token ~doc ~point =
   let node = Fleche.Info.LC.node ~doc ~point Exact in
   (match node with
   | None ->
@@ -157,5 +157,5 @@ let hover ~doc ~point =
       in
       HoverInfo.(to_yojson { contents; range = None })
     else `Null
-  | Some node -> hover ~doc ~node ~point)
+  | Some node -> hover ~token ~doc ~node ~point)
   |> Result.ok

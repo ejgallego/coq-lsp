@@ -9,7 +9,7 @@ let parse ~st ps =
   Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
   |> Option.map Ast.of_coq
 
-let parse ~st ps = Protect.eval ~f:(parse ~st) ps
+let parse ~token ~st ps = Protect.eval ~token ~f:(parse ~st) ps
 
 (* Read the input stream until a dot or a "end of proof" token is encountered *)
 let parse_to_terminator : unit Pcoq.Entry.t =

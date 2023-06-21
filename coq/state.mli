@@ -18,16 +18,17 @@ val program : st:t -> Declare.OblState.View.t Names.Id.Map.t
 
 (** Execute a command in state [st]. Unfortunately this can produce anomalies as
     Coq state setting is imperative, so we need to wrap it in protect. *)
-val in_state : st:t -> f:('a -> 'b) -> 'a -> ('b, Loc.t) Protect.E.t
+val in_state :
+  token:Limits.Token.t -> st:t -> f:('a -> 'b) -> 'a -> ('b, Loc.t) Protect.E.t
 
 (** Drop the proofs from the state *)
 val drop_proofs : st:t -> t
 
 (** Fully admit an ongoing proof *)
-val admit : st:t -> (t, Loc.t) Protect.E.t
+val admit : token:Limits.Token.t -> st:t -> (t, Loc.t) Protect.E.t
 
 (** Admit the current sub-goal *)
-val admit_goal : st:t -> (t, Loc.t) Protect.E.t
+val admit_goal : token:Limits.Token.t -> st:t -> (t, Loc.t) Protect.E.t
 
 (** Extra / interanl *)
 val marshal_in : in_channel -> t

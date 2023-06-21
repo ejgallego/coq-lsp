@@ -110,7 +110,7 @@ module Interp = struct
     let f = loc_apply_offset offset in
     Coq.Protect.E.map_loc ~f res
 
-  let eval (st, stm) : _ Stats.t =
+  let eval ~token (st, stm) : _ Stats.t =
     let stm_loc = Coq.Ast.loc stm |> Option.get in
     match in_cache st stm with
     | Some (cached_loc, res), time ->
@@ -122,7 +122,9 @@ module Interp = struct
       if Debug.cache then Io.Log.trace "memo" "cache miss";
       CacheStats.miss ();
       let kind = CS.Kind.Exec in
-      let res, time_interp = CS.record ~kind ~f:(Coq.Interp.interp ~st) stm in
+      let res, time_interp =
+        CS.record ~kind ~f:(Coq.Interp.interp ~token ~st) stm
+      in
       let time = time_hash +. time_interp in
       match res.r with
       | Coq.Protect.R.Interrupted ->
@@ -141,10 +143,10 @@ module Admit = struct
 
   let cache = C.create 1000
 
-  let eval v =
+  let eval ~token v =
     match C.find_opt cache v with
     | None ->
-      let admitted_st = Coq.State.admit ~st:v in
+      let admitted_st = Coq.State.admit ~token ~st:v in
       C.add cache v admitted_st;
       admitted_st
     | Some admitted_st -> admitted_st
@@ -172,11 +174,11 @@ module Init = struct
 
   let cache = C.create 1000
 
-  let eval v =
+  let eval ~token v =
     match C.find_opt cache v with
     | None ->
       let root_state, workspace, uri = v in
-      let admitted_st = Coq.Init.doc_init ~root_state ~workspace ~uri in
+      let admitted_st = Coq.Init.doc_init ~token ~root_state ~workspace ~uri in
       C.add cache v admitted_st;
       admitted_st
     | Some res -> res

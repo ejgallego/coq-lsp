@@ -29,6 +29,10 @@ module Data : sig
         { uri : Lang.LUri.File.t
         ; handler : document
         }
+    | IntDocRequest of
+        { uri : Lang.LUri.File.t
+        ; handler : token:Limits.Token.t -> document
+        }
     | PosRequest of
         { uri : Lang.LUri.File.t
         ; point : int * int
@@ -36,9 +40,16 @@ module Data : sig
         ; postpone : bool
         ; handler : position
         }
+    | IntPosRequest of
+        { uri : Lang.LUri.File.t
+        ; point : int * int
+        ; version : int option
+        ; postpone : bool
+        ; handler : token:Limits.Token.t -> position
+        }
 
   (* Debug printing *)
   val data : Format.formatter -> t -> unit
   val dm_request : t -> Doc_manager.Request.request
-  val serve : doc:Fleche.Doc.t -> t -> R.t
+  val serve : token:Limits.Token.t -> doc:Fleche.Doc.t -> t -> R.t
 end

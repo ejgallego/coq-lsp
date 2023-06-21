@@ -29,6 +29,10 @@ module Data = struct
         { uri : Lang.LUri.File.t
         ; handler : document
         }
+    | IntDocRequest of
+        { uri : Lang.LUri.File.t
+        ; handler : token:Limits.Token.t -> document
+        }
     | PosRequest of
         { uri : Lang.LUri.File.t
         ; point : int * int
@@ -36,11 +40,20 @@ module Data = struct
         ; postpone : bool
         ; handler : position
         }
+    | IntPosRequest of
+        { uri : Lang.LUri.File.t
+        ; point : int * int
+        ; version : int option
+        ; postpone : bool
+        ; handler : token:Limits.Token.t -> position
+        }
 
   (* Debug printing *)
   let data fmt = function
-    | DocRequest { uri = _; handler = _ } -> Format.fprintf fmt "{k:doc}"
-    | PosRequest { uri = _; point; version; postpone; handler = _ } ->
+    | DocRequest { uri = _; handler = _ }
+    | IntDocRequest { uri = _; handler = _ } -> Format.fprintf fmt "{k:doc}"
+    | PosRequest { uri = _; point; version; postpone; handler = _ }
+    | IntPosRequest { uri = _; point; version; postpone; handler = _ } ->
       Format.fprintf fmt "{k:pos | l: %d, c: %d v: %a p: %B}" (fst point)
         (snd point)
         Format.(pp_print_option pp_print_int)
@@ -48,13 +61,18 @@ module Data = struct
 
   let dm_request pr =
     match pr with
-    | DocRequest { uri; handler = _ } -> Doc_manager.Request.(FullDoc { uri })
-    | PosRequest { uri; point; version; postpone; handler = _ } ->
+    | DocRequest { uri; handler = _ } | IntDocRequest { uri; handler = _ } ->
+      Doc_manager.Request.(FullDoc { uri })
+    | PosRequest { uri; point; version; postpone; handler = _ }
+    | IntPosRequest { uri; point; version; postpone; handler = _ } ->
       Doc_manager.Request.(PosInDoc { uri; point; version; postpone })
 
-  let serve ~doc pr =
+  let serve ~token ~doc pr =
     match pr with
     | DocRequest { uri = _; handler } -> handler ~doc
+    | IntDocRequest { uri = _; handler } -> handler ~token ~doc
     | PosRequest { uri = _; point; version = _; postpone = _; handler } ->
       handler ~point ~doc
+    | IntPosRequest { uri = _; point; version = _; postpone = _; handler } ->
+      handler ~token ~point ~doc
 end

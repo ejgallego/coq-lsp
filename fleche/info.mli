@@ -47,12 +47,21 @@ module type S = sig
   val node : (approx, Doc.Node.t) query
   val range : (approx, Lang.Range.t) query
   val ast : (approx, Doc.Node.Ast.t) query
-  val goals : (approx, Pp.t Coq.Goals.reified_pp) query
+
+  val goals :
+    token:Limits.Token.t -> (approx, Pp.t Coq.Goals.reified_pp) query
+
   val program : (approx, Declare.OblState.View.t Names.Id.Map.t) query
   val messages : (approx, Doc.Node.Message.t list) query
   val info : (approx, Doc.Node.Info.t) query
-  val completion : (string, string list) query
-  val in_state : st:Coq.State.t -> f:('a -> 'b option) -> 'a -> 'b option
+  val completion : token:Limits.Token.t -> (string, string list) query
+
+  val in_state :
+       token:Limits.Token.t
+    -> st:Coq.State.t
+    -> f:('a -> 'b option)
+    -> 'a
+    -> 'b option
 end
 
 module LC : S with module P := LineCol

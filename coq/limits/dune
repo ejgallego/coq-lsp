@@ -1,0 +1,4 @@
+(library
+ (name limits)
+ (public_name coq-lsp.limits)
+ (libraries memprof-limits coq-core.lib))

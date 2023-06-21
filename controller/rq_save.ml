@@ -9,8 +9,8 @@ let print_err ~uri e =
       (Lang.LUri.File.to_string_file uri)
       Pp.pp_with msg
 
-let request ~doc =
-  match Fleche.Doc.save ~doc with
+let request ~token ~doc =
+  match Fleche.Doc.save ~token ~doc with
   | { Coq.Protect.E.r = Interrupted; _ } ->
     Error (code, "save operation interrupted")
   | { Coq.Protect.E.r = Completed (Error e); _ } ->

@@ -9,4 +9,4 @@ type format =
   | Pp
   | Str
 
-val goals : pp_format:format -> Request.position
+val goals : token:Limits.Token.t -> pp_format:format -> Request.position

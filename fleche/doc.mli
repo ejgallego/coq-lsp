@@ -75,7 +75,8 @@ val asts : t -> Node.Ast.t list
 
 (** Create a new Coq document, this is cached! *)
 val create :
-     state:Coq.State.t
+     token:Limits.Token.t
+  -> state:Coq.State.t
   -> workspace:Coq.Workspace.t
   -> uri:Lang.LUri.File.t
   -> version:int
@@ -97,14 +98,20 @@ module Target : sig
   val reached : range:Lang.Range.t -> int * int -> bool
 end
 
-(** [check ~ofn ~target ~doc ()], check document [doc], [target] will have
-    Flèche stop after the point specified there has been reached. Output
+(** [check ~ofn ~token ~target ~doc ()], check document [doc], [target] will
+    have Flèche stop after the point specified there has been reached. Output
     function [ofn] is used to send partial results. *)
-val check : ofn:(Yojson.Safe.t -> unit) -> target:Target.t -> doc:t -> unit -> t
+val check :
+     ofn:(Yojson.Safe.t -> unit)
+  -> token:Limits.Token.t
+  -> target:Target.t
+  -> doc:t
+  -> unit
+  -> t
 
 (** [save ~doc] will save [doc] .vo file. It will fail if proofs are open, or if
     the document completion status is not [Yes] *)
-val save : doc:t -> (unit, Loc.t) Coq.Protect.E.t
+val save : token:Limits.Token.t -> doc:t -> (unit, Loc.t) Coq.Protect.E.t
 
 (** This is internal, to workaround the Coq multiple-docs problem *)
 val create_failed_permanent :

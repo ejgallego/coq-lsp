@@ -22,4 +22,4 @@ let coq_interp ~st cmd =
   let cmd = Ast.to_coq cmd in
   Vernacinterp.interp ~st cmd |> State.of_coq
 
-let interp ~st cmd = Protect.eval cmd ~f:(coq_interp ~st)
+let interp ~token ~st cmd = Protect.eval ~token ~f:(coq_interp ~st) cmd

@@ -17,4 +17,5 @@
 
 type 'a interp_result = ('a, Loc.t) Protect.E.t
 
-val interp : st:State.t -> Ast.t -> State.t interp_result
+val interp :
+  token:Limits.Token.t -> st:State.t -> Ast.t -> State.t interp_result

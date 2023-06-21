@@ -163,7 +163,9 @@ module Check : sig
   val deschedule : uri:Lang.LUri.File.t -> unit
 
   val maybe_check :
-    ofn:(Yojson.Safe.t -> unit) -> (Int.Set.t * Fleche.Doc.t) option
+       ofn:(Yojson.Safe.t -> unit)
+    -> token:Limits.Token.t
+    -> (Int.Set.t * Fleche.Doc.t) option
 end = struct
   let pending = ref None
 
@@ -173,12 +175,12 @@ end = struct
       (List.nth_opt pt_requests 0)
 
   (* Notification handling; reply is optional / asynchronous *)
-  let check ~ofn ~uri =
+  let check ~ofn ~token ~uri =
     LIO.trace "process_queue" "resuming document checking";
     match Handle.find_opt ~uri with
     | Some handle ->
       let target = get_check_target handle.pt_requests in
-      let doc = Fleche.Doc.check ~ofn ~target ~doc:handle.doc () in
+      let doc = Fleche.Doc.check ~ofn ~token ~target ~doc:handle.doc () in
       let requests = Handle.update_doc_info ~handle ~doc in
       send_diags ~ofn ~doc;
       if !Fleche.Config.v.verbosity > 1 then
@@ -192,7 +194,9 @@ end = struct
         ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
       None
 
-  let maybe_check ~ofn = Option.bind !pending (fun uri -> check ~ofn ~uri)
+  let maybe_check ~ofn ~token =
+    Option.bind !pending (fun uri -> check ~ofn ~token ~uri)
+
   let schedule ~uri = pending := Some uri
 
   let deschedule ~uri =
@@ -209,8 +213,10 @@ let send_error_permanent_fail ~ofn ~uri ~version message =
   let diags = Lsp.JLang.mk_diagnostics ~uri ~version [ d ] in
   ofn diags
 
-let create ~ofn ~root_state ~workspace ~uri ~raw ~version =
-  let r = Fleche.Doc.create ~state:root_state ~workspace ~uri ~raw ~version in
+let create ~ofn ~token ~root_state ~workspace ~uri ~raw ~version =
+  let r =
+    Fleche.Doc.create ~token ~state:root_state ~workspace ~uri ~raw ~version
+  in
   match r with
   | Completed (Result.Ok doc) ->
     Handle.create ~uri ~doc;
@@ -242,7 +248,7 @@ let sane_coq_version =
 (* Can't wait for the day this goes away *)
 let tainted = ref false
 
-let create ~ofn ~root_state ~workspace ~uri ~raw ~version =
+let create ~ofn ~token ~root_state ~workspace ~uri ~raw ~version =
   if !tainted && not sane_coq_version then (
     (* Error due to Coq bug *)
     let message =
@@ -261,7 +267,7 @@ let create ~ofn ~root_state ~workspace ~uri ~raw ~version =
     send_error_permanent_fail ~ofn ~uri ~version (Pp.str message))
   else (
     tainted := true;
-    create ~ofn ~root_state ~workspace ~uri ~raw ~version)
+    create ~ofn ~token ~root_state ~workspace ~uri ~raw ~version)
 
 let change ~ofn ~(doc : Fleche.Doc.t) ~version ~raw =
   let uri = doc.uri in

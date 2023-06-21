@@ -28,7 +28,8 @@ type coq_opts =
 val coq_init : coq_opts -> State.t
 
 val doc_init :
-     root_state:State.t
+     token:Limits.Token.t
+  -> root_state:State.t
   -> workspace:Workspace.t
   -> uri:Lang.LUri.File.t
   -> (State.t, Loc.t) Protect.E.t

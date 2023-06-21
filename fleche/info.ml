@@ -116,12 +116,21 @@ module type S = sig
   val node : (approx, Doc.Node.t) query
   val range : (approx, Lang.Range.t) query
   val ast : (approx, Doc.Node.Ast.t) query
-  val goals : (approx, Pp.t Coq.Goals.reified_pp) query
+
+  val goals :
+    token:Limits.Token.t -> (approx, Pp.t Coq.Goals.reified_pp) query
+
   val program : (approx, Declare.OblState.View.t Names.Id.Map.t) query
   val messages : (approx, Doc.Node.Message.t list) query
   val info : (approx, Doc.Node.Info.t) query
-  val completion : (string, string list) query
-  val in_state : st:Coq.State.t -> f:('a -> 'b option) -> 'a -> 'b option
+  val completion : token:Limits.Token.t -> (string, string list) query
+
+  val in_state :
+       token:Limits.Token.t
+    -> st:Coq.State.t
+    -> f:('a -> 'b option)
+    -> 'a
+    -> 'b option
 end
 
 let some x = Some x
@@ -148,10 +157,10 @@ module Make (P : Point) : S with module P := P = struct
 
   let node = find
 
-  let pr_goal st =
+  let pr_goal ~token st =
     let ppx env sigma x =
       let { Coq.Protect.E.r; feedback } =
-        Coq.Print.pr_letype_env ~goal_concl_style:true env sigma x
+        Coq.Print.pr_letype_env ~token ~goal_concl_style:true env sigma x
       in
       Io.Log.feedback feedback;
       match r with
@@ -170,8 +179,8 @@ module Make (P : Point) : S with module P := P = struct
     let node = find ~doc ~point approx in
     Option.bind node Doc.Node.ast
 
-  let in_state ~st ~f node =
-    match Coq.State.in_state ~st ~f node with
+  let in_state ~token ~st ~f node =
+    match Coq.State.in_state ~token ~st ~f node with
     | { r = Coq.Protect.R.Completed (Result.Ok res); feedback } ->
       Io.Log.feedback feedback;
       res
@@ -181,11 +190,11 @@ module Make (P : Point) : S with module P := P = struct
       Io.Log.feedback feedback;
       None
 
-  let goals ~doc ~point approx =
+  let goals ~token ~doc ~point approx =
     find ~doc ~point approx
     |> obind (fun node ->
            let st = node.Doc.Node.state in
-           in_state ~st ~f:pr_goal st)
+           in_state ~token ~st ~f:(pr_goal ~token) st)
 
   let program ~doc ~point approx =
     find ~doc ~point approx
@@ -209,10 +218,10 @@ module Make (P : Point) : S with module P := P = struct
      needed *)
   let to_qualid p = try Some (Libnames.qualid_of_string p) with _ -> None
 
-  let completion ~doc ~point prefix =
+  let completion ~token ~doc ~point prefix =
     find ~doc ~point Exact
     |> obind (fun node ->
-           in_state ~st:node.Doc.Node.state prefix ~f:(fun prefix ->
+           in_state ~token ~st:node.Doc.Node.state prefix ~f:(fun prefix ->
                to_qualid prefix
                |> obind (fun p ->
                       Nametab.completion_canditates p

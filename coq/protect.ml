@@ -33,15 +33,13 @@ module R = struct
 end
 
 (* Eval and reify exceptions *)
-let eval_exn ~f x =
-  try
-    let res = f x in
-    R.Completed (Ok res)
-  with
-  | Sys.Break ->
+let eval_exn ~token ~f x =
+  match Limits.limit ~token ~f x with
+  | Ok res -> R.Completed (Ok res)
+  | Error _ ->
     Vernacstate.Interp.invalidate_cache ();
     R.Interrupted
-  | exn ->
+  | exception exn ->
     let e, info = Exninfo.capture exn in
     let loc = Loc.(get_loc info) in
     let msg = CErrors.iprint (e, info) in
@@ -63,8 +61,8 @@ module E = struct
     ; feedback : 'l Message.t list
     }
 
-  let eval ~f x =
-    let r = eval_exn ~f x in
+  let eval ~token ~f x =
+    let r = eval_exn ~token ~f x in
     let feedback = List.rev !fb_queue in
     let () = fb_queue := [] in
     { r; feedback }
@@ -87,4 +85,4 @@ module E = struct
 end
 
 (* Eval with reified exceptions and feedback *)
-let eval ~f x = E.eval ~f x
+let eval ~token ~f x = E.eval ~token ~f x
