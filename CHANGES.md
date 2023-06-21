@@ -36,6 +36,7 @@
    reported by @arthuraa, #500)
  - Be more resilient when serializing unknowns Asts (@ejgallego, #503,
    reported by Gijs Pennings)
+ - Coq's STM is not linked anymore to `coq-lsp` (@ejgallego, #511)
 
 # coq-lsp 0.1.6: Peek
 ---------------------
