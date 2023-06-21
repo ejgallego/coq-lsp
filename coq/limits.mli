@@ -17,3 +17,10 @@ end
 module Coq : Intf
 module Mp : Intf
 include Intf
+
+type backend =
+  | Coq
+  | Mp
+
+(** *Must* be called *only* once *)
+val select : backend -> unit

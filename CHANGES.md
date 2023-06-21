@@ -91,8 +91,10 @@
    `--max_errors=0` to imitate `coqc` behavior (@ejgallego, #680)
  - Fix `fcc` exit status when checking terminates with fatal errors
    (@ejgallego, @Alizter, #680)
- - Fix (@ejgallego, #683, fixes #682, cc #479 #488, thanks to
-   @Hazardouspeach for the report)
+ - Fix install to OPAM switches from `main` branch (@ejgallego, #683,
+   fixes #682, cc #479 #488, thanks to @Hazardouspeach for the report)
+ - New `--int_backend={Coq,Mp}` command line parameter to select the
+   interruption method for Coq (@ejgallego, #684)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

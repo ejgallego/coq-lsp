@@ -82,3 +82,10 @@ let ri_from : (string option * string) list Term.t =
         value
         & opt_all (pair string string) []
         & info [ "rifrom"; "require-import-from" ] ~docv:"FROM,LIBRARY" ~doc))
+
+let int_backend =
+  let doc = "Select Interruption Backend" in
+  Arg.(
+    value
+    & opt (enum [ ("Coq", Limits.Coq); ("Mp", Limits.Mp) ]) Limits.Coq
+    & info [ "int_backend" ] ~docv:"INT_BACKEND" ~doc)

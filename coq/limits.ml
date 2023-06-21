@@ -46,4 +46,46 @@ module Coq : Intf = struct
 end
 
 module Mp = Limits_mp_impl
-include Coq
+
+type backend =
+  | Coq
+  | Mp
+
+let backend : (module Intf) ref = ref (module Coq : Intf)
+
+let select = function
+  | Coq -> backend := (module Coq)
+  | Mp -> backend := (module Mp)
+
+module Token = struct
+  type t =
+    | C of Coq.Token.t
+    | M of Mp.Token.t
+
+  let create () =
+    let module M = (val !backend) in
+    match M.name with
+    | "memprof-limits" -> M (Mp.Token.create ())
+    | "Control.interrupt" | _ -> C (Coq.Token.create ())
+
+  let set = function
+    | C token -> Coq.Token.set token
+    | M token -> Mp.Token.set token
+
+  let is_set = function
+    | C token -> Coq.Token.is_set token
+    | M token -> Mp.Token.is_set token
+end
+
+let start () =
+  let module M = (val !backend) in
+  M.start ()
+
+let limit ~token ~f x =
+  let module M = (val !backend) in
+  match token with
+  | Token.C token -> Coq.limit ~token ~f x
+  | Token.M token -> Mp.limit ~token ~f x
+
+let name = "select backend"
+let available = true
