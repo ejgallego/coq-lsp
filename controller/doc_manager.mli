@@ -19,13 +19,12 @@ module Check : sig
   (** Check pending documents, return [None] if there is none pending, or
       [Some rqs] the list of requests ready to execute after the check. Sends
       progress and diagnostics notifications using output function [ofn]. *)
-  val maybe_check :
-    ofn:(Yojson.Safe.t -> unit) -> (Int.Set.t * Fleche.Doc.t) option
+  val maybe_check : io:Fleche.Io.CallBack.t -> (Int.Set.t * Fleche.Doc.t) option
 end
 
 (** Create a document *)
 val create :
-     ofn:(Yojson.Safe.t -> unit)
+     io:Fleche.Io.CallBack.t
   -> root_state:Coq.State.t
   -> workspace:Coq.Workspace.t
   -> uri:Lang.LUri.File.t
@@ -35,7 +34,7 @@ val create :
 
 (** Update a document, returns the list of not valid requests *)
 val change :
-     ofn:(Yojson.Safe.t -> unit)
+     io:Fleche.Io.CallBack.t
   -> uri:Lang.LUri.File.t
   -> version:int
   -> raw:string

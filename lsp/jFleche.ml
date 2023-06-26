@@ -46,7 +46,7 @@ module Config = struct
   type t = [%import: Fleche.Config.t] [@@deriving yojson]
 end
 
-module Progress = struct
+module FileProgress = struct
   module Info = struct
     type t = [%import: Fleche.Progress.Info.t] [@@deriving yojson]
   end
@@ -60,7 +60,9 @@ end
 
 let mk_progress ~uri ~version processing =
   let textDocument = { Doc.VersionedTextDocumentIdentifier.uri; version } in
-  let params = Progress.to_yojson { Progress.textDocument; processing } in
+  let params =
+    FileProgress.to_yojson { FileProgress.textDocument; processing }
+  in
   Base.mk_notification ~method_:"$/coq/fileProgress" ~params
 
 module Message = struct
@@ -115,17 +117,13 @@ module FlecheDocument = struct
 end
 
 module SentencePerfData = struct
-  type t =
-    { loc : JLang.Range.t
-    ; time : float
-    ; mem : float
-    }
-  [@@deriving yojson]
+  type t = [%import: Fleche.Perf.Sentence.t] [@@deriving yojson]
 end
 
 module DocumentPerfData = struct
   type t =
-    { summary : string
+    { textDocument : Doc.VersionedTextDocumentIdentifier.t
+    ; summary : string
     ; timings : SentencePerfData.t list
     }
   [@@deriving yojson]
