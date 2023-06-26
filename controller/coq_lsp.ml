@@ -51,6 +51,7 @@ let rec process_queue ~delay ~io ~ofn ~state : unit =
 let concise_cb ofn =
   Fleche.Io.CallBack.
     { trace = (fun _hdr ?extra:_ _msg -> ())
+    ; message = (fun ~lvl:_ ~message:_ -> ())
     ; send_diagnostics =
         (fun ~uri ~version diags ->
           if List.length diags > 0 then
@@ -62,6 +63,7 @@ let concise_cb ofn =
 let lsp_cb ofn =
   Fleche.Io.CallBack.
     { trace = LIO.trace
+    ; message = LIO.logMessage
     ; send_diagnostics =
         (fun ~uri ~version diags ->
           Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)

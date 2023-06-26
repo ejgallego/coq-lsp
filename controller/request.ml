@@ -48,9 +48,9 @@ module Data = struct
 
   let dm_request pr =
     match pr with
-    | DocRequest { uri; handler = _ } -> Doc_manager.Request.(FullDoc { uri })
+    | DocRequest { uri; handler = _ } -> Fleche.Theory.Request.(FullDoc { uri })
     | PosRequest { uri; point; version; postpone; handler = _ } ->
-      Doc_manager.Request.(PosInDoc { uri; point; version; postpone })
+      Fleche.Theory.Request.(PosInDoc { uri; point; version; postpone })
 
   let serve ~doc pr =
     match pr with

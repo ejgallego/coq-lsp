@@ -168,7 +168,7 @@ end = struct
     let f pr =
       let () =
         let request = Request.Data.dm_request pr in
-        Doc_manager.Request.remove { id; request }
+        Fleche.Theory.Request.remove { id; request }
       in
       Error (code, message)
     in
@@ -188,7 +188,7 @@ end = struct
 
   let query ~ofn ~id (pr : Request.Data.t) =
     let request = Request.Data.dm_request pr in
-    match Doc_manager.Request.add { id; request } with
+    match Fleche.Theory.Request.add { id; request } with
     | Cancel ->
       let code = -32802 in
       let message = "Document is not ready" in
@@ -225,7 +225,7 @@ let do_open ~io ~(state : State.t) params =
   in
   let Lsp.Doc.TextDocumentItem.{ uri; version; text; _ } = document in
   let root_state, workspace = State.workspace_of_uri ~uri ~state in
-  Doc_manager.create ~io ~root_state ~workspace ~uri ~raw:text ~version
+  Fleche.Theory.create ~io ~root_state ~workspace ~uri ~raw:text ~version
 
 let do_change ~ofn ~io params =
   let uri, version = Helpers.get_uri_version params in
@@ -240,14 +240,14 @@ let do_change ~ofn ~io params =
     ()
   | change :: _ ->
     let raw = string_field "text" change in
-    let invalid_rq = Doc_manager.change ~io ~uri ~version ~raw in
+    let invalid_rq = Fleche.Theory.change ~io ~uri ~version ~raw in
     let code = -32802 in
     let message = "Request got old in server" in
     Int.Set.iter (Rq.cancel ~ofn ~code ~message) invalid_rq
 
 let do_close ~ofn:_ params =
   let uri = Helpers.get_uri params in
-  Doc_manager.close ~uri
+  Fleche.Theory.close ~uri
 
 let do_trace params =
   let trace = string_field "value" params in
@@ -435,7 +435,7 @@ let dispatch_message ~io ~ofn ~state (com : LSP.Message.t) : State.t =
 (* Queue handling *)
 
 (***********************************************************************)
-(* The queue strategy is: we keep pending document checks in Doc_manager, they
+(* The queue strategy is: we keep pending document checks in Fleche.Theory, they
    are only resumed when the rest of requests in the queue are served.
 
    Note that we should add a method to detect stale requests; maybe cancel them
@@ -446,7 +446,7 @@ type 'a cont =
   | Yield of 'a
 
 let check_or_yield ~io ~ofn ~state =
-  match Doc_manager.Check.maybe_check ~io with
+  match Fleche.Theory.Check.maybe_check ~io with
   | None -> Yield state
   | Some (ready, doc) ->
     let () = Rq.serve_postponed ~ofn ~doc ready in

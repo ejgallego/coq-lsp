@@ -1,6 +1,7 @@
 module CallBack = struct
   type t =
     { trace : string -> ?extra:string -> string -> unit
+    ; message : lvl:int -> message:string -> unit
     ; send_diagnostics :
         uri:Lang.LUri.File.t -> version:int -> Lang.Diagnostic.t list -> unit
     ; send_fileProgress :
@@ -9,6 +10,7 @@ module CallBack = struct
 
   let default =
     { trace = (fun _ ?extra:_ _ -> ())
+    ; message = (fun ~lvl:_ ~message:_ -> ())
     ; send_diagnostics = (fun ~uri:_ ~version:_ _ -> ())
     ; send_fileProgress = (fun ~uri:_ ~version:_ _ -> ())
     }
@@ -29,6 +31,8 @@ module Log = struct
 end
 
 module Report = struct
+  let message ~io ~lvl ~message = io.CallBack.message ~lvl ~message
+
   let diagnostics ~io ~uri ~version d =
     io.CallBack.send_diagnostics ~uri ~version d
 

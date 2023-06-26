@@ -19,12 +19,12 @@ module Check : sig
   (** Check pending documents, return [None] if there is none pending, or
       [Some rqs] the list of requests ready to execute after the check. Sends
       progress and diagnostics notifications using output function [ofn]. *)
-  val maybe_check : io:Fleche.Io.CallBack.t -> (Int.Set.t * Fleche.Doc.t) option
+  val maybe_check : io:Io.CallBack.t -> (Int.Set.t * Doc.t) option
 end
 
-(** Create a document *)
+(** Create a document inside a theory *)
 val create :
-     io:Fleche.Io.CallBack.t
+     io:Io.CallBack.t
   -> root_state:Coq.State.t
   -> workspace:Coq.Workspace.t
   -> uri:Lang.LUri.File.t
@@ -32,9 +32,9 @@ val create :
   -> version:int
   -> unit
 
-(** Update a document, returns the list of not valid requests *)
+(** Update a document inside a theory, returns the list of not valid requests *)
 val change :
-     io:Fleche.Io.CallBack.t
+     io:Io.CallBack.t
   -> uri:Lang.LUri.File.t
   -> version:int
   -> raw:string
@@ -59,7 +59,7 @@ module Request : sig
     }
 
   type action =
-    | Now of Fleche.Doc.t
+    | Now of Doc.t
     | Postpone
     | Cancel
 
