@@ -148,7 +148,8 @@ let local_decl_expr_info ~lines ~kind ~detail (l : local_decl_expr) =
   let range = name.range in
   Lang.Ast.Info.make ~range ~name ~kind ~detail ()
 
-let projection_info ~lines ((ld, _) : local_decl_expr * record_field_attr) =
+let projection_info ~lines
+    ((ld, _) : local_decl_expr * record_field_attr_unparsed) =
   let kind = Kinds.field in
   let detail = "Field" in
   local_decl_expr_info ~lines ~detail ~kind ld
