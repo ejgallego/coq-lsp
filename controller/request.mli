@@ -39,6 +39,6 @@ module Data : sig
 
   (* Debug printing *)
   val data : Format.formatter -> t -> unit
-  val dm_request : t -> Doc_manager.Request.request
+  val dm_request : t -> Fleche.Theory.Request.request
   val serve : doc:Fleche.Doc.t -> t -> R.t
 end

@@ -117,6 +117,7 @@ export interface SentencePerfParams {
 }
 
 export interface DocumentPerfParams {
+  textDocument: VersionedTextDocumentIdentifier;
   summary: string;
   timings: SentencePerfParams[];
 }

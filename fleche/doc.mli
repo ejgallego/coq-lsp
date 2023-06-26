@@ -97,10 +97,10 @@ module Target : sig
   val reached : range:Lang.Range.t -> int * int -> bool
 end
 
-(** [check ~ofn ~target ~doc ()], check document [doc], [target] will have
-    Flèche stop after the point specified there has been reached. Output
-    function [ofn] is used to send partial results. *)
-val check : ofn:(Yojson.Safe.t -> unit) -> target:Target.t -> doc:t -> unit -> t
+(** [check ~io ~target ~doc ()], check document [doc], [target] will have Flèche
+    stop after the point specified there has been reached. Output functions are
+    in the [io] record, used to send partial updates. *)
+val check : io:Io.CallBack.t -> target:Target.t -> doc:t -> unit -> t
 
 (** [save ~doc] will save [doc] .vo file. It will fail if proofs are open, or if
     the document completion status is not [Yes] *)
