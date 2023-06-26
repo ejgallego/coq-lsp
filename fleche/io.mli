@@ -5,9 +5,9 @@ module CallBack : sig
               verbose mode *)
     ; message : lvl:int -> message:string -> unit
           (** Send a user-visible message *)
-    ; send_diagnostics :
+    ; diagnostics :
         uri:Lang.LUri.File.t -> version:int -> Lang.Diagnostic.t list -> unit
-    ; send_fileProgress :
+    ; fileProgress :
         uri:Lang.LUri.File.t -> version:int -> Progress.Info.t list -> unit
     }
 

@@ -52,11 +52,11 @@ let concise_cb ofn =
   Fleche.Io.CallBack.
     { trace = (fun _hdr ?extra:_ _msg -> ())
     ; message = (fun ~lvl:_ ~message:_ -> ())
-    ; send_diagnostics =
+    ; diagnostics =
         (fun ~uri ~version diags ->
           if List.length diags > 0 then
             Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)
-    ; send_fileProgress = (fun ~uri:_ ~version:_ _progress -> ())
+    ; fileProgress = (fun ~uri:_ ~version:_ _progress -> ())
     }
 
 (* Main loop *)
@@ -64,10 +64,10 @@ let lsp_cb ofn =
   Fleche.Io.CallBack.
     { trace = LIO.trace
     ; message = LIO.logMessage
-    ; send_diagnostics =
+    ; diagnostics =
         (fun ~uri ~version diags ->
           Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)
-    ; send_fileProgress =
+    ; fileProgress =
         (fun ~uri ~version progress ->
           Lsp.JFleche.mk_progress ~uri ~version progress |> ofn)
     }
