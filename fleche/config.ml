@@ -36,9 +36,16 @@ type t =
   ; pp_type : int [@default 0]
         (** Pretty-printing type in Info Panel Request, 0 = string; 1 = Pp.t; 2
             = Coq Layout Engine *)
-  ; show_stats_on_hover : bool [@default false]
-  ; verbosity : int [@default 2]
+  ; show_stats_on_hover : bool [@default false]  (** Show stats on hover *)
   ; pp_json : bool [@default false]
+        (** Whether to pretty print the protocol JSON on the wire *)
+  ; send_perf_data : bool [@default true]
+        (** Whether to send the perf data notification *)
+  ; send_diags : bool [@default true]
+        (** Whether to send the diagnostics notification *)
+  ; verbosity : int [@default 2]
+        (** Verbosity, 1 = reduced, 2 = default. As of today reduced will
+            disable all logging, and the diagnostics and perf_data notification *)
   }
 
 let default =
@@ -57,6 +64,8 @@ let default =
   ; show_stats_on_hover = false
   ; verbosity = 2
   ; pp_json = false
+  ; send_perf_data = true
+  ; send_diags = true
   }
 
 let v = ref default

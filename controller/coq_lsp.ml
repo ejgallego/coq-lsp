@@ -136,6 +136,8 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay =
     let workspaces = lsp_init_loop ~ifn ~ofn ~cmdline ~debug in
     let io =
       if !Fleche.Config.v.verbosity < 2 then (
+        Fleche.Config.(
+          v := { !v with send_diags = false; send_perf_data = false });
         LIO.set_log_fn (fun _obj -> ());
         let io = concise_cb ofn in
         Fleche.Io.CallBack.set io;

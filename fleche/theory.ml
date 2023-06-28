@@ -137,7 +137,7 @@ let diags_of_doc doc = List.concat_map Doc.Node.diags doc.Doc.nodes
 
 let send_diags ~io ~doc =
   let diags = diags_of_doc doc in
-  if List.length diags > 0 || !Config.v.verbosity > 1 then
+  if List.length diags > 0 || !Config.v.send_diags then
     let uri, version = (doc.uri, doc.version) in
     Io.Report.diagnostics ~io ~uri ~version diags
 
@@ -173,7 +173,7 @@ end = struct
       let doc = Doc.check ~io ~target ~doc:handle.doc () in
       let requests = Handle.update_doc_info ~handle ~doc in
       send_diags ~io ~doc;
-      if !Config.v.verbosity > 1 then
+      if !Config.v.send_perf_data then
         if (* Only if completed! *)
            completed ~doc then send_perf_data ~io ~doc;
       (* Only if completed! *)
