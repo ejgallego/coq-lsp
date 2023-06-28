@@ -37,6 +37,8 @@
  - Be more resilient when serializing unknowns Asts (@ejgallego, #503,
    reported by Gijs Pennings)
  - Coq's STM is not linked anymore to `coq-lsp` (@ejgallego, #511)
+ - More granular options `send_perf_data` `send_diags`, `verbosity`
+   will set them now (@ejgallego, #)
 
 # coq-lsp 0.1.6: Peek
 ---------------------
