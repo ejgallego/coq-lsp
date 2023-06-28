@@ -195,6 +195,10 @@ module Completion = struct
     | Stopped _ -> "stopped"
     | Failed _ -> "failed"
     | FailedPermanent _ -> "refused to create due to Coq parsing bug"
+
+  let is_completed = function
+    | Yes _ | Failed _ | FailedPermanent _ -> true
+    | _ -> false
 end
 
 (* Private. A doc is a list of nodes for now. The first element in the list is
@@ -695,6 +699,14 @@ let process_and_parse ~io ~target ~uri ~version doc last_tok doc_handle =
         let n_errors = CList.count Lang.Diagnostic.is_error node.Node.diags in
         let doc = add_node ~node doc in
         stm doc state last_tok (acc_errors + n_errors)
+  in
+  (* Reporting of progress and diagnostics (if stopped or failed, if completed
+     the doc manager will take care of it) *)
+  let doc =
+    if not (Completion.is_completed doc.completed) then
+      let () = report_progress ~io ~doc last_tok in
+      send_eager_diagnostics ~io ~uri ~version ~doc
+    else doc
   in
   (* Set the document to "internal" mode, stm expects the node list to be in
      reveresed order *)
