@@ -135,6 +135,25 @@ end
 
 let diags_of_doc doc = List.concat_map Doc.Node.diags doc.Doc.nodes
 
+(* This is temporary for 0.1.7 and our ER project, we need to reify this to a
+   general structure *)
+module Register : sig
+  module Completed : sig
+    type t = io:Io.CallBack.t -> doc:Doc.t -> unit
+  end
+
+  val add : Completed.t -> unit
+  val fire : io:Io.CallBack.t -> doc:Doc.t -> unit
+end = struct
+  module Completed = struct
+    type t = io:Io.CallBack.t -> doc:Doc.t -> unit
+  end
+
+  let callback : Completed.t list ref = ref []
+  let add fn = callback := fn :: !callback
+  let fire ~io ~doc = List.iter (fun f -> f ~io ~doc) !callback
+end
+
 let send_diags ~io ~doc =
   let diags = diags_of_doc doc in
   if List.length diags > 0 || !Config.v.send_diags then
@@ -142,16 +161,14 @@ let send_diags ~io ~doc =
     Io.Report.diagnostics ~io ~uri ~version diags
 
 let send_perf_data ~io ~(doc : Doc.t) =
-  match doc.completed with
-  | Yes _ ->
+  (* The if below needs to be moved to registrationt time, but for now we keep
+     it for now until the plugin workflow is clearer *)
+  if !Config.v.send_perf_data then
     let uri, version = (doc.uri, doc.version) in
     Io.Report.perfData ~io ~uri ~version (Perf_analysis.make doc)
-  | _ -> ()
 
-let completed ~(doc : Doc.t) =
-  match doc.completed with
-  | Yes _ | Failed _ | FailedPermanent _ -> true
-  | Stopped _ -> false
+let () = Register.add send_perf_data
+let () = Register.add send_diags
 
 module Check : sig
   val schedule : uri:Lang.LUri.File.t -> unit
@@ -172,12 +189,9 @@ end = struct
       let target = get_check_target handle.pt_requests in
       let doc = Doc.check ~io ~target ~doc:handle.doc () in
       let requests = Handle.update_doc_info ~handle ~doc in
-      send_diags ~io ~doc;
-      if !Config.v.send_perf_data then
-        if (* Only if completed! *)
-           completed ~doc then send_perf_data ~io ~doc;
-      (* Only if completed! *)
-      if completed ~doc then pending := None;
+      if Doc.Completion.is_completed doc.completed then Register.fire ~io ~doc;
+      (* Remove from the queu *)
+      if Doc.Completion.is_completed doc.completed then pending := None;
       Some (requests, doc)
     | None ->
       Io.Log.trace "Check.check"
@@ -338,7 +352,7 @@ module Request = struct
     match request with
     | FullDoc { uri } ->
       with_doc ~uri ~f:(fun doc ->
-          if completed ~doc then Now doc
+          if Doc.Completion.is_completed doc.completed then Now doc
           else (
             Handle.attach_cp_request ~uri ~id;
             Postpone))

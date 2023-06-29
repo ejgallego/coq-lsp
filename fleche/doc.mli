@@ -54,6 +54,8 @@ module Completion : sig
     | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
     | FailedPermanent of Lang.Range.t
         (** Temporal Coq hack, avoids any computation *)
+
+  val is_completed : t -> bool
 end
 
 (** A Flèche document is basically a [node list], which is a crude form of a
