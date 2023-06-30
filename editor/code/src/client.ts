@@ -124,7 +124,7 @@ export function activateCoqLSP(
     const clientOptions: LanguageClientOptions = {
       documentSelector: [
         { scheme: "file", language: "coq" },
-        { scheme: "file", language: "coqmarkdown" },
+        { scheme: "file", language: "markdown", pattern: "**/*.mv" },
       ],
       outputChannelName: "Coq LSP Server Events",
       revealOutputChannelOn: RevealOutputChannelOn.Info,
@@ -196,7 +196,7 @@ export function activateCoqLSP(
   ) => {
     if (
       textEditor.document.languageId != "coq" &&
-      textEditor.document.languageId != "coqmarkdown"
+      textEditor.document.languageId != "markdown"
     )
       return;
 
