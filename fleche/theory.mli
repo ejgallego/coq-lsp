@@ -70,3 +70,12 @@ module Request : sig
   (** Removes the request from the list of things to wake up *)
   val remove : t -> unit
 end
+
+(* Experimental plugin API, not stable yet *)
+module Register : sig
+  module Completed : sig
+    type t = io:Io.CallBack.t -> doc:Doc.t -> unit
+  end
+
+  val add : Completed.t -> unit
+end

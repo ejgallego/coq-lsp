@@ -250,7 +250,7 @@ let lsp_cmd : unit Cmd.t =
   let vo_load_path = term_append [ rload_path; load_path ] in
   Cmd.(
     v
-      (Cmd.info "coq-lsp" ~version:Version.server ~doc ~man)
+      (Cmd.info "coq-lsp" ~version:Fleche.Version.server ~doc ~man)
       Term.(
         const lsp_main $ bt $ coqcorelib $ coqlib $ ocamlpath $ vo_load_path
         $ ml_include_path $ delay))
