@@ -18,12 +18,16 @@ build: coq_boot
 check: coq_boot
 	dune build $(DUNEOPT) @check
 
-test/node_modules: test/package.json
-	cd test && npm i
+test/server/node_modules: test/server/package.json
+	cd test/server && npm i
 
 .PHONY: test
-test: build test/node_modules
-	cd test && npm test
+test: build test/server/node_modules
+	cd test/server && npm test
+
+.PHONY: test-compiler
+test-compiler: build
+	OCAMLPATH=_build/install/default/lib:$$OCAMLPATH FCC_TEST=true dune runtest
 
 .PHONY: fmt format
 fmt format:

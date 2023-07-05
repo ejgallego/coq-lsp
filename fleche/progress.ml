@@ -20,5 +20,4 @@ module Info = struct
     { range : Lang.Range.t
     ; kind : int
     }
-  [@@deriving yojson]
 end

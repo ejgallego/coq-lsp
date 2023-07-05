@@ -38,6 +38,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [💾 `.vo` file saving](#-vo-file-saving)
   - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
   - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
+  - [🖵 Extensible, Machine-friendly Command Line Compiler](#️-extensive-machine-friendly-command-line-compiler)
   - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
   - [🌐 Web Native!](#-web-native)
   - [🔎 A Platform for Research!](#-a-platform-for-research)
@@ -160,6 +161,16 @@ when a proof doesn't check, admit or ignore? You decide!
 See the `coq-lsp` extension configuration in VSCode for options available.
 
 <img alt="Configuration screen" height="286px" src="etc/img/lsp-config.png"/>
+
+### 🖵 Extensible, Machine-friendly Command Line Compiler
+
+`coq-lsp` includes the `fcc` "Flèche Coq Compiler" which allows the access to
+almost all the features of Flèche / `coq-lsp` without the need to spawn a
+fully-fledged LSP client.
+
+`fcc` has been designed to be machine-friendly and extensible, so you can easily
+add your pre/post processing passes, for example to analyze or serialize parts
+of Coq files.
 
 ### ♻️ Reusability, Standards, Modularity
 

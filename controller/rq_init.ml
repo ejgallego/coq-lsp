@@ -32,13 +32,14 @@ let do_client_options coq_lsp_options : unit =
   | Error msg -> LIO.trace "CoqLspOption.of_yojson error: " msg
 
 let check_client_version client_version : unit =
+  let server_version = Fleche.Version.server in
   LIO.trace "client_version" client_version;
-  if String.(equal client_version "any" || equal client_version Version.server)
+  if String.(equal client_version "any" || equal client_version server_version)
   then () (* Version OK *)
   else
     let message =
       Format.asprintf "Incorrect client version: %s , expected %s."
-        client_version Version.server
+        client_version server_version
     in
     LIO.logMessage ~lvl:1 ~message
 
@@ -142,7 +143,7 @@ let do_initialize ~params =
       ; ( "serverInfo"
         , `Assoc
             [ ("name", `String "coq-lsp (C) Inria 2022-2023")
-            ; ("version", `String Version.server)
+            ; ("version", `String Fleche.Version.server)
             ] )
       ]
   , dir )

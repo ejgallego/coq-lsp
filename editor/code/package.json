@@ -42,20 +42,18 @@
           "gallina"
         ],
         "extensions": [
-          ".v",
-          ".mv"
+          ".v"
         ],
         "configuration": "./coq.configuration.json"
       },
       {
-        "id": "coqmarkdown",
+        "id": "markdown",
         "aliases": [
-          "Coq Markdown"
+          "Markdown"
         ],
         "extensions": [
           ".mv"
-        ],
-        "configuration": "./coq.configuration.json"
+        ]
       }
     ],
     "grammars": [
@@ -63,11 +61,6 @@
         "language": "coq",
         "scopeName": "source.coq",
         "path": "./syntaxes/coq.json"
-      },
-      {
-        "language": "coqmarkdown",
-        "scopeName": "source.coqmarkdown",
-        "path": "./syntaxes/coqmarkdown.json"
       },
       {
         "scopeName": "markdown.coq.codeblock",
@@ -115,7 +108,7 @@
         "command": "coq-lsp.goals",
         "key": "alt+enter",
         "mac": "meta+enter",
-        "when": "editorTextFocus && editorLangId == coq || editorTextFocus && editorLangId == coqmarkdown"
+        "when": "editorTextFocus && (editorLangId == coq || editorTextFocus && editorLangId == markdown)"
       }
     ],
     "viewsContainers": {
@@ -295,16 +288,16 @@
     "@types/throttle-debounce": "^5.0.0",
     "@types/vscode": "^1.73.0",
     "@types/vscode-webview": "^1.57.1",
-    "esbuild": "^0.16.13",
+    "esbuild": "^0.16.17",
     "prettier": "^2.8.1",
     "typescript": "^4.9.4"
   },
   "dependencies": {
     "@vscode/webview-ui-toolkit": "^1.2.1",
+    "jquery": "^3.6.3",
     "object-hash": "^3.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "jquery": "^3.6.3",
     "throttle-debounce": "^5.0.0",
     "vscode-languageclient": "^8.1.0",
     "vscode-languageserver-types": "^3.17.3"

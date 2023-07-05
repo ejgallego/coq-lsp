@@ -25,7 +25,7 @@ editor supporting this protocol.
 ## How is `coq-lsp` different from VSCoq?
 
 [VSCoq](https://github.com/coq-community/vscoq) was developed by C.J.
-Siegbell (and later maintained by a team of volunteers) and at the
+Bell (and later maintained by a team of volunteers) and at the
 time was an impressive achievement. The key difference between `VSCoq`
 and `coq-lsp` is how the VSCode client communicates with Coq.
 

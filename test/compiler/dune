@@ -1,0 +1,5 @@
+(cram
+ (deps
+  (source_tree proj1)
+  (source_tree proj2)
+  %{bin:fcc}))

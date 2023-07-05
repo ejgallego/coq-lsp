@@ -168,7 +168,7 @@ end = struct
     let f pr =
       let () =
         let request = Request.Data.dm_request pr in
-        Doc_manager.Request.remove { id; request }
+        Fleche.Theory.Request.remove { id; request }
       in
       Error (code, message)
     in
@@ -188,7 +188,7 @@ end = struct
 
   let query ~ofn ~id (pr : Request.Data.t) =
     let request = Request.Data.dm_request pr in
-    match Doc_manager.Request.add { id; request } with
+    match Fleche.Theory.Request.add { id; request } with
     | Cancel ->
       let code = -32802 in
       let message = "Document is not ready" in
@@ -218,16 +218,16 @@ end
 (***********************************************************************)
 (* Start of protocol handlers: document notifications                  *)
 
-let do_open ~ofn ~(state : State.t) params =
+let do_open ~io ~(state : State.t) params =
   let document =
     field "textDocument" params
     |> Lsp.Doc.TextDocumentItem.of_yojson |> Result.get_ok
   in
   let Lsp.Doc.TextDocumentItem.{ uri; version; text; _ } = document in
   let root_state, workspace = State.workspace_of_uri ~uri ~state in
-  Doc_manager.create ~ofn ~root_state ~workspace ~uri ~raw:text ~version
+  Fleche.Theory.create ~io ~root_state ~workspace ~uri ~raw:text ~version
 
-let do_change ~ofn params =
+let do_change ~ofn ~io params =
   let uri, version = Helpers.get_uri_version params in
   let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
   match changes with
@@ -240,14 +240,14 @@ let do_change ~ofn params =
     ()
   | change :: _ ->
     let raw = string_field "text" change in
-    let invalid_rq = Doc_manager.change ~ofn ~uri ~version ~raw in
+    let invalid_rq = Fleche.Theory.change ~io ~uri ~version ~raw in
     let code = -32802 in
     let message = "Request got old in server" in
     Int.Set.iter (Rq.cancel ~ofn ~code ~message) invalid_rq
 
 let do_close ~ofn:_ params =
   let uri = Helpers.get_uri params in
-  Doc_manager.close ~uri
+  Fleche.Theory.close ~uri
 
 let do_trace params =
   let trace = string_field "value" params in
@@ -330,8 +330,8 @@ let version () =
     | None -> "N/A"
     | Some bi -> Build_info.V1.Version.to_string bi
   in
-  Format.asprintf "version %s, dev: %s, Coq version: %s, OS: %s" Version.server
-    dev_version Coq_config.version Sys.os_type
+  Format.asprintf "version %s, dev: %s, Coq version: %s, OS: %s"
+    Fleche.Version.server dev_version Coq_config.version Sys.os_type
 
 module Init_effect = struct
   type t =
@@ -369,15 +369,15 @@ let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
     Loop
 
 (** Dispatching *)
-let dispatch_notification ~ofn ~state ~method_ ~params : unit =
+let dispatch_notification ~io ~ofn ~state ~method_ ~params : unit =
   match method_ with
   (* Lifecycle *)
   | "exit" -> raise Lsp_exit
   (* setTrace *)
   | "$/setTrace" -> do_trace params
   (* Document lifetime *)
-  | "textDocument/didOpen" -> do_open ~ofn ~state params
-  | "textDocument/didChange" -> do_change ~ofn params
+  | "textDocument/didOpen" -> do_open ~io ~state params
+  | "textDocument/didChange" -> do_change ~io ~ofn params
   | "textDocument/didClose" -> do_close ~ofn params
   | "textDocument/didSave" -> Cache.save_to_disk ()
   (* Cancel Request *)
@@ -387,13 +387,13 @@ let dispatch_notification ~ofn ~state ~method_ ~params : unit =
   (* Generic handler *)
   | msg -> LIO.trace "no_handler" msg
 
-let dispatch_state_notification ~ofn ~state ~method_ ~params : State.t =
+let dispatch_state_notification ~io ~ofn ~state ~method_ ~params : State.t =
   match method_ with
   (* Workspace *)
   | "workspace/didChangeWorkspaceFolders" ->
     do_changeWorkspaceFolders ~ofn ~state params
   | _ ->
-    dispatch_notification ~ofn ~state ~method_ ~params;
+    dispatch_notification ~io ~ofn ~state ~method_ ~params;
     state
 
 let dispatch_request ~method_ ~params : Rq.Action.t =
@@ -424,10 +424,10 @@ let dispatch_request ~method_ ~params : Rq.Action.t =
 let dispatch_request ~ofn ~id ~method_ ~params =
   dispatch_request ~method_ ~params |> Rq.serve ~ofn ~id
 
-let dispatch_message ~ofn ~state (com : LSP.Message.t) : State.t =
+let dispatch_message ~io ~ofn ~state (com : LSP.Message.t) : State.t =
   match com with
   | Notification { method_; params } ->
-    dispatch_state_notification ~ofn ~state ~method_ ~params
+    dispatch_state_notification ~io ~ofn ~state ~method_ ~params
   | Request { id; method_; params } ->
     dispatch_request ~ofn ~id ~method_ ~params;
     state
@@ -435,7 +435,7 @@ let dispatch_message ~ofn ~state (com : LSP.Message.t) : State.t =
 (* Queue handling *)
 
 (***********************************************************************)
-(* The queue strategy is: we keep pending document checks in Doc_manager, they
+(* The queue strategy is: we keep pending document checks in Fleche.Theory, they
    are only resumed when the rest of requests in the queue are served.
 
    Note that we should add a method to detect stale requests; maybe cancel them
@@ -445,8 +445,8 @@ type 'a cont =
   | Cont of 'a
   | Yield of 'a
 
-let check_or_yield ~ofn ~state =
-  match Doc_manager.Check.maybe_check ~ofn with
+let check_or_yield ~io ~ofn ~state =
+  match Fleche.Theory.Check.maybe_check ~io with
   | None -> Yield state
   | Some (ready, doc) ->
     let () = Rq.serve_postponed ~ofn ~doc ready in
@@ -454,13 +454,13 @@ let check_or_yield ~ofn ~state =
 
 let request_queue = Queue.create ()
 
-let dispatch_or_resume_check ~ofn ~state =
+let dispatch_or_resume_check ~io ~ofn ~state =
   match Queue.peek_opt request_queue with
   | None ->
     (* This is where we make progress on document checking; kind of IDLE
        workqueue. *)
     Control.interrupt := false;
-    check_or_yield ~ofn ~state
+    check_or_yield ~io ~ofn ~state
   | Some com ->
     (* TODO: optimize the queue? EJGA: I've found that VS Code as a client keeps
        the queue tidy by itself, so this works fine as now *)
@@ -468,11 +468,11 @@ let dispatch_or_resume_check ~ofn ~state =
     LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
     (* We let Coq work normally now *)
     Control.interrupt := false;
-    Cont (dispatch_message ~ofn ~state com)
+    Cont (dispatch_message ~io ~ofn ~state com)
 
 (* Wrapper for the top-level call *)
-let dispatch_or_resume_check ~ofn ~state =
-  try Some (dispatch_or_resume_check ~ofn ~state) with
+let dispatch_or_resume_check ~io ~ofn ~state =
+  try Some (dispatch_or_resume_check ~io ~ofn ~state) with
   | U.Type_error (msg, obj) ->
     LIO.trace_object msg obj;
     Some (Yield state)
