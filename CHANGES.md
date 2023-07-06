@@ -15,6 +15,9 @@
    requirements (@ejgallego, #421)
  - Fix bug that prevented "Goal after tactic" from working properly
    (@ejgallego, #438, reported by David Ilcinkas)
+ - Fix "Error message browser becomes non-visible when there are many
+   goals" by using a fixed-position separated error display (@TDiazT,
+   #445, fixes #441)
  - Message about workspace detection was printing the wrong file,
    (@ejgallego, #444, reported by Alex Sanchez-Stern)
  - Display the list of pending obligations in info panel (@ejgallego,
