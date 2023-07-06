@@ -70,13 +70,17 @@ export function InfoPanel() {
 
   if (!goals) return null;
 
+  // We limit the number of messages as to workaround slow rendering
+  // in pretty print mode, to be fixed.
+  let messages = goals.messages.slice(0, 100);
+
   return (
     <div className="info-panel-container">
       <div className="info-panel">
         <FileInfo textDocument={goals.textDocument} position={goals.position}>
           <Goals goals={goals.goals} />
           <Program program={goals.program} />
-          <Messages messages={goals.messages} />
+          <Messages messages={messages} />
         </FileInfo>
       </div>
       {!goals.error ? null : (

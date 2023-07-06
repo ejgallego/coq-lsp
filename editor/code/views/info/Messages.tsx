@@ -1,4 +1,4 @@
-import objectHash from "object-hash";
+// import objectHash from "object-hash";
 import { Message as Msg } from "../../lib/types";
 import { PpString } from "../../lib/types";
 import { Details } from "./Details";
@@ -15,7 +15,8 @@ export function Messages({ messages }: MessagesParams) {
     <Details summary={`Messages (${count})`} open={open}>
       <ul className="messageList">
         {messages.map((value, idx) => {
-          let key = objectHash(value);
+          // let key = objectHash(value);
+          let key = idx;
           return <Message key={key} message={value} />;
         })}
       </ul>
