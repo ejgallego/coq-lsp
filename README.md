@@ -301,15 +301,29 @@ See our [list of frequently-asked questions](./etc/FAQ.md).
 
 ## ⁉️ Troubleshooting and Known Problems
 
+### Known problems
+
+- Current rendering code can be slow with complex goals and messages, if that's
+  the case, please open an issue and set the option `Coq LSP > Method to Print
+  Coq Terms` to 0 as a workaround.
+- `coq-lsp` can fail to interrupt Coq in some cases, such as `Qed` or type class
+  search. If that's the case, please open an issue, we have a experimental
+  branch that solves this problem that you can try.
+- Working with multiple files in Coq < 8.17 requires a Coq patch, see below for
+  instructions.
+- If you install `coq-lsp/VSCode` simultaneously with the `VSCoq` Visual Studio
+  Code extension, Visual Studio Code gets confused and neither of them may
+  work. `coq-lsp` will warn about that. You can disable the `VSCoq` extension as
+  a workaround.
+
+### Troubleshooting
+
 - Some problems can be resolved by restarting `coq-lsp`, in Visual Studio Code,
   `Ctrl+Shift+P` will give you access to the `coq-lsp.restart` command.
   You can also start / stop the server from the status bar.
 - In VSCode, the "Output" window will have a "Coq LSP Server Events" channel
   which should contain some important information; the content of this channel
   is controlled by the `Coq LSP > Trace: Server` option.
-- If you install `coq-lsp` simultaneously with VSCoq, VSCode gets confused and
-  neither of them may work. `coq-lsp` will warn about that. If you know how to
-  improve this, don't hesitate to get in touch with us.
 
 ### 📂 Working With Multiple Files
 

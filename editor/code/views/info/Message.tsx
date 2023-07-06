@@ -1,14 +1,15 @@
-import objectHash from "object-hash";
+// import objectHash from "object-hash";
 import { Message } from "../../lib/types";
 import { PpString } from "../../lib/types";
 import { CoqPp } from "./CoqPp";
 
 export function Message({
+  key,
   message,
 }: {
+  key: React.Key;
   message: PpString | Message<PpString>;
 }) {
-  let key = objectHash(message);
   let text =
     typeof message === "string"
       ? message

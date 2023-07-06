@@ -45,6 +45,12 @@
    will set them now (@ejgallego, #517)
  - Preliminary plugin API for completion events (@ejgallego, #518,
    fixes #506)
+ - Limit the number of messages displayed in the goal window to 101,
+   as to workaround slow render of Coq's pretty printing format. This
+   is an issue for example in Search where we can get thousand of
+   results. We also speed up the rendering a bit by not hashing twice,
+   and fix a parameter-passing bug. (@ejgallego, #523, reported by
+   Anton Podkopaev)
 
 # coq-lsp 0.1.6: Peek
 ---------------------
