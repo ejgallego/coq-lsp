@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - main
+      - v8.18
       - v8.17
       - v8.16
       - v8.15
   pull_request:
     branches:
       - main
+      - v8.18
       - v8.17
       - v8.16
       - v8.15
