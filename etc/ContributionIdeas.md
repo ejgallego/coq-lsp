@@ -35,6 +35,7 @@ like to:
 
 - Allow to skip proofs, configure which ones to skip
 - Contextual continuous checking: Check only what is visible, _à la_ Isabelle.
+- Python Plugin API
 
 ## LTAC Debugging
 
@@ -44,9 +45,10 @@ like to:
 
 Based on the `coq-layout-engine` project.
 
-## LaTeX document support
+## LaTeX and Markdown document support
 
 - support `.lv` literate Coq LaTeX documents
+- support extended markdown contributions to TOC
 
 ### "Computational", Jupyter-style Documents
 
