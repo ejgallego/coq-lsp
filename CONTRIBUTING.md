@@ -286,8 +286,8 @@ The above can be done with:
 ```
 export COQLSPV=0.1.7
 git checkout main  && make                    && dune-release tag ${COQLSPV}
-git checkout v8.17 && make && git merge main  && dune-release tag ${COQLSPV}+8.17 && dune release
-git checkout v8.16 && make && git merge v8.17 && dune-release tag ${COQLSPV}+8.16 && dune release
+git checkout v8.17 && git merge main  && make && dune-release tag ${COQLSPV}+8.17 && dune-release
+git checkout v8.16 && git merge v8.17 && make && dune-release tag ${COQLSPV}+8.16 && dune-release
 ```
 
 ## Emacs
