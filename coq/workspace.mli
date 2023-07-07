@@ -22,6 +22,13 @@ module Flags : sig
     }
 end
 
+module Warning : sig
+  type t
+
+  val make : string -> t
+  val apply : t -> unit
+end
+
 type t = private
   { coqlib : string
   ; coqcorelib : string
@@ -31,6 +38,7 @@ type t = private
   ; require_libs :
       (string * string option * Vernacexpr.export_with_cats option) list
   ; flags : Flags.t
+  ; warnings : Warning.t list
   ; kind : string  (** How the workspace was built *)
   ; debug : bool  (** Enable backtraces *)
   }

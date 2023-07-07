@@ -8,7 +8,7 @@ import * as Types from "vscode-languageserver-types";
 import { URI } from "vscode-uri";
 
 let serverBin = os.platform() === "win32" ? "coq-lsp.exe" : "coq-lsp";
-let projectRoot = path.join(__dirname, "..", "..");
+let projectRoot = path.join(__dirname, "..", "..", "..");
 
 let serverPath = path.join(
   projectRoot,
@@ -23,6 +23,11 @@ let ocamlPath = path.join(projectRoot, "_build", "install", "default", "lib");
 
 export function toURI(s: string) {
   return URI.parse(s).toString();
+}
+
+export function openExampleEphemeral(filename: string, contents: string) {
+  let filepath = path.join(projectRoot, filename);
+  return Types.TextDocumentItem.create(toURI(filepath), "coq", 0, contents);
 }
 
 export function openExample(filename: string) {
@@ -75,6 +80,7 @@ export function start(): LanguageServer {
       },
       ...initializeParameters,
     };
+
     await connection.sendRequest(
       Protocol.InitializeRequest.type,
       initializeParameters

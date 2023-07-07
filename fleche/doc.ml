@@ -192,6 +192,10 @@ module Completion = struct
     | Stopped _ -> "stopped"
     | Failed _ -> "failed"
     | FailedPermanent _ -> "refused to create due to Coq parsing bug"
+
+  let is_completed = function
+    | Yes _ | Failed _ | FailedPermanent _ -> true
+    | _ -> false
 end
 
 (* Private. A doc is a list of nodes for now. The first element in the list is
@@ -210,6 +214,7 @@ type t =
 
 (* Flatten the list of document asts *)
 let asts doc = List.filter_map Node.ast doc.nodes
+let diags doc = List.concat_map (fun node -> node.Node.diags) doc.nodes
 
 (* TOC handling *)
 let rec add_toc_info toc { Lang.Ast.Info.name; range; children; _ } =
@@ -372,15 +377,13 @@ let add_node ~node doc =
   let toc = update_toc_node doc.toc node in
   { doc with nodes = node :: doc.nodes; toc; diags_dirty }
 
-let concat_diags doc = List.concat_map (fun node -> node.Node.diags) doc.nodes
-
-let send_eager_diagnostics ~ofn ~uri ~version ~doc =
+let send_eager_diagnostics ~io ~uri ~version ~doc =
   (* this is too noisy *)
   (* let proc_diag = mk_diag loc 3 (Pp.str "Processing") in *)
   (* Io.Report.diagnostics ~uri ~version (proc_diag :: doc.diags)); *)
   if doc.diags_dirty && !Config.v.eager_diagnostics then (
-    let diags = concat_diags doc in
-    Io.Report.diagnostics ~ofn ~uri ~version diags;
+    let diags = diags doc in
+    Io.Report.diagnostics ~io ~uri ~version diags;
     { doc with diags_dirty = false })
   else doc
 
@@ -398,9 +401,9 @@ let compute_progress end_ (last_done : Lang.Range.t) =
   let range = Lang.Range.{ start; end_ } in
   { Progress.Info.range; kind = 1 }
 
-let report_progress ~doc (last_tok : Lang.Range.t) =
+let report_progress ~io ~doc (last_tok : Lang.Range.t) =
   let progress = compute_progress doc.contents.last last_tok in
-  Io.Report.fileProgress ~uri:doc.uri ~version:doc.version [ progress ]
+  Io.Report.fileProgress ~io ~uri:doc.uri ~version:doc.version [ progress ]
 
 (* XXX: Save on close? *)
 (* let close_doc _modname = () *)
@@ -447,7 +450,7 @@ let state_recovery_heuristic doc st v =
     Io.Log.trace "recovery" "qed";
     recovery_for_failed_qed ~default:st doc.nodes |> log_qed_recovery v.v
   (* If a new focus (or unfocusing) fails, admit the proof and try again *)
-  | Vernacexpr.VernacBullet _ | Vernacexpr.VernacEndSubproof ->
+  | Vernacexpr.(VernacBullet _ | Vernacexpr.VernacEndSubproof) ->
     Io.Log.trace "recovery" "bullet";
     Coq.State.admit_goal ~st
     |> Coq.Protect.E.bind ~f:(fun st -> Coq.Interp.interp ~st v.v)
@@ -668,11 +671,11 @@ let max_errors_node ~state ~range =
     ~parsing_time:0.0
 
 (* main interpretation loop *)
-let process_and_parse ~ofn ~target ~uri ~version doc last_tok doc_handle =
+let process_and_parse ~io ~target ~uri ~version doc last_tok doc_handle =
   let rec stm doc st (last_tok : Lang.Range.t) acc_errors =
     (* Reporting of progress and diagnostics (if dirty) *)
-    let doc = send_eager_diagnostics ~ofn ~uri ~version ~doc in
-    report_progress ~ofn ~doc last_tok;
+    let doc = send_eager_diagnostics ~io ~uri ~version ~doc in
+    report_progress ~io ~doc last_tok;
     if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
     if acc_errors > !Config.v.max_errors then
       let completed = Completion.Failed last_tok in
@@ -708,6 +711,14 @@ let process_and_parse ~ofn ~target ~uri ~version doc last_tok doc_handle =
         let n_errors = CList.count Lang.Diagnostic.is_error node.Node.diags in
         let doc = add_node ~node doc in
         stm doc state last_tok (acc_errors + n_errors)
+  in
+  (* Reporting of progress and diagnostics (if stopped or failed, if completed
+     the doc manager will take care of it) *)
+  let doc =
+    if not (Completion.is_completed doc.completed) then
+      let () = report_progress ~io ~doc last_tok in
+      send_eager_diagnostics ~io ~uri ~version ~doc
+    else doc
   in
   (* Set the document to "internal" mode, stm expects the node list to be in
      reveresed order *)
@@ -766,7 +777,7 @@ let loc_after ~lines ~uri (r : Lang.Range.t) =
   }
 
 (** Setup parser and call the main routine *)
-let resume_check ~ofn ~(last_tok : Lang.Range.t) ~doc ~target =
+let resume_check ~io ~(last_tok : Lang.Range.t) ~doc ~target =
   let uri, version, contents = (doc.uri, doc.version, doc.contents) in
   (* Compute resume point, basically [CLexer.after] + stream setup *)
   let lines = doc.contents.lines in
@@ -784,10 +795,10 @@ let resume_check ~ofn ~(last_tok : Lang.Range.t) ~doc ~target =
       Coq.Parsing.Parsable.make ~loc:resume_loc
         (stream_of_string ~offset processed_content)
     in
-    process_and_parse ~ofn ~target ~uri ~version doc last_tok handle
+    process_and_parse ~io ~target ~uri ~version doc last_tok handle
 
 (** Check a document, if it was not completed already *)
-let check ~ofn ~target ~doc () =
+let check ~io ~target ~doc () =
   match doc.completed with
   | Yes _ ->
     Io.Log.trace "check" "resuming, completed=yes, nothing to do";
@@ -797,7 +808,7 @@ let check ~ofn ~target ~doc () =
     doc
   | Stopped last_tok ->
     DDebug.resume last_tok doc.version;
-    let doc = resume_check ~ofn ~last_tok ~doc ~target in
+    let doc = resume_check ~io ~last_tok ~doc ~target in
     log_doc_completion doc.completed;
     Util.print_stats ();
     doc

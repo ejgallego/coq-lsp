@@ -1,16 +1,23 @@
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
 
+ - New command line compiler `fcc`. `fcc` allows to access most
+   features of `coq-lsp` without the need for a command line client,
+   and it has been designed to be extensible and machine-friendly
+   (@ejgallego, #507, fixes #472)
+ - Enable web extension support. For now this will not try to start
+   the coq-lsp worker as it is not yet built. (@ejgallego, #430, fixes
+   #234)
  - Improvements and clenaups on hover display, in particular we don't
    print repeated `Notation` strings (@ejgallego, #422)
  - Don't fail on missing serlib plugins, they are indeed an
    optimization; this mostly impacts 8.16 by lowering the SerAPI
    requirements (@ejgallego, #421)
- - Enable web extension support. For now this will not try to start
-   the coq-lsp worker as it is not yet built. (@ejgallego, #430, fixes
-   #234)
  - Fix bug that prevented "Goal after tactic" from working properly
    (@ejgallego, #438, reported by David Ilcinkas)
+ - Fix "Error message browser becomes non-visible when there are many
+   goals" by using a fixed-position separated error display (@TDiazT,
+   #445, fixes #441)
  - Message about workspace detection was printing the wrong file,
    (@ejgallego, #444, reported by Alex Sanchez-Stern)
  - Display the list of pending obligations in info panel (@ejgallego,
@@ -22,6 +29,31 @@
  - Pass implicit argument information to hover printer (@ejgallego, #453,
    fixes #448)
  - Fix keybinding for the "Show Goals at Point" command (@4ever2, #460)
+ - Alert when `rootPath` is relative (#465, @ejgallego, report by Alex
+   Sanchez-Stern)
+ - Hook coq-lsp to ViZX extension (@bhaktishh, #469)
+ - `proof/goals` request now takes an optional formatting parameter
+   so clients can specify it per-request (@ejgallego, @bhaktishh, #470)
+ - New command line argument `--idle-delay=$secs` that controls how
+   much an idle server will sleep before going back to request
+   processing. Default setting is `0.1`, using more aggressive
+   settings like `0.01` can decrease latency of requests by ~4x
+   (@ejgallego, @hazardouspeach, #467, #471)
+ - Warnings from `_CoqProject` files are now applied (@ejgallego,
+   reported by @arthuraa, #500)
+ - Be more resilient when serializing unknowns Asts (@ejgallego, #503,
+   reported by Gijs Pennings)
+ - Coq's STM is not linked anymore to `coq-lsp` (@ejgallego, #511)
+ - More granular options `send_perf_data` `send_diags`, `verbosity`
+   will set them now (@ejgallego, #517)
+ - Preliminary plugin API for completion events (@ejgallego, #518,
+   fixes #506)
+ - Limit the number of messages displayed in the goal window to 101,
+   as to workaround slow render of Coq's pretty printing format. This
+   is an issue for example in Search where we can get thousand of
+   results. We also speed up the rendering a bit by not hashing twice,
+   and fix a parameter-passing bug. (@ejgallego, #523, reported by
+   Anton Podkopaev)
 
 # coq-lsp 0.1.6: Peek
 ---------------------

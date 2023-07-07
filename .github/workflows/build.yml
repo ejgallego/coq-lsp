@@ -66,11 +66,15 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: opam exec -- make test
 
+      - name: 🐛 Test fcc
+        if: matrix.os != 'windows-latest'
+        run: opam exec -- make test-compiler
+
   build-nix:
     name: Nix
     strategy:
       matrix:
-        os: [macOS-latest, ubuntu-latest]
+        os: [ubuntu-latest, macOS-latest]
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -82,7 +86,7 @@ jobs:
           submodules: recursive
 
       - name: ❄️ Setup Nix
-        uses: cachix/install-nix-action@v18
+        uses: cachix/install-nix-action@v22
 
       - name: 🧱 Build coq-lsp
         run: nix build .?submodules=1

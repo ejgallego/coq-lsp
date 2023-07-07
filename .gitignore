@@ -12,3 +12,5 @@ _opam
 result
 nix/profiles/
 
+# examples config, ignore for now
+examples/.vscode

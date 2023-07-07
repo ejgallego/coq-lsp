@@ -5,4 +5,15 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val make : Fleche.Doc.t -> Yojson.Safe.t
+module Sentence = struct
+  type t =
+    { loc : Lang.Range.t
+    ; time : float
+    ; mem : float
+    }
+end
+
+type t =
+  { summary : string
+  ; timings : Sentence.t list
+  }

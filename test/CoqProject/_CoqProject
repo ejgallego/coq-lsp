@@ -1,0 +1,6 @@
+# _CoqProject
+-Q . test
+
+-arg -w -arg -local-declaration
+
+test.v

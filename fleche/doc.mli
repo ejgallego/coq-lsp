@@ -54,6 +54,8 @@ module Completion : sig
     | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
     | FailedPermanent of Lang.Range.t
         (** Temporal Coq hack, avoids any computation *)
+
+  val is_completed : t -> bool
 end
 
 (** A Flèche document is basically a [node list], which is a crude form of a
@@ -72,6 +74,9 @@ type t = private
 
 (** Return the list of all asts in the doc *)
 val asts : t -> Node.Ast.t list
+
+(** Return the list of all diags in the doc *)
+val diags : t -> Lang.Diagnostic.t list
 
 (** Create a new Coq document, this is cached! *)
 val create :
@@ -97,10 +102,10 @@ module Target : sig
   val reached : range:Lang.Range.t -> int * int -> bool
 end
 
-(** [check ~ofn ~target ~doc ()], check document [doc], [target] will have
-    Flèche stop after the point specified there has been reached. Output
-    function [ofn] is used to send partial results. *)
-val check : ofn:(Yojson.Safe.t -> unit) -> target:Target.t -> doc:t -> unit -> t
+(** [check ~io ~target ~doc ()], check document [doc], [target] will have Flèche
+    stop after the point specified there has been reached. Output functions are
+    in the [io] record, used to send partial updates. *)
+val check : io:Io.CallBack.t -> target:Target.t -> doc:t -> unit -> t
 
 (** [save ~doc] will save [doc] .vo file. It will fail if proofs are open, or if
     the document completion status is not [Yes] *)

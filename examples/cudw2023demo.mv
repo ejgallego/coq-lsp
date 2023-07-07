@@ -1,0 +1,112 @@
+## Welcome to Coq LSP Demo
+
+We will review some of the coq-lsp features quickly.
+
+### Markdown / Hybrid Document support
+
+You can write diagrams:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Still
+    Still --> [*]
+    Still --> Moving
+    Moving --> Still
+    Moving --> Crash
+    Crash --> [*]
+```
+
+And many other things such as math:
+
+$$
+f : A \to B \quad g : B \to C \quad g \circ f : A \to C
+$$
+
+### Continous Checking and goal display
+
+```coq
+From Coq Require Import List.
+Import ListNotations.
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+
+```
+
+Now let's do some proofs over lists:
+
+```coq
+Lemma rev_snoc_cons A :
+  forall (x : A) (l : list A), rev (l ++ [x]) = x :: rev l.
+Proof.
+  induction l.
+  - I don't know what I'm doing.
+  - simpl. rewrite IHl. simpl. reflexivity.
+Qed.
+```
+
+Try to update _above_ and **below**:
+```coq
+Theorem rev_rev A : forall (l : list A), rev (rev l) = l.
+Proof.
+  induction l.
+  - now reflexivity.
+  - simpl. rewrite rev_snoc_cons. rewrite IHl.
+    reflexivity.
+Qed.
+```
+
+We also have some support for fancier things such as
+obligations:
+
+```coq
+From Coq Require Import Program Program.Tactics.
+
+Program Definition Ob : _ := _.
+Next Obligation.
+exact nat. Defined.
+Next Obligation.
+unfold Ob_obligation_1.
+exact 3. Defined.
+
+Eval compute in Ob.
+```
+
+### Standard LSP features
+
+We support a few standard LSP features such as:
+
+- hover
+- completion
+- jump to definition
+- outline
+
+We expect to fully support most LSP standard
+features soon.
+
+### Programmable Error Recovery
+
+Let's go back and break the first proof.
+
+`coq-lsp` error recovery is programmable, for example here we showcase
+a custom routine for bullets:
+
+```coq
+Lemma failingBullet : (1 = 1) /\ (21 = 21 /\ 22 = 22) /\ (3 = 3).
+Proof.
+split;[|split].
+- 
+-
+-
+Qed.
+```
+
+Error handling and incrementality combine in interesting ways,
+for example we can edit inside opaque proofs for free!
+
+We can also take advantages for all kind of delayed execution.
+
+# Thanks to all !!!
+
+![](./chicken.jpg)

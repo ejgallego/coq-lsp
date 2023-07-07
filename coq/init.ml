@@ -59,15 +59,11 @@ let coq_init opts =
   let fb_handler = mk_fb_handler Protect.fb_queue in
   ignore (Feedback.add_feeder fb_handler);
 
-  (* SerAPI plugins *)
-  let load_plugin = opts.load_plugin in
-  let load_module = opts.load_module in
-
   (* Custom toplevel is used for bytecode-to-js dynlink *)
   let ser_mltop : Mltop.toplevel =
     let open Mltop in
-    { load_plugin
-    ; load_module
+    { load_plugin = opts.load_plugin
+    ; load_module = opts.load_module
     ; add_dir = (fun _ -> ())
     ; ml_loop = (fun _ -> ())
     }

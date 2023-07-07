@@ -30,6 +30,14 @@ val mk_progress :
   -> Fleche.Progress.Info.t list
   -> Yojson.Safe.t
 
+module FileProgress : sig
+  type t =
+    { textDocument : Doc.VersionedTextDocumentIdentifier.t
+    ; processing : Fleche.Progress.Info.t list
+    }
+  [@@deriving yojson]
+end
+
 (** Goals *)
 module Message : sig
   type 'a t =
@@ -78,17 +86,13 @@ module FlecheDocument : sig
 end
 
 module SentencePerfData : sig
-  type t =
-    { loc : JLang.Range.t
-    ; time : float
-    ; mem : float
-    }
-  [@@deriving yojson]
+  type t = Fleche.Perf.Sentence.t [@@deriving yojson]
 end
 
 module DocumentPerfData : sig
   type t =
-    { summary : string
+    { textDocument : Doc.VersionedTextDocumentIdentifier.t
+    ; summary : string
     ; timings : SentencePerfData.t list
     }
   [@@deriving yojson]
