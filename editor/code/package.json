@@ -285,7 +285,7 @@
     "@types/throttle-debounce": "^5.0.0",
     "@types/vscode": "^1.73.0",
     "@types/vscode-webview": "^1.57.1",
-    "esbuild": "^0.16.17",
+    "esbuild": "^0.18.11",
     "prettier": "^3.0.0",
     "typescript": "^5.1.6"
   },
