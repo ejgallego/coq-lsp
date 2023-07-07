@@ -102,9 +102,9 @@ jobs:
       - name: 🚀 Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
       - run: npm ci
-      - run: npx --yes vsce ls
+      - run: npx --yes @vscode/vsce ls
 
   nix-flake-check:
     name: Nix Flake Check
