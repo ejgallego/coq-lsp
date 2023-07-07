@@ -6,7 +6,8 @@ server](https://github.com/ejgallego/coq-lsp).
 
 The server provides many nice features such as incremental checking,
 advanced error recovery, document information, ... See the server
-documentation for more information.
+documentation at the project page for more information and full
+changelog.
 
 ## Features
 
@@ -17,6 +18,7 @@ client by Microsoft, with 2 main addons:
   errors at point. It does also support client-side rendering.  By
   default, Cmd-Enter and mouse click will enable the panel for the
   current point.
+
 - document checking progress, using the right lane decoration.
 
 See the extension configuration options for more information.
@@ -31,4 +33,3 @@ opam install coq-lsp
 
 The server should also appear in the Coq Platform, and likely by other
 channels.
-

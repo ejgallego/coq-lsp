@@ -1,4 +1,24 @@
-# coq-lsp 0.1.5: Peek
+# coq-lsp 0.1.7: Just-in-time
+-----------------------------
+
+- Enable web extension support (worker server will happen in next release)
+- Improvements and clenaups on hover display, in particular we don't
+  print repeated `Notation` strings.
+- Fix bug that prevented "Goal after tactic" from working properly.
+- Fix "Error message browser becomes non-visible when there are many
+  goals" by using a fixed-position separated error display.
+- Display the list of pending obligations in info panel.
+- Preliminary panel to display document performance data.
+- Fix keybinding for the "Show Goals at Point" command
+- Hook coq-lsp to ViZX extension
+- Warnings settings from `_CoqProject` files are now applied
+- Limit the number of messages displayed in the goal window to 101,
+  as to workaround slow render of Coq's pretty printing format. This
+  is an issue for example in Search where we can get thousand of
+  results. We also speed up the rendering a bit by not hashing twice,
+  and fix a parameter-passing bug in the React setup.
+
+# coq-lsp 0.1.6: Peek
 ----------------------
 
 - The information / goal view now uses a new layout-aware printer; the

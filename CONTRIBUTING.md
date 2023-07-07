@@ -280,16 +280,24 @@ The checklist for the release as of today is the following:
 - `dune release tag` for each `$coq_lsp_version+$coq_version`
 - `dune release` for each version that should to the main opam repos
 - [optional] update pre-release packages to coq-opam-archive
-- [important] bump `version.ml` and `package.json` version string
+- [important] after the release, bump `version.ml` and `package.json` version string
+
+The above can be done with:
+```
+export COQLSPV=0.1.7
+git checkout main  && make                    && dune-release tag ${COQLSPV}
+git checkout v8.17 && git merge main  && make && dune-release tag ${COQLSPV}+8.17 && dune-release
+git checkout v8.16 && git merge v8.17 && make && dune-release tag ${COQLSPV}+8.16 && dune-release
+```
 
 ## Emacs
 
 You should be able to use `coq-lsp` with
-[eglot](https://joaotavora.github.io/eglot/).
+[eglot](https://joaotavora.github.io/eglot/) or [lsp-mode](https://github.com/emacs-lsp/lsp-mode)
 
 Emacs support is a goal of `coq-lsp`, so if you find any trouble using
 `eglot` or `lsp-mode` with `coq-lsp`, please don't hesitate to open an
-issue.
+issue. See `coq-lsp` README for more notes on Emacs support.
 
 ## VIM
 
@@ -297,3 +305,5 @@ You should be able to use `coq-lsp` with VIM.
 
 VIM support is a goal of `coq-lsp`, so if you find any trouble using
 `coq-lsp` with VIM, please don't hesitate to open an issue.
+
+See `coq-lsp` README for more notes on VIM support.
