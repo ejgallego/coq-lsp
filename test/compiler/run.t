@@ -51,13 +51,18 @@ Compile both files
   
   [message] compiling file proj1/b.v
   
+  [message] You have opened two or more Coq files simultaneously in the server
+  Unfortunately Coq's < 8.17 doesn't properly support that setup yet
+  You'll need to close all files but one, and restart the server.
+  
+  Check coq-lsp webpage (Working with multiple files section) for
+  instructions on how to install a fixed branch for earlier Coq versions.
   $ ls proj1
   a.diags
   a.v
   a.vo
   b.diags
   b.v
-  b.vo
 
 Compile a dependent file without the dep being built
   $ rm proj1/*.vo
