@@ -232,7 +232,7 @@ let create ~io ~root_state ~workspace ~uri ~raw ~version =
     send_error_permanent_fail ~io ~uri ~version (Pp.str message)
   | Interrupted -> ()
 
-(* Set this to false for < 8.18, we could parse the version but not worth it. *)
+(* Set this to false for < 8.17, we could parse the version but not worth it. *)
 let sane_coq_base_version = true
 
 let sane_coq_branch =
@@ -252,7 +252,7 @@ let create ~io ~root_state ~workspace ~uri ~raw ~version =
     (* Error due to Coq bug *)
     let message =
       "You have opened two or more Coq files simultaneously in the server\n\
-       Unfortunately Coq's < 8.18 doesn't properly support that setup yet\n\
+       Unfortunately Coq's < 8.17 doesn't properly support that setup yet\n\
        You'll need to close all files but one, and restart the server.\n\n\
        Check coq-lsp webpage (Working with multiple files section) for\n\
        instructions on how to install a fixed branch for earlier Coq versions."
