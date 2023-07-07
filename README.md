@@ -51,6 +51,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [🏘️ Supported Coq Versions](#️-supported-coq-versions)
   - [🏓 Server](#-server)
   - [🫐 Visual Studio Code](#-visual-studio-code)
+  - [🦄 Emacs](#-emacs)
   - [✅ Vim](#-vim)
   - [🩱 Neovim](#-neovim)
 - [🗣️ Discussion Channel](#️-discussion-channel)
@@ -276,6 +277,13 @@ programs.vscode = {
   ];
 };
 ```
+
+### 🦄 Emacs
+
+- An experimental configuration for `lsp-mode` has been provided by Arthur
+  Azevedo de Amorim, supporting goal display, see [the Zulip
+  thread](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp/topic/coq-lsp.20under.20Emacs.2E)
+  for more information.
 
 ### ✅ Vim
 
