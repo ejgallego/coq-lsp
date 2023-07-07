@@ -1,6 +1,7 @@
 General tests for the Flèche Compiler
 
 Describe the project
+  $ export FCC_TEST=true
   $ fcc --root proj1
   [message] Configuration loaded from Command-line arguments
    - coqlib is at: [TEST_PATH]
