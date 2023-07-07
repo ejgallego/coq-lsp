@@ -15,6 +15,9 @@
    requirements (@ejgallego, #421)
  - Fix bug that prevented "Goal after tactic" from working properly
    (@ejgallego, #438, reported by David Ilcinkas)
+ - Fix "Error message browser becomes non-visible when there are many
+   goals" by using a fixed-position separated error display (@TDiazT,
+   #445, fixes #441)
  - Message about workspace detection was printing the wrong file,
    (@ejgallego, #444, reported by Alex Sanchez-Stern)
  - Display the list of pending obligations in info panel (@ejgallego,
@@ -45,6 +48,12 @@
    will set them now (@ejgallego, #517)
  - Preliminary plugin API for completion events (@ejgallego, #518,
    fixes #506)
+ - Limit the number of messages displayed in the goal window to 101,
+   as to workaround slow render of Coq's pretty printing format. This
+   is an issue for example in Search where we can get thousand of
+   results. We also speed up the rendering a bit by not hashing twice,
+   and fix a parameter-passing bug. (@ejgallego, #523, reported by
+   Anton Podkopaev)
 
 # coq-lsp 0.1.6: Peek
 ---------------------
