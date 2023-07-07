@@ -17,7 +17,7 @@ export interface CoqLspServerConfig {
 export namespace CoqLspServerConfig {
   export function create(
     client_version: string,
-    wsConfig: any
+    wsConfig: any,
   ): CoqLspServerConfig {
     return {
       client_version: client_version,

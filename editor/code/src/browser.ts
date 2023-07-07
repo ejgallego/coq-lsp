@@ -11,7 +11,7 @@ export function activate(context: ExtensionContext): void {
       "coq-lsp",
       "Coq LSP Worker",
       clientOptions,
-      worker
+      worker,
     );
   };
   activateCoqLSP(context, cf);

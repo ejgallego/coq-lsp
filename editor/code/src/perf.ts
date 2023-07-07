@@ -10,7 +10,7 @@ import { NotificationType } from "vscode-languageclient";
 import { DocumentPerfParams } from "../lib/types";
 
 export const coqPerfData = new NotificationType<DocumentPerfParams>(
-  "$/coq/filePerfData"
+  "$/coq/filePerfData",
 );
 
 export class PerfDataView implements Disposable {
@@ -20,7 +20,7 @@ export class PerfDataView implements Disposable {
   constructor(extensionUri: Uri) {
     let resolveWebviewView = (
       webview: WebviewView,
-      context: WebviewViewResolveContext<any>
+      context: WebviewViewResolveContext<any>,
     ) => {
       webview.webview.options = {
         // Allow scripts in the webview
@@ -28,11 +28,11 @@ export class PerfDataView implements Disposable {
       };
 
       const styleUri = webview.webview.asWebviewUri(
-        Uri.joinPath(extensionUri, "out", "views", "perf", "index.css")
+        Uri.joinPath(extensionUri, "out", "views", "perf", "index.css"),
       );
 
       const scriptUri = webview.webview.asWebviewUri(
-        Uri.joinPath(extensionUri, "out", "views", "perf", "index.js")
+        Uri.joinPath(extensionUri, "out", "views", "perf", "index.js"),
       );
 
       webview.webview.html = ` <!DOCTYPE html>
@@ -57,7 +57,7 @@ export class PerfDataView implements Disposable {
     let perfProvider: WebviewViewProvider = { resolveWebviewView };
     this.panel = window.registerWebviewViewProvider(
       "coqPerfView",
-      perfProvider
+      perfProvider,
     );
   }
   dispose() {

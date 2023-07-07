@@ -11,5 +11,5 @@ const root = createRoot(container!); // createRoot(container!) if you use TypeSc
 root.render(
   <React.StrictMode>
     <InfoPanel />
-  </React.StrictMode>
+  </React.StrictMode>,
 );

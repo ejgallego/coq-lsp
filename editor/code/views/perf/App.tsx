@@ -94,7 +94,7 @@ function App() {
                     {field}
                   </VSCodeDataGridCell>
                 );
-              }
+              },
             )}
           </>
         </VSCodeDataGridRow>

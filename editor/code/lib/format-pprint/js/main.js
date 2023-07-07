@@ -50,7 +50,7 @@ export class FormatPrettyPrint {
       case "Pp_tag":
         return this._wrapTrimmed(
           this.pp2DOM(pp[2]),
-          $("<span>").addClass(pp[1])
+          $("<span>").addClass(pp[1]),
         );
 
       // ["Pp_force_newline"]
@@ -72,7 +72,7 @@ export class FormatPrettyPrint {
             spn(nspaces, "spaces"),
             $("<br/>"),
             spn(0, "prev-indent"),
-            spn(indent, "indent")
+            spn(indent, "indent"),
           );
 
       case "Pp_empty":
@@ -198,7 +198,7 @@ export class FormatPrettyPrint {
         lead && document.createTextNode(lead),
         wrapper_jdom.append(jdom)[0],
         trail && document.createTextNode(trail),
-      ].filter((x) => x)
+      ].filter((x) => x),
     );
   }
 }

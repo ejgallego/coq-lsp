@@ -12,7 +12,7 @@ export function activate(context: ExtensionContext): void {
       "coq-lsp",
       "Coq LSP Server",
       serverOptions,
-      clientOptions
+      clientOptions,
     );
   };
   return activateCoqLSP(context, cf);

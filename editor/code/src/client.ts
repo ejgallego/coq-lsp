@@ -51,12 +51,12 @@ let perfDataHook: Disposable;
 export type ClientFactoryType = (
   context: ExtensionContext,
   clientOptions: LanguageClientOptions,
-  wsConfig: WorkspaceConfiguration
+  wsConfig: WorkspaceConfiguration,
 ) => BaseLanguageClient;
 
 export function activateCoqLSP(
   context: ExtensionContext,
-  clientFactory: ClientFactoryType
+  clientFactory: ClientFactoryType,
 ): void {
   window.showInformationMessage("Coq LSP Extension: Going to activate!");
 
@@ -67,7 +67,7 @@ export function activateCoqLSP(
   function coqEditorCommand(command: string, fn: (editor: TextEditor) => void) {
     let disposable = commands.registerTextEditorCommand(
       "coq-lsp." + command,
-      fn
+      fn,
     );
     context.subscriptions.push(disposable);
   }
@@ -77,7 +77,7 @@ export function activateCoqLSP(
       window.showErrorMessage(
         "Coq LSP Extension: VSCoq extension has been detected, you need to deactivate it for coq-lsp to work properly.",
         { modal: false, detail: "thanks for your understanding" },
-        { title: "Understood" }
+        { title: "Understood" },
       );
     }
   }
@@ -118,7 +118,7 @@ export function activateCoqLSP(
     let client_version = context.extension.packageJSON.version;
     const initializationOptions = CoqLspServerConfig.create(
       client_version,
-      wsConfig
+      wsConfig,
     );
 
     const clientOptions: LanguageClientOptions = {
@@ -149,10 +149,10 @@ export function activateCoqLSP(
           if (window.activeTextEditor) {
             goalsCall(
               window.activeTextEditor,
-              TextEditorSelectionChangeKind.Command
+              TextEditorSelectionChangeKind.Command,
             );
           }
-        })
+        }),
     ).catch((error) => {
       let emsg = error.toString();
       console.log(`Error in coq-lsp start: ${emsg}`);
@@ -192,7 +192,7 @@ export function activateCoqLSP(
 
   const goalsCall = (
     textEditor: TextEditor,
-    callKind: TextEditorSelectionChangeKind | undefined
+    callKind: TextEditorSelectionChangeKind | undefined,
   ) => {
     if (
       textEditor.document.languageId != "coq" &&
@@ -221,13 +221,13 @@ export function activateCoqLSP(
   let goalsHook = window.onDidChangeTextEditorSelection(
     (evt: TextEditorSelectionChangeEvent) => {
       goalsCall(evt.textEditor, evt.kind);
-    }
+    },
   );
 
   context.subscriptions.push(goalsHook);
 
   const docReq = new RequestType<FlecheDocumentParams, FlecheDocument, void>(
-    "coq/getDocument"
+    "coq/getDocument",
   );
 
   const getDocument = (editor: TextEditor) => {
@@ -235,14 +235,14 @@ export function activateCoqLSP(
     let version = editor.document.version;
     let textDocument = VersionedTextDocumentIdentifier.create(
       uri.toString(),
-      version
+      version,
     );
     let params: FlecheDocumentParams = { textDocument };
     client.sendRequest(docReq, params).then((fd) => console.log(fd));
   };
 
   const saveReq = new RequestType<FlecheDocumentParams, void, void>(
-    "coq/saveVo"
+    "coq/saveVo",
   );
 
   const saveDocument = (editor: TextEditor) => {
@@ -250,7 +250,7 @@ export function activateCoqLSP(
     let version = editor.document.version;
     let textDocument = VersionedTextDocumentIdentifier.create(
       uri.toString(),
-      version
+      version,
     );
     let params: FlecheSaveParams = { textDocument };
     client
@@ -267,7 +267,7 @@ export function activateCoqLSP(
     lspStatusItem = window.createStatusBarItem(
       "coq-lsp.enable",
       StatusBarAlignment.Left,
-      0
+      0,
     );
     lspStatusItem.command = "coq-lsp.toggle";
     lspStatusItem.text = "coq-lsp (activating)";
@@ -285,7 +285,7 @@ export function activateCoqLSP(
     } else {
       lspStatusItem.text = "$(circle-slash) coq-lsp (stopped)";
       lspStatusItem.backgroundColor = new ThemeColor(
-        "statusBarItem.warningBackground"
+        "statusBarItem.warningBackground",
       );
       lspStatusItem.tooltip = "coq-lsp has been disabled. Click to enable.";
     }
@@ -294,7 +294,7 @@ export function activateCoqLSP(
   const setFailedStatuBar = (emsg: string) => {
     lspStatusItem.text = "$(circle-slash) coq-lsp (failed to start)";
     lspStatusItem.backgroundColor = new ThemeColor(
-      "statusBarItem.errorBackground"
+      "statusBarItem.errorBackground",
     );
     lspStatusItem.tooltip = `coq-lsp couldn't start: ${emsg} Click to retry.`;
   };

@@ -30,7 +30,7 @@ interface CoqFileProgressParams {
 }
 
 const coqFileProgress = new NotificationType<CoqFileProgressParams>(
-  "$/coq/fileProgress"
+  "$/coq/fileProgress",
 );
 
 // Create decoration for fileProgress

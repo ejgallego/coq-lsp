@@ -15,7 +15,7 @@ import {
 import { GoalRequest, GoalAnswer, PpString } from "../lib/types";
 
 const infoReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
-  "proof/goals"
+  "proof/goals",
 );
 
 export class InfoPanel {
@@ -37,15 +37,15 @@ export class InfoPanel {
       "goals",
       "Goals",
       { preserveFocus: true, viewColumn: ViewColumn.Two },
-      webviewOpts
+      webviewOpts,
     );
 
     const styleUri = this.panel.webview.asWebviewUri(
-      Uri.joinPath(this.extensionUri, "out", "views", "info", "index.css")
+      Uri.joinPath(this.extensionUri, "out", "views", "info", "index.css"),
     );
 
     const scriptUri = this.panel.webview.asWebviewUri(
-      Uri.joinPath(this.extensionUri, "out", "views", "info", "index.js")
+      Uri.joinPath(this.extensionUri, "out", "views", "info", "index.js"),
     );
 
     this.panel.webview.html = ` <!DOCTYPE html>
@@ -103,7 +103,7 @@ export class InfoPanel {
     this.requestSent(params);
     client.sendRequest(infoReq, params).then(
       (goals) => this.requestDisplay(goals),
-      (reason) => this.requestError(reason)
+      (reason) => this.requestError(reason),
     );
   }
 
@@ -112,7 +112,7 @@ export class InfoPanel {
     console.log(params.pp_format);
     client.sendRequest(infoReq, params).then(
       (goals) => this.requestVizxDisplay(goals),
-      (reason) => this.requestError(reason)
+      (reason) => this.requestError(reason),
     );
   }
 
@@ -120,11 +120,11 @@ export class InfoPanel {
     client: BaseLanguageClient,
     uri: Uri,
     version: number,
-    position: Position
+    position: Position,
   ) {
     let textDocument = VersionedTextDocumentIdentifier.create(
       uri.toString(),
-      version
+      version,
     );
     let cursor: GoalRequest = { textDocument, position };
     let strCursor: GoalRequest = {
