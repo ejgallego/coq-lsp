@@ -29,7 +29,7 @@ Record Category := {
 }.
 ```
 
-### Error recover
+### Error recovery
 
 ```coq
 Lemma addnC n m : n + m = m + n.
