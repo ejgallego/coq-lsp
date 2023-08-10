@@ -40,6 +40,14 @@ val change :
   -> raw:string
   -> Int.Set.t
 
+(** Update the workspace for a document *)
+val changeWorspaceConfig :
+     io:Io.CallBack.t
+  -> root_state:Coq.State.t
+  -> workspace:Coq.Workspace.t
+  -> uri:Lang.LUri.File.t
+  -> Int.Set.t
+
 (** Close a document *)
 val close : uri:Lang.LUri.File.t -> unit
 

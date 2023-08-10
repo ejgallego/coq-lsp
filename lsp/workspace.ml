@@ -6,6 +6,13 @@
 
 module Lang = JLang
 
+module DidChangeConfigurationParams = struct
+  type t =
+    { settings : Yojson.Safe.t
+    }
+  [@@deriving yojson]
+end
+
 module WorkspaceFolder = struct
   type t =
     { uri : Lang.LUri.File.t

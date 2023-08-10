@@ -4,6 +4,13 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module DidChangeConfigurationParams : sig
+  type t =
+    { settings : Yojson.Safe.t
+    }
+  [@@deriving yojson]
+end
+
 module WorkspaceFolder : sig
   type t =
     { uri : Lang.LUri.File.t

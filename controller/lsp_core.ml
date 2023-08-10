@@ -120,6 +120,21 @@ let do_changeWorkspaceFolders ~ofn:_ ~state params =
   let state = List.fold_left State.del_workspace state removed in
   state
 
+module ConfParams = struct
+  type t = { uri: int ; workspace : unit }
+  [@@deriving yojson]
+end
+
+let do_changeConfiguration ~ofn ~state params =
+  let open Lsp.Workspace in
+  let { DidChangeConfigurationParams.settings } =
+    DidChangeConfigurationParams.of_yojson (`Assoc params) |> Result.get_ok
+  in
+  let { ConfParams.uri; workspace } = ConfParams.t settings in
+  let () = Fleche.Theory.changeWorspaceConfig ~io:ofn ~workspace ~uri in
+  (* let _ = settings in *)
+  state
+
 (* main request module with [answer, postpone, cancel, serve] methods, basically
    IO + glue with the doc_manager *)
 module Rq : sig
@@ -392,6 +407,8 @@ let dispatch_state_notification ~io ~ofn ~state ~method_ ~params : State.t =
   (* Workspace *)
   | "workspace/didChangeWorkspaceFolders" ->
     do_changeWorkspaceFolders ~ofn ~state params
+  | "workspace/didChangeConfiguration" ->
+    do_changeConfiguration ~ofn ~state params
   | _ ->
     dispatch_notification ~io ~ofn ~state ~method_ ~params;
     state

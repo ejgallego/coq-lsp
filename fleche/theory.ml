@@ -287,7 +287,7 @@ let change ~io ~(doc : Doc.t) ~version ~raw =
 let change ~io ~uri ~version ~raw =
   match Handle.find_opt ~uri with
   | None ->
-    Io.Log.trace "DocHandle.find"
+    Io.Log.trace "DocHandle.find / change"
       ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
     Int.Set.empty
   | Some { doc; _ } ->
@@ -296,6 +296,21 @@ let change ~io ~uri ~version ~raw =
       (* That's a weird case, get got changes without a version bump? Do nothing
          for now *)
       Int.Set.empty
+
+let changeWorspaceConfig ~io ~root_state ~workspace ~uri =
+  match Handle.find_opt ~uri with
+  | None ->
+    Io.Log.trace "DocHandle.find / changeWorspaceConfig"
+      ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
+    Int.Set.empty
+  | Some { doc; _ } ->
+    let { Doc.version; contents; _ } = doc in
+    let { Contents.raw; _ } = contents in
+    let invalid_reqs = Handle.clear_requests ~uri in
+    Handle.close ~uri;
+    create ~io ~root_state ~workspace ~uri ~raw ~version;
+    Check.schedule ~uri;
+    invalid_reqs
 
 let close ~uri =
   (* XXX: Our handling of the "queue" is not good, handle should take care of
