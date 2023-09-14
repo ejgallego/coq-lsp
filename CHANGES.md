@@ -3,6 +3,7 @@
 
  - Update VSCode client dependencies, should bring some performance
    improvements to goal pretty printing (@ejgallego, #530)
+- Update goal display colors for light mode so they are actually readable now. (@bhaktishh, #539, fixes #532)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
