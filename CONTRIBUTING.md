@@ -125,6 +125,12 @@ nix build .?submodules=1
 This currently only applies to building the default package (`coq-lsp`), which is
 the server. Clients don't have specific submodules as of yet.
 
+When the flake is out-of-date, for instance when a new version of ocamlformat
+is out, you can update the flake inputs with:
+```sh
+nix flake update
+```
+
 ### Code organization
 
 The `coq-lsp` server consists of several components, we present them bottom-up
