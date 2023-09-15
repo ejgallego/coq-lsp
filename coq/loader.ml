@@ -14,6 +14,7 @@
 (* Copyright 2019-2022 Inria                                            *)
 (* Written by Emilio J. Gallego Arias                                   *)
 (************************************************************************)
+
 [@@@ocamlformat "disable"]
 
 let list_last l = List.(nth l (length l - 1))
