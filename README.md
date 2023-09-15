@@ -54,6 +54,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [🦄 Emacs](#-emacs)
   - [✅ Vim](#-vim)
   - [🩱 Neovim](#-neovim)
+  - [🐍 Python](#-python)
 - [🗣️ Discussion Channel](#️-discussion-channel)
 - [☎ Weekly Calls](#-weekly-calls)
 - [❓FAQ](#faq)
@@ -295,6 +296,11 @@ programs.vscode = {
 ### 🩱 Neovim
 
 - Experimental client by Jaehwang Jung: https://github.com/tomtomjhj/coq-lsp.nvim
+
+### 🐍 Python
+
+- Interact programmatically with Coq files by using the [Python `coq-lsp` client](https://github.com/sr-lab/coq-lsp-pyclient)
+  by Pedro Carrott and Nuno Saavedra.
 
 ## 🗣️ Discussion Channel
 
