@@ -26,7 +26,10 @@ module Warning : sig
   type t
 
   val make : string -> t
-  val apply : t -> unit
+
+  (** Adds new warnings to the list of current warnings, the Coq API
+      here is a bit tricky... *)
+  val apply : t list -> unit
 end
 
 type t = private

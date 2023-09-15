@@ -5,6 +5,8 @@
    improvements to goal pretty printing (@ejgallego, #530)
  - Added link to Python coq-lsp client by Pedro Carrot and Nuno
    Saavedra (@Nfsaavedra, #536)
+ - Properly concatenate warnings from _CoqProject (@ejgallego,
+   reported by @mituharu, #, fixes #540)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------

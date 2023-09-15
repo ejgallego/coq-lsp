@@ -34,16 +34,18 @@ module Warning : sig
   type t
 
   val make : string -> t
-  val apply : t -> unit
+
+  (** Adds new warnings to the list of current warnings *)
+  val apply : t list -> unit
 end = struct
   type t = string
 
   let make x = x
-  let to_string x = x
 
   let apply w =
-    let warn = CWarnings.get_flags () in
-    CWarnings.set_flags (warn ^ to_string w)
+    let old_warn = CWarnings.get_flags () in
+    let new_warn = String.concat "," w in
+    CWarnings.set_flags (old_warn ^ "," ^ new_warn)
 end
 
 type t =
@@ -236,7 +238,7 @@ let apply ~uri
     } =
   if debug then CDebug.set_flags "backtrace";
   Flags.apply flags;
-  List.iter Warning.apply warnings;
+  Warning.apply warnings;
   List.iter Mltop.add_ml_dir ml_include_path;
   findlib_init ~ml_include_path ~ocamlpath;
   List.iter Loadpath.add_vo_path vo_load_path;
