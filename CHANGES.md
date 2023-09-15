@@ -3,6 +3,8 @@
 
  - Update VSCode client dependencies, should bring some performance
    improvements to goal pretty printing (@ejgallego, #530)
+ - Added link to Python coq-lsp client by Pedro Carrot and Nuno
+   Saavedra (@Nfsaavedra, #536)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
