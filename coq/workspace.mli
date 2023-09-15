@@ -27,8 +27,8 @@ module Warning : sig
 
   val make : string -> t
 
-  (** Adds new warnings to the list of current warnings, the Coq API
-      here is a bit tricky... *)
+  (** Adds new warnings to the list of current warnings, the Coq API here is a
+      bit tricky... *)
   val apply : t list -> unit
 end
 
