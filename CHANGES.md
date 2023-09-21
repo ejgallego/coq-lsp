@@ -7,6 +7,9 @@
    Saavedra (@Nfsaavedra, #536)
  - Properly concatenate warnings from _CoqProject (@ejgallego,
    reported by @mituharu, #541, fixes #540)
+ - Fix broken `coq/saveVo` and `coq/getDocument` requests due to a
+   parsing problem with extra fields in their requests (@ejgallego,
+   #549, reported by @Zimmi48)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
