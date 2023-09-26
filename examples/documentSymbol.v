@@ -3,10 +3,20 @@ Record a := {
   ; proj2 : Type
 }.
 
+Notation "A -> B" := (forall (_ : A), B) (at level 99, B at level 200).
 Inductive foo := A | B : a -> foo.
 
+Inductive aba := C.
+
 Inductive eh1 := Ah1 : eh2 -> eh1
-with eh2 := Bh1 : eh1 -> eh2. 
+with eh2 := Bh1 : eh1 -> eh2.
+
+Definition mu := forall (x : Type), x.
+
+Inductive False := .
+
+Inductive nat := O | S : nat -> nat.
+Inductive bool := true | false.
 
 Variable (j : nat).
 

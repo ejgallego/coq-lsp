@@ -160,6 +160,11 @@ Some tips:
 
 [ocamlformat]: https://github.com/ocaml-ppx/ocamlformat
 
+## Worker version (and debugging tips)
+
+See https://github.com/ocsigen/js_of_ocaml/issues/410 for debugging
+tips with `js_of_ocaml`.
+
 ## Client guide (VS Code Extension)
 
 The VS Code extension is setup as a standard `npm` Typescript + React package

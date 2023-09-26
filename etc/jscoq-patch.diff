@@ -1,0 +1,13 @@
+diff --git a/kernel/uint63_63.ml b/kernel/uint63_63.ml
+index 1d2496e660..0afaaa9bf8 100644
+--- a/kernel/uint63_63.ml
++++ b/kernel/uint63_63.ml
+@@ -10,7 +10,7 @@
+ 
+ type t = int
+ 
+-let _ = assert (Sys.word_size = 64)
++(* let _ = assert (Sys.word_size = 64) *)
+ 
+ let uint_size = 63
+ 

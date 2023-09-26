@@ -45,11 +45,17 @@ watch: coq_boot
 build-all: coq_boot
 	dune build $(DUNEOPT) @all
 
+.PHONY: js
+js:
+	dune build --profile=release controller-js/coq_lsp_worker.bc.cjs
+	cp controller-js/coq_lsp_worker.bc.cjs editor/code/out/coq_lsp_worker.bc.js
+
 # We set -libdir due to a Coq bug on win32, see https://github.com/coq/coq/pull/17289
 vendor/coq/config/coq_config.ml:
 	cd vendor/coq \
 	&& ./configure -no-ask -prefix $(shell pwd)/_build/install/default/ \
 	        -libdir $(shell pwd)/_build/install/default/lib/coq \
+	        -bytecode-compiler no \
 		-native-compiler no \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune

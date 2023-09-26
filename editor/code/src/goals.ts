@@ -12,6 +12,7 @@ import {
   RequestType,
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
+import * as LSP from "vscode-languageserver-types";
 import { GoalRequest, GoalAnswer, PpString } from "../lib/types";
 
 const infoReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
@@ -120,12 +121,13 @@ export class InfoPanel {
     client: BaseLanguageClient,
     uri: Uri,
     version: number,
-    position: Position
+    vsPos: Position
   ) {
     let textDocument = VersionedTextDocumentIdentifier.create(
       uri.toString(),
       version
     );
+    let position : LSP.Position = LSP.Position.create(vsPos.line, vsPos.character)
     let cursor: GoalRequest = { textDocument, position };
     let strCursor: GoalRequest = {
       textDocument,

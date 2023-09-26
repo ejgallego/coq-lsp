@@ -23,7 +23,11 @@ module F = Format
 module J = Yojson.Safe
 module U = Yojson.Safe.Util
 
-let field name dict = List.(assoc name dict)
+let field name dict =
+  try List.(assoc name dict)
+  with Not_found ->
+    raise (U.Type_error ("field " ^ name ^ " not found", `Assoc dict))
+
 let int_field name dict = U.to_int (field name dict)
 let dict_field name dict = U.to_assoc (field name dict)
 let list_field name dict = U.to_list (field name dict)

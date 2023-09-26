@@ -32,15 +32,18 @@ module Warning : sig
   val apply : t list -> unit
 end
 
+(* Generated from a _CoqProject, dune (in the future) or command line args *)
 type t = private
   { coqlib : string
   ; coqcorelib : string
   ; ocamlpath : string option
   ; vo_load_path : Loadpath.vo_path list
-  ; ml_include_path : string list
+        (** List of -R / -Q flags passed to Coq, usually theories we depend on *)
+  ; ml_include_path : string list  (** List of paths to look for Coq plugins *)
   ; require_libs :
       (string * string option * Vernacexpr.export_with_cats option) list
-  ; flags : Flags.t
+        (** Modules to preload, usually Coq.Init.Prelude *)
+  ; flags : Flags.t  (** Coq-specific flags *)
   ; warnings : Warning.t list
   ; kind : string  (** How the workspace was built *)
   ; debug : bool  (** Enable backtraces *)
