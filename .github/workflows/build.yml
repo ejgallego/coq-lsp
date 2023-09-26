@@ -52,6 +52,9 @@ jobs:
       - name: 🐫🐪🐫 Get dependencies
         run: opam exec -- make opam-deps
 
+      - name: Configure coq-lsp natively with Windows paths
+        run: opam exec -- make winconfig
+
       - name: 🧱 Build coq-lsp
         run: opam exec -- make build
 

@@ -47,9 +47,23 @@ build-all: coq_boot
 
 # We set -libdir due to a Coq bug on win32, see https://github.com/coq/coq/pull/17289
 vendor/coq/config/coq_config.ml:
-	cd vendor/coq \
-	&& ./configure -no-ask -prefix $(shell pwd)/_build/install/default/ \
-	        -libdir $(shell pwd)/_build/install/default/lib/coq \
+	EPATH=$(shell pwd) \
+	&& cd vendor/coq \
+	&& ./configure -no-ask -prefix "$$EPATH/_build/install/default/" \
+	        -libdir "$$EPATH/_build/install/default/lib/coq" \
+		-native-compiler no \
+	&& cp theories/dune.disabled theories/dune \
+	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
+
+# We set windows parameters a bit better, note the need to use forward
+# slashed (cygpath -m) due to escaping :( , a conversion to `-w` is
+# welcomed if someones has time for this
+.PHONY: winconfig
+winconfig:
+	EPATH=$(shell cygpath -am .) \
+	&& cd vendor/coq \
+	&& ./configure -no-ask -prefix "$$EPATH\\_build\\install\\default\\" \
+	        -libdir "$$EPATH\\_build\\install\\default\\lib\\coq\\" \
 		-native-compiler no \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
