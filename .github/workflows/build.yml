@@ -38,6 +38,11 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          detached: true
+
       - name: 🐫 Setup OCaml
         uses: ocaml/setup-ocaml@v2
         with:
