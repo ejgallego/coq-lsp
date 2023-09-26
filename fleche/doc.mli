@@ -37,6 +37,8 @@ module Node : sig
     ; diags : Lang.Diagnostic.t list  (** Diagnostics associated to the node *)
     ; messages : Message.t list
     ; info : Info.t
+    ; children : t list
+    ; parent : t option
     }
 
   val range : t -> Lang.Range.t
