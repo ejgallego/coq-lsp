@@ -243,21 +243,18 @@ guide](./CONTRIBUTING.md)
   opam install coq-lsp
   ```
 - **Nix**:
-   - In nixpkgs: [coqPackages.coq-lsp](https://github.com/NixOS/nixpkgs/tree/master/pkgs/development/coq-modules/coq-lsp)
-   - An example of a `flake` that uses `coq-lsp` in a development environment is here
+  - In nixpkgs: [coqPackages.coq-lsp](https://github.com/NixOS/nixpkgs/tree/master/pkgs/development/coq-modules/coq-lsp)
+  - An example of a `flake` that uses `coq-lsp` in a development environment is here
      https://github.com/HoTT/Coq-HoTT/blob/master/flake.nix .
-- **Windows**: To install `coq-lsp` on windows, we recommend you use a cygwin
-  build, such as the [one described
-  here](https://github.com/coq/platform/blob/main/doc/README_Windows.md#installation-by-compiling-from-sources-using-opam-on-cygwin), tho
-  any OCaml env where Coq can be built should work.
-  - build `coq-lsp` from source (branch `v8.16`, which will become 0.1.7)
-  - Set the path to `coq-lsp.exe` binary in VS Code settings
-  - Set the `--ocamlpath=c:\$path_to_opam\lib` argument in VS Code settings if
-    you get a findlib error. The Coq Platform ships with an un-configured
-    binary. Note, the path should be unquoted
-  - If the binary doesn't work, try to run it from the file explorer; if you get
-    a `.dll` error you'll need to copy that dll (often `libgmp-10.dll`) to the
-    `C:\Windows` folder for `coq-lsp` to work.
+- **Windows**: To install `coq-lsp` on windows, you need to build the Coq Platform:
+  - Download and uncompress the Platform Script: https://github.com/coq/platform/archive/refs/tags/2023.03.0.zip
+  - From a shell, execute `./coq_platform_make_windows.bat`
+  - Select `C:\cp_817` as the install path, select the packages you want
+  - Run `C:\cp_817\Cygwin.bat`
+  - Run `opam install coq-lsp`
+  - Run `cp /cygdrive/c/cp_817/usr/x86_64-w64-mingw32/sys-root/mingw/bin/libgmp-10.dll /home/User/.opam/CP.2023.03.0~8.17~2023.08/bin`
+  - In VSCode native, you can now set the `Coq-lsp: Path` setting to `C:\cp_817\home\User\.opam\CP.2023.03.0~8.17~2023.08\bin\coq-lsp.exe`
+  - Things should work !
 - **Coq Platform** (coming soon)
   - See the [bug tracking coq-lsp inclusion](https://github.com/coq/platform/issues/319)
 - [Do it yourself!](#server-1)
