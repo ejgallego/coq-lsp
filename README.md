@@ -8,10 +8,13 @@ Studio Code](https://code.visualstudio.com/) extension for the [Coq Proof
 Assistant](https://coq.inria.fr). Experimental support for [Vim](#vim) and
 [Neovim](#neovim) is also available in their own projects.
 
-Install for Visual Studio is as easy as:
+Install for Visual Studio Code is as easy as **[Mac/Linux]**:
 ```
 $ opam install coq-lsp && code --install-extension ejgallego.coq-lsp
 ```
+
+For **[Windows]**, see the [instructions](#-server); we will provide an `.exe`
+installer very soon.
 
 Key [features](#Features) of `coq-lsp` are continuous and incremental document
 checking, advanced error recovery, markdown support, positional goals and
