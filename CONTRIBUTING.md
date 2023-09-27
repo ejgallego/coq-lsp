@@ -131,6 +131,13 @@ is out, you can update the flake inputs with:
 nix flake update
 ```
 
+You can also add the `dev` version build to your flake as:
+```nix
+inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
+...
+coq-lsp.packages.${system}.default
+```
+
 ### Code organization
 
 The `coq-lsp` server consists of several components, we present them bottom-up

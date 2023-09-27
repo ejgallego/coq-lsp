@@ -214,13 +214,15 @@ SerAPI](etc/SerAPI.md) document.
 ## 🛠️ Installation
 
 In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md)
-`coq-lsp` and a suitable client. We recommend the Visual Studio Code Extension
-as client.
+`coq-lsp` and a suitable LSP client that understands `coq-lsp` extensions. The
+recommended client is the Visual Studio Code Extension, but we aim to fully
+support other clients officially and will do so once their authors consider them
+ready.
 
 ### 🏘️ Supported Coq Versions
 
-`coq-lsp` supports Coq 8.15, 8.16, Coq 8.17, and Coq's `master` branch. Code for
-each Coq version can be found in the corresponding branch.
+`coq-lsp` supports Coq 8.15, 8.16, Coq 8.17, Coq 8.18, and Coq's `master`
+branch. Code for each Coq version can be found in the corresponding branch.
 
 We recommended a minimum of Coq 8.17, due to better test coverage for that
 version. For 8.16, we recommend users to install the custom Coq tree as detailed
@@ -230,20 +232,20 @@ Support for older Coq versions is possible; it is possible to make `coq-lsp`
 work with Coq back to Coq 8.10/8.9. If you are interested in making that happen
 don't hesitate to get in touch with us.
 
+Note that this section covers user installs, if you would like to contribute to
+`coq-lsp` and build a development version, please check our [contributing
+guide](./CONTRIBUTING.md)
+
 ### 🏓 Server
 
-- **opam**:
+- **opam** (OSX/Linux):
   ```
   opam install coq-lsp
   ```
 - **Nix**:
-   - In nixpkgs: [#213397](https://github.com/NixOS/nixpkgs/pull/213397)
-   - In your flake:
-   ```nix
-   inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
-   ...
-   coq-lsp.packages.${system}.default
-   ```
+   - In nixpkgs: [coqPackages.coq-lsp](https://github.com/NixOS/nixpkgs/tree/master/pkgs/development/coq-modules/coq-lsp)
+   - An example of a `flake` that uses `coq-lsp` in a development environment is here
+     https://github.com/HoTT/Coq-HoTT/blob/master/flake.nix .
 - **Windows**: To install `coq-lsp` on windows, we recommend you use a cygwin
   build, such as the [one described
   here](https://github.com/coq/platform/blob/main/doc/README_Windows.md#installation-by-compiling-from-sources-using-opam-on-cygwin), tho
