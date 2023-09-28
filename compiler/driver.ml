@@ -21,22 +21,12 @@ let load_plugin plugin_name = Fl_dynload.load_packages [ plugin_name ]
 let plugin_init = List.iter load_plugin
 
 let go args =
-  let { Args.roots; display; debug; files; plugins } = args in
+  let { Args.cmdline; roots; display; debug; files; plugins } = args in
   (* Initialize event callbacks *)
   let io = Output.init display in
   (* Initialize Coq *)
   let debug = debug || Fleche.Debug.backtraces || !Fleche.Config.v.debug in
   let root_state = coq_init ~debug in
-  let cmdline =
-    { Coq.Workspace.CmdLine.coqcorelib =
-        Filename.concat Coq_config.coqlib "../coq-core/"
-    ; coqlib = Coq_config.coqlib
-    ; ocamlpath = None
-    ; vo_load_path = []
-    ; ml_include_path = []
-    ; args = []
-    }
-  in
   let roots = if List.length roots < 1 then [ Sys.getcwd () ] else roots in
   let workspaces =
     List.map (fun dir -> (dir, Coq.Workspace.guess ~cmdline ~debug ~dir)) roots
