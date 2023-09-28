@@ -13,6 +13,8 @@
    #547, reported by @Zimmi48)
  - `fcc` now understands the `--coqlib`, `--coqcorelib`,
    `--ocamlpath`, `-Q` and `-R` arguments (@ejgallego, #555)
+ - Describe findlib status in `Workspace.describe`, which is printed
+   in the output windows (@ejgallego, #556)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
