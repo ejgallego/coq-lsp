@@ -1,3 +1,17 @@
+# coq-lsp 0.1.8: Dot / Bracket
+------------------------------
+
+ - Update VSCode client dependencies, should bring some performance
+   improvements to goal pretty printing (@ejgallego, #530)
+ - Update goal display colors for light mode so they are actually readable now. (@bhaktishh, #539, fixes #532)
+ - Added link to Python coq-lsp client by Pedro Carrot and Nuno
+   Saavedra (@Nfsaavedra, #536)
+ - Properly concatenate warnings from _CoqProject (@ejgallego,
+   reported by @mituharu, #541, fixes #540)
+ - Fix broken `coq/saveVo` and `coq/getDocument` requests due to a
+   parsing problem with extra fields in their requests (@ejgallego,
+   #547, reported by @Zimmi48)
+
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
 

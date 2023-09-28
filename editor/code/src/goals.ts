@@ -127,7 +127,11 @@ export class InfoPanel {
       version
     );
     let cursor: GoalRequest = { textDocument, position };
-    let strCursor: GoalRequest = { textDocument, position, pp_format: "Str" };
+    let strCursor: GoalRequest = {
+      textDocument,
+      position,
+      pp_format: "Str",
+    };
     this.sendGoalsRequest(client, cursor);
     let vizx = extensions.getExtension("inQWIRE.vizx");
     if (vizx?.isActive) {

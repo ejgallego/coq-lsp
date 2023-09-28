@@ -5,7 +5,7 @@ import {
   VSCodeDataGridRow,
   VSCodeDataGridCell,
 } from "@vscode/webview-ui-toolkit/react";
-import "./App.css";
+import "./media/App.css";
 import { Range } from "vscode-languageserver-types";
 import { DocumentPerfParams } from "../../lib/types";
 
