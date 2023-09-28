@@ -4,12 +4,19 @@ let coq_init ~debug =
   let load_plugin = Coq.Loader.plugin_handler None in
   Coq.Init.(coq_init { debug; load_module; load_plugin })
 
+let replace_test_path exp message =
+  let home_re = Str.regexp (exp ^ ".*$") in
+  Str.global_replace home_re "coqlib is at: [TEST_PATH]" message
+
 let sanitize_paths message =
   match Sys.getenv_opt "FCC_TEST" with
   | None -> message
   | Some _ ->
-    let home_re = Str.regexp "coqlib is at: .*$" in
-    Str.global_replace home_re "coqlib is at: [TEST_PATH]" message
+    message
+    |> replace_test_path "coqlib is at: "
+    |> replace_test_path "coqcorelib is at: "
+    |> replace_test_path "findlib config: "
+    |> replace_test_path "findlib default location: "
 
 let log_workspace ~io (dir, w) =
   let message, extra = Coq.Workspace.describe w in
