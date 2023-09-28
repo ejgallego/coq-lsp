@@ -2,10 +2,76 @@
 open Cmdliner
 open Fcc_lib
 
-let fcc_main roots display debug plugins files =
-  let args = Args.{ roots; display; files; debug; plugins } in
+let fcc_main roots display debug plugins files coqlib coqcorelib ocamlpath
+    rload_path load_path =
+  let vo_load_path = rload_path @ load_path in
+  let ml_include_path = [] in
+  let args = [] in
+  let cmdline =
+    { Coq.Workspace.CmdLine.coqlib
+    ; coqcorelib
+    ; ocamlpath
+    ; vo_load_path
+    ; ml_include_path
+    ; args
+    }
+  in
+  let args = Args.{ cmdline; roots; display; files; debug; plugins } in
   Driver.go args
 
+(****************************************************************************)
+(* XXX: Common with coq-lsp.exe *)
+let coqlib =
+  let doc =
+    "Load Coq.Init.Prelude from $(docv); theories and user-contrib should live \
+     there."
+  in
+  Arg.(
+    value & opt string Coq_config.coqlib & info [ "coqlib" ] ~docv:"COQLIB" ~doc)
+
+let coqcorelib =
+  let doc = "Path to Coq plugin directories." in
+  Arg.(
+    value
+    & opt string (Filename.concat Coq_config.coqlib "../coq-core/")
+    & info [ "coqcorelib" ] ~docv:"COQCORELIB" ~doc)
+
+let ocamlpath =
+  let doc = "Path to OCaml's lib" in
+  Arg.(
+    value & opt (some string) None & info [ "ocamlpath" ] ~docv:"OCAMLPATH" ~doc)
+
+let coq_lp_conv ~implicit (unix_path, lp) =
+  { Loadpath.coq_path = Libnames.dirpath_of_string lp
+  ; unix_path
+  ; has_ml = true
+  ; implicit
+  ; recursive = true
+  }
+
+let rload_path : Loadpath.vo_path list Term.t =
+  let doc =
+    "Bind a logical loadpath LP to a directory DIR and implicitly open its \
+     namespace."
+  in
+  Term.(
+    const List.(map (coq_lp_conv ~implicit:true))
+    $ Arg.(
+        value
+        & opt_all (pair dir string) []
+        & info [ "R"; "rec-load-path" ] ~docv:"DIR,LP" ~doc))
+
+let load_path : Loadpath.vo_path list Term.t =
+  let doc = "Bind a logical loadpath LP to a directory DIR" in
+  Term.(
+    const List.(map (coq_lp_conv ~implicit:false))
+    $ Arg.(
+        value
+        & opt_all (pair dir string) []
+        & info [ "Q"; "load-path" ] ~docv:"DIR,LP" ~doc))
+(****************************************************************************)
+
+(* Specific to fcc *)
 let roots : string list Term.t =
   let doc = "Workspace(s) root(s)" in
   Arg.(value & opt_all string [] & info [ "root" ] ~docv:"ROOTS" ~doc)
@@ -43,7 +109,9 @@ let fcc_cmd : unit Cmd.t =
   in
   let version = Fleche.Version.server in
   let fcc_term =
-    Term.(const fcc_main $ roots $ display $ debug $ plugins $ file)
+    Term.(
+      const fcc_main $ roots $ display $ debug $ plugins $ file $ coqlib
+      $ coqcorelib $ ocamlpath $ rload_path $ load_path)
   in
   Cmd.(v (Cmd.info "fcc" ~version ~doc ~man) fcc_term)
 
