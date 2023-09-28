@@ -61,15 +61,17 @@ jobs:
       - name: 🐫🐪🐫 Get dependencies
         run: opam exec -- make opam-deps
 
+      - name: 🐛 Test coq-lsp
+        if: matrix.os == 'windows-latest'
+        run: opam exec -- make winconfig
+
       - name: 🧱 Build coq-lsp
         run: opam exec -- make build
 
       - name: 🐛 Test coq-lsp
-        if: matrix.os != 'windows-latest'
         run: opam exec -- make test
 
       - name: 🐛 Test fcc
-        if: matrix.os != 'windows-latest'
         run: opam exec -- make test-compiler
 
   build-nix:
@@ -104,9 +106,9 @@ jobs:
       - name: 🚀 Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
       - run: npm ci
-      - run: npx --yes vsce ls
+      - run: npx --yes @vscode/vsce ls
 
   nix-flake-check:
     name: Nix Flake Check

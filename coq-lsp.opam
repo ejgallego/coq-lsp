@@ -33,7 +33,6 @@ depends: [
   # Uncomment this for releases
   "coq"          { >= "8.18" < "8.19"  }
   "coq-serapi"   { >= "8.18" < "8.19"  }
-
 ]
 
 build: [ [ "dune" "build" "-p" name "-j" jobs ] ]

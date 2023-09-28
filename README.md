@@ -8,10 +8,14 @@ Studio Code](https://code.visualstudio.com/) extension for the [Coq Proof
 Assistant](https://coq.inria.fr). Experimental support for [Vim](#vim) and
 [Neovim](#neovim) is also available in their own projects.
 
-Install for Visual Studio is as easy as:
+**[Install: 🐧 Linux / 🍎 macOs]**:
 ```
 $ opam install coq-lsp && code --install-extension ejgallego.coq-lsp
 ```
+
+**[Install: 🪟 Windows ]:**
+
+> see the [instructions](#-server); we will provide an `.exe` installer very soon
 
 Key [features](#Features) of `coq-lsp` are continuous and incremental document
 checking, advanced error recovery, markdown support, positional goals and
@@ -54,6 +58,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [🦄 Emacs](#-emacs)
   - [✅ Vim](#-vim)
   - [🩱 Neovim](#-neovim)
+  - [🐍 Python](#-python)
 - [🗣️ Discussion Channel](#️-discussion-channel)
 - [☎ Weekly Calls](#-weekly-calls)
 - [❓FAQ](#faq)
@@ -213,13 +218,15 @@ SerAPI](etc/SerAPI.md) document.
 ## 🛠️ Installation
 
 In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md)
-`coq-lsp` and a suitable client. We recommend the Visual Studio Code Extension
-as client.
+`coq-lsp` and a suitable LSP client that understands `coq-lsp` extensions. The
+recommended client is the Visual Studio Code Extension, but we aim to fully
+support other clients officially and will do so once their authors consider them
+ready.
 
 ### 🏘️ Supported Coq Versions
 
-`coq-lsp` supports Coq 8.15, 8.16, Coq 8.17, and Coq's `master` branch. Code for
-each Coq version can be found in the corresponding branch.
+`coq-lsp` supports Coq 8.15, 8.16, Coq 8.17, Coq 8.18, and Coq's `master`
+branch. Code for each Coq version can be found in the corresponding branch.
 
 We recommended a minimum of Coq 8.17, due to better test coverage for that
 version. For 8.16, we recommend users to install the custom Coq tree as detailed
@@ -229,32 +236,29 @@ Support for older Coq versions is possible; it is possible to make `coq-lsp`
 work with Coq back to Coq 8.10/8.9. If you are interested in making that happen
 don't hesitate to get in touch with us.
 
+Note that this section covers user installs, if you would like to contribute to
+`coq-lsp` and build a development version, please check our [contributing
+guide](./CONTRIBUTING.md)
+
 ### 🏓 Server
 
-- **opam**:
+- **opam** (OSX/Linux):
   ```
   opam install coq-lsp
   ```
 - **Nix**:
-   - In nixpkgs: [#213397](https://github.com/NixOS/nixpkgs/pull/213397)
-   - In your flake:
-   ```nix
-   inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
-   ...
-   coq-lsp.packages.${system}.default
-   ```
-- **Windows**: To install `coq-lsp` on windows, we recommend you use a cygwin
-  build, such as the [one described
-  here](https://github.com/coq/platform/blob/main/doc/README_Windows.md#installation-by-compiling-from-sources-using-opam-on-cygwin), tho
-  any OCaml env where Coq can be built should work.
-  - build `coq-lsp` from source (branch `v8.16`, which will become 0.1.7)
-  - Set the path to `coq-lsp.exe` binary in VS Code settings
-  - Set the `--ocamlpath=c:\$path_to_opam\lib` argument in VS Code settings if
-    you get a findlib error. The Coq Platform ships with an un-configured
-    binary. Note, the path should be unquoted
-  - If the binary doesn't work, try to run it from the file explorer; if you get
-    a `.dll` error you'll need to copy that dll (often `libgmp-10.dll`) to the
-    `C:\Windows` folder for `coq-lsp` to work.
+  - In nixpkgs: [coqPackages.coq-lsp](https://github.com/NixOS/nixpkgs/tree/master/pkgs/development/coq-modules/coq-lsp)
+  - An example of a `flake` that uses `coq-lsp` in a development environment is here
+     https://github.com/HoTT/Coq-HoTT/blob/master/flake.nix .
+- **Windows**: To install `coq-lsp` on windows, you need to build the Coq Platform:
+  - Download and uncompress the Platform Script: https://github.com/coq/platform/archive/refs/tags/2023.03.0.zip
+  - From a shell, execute `./coq_platform_make_windows.bat`
+  - Select `C:\cp_817` as the install path, select the packages you want
+  - Run `C:\cp_817\Cygwin.bat`
+  - Run `opam install coq-lsp`
+  - Run `cp /cygdrive/c/cp_817/usr/x86_64-w64-mingw32/sys-root/mingw/bin/libgmp-10.dll /home/User/.opam/CP.2023.03.0~8.17~2023.08/bin`
+  - In VSCode native, you can now set the `Coq-lsp: Path` setting to `C:\cp_817\home\User\.opam\CP.2023.03.0~8.17~2023.08\bin\coq-lsp.exe`
+  - Things should work !
 - **Coq Platform** (coming soon)
   - See the [bug tracking coq-lsp inclusion](https://github.com/coq/platform/issues/319)
 - [Do it yourself!](#server-1)
@@ -295,6 +299,11 @@ programs.vscode = {
 ### 🩱 Neovim
 
 - Experimental client by Jaehwang Jung: https://github.com/tomtomjhj/coq-lsp.nvim
+
+### 🐍 Python
+
+- Interact programmatically with Coq files by using the [Python `coq-lsp` client](https://github.com/sr-lab/coq-lsp-pyclient)
+  by Pedro Carrott and Nuno Saavedra.
 
 ## 🗣️ Discussion Channel
 
