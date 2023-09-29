@@ -39,3 +39,11 @@ Proof.
   { exact 2. }
   exact 1.
 Qed.
+
+Goal Type.
+Qed.
+
+Definition baaar : Type.
+Qed.
+
+About baaar.
