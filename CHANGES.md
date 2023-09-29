@@ -15,6 +15,10 @@
    `--ocamlpath`, `-Q` and `-R` arguments (@ejgallego, #555)
  - Describe findlib status in `Workspace.describe`, which is printed
    in the output windows (@ejgallego, #556)
+ - `coq-lsp` plugin loader will now be strict in case of a plugin
+   failure, the previous loose behavior was more convenient for the
+   early releases, but it doesn't make sense now and made things
+   pretty hard to debug on the Windows installer (@ejgallego, #557)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
