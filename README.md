@@ -266,21 +266,9 @@ guide](./CONTRIBUTING.md)
 <!-- TODO 🟣 Emacs, 🪖 Proof general, 🐔 CoqIDE -->
 
 ### 🫐 Visual Studio Code
+
 - Official Marketplace: https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
 - Open VSX: https://open-vsx.org/extension/ejgallego/coq-lsp
-- Nix:
-```nix
-inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
-...
-programs.vscode = {
-  enable = true;
-  extensions = with pkgs.vscode-extensions; [
-    ...
-    inputs.coq-lsp.packages.${pkgs.system}.vscode-extension
-    ...
-  ];
-};
-```
 
 ### 🦄 Emacs
 
@@ -291,7 +279,7 @@ programs.vscode = {
 
 ### ✅ Vim
 
-- Experimental [CoqTail](https://github.com/whonore/Coqtail) support by Wolf Honore: 
+- Experimental [CoqTail](https://github.com/whonore/Coqtail) support by Wolf Honore:
   https://github.com/whonore/Coqtail/pull/323
 
   See it in action https://asciinema.org/a/mvzqHOHfmWB2rvwEIKFjuaRIu

@@ -269,6 +269,21 @@ that, you want to use the web extension profile in the launch setup.
 The default build target will allow you to debug the extension by providing the
 right sourcemaps.
 
+### Nix:
+
+Nix can be configured to use the version of the VS Code extension from our `git` in the following way:
+```nix
+inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
+...
+programs.vscode = {
+  enable = true;
+  extensions = with pkgs.vscode-extensions; [
+    ...
+    inputs.coq-lsp.packages.${pkgs.system}.vscode-extension
+    ...
+  ];
+};
+```
 ## Test-suite
 
 `coq-lsp` has a test-suite in the [test directory](./test), see the
