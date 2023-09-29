@@ -8,18 +8,17 @@ Studio Code](https://code.visualstudio.com/) extension for the [Coq Proof
 Assistant](https://coq.inria.fr). Experimental support for [Vim](#vim) and
 [Neovim](#neovim) is also available in their own projects.
 
-**[Install: 🐧 Linux / 🍎 macOs]**:
+**Quick Install**:
+  - **🐧 Linux / 🍎 macOs:**
 ```
-$ opam install coq-lsp && code --install-extension ejgallego.coq-lsp
+$ opam install coq-lsp && code --install-extension ejgallego.coq-lsp`
 ```
+  - **🪟 Windows:** Download the [Coq Platform installer](#-server)
 
-**[Install: 🪟 Windows ]:**
-
-> see the [instructions](#-server); we will provide an `.exe` installer very soon
-
-Key [features](#Features) of `coq-lsp` are continuous and incremental document
-checking, advanced error recovery, markdown support, positional goals and
-information panel, performance data, and more.
+**Key [features](#Features)** of `coq-lsp` are: continuous and incremental
+document checking, advanced error recovery, hybrid Coq/markdown document
+support, multiple workspace support, positional goals and information panel,
+performance data, extensible command-line compiler, plugin system, and more.
 
 `coq-lsp` aims to provide a seamless, modern interactive theorem proving
 experience, as well as to serve as a maintainable platform for research and UI
@@ -250,18 +249,23 @@ guide](./CONTRIBUTING.md)
   - In nixpkgs: [coqPackages.coq-lsp](https://github.com/NixOS/nixpkgs/tree/master/pkgs/development/coq-modules/coq-lsp)
   - An example of a `flake` that uses `coq-lsp` in a development environment is here
      https://github.com/HoTT/Coq-HoTT/blob/master/flake.nix .
-- **Windows**: To install `coq-lsp` on windows, you need to build the Coq Platform:
-  - Download and uncompress the Platform Script: https://github.com/coq/platform/archive/refs/tags/2023.03.0.zip
-  - From a shell, execute `./coq_platform_make_windows.bat`
-  - Select `C:\cp_817` as the install path, select the packages you want
-  - Run `C:\cp_817\Cygwin.bat`
-  - Run `opam install coq-lsp`
-  - Run `cp /cygdrive/c/cp_817/usr/x86_64-w64-mingw32/sys-root/mingw/bin/libgmp-10.dll /home/User/.opam/CP.2023.03.0~8.17~2023.08/bin`
-  - In VSCode native, you can now set the `Coq-lsp: Path` setting to `C:\cp_817\home\User\.opam\CP.2023.03.0~8.17~2023.08\bin\coq-lsp.exe`
-  - Things should work !
-- **Coq Platform** (coming soon)
-  - See the [bug tracking coq-lsp inclusion](https://github.com/coq/platform/issues/319)
-- [Do it yourself!](#server-1)
+- **Windows**:
+  Experimental Windows installers based on the [Coq
+  Platform](https://github.com/coq/platform) are available at https://www.irif.fr/~gallego/coq-lsp/
+
+  This provides a Windows native binary that can be executed from VSCode
+  normally. As of today a bit of configuration is still needed:
+  - In VSCode, set the `Coq-lsp: Path` to:
+    + `C:\Coq-Platform~8.17-lsp\bin\coq-lsp.exe`
+  - In VSCode, set the `Coq-lsp: Args` to:
+    + `--coqlib=C:\Coq-Platform~8.17-lsp\lib\coq\`
+    + `--coqcorelib=C:\Coq-Platform~8.17-lsp\lib\coq-core\`
+    + `--ocamlpath=C:\Coq-Platform~8.17-lsp\lib\`
+  - Replace `C:\Coq-Platform~8.17-lsp\` by the path you have installed Coq above as needed
+  - Note that the installers are unsigned (for now), so you'll have to click on
+    "More info" then "Run anyway" inside the "Windows Protected your PC" dialog
+  - Also note that the installers are work in progress, and may change often.
+- **Do it yourself!** [Compilation from sources](./CONTRIBUTING.md#compilation)
 
 <!-- TODO 🟣 Emacs, 🪖 Proof general, 🐔 CoqIDE -->
 
