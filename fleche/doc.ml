@@ -573,18 +573,11 @@ let strategy_of_coq_err ~node ~state ~last_tok = function
   | User _ -> Continue { state; last_tok; node }
 
 (* XXX: This should be refined. *)
-let recovery_interp ~doc ~st ~ast last_tok =
+let recovery_interp ~doc ~st ?ast last_tok =
   let { Coq.Protect.E.r; feedback = _ } =
-    state_recovery_heuristic last_tok doc st ast
-  in
-  match r with
-  | Interrupted -> st
-  | Completed (Ok st) -> st
-  | Completed (Error _) -> st
-
-let recovery_lex ~doc ~st last_tok =
-  let { Coq.Protect.E.r; feedback = _ } =
-    qed_lex_recovery last_tok doc.contents doc.nodes st
+    match ast with
+    | None -> qed_lex_recovery last_tok doc.contents doc.nodes st
+    | Some ast -> state_recovery_heuristic last_tok doc st ast
   in
   match r with
   | Interrupted -> st
@@ -625,7 +618,7 @@ let document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
     Stop (completed, node)
   (* Parsing error *)
   | Skip (span_range, last_tok) ->
-    let st = recovery_lex ~doc ~st last_tok in
+    let st = recovery_interp ~doc ~st last_tok in
     let node =
       unparseable_node ~range:span_range ~parsing_diags ~parsing_feedback
         ~state:st ~parsing_time
