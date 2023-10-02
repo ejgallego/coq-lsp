@@ -204,18 +204,27 @@ module Notation : HoverProvider = struct
   let h = Handler.WithNode info_notation
 end
 
-let handlers : Handler.t list = [ Loc_info.h; Stats.h; Type.h; Notation.h ]
+module Register = struct
+  let handlers : Handler.t list ref = ref []
+  let add fn = handlers := fn :: !handlers
 
-let handle_hover ~contents ~point ~node = function
-  | Handler.MaybeNode h -> h ~contents ~point ~node
-  | Handler.WithNode h ->
-    Option.bind node (fun node -> h ~contents ~point ~node)
+  let handle ~contents ~point ~node = function
+    | Handler.MaybeNode h -> h ~contents ~point ~node
+    | Handler.WithNode h ->
+      Option.bind node (fun node -> h ~contents ~point ~node)
+
+  let fire ~contents ~point ~node =
+    List.filter_map (handle ~contents ~point ~node) !handlers
+end
+
+(* Register in-file hover plugins *)
+let () = List.iter Register.add [ Loc_info.h; Stats.h; Type.h; Notation.h ]
 
 let hover ~doc ~point =
   let contents = doc.Doc.contents in
   let node = Info.LC.node ~doc ~point Exact in
   let range = Option.map Doc.Node.range node in
-  let hovers = List.filter_map (handle_hover ~contents ~point ~node) handlers in
+  let hovers = Register.fire ~contents ~point ~node in
   match hovers with
   | [] -> `Null
   | hovers ->
