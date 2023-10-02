@@ -8,9 +8,17 @@ Studio Code](https://code.visualstudio.com/) extension for the [Coq Proof
 Assistant](https://coq.inria.fr). Experimental support for [Vim](#vim) and
 [Neovim](#neovim) is also available in their own projects.
 
-Key [features](#Features) of `coq-lsp` are continuous and incremental document
-checking, advanced error recovery, markdown support, positional goals and
-information panel, performance data, and more.
+**Quick Install**:
+  - **🐧 Linux / 🍎 macOs:**
+```
+$ opam install coq-lsp && code --install-extension ejgallego.coq-lsp`
+```
+  - **🪟 Windows:** Download the [Coq Platform installer](#-server)
+
+**Key [features](#Features)** of `coq-lsp` are: continuous and incremental
+document checking, advanced error recovery, hybrid Coq/markdown document
+support, multiple workspace support, positional goals and information panel,
+performance data, extensible command-line compiler, plugin system, and more.
 
 `coq-lsp` aims to provide a seamless, modern interactive theorem proving
 experience, as well as to serve as a maintainable platform for research and UI
@@ -38,6 +46,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [💾 `.vo` file saving](#-vo-file-saving)
   - [⏱️ Detailed Timing and Memory Statistics](#️-detailed-timing-and-memory-statistics)
   - [🔧 Client-Side Configuration Options](#-client-side-configuration-options)
+  - [🖵 Extensible, Machine-friendly Command Line Compiler](#️-extensive-machine-friendly-command-line-compiler)
   - [♻️ Reusability, Standards, Modularity](#️-reusability-standards-modularity)
   - [🌐 Web Native!](#-web-native)
   - [🔎 A Platform for Research!](#-a-platform-for-research)
@@ -45,8 +54,10 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [🏘️ Supported Coq Versions](#️-supported-coq-versions)
   - [🏓 Server](#-server)
   - [🫐 Visual Studio Code](#-visual-studio-code)
+  - [🦄 Emacs](#-emacs)
   - [✅ Vim](#-vim)
   - [🩱 Neovim](#-neovim)
+  - [🐍 Python](#-python)
 - [🗣️ Discussion Channel](#️-discussion-channel)
 - [☎ Weekly Calls](#-weekly-calls)
 - [❓FAQ](#faq)
@@ -79,30 +90,28 @@ should not, please file a bug!
 ### 🧠 Smart, Cache-Aware Error Recovery
 
 `coq-lsp` won't stop checking on errors, but supports (and encourages) working
-with proof documents that are only partially working. Moreover, error recovery
-integrates with the incremental cache, and will recognize proof structure.
+with proof documents that are only partially working. Error recovery integrates
+with the incremental cache, and does recognize proof structure.
 
 You can edit without fear inside a `Proof. ... Qed.`, the rest of the document
-won't be rechecked, unless the proof is completed.
+won't be rechecked; you can leave bullets and focused goals unfinished, and
+`coq-lsp` will automatically admit them for you.
 
-Moreover, if a lemma is not completed, `coq-lsp` will admit it automatically. No
-more `Admitted` / `Qed` churn!
+If a lemma is not completed, `coq-lsp` will admit it automatically. No more
+`Admitted` / `Qed` churn!
 
 <img alt="Smart error recovery" height="286px" src="etc/img/lsp-errors.gif"/>
-
-Furthermore, you can leave bullets and focused goals unfinished, and `coq-lsp`
-will automatically admit them for you.
 
 ### 🥅 Whole-Document Goal Display
 
 `coq-lsp` will follow the cursor movement and show underlying goals and
-messages; this is configurable in case you'd like to trigger goal display more
-conservatively.
+messages; as well as information about what goals you have given up, shelves,
+pending obligations, open bullets and their goals.
 
 <img alt="Whole-Document Goal Display" height="286px" src="etc/img/lsp-goals.gif"/>
 
-The panel will also include goals that you have given up or shelved. This panel
-will also show the current info about open bullets and their goals.
+Goal display behavior is configurable in case you'd like to trigger goal display
+more conservatively.
 
 ### 🗒️ Markdown Support
 
@@ -112,13 +121,15 @@ documents at the core of its design ideas.
 
 <img alt="Coq + Markdown Editing" height="286px" src="etc/img/lsp-markdown.gif"/>
 
+Moreover, you can use Visual Studio Code Markdown preview to render your
+markdown documents nicely!
+
 ### 👥 Document Outline
 
 `coq-lsp` supports document outline and code folding, allowing you to jump
 directly to definitions in the document. Many of the Coq vernacular commands
 like `Definition`, `Theorem`, `Lemma`, etc. will be recognized as document
 symbols which you can navigate to or see the outline of.
-
 
 <img alt="Document Outline Demo" height="286px" src="etc/img/lsp-outline.gif"/> <img alt="Document Symbols" height="286px" src="etc/img/lsp-doc-symbols.png"/>
 
@@ -127,6 +138,9 @@ symbols which you can navigate to or see the outline of.
 Hovering over a Coq identifier will show its type.
 
 <img alt="Types on Hover" height="286px" src="etc/img/lsp-hover-2.gif"/>
+
+Hover is also used to get debug information, which can be enabled in the
+preferences panel.
 
 ### 📁 Multiple Workspaces
 
@@ -157,6 +171,16 @@ when a proof doesn't check, admit or ignore? You decide!
 See the `coq-lsp` extension configuration in VSCode for options available.
 
 <img alt="Configuration screen" height="286px" src="etc/img/lsp-config.png"/>
+
+### 🖵 Extensible, Machine-friendly Command Line Compiler
+
+`coq-lsp` includes the `fcc` "Flèche Coq Compiler" which allows the access to
+almost all the features of Flèche / `coq-lsp` without the need to spawn a
+fully-fledged LSP client.
+
+`fcc` has been designed to be machine-friendly and extensible, so you can easily
+add your pre/post processing passes, for example to analyze or serialize parts
+of Coq files.
 
 ### ♻️ Reusability, Standards, Modularity
 
@@ -193,72 +217,73 @@ SerAPI](etc/SerAPI.md) document.
 ## 🛠️ Installation
 
 In order to use `coq-lsp` you'll need to install [**both**](etc/FAQ.md)
-`coq-lsp` and a suitable client. We recommend the Visual Studio Code Extension.
+`coq-lsp` and a suitable LSP client that understands `coq-lsp` extensions. The
+recommended client is the Visual Studio Code Extension, but we aim to fully
+support other clients officially and will do so once their authors consider them
+ready.
 
 ### 🏘️ Supported Coq Versions
 
-`coq-lsp` supports Coq 8.16, Coq 8.17, and Coq's `master` branch.
+`coq-lsp` supports Coq 8.15, 8.16, Coq 8.17, Coq 8.18, and Coq's `master`
+branch. Code for each Coq version can be found in the corresponding branch.
 
 We recommended a minimum of Coq 8.17, due to better test coverage for that
-version.  We also recommend users to install the custom Coq trees for 8.16 and
-8.17 as detailed in [Working With Multiple Files](#working-with-multiple-files)
+version. For 8.16, we recommend users to install the custom Coq tree as detailed
+in [Working With Multiple Files](#working-with-multiple-files)
 
 Support for older Coq versions is possible; it is possible to make `coq-lsp`
 work with Coq back to Coq 8.10/8.9. If you are interested in making that happen
 don't hesitate to get in touch with us.
 
+Note that this section covers user installs, if you would like to contribute to
+`coq-lsp` and build a development version, please check our [contributing
+guide](./CONTRIBUTING.md)
+
 ### 🏓 Server
 
-- **opam**:
+- **opam** (OSX/Linux):
   ```
   opam install coq-lsp
   ```
 - **Nix**:
-   - In nixpkgs: [#213397](https://github.com/NixOS/nixpkgs/pull/213397)
-   - In your flake:
-   ```nix
-   inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
-   ...
-   coq-lsp.packages.${system}.default
-   ```
-- **Windows**: To install `coq-lsp` on windows, we recommend you use a cygwin
-  build, such as the [one described
-  here](https://github.com/coq/platform/blob/main/doc/README_Windows.md#installation-by-compiling-from-sources-using-opam-on-cygwin), tho
-  any OCaml env where Coq can be built should work.
-  - build `coq-lsp` from source (branch `v8.16`, which will become 0.1.7)
-  - Set the path to `coq-lsp.exe` binary in VS Code settings
-  - Set the `--ocamlpath=c:\$path_to_opam\lib` argument in VS Code settings if
-    you get a findlib error. The Coq Platform ships with an un-configured
-    binary. Note, the path should be unquoted
-  - If the binary doesn't work, try to run it from the file explorer; if you get
-    a `.dll` error you'll need to copy that dll (often `libgmp-10.dll`) to the
-    `C:\Windows` folder for `coq-lsp` to work.
-- **Coq Platform** (coming soon)
-  - See the [bug tracking coq-lsp inclusion](https://github.com/coq/platform/issues/319)
-- [Do it yourself!](#server-1)
+  - In nixpkgs: [coqPackages.coq-lsp](https://github.com/NixOS/nixpkgs/tree/master/pkgs/development/coq-modules/coq-lsp)
+  - An example of a `flake` that uses `coq-lsp` in a development environment is here
+     https://github.com/HoTT/Coq-HoTT/blob/master/flake.nix .
+- **Windows**:
+  Experimental Windows installers based on the [Coq
+  Platform](https://github.com/coq/platform) are available at https://www.irif.fr/~gallego/coq-lsp/
+
+  This provides a Windows native binary that can be executed from VSCode
+  normally. As of today a bit of configuration is still needed:
+  - In VSCode, set the `Coq-lsp: Path` to:
+    + `C:\Coq-Platform~8.17-lsp\bin\coq-lsp.exe`
+  - In VSCode, set the `Coq-lsp: Args` to:
+    + `--coqlib=C:\Coq-Platform~8.17-lsp\lib\coq\`
+    + `--coqcorelib=C:\Coq-Platform~8.17-lsp\lib\coq-core\`
+    + `--ocamlpath=C:\Coq-Platform~8.17-lsp\lib\`
+  - Replace `C:\Coq-Platform~8.17-lsp\` by the path you have installed Coq above as needed
+  - Note that the installers are unsigned (for now), so you'll have to click on
+    "More info" then "Run anyway" inside the "Windows Protected your PC" dialog
+  - Also note that the installers are work in progress, and may change often.
+- **Do it yourself!** [Compilation from sources](./CONTRIBUTING.md#compilation)
 
 <!-- TODO 🟣 Emacs, 🪖 Proof general, 🐔 CoqIDE -->
 
 ### 🫐 Visual Studio Code
+
 - Official Marketplace: https://marketplace.visualstudio.com/items?itemName=ejgallego.coq-lsp
 - Open VSX: https://open-vsx.org/extension/ejgallego/coq-lsp
-- Nix:
-```nix
-inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
-...
-programs.vscode = {
-  enable = true;
-  extensions = with pkgs.vscode-extensions; [
-    ...
-    inputs.coq-lsp.packages.${pkgs.system}.vscode-extension
-    ...
-  ];
-};
-```
+
+### 🦄 Emacs
+
+- An experimental configuration for `lsp-mode` has been provided by Arthur
+  Azevedo de Amorim, supporting goal display, see [the Zulip
+  thread](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp/topic/coq-lsp.20under.20Emacs.2E)
+  for more information.
 
 ### ✅ Vim
 
-- Experimental [CoqTail](https://github.com/whonore/Coqtail) support by Wolf Honore: 
+- Experimental [CoqTail](https://github.com/whonore/Coqtail) support by Wolf Honore:
   https://github.com/whonore/Coqtail/pull/323
 
   See it in action https://asciinema.org/a/mvzqHOHfmWB2rvwEIKFjuaRIu
@@ -266,6 +291,11 @@ programs.vscode = {
 ### 🩱 Neovim
 
 - Experimental client by Jaehwang Jung: https://github.com/tomtomjhj/coq-lsp.nvim
+
+### 🐍 Python
+
+- Interact programmatically with Coq files by using the [Python `coq-lsp` client](https://github.com/sr-lab/coq-lsp-pyclient)
+  by Pedro Carrott and Nuno Saavedra.
 
 ## 🗣️ Discussion Channel
 
@@ -285,29 +315,38 @@ See our [list of frequently-asked questions](./etc/FAQ.md).
 
 ## ⁉️ Troubleshooting and Known Problems
 
+### Known problems
+
+- Current rendering code can be slow with complex goals and messages, if that's
+  the case, please open an issue and set the option `Coq LSP > Method to Print
+  Coq Terms` to 0 as a workaround.
+- `coq-lsp` can fail to interrupt Coq in some cases, such as `Qed` or type class
+  search. If that's the case, please open an issue, we have a experimental
+  branch that solves this problem that you can try.
+- Working with multiple files in Coq < 8.17 requires a Coq patch, see below for
+  instructions.
+- If you install `coq-lsp/VSCode` simultaneously with the `VSCoq` Visual Studio
+  Code extension, Visual Studio Code gets confused and neither of them may
+  work. `coq-lsp` will warn about that. You can disable the `VSCoq` extension as
+  a workaround.
+
+### Troubleshooting
+
 - Some problems can be resolved by restarting `coq-lsp`, in Visual Studio Code,
   `Ctrl+Shift+P` will give you access to the `coq-lsp.restart` command.
   You can also start / stop the server from the status bar.
 - In VSCode, the "Output" window will have a "Coq LSP Server Events" channel
   which should contain some important information; the content of this channel
   is controlled by the `Coq LSP > Trace: Server` option.
-- If you install `coq-lsp` simultaneously with VSCoq, VSCode gets confused and
-  neither of them may work. `coq-lsp` will warn about that. If you know how to
-  improve this, don't hesitate to get in touch with us.
 
 ### 📂 Working With Multiple Files
 
 `coq-lsp` can't work with more than one file at the same time, due to problems
-with parsing state management upstream. This was fixed in Coq `master` branch
-(to become **Coq 8.18**).
+with parsing state management upstream. This was fixed in Coq 8.17.
 
-As this is very inconvenient, we do provide a fixed Coq branch that you can
-install using `opam pin`:
+As this is very inconvenient for users in older Coq versions, we do provide a
+fixed Coq branch that you can install using `opam pin`:
 
-- For Coq 8.17:
-  ```
-  opam pin add coq-core https://github.com/ejgallego/coq.git#v8.17+lsp
-  ```
 - For Coq 8.16:
   ```
   opam pin add coq https://github.com/ejgallego/coq.git#v8.16+lsp
@@ -344,11 +383,11 @@ the best ideas will arise from using `coq-lsp` in your own Coq projects.
 - Ali Caglayan (co-coordinator)
 - Emilio J. Gallego Arias (Inria Paris, co-coordinator)
 - Shachar Itzhaky (Technion)
-- Ramkumar Ramachandra (Inria Paris)
 
 ### 🕰️ Past Contributors
 
 - Vincent Laporte (Inria)
+- Ramkumar Ramachandra (Inria Paris)
 
 ## ©️ Licensing Information
 

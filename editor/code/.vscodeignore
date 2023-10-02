@@ -3,6 +3,7 @@
 .prettierignore
 .gitignore
 .vscode/
+flakeModule.nix
 
 # Source files
 **/*.ts
@@ -18,3 +19,4 @@ esbuild.mjs
 views/info/media/
 
 # Perf view
+views/perf/media/

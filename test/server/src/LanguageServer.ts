@@ -8,7 +8,7 @@ import * as Types from "vscode-languageserver-types";
 import { URI } from "vscode-uri";
 
 let serverBin = os.platform() === "win32" ? "coq-lsp.exe" : "coq-lsp";
-let projectRoot = path.join(__dirname, "..", "..");
+let projectRoot = path.join(__dirname, "..", "..", "..");
 
 let serverPath = path.join(
   projectRoot,
@@ -16,7 +16,7 @@ let serverPath = path.join(
   "install",
   "default",
   "bin",
-  serverBin
+  serverBin,
 );
 
 let ocamlPath = path.join(projectRoot, "_build", "install", "default", "lib");
@@ -25,19 +25,24 @@ export function toURI(s: string) {
   return URI.parse(s).toString();
 }
 
+export function openExampleEphemeral(filename: string, contents: string) {
+  let filepath = path.join(projectRoot, filename);
+  return Types.TextDocumentItem.create(toURI(filepath), "coq", 0, contents);
+}
+
 export function openExample(filename: string) {
   let filepath = path.join(projectRoot, "examples", filename);
   return Types.TextDocumentItem.create(
     toURI(filepath),
     "coq",
     0,
-    fs.readFileSync(filepath, "utf-8")
+    fs.readFileSync(filepath, "utf-8"),
   );
 }
 
 export interface LanguageServer extends rpc.MessageConnection {
   initialize(
-    initializeParameters?: Partial<Protocol.InitializeParams>
+    initializeParameters?: Partial<Protocol.InitializeParams>,
   ): Promise<void>;
   exit(): Promise<void>;
 }
@@ -51,12 +56,12 @@ export function start(): LanguageServer {
   });
   let connection = rpc.createMessageConnection(
     new rpc.StreamMessageReader(childProcess.stdout!),
-    new rpc.StreamMessageWriter(childProcess.stdin!)
+    new rpc.StreamMessageWriter(childProcess.stdin!),
   );
   connection.listen();
 
   const initialize = async (
-    initializeParameters: Partial<Protocol.InitializeParams> = {}
+    initializeParameters: Partial<Protocol.InitializeParams> = {},
   ) => {
     initializeParameters = {
       processId: process.pid,
@@ -75,9 +80,10 @@ export function start(): LanguageServer {
       },
       ...initializeParameters,
     };
+
     await connection.sendRequest(
       Protocol.InitializeRequest.type,
-      initializeParameters
+      initializeParameters,
     );
   };
 

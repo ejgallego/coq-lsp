@@ -19,12 +19,12 @@ module Check : sig
   (** Check pending documents, return [None] if there is none pending, or
       [Some rqs] the list of requests ready to execute after the check. Sends
       progress and diagnostics notifications using output function [ofn]. *)
-  val maybe_check : ofn:(Yojson.Safe.t -> unit) -> Int.Set.t option
+  val maybe_check : io:Io.CallBack.t -> (Int.Set.t * Doc.t) option
 end
 
-(** Create a document *)
+(** Create a document inside a theory *)
 val create :
-     ofn:(Yojson.Safe.t -> unit)
+     io:Io.CallBack.t
   -> root_state:Coq.State.t
   -> workspace:Coq.Workspace.t
   -> uri:Lang.LUri.File.t
@@ -32,9 +32,9 @@ val create :
   -> version:int
   -> unit
 
-(** Update a document, returns the list of not valid requests *)
+(** Update a document inside a theory, returns the list of not valid requests *)
 val change :
-     ofn:(Yojson.Safe.t -> unit)
+     io:Io.CallBack.t
   -> uri:Lang.LUri.File.t
   -> version:int
   -> raw:string
@@ -43,19 +43,40 @@ val change :
 (** Close a document *)
 val close : uri:Lang.LUri.File.t -> unit
 
-exception AbortRequest
+module Request : sig
+  type request =
+    | FullDoc of { uri : Lang.LUri.File.t }
+    | PosInDoc of
+        { uri : Lang.LUri.File.t
+        ; point : int * int
+        ; version : int option
+        ; postpone : bool
+        }
 
-(** [find_doc ~uri] , raises AbortRequest if [uri] is invalid *)
-val find_doc : uri:Lang.LUri.File.t -> Fleche.Doc.t
+  type t =
+    { id : int
+    ; request : request
+    }
 
-(** Add a request to be served when the document is completed *)
-val add_on_completion : uri:Lang.LUri.File.t -> id:int -> unit
+  type action =
+    | Now of Doc.t
+    | Postpone
+    | Cancel
 
-val remove_on_completion : uri:Lang.LUri.File.t -> id:int -> unit
+  (** Add a request to be served; returns [Postpone] if request is added to the
+      queue, [Now doc] if the request is available. [Cancel] means "we will
+      never be able to serve this" *)
+  val add : t -> action
 
-(** Add a request to be served when the document point data is available, for
-    now, we allow a single request like that. Maybe returns the id of the
-    previous request which should now be cancelled. *)
-val add_on_point : uri:Lang.LUri.File.t -> id:int -> point:int * int -> unit
+  (** Removes the request from the list of things to wake up *)
+  val remove : t -> unit
+end
 
-val remove_on_point : uri:Lang.LUri.File.t -> id:int -> point:int * int -> unit
+(* Experimental plugin API, not stable yet *)
+module Register : sig
+  module Completed : sig
+    type t = io:Io.CallBack.t -> doc:Doc.t -> unit
+  end
+
+  val add : Completed.t -> unit
+end

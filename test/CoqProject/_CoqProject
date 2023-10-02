@@ -1,0 +1,7 @@
+# _CoqProject
+-Q . test
+
+-arg -w -arg -local-declaration
+-arg -w -arg +non-primitive-record
+
+test.v

@@ -66,7 +66,7 @@ export class FileProgressManager {
     for (const editor of window.visibleTextEditors) {
       if (
         editor.document.languageId === "coq" ||
-        editor.document.languageId === "coqmarkdown"
+        editor.document.languageId === "markdown"
       ) {
         editor.setDecorations(progressDecoration, []);
       }

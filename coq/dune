@@ -7,7 +7,6 @@
   findlib.dynload
   lang
   coq-core.vernac
-  coq-core.stm
   coq-serapi.serlib
   camlp-streams))
 

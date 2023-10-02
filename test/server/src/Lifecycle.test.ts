@@ -5,7 +5,25 @@ test("startup and shutdown", async () => {
   await LanguageServer.start().exit();
 });
 
-test("initialize with empty capabilities", async () => {
+test("initialize with empty capabilities and rootPath (absolute)", async () => {
+  let languageServer = LanguageServer.start();
+  let capabilities: Protocol.ClientCapabilities = {};
+  let initializeParameters: Protocol.InitializeParams = {
+    processId: process.pid,
+    rootPath: ".",
+    rootUri: null,
+    capabilities: capabilities,
+    workspaceFolders: [],
+  };
+  let result = await languageServer.sendRequest(
+    Protocol.InitializeRequest.type,
+    initializeParameters,
+  );
+  expect(result.capabilities).toBeTruthy();
+  await languageServer.exit();
+});
+
+test("initialize with empty capabilities and rootURI", async () => {
   let languageServer = LanguageServer.start();
   let capabilities: Protocol.ClientCapabilities = {};
   let initializeParameters: Protocol.InitializeParams = {
@@ -16,7 +34,7 @@ test("initialize with empty capabilities", async () => {
   };
   let result = await languageServer.sendRequest(
     Protocol.InitializeRequest.type,
-    initializeParameters
+    initializeParameters,
   );
   expect(result.capabilities).toBeTruthy();
   await languageServer.exit();

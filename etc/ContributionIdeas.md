@@ -35,6 +35,7 @@ like to:
 
 - Allow to skip proofs, configure which ones to skip
 - Contextual continuous checking: Check only what is visible, _à la_ Isabelle.
+- Python Plugin API
 
 ## LTAC Debugging
 
@@ -42,11 +43,13 @@ like to:
 
 ## "Semantic" goal and document printing
 
-Based on the `coq-layout-engine` project.
+- Add support for the `coq-layout-engine` project.
+- Port the current pp printer code to React
 
-## LaTeX document support
+## LaTeX and Markdown document support
 
 - support `.lv` literate Coq LaTeX documents
+- support extended markdown contributions to TOC
 
 ### "Computational", Jupyter-style Documents
 

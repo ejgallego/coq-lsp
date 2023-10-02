@@ -22,6 +22,16 @@ module Flags : sig
     }
 end
 
+module Warning : sig
+  type t
+
+  val make : string -> t
+
+  (** Adds new warnings to the list of current warnings, the Coq API here is a
+      bit tricky... *)
+  val apply : t list -> unit
+end
+
 type t = private
   { coqlib : string
   ; coqcorelib : string
@@ -30,6 +40,7 @@ type t = private
   ; ml_include_path : string list
   ; require_libs : (string * string option * bool option) list
   ; flags : Flags.t
+  ; warnings : Warning.t list
   ; kind : string  (** How the workspace was built *)
   ; debug : bool  (** Enable backtraces *)
   }

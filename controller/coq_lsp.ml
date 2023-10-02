@@ -31,10 +31,10 @@ let exit_message () =
 
 let lsp_cleanup () = exit_message ()
 
-let rec process_queue ~ofn ~state =
+let rec process_queue ~delay ~io ~ofn ~state : unit =
   if Fleche.Debug.sched_wakeup then
     LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
-  match dispatch_or_resume_check ~ofn ~state with
+  match dispatch_or_resume_check ~io ~ofn ~state with
   | None ->
     (* As of now, we exit the whole program here, we could try an experiment to
        invert the threads, so the I/O routine is a thread and process_queue is
@@ -44,19 +44,31 @@ let rec process_queue ~ofn ~state =
        I/O *)
     exit 0
   | Some (Yield state) ->
-    Thread.delay 0.1;
-    process_queue ~ofn ~state
-  | Some (Cont state) -> process_queue ~ofn ~state
+    Thread.delay delay;
+    process_queue ~delay ~io ~ofn ~state
+  | Some (Cont state) -> process_queue ~delay ~io ~ofn ~state
+
+let concise_cb ofn =
+  Fleche.Io.CallBack.
+    { trace = (fun _hdr ?extra:_ _msg -> ())
+    ; message = (fun ~lvl:_ ~message:_ -> ())
+    ; diagnostics =
+        (fun ~uri ~version diags ->
+          if List.length diags > 0 then
+            Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)
+    ; fileProgress = (fun ~uri:_ ~version:_ _progress -> ())
+    }
 
 (* Main loop *)
-let lsp_cb =
+let lsp_cb ofn =
   Fleche.Io.CallBack.
     { trace = LIO.trace
-    ; send_diagnostics =
-        (fun ~ofn ~uri ~version diags ->
+    ; message = LIO.logMessage
+    ; diagnostics =
+        (fun ~uri ~version diags ->
           Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)
-    ; send_fileProgress =
-        (fun ~ofn ~uri ~version progress ->
+    ; fileProgress =
+        (fun ~uri ~version progress ->
           Lsp.JFleche.mk_progress ~uri ~version progress |> ofn)
     }
 
@@ -77,7 +89,7 @@ let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug =
     | Init_effect.Loop -> lsp_init_loop ~ifn ~ofn ~cmdline ~debug
     | Init_effect.Success w -> w)
 
-let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
+let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay =
   (* Try to be sane w.r.t. \r\n in Windows *)
   Stdlib.set_binary_mode_in stdin true;
   Stdlib.set_binary_mode_out stdout true;
@@ -87,7 +99,9 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
   (* Set log channels *)
   let ofn = LIO.send_json Format.std_formatter in
   LIO.set_log_fn ofn;
-  Fleche.Io.CallBack.set lsp_cb;
+
+  let io = lsp_cb ofn in
+  Fleche.Io.CallBack.set io;
 
   (* IMPORTANT: LSP spec forbids any message from server to client before
      initialize is received *)
@@ -120,6 +134,16 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
   try
     (* LSP Server server initialization *)
     let workspaces = lsp_init_loop ~ifn ~ofn ~cmdline ~debug in
+    let io =
+      if !Fleche.Config.v.verbosity < 2 then (
+        Fleche.Config.(
+          v := { !v with send_diags = false; send_perf_data = false });
+        LIO.set_log_fn (fun _obj -> ());
+        let io = concise_cb ofn in
+        Fleche.Io.CallBack.set io;
+        io)
+      else io
+    in
 
     (* Core LSP loop context *)
     let state = { State.root_state; cmdline; workspaces } in
@@ -127,12 +151,15 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path =
     (* Read workspace state (noop for now) *)
     Cache.read_from_disk ();
 
-    let (_ : Thread.t) =
-      Thread.create (fun () -> process_queue ~ofn ~state) ()
-    in
+    let pfn () : unit = process_queue ~delay ~io ~ofn ~state in
+    let (_ : Thread.t) = Thread.create pfn () in
 
     read_loop ()
-  with exn ->
+  with
+  | Lsp_exit ->
+    let message = "[LSP shutdown] EOF\n" in
+    LIO.logMessage ~lvl:1 ~message
+  | exn ->
     let bt = Printexc.get_backtrace () in
     let exn, info = Exninfo.capture exn in
     let exn_msg = Printexc.to_string exn in
@@ -204,6 +231,10 @@ let ml_include_path : string list Term.t =
   Arg.(
     value & opt_all dir [] & info [ "I"; "ml-include-path" ] ~docv:"DIR" ~doc)
 
+let delay : float Term.t =
+  let doc = "Delay value in seconds when server is idle" in
+  Arg.(value & opt float 0.1 & info [ "D"; "idle-delay" ] ~docv:"DELAY" ~doc)
+
 let term_append l =
   Term.(List.(fold_right (fun t l -> const append $ t $ l) l (const [])))
 
@@ -219,10 +250,10 @@ let lsp_cmd : unit Cmd.t =
   let vo_load_path = term_append [ rload_path; load_path ] in
   Cmd.(
     v
-      (Cmd.info "coq-lsp" ~version:Version.server ~doc ~man)
+      (Cmd.info "coq-lsp" ~version:Fleche.Version.server ~doc ~man)
       Term.(
         const lsp_main $ bt $ coqcorelib $ coqlib $ ocamlpath $ vo_load_path
-        $ ml_include_path))
+        $ ml_include_path $ delay))
 
 let main () =
   let ecode = Cmd.eval lsp_cmd in

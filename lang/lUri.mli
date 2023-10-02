@@ -31,6 +31,9 @@ module File : sig
   (** compare *)
   val compare : t -> t -> int
 
+  (** equal *)
+  val equal : t -> t -> bool
+
   (** hash *)
   val hash : t -> int
 end

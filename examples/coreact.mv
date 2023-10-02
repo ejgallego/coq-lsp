@@ -1,0 +1,79 @@
+## Welcome to Coq LSP
+
+- You can edit this document as you please
+- Coq will recognize the code snippets as Coq
+- You will be able to save the document and link to other documents soon
+
+```coq
+From Coq Require Import List.
+Import ListNotations.
+
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
+```
+
+### Definition of a Category:
+
+$$
+f : A \to B \quad g : B \to C \quad g \circ f : A \to C
+$$
+
+```coq
+Record Category := {
+    carrier : Type
+  ; hom : carrier -> carrier -> Type
+  ; comp : forall A B C, hom A B -> hom B C -> hom A C
+  ; _ : forall A B C D (f : hom A B) (g : hom B C) (h : hom C D) ,
+      comp (comp f g) h = comp f (comp g h)
+}.
+```
+
+### Error recovery
+
+```coq
+Lemma addnC n m : n + m = m + n.
+Proof. induction n. 
+- now induction m.
+- 
+Qed.
+
+About addnC.
+```
+
+### Using Mermaid Diagrams:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Still
+    Still --> [*]
+    Still --> Moving
+    Moving --> Still
+    Moving --> Crash
+    Crash --> [*]
+```
+
+### Some random lemmas about lists
+
+```coq
+Lemma rev_snoc_cons A :
+  forall (x : A) (l : list A), rev (l ++ [x]) = x :: rev l.
+Proof.
+  induction l.
+  - reflexivity.
+  - simpl. rewrite IHl. simpl. reflexivity.
+Qed.
+```
+
+Try to update _above_ and **below**:
+```coq
+Theorem rev_rev A : forall (l : list A), rev (rev l) = l.
+Proof.
+  induction l.
+  - reflexivity.
+  - simpl. rewrite rev_snoc_cons. rewrite IHl.
+    reflexivity.
+Qed.
+```
+
+Please edit your code here!

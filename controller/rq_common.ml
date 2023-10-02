@@ -36,11 +36,10 @@ let find_id s c =
   Lsp.Io.trace "find_id" ("start: " ^ string_of_int start);
   id_from_start s start
 
-let get_id_at_point ~doc ~point =
+let get_id_at_point ~contents ~point =
   let line, character = point in
   Lsp.Io.trace "get_id_at_point"
     ("l: " ^ string_of_int line ^ " c: " ^ string_of_int character);
-  let { Fleche.Doc.contents; _ } = doc in
   let { Fleche.Contents.lines; _ } = contents in
   if line <= Array.length lines then
     let line = Array.get lines line in

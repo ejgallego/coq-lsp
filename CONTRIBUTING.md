@@ -59,8 +59,10 @@ generate it from the relevant entries in `CHANGES.md` at release time.
 ### Compilation
 
 #### Opam/Dune
-The server project uses a standard OCaml development setup based on Opam and
-Dune.
+The server project uses a standard OCaml development setup based on
+Opam and Dune. This also works on Windows using the [Coq Platform
+Source
+Install](https://github.com/coq/platform/blob/main/doc/README_Windows.md#installation-by-compiling-from-sources-using-opam-on-cygwin)
 
 1. Install the dependencies (the complete updated list of dependencies can be found in `coq-lsp.opam`).
 
@@ -69,7 +71,7 @@ Dune.
     ```
 
 2. Initialize submodules (the `main` branch uses some submodules, which we plan to get rid of soon. Branches `v8.x` can already skip this step.)
-  
+
     ```sh
     make submodules-init
     ```
@@ -85,7 +87,7 @@ Alternatively, you can also use the regular `dune build @check` etc... targets.
 
 #### Nix
 
-We have a Nix flake that you can use. 
+We have a Nix flake that you can use.
 
 1. Dependencies: for development it suffices to run `nix develop` to spawn a shell with the corresponding dependencies.
 
@@ -100,7 +102,7 @@ We have a Nix flake that you can use.
     ```
 
 2. Initialize submodules (the `main` branch uses some submodules, which we plan to get rid of soon. Branches `v8.x` can already skip this step.)
-  
+
     ```sh
     make submodules-init
     ```
@@ -124,6 +126,19 @@ nix build .?submodules=1
 
 This currently only applies to building the default package (`coq-lsp`), which is
 the server. Clients don't have specific submodules as of yet.
+
+When the flake is out-of-date, for instance when a new version of ocamlformat
+is out, you can update the flake inputs with:
+```sh
+nix flake update
+```
+
+You can also add the `dev` version build to your flake as:
+```nix
+inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
+...
+coq-lsp.packages.${system}.default
+```
 
 ### Code organization
 
@@ -153,27 +168,6 @@ Some tips:
   automatically.
 
 [ocamlformat]: https://github.com/ocaml-ppx/ocamlformat
-
-### Releasing
-
-`coq-lsp` is released using `dune-release tag` + `dune-release`.
-
-The checklist for the release as of today is the following:
-
-### Client:
-
-- update the client changelog at `editor/code/CHANGELOG.md`, commit
-- for the `main` branch: `dune release tag $coq_lsp_version`
-- check with `vsce ls` that the client contents are OK
-- `vsce publish`
-
-### Server:
-
-- sync branches for previous Coq versions, using `git merge`, test and push to CI.
-- `dune release tag` for each `$coq_lsp_version+$coq_version`
-- `dune release` for each version that should to the main opam repos
-- [optional] update pre-release packages to coq-opam-archive
-- [important] bump `version.ml` and `package.json` version string
 
 ## Client guide (VS Code Extension)
 
@@ -277,16 +271,69 @@ that, you want to use the web extension profile in the launch setup.
 The default build target will allow you to debug the extension by providing the
 right sourcemaps.
 
+### Nix:
+
+Nix can be configured to use the version of the VS Code extension from our `git` in the following way:
+```nix
+inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
+...
+programs.vscode = {
+  enable = true;
+  extensions = with pkgs.vscode-extensions; [
+    ...
+    inputs.coq-lsp.packages.${pkgs.system}.vscode-extension
+    ...
+  ];
+};
+```
+## Test-suite
+
+`coq-lsp` has a test-suite in the [test directory](./test), see the
+README there for more details.
+
+## Releasing
+
+`coq-lsp` is released using `dune-release tag` + `dune-release`.
+
+The checklist for the release as of today is the following:
+
+### Client:
+
+- update the client changelog at `editor/code/CHANGELOG.md`, commit
+- for the `main` branch: `dune release tag $coq_lsp_version`
+- check with `vsce ls` that the client contents are OK
+- `vsce publish`
+
+### Server:
+
+- sync branches for previous Coq versions, using `git merge`, test and push to CI.
+- `dune release tag` for each `$coq_lsp_version+$coq_version`
+- `dune release` for each version that should to the main opam repos
+- [optional] update pre-release packages to coq-opam-archive
+- [important] after the release, bump `version.ml` and `package.json` version string
+
+The above can be done with:
+```
+export COQLSPV=0.1.7
+git checkout main  && make                    && dune-release tag ${COQLSPV}
+git checkout v8.17 && git merge main  && make && dune-release tag ${COQLSPV}+8.17 && dune-release
+git checkout v8.16 && git merge v8.17 && make && dune-release tag ${COQLSPV}+8.16 && dune-release
+```
 
 ## Emacs
 
 You should be able to use `coq-lsp` with
-[eglot](https://joaotavora.github.io/eglot/).
+[eglot](https://joaotavora.github.io/eglot/) or [lsp-mode](https://github.com/emacs-lsp/lsp-mode)
 
-Emacs support is a goal of `coq-lsp`, so if you find any trouble using `eglot` or `lsp-mode` with `coq-lsp`, please don't hesitate to open an issue. 
+Emacs support is a goal of `coq-lsp`, so if you find any trouble using
+`eglot` or `lsp-mode` with `coq-lsp`, please don't hesitate to open an
+issue. See `coq-lsp` README for more notes on Emacs support.
 
 ## VIM
 
-You should be able to use `coq-lsp` with VIM. 
+You should be able to use `coq-lsp` with VIM.
 
-VIM support is a goal of `coq-lsp`, so if you find any trouble using `coq-lsp` with VIM, please don't hesitate to open an issue. 
+VIM support is a goal of `coq-lsp`, so if you find any trouble using
+`coq-lsp` with VIM, please don't hesitate to open an issue.
+
+See `coq-lsp` README for more notes on VIM support.

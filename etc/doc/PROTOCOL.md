@@ -79,6 +79,7 @@ In order to display proof goals and information at point, `coq-lsp` supports the
 interface GoalRequest {
     textDocument: VersionedTextDocumentIdentifier;
     position: Position;
+    pp_format?: 'Pp' | 'Str';
 }
 ```
 
@@ -162,6 +163,7 @@ was the default.
 #### Changelog
 
 - v0.1.7: program information added, rest of fields compatible with 0.1.6
+- v0.1.7: pp_format field added to request, backwards compatible
 - v0.1.6: the `Pp` parameter can now be either Coq's `Pp.t` type or `string` (default)
 - v0.1.5: message type does now include range and level
 - v0.1.4: goal type was made generic, the `stacks` and `def` fields are not null anymore, compatible v0.1.3 clients

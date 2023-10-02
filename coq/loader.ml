@@ -67,9 +67,12 @@ let map_serlib fl_pkg =
     check_package_exists serlib_name
   else None
 
-(* We are more liberal in the case a SerAPI plugin is not availabe, as the
-   fallbacks are "safe", tho will yield way worse incremental behavior for
-   expressions defined by the plugin *)
+(* We used to be liberal here in the case a SerAPI plugin was not available.
+   This proved to be a bad choice as Coq got confused when plugin loading
+   failed. Par-contre, we now need to make the list in `map_serlib` open, so
+   plugins can register whether they support serialization. I'm afraid that'll
+   have to happen via the finlib database as we cannot load anticipatedly a
+   plugin that may not exist. *)
 let safe_loader loader fl_pkg =
   try loader [fl_pkg]
   with
@@ -79,7 +82,7 @@ let safe_loader loader fl_pkg =
      Feedback.msg_warning
       Pp.(str "Loading findlib plugin: " ++ str fl_pkg
           ++ str "failed" ++ fnl () ++ exn_msg);
-    ()
+    Exninfo.iraise iexn
 
 let plugin_handler user_loader =
   let fl_loader = Option.default (Fl_dynload.load_packages ~debug:false) user_loader in

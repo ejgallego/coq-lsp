@@ -1,0 +1,7 @@
+(cram
+ (deps
+  (source_tree proj1)
+  (source_tree proj2)
+  ; For the plugins to be built
+  (package coq-lsp)
+  %{bin:fcc}))

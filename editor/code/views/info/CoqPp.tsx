@@ -23,14 +23,18 @@ export function CoqPp({
       return (
         <div
           style={{ display: "inline" }}
-          dangerouslySetInnerHTML={{ __html: rendered.prop("outerHTML") }}
+          dangerouslySetInnerHTML={{
+            __html: rendered.prop("outerHTML"),
+          }}
         ></div>
       );
     } else {
       let rendered = FormatPrettyPrint.pp2DOM(content, "vertical");
       return (
         <div
-          dangerouslySetInnerHTML={{ __html: rendered.prop("outerHTML") }}
+          dangerouslySetInnerHTML={{
+            __html: rendered.prop("outerHTML"),
+          }}
         ></div>
       );
     }

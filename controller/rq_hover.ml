@@ -7,9 +7,6 @@
 
 open Lsp.Core
 
-(* Debug parameters *)
-let show_loc_info = false
-
 (* Taken from printmod.ml, funny stuff! *)
 let build_ind_type mip = Inductive.type_of_inductive mip
 
@@ -98,7 +95,7 @@ let info_of_id ~st id =
   let st = Coq.State.to_coq st in
   let sigma, env =
     match st with
-    | { Vernacstate.lemmas = Some pstate; _ } ->
+    | { lemmas = Some pstate; _ } ->
       Vernacstate.LemmaStack.with_top pstate
         ~f:Declare.Proof.get_current_context
     | _ ->
@@ -119,41 +116,117 @@ let pp_typ id = function
     let nt = Pp.string_of_ppcmds nt in
     Format.(asprintf "```coq\n%s\n```" nt)
 
-let if_bool b l = if b then [ l ] else []
-let to_list = Option.cata (fun x -> [ x ]) []
+let to_list x = Option.cata (fun x -> [ x ]) [] x
 
-let hover ~doc ~node ~point =
-  let open Fleche in
-  let range = Doc.Node.range node in
-  let info = Doc.Node.info node in
-  let range_string = Format.asprintf "%a" Lang.Range.pp range in
-  let stats_string = Doc.Node.Info.print info in
-  let type_string =
-    Option.bind (Rq_common.get_id_at_point ~doc ~point) (fun id ->
-        Option.map (pp_typ id) (info_of_id_at_point ~node id))
-  in
-  let hovers =
-    if_bool show_loc_info range_string
-    @ if_bool !Config.v.show_stats_on_hover stats_string
-    @ to_list type_string
-  in
+let info_type ~contents ~point ~node : string option =
+  Option.bind (Rq_common.get_id_at_point ~contents ~point) (fun id ->
+      Option.map (pp_typ id) (info_of_id_at_point ~node id))
+
+let extract_def ~point:_ (def : Vernacexpr.definition_expr) :
+    Constrexpr.constr_expr list =
+  match def with
+  | Vernacexpr.ProveBody (_bl, et) -> [ et ]
+  | Vernacexpr.DefineBody (_bl, _, et, eb) -> [ et ] @ to_list eb
+
+let extract_pexpr ~point:_ (pexpr : Vernacexpr.proof_expr) :
+    Constrexpr.constr_expr list =
+  let _id, (_bl, et) = pexpr in
+  [ et ]
+
+let extract ~point ast =
+  match (Coq.Ast.to_coq ast).v.expr with
+  | Vernacexpr.(VernacDefinition (_, _, expr)) -> extract_def ~point expr
+  | Vernacexpr.(VernacStartTheoremProof (_, pexpr)) ->
+    List.concat_map (extract_pexpr ~point) pexpr
+  | _ -> []
+
+let ntn_key_info (_entry, key) = "notation: " ^ key
+
+let info_notation ~point (ast : Fleche.Doc.Node.Ast.t) =
+  (* XXX: Iterate over the results *)
+  match extract ~point ast.v with
+  | { CAst.v = Constrexpr.CNotation (_, key, _params); _ } :: _ ->
+    Some (ntn_key_info key)
+  | _ -> None
+
+let info_notation ~contents:_ ~point ~node : string option =
+  Option.bind node.Fleche.Doc.Node.ast (info_notation ~point)
+
+open Fleche
+
+(* Hover handler *)
+module Handler = struct
+  (** Returns [Some markdown] if there is some hover to match *)
+  type 'node h =
+    contents:Contents.t -> point:int * int -> node:'node -> string option
+
+  type t =
+    | MaybeNode : Doc.Node.t option h -> t
+    | WithNode : Doc.Node.t h -> t
+end
+
+module type HoverProvider = sig
+  val h : Handler.t
+end
+
+module Loc_info : HoverProvider = struct
+  let enabled = false
+
+  let h ~contents:_ ~point:_ ~node =
+    match node with
+    | None -> "no node here"
+    | Some node ->
+      let range = Doc.Node.range node in
+      Format.asprintf "%a" Lang.Range.pp range
+
+  let h ~contents ~point ~node =
+    if enabled then Some (h ~contents ~point ~node) else None
+
+  let h = Handler.MaybeNode h
+end
+
+module Stats : HoverProvider = struct
+  let h ~contents:_ ~point:_ ~node =
+    if !Config.v.show_stats_on_hover then Some Doc.Node.(Info.print (info node))
+    else None
+
+  let h = Handler.WithNode h
+end
+
+module Type : HoverProvider = struct
+  let h = Handler.WithNode info_type
+end
+
+module Notation : HoverProvider = struct
+  let h = Handler.WithNode info_notation
+end
+
+module Register = struct
+  let handlers : Handler.t list ref = ref []
+  let add fn = handlers := fn :: !handlers
+
+  let handle ~contents ~point ~node = function
+    | Handler.MaybeNode h -> h ~contents ~point ~node
+    | Handler.WithNode h ->
+      Option.bind node (fun node -> h ~contents ~point ~node)
+
+  let fire ~contents ~point ~node =
+    List.filter_map (handle ~contents ~point ~node) !handlers
+end
+
+(* Register in-file hover plugins *)
+let () = List.iter Register.add [ Loc_info.h; Stats.h; Type.h; Notation.h ]
+
+let hover ~doc ~point =
+  let contents = doc.Doc.contents in
+  let node = Info.LC.node ~doc ~point Exact in
+  let range = Option.map Doc.Node.range node in
+  let hovers = Register.fire ~contents ~point ~node in
   match hovers with
   | [] -> `Null
   | hovers ->
-    let range = Some range in
     let value = String.concat "\n___\n" hovers in
     let contents = { HoverContents.kind = "markdown"; value } in
     HoverInfo.(to_yojson { contents; range })
 
-let hover ~doc ~point =
-  let node = Fleche.Info.LC.node ~doc ~point Exact in
-  (match node with
-  | None ->
-    if show_loc_info then
-      let contents =
-        { HoverContents.kind = "markdown"; value = "no node here" }
-      in
-      HoverInfo.(to_yojson { contents; range = None })
-    else `Null
-  | Some node -> hover ~doc ~node ~point)
-  |> Result.ok
+let hover ~doc ~point = hover ~doc ~point |> Result.ok

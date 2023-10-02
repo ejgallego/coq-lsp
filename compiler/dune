@@ -1,0 +1,10 @@
+(library
+ (name fcc_lib)
+ (modules :standard \ fcc)
+ ; LSP is used to print diagnostics, etc...
+ (libraries fleche lsp))
+
+(executable
+ (public_name fcc)
+ (modules fcc)
+ (libraries cmdliner fcc_lib))

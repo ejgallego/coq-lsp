@@ -6,6 +6,7 @@
 (************************************************************************)
 
 let request ~(doc : Fleche.Doc.t) ~point =
+  let { Fleche.Doc.contents; _ } = doc in
   Option.cata
     (fun id_at_point ->
       let { Fleche.Doc.toc; _ } = doc in
@@ -15,5 +16,5 @@ let request ~(doc : Fleche.Doc.t) ~point =
         Lsp.Core.Location.({ uri; range } |> to_yojson)
       | None -> `Null)
     `Null
-    (Rq_common.get_id_at_point ~doc ~point)
+    (Rq_common.get_id_at_point ~contents ~point)
   |> Result.ok

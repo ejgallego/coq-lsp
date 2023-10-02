@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - main
+      - v8.18
       - v8.17
       - v8.16
       - v8.15
   pull_request:
     branches:
       - main
+      - v8.18
       - v8.17
       - v8.16
       - v8.15
@@ -59,18 +61,24 @@ jobs:
       - name: 🐫🐪🐫 Get dependencies
         run: opam exec -- make opam-deps
 
+      - name: 🐛 Test coq-lsp
+        if: matrix.os == 'windows-latest'
+        run: opam exec -- make winconfig
+
       - name: 🧱 Build coq-lsp
         run: opam exec -- make build
 
       - name: 🐛 Test coq-lsp
-        if: matrix.os != 'windows-latest'
         run: opam exec -- make test
+
+      - name: 🐛 Test fcc
+        run: opam exec -- make test-compiler
 
   build-nix:
     name: Nix
     strategy:
       matrix:
-        os: [macOS-latest, ubuntu-latest]
+        os: [ubuntu-latest, macOS-latest]
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -82,7 +90,7 @@ jobs:
           submodules: recursive
 
       - name: ❄️ Setup Nix
-        uses: cachix/install-nix-action@v18
+        uses: cachix/install-nix-action@v22
 
       - name: 🧱 Build coq-lsp
         run: nix build .?submodules=1
@@ -98,9 +106,9 @@ jobs:
       - name: 🚀 Setup node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
       - run: npm ci
-      - run: npx --yes vsce ls
+      - run: npx --yes @vscode/vsce ls
 
   nix-flake-check:
     name: Nix Flake Check

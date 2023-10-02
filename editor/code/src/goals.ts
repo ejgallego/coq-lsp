@@ -1,4 +1,12 @@
-import { Position, Uri, WebviewPanel, window, ViewColumn } from "vscode";
+import {
+  Position,
+  Uri,
+  WebviewPanel,
+  window,
+  ViewColumn,
+  extensions,
+  commands,
+} from "vscode";
 import {
   BaseLanguageClient,
   RequestType,
@@ -80,6 +88,11 @@ export class InfoPanel {
     this.postMessage("renderGoals", goals);
   }
 
+  requestVizxDisplay(goals: GoalAnswer<PpString>) {
+    console.log(goals);
+    commands.executeCommand("vizx.lspRender", goals);
+  }
+
   // notify the info panel that we found an error
   requestError(e: any) {
     this.postMessage("infoError", e);
@@ -90,6 +103,15 @@ export class InfoPanel {
     this.requestSent(params);
     client.sendRequest(infoReq, params).then(
       (goals) => this.requestDisplay(goals),
+      (reason) => this.requestError(reason)
+    );
+  }
+
+  sendVizxRequest(client: BaseLanguageClient, params: GoalRequest) {
+    this.requestSent(params);
+    console.log(params.pp_format);
+    client.sendRequest(infoReq, params).then(
+      (goals) => this.requestVizxDisplay(goals),
       (reason) => this.requestError(reason)
     );
   }
@@ -105,6 +127,16 @@ export class InfoPanel {
       version
     );
     let cursor: GoalRequest = { textDocument, position };
+    let strCursor: GoalRequest = {
+      textDocument,
+      position,
+      pp_format: "Str",
+    };
     this.sendGoalsRequest(client, cursor);
+    let vizx = extensions.getExtension("inQWIRE.vizx");
+    if (vizx?.isActive) {
+      console.log("vizx active in updateFromServer");
+      this.sendVizxRequest(client, strCursor);
+    }
   }
 }
