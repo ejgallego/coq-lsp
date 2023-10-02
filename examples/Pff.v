@@ -13,7 +13,7 @@ Require Export Even.
 Require Import Psatz.
 
 (*** was file sTactic.v  ***)
-
+Set Warnings "-deprecated-syntactic-definition".
 (****************************************************************************
 
           IEEE754  :  sTactic

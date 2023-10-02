@@ -175,7 +175,24 @@ module Check : sig
   val deschedule : uri:Lang.LUri.File.t -> unit
   val maybe_check : io:Io.CallBack.t -> (Int.Set.t * Doc.t) option
 end = struct
-  let pending = ref None
+  let pending = ref []
+
+  let pend_pop = function
+    | [] -> []
+    | _ :: p -> p
+
+  (** Push to front; beware of complexity here? Usually we don't have more than
+      10-20 files open in this use case; other use cases may require a more
+      efficient data-structure. *)
+  let pend_push uri pend = uri :: CList.remove Lang.LUri.File.equal uri pend
+
+  (** Try until [Some] *)
+  let rec pend_try f = function
+    | [] -> None
+    | l :: tt -> (
+      match f l with
+      | None -> pend_try f tt
+      | Some r -> Some r)
 
   let get_check_target pt_requests =
     let target_of_pt_handle (_, (l, c)) = Doc.Target.Position (l, c) in
@@ -191,19 +208,20 @@ end = struct
       let requests = Handle.update_doc_info ~handle ~doc in
       if Doc.Completion.is_completed doc.completed then Register.fire ~io ~doc;
       (* Remove from the queu *)
-      if Doc.Completion.is_completed doc.completed then pending := None;
+      if Doc.Completion.is_completed doc.completed then
+        pending := pend_pop !pending;
       Some (requests, doc)
     | None ->
+      pending := pend_pop !pending;
       Io.Log.trace "Check.check"
         ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
       None
 
-  let maybe_check ~io = Option.bind !pending (fun uri -> check ~io ~uri)
-  let schedule ~uri = pending := Some uri
+  let maybe_check ~io = pend_try (fun uri -> check ~io ~uri) !pending
+  let schedule ~uri = pending := pend_push uri !pending
 
   let deschedule ~uri =
-    if Option.compare Lang.LUri.File.compare (Some uri) !pending = 0 then
-      pending := None
+    pending := CList.remove Lang.LUri.File.equal uri !pending
 end
 
 let send_error_permanent_fail ~io ~uri ~version message =
@@ -355,6 +373,7 @@ module Request = struct
           if Doc.Completion.is_completed doc.completed then Now doc
           else (
             Handle.attach_cp_request ~uri ~id;
+            Check.schedule ~uri;
             Postpone))
     | PosInDoc { uri; point; version; postpone } ->
       with_doc ~uri ~f:(fun doc ->
@@ -363,6 +382,7 @@ module Request = struct
           | true, _ -> Now doc
           | false, true ->
             Handle.attach_pt_request ~uri ~id ~point;
+            Check.schedule ~uri;
             Postpone
           | false, false -> Cancel)
 
