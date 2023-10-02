@@ -7,9 +7,6 @@
 
 open Lsp.Core
 
-(* Debug parameters *)
-let show_loc_info = false
-
 (* Taken from printmod.ml, funny stuff! *)
 let build_ind_type mip = Inductive.type_of_inductive mip
 
@@ -121,10 +118,9 @@ let pp_typ id = function
     let nt = Pp.string_of_ppcmds nt in
     Format.(asprintf "```coq\n%s\n```" nt)
 
-let if_bool b l = if b then [ l ] else []
 let to_list x = Option.cata (fun x -> [ x ]) [] x
 
-let info_type ~contents ~node ~point : string option =
+let info_type ~contents ~point ~node : string option =
   Option.bind (Rq_common.get_id_at_point ~contents ~point) (fun id ->
       Option.map (pp_typ id) (info_of_id_at_point ~node id))
 
@@ -156,40 +152,75 @@ let info_notation ~point (ast : Fleche.Doc.Node.Ast.t) =
     Some (ntn_key_info key)
   | _ -> None
 
-let info_notation ~node ~point : string option =
+let info_notation ~contents:_ ~point ~node : string option =
   Option.bind node.Fleche.Doc.Node.ast (info_notation ~point)
 
-let hover ~doc ~node ~point =
-  let open Fleche in
-  let contents = doc.Fleche.Doc.contents in
-  let range = Doc.Node.range node in
-  let info = Doc.Node.info node in
-  let range_string = Format.asprintf "%a" Lang.Range.pp range in
-  let stats_string = Doc.Node.Info.print info in
-  let type_string = info_type ~contents ~node ~point in
-  let notation_string = info_notation ~node ~point in
-  let hovers =
-    if_bool show_loc_info range_string
-    @ if_bool !Config.v.show_stats_on_hover stats_string
-    @ to_list type_string @ to_list notation_string
-  in
+open Fleche
+
+(* Hover handler *)
+module Handler = struct
+  (** Returns [Some markdown] if there is some hover to match *)
+  type 'node h =
+    contents:Contents.t -> point:int * int -> node:'node -> string option
+
+  type t =
+    | MaybeNode : Doc.Node.t option h -> t
+    | WithNode : Doc.Node.t h -> t
+end
+
+module type HoverProvider = sig
+  val h : Handler.t
+end
+
+module Loc_info : HoverProvider = struct
+  let enabled = false
+
+  let h ~contents:_ ~point:_ ~node =
+    match node with
+    | None -> "no node here"
+    | Some node ->
+      let range = Doc.Node.range node in
+      Format.asprintf "%a" Lang.Range.pp range
+
+  let h ~contents ~point ~node =
+    if enabled then Some (h ~contents ~point ~node) else None
+
+  let h = Handler.MaybeNode h
+end
+
+module Stats : HoverProvider = struct
+  let h ~contents:_ ~point:_ ~node =
+    if !Config.v.show_stats_on_hover then Some Doc.Node.(Info.print (info node))
+    else None
+
+  let h = Handler.WithNode h
+end
+
+module Type : HoverProvider = struct
+  let h = Handler.WithNode info_type
+end
+
+module Notation : HoverProvider = struct
+  let h = Handler.WithNode info_notation
+end
+
+let handlers : Handler.t list = [ Loc_info.h; Stats.h; Type.h; Notation.h ]
+
+let handle_hover ~contents ~point ~node = function
+  | Handler.MaybeNode h -> h ~contents ~point ~node
+  | Handler.WithNode h ->
+    Option.bind node (fun node -> h ~contents ~point ~node)
+
+let hover ~doc ~point =
+  let contents = doc.Doc.contents in
+  let node = Info.LC.node ~doc ~point Exact in
+  let range = Option.map Doc.Node.range node in
+  let hovers = List.filter_map (handle_hover ~contents ~point ~node) handlers in
   match hovers with
   | [] -> `Null
   | hovers ->
-    let range = Some range in
     let value = String.concat "\n___\n" hovers in
     let contents = { HoverContents.kind = "markdown"; value } in
     HoverInfo.(to_yojson { contents; range })
 
-let hover ~doc ~point =
-  let node = Fleche.Info.LC.node ~doc ~point Exact in
-  (match node with
-  | None ->
-    if show_loc_info then
-      let contents =
-        { HoverContents.kind = "markdown"; value = "no node here" }
-      in
-      HoverInfo.(to_yojson { contents; range = None })
-    else `Null
-  | Some node -> hover ~doc ~node ~point)
-  |> Result.ok
+let hover ~doc ~point = hover ~doc ~point |> Result.ok
