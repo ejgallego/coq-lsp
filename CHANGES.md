@@ -26,6 +26,8 @@
    people to build their own more refined notation feedback systems
    (@ejgallego, #562)
  - Hover request can now be extended by plugins (@ejgallego, #562)
+ - Updated LSP and JS client libs, notably to vscode-languageclient 9
+   (@ejgallego, #565)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
