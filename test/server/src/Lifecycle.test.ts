@@ -17,7 +17,7 @@ test("initialize with empty capabilities and rootPath (absolute)", async () => {
   };
   let result = await languageServer.sendRequest(
     Protocol.InitializeRequest.type,
-    initializeParameters
+    initializeParameters,
   );
   expect(result.capabilities).toBeTruthy();
   await languageServer.exit();
@@ -34,7 +34,7 @@ test("initialize with empty capabilities and rootURI", async () => {
   };
   let result = await languageServer.sendRequest(
     Protocol.InitializeRequest.type,
-    initializeParameters
+    initializeParameters,
   );
   expect(result.capabilities).toBeTruthy();
   await languageServer.exit();
