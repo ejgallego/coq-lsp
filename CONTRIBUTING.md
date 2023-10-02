@@ -59,8 +59,10 @@ generate it from the relevant entries in `CHANGES.md` at release time.
 ### Compilation
 
 #### Opam/Dune
-The server project uses a standard OCaml development setup based on Opam and
-Dune.
+The server project uses a standard OCaml development setup based on
+Opam and Dune. This also works on Windows using the [Coq Platform
+Source
+Install](https://github.com/coq/platform/blob/main/doc/README_Windows.md#installation-by-compiling-from-sources-using-opam-on-cygwin)
 
 1. Install the dependencies (the complete updated list of dependencies can be found in `coq-lsp.opam`).
 
@@ -69,7 +71,7 @@ Dune.
     ```
 
 2. Initialize submodules (the `main` branch uses some submodules, which we plan to get rid of soon. Branches `v8.x` can already skip this step.)
-  
+
     ```sh
     make submodules-init
     ```
@@ -85,7 +87,7 @@ Alternatively, you can also use the regular `dune build @check` etc... targets.
 
 #### Nix
 
-We have a Nix flake that you can use. 
+We have a Nix flake that you can use.
 
 1. Dependencies: for development it suffices to run `nix develop` to spawn a shell with the corresponding dependencies.
 
@@ -100,7 +102,7 @@ We have a Nix flake that you can use.
     ```
 
 2. Initialize submodules (the `main` branch uses some submodules, which we plan to get rid of soon. Branches `v8.x` can already skip this step.)
-  
+
     ```sh
     make submodules-init
     ```
@@ -269,6 +271,21 @@ that, you want to use the web extension profile in the launch setup.
 The default build target will allow you to debug the extension by providing the
 right sourcemaps.
 
+### Nix:
+
+Nix can be configured to use the version of the VS Code extension from our `git` in the following way:
+```nix
+inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
+...
+programs.vscode = {
+  enable = true;
+  extensions = with pkgs.vscode-extensions; [
+    ...
+    inputs.coq-lsp.packages.${pkgs.system}.vscode-extension
+    ...
+  ];
+};
+```
 ## Test-suite
 
 `coq-lsp` has a test-suite in the [test directory](./test), see the

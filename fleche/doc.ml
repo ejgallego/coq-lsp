@@ -423,7 +423,8 @@ let rec find_proof_start nodes =
   | { Node.ast = None; _ } :: ns -> find_proof_start ns
   | ({ ast = Some ast; _ } as n) :: ns -> (
     match (Node.Ast.to_coq ast).CAst.v.Vernacexpr.expr with
-    | Vernacexpr.VernacSynPure (VernacStartTheoremProof _) ->
+    | Vernacexpr.VernacSynPure (VernacStartTheoremProof _)
+    | VernacSynPure (VernacDefinition (_, _, ProveBody _)) ->
       Some (n, Util.hd_opt ns)
     | _ -> find_proof_start ns)
 
