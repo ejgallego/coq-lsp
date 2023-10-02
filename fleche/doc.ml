@@ -447,8 +447,25 @@ let log_qed_recovery v =
         ("success" ^ loc_msg ^ " " ^ Memo.Interp.input_info (st, v));
       st)
 
-(* Simple heuristic for Qed. *)
-let state_recovery_heuristic doc st v =
+(* Contents-based recovery heuristic, special 'Qed.' case when `Qed.` is part of
+   the error *)
+let extract_qed Lang.Range.{ end_; _ } { Contents.lines; _ } =
+  let Lang.Point.{ line; character; _ } = end_ in
+  let line = Array.get lines line in
+  if character > 3 && String.length line > 3 then
+    let coff = character - 4 in
+    Some (String.init 3 (fun idx -> line.[idx + coff]))
+  else None
+
+let qed_lex_recovery last_tok contents nodes st =
+  match extract_qed last_tok contents with
+  | Some txt when String.equal txt "Qed" ->
+    Io.Log.trace "lex recovery" "qed detected";
+    recovery_for_failed_qed ~default:st nodes |> Coq.Protect.E.map ~f:fst
+  | Some _ | None -> Coq.Protect.E.ok st
+
+(* AST-based heuristics: Qed, bullets, ... *)
+let state_recovery_heuristic last_tok doc st v =
   match (Node.Ast.to_coq v).CAst.v.Vernacexpr.expr with
   (* Drop the top proof state if we reach a faulty Qed. *)
   | Vernacexpr.VernacSynPure (VernacEndProof _) ->
@@ -459,7 +476,9 @@ let state_recovery_heuristic doc st v =
     Io.Log.trace "recovery" "bullet";
     Coq.State.admit_goal ~st
     |> Coq.Protect.E.bind ~f:(fun st -> Coq.Interp.interp ~st v.v)
-  | _ -> Coq.Protect.E.ok st
+  | _ ->
+    (* Fallback to qed special lex case *)
+    qed_lex_recovery last_tok doc.contents doc.nodes st
 
 let interp_and_info ~parsing_time ~st ast =
   let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
@@ -558,8 +577,12 @@ let strategy_of_coq_err ~node ~state ~last_tok = function
   | User _ -> Continue { state; last_tok; node }
 
 (* XXX: This should be refined. *)
-let recovery_interp ~doc ~st ~ast =
-  let { Coq.Protect.E.r; feedback = _ } = state_recovery_heuristic doc st ast in
+let recovery_interp ~doc ~st ?ast last_tok =
+  let { Coq.Protect.E.r; feedback = _ } =
+    match ast with
+    | None -> qed_lex_recovery last_tok doc.contents doc.nodes st
+    | Some ast -> state_recovery_heuristic last_tok doc st ast
+  in
   match r with
   | Interrupted -> st
   | Completed (Ok st) -> st
@@ -578,7 +601,7 @@ let node_of_coq_result ~doc ~range ~ast ~st ~parsing_diags ~parsing_feedback
   | Error (User (err_range, msg) as coq_err) ->
     let err_range = Option.default range err_range in
     let err_diags = [ Diags.error ~range:err_range ~msg ~ast ] in
-    let recovery_st = recovery_interp ~doc ~st ~ast in
+    let recovery_st = recovery_interp ~doc ~st ~ast last_tok in
     let node =
       parsed_node ~range ~ast ~state:recovery_st ~parsing_diags
         ~parsing_feedback ~diags:err_diags ~feedback ~info
@@ -599,6 +622,7 @@ let document_action ~st ~parsing_diags ~parsing_feedback ~parsing_time ~doc
     Stop (completed, node)
   (* Parsing error *)
   | Skip (span_range, last_tok) ->
+    let st = recovery_interp ~doc ~st last_tok in
     let node =
       unparseable_node ~range:span_range ~parsing_diags ~parsing_feedback
         ~state:st ~parsing_time

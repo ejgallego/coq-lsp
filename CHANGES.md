@@ -3,7 +3,8 @@
 
  - Update VSCode client dependencies, should bring some performance
    improvements to goal pretty printing (@ejgallego, #530)
- - Update goal display colors for light mode so they are actually readable now. (@bhaktishh, #539, fixes #532)
+ - Update goal display colors for light mode so they are actually
+   readable now. (@bhaktishh, #539, fixes #532)
  - Added link to Python coq-lsp client by Pedro Carrot and Nuno
    Saavedra (@Nfsaavedra, #536)
  - Properly concatenate warnings from _CoqProject (@ejgallego,
@@ -32,6 +33,9 @@
    background as more documents will be checked, but provides a few
    usability improvements (@ejgallego, #566, fixes #563, reported by
    Ali Caglayan)
+ - New lexical qed detection error recovery rule; this makes a very
+   large usability difference in practice when editing inside proofs.
+   (@ejgallego, #567, fixes #33)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------

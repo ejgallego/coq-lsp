@@ -1,6 +1,23 @@
 {
   description = "A language server (LSP) for the Coq theorem prover";
 
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    treefmt.url = "github:numtide/treefmt-nix";
+
+    napalm.url = "github:nix-community/napalm";
+
+    flake-compat = {
+      url = "github:edolstra/flake-compat";
+      flake = false;
+    };
+
+    coq-serapi = {
+      url = "github:ejgallego/coq-serapi/v8.18";
+      flake = false;
+    };
+  };
+
   outputs = inputs @ {
     self,
     flake-parts,
@@ -18,9 +35,9 @@
         ...
       }: let
         l = lib // builtins;
-        coq_8_17 = pkgs.coqPackages_8_17;
-        coqPackages = coq_8_17.coqPackages;
-        ocamlPackages = coq_8_17.coq.ocamlPackages;
+        coqpkg = pkgs.coqPackages_8_18;
+        coqPackages = coqpkg.coqPackages;
+        ocamlPackages = coqpkg.coq.ocamlPackages;
       in {
         packages.default = config.packages.coq-lsp;
 
@@ -29,7 +46,7 @@
           duneVersion = "3";
 
           pname = "coq-lsp";
-          version = "${self.lastModifiedDate}+8.17-rc1";
+          version = "${self.lastModifiedDate}+8.18-rc1";
 
           src = self.outPath;
 
@@ -40,7 +57,7 @@
           propagatedBuildInputs = let
             serapi =
               (coqPackages.lib.overrideCoqDerivation {
-                  defaultVersion = "8.17.0+0.17.0";
+                  defaultVersion = "8.18.0+0.18.0";
                 }
                 coqPackages.serapi)
               .overrideAttrs (_: {
@@ -78,21 +95,4 @@
         };
       };
     };
-
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    treefmt.url = "github:numtide/treefmt-nix";
-
-    napalm.url = "github:nix-community/napalm";
-
-    flake-compat = {
-      url = "github:edolstra/flake-compat";
-      flake = false;
-    };
-
-    coq-serapi = {
-      url = "github:ejgallego/coq-serapi/v8.17";
-      flake = false;
-    };
-  };
 }
