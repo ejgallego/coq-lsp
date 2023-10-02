@@ -32,6 +32,9 @@
    background as more documents will be checked, but provides a few
    usability improvements (@ejgallego, #566, fixes #563, reported by
    Ali Caglayan)
+ - New lexical qed detection error recovery rule; this makes a very
+   large usability difference in practice when editing inside proofs.
+   (@ejgallego, #567, fixes #33)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
