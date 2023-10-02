@@ -124,7 +124,8 @@ module Handle = struct
       in
       let handle = { handle with pt_requests = delayed } in
       (handle, pt_ids fullfilled)
-    | Failed _ | FailedPermanent _ -> (handle, Int.Set.empty)
+    | WorkspaceUpdated _ | Failed _ | FailedPermanent _ ->
+      (handle, Int.Set.empty)
 
   (* trigger pending incremental requests *)
   let update_doc_info ~handle ~(doc : Doc.t) =
@@ -267,8 +268,6 @@ let change ~io:_ ~(doc : Doc.t) ~version ~raw =
   Io.Log.trace "bump file"
     (Lang.LUri.File.to_string_uri uri ^ " / version: " ^ string_of_int version);
   let tb = Unix.gettimeofday () in
-  (* The discrepancy here will be solved once we remove the [Protect.*.t] types
-     from `doc.mli` *)
   let doc = Doc.bump_version ~version ~raw doc in
   let diff = Unix.gettimeofday () -. tb in
   Io.Log.trace "bump file took" (Format.asprintf "%f" diff);
@@ -332,6 +331,7 @@ module Request = struct
       | Yes _ -> true
       | Failed range | FailedPermanent range | Stopped range ->
         Doc.Target.reached ~range (line, col)
+      | WorkspaceUpdated _ -> false
     in
     let in_range =
       match version with

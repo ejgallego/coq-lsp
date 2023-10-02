@@ -30,6 +30,8 @@ module R = struct
   let map_loc ~f =
     let f (loc, msg) = (Option.map f loc, msg) in
     map_error ~f
+
+  let ok v = Completed (Ok v)
 end
 
 (* Eval and reify exceptions *)

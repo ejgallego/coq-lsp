@@ -183,16 +183,22 @@ module Completion = struct
   type t =
     | Yes of Lang.Range.t  (** Location of the last token in the document *)
     | Stopped of Lang.Range.t  (** Location of the last valid token *)
+    | WorkspaceUpdated of Lang.Range.t  (** Location of the last valid token *)
     | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
     | FailedPermanent of Lang.Range.t
         (** Temporal Coq hack, avoids any computation *)
 
   let range = function
-    | Yes range | Stopped range | Failed range | FailedPermanent range -> range
+    | Yes range
+    | Stopped range
+    | WorkspaceUpdated range
+    | Failed range
+    | FailedPermanent range -> range
 
   let to_string = function
     | Yes _ -> "fully checked"
     | Stopped _ -> "stopped"
+    | WorkspaceUpdated _ -> "workspace was updated"
     | Failed _ -> "failed"
     | FailedPermanent _ -> "refused to create due to Coq parsing bug"
 
@@ -229,7 +235,7 @@ type t =
   ; root : Coq.State.t
         (** [root] contains the first state document state, obtained by applying
             a workspace to Coq's initial state *)
-  ; diags_dirty : bool  (** internal field *)
+  ; diags_dirty : bool  (** internal field, used to optimize `eager_diagnostics` *)
   }
 
 (* Flatten the list of document asts *)
@@ -441,6 +447,7 @@ let bump_version ~version ~(contents : Contents.t) doc =
   (* We can do better, but we need to handle the case where the anomaly is when
      restoring / executing the first sentence *)
   | FailedPermanent _ -> doc
+  | WorkspaceUpdated _
   | Failed _ ->
     (* re-create the document on failed, as the env may have changed *)
     recreate ~doc ~version ~contents
@@ -453,6 +460,10 @@ let bump_version ~version ~raw doc =
     let completed range = Completion.Failed range in
     conv_error_doc ~raw ~uri ~version ~env:doc.env ~root:doc.root ~completed e
   | Contents.R.Ok contents -> bump_version ~version ~contents doc
+
+let update_env ~doc ~env =
+  let range = Completion.range doc.completed in
+  { doc with completed = WorkspaceUpdated range; env }
 
 let add_node ~node doc =
   let diags_dirty = if node.Node.diags <> [] then true else doc.diags_dirty in
@@ -927,6 +938,11 @@ let check ~io ~target ~doc () =
   | FailedPermanent _ | Failed _ ->
     Io.Log.trace "check" "can't resume, failed=yes, nothing to do";
     doc
+  | WorkspaceUpdated _ ->
+    Io.Log.trace "check" "resuming, full workspace update";
+    (* XXX *)
+    let state, workspace, uri = (doc.init, doc.workspace, doc.uri) in
+    create_doc ~state ~workspace ~uri ~version ~contents
   | Stopped last_tok ->
     DDebug.resume last_tok doc.version;
     let doc = resume_check ~io ~last_tok ~doc ~target in

@@ -13,7 +13,8 @@ let to_completed = function
   | Fleche.Doc.Completion.Yes range ->
     { Lsp.JFleche.CompletionStatus.status = `Yes; range }
   | Stopped range -> { status = `Stopped; range }
-  | Failed range | FailedPermanent range -> { status = `Failed; range }
+  | WorkspaceUpdated range | Failed range | FailedPermanent range ->
+    { status = `Failed; range }
 
 let request ~doc =
   let { Fleche.Doc.nodes; completed; _ } = doc in

@@ -25,6 +25,9 @@ module R : sig
   (** Update the loc stored in the result, this is used by our cache-aware
       location *)
   val map_loc : f:('l -> 'm) -> ('a, 'l) t -> ('a, 'm) t
+
+  (** Special case, prefer [E.ok] below *)
+  val ok : 'a -> ('a, 'l) t
 end
 
 module E : sig

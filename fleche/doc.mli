@@ -51,6 +51,9 @@ module Completion : sig
   type t = private
     | Yes of Lang.Range.t  (** Location of the last token in the document *)
     | Stopped of Lang.Range.t  (** Location of the last valid token *)
+    | WorkspaceUpdated of Lang.Range.t
+        (** The Workspace Environment was updated, document may need full
+            restart *)
     | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
     | FailedPermanent of Lang.Range.t
         (** Temporal Coq hack, avoids any computation *)
@@ -104,6 +107,11 @@ val create : env:Env.t -> uri:Lang.LUri.File.t -> version:int -> raw:string -> t
     incremental checking. If the operation fails, the document will be left in
     `Failed` state. *)
 val bump_version : version:int -> raw:string -> t -> t
+
+(** Notify the document the workspace / environment has changed. For
+    now amounts to re-creating a new document with the updated
+    environment. *)
+val update_env : doc:t -> env:Env.t -> t
 
 (** Checking targets, this specifies what we expect check to reach *)
 module Target : sig
