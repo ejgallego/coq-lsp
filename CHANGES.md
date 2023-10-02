@@ -28,6 +28,10 @@
  - Hover request can now be extended by plugins (@ejgallego, #562)
  - Updated LSP and JS client libs, notably to vscode-languageclient 9
    (@ejgallego, #565)
+ - Implement a LIFO document scheduler, this is heavier in the
+   background as more documents will be checked, but provides a few
+   usability improvements (@ejgallego, #566, fixes #563, reported by
+   Ali Caglayan)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
