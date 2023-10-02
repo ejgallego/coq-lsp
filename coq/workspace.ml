@@ -34,16 +34,18 @@ module Warning : sig
   type t
 
   val make : string -> t
-  val apply : t -> unit
+
+  (** Adds new warnings to the list of current warnings *)
+  val apply : t list -> unit
 end = struct
   type t = string
 
   let make x = x
-  let to_string x = x
 
   let apply w =
-    let warn = CWarnings.get_flags () in
-    CWarnings.set_flags (warn ^ to_string w)
+    let old_warn = CWarnings.get_flags () in
+    let new_warn = String.concat "," w in
+    CWarnings.set_flags (old_warn ^ "," ^ new_warn)
 end
 
 type t =
@@ -157,26 +159,79 @@ let pp_load_path fmt
     (Names.DirPath.to_string coq_path)
     unix_path
 
-let describe { coqlib; kind; vo_load_path; ml_include_path; require_libs; _ } =
+(* This is a bit messy upstream, as -I both extends Coq loadpath and OCAMLPATH
+   loadpath *)
+let findlib_init ~ml_include_path ~ocamlpath =
+  let config, ocamlpath =
+    match ocamlpath with
+    | None -> (None, [])
+    | Some dir -> (Some (Filename.concat dir "findlib.conf"), [ dir ])
+  in
+  let env_ocamlpath = try [ Sys.getenv "OCAMLPATH" ] with Not_found -> [] in
+  let env_ocamlpath = ml_include_path @ env_ocamlpath @ ocamlpath in
+  let ocamlpathsep = if Sys.unix then ":" else ";" in
+  let env_ocamlpath = String.concat ocamlpathsep env_ocamlpath in
+  Findlib.init ~env_ocamlpath ?config ()
+
+let describe
+    { coqlib
+    ; coqcorelib
+    ; ocamlpath
+    ; kind
+    ; vo_load_path
+    ; ml_include_path
+    ; require_libs
+    ; flags = _
+    ; warnings = _
+    ; debug = _
+    } =
   let require_msg =
     String.concat " " (List.map (fun (s, _, _) -> s) require_libs)
   in
   let n_vo = List.length vo_load_path in
   let n_ml = List.length ml_include_path in
+  let ocamlpath_msg =
+    Option.cata
+      (fun op -> "was overrident to " ^ op)
+      "wasn't overriden" ocamlpath
+  in
+  (* We need to do this in order for the calls to Findlib to make sense, but
+     really need to modify this *)
+  findlib_init ~ml_include_path ~ocamlpath;
+  let fl_packages = Findlib.list_packages' () in
+  let fl_config = Findlib.config_file () in
+  let fl_location = Findlib.default_location () in
+  let fl_paths = Findlib.search_path () in
   let extra =
-    Format.asprintf "@[vo_paths:@\n @[<v>%a@]@\nml_paths:@\n @[<v>%a@]@]"
+    Format.asprintf
+      "@[vo_paths:@\n\
+      \ @[<v>%a@]@\n\
+       ml_paths:@\n\
+      \ @[<v>%a@]@\n\
+       findlib_paths:@\n\
+      \ @[<v>%a@]@\n\
+       findlib_packages:@\n\
+      \ @[<v>%a@]@]"
       (Format.pp_print_list pp_load_path)
       vo_load_path
       Format.(pp_print_list pp_print_string)
       ml_include_path
+      Format.(pp_print_list pp_print_string)
+      fl_paths
+      Format.(pp_print_list pp_print_string)
+      fl_packages
   in
   ( Format.asprintf
       "@[Configuration loaded from %s@\n\
       \ - coqlib is at: %s@\n\
+      \   + coqcorelib is at: %s@\n\
       \ - Modules [%s] will be loaded by default@\n\
       \ - %d Coq path directory bindings in scope; %d Coq plugin directory \
-       bindings in scope@]"
-      kind coqlib require_msg n_vo n_ml
+       bindings in scope@\n\
+      \ - ocamlpath %s@\n\
+      \   + findlib config: %s@\n\
+      \   + findlib default location: %s@]" kind coqlib coqcorelib require_msg
+      n_vo n_ml ocamlpath_msg fl_config fl_location
   , extra )
 
 (* Require a set of libraries *)
@@ -207,20 +262,6 @@ let dirpath_of_uri ~uri =
   let ldir = Libnames.add_dirpath_suffix ldir0 id in
   ldir
 
-(* This is a bit messy upstream, as -I both extends Coq loadpath and OCAMLPATH
-   loadpath *)
-let findlib_init ~ml_include_path ~ocamlpath =
-  let config, ocamlpath =
-    match ocamlpath with
-    | None -> (None, [])
-    | Some dir -> (Some (Filename.concat dir "findlib.conf"), [ dir ])
-  in
-  let env_ocamlpath = try [ Sys.getenv "OCAMLPATH" ] with Not_found -> [] in
-  let env_ocamlpath = ml_include_path @ env_ocamlpath @ ocamlpath in
-  let ocamlpathsep = if Sys.unix then ":" else ";" in
-  let env_ocamlpath = String.concat ocamlpathsep env_ocamlpath in
-  Findlib.init ~env_ocamlpath ?config ()
-
 (* NOTE: Use exhaustive match below to avoid bugs by skipping fields *)
 let apply ~uri
     { coqlib = _
@@ -236,7 +277,7 @@ let apply ~uri
     } =
   if debug then CDebug.set_flags "backtrace";
   Flags.apply flags;
-  List.iter Warning.apply warnings;
+  Warning.apply warnings;
   List.iter Mltop.add_ml_dir ml_include_path;
   findlib_init ~ml_include_path ~ocamlpath;
   List.iter Loadpath.add_vo_path vo_load_path;

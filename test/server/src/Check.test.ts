@@ -28,19 +28,19 @@ test("Open file with wrong URI", async () => {
     "wrong_file.v",
     "coq",
     0,
-    "Definition a := 3."
+    "Definition a := 3.",
   );
 
   await languageServer.sendNotification(
     Protocol.DidOpenTextDocumentNotification.type,
     {
       textDocument,
-    }
+    },
   );
   let p = new Promise<Protocol.PublishDiagnosticsParams>((resolve) => {
     languageServer.onNotification(
       Protocol.PublishDiagnosticsNotification.type,
-      resolve
+      resolve,
     );
   });
 
@@ -61,19 +61,19 @@ test("Open non-existing file, with URI", async () => {
 
   let textDocument = LanguageServer.openExampleEphemeral(
     "ephemeral.v",
-    "Definition a := 3."
+    "Definition a := 3.",
   );
 
   await languageServer.sendNotification(
     Protocol.DidOpenTextDocumentNotification.type,
     {
       textDocument,
-    }
+    },
   );
   let p = new Promise<Protocol.PublishDiagnosticsParams>((resolve) => {
     languageServer.onNotification(
       Protocol.PublishDiagnosticsNotification.type,
-      resolve
+      resolve,
     );
   });
 
@@ -97,12 +97,12 @@ test("Fully checks ex1.v", async () => {
     Protocol.DidOpenTextDocumentNotification.type,
     {
       textDocument,
-    }
+    },
   );
   let p = new Promise<Protocol.PublishDiagnosticsParams>((resolve) => {
     languageServer.onNotification(
       Protocol.PublishDiagnosticsNotification.type,
-      resolve
+      resolve,
     );
   });
 

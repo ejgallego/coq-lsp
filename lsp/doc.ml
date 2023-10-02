@@ -17,8 +17,10 @@ module TextDocumentItem = struct
   [@@deriving yojson]
 end
 
+(* Sometimes we use this to parse VersionedTextDocumentIdentifier, we use {
+   strict = false } as a quick fix *)
 module TextDocumentIdentifier = struct
-  type t = { uri : Lang.LUri.File.t } [@@deriving yojson]
+  type t = { uri : Lang.LUri.File.t } [@@deriving yojson { strict = false }]
 end
 
 module OVersionedTextDocumentIdentifier = struct

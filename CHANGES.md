@@ -1,3 +1,42 @@
+# coq-lsp 0.1.8: Dot / Bracket
+------------------------------
+
+ - Update VSCode client dependencies, should bring some performance
+   improvements to goal pretty printing (@ejgallego, #530)
+ - Update goal display colors for light mode so they are actually
+   readable now. (@bhaktishh, #539, fixes #532)
+ - Added link to Python coq-lsp client by Pedro Carrot and Nuno
+   Saavedra (@Nfsaavedra, #536)
+ - Properly concatenate warnings from _CoqProject (@ejgallego,
+   reported by @mituharu, #541, fixes #540)
+ - Fix broken `coq/saveVo` and `coq/getDocument` requests due to a
+   parsing problem with extra fields in their requests (@ejgallego,
+   #547, reported by @Zimmi48)
+ - `fcc` now understands the `--coqlib`, `--coqcorelib`,
+   `--ocamlpath`, `-Q` and `-R` arguments (@ejgallego, #555)
+ - Describe findlib status in `Workspace.describe`, which is printed
+   in the output windows (@ejgallego, #556)
+ - `coq-lsp` plugin loader will now be strict in case of a plugin
+   failure, the previous loose behavior was more convenient for the
+   early releases, but it doesn't make sense now and made things
+   pretty hard to debug on the Windows installer (@ejgallego, #557)
+ - Add pointers to Windows installers (@ejgallego, #559)
+ - Recognize `Goal` and `Definition $id : ... .` as proof starters
+   (@ejgallego, #561, reported by @Zimmi48, fixes #548)
+ - Provide basic notation information on hover. This is intended for
+   people to build their own more refined notation feedback systems
+   (@ejgallego, #562)
+ - Hover request can now be extended by plugins (@ejgallego, #562)
+ - Updated LSP and JS client libs, notably to vscode-languageclient 9
+   (@ejgallego, #565)
+ - Implement a LIFO document scheduler, this is heavier in the
+   background as more documents will be checked, but provides a few
+   usability improvements (@ejgallego, #566, fixes #563, reported by
+   Ali Caglayan)
+ - New lexical qed detection error recovery rule; this makes a very
+   large usability difference in practice when editing inside proofs.
+   (@ejgallego, #567, fixes #33)
+
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
 

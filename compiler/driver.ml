@@ -4,12 +4,19 @@ let coq_init ~debug =
   let load_plugin = Coq.Loader.plugin_handler None in
   Coq.Init.(coq_init { debug; load_module; load_plugin })
 
+let replace_test_path exp message =
+  let home_re = Str.regexp (exp ^ ".*$") in
+  Str.global_replace home_re "coqlib is at: [TEST_PATH]" message
+
 let sanitize_paths message =
   match Sys.getenv_opt "FCC_TEST" with
   | None -> message
   | Some _ ->
-    let home_re = Str.regexp "coqlib is at: .*$" in
-    Str.global_replace home_re "coqlib is at: [TEST_PATH]" message
+    message
+    |> replace_test_path "coqlib is at: "
+    |> replace_test_path "coqcorelib is at: "
+    |> replace_test_path "findlib config: "
+    |> replace_test_path "findlib default location: "
 
 let log_workspace ~io (dir, w) =
   let message, extra = Coq.Workspace.describe w in
@@ -21,22 +28,12 @@ let load_plugin plugin_name = Fl_dynload.load_packages [ plugin_name ]
 let plugin_init = List.iter load_plugin
 
 let go args =
-  let { Args.roots; display; debug; files; plugins } = args in
+  let { Args.cmdline; roots; display; debug; files; plugins } = args in
   (* Initialize event callbacks *)
   let io = Output.init display in
   (* Initialize Coq *)
   let debug = debug || Fleche.Debug.backtraces || !Fleche.Config.v.debug in
   let root_state = coq_init ~debug in
-  let cmdline =
-    { Coq.Workspace.CmdLine.coqcorelib =
-        Filename.concat Coq_config.coqlib "../coq-core/"
-    ; coqlib = Coq_config.coqlib
-    ; ocamlpath = None
-    ; vo_load_path = []
-    ; ml_include_path = []
-    ; args = []
-    }
-  in
   let roots = if List.length roots < 1 then [ Sys.getcwd () ] else roots in
   let workspaces =
     List.map (fun dir -> (dir, Coq.Workspace.guess ~cmdline ~debug ~dir)) roots

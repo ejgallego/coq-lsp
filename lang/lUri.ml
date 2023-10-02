@@ -23,4 +23,5 @@ module File = struct
   let extension { file; _ } = Filename.extension file
   let hash = Hashtbl.hash
   let compare = Stdlib.compare
+  let equal = Stdlib.( = )
 end

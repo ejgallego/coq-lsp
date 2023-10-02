@@ -64,8 +64,12 @@ div.Pp_box:not([data-mode="vertical"]) > .Pp_break:not(.br) > span.prev-indent {
   color: #aabb22;
 }
 
-.constr\.variable {
+body.vscode-dark .constr\.variable {
   color: #7fbfff;
+}
+
+body.vscode-light .constr\.variable {
+  color: #007bff;
 }
 
 .module\.definition {
@@ -80,12 +84,20 @@ div.Pp_box:not([data-mode="vertical"]) > .Pp_break:not(.br) > span.prev-indent {
   color: #9674b8;
 }
 
-.tactic\.primitive {
+body.vscode-dark .tactic\.primitive {
   color: #c0c0c0;
 }
 
-.tactic\.string {
+body.vscode-light .tactic\.primitive {
+  color: #5c5b5b;
+}
+
+body.vscode-dark .tactic\.string {
   color: #99ff99;
+}
+
+body.vscode-light .tactic\.string {
+  color: #71ba71;
 }
 
 .constr\.reference:hover,

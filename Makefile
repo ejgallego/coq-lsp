@@ -26,8 +26,8 @@ test: build test/server/node_modules
 	cd test/server && npm test
 
 .PHONY: test-compiler
-test-compiler: build
-	OCAMLPATH=_build/install/default/lib:$$OCAMLPATH FCC_TEST=true dune runtest
+test-compiler:
+	dune runtest
 
 .PHONY: fmt format
 fmt format:
@@ -41,19 +41,35 @@ watch: coq_boot
 build-all: coq_boot
 	dune build $(DUNEOPT) @all
 
-# We set -libdir due to a Coq bug on win32, see https://github.com/coq/coq/pull/17289
+# We set -libdir due to a Coq bug on win32, see
+# https://github.com/coq/coq/pull/17289 , this can be removed once we
+# drop support for Coq 8.16
 vendor/coq/config/coq_config.ml:
-	cd vendor/coq \
-	&& ./configure -no-ask -prefix $(shell pwd)/_build/install/default/ \
-	        -libdir $(shell pwd)/_build/install/default/lib/coq \
-		-native-compiler no
+	EPATH=$(shell pwd) \
+	&& cd vendor/coq \
+	&& ./configure -no-ask -prefix "$$EPATH/_build/install/default/" \
+	        -libdir "$$EPATH/_build/install/default/lib/coq" \
+		-native-compiler no \
+	&& cp theories/dune.disabled theories/dune \
+	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
+
+# We set windows parameters a bit better, note the need to use forward
+# slashed (cygpath -m) due to escaping :( , a conversion to `-w` is
+# welcomed if someones has time for this
+.PHONY: winconfig
+winconfig:
+	EPATH=$(shell cygpath -am .) \
+	&& cd vendor/coq \
+	&& ./configure -no-ask -prefix "$$EPATH\\_build\\install\\default\\" \
+	        -libdir "$$EPATH\\_build\\install\\default\\lib\\coq\\" \
+		-native-compiler no \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
 
 .PHONY: coq_boot
 coq_boot:
 # We do nothing for release versions
-# coq_boot: coq/config/coq_config.ml
+# coq_boot: vendor/coq/config/coq_config.ml
 
 .PHONY: clean
 clean:

@@ -63,8 +63,9 @@ module Request : sig
     | Postpone
     | Cancel
 
-  (** Add a request to be served; returns [true] if request is added to the
-      queue , [false] if the request can be already answered. *)
+  (** Add a request to be served; returns [Postpone] if request is added to the
+      queue, [Now doc] if the request is available. [Cancel] means "we will
+      never be able to serve this" *)
   val add : t -> action
 
   (** Removes the request from the list of things to wake up *)

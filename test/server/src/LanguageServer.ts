@@ -16,7 +16,7 @@ let serverPath = path.join(
   "install",
   "default",
   "bin",
-  serverBin
+  serverBin,
 );
 
 let ocamlPath = path.join(projectRoot, "_build", "install", "default", "lib");
@@ -36,13 +36,13 @@ export function openExample(filename: string) {
     toURI(filepath),
     "coq",
     0,
-    fs.readFileSync(filepath, "utf-8")
+    fs.readFileSync(filepath, "utf-8"),
   );
 }
 
 export interface LanguageServer extends rpc.MessageConnection {
   initialize(
-    initializeParameters?: Partial<Protocol.InitializeParams>
+    initializeParameters?: Partial<Protocol.InitializeParams>,
   ): Promise<void>;
   exit(): Promise<void>;
 }
@@ -56,12 +56,12 @@ export function start(): LanguageServer {
   });
   let connection = rpc.createMessageConnection(
     new rpc.StreamMessageReader(childProcess.stdout!),
-    new rpc.StreamMessageWriter(childProcess.stdin!)
+    new rpc.StreamMessageWriter(childProcess.stdin!),
   );
   connection.listen();
 
   const initialize = async (
-    initializeParameters: Partial<Protocol.InitializeParams> = {}
+    initializeParameters: Partial<Protocol.InitializeParams> = {},
   ) => {
     initializeParameters = {
       processId: process.pid,
@@ -83,7 +83,7 @@ export function start(): LanguageServer {
 
     await connection.sendRequest(
       Protocol.InitializeRequest.type,
-      initializeParameters
+      initializeParameters,
     );
   };
 

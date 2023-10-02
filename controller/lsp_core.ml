@@ -35,11 +35,21 @@ module LIO = Lsp.Io
 module LSP = Lsp.Base
 
 module Helpers = struct
-  (* helpers; fix to have better errors on wrong protocol code *)
+  (* XXX helpers; fix to have better errors on wrong protocol code *)
+  (* Also note that rely sometimes on "subtyping" of fields, that's something to
+     think about better and fix, see #547 *)
   let get_uri params =
     let document =
-      field "textDocument" params
-      |> Lsp.Doc.TextDocumentIdentifier.of_yojson |> Result.get_ok
+      match
+        field "textDocument" params |> Lsp.Doc.TextDocumentIdentifier.of_yojson
+      with
+      | Ok uri -> uri
+      | Error err ->
+        (* ppx_deriving_yojson error messages leave a lot to be desired *)
+        let message = Format.asprintf "json parsing failed: %s" err in
+        LIO.logMessage ~lvl:1 ~message;
+        (* XXX Fixme *)
+        CErrors.user_err (Pp.str "failed to parse uri")
     in
     let Lsp.Doc.TextDocumentIdentifier.{ uri } = document in
     uri
