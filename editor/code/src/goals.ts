@@ -126,6 +126,8 @@ export class InfoPanel {
       uri.toString(),
       version
     );
+    // let pretac = "idtac.";
+    // let cursor: GoalRequest = { textDocument, position, pretac };
     let cursor: GoalRequest = { textDocument, position };
     let strCursor: GoalRequest = {
       textDocument,

@@ -297,9 +297,12 @@ let get_pp_format params =
     get_pp_format_from_config ()
   | None -> get_pp_format_from_config ()
 
+let get_pretac params = ostring_field "pretac" params
+
 let do_goals ~params =
   let pp_format = get_pp_format params in
-  let handler = Rq_goals.goals ~pp_format in
+  let pretac = get_pretac params in
+  let handler = Rq_goals.goals ~pp_format ?pretac () in
   do_position_request ~postpone:true ~handler ~params
 
 let do_definition =
