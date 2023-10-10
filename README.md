@@ -247,6 +247,9 @@ guide](./CONTRIBUTING.md)
   ```
 - **Nix**:
   - In nixpkgs: [coqPackages.coq-lsp](https://github.com/NixOS/nixpkgs/tree/master/pkgs/development/coq-modules/coq-lsp)
+  - This package is automatically put in scope when running `nix-shell` in a
+    project using the [Coq Nix Toolbox](https://github.com/coq-community/coq-nix-toolbox)
+    (with a sufficiently recent version of the Toolbox).
   - An example of a `flake` that uses `coq-lsp` in a development environment is here
      https://github.com/HoTT/Coq-HoTT/blob/master/flake.nix .
 - **Windows**:
