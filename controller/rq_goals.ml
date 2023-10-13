@@ -35,6 +35,18 @@ let pp ~pp_format pp =
   | Pp -> Lsp.JCoq.Pp.to_yojson pp
   | Str -> `String (Pp.string_of_ppcmds pp)
 
+let get_goals_info ~doc ~point =
+  let open Fleche in
+  let goals_mode = get_goals_mode () in
+  let node = Info.LC.node ~doc ~point goals_mode in
+  match node with
+  | None -> (None, None)
+  | Some node ->
+    let st = node.Doc.Node.state in
+    let goals = Info.Goals.goals ~st in
+    let program = Info.Goals.program ~st in
+    (goals, Some program)
+
 let goals ~pp_format ~doc ~point =
   let open Fleche in
   let uri, version = (doc.Doc.uri, doc.version) in
@@ -42,9 +54,7 @@ let goals ~pp_format ~doc ~point =
   let position =
     Lang.Point.{ line = fst point; character = snd point; offset = -1 }
   in
-  let goals_mode = get_goals_mode () in
-  let goals = Info.LC.goals ~doc ~point goals_mode in
-  let program = Info.LC.program ~doc ~point goals_mode in
+  let goals, program = get_goals_info ~doc ~point in
   let node = Info.LC.node ~doc ~point Exact in
   let messages = mk_messages node in
   let error = Option.bind node mk_error in

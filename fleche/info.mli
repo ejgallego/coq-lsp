@@ -45,15 +45,20 @@ module type S = sig
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
 
   val node : (approx, Doc.Node.t) query
-  val range : (approx, Lang.Range.t) query
-  val ast : (approx, Doc.Node.Ast.t) query
-  val goals : (approx, Pp.t Coq.Goals.reified_pp) query
-  val program : (approx, Declare.OblState.View.t Names.Id.Map.t) query
-  val messages : (approx, Doc.Node.Message.t list) query
-  val info : (approx, Doc.Node.Info.t) query
-  val completion : (string, string list) query
-  val in_state : st:Coq.State.t -> f:('a -> 'b option) -> 'a -> 'b option
 end
 
 module LC : S with module P := LineCol
 module O : S with module P := Offset
+
+(** Helper to absorb errors in state change, needed due to the lack of proper
+    monad in Coq.Protect, to fix soon *)
+val in_state : st:Coq.State.t -> f:('a -> 'b option) -> 'a -> 'b option
+
+module Goals : sig
+  val goals : st:Coq.State.t -> Pp.t Coq.Goals.reified_pp option
+  val program : st:Coq.State.t -> Declare.OblState.View.t Names.Id.Map.t
+end
+
+module Completion : sig
+  val candidates : st:Coq.State.t -> string -> string list option
+end
