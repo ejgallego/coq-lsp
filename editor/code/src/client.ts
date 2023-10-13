@@ -72,7 +72,9 @@ export function activateCoqLSP(
     context.subscriptions.push(disposable);
   }
   function checkForVSCoq() {
-    let vscoq = extensions.getExtension("maximedenes.vscoq");
+    let vscoq =
+      extensions.getExtension("maximedenes.vscoq") ||
+      extensions.getExtension("coq-community.vscoq1");
     if (vscoq?.isActive) {
       window.showErrorMessage(
         "Coq LSP Extension: VSCoq extension has been detected, you need to deactivate it for coq-lsp to work properly.",
