@@ -114,18 +114,9 @@ module type S = sig
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
 
   val node : (approx, Doc.Node.t) query
-  val range : (approx, Lang.Range.t) query
-  val ast : (approx, Doc.Node.Ast.t) query
-  val goals : (approx, Pp.t Coq.Goals.reified_pp) query
-  val program : (approx, Coq.State.Declare.OblState.View.t Names.Id.Map.t) query
-  val messages : (approx, Doc.Node.Message.t list) query
-  val info : (approx, Doc.Node.Info.t) query
-  val completion : (string, string list) query
-  val in_state : st:Coq.State.t -> f:('a -> 'b option) -> 'a -> 'b option
 end
 
 let some x = Some x
-let obind x f = Option.bind f x
 
 module Make (P : Point) : S with module P := P = struct
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
@@ -147,7 +138,29 @@ module Make (P : Point) : S with module P := P = struct
     find None doc.Doc.nodes
 
   let node = find
+end
 
+module LC = Make (LineCol)
+module O = Make (Offset)
+
+(* XXX: We need to split this module in two: one that handles the extraction of
+   information from a document, and the other that further processes it, like
+   for goals, possibly executing Coq code. *)
+
+(* XXX: This needs fixing by having a better monad *)
+let in_state ~st ~f node =
+  match Coq.State.in_state ~st ~f node with
+  | { r = Coq.Protect.R.Completed (Result.Ok res); feedback } ->
+    Io.Log.feedback feedback;
+    res
+  | { r = Coq.Protect.R.Completed (Result.Error _) | Coq.Protect.R.Interrupted
+    ; feedback
+    } ->
+    Io.Log.feedback feedback;
+    None
+
+(* Related to goal request *)
+module Goals = struct
   let pr_goal st =
     let ppx env sigma x =
       let { Coq.Protect.E.r; feedback } =
@@ -162,43 +175,11 @@ module Make (P : Point) : S with module P := P = struct
     let lemmas = Coq.State.lemmas ~st in
     Option.map (Coq.Goals.reify ~ppx) lemmas
 
-  let range ~doc ~point approx =
-    let node = find ~doc ~point approx in
-    Option.map Doc.Node.range node
+  let goals ~st = in_state ~st ~f:pr_goal st
+  let program ~st = Coq.State.program ~st
+end
 
-  let ast ~doc ~point approx =
-    let node = find ~doc ~point approx in
-    Option.bind node Doc.Node.ast
-
-  let in_state ~st ~f node =
-    match Coq.State.in_state ~st ~f node with
-    | { r = Coq.Protect.R.Completed (Result.Ok res); feedback } ->
-      Io.Log.feedback feedback;
-      res
-    | { r = Coq.Protect.R.Completed (Result.Error _) | Coq.Protect.R.Interrupted
-      ; feedback
-      } ->
-      Io.Log.feedback feedback;
-      None
-
-  let goals ~doc ~point approx =
-    find ~doc ~point approx
-    |> obind (fun node ->
-           let st = node.Doc.Node.state in
-           in_state ~st ~f:pr_goal st)
-
-  let program ~doc ~point approx =
-    find ~doc ~point approx
-    |> Option.map (fun node ->
-           let st = node.Doc.Node.state in
-           Coq.State.program ~st)
-
-  let messages ~doc ~point approx =
-    find ~doc ~point approx |> Option.map Doc.Node.messages
-
-  let info ~doc ~point approx =
-    find ~doc ~point approx |> Option.map Doc.Node.info
-
+module Completion = struct
   (* XXX: This belongs in Coq *)
   let pr_extref gr =
     match gr with
@@ -209,16 +190,11 @@ module Make (P : Point) : S with module P := P = struct
      needed *)
   let to_qualid p = try Some (Libnames.qualid_of_string p) with _ -> None
 
-  let completion ~doc ~point prefix =
-    find ~doc ~point Exact
-    |> obind (fun node ->
-           in_state ~st:node.Doc.Node.state prefix ~f:(fun prefix ->
-               to_qualid prefix
-               |> obind (fun p ->
-                      Nametab.completion_canditates p
-                      |> List.map (fun x -> Pp.string_of_ppcmds (pr_extref x))
-                      |> some)))
+  let candidates ~st prefix =
+    let ( let* ) = Option.bind in
+    in_state ~st prefix ~f:(fun prefix ->
+        let* p = to_qualid prefix in
+        Nametab.completion_canditates p
+        |> List.map (fun x -> Pp.string_of_ppcmds (pr_extref x))
+        |> some)
 end
-
-module LC = Make (LineCol)
-module O = Make (Offset)
