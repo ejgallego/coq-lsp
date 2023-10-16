@@ -1,1 +1,7 @@
+(env
+ (dev
+  (flags :standard -rectypes))
+ (release
+  (flags :standard -rectypes)))
+
 (vendored_dirs vendor)
