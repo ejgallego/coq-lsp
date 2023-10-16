@@ -109,7 +109,7 @@ let info_of_id ~st id =
 
 let info_of_id_at_point ~node id =
   let st = node.Fleche.Doc.Node.state in
-  Fleche.Info.LC.in_state ~st ~f:(info_of_id ~st) id
+  Fleche.Info.in_state ~st ~f:(info_of_id ~st) id
 
 let pp_typ id = function
   | Def typ ->

@@ -36,6 +36,9 @@
  - New lexical qed detection error recovery rule; this makes a very
    large usability difference in practice when editing inside proofs.
    (@ejgallego, #567, fixes #33)
+ - `coq-lsp` is now supported by the `coq-nix-toolbox` (@Zimmi48,
+   @CohenCyril, #572, via
+   https://github.com/coq-community/coq-nix-toolbox/pull/164 )
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
