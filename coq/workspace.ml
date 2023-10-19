@@ -80,21 +80,23 @@ let mk_userlib unix_path =
 
 let getenv var else_ = try Sys.getenv var with Not_found -> else_
 
-let rec parse_args args init boot f w =
+let rec parse_args args init boot libs f w =
   match args with
-  | [] -> (init, boot, f, List.rev w)
+  | [] -> (init, boot, List.rev libs, f, List.rev w)
+  | "-rifrom" :: from :: lib :: rest ->
+    parse_args rest init boot ((Some from, lib) :: libs) f w
   | "-indices-matter" :: rest ->
-    parse_args rest init boot { f with Flags.indices_matter = true } w
+    parse_args rest init boot libs { f with Flags.indices_matter = true } w
   | "-impredicative-set" :: rest ->
-    parse_args rest init boot { f with Flags.impredicative_set = true } w
-  | "-noinit" :: rest -> parse_args rest false boot f w
-  | "-boot" :: rest -> parse_args rest init true f w
+    parse_args rest init boot libs { f with Flags.impredicative_set = true } w
+  | "-noinit" :: rest -> parse_args rest false boot libs f w
+  | "-boot" :: rest -> parse_args rest init true libs f w
   | "-w" :: warn :: rest ->
     let warn = Warning.make warn in
-    parse_args rest init boot f (warn :: w)
+    parse_args rest init boot libs f (warn :: w)
   | _ :: rest ->
     (* emit warning? *)
-    parse_args rest init boot f w
+    parse_args rest init boot libs f w
 
 module CmdLine = struct
   type t =
@@ -104,8 +106,11 @@ module CmdLine = struct
     ; vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
     ; args : string list
+    ; require_libraries : (string option * string) list
     }
 end
+
+let mk_require_from (from, lib) = (lib, from, Some (Lib.Import, None))
 
 let make ~cmdline ~implicit ~kind ~debug =
   let { CmdLine.coqcorelib
@@ -114,14 +119,15 @@ let make ~cmdline ~implicit ~kind ~debug =
       ; args
       ; ml_include_path
       ; vo_load_path
+      ; require_libraries
       } =
     cmdline
   in
   let coqcorelib = getenv "COQCORELIB" coqcorelib in
   let coqlib = getenv "COQLIB" coqlib in
   let mk_path_coqlib prefix = coqlib ^ "/" ^ prefix in
-  let init, boot, flags, warnings =
-    parse_args args true false Flags.default []
+  let init, boot, libs, flags, warnings =
+    parse_args args true false [] Flags.default []
   in
   (* Setup ml_include for the core plugins *)
   let dft_ml_include_path, dft_vo_load_path =
@@ -137,7 +143,11 @@ let make ~cmdline ~implicit ~kind ~debug =
         stdlib_vo_path :: user_vo_path )
   in
   let require_libs =
-    if init then [ ("Coq.Init.Prelude", None, Some (Lib.Import, None)) ] else []
+    let rq_list =
+      if init then ((None, "Coq.Init.Prelude") :: require_libraries) @ libs
+      else require_libraries @ libs
+    in
+    List.map mk_require_from rq_list
   in
   let vo_load_path = dft_vo_load_path @ vo_load_path in
   let ml_include_path = dft_ml_include_path @ ml_include_path in

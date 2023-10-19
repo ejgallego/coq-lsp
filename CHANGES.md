@@ -39,6 +39,9 @@
  - `coq-lsp` is now supported by the `coq-nix-toolbox` (@Zimmi48,
    @CohenCyril, #572, via
    https://github.com/coq-community/coq-nix-toolbox/pull/164 )
+ - Support for `-rifrom` in `_CoqProject` and in command line
+   (`--rifrom`). Thanks to Lasse Blaauwbroek for the report.
+   (@ejgallego, #581, fixes #579)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
