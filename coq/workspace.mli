@@ -63,6 +63,7 @@ module CmdLine : sig
     ; vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
     ; args : string list
+    ; require_libraries : (string option * string) list  (** Library, From *)
     }
 end
 

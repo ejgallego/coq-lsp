@@ -89,7 +89,8 @@ let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug =
     | Init_effect.Loop -> lsp_init_loop ~ifn ~ofn ~cmdline ~debug
     | Init_effect.Success w -> w)
 
-let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay =
+let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
+    require_libraries delay =
   (* Try to be sane w.r.t. \r\n in Windows *)
   Stdlib.set_binary_mode_in stdin true;
   Stdlib.set_binary_mode_out stdout true;
@@ -116,6 +117,7 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path delay =
     ; vo_load_path
     ; ml_include_path
     ; args = []
+    ; require_libraries
     }
   in
 
@@ -231,6 +233,18 @@ let ml_include_path : string list Term.t =
   Arg.(
     value & opt_all dir [] & info [ "I"; "ml-include-path" ] ~docv:"DIR" ~doc)
 
+let rifrom : (string option * string) list Term.t =
+  let doc =
+    "FROM Require Import LIBRARY before creating the document, à la From Coq \
+     Require Import Prelude"
+  in
+  Term.(
+    const (List.map (fun (x, y) -> (Some x, y)))
+    $ Arg.(
+        value
+        & opt_all (pair string string) []
+        & info [ "rifrom"; "require-import-from" ] ~docv:"FROM,LIBRARY" ~doc))
+
 let delay : float Term.t =
   let doc = "Delay value in seconds when server is idle" in
   Arg.(value & opt float 0.1 & info [ "D"; "idle-delay" ] ~docv:"DELAY" ~doc)
@@ -253,7 +267,7 @@ let lsp_cmd : unit Cmd.t =
       (Cmd.info "coq-lsp" ~version:Fleche.Version.server ~doc ~man)
       Term.(
         const lsp_main $ bt $ coqcorelib $ coqlib $ ocamlpath $ vo_load_path
-        $ ml_include_path $ delay))
+        $ ml_include_path $ rifrom $ delay))
 
 let main () =
   let ecode = Cmd.eval lsp_cmd in

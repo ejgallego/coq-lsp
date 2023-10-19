@@ -1,4 +1,4 @@
-### Welcome to Coq LSP
+## Welcome to Coq LSP
 
 - You can edit this document as you please
 - Coq will recognize the code snippets as Coq
@@ -9,6 +9,11 @@ From Coq Require Import List.
 Import ListNotations.
 ```
 
+### Here is a simple Proof about Lists
+$$
+  \forall~x~l,
+    \mathsf{rev}(l \mathrel{++} [x]) = x \mathrel{::} (\mathsf{rev}~l)
+$$
 ```coq
 Lemma rev_snoc_cons A :
   forall (x : A) (l : list A), rev (l ++ [x]) = x :: rev l.
@@ -19,6 +24,7 @@ Proof.
 Qed.
 ```
 
+### Here is another proof depending on it
 Try to update _above_ and **below**:
 ```coq
 Theorem rev_rev A : forall (l : list A), rev (rev l) = l.
@@ -31,3 +37,12 @@ Qed.
 ```
 
 Please edit your code here!
+
+## Here we do some lambda terms, because we can!
+
+```coq
+Inductive term :=
+  | Var : nat -> term
+  | Abs : term -> term
+  | Lam : term -> term -> term.
+```
