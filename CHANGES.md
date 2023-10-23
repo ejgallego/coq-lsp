@@ -42,6 +42,9 @@
  - Support for `-rifrom` in `_CoqProject` and in command line
    (`--rifrom`). Thanks to Lasse Blaauwbroek for the report.
    (@ejgallego, #581, fixes #579)
+ - Export Query Goals API in VSCode client; this way other extensions
+   can implement their own commands that query Coq goals (@amblafont,
+   @ejgallego, #576, closes #558)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
