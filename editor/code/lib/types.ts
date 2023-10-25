@@ -69,6 +69,7 @@ export interface GoalRequest {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
   pp_format?: "Pp" | "Str";
+  pretac?: string;
 }
 
 export type Pp =
