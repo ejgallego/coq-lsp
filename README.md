@@ -11,7 +11,7 @@ Assistant](https://coq.inria.fr). Experimental support for [Vim](#vim) and
 **Quick Install**:
   - **🐧 Linux / 🍎 macOs:**
 ```
-$ opam install coq-lsp && code --install-extension ejgallego.coq-lsp`
+$ opam install coq-lsp && code --install-extension ejgallego.coq-lsp
 ```
   - **🪟 Windows:** Download the [Coq Platform installer](#-server)
 
@@ -317,6 +317,16 @@ information. Everyone is most welcome!
 See our [list of frequently-asked questions](./etc/FAQ.md).
 
 ## ⁉️ Troubleshooting and Known Problems
+
+### Coq upstream bugs
+
+Unfortunately Coq releases contain bugs that affect `coq-lsp`. We strongly
+recommend that if you are installing via opam, you use the following branches
+that have some fixes backported:
+
+- For 8.18: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.18+lsp`
+- For 8.17: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.17+lsp`
+- For 8.16: `opam pin add coq      https://github.com/ejgallego/coq.git#v8.16+lsp`
 
 ### Known problems
 
