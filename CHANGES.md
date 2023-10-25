@@ -1,5 +1,5 @@
-# coq-lsp 0.1.8: Dot / Bracket
-------------------------------
+# coq-lsp 0.1.8: Trick-or-treat
+-------------------------------
 
  - Update VSCode client dependencies, should bring some performance
    improvements to goal pretty printing (@ejgallego, #530)
