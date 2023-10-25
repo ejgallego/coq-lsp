@@ -15,32 +15,4 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module R : sig
-  type t = (Yojson.Safe.t, int * string) Result.t
-end
-
-type document = doc:Fleche.Doc.t -> R.t
-type position = doc:Fleche.Doc.t -> point:int * int -> R.t
-
-(** Requests that require data access *)
-module Data : sig
-  type t =
-    | DocRequest of
-        { uri : Lang.LUri.File.t
-        ; handler : document
-        }
-    | PosRequest of
-        { uri : Lang.LUri.File.t
-        ; point : int * int
-        ; version : int option
-        ; postpone : bool
-        ; handler : position
-        }
-
-  (* Debug printing *)
-  val data : Format.formatter -> t -> unit
-  val dm_request : t -> Fleche.Theory.Request.request
-  val serve : doc:Fleche.Doc.t -> t -> R.t
-end
-
-val empty : position
+val request : Request.position

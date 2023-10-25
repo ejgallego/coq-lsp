@@ -25,7 +25,6 @@ module U = Yojson.Safe.Util
 
 let field name dict = List.(assoc name dict)
 let int_field name dict = U.to_int (field name dict)
-let dict_field name dict = U.to_assoc (field name dict)
 let list_field name dict = U.to_list (field name dict)
 let string_field name dict = U.to_string (field name dict)
 let ofield name dict = List.(assoc_opt name dict)
@@ -70,10 +69,18 @@ module Helpers = struct
     let Lsp.Doc.VersionedTextDocumentIdentifier.{ uri; version } = document in
     (uri, version)
 
-  let get_position params =
-    let pos = dict_field "position" params in
+  let lsp_position_to_tuple (pos : J.t) =
+    let pos = U.to_assoc pos in
     let line, character = (int_field "line" pos, int_field "character" pos) in
     (line, character)
+
+  let get_position params =
+    let pos = field "position" params in
+    lsp_position_to_tuple pos
+
+  let get_position_array params =
+    let pos_list = list_field "positions" params in
+    List.map lsp_position_to_tuple pos_list
 end
 
 (** LSP loop internal state: mainly the data needed to create a new document. In
@@ -276,7 +283,23 @@ let do_position_request ~postpone ~params ~handler =
   Rq.Action.Data
     (Request.Data.PosRequest { uri; handler; point; version; postpone })
 
+(* For now we only pick the first item *)
+let do_position_list_request ~postpone ~params ~handler =
+  let uri, version = Helpers.get_uri_oversion params in
+  let points = Helpers.get_position_array params in
+  match points with
+  | [] ->
+    let point, handler = ((0, 0), Request.empty) in
+    Rq.Action.Data
+      (Request.Data.PosRequest { uri; handler; point; version; postpone })
+  | point :: _ ->
+    Rq.Action.Data
+      (Request.Data.PosRequest { uri; handler; point; version; postpone })
+
 let do_hover = do_position_request ~postpone:false ~handler:Rq_hover.hover
+
+let do_selectionRange =
+  do_position_list_request ~postpone:false ~handler:Rq_selectionRange.request
 
 (* We get the format from the params *)
 let get_pp_format_from_config () =
@@ -423,6 +446,7 @@ let dispatch_request ~method_ ~params : Rq.Action.t =
   | "textDocument/documentSymbol" -> do_symbols ~params
   | "textDocument/hover" -> do_hover ~params
   | "textDocument/codeLens" -> do_lens ~params
+  | "textDocument/selectionRange" -> do_selectionRange ~params
   (* Proof-specific stuff *)
   | "proof/goals" -> do_goals ~params
   (* Proof-specific stuff *)
