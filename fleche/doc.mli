@@ -58,18 +58,35 @@ module Completion : sig
   val is_completed : t -> bool
 end
 
+(** Enviroment external to the document, this includes for now the [init] Coq
+    state and the [workspace], which are used to build the first state of the
+    document, usually by importing the prelude and other libs implicitly. *)
+module Env : sig
+  type t = private
+    { init : Coq.State.t
+    ; workspace : Coq.Workspace.t
+    }
+
+  val make : init:Coq.State.t -> workspace:Coq.Workspace.t -> t
+end
+
 (** A Flèche document is basically a [node list], which is a crude form of a
     meta-data map [Range.t -> data], where for now [data] is the contents of
     [Node.t]. *)
 type t = private
-  { uri : Lang.LUri.File.t
-  ; version : int
-  ; contents : Contents.t
-  ; toc : Lang.Range.t CString.Map.t
-  ; root : Coq.State.t
-  ; nodes : Node.t list
-  ; diags_dirty : bool
+  { uri : Lang.LUri.File.t  (** [uri] of the document *)
+  ; version : int  (** [version] of the document *)
+  ; contents : Contents.t  (** [contents] of the document *)
+  ; nodes : Node.t list  (** List of document nodes *)
   ; completed : Completion.t
+        (** Status of the document, usually either completed, suspended, or
+            waiting for some IO / external event *)
+  ; toc : Lang.Range.t CString.Map.t  (** table of contents *)
+  ; env : Env.t  (** External document enviroment *)
+  ; root : Coq.State.t
+        (** [root] contains the first state document state, obtained by applying
+            a workspace to Coq's initial state *)
+  ; diags_dirty : bool  (** internal field *)
   }
 
 (** Return the list of all asts in the doc *)
@@ -80,8 +97,7 @@ val diags : t -> Lang.Diagnostic.t list
 
 (** Create a new Coq document, this is cached! *)
 val create :
-     state:Coq.State.t
-  -> workspace:Coq.Workspace.t
+     env:Env.t
   -> uri:Lang.LUri.File.t
   -> version:int
   -> raw:string
@@ -113,7 +129,7 @@ val save : doc:t -> (unit, Loc.t) Coq.Protect.E.t
 
 (** This is internal, to workaround the Coq multiple-docs problem *)
 val create_failed_permanent :
-     state:Coq.State.t
+     env:Env.t
   -> uri:Lang.LUri.File.t
   -> version:int
   -> raw:string

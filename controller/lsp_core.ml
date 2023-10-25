@@ -251,8 +251,9 @@ let do_open ~io ~(state : State.t) params =
     |> Lsp.Doc.TextDocumentItem.of_yojson |> Result.get_ok
   in
   let Lsp.Doc.TextDocumentItem.{ uri; version; text; _ } = document in
-  let root_state, workspace = State.workspace_of_uri ~uri ~state in
-  Fleche.Theory.create ~io ~root_state ~workspace ~uri ~raw:text ~version
+  let init, workspace = State.workspace_of_uri ~uri ~state in
+  let env = Fleche.Doc.Env.make ~init ~workspace in
+  Fleche.Theory.create ~io ~env ~uri ~raw:text ~version
 
 let do_change ~ofn ~io params =
   let uri, version = Helpers.get_uri_version params in

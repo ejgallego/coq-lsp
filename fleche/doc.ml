@@ -201,18 +201,35 @@ module Completion = struct
     | _ -> false
 end
 
-(* Private. A doc is a list of nodes for now. The first element in the list is
-   assumed to be the tip of the document. The initial document is the empty
-   list. *)
+(** Enviroment external to the document, this includes for now the [init] Coq
+    state and the [workspace], which are used to build the first state of the
+    document, usually by importing the prelude and other libs implicitly. *)
+module Env = struct
+  type t =
+    { init : Coq.State.t
+    ; workspace : Coq.Workspace.t
+    }
+
+  let make ~init ~workspace = { init; workspace }
+end
+
+(** A Flèche document is basically a [node list], which is a crude form of a
+    meta-data map [Range.t -> data], where for now [data] is the contents of
+    [Node.t]. *)
 type t =
-  { uri : Lang.LUri.File.t
-  ; version : int
-  ; contents : Contents.t
-  ; toc : Lang.Range.t CString.Map.t
-  ; root : Coq.State.t
-  ; nodes : Node.t list
-  ; diags_dirty : bool  (** Used to optimize `eager_diagnostics` *)
+  { uri : Lang.LUri.File.t  (** [uri] of the document *)
+  ; version : int  (** [version] of the document *)
+  ; contents : Contents.t  (** [contents] of the document *)
+  ; nodes : Node.t list  (** List of document nodes *)
   ; completed : Completion.t
+        (** Status of the document, usually either completed, suspended, or
+            waiting for some IO / external event *)
+  ; toc : Lang.Range.t CString.Map.t  (** table of contents *)
+  ; env : Env.t  (** External document enviroment *)
+  ; root : Coq.State.t
+        (** [root] contains the first state document state, obtained by applying
+            a workspace to Coq's initial state *)
+  ; diags_dirty : bool  (** internal field *)
   }
 
 (* Flatten the list of document asts *)
@@ -257,11 +274,11 @@ let process_init_feedback ~stats range state messages =
   else []
 
 (* Memoized call to [Coq.Init.doc_init] *)
-let mk_doc root_state workspace uri = Memo.Init.eval (root_state, workspace, uri)
+let mk_doc ~env ~uri = Memo.Init.eval (env.Env.init, env.workspace, uri)
 
-let create ~state ~workspace ~uri ~version ~contents =
+let create ~env ~uri ~version ~contents =
   let () = Stats.reset () in
-  let { Coq.Protect.E.r; feedback } = mk_doc state workspace uri in
+  let { Coq.Protect.E.r; feedback } = mk_doc ~env ~uri in
   Coq.Protect.R.map r ~f:(fun root ->
       let init_loc = init_loc ~uri in
       let lines = contents.Contents.lines in
@@ -277,18 +294,19 @@ let create ~state ~workspace ~uri ~version ~contents =
       ; contents
       ; toc
       ; version
-      ; root
       ; nodes
-      ; diags_dirty
       ; completed = Stopped init_range
+      ; root
+      ; env
+      ; diags_dirty
       })
 
-let create ~state ~workspace ~uri ~version ~raw =
+let create ~env ~uri ~version ~raw =
   match Contents.make ~uri ~raw with
   | Error e -> Coq.Protect.R.error (Pp.str e)
-  | Ok contents -> create ~state ~workspace ~uri ~version ~contents
+  | Ok contents -> create ~env ~uri ~version ~contents
 
-let create_failed_permanent ~state ~uri ~version ~raw =
+let create_failed_permanent ~env ~uri ~version ~raw =
   Contents.make ~uri ~raw
   |> Contents.R.map ~f:(fun contents ->
          let lines = contents.Contents.lines in
@@ -298,10 +316,11 @@ let create_failed_permanent ~state ~uri ~version ~raw =
          ; contents
          ; toc = CString.Map.empty
          ; version
-         ; root = state
+         ; root = env.Env.init
          ; nodes = []
          ; diags_dirty = true
          ; completed = FailedPermanent range
+         ; env
          })
 
 let recover_up_to_offset ~init_range doc offset =
@@ -342,6 +361,7 @@ let bump_version ~init_range ~version ~contents doc =
   (* Important: uri, root remain the same *)
   let uri = doc.uri in
   let root = doc.root in
+  let env = doc.env in
   { uri
   ; version
   ; root
@@ -350,6 +370,7 @@ let bump_version ~init_range ~version ~contents doc =
   ; toc
   ; diags_dirty = true (* EJGA: Is it worth to optimize this? *)
   ; completed
+  ; env
   }
 
 let bump_version ~version ~(contents : Contents.t) doc =
