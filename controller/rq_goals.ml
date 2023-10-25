@@ -40,7 +40,7 @@ let pp ~pp_format pp =
    we should tune whether we cache the results; we try this for now. *)
 let parse_and_execute_in tac st =
   (* Parse tac, loc==FIXME *)
-  let str = Gramlib.Stream.of_string tac in
+  let str = Stream.of_string tac in
   let str = Coq.Parsing.Parsable.make ?loc:None str in
   match Coq.Parsing.parse ~st str with
   | Coq.Protect.E.{ r = Interrupted; feedback = _ }
