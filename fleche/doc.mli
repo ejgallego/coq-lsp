@@ -82,10 +82,7 @@ type t = private
         (** Status of the document, usually either completed, suspended, or
             waiting for some IO / external event *)
   ; toc : Lang.Range.t CString.Map.t  (** table of contents *)
-  ; env : Env.t  (** External document enviroment *)
-  ; root : Coq.State.t
-        (** [root] contains the first state document state, obtained by applying
-            a workspace to Coq's initial state *)
+  ; env : Env.t  (** (External) document enviroment *)
   ; diags_dirty : bool  (** internal field *)
   }
 

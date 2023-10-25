@@ -224,11 +224,8 @@ type t =
   ; completed : Completion.t
         (** Status of the document, usually either completed, suspended, or
             waiting for some IO / external event *)
-  ; toc : Lang.Range.t CString.Map.t  (** table of contents *)
-  ; env : Env.t  (** External document enviroment *)
-  ; root : Coq.State.t
-        (** [root] contains the first state document state, obtained by applying
-            a workspace to Coq's initial state *)
+  ; toc : Lang.Range.t CString.Map.t  (** Table of contents *)
+  ; env : Env.t  (** (External) document enviroment *)
   ; diags_dirty : bool  (** internal field *)
   }
 
@@ -283,39 +280,53 @@ let process_init_feedback ~lines ~stats state feedback =
   else []
 
 (* Memoized call to [Coq.Init.doc_init] *)
-let mk_doc ~env ~uri = Memo.Init.eval (env.Env.init, env.workspace, uri)
+let mk_root ~env ~uri = Memo.Init.eval (env.Env.init, env.workspace, uri)
+
+(** [get_last_node ~reverse ~doc] returns the last state and maybe a
+    last node if the document was prope over the last node, or a dummy
+    one if the document couldn't be created *)
+let fold_last_state ~reverse ~doc ~f =
+  let get = if reverse then Util.hd_opt else Util.last in
+  match get doc.nodes with
+  | None ->
+    let env, uri = doc.env, doc.uri in
+    Coq.Protect.E.map ~f (mk_root ~env ~uri)
+  | Some { state; _ } ->
+    f state
+
+(* Helper to get the root of the document *)
+(* let get_root ~f  *)
 
 (* Create empty doc, in state [~completed] *)
-let empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed =
+let empty_doc ~uri ~contents ~version ~env ~nodes ~completed =
   let lines = contents.Contents.lines in
   let init_loc = init_loc ~uri in
   let init_range = Coq.Utils.to_range ~lines init_loc in
   let toc = CString.Map.empty in
   let diags_dirty = not (CList.is_empty nodes) in
   let completed = completed init_range in
-  { uri; contents; toc; version; env; root; nodes; diags_dirty; completed }
+  { uri; contents; toc; version; env; nodes; diags_dirty; completed }
 
 let error_doc ~loc ~message ~uri ~contents ~version ~env ~completed =
   let feedback = [ (loc, 1, Pp.str message) ] in
-  let root = env.Env.init in
   let nodes = [] in
-  (empty_doc ~uri ~version ~contents ~env ~root ~nodes ~completed, feedback)
+  (empty_doc ~uri ~version ~contents ~env ~nodes ~completed, feedback)
 
-let conv_error_doc ~raw ~uri ~version ~env ~root ~completed err =
+let conv_error_doc ~raw ~uri ~version ~env ~completed err =
   let contents = Contents.make_raw ~raw in
   let lines = contents.lines in
   let err = (None, 1, Pp.(str "Error in document conversion: " ++ str err)) in
   let stats = Stats.dump () in
-  let nodes = process_init_feedback ~lines ~stats root [ err ] in
-  empty_doc ~uri ~version ~env ~root ~nodes ~completed ~contents
+  let nodes = process_init_feedback ~lines ~stats env.Env.init [ err ] in
+  empty_doc ~uri ~version ~env ~nodes ~completed ~contents
 
 let create ~env ~uri ~version ~contents =
   let () = Stats.reset () in
-  let root = mk_doc ~env ~uri in
+  let root = mk_root ~env ~uri in
   Coq.Protect.E.map root ~f:(fun root ->
       let nodes = [] in
       let completed range = Completion.Stopped range in
-      empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed)
+      empty_doc ~uri ~contents ~version ~env ~nodes ~completed)
 
 (** Create a permanently failed doc, to be removed when we drop 8.16 support *)
 let handle_failed_permanent ~env ~uri ~version ~contents =
@@ -365,8 +376,7 @@ let handle_doc_creation_exec ~env ~uri ~version ~contents =
 let handle_contents_creation ~env ~uri ~version ~raw ~completed f =
   match Contents.make ~uri ~raw with
   | Contents.R.Error err ->
-    let root = env.Env.init in
-    conv_error_doc ~raw ~uri ~version ~env ~root ~completed err
+    conv_error_doc ~raw ~uri ~version ~env ~completed err
   | Contents.R.Ok contents -> f ~env ~uri ~version ~contents
 
 let create ~env ~uri ~version ~raw =
@@ -419,13 +429,11 @@ let compute_common_prefix ~init_range ~contents (prev : t) =
 let bump_version ~init_range ~version ~contents doc =
   (* When a new document, we resume checking from a common prefix *)
   let nodes, completed, toc = compute_common_prefix ~init_range ~contents doc in
-  (* Important: uri, root remain the same *)
+  (* Important: uri, env remain the same *)
   let uri = doc.uri in
-  let root = doc.root in
   let env = doc.env in
   { uri
   ; version
-  ; root
   ; nodes
   ; contents
   ; toc
@@ -451,7 +459,7 @@ let bump_version ~version ~raw doc =
   match Contents.make ~uri ~raw with
   | Contents.R.Error e ->
     let completed range = Completion.Failed range in
-    conv_error_doc ~raw ~uri ~version ~env:doc.env ~root:doc.root ~completed e
+    conv_error_doc ~raw ~uri ~version ~env:doc.env ~completed e
   | Contents.R.Ok contents -> bump_version ~version ~contents doc
 
 let add_node ~node doc =
@@ -847,16 +855,13 @@ let process_and_parse ~io ~target ~uri ~version doc last_tok doc_handle =
   let doc = { doc with nodes = List.rev doc.nodes } in
   (* Note that nodes and diags in reversed order here *)
   (match doc.nodes with
-  | [] -> ()
+  | [] ->
+    Io.Log.trace "resume" "resuming from document start";
   | n :: _ ->
     Io.Log.trace "resume" ("last node :" ^ Lang.Range.to_string n.range));
-  let last_node = Util.hd_opt doc.nodes in
-  let st, stats =
-    Option.cata
-      (fun { Node.state; info = { stats; _ }; _ } -> (state, stats))
-      (doc.root, Stats.zero ())
-      last_node
-  in
+  let f { Node.state; info = { stats; _ }; _ } = (state, stats) in
+  let st, node = get_last_state ~reverse:true ~doc ~f in
+  (* let node =  *)
   Stats.restore stats;
   let doc = stm doc st last_tok 0 in
   (* Set the document to "finished" mode: reverse the node list *)
@@ -937,7 +942,7 @@ let check ~io ~target ~doc () =
 let save ~doc =
   match doc.completed with
   | Yes _ ->
-    let st = Util.last doc.nodes |> Option.cata Node.state doc.root in
+    let st = fold_last_node ~reverse:false ~doc ~f:Fun.id in
     let uri = doc.uri in
     let ldir = Coq.Workspace.dirpath_of_uri ~uri in
     let in_file = Lang.LUri.File.to_string_file uri in
