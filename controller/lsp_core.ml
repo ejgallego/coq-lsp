@@ -115,7 +115,17 @@ module State = struct
     let dir = Lang.LUri.File.to_string_file uri in
     { state with workspaces = List.remove_assoc dir state.workspaces }
 
-  let is_in_dir ~dir ~file = CString.is_prefix dir file
+  let split_in_components path =
+    let phase1 = String.split_on_char '/' path in
+    let phase2 = List.map (String.split_on_char '\\') phase1 in
+    List.concat phase2
+
+  (* This is a bit more tricky in Windows, due to \ vs / paths appearing, so we
+     need to first split the dir *)
+  let is_in_dir ~dir ~file =
+    let dir_c = split_in_components dir in
+    let file_c = split_in_components file in
+    CList.prefix_of String.equal dir_c file_c
 
   let workspace_of_uri ~uri ~state =
     let { root_state; workspaces; _ } = state in
