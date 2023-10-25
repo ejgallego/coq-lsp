@@ -56,6 +56,8 @@
    parents. (@ejgallego, #582)
  - Be more robust to mixed-separator windows paths in workspace
    detection (@ejgallego, #583, fixes #569)
+ - Adjust printing breaks in error and message panels (@ejgallego,
+   @Alizter, #586, fixes #457 , fixes #458 , fixes #571)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
