@@ -12,6 +12,7 @@ export interface CoqLspServerConfig {
   max_errors: number;
   pp_type: 0 | 1 | 2;
   show_stats_on_hover: boolean;
+  show_loc_info_on_hover: boolean;
 }
 
 export namespace CoqLspServerConfig {
@@ -31,6 +32,7 @@ export namespace CoqLspServerConfig {
       max_errors: wsConfig.max_errors,
       pp_type: wsConfig.pp_type,
       show_stats_on_hover: wsConfig.show_stats_on_hover,
+      show_loc_info_on_hover: wsConfig.show_loc_info_on_hover,
     };
   }
 }
