@@ -157,6 +157,11 @@
         "title": "Hover",
         "type": "object",
         "properties": {
+          "coq-lsp.show_stats_on_hover": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show timing and memory stats for a sentence on hover."
+          },
           "coq-lsp.show_loc_info_on_hover": {
             "type": "boolean",
             "default": false,
