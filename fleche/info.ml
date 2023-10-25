@@ -175,6 +175,8 @@ module Goals = struct
     let lemmas = Coq.State.lemmas ~st in
     Option.map (Coq.Goals.reify ~ppx) lemmas
 
+  (* We need to use [in_state] here due to printing not being pure, but we want
+     a better design here eventually *)
   let goals ~st = in_state ~st ~f:pr_goal st
   let program ~st = Coq.State.program ~st
 end

@@ -14,7 +14,7 @@ import {
 } from "vscode-languageclient";
 import { GoalRequest, GoalAnswer, PpString } from "../lib/types";
 
-const infoReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
+export const goalReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
   "proof/goals"
 );
 
@@ -101,7 +101,7 @@ export class InfoPanel {
   // LSP Protocol extension for Goals
   sendGoalsRequest(client: BaseLanguageClient, params: GoalRequest) {
     this.requestSent(params);
-    client.sendRequest(infoReq, params).then(
+    client.sendRequest(goalReq, params).then(
       (goals) => this.requestDisplay(goals),
       (reason) => this.requestError(reason)
     );
@@ -110,7 +110,7 @@ export class InfoPanel {
   sendVizxRequest(client: BaseLanguageClient, params: GoalRequest) {
     this.requestSent(params);
     console.log(params.pp_format);
-    client.sendRequest(infoReq, params).then(
+    client.sendRequest(goalReq, params).then(
       (goals) => this.requestVizxDisplay(goals),
       (reason) => this.requestError(reason)
     );
@@ -126,6 +126,8 @@ export class InfoPanel {
       uri.toString(),
       version
     );
+    // let pretac = "idtac.";
+    // let cursor: GoalRequest = { textDocument, position, pretac };
     let cursor: GoalRequest = { textDocument, position };
     let strCursor: GoalRequest = {
       textDocument,

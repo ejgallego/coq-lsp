@@ -25,9 +25,12 @@ import {
   FlecheDocumentParams,
   FlecheDocument,
   FlecheSaveParams,
+  GoalRequest,
+  GoalAnswer,
+  PpString,
 } from "../lib/types";
 import { CoqLspClientConfig, CoqLspServerConfig } from "./config";
-import { InfoPanel } from "./goals";
+import { InfoPanel, goalReq } from "./goals";
 import { FileProgressManager } from "./progress";
 import { coqPerfData, PerfDataView } from "./perf";
 
@@ -54,10 +57,19 @@ export type ClientFactoryType = (
   wsConfig: WorkspaceConfiguration
 ) => BaseLanguageClient;
 
+// Extension API type (note this doesn't live in `lib` as this is VSCode specific)
+export interface CoqLspAPI {
+  /**
+   * Query goals from Coq
+   * @param params goal request parameters
+   */
+  goalsRequest(params: GoalRequest): Promise<GoalAnswer<PpString>>;
+}
+
 export function activateCoqLSP(
   context: ExtensionContext,
   clientFactory: ClientFactoryType
-): void {
+): CoqLspAPI {
   window.showInformationMessage("Coq LSP Extension: Going to activate!");
 
   function coqCommand(command: string, fn: () => void) {
@@ -317,7 +329,14 @@ export function activateCoqLSP(
   createEnableButton();
 
   start();
+
+  return {
+    goalsRequest: (params) => {
+      return client.sendRequest(goalReq, params);
+    },
+  };
 }
+
 export function deactivateCoqLSP(): Thenable<void> | undefined {
   if (!client) {
     return undefined;

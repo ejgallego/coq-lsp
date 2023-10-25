@@ -35,26 +35,55 @@ let pp ~pp_format pp =
   | Pp -> Lsp.JCoq.Pp.to_yojson pp
   | Str -> `String (Pp.string_of_ppcmds pp)
 
-let get_goals_info ~doc ~point =
+(* XXX: Speculative execution here requires more thought, about errors,
+   location, we need to make the request fail if it is not good, etc... Moreover
+   we should tune whether we cache the results; we try this for now. *)
+let parse_and_execute_in tac st =
+  (* Parse tac, loc==FIXME *)
+  let str = Gramlib.Stream.of_string tac in
+  let str = Coq.Parsing.Parsable.make ?loc:None str in
+  match Coq.Parsing.parse ~st str with
+  | Coq.Protect.E.{ r = Interrupted; feedback = _ }
+  | Coq.Protect.E.{ r = Completed (Error _); feedback = _ }
+  | Coq.Protect.E.{ r = Completed (Ok None); feedback = _ } -> None
+  | Coq.Protect.E.{ r = Completed (Ok (Some ast)); feedback = _ } -> (
+    let open Fleche.Memo in
+    (* XXX use the bind in Coq.Protect.E *)
+    match (Interp.eval (st, ast)).res with
+    | Coq.Protect.E.{ r = Interrupted; feedback = _ }
+    | Coq.Protect.E.{ r = Completed (Error _); feedback = _ } -> None
+    | Coq.Protect.E.{ r = Completed (Ok st); feedback = _ } -> Some st)
+
+let run_pretac ?pretac st =
+  match pretac with
+  | None ->
+    (* Debug option *)
+    (* Lsp.Io.trace "goals" "pretac empty"; *)
+    Some st
+  | Some tac -> Fleche.Info.in_state ~st ~f:(parse_and_execute_in tac) st
+
+let get_goal_info ~doc ~point ?pretac () =
   let open Fleche in
   let goals_mode = get_goals_mode () in
   let node = Info.LC.node ~doc ~point goals_mode in
   match node with
   | None -> (None, None)
-  | Some node ->
-    let st = node.Doc.Node.state in
-    let goals = Info.Goals.goals ~st in
-    let program = Info.Goals.program ~st in
-    (goals, Some program)
+  | Some node -> (
+    match run_pretac ?pretac node.Doc.Node.state with
+    | None -> (None, None)
+    | Some st ->
+      let goals = Info.Goals.goals ~st in
+      let program = Info.Goals.program ~st in
+      (goals, Some program))
 
-let goals ~pp_format ~doc ~point =
+let goals ~pp_format ?pretac () ~doc ~point =
   let open Fleche in
   let uri, version = (doc.Doc.uri, doc.version) in
   let textDocument = Lsp.Doc.VersionedTextDocumentIdentifier.{ uri; version } in
   let position =
     Lang.Point.{ line = fst point; character = snd point; offset = -1 }
   in
-  let goals, program = get_goals_info ~doc ~point in
+  let goals, program = get_goal_info ~doc ~point ?pretac () in
   let node = Info.LC.node ~doc ~point Exact in
   let messages = mk_messages node in
   let error = Option.bind node mk_error in

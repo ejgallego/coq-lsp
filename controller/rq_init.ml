@@ -128,6 +128,7 @@ let do_initialize ~params =
           ] )
     ; ("definitionProvider", `Bool true)
     ; ("codeLensProvider", `Assoc [])
+    ; ("selectionRangeProvider", `Bool true)
     ; ( "workspace"
       , `Assoc
           [ ( "workspaceFolders"

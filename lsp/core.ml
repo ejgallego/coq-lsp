@@ -115,6 +115,15 @@ module CodeLens = struct
   [@@deriving yojson]
 end
 
+(** SelectionRange *)
+module SelectionRange = struct
+  type t =
+    { range : Lang.Range.t
+    ; parent : t option [@default None]
+    }
+  [@@deriving yojson]
+end
+
 (** Pull Diagnostics *)
 module DocumentDiagnosticParams = struct
   type t =
