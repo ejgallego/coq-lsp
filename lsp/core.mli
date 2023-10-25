@@ -114,6 +114,15 @@ module CodeLens : sig
   [@@deriving yojson]
 end
 
+(** SelectionRange *)
+module SelectionRange : sig
+  type t =
+    { range : Lang.Range.t
+    ; parent : t option [@default None]
+    }
+  [@@deriving yojson]
+end
+
 (** Pull Diagnostics *)
 module DocumentDiagnosticParams : sig
   type t =

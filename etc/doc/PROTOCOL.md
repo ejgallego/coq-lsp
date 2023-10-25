@@ -45,6 +45,7 @@ If a feature doesn't appear here it usually means it is not planned in the short
 | `textDocument/publishDiagnostics`     | Yes     |                                                            |
 | `textDocument/diagnostic`             | No      | Planned, issue #49                                         |
 | `textDocument/codeAction`             | No      | Planned                                                    |
+| `textDocument/selectionRange`         | Partial | We only take into account the first selection; no parents  |
 |---------------------------------------|---------|------------------------------------------------------------|
 | `workspace/workspaceFolders`          | Yes     | Each folder should have a `_CoqProject` file at the root.  |
 | `workspace/didChangeWorkspaceFolders` | Yes     |                                                            |

@@ -48,6 +48,12 @@
  - New `pretac` field for preprocessing of goals with a tactic using
    speculative execution, this is experimental for now (@amblafont,
    @ejgallego, #573, helps with #558)
+ - Implement `textDocument/selectionRange` request, that will return
+   the range of the Coq sentence underlying the cursor. In VSCode,
+   this is triggered by the "Expand Selection" command. The
+   implementation is partial: we only take into account the first
+   position, and we only return a single range (Coq sentence) without
+   parents. (@ejgallego, #582)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------

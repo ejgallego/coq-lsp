@@ -173,7 +173,7 @@ module type HoverProvider = sig
 end
 
 module Loc_info : HoverProvider = struct
-  let enabled = false
+  let enabled = true
 
   let h ~contents:_ ~point:_ ~node =
     match node with
