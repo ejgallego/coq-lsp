@@ -50,10 +50,11 @@ end
 module LC : S with module P := LineCol
 module O : S with module P := Offset
 
-(** Helper to absorb errors in state change, needed due to the lack of proper
-    monad in Coq.Protect, to fix soon *)
+(** Helper to absorb errors in state change to [None], needed due to the lack of
+    proper monad in Coq.Protect, to fix soon *)
 val in_state : st:Coq.State.t -> f:('a -> 'b option) -> 'a -> 'b option
 
+(** We move towards a more modular design here, for preprocessing *)
 module Goals : sig
   val goals : st:Coq.State.t -> Pp.t Coq.Goals.reified_pp option
 

@@ -3,7 +3,7 @@ open Cmdliner
 open Fcc_lib
 
 let fcc_main roots display debug plugins files coqlib coqcorelib ocamlpath
-    rload_path load_path =
+    rload_path load_path require_libraries =
   let vo_load_path = rload_path @ load_path in
   let ml_include_path = [] in
   let args = [] in
@@ -14,6 +14,7 @@ let fcc_main roots display debug plugins files coqlib coqcorelib ocamlpath
     ; vo_load_path
     ; ml_include_path
     ; args
+    ; require_libraries
     }
   in
   let args = Args.{ cmdline; roots; display; files; debug; plugins } in
@@ -98,6 +99,18 @@ let plugins : string list Term.t =
   let doc = "Compiler plugins to load" in
   Arg.(value & opt_all string [] & info [ "plugin" ] ~docv:"PLUGINS" ~doc)
 
+let rifrom : (string option * string) list Term.t =
+  let doc =
+    "FROM Require Import LIBRARY before creating the document, à la From Coq \
+     Require Import Prelude"
+  in
+  Term.(
+    const (List.map (fun (x, y) -> (Some x, y)))
+    $ Arg.(
+        value
+        & opt_all (pair string string) []
+        & info [ "rifrom"; "require-import-from" ] ~docv:"FROM,LIBRARY" ~doc))
+
 let fcc_cmd : unit Cmd.t =
   let doc = "Flèche Coq Compiler" in
   let man =
@@ -111,7 +124,7 @@ let fcc_cmd : unit Cmd.t =
   let fcc_term =
     Term.(
       const fcc_main $ roots $ display $ debug $ plugins $ file $ coqlib
-      $ coqcorelib $ ocamlpath $ rload_path $ load_path)
+      $ coqcorelib $ ocamlpath $ rload_path $ load_path $ rifrom)
   in
   Cmd.(v (Cmd.info "fcc" ~version ~doc ~man) fcc_term)
 

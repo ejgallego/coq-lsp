@@ -8,10 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type t = string
+(************************************************************************)
+(* Coq Language Server Protocol                                         *)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Written by: Emilio J. Gallego Arias                                  *)
+(************************************************************************)
 
-(************************************************************************)
-(*                        UPDATE VERSION HERE                           *)
-let server = "0.1.8"
-(*                        UPDATE VERSION HERE                           *)
-(************************************************************************)
+val request : Request.position
