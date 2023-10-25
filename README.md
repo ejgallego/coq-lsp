@@ -65,7 +65,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [📂 Working With Multiple Files](#-working-with-multiple-files)
 - [📔 Planned Features](#-planned-features)
 - [📕 Protocol Documentation](#-protocol-documentation)
-- [🤸 Contributing](#-contributing)
+- [🤸 Contributing and Extending the System](#-contributing-and-extending-the-system)
 - [🥷 Team](#-team)
   - [🕰️ Past Contributors](#️-past-contributors)
 - [©️ Licensing Information](#️-licensing-information)
@@ -368,7 +368,7 @@ plus some extensions specific to Coq.
 
 Check [the `coq-lsp` protocol documentation](etc/doc/PROTOCOL.md) for more details.
 
-## 🤸 Contributing
+## 🤸 Contributing and Extending the System
 
 Contributions are very welcome! Feel free to chat with the dev team in
 [Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp) for any
@@ -380,6 +380,10 @@ the organization of the codebase, developer workflow, and more.
 Here is a [list of project ideas](etc/ContributionIdeas.md) that could be of
 help in case you are looking for contribution ideas, tho we are convinced that
 the best ideas will arise from using `coq-lsp` in your own Coq projects.
+
+Both Flèche and `coq-lsp` have a preliminary _plugin system_. The VSCode
+extension also exports and API so other extensions use its functionality
+to query and interact with Coq documents.
 
 ## 🥷 Team
 

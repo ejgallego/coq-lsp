@@ -1,5 +1,5 @@
-# coq-lsp 0.1.8: Dot / Bracket
-------------------------------
+# coq-lsp 0.1.8: Trick-or-treat
+-------------------------------
 
  - Update VSCode client dependencies, should bring some performance
    improvements to goal pretty printing (@ejgallego, #530)
@@ -39,6 +39,25 @@
  - `coq-lsp` is now supported by the `coq-nix-toolbox` (@Zimmi48,
    @CohenCyril, #572, via
    https://github.com/coq-community/coq-nix-toolbox/pull/164 )
+ - Support for `-rifrom` in `_CoqProject` and in command line
+   (`--rifrom`). Thanks to Lasse Blaauwbroek for the report.
+   (@ejgallego, #581, fixes #579)
+ - Export Query Goals API in VSCode client; this way other extensions
+   can implement their own commands that query Coq goals (@amblafont,
+   @ejgallego, #576, closes #558)
+ - New `pretac` field for preprocessing of goals with a tactic using
+   speculative execution, this is experimental for now (@amblafont,
+   @ejgallego, #573, helps with #558)
+ - Implement `textDocument/selectionRange` request, that will return
+   the range of the Coq sentence underlying the cursor. In VSCode,
+   this is triggered by the "Expand Selection" command. The
+   implementation is partial: we only take into account the first
+   position, and we only return a single range (Coq sentence) without
+   parents. (@ejgallego, #582)
+ - Be more robust to mixed-separator windows paths in workspace
+   detection (@ejgallego, #583, fixes #569)
+ - Adjust printing breaks in error and message panels (@ejgallego,
+   @Alizter, #586, fixes #457 , fixes #458 , fixes #571)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------

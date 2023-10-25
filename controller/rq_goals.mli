@@ -9,4 +9,6 @@ type format =
   | Pp
   | Str
 
-val goals : pp_format:format -> Request.position
+(** [goals ~pp_format ?pretac] Serve goals at point; users can request
+    pre-processing and formatting using the provided parameters. *)
+val goals : pp_format:format -> ?pretac:string -> unit -> Request.position

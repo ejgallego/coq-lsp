@@ -58,3 +58,5 @@ module Data = struct
     | PosRequest { uri = _; point; version = _; postpone = _; handler } ->
       handler ~point ~doc
 end
+
+let empty ~doc:_ ~point:_ = Ok (`List [])

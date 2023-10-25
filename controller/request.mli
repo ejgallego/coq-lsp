@@ -42,3 +42,5 @@ module Data : sig
   val dm_request : t -> Fleche.Theory.Request.request
   val serve : doc:Fleche.Doc.t -> t -> R.t
 end
+
+val empty : position

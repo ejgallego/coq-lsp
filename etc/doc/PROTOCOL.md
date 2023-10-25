@@ -45,6 +45,7 @@ If a feature doesn't appear here it usually means it is not planned in the short
 | `textDocument/publishDiagnostics`     | Yes     |                                                            |
 | `textDocument/diagnostic`             | No      | Planned, issue #49                                         |
 | `textDocument/codeAction`             | No      | Planned                                                    |
+| `textDocument/selectionRange`         | Partial | We only take into account the first selection; no parents  |
 |---------------------------------------|---------|------------------------------------------------------------|
 | `workspace/workspaceFolders`          | Yes     | Each folder should have a `_CoqProject` file at the root.  |
 | `workspace/didChangeWorkspaceFolders` | Yes     |                                                            |
@@ -80,6 +81,7 @@ interface GoalRequest {
     textDocument: VersionedTextDocumentIdentifier;
     position: Position;
     pp_format?: 'Pp' | 'Str';
+    pretac?: string;
 }
 ```
 
@@ -162,6 +164,7 @@ was the default.
 
 #### Changelog
 
+- v0.1.8: new optional `pretac` field for post-processing, backwards compatible with 0.1.7
 - v0.1.7: program information added, rest of fields compatible with 0.1.6
 - v0.1.7: pp_format field added to request, backwards compatible
 - v0.1.6: the `Pp` parameter can now be either Coq's `Pp.t` type or `string` (default)
