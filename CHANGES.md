@@ -23,6 +23,11 @@
    provides a full working Coq enviroment in `vscode.dev`. The web
    worker version is build as an artifact on CI (@ejgallego
    @corwin-of-amber, #433)
+ - [hover] When the `show_doc_on_hover` option is enabled, hover will
+   show coqdoc documentation when hovering on identifiers, using some
+   heuristics to infer it from the comment just before
+   it. Documentation is treated as Markdown. This feature is
+   experimental and may change in the future. (@ejgallego, #590)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------
