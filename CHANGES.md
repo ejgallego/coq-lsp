@@ -1,3 +1,11 @@
+# unreleased
+-----------
+
+ - new option `show_loc_info_on_hover` that will display parsing debug
+   information on hover; previous flag was fixed in code, which is way
+   less flexible. This also fixes the option being on in 0.1.8 by
+   mistake (@ejgallego, #588)
+
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
 

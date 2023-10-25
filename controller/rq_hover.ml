@@ -173,8 +173,6 @@ module type HoverProvider = sig
 end
 
 module Loc_info : HoverProvider = struct
-  let enabled = true
-
   let h ~contents:_ ~point:_ ~node =
     match node with
     | None -> "no node here"
@@ -183,7 +181,8 @@ module Loc_info : HoverProvider = struct
       Format.asprintf "%a" Lang.Range.pp range
 
   let h ~contents ~point ~node =
-    if enabled then Some (h ~contents ~point ~node) else None
+    if !Config.v.show_loc_info_on_hover then Some (h ~contents ~point ~node)
+    else None
 
   let h = Handler.MaybeNode h
 end
