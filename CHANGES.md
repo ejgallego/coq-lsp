@@ -1,11 +1,11 @@
 # unreleased
 -----------
 
- - new option `show_loc_info_on_hover` that will display parsing debug
+ - New option `show_loc_info_on_hover` that will display parsing debug
    information on hover; previous flag was fixed in code, which is way
    less flexible. This also fixes the option being on in 0.1.8 by
    mistake (@ejgallego, #588)
- - hover plugins can now access the full document, this is convenient
+ - Hover plugins can now access the full document, this is convenient
    for many use cases (@ejgallego, #591)
  - fix hover position computation on the presence of Utf characters
    (@ejgallego, #597, thanks to Pierre Courtieu for the report and
@@ -19,6 +19,9 @@
  - `proof/goals` request: new `mode` parameter, to specify goals
    after/before sentence display; renamed `pretac` to `command`, as to
    provide official support for speculative execution (@ejgallego, #600)
+ - Hover will now show coqdoc documentation of identifiers, using some
+   heuristics to infer it from the comments. Documentation is treated
+   as Markdown, this may change in the future. (@ejgallego, #590)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
