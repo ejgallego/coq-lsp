@@ -54,6 +54,8 @@
    implementation is partial: we only take into account the first
    position, and we only return a single range (Coq sentence) without
    parents. (@ejgallego, #582)
+ - Be more robust to mixed-separator windows paths in workspace
+   detection (@ejgallego, #583, fixes #569)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
