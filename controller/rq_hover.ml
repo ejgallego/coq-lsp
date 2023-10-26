@@ -160,12 +160,16 @@ open Fleche
 (* Hover handler *)
 module Handler = struct
   (** Returns [Some markdown] if there is some hover to match *)
-  type 'node h =
+  type 'node h_node =
     contents:Contents.t -> point:int * int -> node:'node -> string option
 
+  type h_doc =
+    doc:Doc.t -> point:int * int -> node:Doc.Node.t option -> string option
+
   type t =
-    | MaybeNode : Doc.Node.t option h -> t
-    | WithNode : Doc.Node.t h -> t
+    | MaybeNode : Doc.Node.t option h_node -> t
+    | WithNode : Doc.Node.t h_node -> t
+    | WithDoc : h_doc -> t
 end
 
 module type HoverProvider = sig
@@ -207,23 +211,25 @@ module Register = struct
   let handlers : Handler.t list ref = ref []
   let add fn = handlers := fn :: !handlers
 
-  let handle ~contents ~point ~node = function
+  let handle ~(doc : Doc.t) ~point ~node =
+    let contents = doc.contents in
+    function
     | Handler.MaybeNode h -> h ~contents ~point ~node
     | Handler.WithNode h ->
       Option.bind node (fun node -> h ~contents ~point ~node)
+    | Handler.WithDoc h -> h ~doc ~point ~node
 
-  let fire ~contents ~point ~node =
-    List.filter_map (handle ~contents ~point ~node) !handlers
+  let fire ~doc ~point ~node =
+    List.filter_map (handle ~doc ~point ~node) !handlers
 end
 
 (* Register in-file hover plugins *)
 let () = List.iter Register.add [ Loc_info.h; Stats.h; Type.h; Notation.h ]
 
 let hover ~doc ~point =
-  let contents = doc.Doc.contents in
   let node = Info.LC.node ~doc ~point Exact in
   let range = Option.map Doc.Node.range node in
-  let hovers = Register.fire ~contents ~point ~node in
+  let hovers = Register.fire ~doc ~point ~node in
   match hovers with
   | [] -> `Null
   | hovers ->

@@ -5,6 +5,8 @@
    information on hover; previous flag was fixed in code, which is way
    less flexible. This also fixes the option being on in 0.1.8 by
    mistake (@ejgallego, #588)
+ - hover plugins can now access the full document, this is convenient
+   for many use cases (@ejgallego, #591)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
