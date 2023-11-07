@@ -10,6 +10,9 @@
  - fix hover position computation on the presence of Utf characters
    (@ejgallego, #597, thanks to Pierre Courtieu for the report and
    example, closes #594)
+ - workaround seemingly VSCode activation bug that prevented extension
+   activation (@ejgallego @r3m0t, #598, cc #596, reported by Théo
+   Zimmerman)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
