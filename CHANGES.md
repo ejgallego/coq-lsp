@@ -13,6 +13,9 @@
  - workaround seemingly VSCode activation bug that prevented extension
    activation (@ejgallego @r3m0t, #598, cc #596, reported by Théo
    Zimmerman)
+ - require VSCode >= 1.82 in package.json . Our VSCode extension uses
+   `vscode-languageclient` 9 which imposes this. (@ejgallego, #599,
+   thanks to Théo Zimmerman for the report)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
