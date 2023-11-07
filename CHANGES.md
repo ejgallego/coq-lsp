@@ -7,6 +7,9 @@
    mistake (@ejgallego, #588)
  - hover plugins can now access the full document, this is convenient
    for many use cases (@ejgallego, #591)
+ - fix hover position computation on the presence of Utf characters
+   (@ejgallego, #597, thanks to Pierre Courtieu for the report and
+   example, closes #594)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
