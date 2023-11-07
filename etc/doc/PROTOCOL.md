@@ -82,6 +82,8 @@ interface GoalRequest {
     position: Position;
     pp_format?: 'Pp' | 'Str';
     pretac?: string;
+    command?: string;
+    mode?: 'Prev' | 'After';
 }
 ```
 
@@ -164,6 +166,9 @@ was the default.
 
 #### Changelog
 
+- v0.1.9: backwards compatible with 0.1.8
+  + new optional `mode : "Prev" | "After"` field to indicate desired goal position
+  + `command` field, alias of `pretac`, as this is not limited to tactics
 - v0.1.8: new optional `pretac` field for post-processing, backwards compatible with 0.1.7
 - v0.1.7: program information added, rest of fields compatible with 0.1.6
 - v0.1.7: pp_format field added to request, backwards compatible

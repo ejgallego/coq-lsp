@@ -330,12 +330,27 @@ let get_pp_format params =
     get_pp_format_from_config ()
   | None -> get_pp_format_from_config ()
 
-let get_pretac params = ostring_field "pretac" params
+let get_pretac params =
+  Option.append (ostring_field "command" params) (ostring_field "pretac" params)
+
+let get_goals_mode_from_config () =
+  if !Fleche.Config.v.goal_after_tactic then Fleche.Info.PrevIfEmpty
+  else Fleche.Info.Prev
+
+let get_goals_mode params =
+  match ostring_field "mode" params with
+  | Some "Prev" -> Fleche.Info.Prev
+  | Some "After" -> Fleche.Info.PrevIfEmpty
+  | Some v ->
+    LIO.trace "get_goals_mode" ("error in parameter: " ^ v);
+    get_goals_mode_from_config ()
+  | None -> get_goals_mode_from_config ()
 
 let do_goals ~params =
   let pp_format = get_pp_format params in
+  let mode = get_goals_mode params in
   let pretac = get_pretac params in
-  let handler = Rq_goals.goals ~pp_format ?pretac () in
+  let handler = Rq_goals.goals ~pp_format ~mode ~pretac () in
   do_position_request ~postpone:true ~handler ~params
 
 let do_definition =

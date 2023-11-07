@@ -21,10 +21,6 @@ let mk_error node =
   | [] -> None
   | e :: _ -> Some e.Diagnostic.message
 
-let get_goals_mode () =
-  if !Fleche.Config.v.goal_after_tactic then Fleche.Info.PrevIfEmpty
-  else Fleche.Info.Prev
-
 (** Format for goal printing *)
 type format =
   | Pp
@@ -62,10 +58,9 @@ let run_pretac ?pretac st =
     Some st
   | Some tac -> Fleche.Info.in_state ~st ~f:(parse_and_execute_in tac) st
 
-let get_goal_info ~doc ~point ?pretac () =
+let get_goal_info ~doc ~point ~mode ~pretac () =
   let open Fleche in
-  let goals_mode = get_goals_mode () in
-  let node = Info.LC.node ~doc ~point goals_mode in
+  let node = Info.LC.node ~doc ~point mode in
   match node with
   | None -> (None, None)
   | Some node -> (
@@ -76,14 +71,14 @@ let get_goal_info ~doc ~point ?pretac () =
       let program = Info.Goals.program ~st in
       (goals, Some program))
 
-let goals ~pp_format ?pretac () ~doc ~point =
+let goals ~pp_format ~mode ~pretac () ~doc ~point =
   let open Fleche in
   let uri, version = (doc.Doc.uri, doc.version) in
   let textDocument = Lsp.Doc.VersionedTextDocumentIdentifier.{ uri; version } in
   let position =
     Lang.Point.{ line = fst point; character = snd point; offset = -1 }
   in
-  let goals, program = get_goal_info ~doc ~point ?pretac () in
+  let goals, program = get_goal_info ~doc ~point ~mode ~pretac () in
   let node = Info.LC.node ~doc ~point Exact in
   let messages = mk_messages node in
   let error = Option.bind node mk_error in
