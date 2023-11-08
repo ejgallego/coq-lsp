@@ -514,19 +514,43 @@ let check_or_yield ~io ~ofn ~state =
     let () = Rq.serve_postponed ~ofn ~doc ready in
     Cont state
 
-let request_queue = Queue.create ()
+module LspQueue : sig
+  val pop_opt : unit -> LSP.Message.t option
+  val push_and_optimize : LSP.Message.t -> unit
+end = struct
+  let request_queue = Queue.create ()
+
+  let pop_opt () =
+    match Queue.peek_opt request_queue with
+    | None -> None
+    | Some v ->
+      ignore (Queue.pop request_queue);
+      Some v
+
+  let analyze = function
+    | LSP.Message.Notification { method_ = "textDocument/didChange"; params } ->
+      let uri, version = Helpers.get_uri_version params in
+      Some (uri, version)
+    | _ -> None
+
+  let filter_queue _d = ()
+
+  (* TODO: optimize the queue? EJGA: I've found that VS Code as a client keeps
+     the queue tidy by itself, so this works fine as now *)
+  let push_and_optimize com =
+    let filter_data = analyze com in
+    filter_queue filter_data;
+    Queue.push com request_queue
+end
 
 let dispatch_or_resume_check ~io ~ofn ~state =
-  match Queue.peek_opt request_queue with
+  match LspQueue.pop_opt () with
   | None ->
     (* This is where we make progress on document checking; kind of IDLE
        workqueue. *)
     Control.interrupt := false;
     check_or_yield ~io ~ofn ~state
   | Some com ->
-    (* TODO: optimize the queue? EJGA: I've found that VS Code as a client keeps
-       the queue tidy by itself, so this works fine as now *)
-    ignore (Queue.pop request_queue);
     LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
     (* We let Coq work normally now *)
     Control.interrupt := false;
@@ -562,5 +586,5 @@ let enqueue_message (com : LSP.Message.t) =
     LIO.trace "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   (* TODO: this is the place to cancel pending requests that are invalid, and in
      general, to perform queue optimizations *)
-  Queue.push com request_queue;
+  LspQueue.push_and_optimize com;
   Control.interrupt := true

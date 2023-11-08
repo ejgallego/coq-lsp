@@ -289,6 +289,8 @@ let change ~io ~(doc : Doc.t) ~version ~raw =
   Io.Log.trace "bump file"
     (Lang.LUri.File.to_string_uri uri ^ " / version: " ^ string_of_int version);
   let tb = Unix.gettimeofday () in
+  (* The discrepancy here will be solved once we remove the [Protect.*.t] types
+     from `doc.mli` *)
   match Doc.bump_version ~version ~raw doc with
   | Contents.R.Error e ->
     (* Send diagnostics for content conversion *)
@@ -298,9 +300,8 @@ let change ~io ~(doc : Doc.t) ~version ~raw =
   | Contents.R.Ok doc ->
     let diff = Unix.gettimeofday () -. tb in
     Io.Log.trace "bump file took" (Format.asprintf "%f" diff);
-    let invalid_reqs = Handle.update_doc_version ~doc in
     Check.schedule ~uri;
-    invalid_reqs
+    Handle.update_doc_version ~doc
 
 let change ~io ~uri ~version ~raw =
   match Handle.find_opt ~uri with
