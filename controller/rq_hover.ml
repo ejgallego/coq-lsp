@@ -108,7 +108,7 @@ let info_of_id ~st id =
 
 let info_of_id_at_point ~node id =
   let st = node.Fleche.Doc.Node.state in
-  Fleche.Info.in_state ~st ~f:(info_of_id ~st) id
+  Coq.State.in_state ~st ~f:(info_of_id ~st) id
 
 let pp_typ id = function
   | Def typ ->
@@ -122,7 +122,10 @@ let to_list x = Option.cata (fun x -> [ x ]) [] x
 
 let info_type ~contents ~point ~node : string option =
   Option.bind (Rq_common.get_id_at_point ~contents ~point) (fun id ->
-      Option.map (pp_typ id) (info_of_id_at_point ~node id))
+      match info_of_id_at_point ~node id with
+      | Coq.Protect.{ E.r = R.Completed (Ok (Some info)); feedback = _ } ->
+        Some (pp_typ id info)
+      | _ -> None)
 
 let extract_def ~point:_ (def : Vernacexpr.definition_expr) :
     Constrexpr.constr_expr list =
