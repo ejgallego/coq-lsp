@@ -37,6 +37,35 @@ module CacheStats = struct
       Format.asprintf "cache hit rate: %3.2f" hit_rate
 end
 
+module MemoTable = struct
+  module type S = sig
+    include Hashtbl.S
+
+    val add_execution :
+      ('a, 'l) Coq.Protect.E.t t -> key -> ('a, 'l) Coq.Protect.E.t -> unit
+
+    val add_execution_loc :
+         ('v * ('a, 'l) Coq.Protect.E.t) t
+      -> key
+      -> 'v * ('a, 'l) Coq.Protect.E.t
+      -> unit
+  end
+
+  module Make (H : Hashtbl.HashedType) : S with type key = H.t = struct
+    include Hashtbl.Make (H)
+
+    let add_execution t k ({ Coq.Protect.E.r; _ } as v) =
+      match r with
+      | Coq.Protect.R.Interrupted -> ()
+      | _ -> add t k v
+
+    let add_execution_loc t k ((_, { Coq.Protect.E.r; _ }) as v) =
+      match r with
+      | Coq.Protect.R.Interrupted -> ()
+      | _ -> add t k v
+  end
+end
+
 module Interp = struct
   (* Loc-independent command evalution and caching. *)
   module VernacInput = struct
@@ -56,11 +85,11 @@ module Interp = struct
   let input_info (st, v) =
     Format.asprintf "stm: %d | st %d" (Coq.Ast.hash v) (Hashtbl.hash st)
 
-  module HC = Hashtbl.Make (VernacInput)
+  module HC = MemoTable.Make (VernacInput)
 
   module Result = struct
     (* We store the location as to compute an offset for cached results *)
-    type t = Loc.t * Coq.State.t Coq.Interp.interp_result
+    type t = Loc.t * (Coq.State.t, Loc.t) Coq.Protect.E.t
   end
 
   type cache = Result.t HC.t
@@ -118,26 +147,20 @@ module Interp = struct
       CacheStats.hit ();
       let res = adjust_offset ~stm_loc ~cached_loc res in
       Stats.make ~cache_hit:true ~time res
-    | None, time_hash -> (
+    | None, time_hash ->
       if Debug.cache then Io.Log.trace "memo" "cache miss";
       CacheStats.miss ();
       let kind = CS.Kind.Exec in
       let res, time_interp = CS.record ~kind ~f:(Coq.Interp.interp ~st) stm in
+      let () = HC.add_execution_loc !cache (st, stm) (stm_loc, res) in
       let time = time_hash +. time_interp in
-      match res.r with
-      | Coq.Protect.R.Interrupted ->
-        (* Don't cache interruptions *)
-        Stats.make ~time res
-      | Coq.Protect.R.Completed _ ->
-        let () = HC.add !cache (st, stm) (stm_loc, res) in
-        let time = time_hash +. time_interp in
-        Stats.make ~time res)
+      Stats.make ~time res
 end
 
 module Admit = struct
   type t = Coq.State.t
 
-  module C = Hashtbl.Make (Coq.State)
+  module C = MemoTable.Make (Coq.State)
 
   let cache = C.create 1000
 
@@ -145,7 +168,7 @@ module Admit = struct
     match C.find_opt cache v with
     | None ->
       let admitted_st = Coq.State.admit ~st:v in
-      C.add cache v admitted_st;
+      C.add_execution cache v admitted_st;
       admitted_st
     | Some admitted_st -> admitted_st
 end
@@ -168,7 +191,7 @@ module Init = struct
 
   type t = S.t
 
-  module C = Hashtbl.Make (S)
+  module C = MemoTable.Make (S)
 
   let cache = C.create 1000
 
@@ -177,7 +200,7 @@ module Init = struct
     | None ->
       let root_state, workspace, uri = v in
       let admitted_st = Coq.Init.doc_init ~root_state ~workspace ~uri in
-      C.add cache v admitted_st;
+      C.add_execution cache v admitted_st;
       admitted_st
     | Some res -> res
 end

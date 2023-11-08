@@ -15,6 +15,4 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type 'a interp_result = ('a, Loc.t) Protect.E.t
-
-val interp : st:State.t -> Ast.t -> State.t interp_result
+val interp : st:State.t -> Ast.t -> (State.t, Loc.t) Protect.E.t
