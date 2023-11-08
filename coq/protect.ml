@@ -84,6 +84,16 @@ module E = struct
       { r; feedback = feedback @ fb2 }
 
   let ok v = { r = Completed (Ok v); feedback = [] }
+
+  module O = struct
+    let ( let+ ) x f = map ~f x
+
+    (* let (and+) r1 r2 = { r = r1.r, r2.r; feedback = r1.feedback @ r2.feedback
+       } *)
+    let ( let* ) x f = bind ~f x
+    (* let (and+) r1 r2 = { r = r1.r, r2.r; feedback = r1.feedback @ r2.feedback
+       } *)
+  end
 end
 
 (* Eval with reified exceptions and feedback *)
