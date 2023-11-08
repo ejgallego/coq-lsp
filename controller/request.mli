@@ -17,6 +17,8 @@
 
 module R : sig
   type t = (Yojson.Safe.t, int * string) Result.t
+
+  val of_execution : name:string -> f:('a -> (t, 'l) Coq.Protect.E.t) -> 'a -> t
 end
 
 type document = doc:Fleche.Doc.t -> R.t
@@ -43,4 +45,5 @@ module Data : sig
   val serve : doc:Fleche.Doc.t -> t -> R.t
 end
 
+(** Returns an empty list of results for any position / document *)
 val empty : position

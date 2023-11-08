@@ -50,16 +50,15 @@ end
 module LC : S with module P := LineCol
 module O : S with module P := Offset
 
-(** Helper to absorb errors in state change to [None], needed due to the lack of
-    proper monad in Coq.Protect, to fix soon *)
-val in_state : st:Coq.State.t -> f:('a -> 'b option) -> 'a -> 'b option
-
 (** We move towards a more modular design here, for preprocessing *)
 module Goals : sig
-  val goals : st:Coq.State.t -> Pp.t Coq.Goals.reified_pp option
+  val goals :
+    st:Coq.State.t -> (Pp.t Coq.Goals.reified_pp option, Loc.t) Coq.Protect.E.t
+
   val program : st:Coq.State.t -> Declare.OblState.View.t Names.Id.Map.t
 end
 
 module Completion : sig
-  val candidates : st:Coq.State.t -> string -> string list option
+  val candidates :
+    st:Coq.State.t -> string -> (string list option, Loc.t) Coq.Protect.E.t
 end
