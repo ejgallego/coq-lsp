@@ -17,7 +17,7 @@ module Interp : sig
   type t = Coq.State.t * Coq.Ast.t
 
   (** Interpret a command, possibly memoizing it *)
-  val eval : t -> Coq.State.t Coq.Interp.interp_result Stats.t
+  val eval : t -> (Coq.State.t, Loc.t) Coq.Protect.E.t Stats.t
 
   (** [size ()] Return the size in words, expensive *)
   val size : unit -> int

@@ -15,8 +15,6 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type 'a interp_result = ('a, Loc.t) Protect.E.t
-
 let coq_interp ~st cmd =
   let st = State.to_coq st in
   let cmd = Ast.to_coq cmd in

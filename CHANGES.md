@@ -19,6 +19,8 @@
  - `proof/goals` request: new `mode` parameter, to specify goals
    after/before sentence display; renamed `pretac` to `command`, as to
    provide official support for speculative execution (@ejgallego, #600)
+ - fix some cases where interrupted computations where memoized
+   (@ejgallego, #603)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
