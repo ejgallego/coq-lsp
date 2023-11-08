@@ -147,18 +147,6 @@ module O = Make (Offset)
    information from a document, and the other that further processes it, like
    for goals, possibly executing Coq code. *)
 
-(* XXX: This needs fixing by having a better monad *)
-let in_state ~st ~f node =
-  match Coq.State.in_state ~st ~f node with
-  | { r = Coq.Protect.R.Completed (Result.Ok res); feedback } ->
-    Io.Log.feedback feedback;
-    res
-  | { r = Coq.Protect.R.Completed (Result.Error _) | Coq.Protect.R.Interrupted
-    ; feedback
-    } ->
-    Io.Log.feedback feedback;
-    None
-
 (* Related to goal request *)
 module Goals = struct
   let pr_goal st =
@@ -166,6 +154,8 @@ module Goals = struct
       let { Coq.Protect.E.r; feedback } =
         Coq.Print.pr_letype_env ~goal_concl_style:true env sigma x
       in
+      (* XXX: We ideally want to thread this in the monad too, but it'd be
+         better if the printer was more functional *)
       Io.Log.feedback feedback;
       match r with
       | Coq.Protect.R.Completed (Ok pr) -> pr
@@ -177,7 +167,7 @@ module Goals = struct
 
   (* We need to use [in_state] here due to printing not being pure, but we want
      a better design here eventually *)
-  let goals ~st = in_state ~st ~f:pr_goal st
+  let goals ~st = Coq.State.in_state ~st ~f:pr_goal st
   let program ~st = Coq.State.program ~st
 end
 
@@ -194,7 +184,7 @@ module Completion = struct
 
   let candidates ~st prefix =
     let ( let* ) = Option.bind in
-    in_state ~st prefix ~f:(fun prefix ->
+    Coq.State.in_state ~st prefix ~f:(fun prefix ->
         let* p = to_qualid prefix in
         Nametab.completion_canditates p
         |> List.map (fun x -> Pp.string_of_ppcmds (pr_extref x))
