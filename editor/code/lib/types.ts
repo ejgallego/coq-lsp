@@ -70,6 +70,8 @@ export interface GoalRequest {
   position: Position;
   pp_format?: "Pp" | "Str";
   pretac?: string;
+  command?: string;
+  mode?: "Prev" | "After";
 }
 
 export type Pp =

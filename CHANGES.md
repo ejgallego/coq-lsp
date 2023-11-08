@@ -16,6 +16,9 @@
  - require VSCode >= 1.82 in package.json . Our VSCode extension uses
    `vscode-languageclient` 9 which imposes this. (@ejgallego, #599,
    thanks to Théo Zimmerman for the report)
+ - `proof/goals` request: new `mode` parameter, to specify goals
+   after/before sentence display; renamed `pretac` to `command`, as to
+   provide official support for speculative execution (@ejgallego, #600)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
