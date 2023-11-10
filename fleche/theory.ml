@@ -224,34 +224,10 @@ end = struct
     pending := CList.remove Lang.LUri.File.equal uri !pending
 end
 
-let send_error_permanent_fail ~io ~uri ~version message =
-  let open Lang in
-  let start = Point.{ line = 0; character = 0; offset = 0 } in
-  let end_ = Point.{ line = 0; character = 1; offset = 1 } in
-  let range = Range.{ start; end_ } in
-  let d = Lang.Diagnostic.{ range; severity = 1; message; extra = None } in
-  Io.Report.diagnostics ~io ~uri ~version [ d ]
-
-let handle_create ~io ~uri ~version r =
-  match r with
-  | Coq.Protect.R.Completed (Result.Ok doc) ->
-    Handle.create ~uri ~doc;
-    Check.schedule ~uri
-  | Completed (Result.Error (Anomaly (_, msg)))
-  | Completed (Result.Error (User (_, msg))) ->
-    (* For now we inform the user of the problem, we could be finer and create a
-       ghost node for the implicit import, but we will phase that out in Coq
-       upstream at some point. *)
-    let message =
-      Format.asprintf "Doc.create, internal error: @[%a@]" Pp.pp_with msg
-    in
-    Io.Report.message ~io ~lvl:1 ~message;
-    send_error_permanent_fail ~io ~uri ~version (Pp.str message)
-  | Interrupted -> ()
-
-let create ~io ~env ~uri ~raw ~version =
-  let r = Doc.create ~env ~uri ~raw ~version in
-  handle_create ~io ~uri ~version r
+let create ~env ~uri ~raw ~version =
+  let doc = Doc.create ~env ~uri ~raw ~version in
+  Handle.create ~uri ~doc;
+  Check.schedule ~uri
 
 (* Set this to false for < 8.17, we could parse the version but not worth it. *)
 let sane_coq_base_version = true
@@ -279,32 +255,28 @@ let create ~io ~env ~uri ~raw ~version =
        instructions on how to install a fixed branch for earlier Coq versions."
     in
     Io.Report.message ~io ~lvl:1 ~message;
-    (match Doc.create_failed_permanent ~env ~uri ~raw ~version with
-    | Contents.R.Error _e -> ()
-    | Ok doc -> Handle.create ~uri ~doc);
-    send_error_permanent_fail ~io ~uri ~version (Pp.str message))
+    let doc = Doc.create_failed_permanent ~env ~uri ~raw ~version in
+    Handle.create ~uri ~doc;
+    Check.schedule ~uri)
   else (
     tainted := true;
-    create ~io ~env ~uri ~raw ~version)
+    create ~env ~uri ~raw ~version)
 
-let change ~io ~(doc : Doc.t) ~version ~raw =
+let change ~io:_ ~(doc : Doc.t) ~version ~raw =
   let uri = doc.uri in
   Io.Log.trace "bump file"
     (Lang.LUri.File.to_string_uri uri ^ " / version: " ^ string_of_int version);
   let tb = Unix.gettimeofday () in
   (* The discrepancy here will be solved once we remove the [Protect.*.t] types
      from `doc.mli` *)
-  match Doc.bump_version ~version ~raw doc with
-  | Contents.R.Error e ->
-    (* Send diagnostics for content conversion *)
-    let message = Pp.(str "Error in document conversion: " ++ str e) in
-    send_error_permanent_fail ~io ~uri ~version message;
-    Handle.clear_requests ~uri
-  | Contents.R.Ok doc ->
-    let diff = Unix.gettimeofday () -. tb in
-    Io.Log.trace "bump file took" (Format.asprintf "%f" diff);
-    Check.schedule ~uri;
-    Handle.update_doc_version ~doc
+  let doc = Doc.bump_version ~version ~raw doc in
+  let diff = Unix.gettimeofday () -. tb in
+  Io.Log.trace "bump file took" (Format.asprintf "%f" diff);
+  (* Just in case for the future, we update the document before requesting it to
+     be checked *)
+  let invalid = Handle.update_doc_version ~doc in
+  Check.schedule ~uri;
+  invalid
 
 let change ~io ~uri ~version ~raw =
   match Handle.find_opt ~uri with

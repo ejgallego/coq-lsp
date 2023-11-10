@@ -21,6 +21,11 @@
    provide official support for speculative execution (@ejgallego, #600)
  - fix some cases where interrupted computations where memoized
    (@ejgallego, #603)
+ - [internal] Flèche [Doc.t] API will now absorb errors on document
+   update and creation into the document itself. Thus, a document that
+   failed to create or update is still valid, but in the right failed
+   state. This is a much needed API change for a lot of use cases
+   (@ejgallego, #604)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
