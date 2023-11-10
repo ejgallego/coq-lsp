@@ -262,66 +262,127 @@ let init_fname ~uri =
 
 let init_loc ~uri = Loc.initial (init_fname ~uri)
 
-let process_init_feedback ~stats range state messages =
+(* default range for the node that contains the init feedback errors *)
+let drange =
+  let open Lang in
+  let start = Point.{ line = 0; character = 0; offset = 0 } in
+  let end_ = Point.{ line = 0; character = 1; offset = 1 } in
+  Range.{ start; end_ }
+
+let process_init_feedback ~lines ~stats state feedback =
+  let messages = List.map (Node.Message.feedback_to_message ~lines) feedback in
   if not (CList.is_empty messages) then
-    let diags, messages = Diags.of_messages ~drange:range messages in
+    let diags, messages = Diags.of_messages ~drange messages in
     let parsing_time = 0.0 in
     let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
     let info =
       Node.Info.make ~parsing_time ~mw_prev ~mw_after:mw_prev ~stats ()
     in
+    let range = drange in
     [ { Node.range; ast = None; state; diags; messages; info } ]
   else []
 
 (* Memoized call to [Coq.Init.doc_init] *)
 let mk_doc ~env ~uri = Memo.Init.eval (env.Env.init, env.workspace, uri)
 
+(* Create empty doc, in state [~completed] *)
+let empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed =
+  let lines = contents.Contents.lines in
+  let init_loc = init_loc ~uri in
+  let init_range = Coq.Utils.to_range ~lines init_loc in
+  let toc = CString.Map.empty in
+  let diags_dirty = not (CList.is_empty nodes) in
+  let completed = completed init_range in
+  { uri; contents; toc; version; env; root; nodes; diags_dirty; completed }
+
+let error_doc ~loc ~message ~uri ~contents ~version ~env ~completed =
+  let feedback = [ (loc, 1, Pp.str message) ] in
+  let root = env.Env.init in
+  let nodes = [] in
+  (empty_doc ~uri ~version ~contents ~env ~root ~nodes ~completed, feedback)
+
+let conv_error_doc ~raw ~uri ~version ~env ~root ~completed err =
+  let contents = Contents.make_raw ~raw in
+  let lines = contents.lines in
+  let err = (None, 1, Pp.(str "Error in document conversion: " ++ str err)) in
+  let stats = Stats.dump () in
+  let nodes = process_init_feedback ~lines ~stats root [ err ] in
+  empty_doc ~uri ~version ~env ~root ~nodes ~completed ~contents
+
 let create ~env ~uri ~version ~contents =
   let () = Stats.reset () in
-  let { Coq.Protect.E.r; feedback } = mk_doc ~env ~uri in
-  Coq.Protect.R.map r ~f:(fun root ->
-      let init_loc = init_loc ~uri in
-      let lines = contents.Contents.lines in
-      let init_range = Coq.Utils.to_range ~lines init_loc in
-      let feedback =
-        List.map (Node.Message.feedback_to_message ~lines) feedback
+  let root = mk_doc ~env ~uri in
+  Coq.Protect.E.map root ~f:(fun root ->
+      let nodes = [] in
+      let completed range = Completion.Stopped range in
+      empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed)
+
+(** Create a permanently failed doc, to be removed when we drop 8.16 support *)
+let handle_failed_permanent ~env ~uri ~version ~contents =
+  let completed range = Completion.FailedPermanent range in
+  let loc, message = (None, "Document Failed Permanently due to Coq bugs") in
+  let doc, feedback =
+    error_doc ~loc ~message ~uri ~contents ~version ~env ~completed
+  in
+  let stats = Stats.dump () in
+  let nodes =
+    let lines = contents.Contents.lines in
+    process_init_feedback ~lines ~stats env.Env.init feedback @ doc.nodes
+  in
+  let diags_dirty = not (CList.is_empty nodes) in
+  { doc with nodes; diags_dirty }
+
+(** Try to create a doc, if Coq execution fails, create a failed doc with the
+    corresponding errors; for now we refine the contents step as to better setup
+    the initial document. *)
+let handle_doc_creation_exec ~env ~uri ~version ~contents =
+  let completed range = Completion.Failed range in
+  let { Coq.Protect.E.r; feedback } = create ~env ~uri ~version ~contents in
+  let doc, extra_feedback =
+    match r with
+    | Interrupted ->
+      let message = "Document Creation Interrupted!" in
+      let loc = None in
+      error_doc ~loc ~message ~uri ~version ~contents ~env ~completed
+    | Completed (Error (User (loc, err_msg)))
+    | Completed (Error (Anomaly (loc, err_msg))) ->
+      let message =
+        Format.asprintf "Doc.create, internal error: @[%a@]" Pp.pp_with err_msg
       in
-      let stats = Stats.dump () in
-      let toc = CString.Map.empty in
-      let nodes = process_init_feedback ~stats init_range root feedback in
-      let diags_dirty = not (CList.is_empty nodes) in
-      { uri
-      ; contents
-      ; toc
-      ; version
-      ; nodes
-      ; completed = Stopped init_range
-      ; root
-      ; env
-      ; diags_dirty
-      })
+      error_doc ~loc ~message ~uri ~version ~contents ~env ~completed
+    | Completed (Ok doc) -> (doc, [])
+  in
+  let state = doc.root in
+  let stats = Stats.dump () in
+  let nodes =
+    let lines = contents.Contents.lines in
+    process_init_feedback ~lines ~stats state (feedback @ extra_feedback)
+    @ doc.nodes
+  in
+  let diags_dirty = not (CList.is_empty nodes) in
+  { doc with nodes; diags_dirty }
+
+let handle_contents_creation ~env ~uri ~version ~raw ~completed f =
+  match Contents.make ~uri ~raw with
+  | Contents.R.Error err ->
+    let root = env.Env.init in
+    conv_error_doc ~raw ~uri ~version ~env ~root ~completed err
+  | Contents.R.Ok contents -> f ~env ~uri ~version ~contents
 
 let create ~env ~uri ~version ~raw =
-  match Contents.make ~uri ~raw with
-  | Error e -> Coq.Protect.R.error (Pp.str e)
-  | Ok contents -> create ~env ~uri ~version ~contents
+  let completed range = Completion.Failed range in
+  handle_contents_creation ~env ~uri ~version ~raw ~completed
+    handle_doc_creation_exec
+
+(* Used in bump, we should consolidate with create *)
+let recreate ~doc ~version ~contents =
+  let env, uri = (doc.env, doc.uri) in
+  handle_doc_creation_exec ~env ~uri ~version ~contents
 
 let create_failed_permanent ~env ~uri ~version ~raw =
-  Contents.make ~uri ~raw
-  |> Contents.R.map ~f:(fun contents ->
-         let lines = contents.Contents.lines in
-         let init_loc = init_loc ~uri in
-         let range = Coq.Utils.to_range ~lines init_loc in
-         { uri
-         ; contents
-         ; toc = CString.Map.empty
-         ; version
-         ; root = env.Env.init
-         ; nodes = []
-         ; diags_dirty = true
-         ; completed = FailedPermanent range
-         ; env
-         })
+  let completed range = Completion.FailedPermanent range in
+  handle_contents_creation ~env ~uri ~version ~raw ~completed
+    handle_failed_permanent
 
 let recover_up_to_offset ~init_range doc offset =
   Io.Log.trace "prefix"
@@ -381,20 +442,17 @@ let bump_version ~version ~(contents : Contents.t) doc =
      restoring / executing the first sentence *)
   | FailedPermanent _ -> doc
   | Failed _ ->
-    { doc with
-      version
-    ; nodes = []
-    ; contents
-    ; diags_dirty = true
-    ; completed = Stopped init_range
-    }
+    (* re-create the document on failed, as the env may have changed *)
+    recreate ~doc ~version ~contents
   | Stopped _ | Yes _ -> bump_version ~init_range ~version ~contents doc
 
 let bump_version ~version ~raw doc =
-  let contents = Contents.make ~uri:doc.uri ~raw in
-  Contents.R.map
-    ~f:(fun contents -> bump_version ~version ~contents doc)
-    contents
+  let uri = doc.uri in
+  match Contents.make ~uri ~raw with
+  | Contents.R.Error e ->
+    let completed range = Completion.Failed range in
+    conv_error_doc ~raw ~uri ~version ~env:doc.env ~root:doc.root ~completed e
+  | Contents.R.Ok contents -> bump_version ~version ~contents doc
 
 let add_node ~node doc =
   let diags_dirty = if node.Node.diags <> [] then true else doc.diags_dirty in
@@ -885,6 +943,6 @@ let save ~doc =
     let in_file = Lang.LUri.File.to_string_file uri in
     Coq.State.in_state ~st ~f:(fun () -> Coq.Save.save_vo ~st ~ldir ~in_file) ()
   | _ ->
-    let error = Pp.(str "Can't save incomplete document") in
+    let error = Pp.(str "Can't save document that failed to check") in
     let r = Coq.Protect.R.error error in
     Coq.Protect.E.{ r; feedback = [] }

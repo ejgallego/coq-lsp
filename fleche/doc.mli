@@ -95,17 +95,15 @@ val asts : t -> Node.Ast.t list
 (** Return the list of all diags in the doc *)
 val diags : t -> Lang.Diagnostic.t list
 
-(** Create a new Coq document, this is cached! *)
-val create :
-     env:Env.t
-  -> uri:Lang.LUri.File.t
-  -> version:int
-  -> raw:string
-  -> (t, Loc.t) Coq.Protect.R.t
+(** Create a new Coq document, this is cached! Note that this operation always
+    suceeds, but the document could be created in a `Failed` state if problems
+    arise. *)
+val create : env:Env.t -> uri:Lang.LUri.File.t -> version:int -> raw:string -> t
 
 (** Update the contents of a document, updating the right structures for
-    incremental checking. *)
-val bump_version : version:int -> raw:string -> t -> t Contents.R.t
+    incremental checking. If the operation fails, the document will be left in
+    `Failed` state. *)
+val bump_version : version:int -> raw:string -> t -> t
 
 (** Checking targets, this specifies what we expect check to reach *)
 module Target : sig
@@ -129,8 +127,4 @@ val save : doc:t -> (unit, Loc.t) Coq.Protect.E.t
 
 (** This is internal, to workaround the Coq multiple-docs problem *)
 val create_failed_permanent :
-     env:Env.t
-  -> uri:Lang.LUri.File.t
-  -> version:int
-  -> raw:string
-  -> t Contents.R.t
+  env:Env.t -> uri:Lang.LUri.File.t -> version:int -> raw:string -> t
