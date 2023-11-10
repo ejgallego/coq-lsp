@@ -30,8 +30,9 @@ let compile_file ~cc file =
   | Error _ -> ()
   | Ok uri -> (
     let workspace = workspace_of_uri ~io ~workspaces ~uri in
+    let env = Doc.Env.make ~init:root_state ~workspace in
     let raw = Util.input_all file in
-    let () = Theory.create ~io ~root_state ~workspace ~uri ~raw ~version:1 in
+    let () = Theory.create ~io ~env ~uri ~raw ~version:1 in
     match Theory.Check.maybe_check ~io with
     | None -> ()
     | Some (_, doc) ->

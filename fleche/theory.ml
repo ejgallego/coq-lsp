@@ -232,10 +232,9 @@ let send_error_permanent_fail ~io ~uri ~version message =
   let d = Lang.Diagnostic.{ range; severity = 1; message; extra = None } in
   Io.Report.diagnostics ~io ~uri ~version [ d ]
 
-let create ~io ~root_state ~workspace ~uri ~raw ~version =
-  let r = Doc.create ~state:root_state ~workspace ~uri ~raw ~version in
+let handle_create ~io ~uri ~version r =
   match r with
-  | Completed (Result.Ok doc) ->
+  | Coq.Protect.R.Completed (Result.Ok doc) ->
     Handle.create ~uri ~doc;
     Check.schedule ~uri
   | Completed (Result.Error (Anomaly (_, msg)))
@@ -249,6 +248,10 @@ let create ~io ~root_state ~workspace ~uri ~raw ~version =
     Io.Report.message ~io ~lvl:1 ~message;
     send_error_permanent_fail ~io ~uri ~version (Pp.str message)
   | Interrupted -> ()
+
+let create ~io ~env ~uri ~raw ~version =
+  let r = Doc.create ~env ~uri ~raw ~version in
+  handle_create ~io ~uri ~version r
 
 (* Set this to false for < 8.17, we could parse the version but not worth it. *)
 let sane_coq_base_version = true
@@ -265,7 +268,7 @@ let sane_coq_version =
 (* Can't wait for the day this goes away *)
 let tainted = ref false
 
-let create ~io ~root_state ~workspace ~uri ~raw ~version =
+let create ~io ~env ~uri ~raw ~version =
   if !tainted && not sane_coq_version then (
     (* Error due to Coq bug *)
     let message =
@@ -276,13 +279,13 @@ let create ~io ~root_state ~workspace ~uri ~raw ~version =
        instructions on how to install a fixed branch for earlier Coq versions."
     in
     Io.Report.message ~io ~lvl:1 ~message;
-    (match Doc.create_failed_permanent ~state:root_state ~uri ~raw ~version with
+    (match Doc.create_failed_permanent ~env ~uri ~raw ~version with
     | Contents.R.Error _e -> ()
     | Ok doc -> Handle.create ~uri ~doc);
     send_error_permanent_fail ~io ~uri ~version (Pp.str message))
   else (
     tainted := true;
-    create ~io ~root_state ~workspace ~uri ~raw ~version)
+    create ~io ~env ~uri ~raw ~version)
 
 let change ~io ~(doc : Doc.t) ~version ~raw =
   let uri = doc.uri in
