@@ -139,3 +139,8 @@ let make ~uri ~raw =
   | R.Ok text ->
     let last, lines = get_last_text text in
     R.Ok { raw; text; last; lines }
+
+let make_raw ~raw =
+  let text = raw in
+  let last, lines = get_last_text text in
+  { raw; text; last; lines }
