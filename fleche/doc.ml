@@ -943,7 +943,9 @@ let save ~doc =
     let uri = doc.uri in
     let ldir = Coq.Workspace.dirpath_of_uri ~uri in
     let in_file = Lang.LUri.File.to_string_file uri in
-    Coq.State.in_state ~st ~f:(fun () -> Coq.Save.save_vo ~st ~ldir ~in_file) ()
+    Coq.State.in_stateM ~st
+      ~f:(fun () -> Coq.Save.save_vo ~st ~ldir ~in_file)
+      ()
   | _ ->
     let error = Pp.(str "Can't save document that failed to check") in
     let r = Coq.Protect.R.error error in
