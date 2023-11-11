@@ -176,12 +176,12 @@ Load the astdump plugin
   $ fcc --plugin=coq-lsp.plugin.astdump --root proj1 proj1/a.v
   [message] Configuration loaded from Command-line arguments
    - coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
    - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
-     + coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
   
   [ast plugin] dumping ast for proj1/a.v ...
