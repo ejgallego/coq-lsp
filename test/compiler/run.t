@@ -104,6 +104,14 @@ Compile a dependent file without the dep being built
     "severity": 4,
     "message": "aa is defined"
   }
+  {
+    "range": {
+      "start": { "line": 6, "character": 0 },
+      "end": { "line": 6, "character": 4 }
+    },
+    "severity": 4,
+    "message": "foo is defined"
+  }
   $ cat proj1/b.diags
   {
     "range": {
@@ -163,3 +171,22 @@ Load the example plugin
   [message] compiling file proj1/a.v
   
   [example plugin] file checking for proj1/a.v was completed
+
+Load the astdump plugin
+  $ fcc --plugin=coq-lsp.plugin.astdump --root proj1 proj1/a.v
+  [message] Configuration loaded from Command-line arguments
+   - coqlib is at: [TEST_PATH]
+     + coqlib is at: [TEST_PATH]
+   - Modules [Coq.Init.Prelude] will be loaded by default
+   - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
+   - ocamlpath wasn't overriden
+     + coqlib is at: [TEST_PATH]
+     + coqlib is at: [TEST_PATH]
+  [message] compiling file proj1/a.v
+  
+  [ast plugin] dumping ast for proj1/a.v ...
+  [ast plugin] dumping ast for proj1/a.v was completed!
+  $ md5sum proj1/a.v.json.astdump
+  3b0cdd303aac62d35ba0c765b4d1c373  proj1/a.v.json.astdump
+  $ md5sum proj1/a.v.sexp.astdump
+  af5864db39cb58fdc402f8d7d639b5d0  proj1/a.v.sexp.astdump

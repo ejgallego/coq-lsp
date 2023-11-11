@@ -1,0 +1,4 @@
+(library
+ (name Astdump_plugin)
+ (public_name coq-lsp.plugin.astdump)
+ (libraries coq-lsp.fleche coq-lsp.lsp))
