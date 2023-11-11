@@ -26,6 +26,7 @@
    failed to create or update is still valid, but in the right failed
    state. This is a much needed API change for a lot of use cases
    (@ejgallego, #604)
+ - support OCaml 5.1.x (@ejgallego, #606)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
