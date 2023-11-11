@@ -29,6 +29,8 @@
  - support OCaml 5.1.x (@ejgallego, #606)
  - update progress indicator correctly on End Of File (@ejgallego,
    #605, fixes #445)
+ - [plugins] New `astdump` plugin to dump AST of files into JSON and
+   SEXP (@ejgallego, #607)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
