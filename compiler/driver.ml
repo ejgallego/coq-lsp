@@ -6,7 +6,7 @@ let coq_init ~debug =
 
 let replace_test_path exp message =
   let home_re = Str.regexp (exp ^ ".*$") in
-  Str.global_replace home_re "coqlib is at: [TEST_PATH]" message
+  Str.global_replace home_re (exp ^ "[TEST_PATH]") message
 
 let sanitize_paths message =
   match Sys.getenv_opt "FCC_TEST" with
