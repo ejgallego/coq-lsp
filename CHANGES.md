@@ -31,6 +31,7 @@
    #605, fixes #445)
  - [plugins] New `astdump` plugin to dump AST of files into JSON and
    SEXP (@ejgallego, #607)
+ - errors on save where not properly caught (@ejgallego, #608)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
