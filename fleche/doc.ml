@@ -627,8 +627,8 @@ let parse_action ~lines ~st last_tok doc_handle =
     match res with
     | Ok None ->
       (* We actually need to fix Coq to return the location of the true file
-         EOF, the below trick doesn't work. That will involved updating the type
-         of `main_entry` *)
+         EOF, the below trick seems to work tho. Coq fix involves updating the
+         type of `Pcoq.main_entry` *)
       let last_tok = Coq.Parsing.Parsable.loc doc_handle in
       let last_tok = Coq.Utils.to_range ~lines last_tok in
       (EOF (Yes last_tok), [], feedback, time)
@@ -636,7 +636,7 @@ let parse_action ~lines ~st last_tok doc_handle =
       let () = if Debug.parsing then DDebug.parsed_sentence ~ast in
       (Process ast, [], feedback, time)
     | Error (Anomaly (_, msg)) | Error (User (None, msg)) ->
-      (* We don't have a better altenative :(, usually missing error loc here
+      (* We don't have a better alternative :(, usually missing error loc here
          means an anomaly, so we stop *)
       let err_range = last_tok in
       let parse_diags = [ Diags.make err_range 1 msg ] in
@@ -828,6 +828,8 @@ let process_and_parse ~io ~target ~uri ~version doc last_tok doc_handle =
       | Interrupted last_tok -> set_completion ~completed:(Stopped last_tok) doc
       | Stop (completed, node) ->
         let doc = add_node ~node doc in
+        (* See #445 *)
+        report_progress ~io ~doc (Completion.range completed);
         set_completion ~completed doc
       | Continue { state; last_tok; node } ->
         let n_errors = CList.count Lang.Diagnostic.is_error node.Node.diags in
