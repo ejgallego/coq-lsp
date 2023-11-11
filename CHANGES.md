@@ -27,6 +27,8 @@
    state. This is a much needed API change for a lot of use cases
    (@ejgallego, #604)
  - support OCaml 5.1.x (@ejgallego, #606)
+ - update progress indicator correctly on End Of File (@ejgallego,
+   #605, fixes #445)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
@@ -108,7 +110,7 @@
    (@ejgallego, #438, reported by David Ilcinkas)
  - Fix "Error message browser becomes non-visible when there are many
    goals" by using a fixed-position separated error display (@TDiazT,
-   #445, fixes #441)
+   #455, fixes #441)
  - Message about workspace detection was printing the wrong file,
    (@ejgallego, #444, reported by Alex Sanchez-Stern)
  - Display the list of pending obligations in info panel (@ejgallego,
