@@ -186,7 +186,14 @@ Load the astdump plugin
   
   [ast plugin] dumping ast for proj1/a.v ...
   [ast plugin] dumping ast for proj1/a.v was completed!
-  $ md5sum proj1/a.v.json.astdump
-  3b0cdd303aac62d35ba0c765b4d1c373  proj1/a.v.json.astdump
-  $ md5sum proj1/a.v.sexp.astdump
-  af5864db39cb58fdc402f8d7d639b5d0  proj1/a.v.sexp.astdump
+
+EJGA: I'd be nice to check the checksum of files here, however
+`md5sum` is not avilable on all of our CI platforms yet. `ls -l`
+output is also not fully portable, so we settle for this check for now.
+
+Another way to test this would be to have an `undump` plugin, so we
+de-serialize the document back and check.
+
+  $ ls proj1/a.v.json.astdump proj1/a.v.sexp.astdump
+  proj1/a.v.json.astdump
+  proj1/a.v.sexp.astdump
