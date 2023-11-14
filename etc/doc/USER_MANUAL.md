@@ -98,7 +98,18 @@ A setting to have `coq-lsp` check documents continuously exists.
 You can tell the server to free up memory with the "Coq LSP: Free
 memory" command.
 
-## Advanced: Multiple workspaces
+## Advanced: Multiple Workspaces
+
+`coq-lsp` does support projects that combine multiple Coq project
+roots in a single workspace. That way, one can develop on several
+distinct Coq developments seamlessly.
+
+To enable this, use the "Add Folder" option in VSCode, where each root
+must be a folder containing a `_CoqProject` file.
+
+Check the example at
+[../../examples/multiple_workspaces/](../../examples/multiple_workspaces/)
+to see it in action!
 
 ## Interrupting coq-lsp
 

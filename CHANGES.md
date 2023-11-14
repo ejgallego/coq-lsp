@@ -153,6 +153,8 @@
    and info messages appear as diagnostics
  - Display the continous/on-request checking mode in the status bar,
    allow to change it by clicking on it (@ejgallego, #721)
+ - Add an example of multiple workspaces (@ejgallego, @Blaisorblade,
+   #611)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
