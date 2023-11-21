@@ -16,7 +16,7 @@ type t =
   ; client_version : string [@default "any"]
   ; eager_diagnostics : bool [@default true]
         (** [eager_diagnostics] Send (full) diagnostics after processing each *)
-  ; goal_after_tactic : bool [@default false]
+  ; goal_after_tactic : bool [@default true]
         (** When showing goals and the cursor is in a tactic, if false, show
             goals before executing the tactic, if true, show goals after *)
   ; show_coq_info_messages : bool [@default false]
