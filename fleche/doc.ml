@@ -549,20 +549,26 @@ end = struct
 
   (* Contents-based recovery heuristic, special 'Qed.' case when `Qed.` is part
      of the error *)
-  let extract_qed Lang.Range.{ end_; _ } { Contents.lines; _ } =
+
+  (* This function extracts the last [size] chars from the error, omitting the
+     point *)
+  let extract_token Lang.Range.{ end_; _ } { Contents.lines; _ } size =
     let Lang.Point.{ line; character; _ } = end_ in
     let line = Array.get lines line in
-    if character > 3 && String.length line > 3 then
-      let coff = character - 4 in
-      Some (String.init 3 (fun idx -> line.[idx + coff]))
+    if character > size && String.length line > size then
+      let coff = character - (size + 1) in
+      Some (String.init size (fun idx -> line.[idx + coff]))
     else None
 
   let lex_recovery_heuristic last_tok contents nodes st =
-    match extract_qed last_tok contents with
-    | Some txt when String.equal txt "Qed" ->
-      Io.Log.trace "lex recovery" "qed detected";
+    let et = extract_token last_tok contents in
+    match (et 3, et 7, et 8) with
+    | Some ("Qed" as txt), _, _
+    | _, Some ("Defined" as txt), _
+    | _, _, Some ("Admitted" as txt) ->
+      Io.Log.trace "lex recovery" (txt ^ " detected");
       recovery_for_failed_qed ~default:st nodes |> Coq.Protect.E.map ~f:fst
-    | Some _ | None -> Coq.Protect.E.ok st
+    | _, _, _ -> Coq.Protect.E.ok st
 
   (* AST-based heuristics: Qed, bullets, ... *)
   let ast_recovery_heuristic last_tok contents nodes st v =

@@ -34,6 +34,8 @@
  - errors on save where not properly caught (@ejgallego, #608)
  - switch default of `goal_after_tactic` to `true` (@Alizter,
    @ejgallego, cc: #614)
+ - error recovery: Recognize `Defined` and `Admitted` in lex recovery
+   (@ejgallego, #616)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
