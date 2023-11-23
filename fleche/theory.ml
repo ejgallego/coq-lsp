@@ -254,7 +254,8 @@ let create ~io ~env ~uri ~raw ~version =
        Check coq-lsp webpage (Working with multiple files section) for\n\
        instructions on how to install a fixed branch for earlier Coq versions."
     in
-    Io.Report.message ~io ~lvl:1 ~message;
+    let lvl = Io.Level.error in
+    Io.Report.message ~io ~lvl ~message;
     let doc = Doc.create_failed_permanent ~env ~uri ~raw ~version in
     Handle.create ~uri ~doc;
     Check.schedule ~uri)

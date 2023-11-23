@@ -102,7 +102,7 @@ module Node = struct
   end
 
   module Message = struct
-    type t = Lang.Range.t option * int * Pp.t
+    type t = Lang.Range.t Coq.Message.t
 
     let feedback_to_message ~lines (loc, lvl, msg) =
       (Coq.Utils.to_orange ~lines loc, lvl, msg)
@@ -126,7 +126,32 @@ module Node = struct
   (* let with_state f n = Option.map (fun x -> (x, n.state)) (f n) *)
 end
 
-module Diags = struct
+(** Diagnostics helper module *)
+module Diags : sig
+  val err : Lang.Diagnostic.Severity.t
+
+  (** Build simple diagnostic *)
+  val make :
+       ?extra:Lang.Diagnostic.Extra.t list
+    -> Lang.Range.t
+    -> Lang.Diagnostic.Severity.t
+    -> Pp.t
+    -> Lang.Diagnostic.t
+
+  (** Build advanced diagnostic with AST analysis *)
+  val error :
+    range:Lang.Range.t -> msg:Pp.t -> ast:Node.Ast.t -> Lang.Diagnostic.t
+
+  (** [of_messages drange msgs] process feedback messages, and convert some to
+      diagnostics based on user-config. Default range [drange] is used for
+      messages that have no range, usually this is set to the full node range. *)
+  val of_messages :
+       drange:Lang.Range.t
+    -> Node.Message.t list
+    -> Lang.Diagnostic.t list * Node.Message.t list
+end = struct
+  let err = Lang.Diagnostic.Severity.error
+
   let make ?extra range severity message =
     Lang.Diagnostic.{ range; severity; message; extra }
 
@@ -143,7 +168,7 @@ module Diags = struct
 
   let error ~range ~msg ~ast =
     let extra = extra_diagnostics_of_ast ast in
-    make ?extra range 1 msg
+    make ?extra range Lang.Diagnostic.Severity.error msg
 
   let of_feed ~drange (range, severity, message) =
     let range = Option.default drange range in
@@ -173,6 +198,7 @@ module Diags = struct
       else 3
     in
     let f (_, lvl, _) =
+      let lvl = Lang.Diagnostic.Severity.to_int lvl in
       if lvl = 2 then Both else if lvl < cutoff then Left else Right
     in
     let diags, messages = partition ~f fbs in
@@ -296,7 +322,7 @@ let empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed =
   { uri; contents; toc; version; env; root; nodes; diags_dirty; completed }
 
 let error_doc ~loc ~message ~uri ~contents ~version ~env ~completed =
-  let feedback = [ (loc, 1, Pp.str message) ] in
+  let feedback = [ (loc, Diags.err, Pp.str message) ] in
   let root = env.Env.init in
   let nodes = [] in
   (empty_doc ~uri ~version ~contents ~env ~root ~nodes ~completed, feedback)
@@ -304,7 +330,9 @@ let error_doc ~loc ~message ~uri ~contents ~version ~env ~completed =
 let conv_error_doc ~raw ~uri ~version ~env ~root ~completed err =
   let contents = Contents.make_raw ~raw in
   let lines = contents.lines in
-  let err = (None, 1, Pp.(str "Error in document conversion: " ++ str err)) in
+  let err =
+    (None, Diags.err, Pp.(str "Error in document conversion: " ++ str err))
+  in
   let stats = Stats.dump () in
   let nodes = process_init_feedback ~lines ~stats root [ err ] in
   empty_doc ~uri ~version ~env ~root ~nodes ~completed ~contents
@@ -645,10 +673,10 @@ let parse_action ~lines ~st last_tok doc_handle =
       (* We don't have a better alternative :(, usually missing error loc here
          means an anomaly, so we stop *)
       let err_range = last_tok in
-      let parse_diags = [ Diags.make err_range 1 msg ] in
+      let parse_diags = [ Diags.make err_range Diags.err msg ] in
       (EOF (Failed last_tok), parse_diags, feedback, time)
     | Error (User (Some err_range, msg)) ->
-      let parse_diags = [ Diags.make err_range 1 msg ] in
+      let parse_diags = [ Diags.make err_range Diags.err msg ] in
       Coq.Parsing.discard_to_dot doc_handle;
       let last_tok = Coq.Parsing.Parsable.loc doc_handle in
       let last_tok_range = Coq.Utils.to_range ~lines last_tok in
@@ -794,7 +822,7 @@ let log_beyond_target last_tok target =
 
 let max_errors_node ~state ~range =
   let msg = Pp.str "Maximum number of errors reached" in
-  let parsing_diags = [ Diags.make range 1 msg ] in
+  let parsing_diags = [ Diags.make range Diags.err msg ] in
   unparseable_node ~range ~parsing_diags ~parsing_feedback:[] ~state
     ~parsing_time:0.0
 

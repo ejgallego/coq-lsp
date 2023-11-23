@@ -27,7 +27,7 @@ module Node : sig
   end
 
   module Message : sig
-    type t = Lang.Range.t option * int * Pp.t
+    type t = Lang.Range.t option * Lang.Diagnostic.Severity.t * Pp.t
   end
 
   type t = private

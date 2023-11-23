@@ -19,16 +19,22 @@ let dump_asts ~out_file pp asts =
   Format.pp_print_flush fmt ();
   Stdlib.close_out out
 
-let dump_ast ~io:_ ~(doc : Doc.t) =
+let dump_ast ~io ~(doc : Doc.t) =
   let uri = doc.uri in
   let uri_str = Lang.LUri.File.to_string_uri uri in
   let out_file_j = Lang.LUri.File.to_string_file uri ^ ".json.astdump" in
   let out_file_s = Lang.LUri.File.to_string_file uri ^ ".sexp.astdump" in
-  Format.eprintf "[ast plugin] dumping ast for %s ...@\n%!" uri_str;
+  let lvl = Io.Level.info in
+  let message = Format.asprintf "[ast plugin] dumping ast for %s ..." uri_str in
+  Io.Report.message ~io ~lvl ~message;
   let asts = Doc.asts doc in
   let () = dump_asts ~out_file:out_file_j pp_json asts in
   let () = dump_asts ~out_file:out_file_s pp_sexp asts in
-  Format.eprintf "[ast plugin] dumping ast for %s was completed!@\n%!" uri_str
+  let message =
+    Format.asprintf "[ast plugin] dumping ast for %s was completed!" uri_str
+  in
+  Io.Report.message ~io ~lvl ~message;
+  ()
 
 let main () = Theory.Register.add dump_ast
 let () = main ()
