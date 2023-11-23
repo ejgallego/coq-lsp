@@ -58,6 +58,8 @@
    (@ejgallego, #661)
  - interpret require thru our own custom execution env-aware path
    (@bhaktishh, @ejgallego, #642, #643, #644)
+ - new `coq-lsp.plugin.goaldump` plugin, as an example on how to dump
+   goals from a document (@ejgallego @gbdrt, #619)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

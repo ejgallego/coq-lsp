@@ -27,8 +27,8 @@ let save_diags_file ~(doc : Fleche.Doc.t) =
 let compile_file ~cc file =
   let { Cc.io; root_state; workspaces; default; token } = cc in
   let lvl = Io.Level.info in
-  let message = Format.asprintf "compiling file %s@\n%!" file in
-  io.message ~lvl ~message;
+  let message = Format.asprintf "compiling file %s" file in
+  Io.Report.message ~io ~lvl ~message;
   match Lang.LUri.(File.of_uri (of_string file)) with
   | Error _ -> ()
   | Ok uri -> (
