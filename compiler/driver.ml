@@ -21,8 +21,9 @@ let sanitize_paths message =
 let log_workspace ~io (dir, w) =
   let message, extra = Coq.Workspace.describe w in
   Fleche.Io.Log.trace "workspace" ("initialized " ^ dir) ~extra;
+  let lvl = Fleche.Io.Level.info in
   let message = sanitize_paths message in
-  Fleche.Io.Report.message ~io ~lvl:3 ~message
+  Fleche.Io.Report.message ~io ~lvl ~message
 
 let load_plugin plugin_name = Fl_dynload.load_packages [ plugin_name ]
 let plugin_init = List.iter load_plugin

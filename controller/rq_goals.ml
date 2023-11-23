@@ -6,7 +6,9 @@
 (************************************************************************)
 
 (* Replace by ppx when we can print goals properly in the client *)
-let mk_message (range, level, text) = Lsp.JFleche.Message.{ range; level; text }
+let mk_message (range, level, text) =
+  let level = Lang.Diagnostic.Severity.to_int level in
+  Lsp.JFleche.Message.{ range; level; text }
 
 let mk_messages node =
   Option.map Fleche.Doc.Node.messages node
@@ -15,10 +17,9 @@ let mk_messages node =
 let mk_error node =
   let open Fleche in
   let open Lang in
-  match
-    List.filter (fun d -> d.Diagnostic.severity < 2) node.Doc.Node.diags
-  with
+  match List.filter Diagnostic.is_error node.Doc.Node.diags with
   | [] -> None
+  (* XXX FIXME! *)
   | e :: _ -> Some e.Diagnostic.message
 
 (** Format for goal printing *)

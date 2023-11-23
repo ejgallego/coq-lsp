@@ -170,7 +170,7 @@ Load the example plugin
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
   
-  [example plugin] file checking for proj1/a.v was completed
+  [message] [example plugin] file checking for proj1/a.v was completed
 
 Load the astdump plugin
   $ fcc --plugin=coq-lsp.plugin.astdump --root proj1 proj1/a.v
@@ -184,8 +184,8 @@ Load the astdump plugin
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
   
-  [ast plugin] dumping ast for proj1/a.v ...
-  [ast plugin] dumping ast for proj1/a.v was completed!
+  [message] [ast plugin] dumping ast for proj1/a.v ...
+  [message] [ast plugin] dumping ast for proj1/a.v was completed!
 
 EJGA: I'd be nice to check the checksum of files here, however
 `md5sum` is not avilable on all of our CI platforms yet. `ls -l`
