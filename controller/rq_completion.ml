@@ -90,20 +90,39 @@ let get_char_at_point ~(doc : Fleche.Doc.t) ~point =
   else (* Can't get previous char *)
     None
 
-(* point is a utf char! *)
+let build_doc_idents_and_nametab ~doc prefix =
+  let st = doc.Fleche.Doc.root in
+  let toc = build_doc_idents ~doc in
+  let open Coq.Protect.E.O in
+  let+ nametab = Fleche.Info.Completion.candidates ~st prefix in
+  let nametab = Option.default [] nametab in
+  let nametab = CList.map (fun label -> mk_completion ~label ()) nametab in
+  toc @ nametab
+
+(* point is a utf-16 charpoint! *)
 let completion ~doc ~point =
   (* Instead of get_char_at_point we should have a CompletionContext.t, to be
      addressed in further completion PRs *)
-  (match get_char_at_point ~doc ~point with
+  match get_char_at_point ~doc ~point with
   | None ->
     let incomplete = true in
     let items = [] in
-    mk_completion_list ~incomplete ~items
+    mk_completion_list ~incomplete ~items |> Result.ok |> Coq.Protect.E.ok
   | Some c ->
-    let incomplete, items =
-      if c = '\\' then (false, unicode_list point)
-      else (true, build_doc_idents ~doc)
+    let open Coq.Protect.E.O in
+    let+ incomplete, items =
+      if c = '\\' then Coq.Protect.E.ok (false, unicode_list point)
+      else
+        (* We want to get the previous *)
+        let point = (fst point, max (snd point - 1) 0) in
+        let prefix = Rq_common.get_id_at_point ~contents:doc.contents ~point in
+        let prefix = Option.default (String.make 1 c) prefix in
+        let+ items = build_doc_idents_and_nametab ~doc prefix in
+        (true, items)
     in
     let res = mk_completion_list ~incomplete ~items in
-    res)
-  |> Result.ok
+    Result.ok res
+
+let completion ~doc ~point =
+  let f () = completion ~doc ~point in
+  Request.R.of_execution ~name:"completion" ~f ()

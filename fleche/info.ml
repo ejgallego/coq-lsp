@@ -69,6 +69,7 @@ module LineCol : Point with type t = int * int = struct
       if line1 = line && line2 = line then col1 <= col && col < col2
       else (line1 = line && col1 <= col) || (line2 = line && col < col2)
 
+  (* Point is beyond [range] *)
   let gt_range ?range (line, col) =
     match range with
     | None -> false
@@ -172,6 +173,18 @@ module Goals = struct
 end
 
 module Completion = struct
+  let obind f x = Option.bind x f
+
+  (* let find ~doc ~point approx = *)
+  (*   let res = find ~doc ~point approx in *)
+  (*   match res with *)
+  (*   | Some res -> *)
+  (*     Io.Log.trace "info:find" ("found node at " ^ P.to_string point); *)
+  (*     Some res *)
+  (*   | None -> *)
+  (*     Io.Log.trace "info:find" ("failed at " ^ P.to_string point); *)
+  (*     None *)
+
   (* XXX: This belongs in Coq *)
   let pr_extref gr =
     match gr with
@@ -180,13 +193,57 @@ module Completion = struct
 
   (* XXX This may fail when passed "foo." for example, so more sanitizing is
      needed *)
-  let to_qualid p = try Some (Libnames.qualid_of_string p) with _ -> None
+  let remove_dot_if_last p : string =
+    let l = String.length p in
+    if l > 1 then if p.[l - 1] = '.' then String.sub p 0 (l - 1) else p else p
 
-  let candidates ~st prefix =
-    let ( let* ) = Option.bind in
+  (* let candidates ~st prefix = *)
+  (*   let ( let* ) = Option.bind in *)
+  (*   Coq.State.in_state ~st prefix ~f:(fun prefix -> *)
+  (*       let* p = to_qualid prefix in *)
+  (*       Nametab.completion_canditates p *)
+  (*       |> List.map (fun x -> Pp.string_of_ppcmds (pr_extref x)) *)
+  (*       |> some) *)
+  let to_qualid p =
+    let p = remove_dot_if_last p in
+    try Some (Libnames.qualid_of_string p)
+    with _ ->
+      Io.Log.trace "completion" ("broken qualid_of_string: " ^ p);
+      None
+
+  let completion ~st prefix =
     Coq.State.in_state ~st prefix ~f:(fun prefix ->
-        let* p = to_qualid prefix in
-        Nametab.completion_canditates p
-        |> List.map (fun x -> Pp.string_of_ppcmds (pr_extref x))
-        |> some)
+        to_qualid prefix
+        |> obind (fun p ->
+               Nametab.completion_canditates p
+               |> List.map (fun x -> Pp.string_of_ppcmds (pr_extref x))
+               |> List.append
+                    (Notgram_ops.get_defined_notations () |> List.map snd)
+               |> some))
+
+  let _get_id_at_node_point offset range text = Span.find ~offset ~range text
+
+  let debug_completion cat msg =
+    if Debug.completion then Io.Log.trace ("completion: " ^ cat) msg
+
+  let pr_completion_res = function
+    | None -> "no results"
+    | Some res -> string_of_int (List.length res) ^ " results"
+
+  (* This is still buggy for the case that find doesn't work (i.e. no ast) *)
+  (* let candidates ~st ~point:_ () = *)
+  let candidates ~st prefix =
+    (* we do exact matching for... *)
+    (* let range = node.Doc.Node.range in *)
+    (* let text = doc.Doc.contents.text in *)
+    (* let span = Span.make ~contents:doc.Doc.contents ~loc in *)
+    (* let offset = P.to_offset point text in *)
+    (* debug_completion "offset" (string_of_int offset); *)
+    (* let prefix = get_id_at_node_point offset range text in *)
+    (* let prefix = "" in *)
+    debug_completion "prefix" prefix;
+    let open Coq.Protect.E.O in
+    let+ res = completion ~st prefix in
+    debug_completion "n results" (pr_completion_res res);
+    res
 end

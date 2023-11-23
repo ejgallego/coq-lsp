@@ -1,5 +1,5 @@
-# unreleased
------------
+# unreleased (Layers?)
+----------------------
 
  - new option `show_loc_info_on_hover` that will display parsing debug
    information on hover; previous flag was fixed in code, which is way
@@ -36,6 +36,7 @@
    @ejgallego, cc: #614)
  - error recovery: Recognize `Defined` and `Admitted` in lex recovery
    (@ejgallego, #616)
+ - completion and notation display
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
