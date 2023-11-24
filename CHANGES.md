@@ -36,6 +36,8 @@
    @ejgallego, cc: #614)
  - error recovery: Recognize `Defined` and `Admitted` in lex recovery
    (@ejgallego, #616)
+ - completion: correctly understand UTF-16 code points on completion
+   request (Léo Stefanesco, #613, fixes #531)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
