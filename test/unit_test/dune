@@ -1,4 +1,0 @@
-(test
- (name utf16_pos)
- (link_flags -linkall)
- (libraries alcotest coq))

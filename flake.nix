@@ -66,7 +66,7 @@
           in
             l.attrValues {
               inherit serapi;
-              inherit (ocamlPackages) yojson cmdliner uri dune-build-info;
+              inherit (ocamlPackages) yojson cmdliner uri dune-build-info ppx_inline_test;
             };
         };
 
@@ -90,7 +90,7 @@
           packages = l.attrValues {
             inherit (config.treefmt.build) wrapper;
             inherit (pkgs) dune_3 nodejs dune-release;
-            inherit (ocamlPackages) ocaml ocaml-lsp alcotest;
+            inherit (ocamlPackages) ocaml ocamlformat ocaml-lsp;
           };
         };
       };
