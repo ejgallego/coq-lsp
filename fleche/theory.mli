@@ -25,8 +25,7 @@ end
 (** Create a document inside a theory *)
 val create :
      io:Io.CallBack.t
-  -> root_state:Coq.State.t
-  -> workspace:Coq.Workspace.t
+  -> env:Doc.Env.t
   -> uri:Lang.LUri.File.t
   -> raw:string
   -> version:int

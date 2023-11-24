@@ -61,9 +61,13 @@ let concise_cb ofn =
 
 (* Main loop *)
 let lsp_cb ofn =
+  let message ~lvl ~message =
+    let lvl = Fleche.Io.Level.to_int lvl in
+    LIO.logMessage ~lvl ~message
+  in
   Fleche.Io.CallBack.
     { trace = LIO.trace
-    ; message = LIO.logMessage
+    ; message
     ; diagnostics =
         (fun ~uri ~version diags ->
           Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)

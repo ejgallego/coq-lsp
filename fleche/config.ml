@@ -16,7 +16,7 @@ type t =
   ; client_version : string [@default "any"]
   ; eager_diagnostics : bool [@default true]
         (** [eager_diagnostics] Send (full) diagnostics after processing each *)
-  ; goal_after_tactic : bool [@default false]
+  ; goal_after_tactic : bool [@default true]
         (** When showing goals and the cursor is in a tactic, if false, show
             goals before executing the tactic, if true, show goals after *)
   ; show_coq_info_messages : bool [@default false]
@@ -37,6 +37,8 @@ type t =
         (** Pretty-printing type in Info Panel Request, 0 = string; 1 = Pp.t; 2
             = Coq Layout Engine *)
   ; show_stats_on_hover : bool [@default false]  (** Show stats on hover *)
+  ; show_loc_info_on_hover : bool [@default false]
+        (** Show loc info on hover *)
   ; pp_json : bool [@default false]
         (** Whether to pretty print the protocol JSON on the wire *)
   ; send_perf_data : bool [@default true]
@@ -62,6 +64,7 @@ let default =
   ; max_errors = 150
   ; pp_type = 0
   ; show_stats_on_hover = false
+  ; show_loc_info_on_hover = false
   ; verbosity = 2
   ; pp_json = false
   ; send_perf_data = true

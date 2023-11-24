@@ -17,7 +17,7 @@ type id_info =
 let info_of_ind env sigma ((sp, i) : Names.Ind.t) =
   let mib = Environ.lookup_mind sp env in
   let u =
-    Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib)
+    UVars.make_abstract_instance (Declareops.inductive_polymorphic_context mib)
   in
   let mip = mib.Declarations.mind_packets.(i) in
   let paramdecls = Inductive.inductive_paramdecls (mib, u) in
@@ -108,7 +108,7 @@ let info_of_id ~st id =
 
 let info_of_id_at_point ~node id =
   let st = node.Fleche.Doc.Node.state in
-  Fleche.Info.in_state ~st ~f:(info_of_id ~st) id
+  Coq.State.in_state ~st ~f:(info_of_id ~st) id
 
 let pp_typ id = function
   | Def typ ->
@@ -122,7 +122,10 @@ let to_list x = Option.cata (fun x -> [ x ]) [] x
 
 let info_type ~contents ~point ~node : string option =
   Option.bind (Rq_common.get_id_at_point ~contents ~point) (fun id ->
-      Option.map (pp_typ id) (info_of_id_at_point ~node id))
+      match info_of_id_at_point ~node id with
+      | Coq.Protect.{ E.r = R.Completed (Ok (Some info)); feedback = _ } ->
+        Some (pp_typ id info)
+      | _ -> None)
 
 let extract_def ~point:_ (def : Vernacexpr.definition_expr) :
     Constrexpr.constr_expr list =
@@ -160,12 +163,16 @@ open Fleche
 (* Hover handler *)
 module Handler = struct
   (** Returns [Some markdown] if there is some hover to match *)
-  type 'node h =
+  type 'node h_node =
     contents:Contents.t -> point:int * int -> node:'node -> string option
 
+  type h_doc =
+    doc:Doc.t -> point:int * int -> node:Doc.Node.t option -> string option
+
   type t =
-    | MaybeNode : Doc.Node.t option h -> t
-    | WithNode : Doc.Node.t h -> t
+    | MaybeNode : Doc.Node.t option h_node -> t
+    | WithNode : Doc.Node.t h_node -> t
+    | WithDoc : h_doc -> t
 end
 
 module type HoverProvider = sig
@@ -173,8 +180,6 @@ module type HoverProvider = sig
 end
 
 module Loc_info : HoverProvider = struct
-  let enabled = true
-
   let h ~contents:_ ~point:_ ~node =
     match node with
     | None -> "no node here"
@@ -183,7 +188,8 @@ module Loc_info : HoverProvider = struct
       Format.asprintf "%a" Lang.Range.pp range
 
   let h ~contents ~point ~node =
-    if enabled then Some (h ~contents ~point ~node) else None
+    if !Config.v.show_loc_info_on_hover then Some (h ~contents ~point ~node)
+    else None
 
   let h = Handler.MaybeNode h
 end
@@ -208,23 +214,25 @@ module Register = struct
   let handlers : Handler.t list ref = ref []
   let add fn = handlers := fn :: !handlers
 
-  let handle ~contents ~point ~node = function
+  let handle ~(doc : Doc.t) ~point ~node =
+    let contents = doc.contents in
+    function
     | Handler.MaybeNode h -> h ~contents ~point ~node
     | Handler.WithNode h ->
       Option.bind node (fun node -> h ~contents ~point ~node)
+    | Handler.WithDoc h -> h ~doc ~point ~node
 
-  let fire ~contents ~point ~node =
-    List.filter_map (handle ~contents ~point ~node) !handlers
+  let fire ~doc ~point ~node =
+    List.filter_map (handle ~doc ~point ~node) !handlers
 end
 
 (* Register in-file hover plugins *)
 let () = List.iter Register.add [ Loc_info.h; Stats.h; Type.h; Notation.h ]
 
 let hover ~doc ~point =
-  let contents = doc.Doc.contents in
   let node = Info.LC.node ~doc ~point Exact in
   let range = Option.map Doc.Node.range node in
-  let hovers = Register.fire ~contents ~point ~node in
+  let hovers = Register.fire ~doc ~point ~node in
   match hovers with
   | [] -> `Null
   | hovers ->

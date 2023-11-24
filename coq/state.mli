@@ -20,6 +20,10 @@ val program : st:t -> Declare.OblState.View.t Names.Id.Map.t
     Coq state setting is imperative, so we need to wrap it in protect. *)
 val in_state : st:t -> f:('a -> 'b) -> 'a -> ('b, Loc.t) Protect.E.t
 
+(** Execute a monadic command in state [st]. *)
+val in_stateM :
+  st:t -> f:('a -> ('b, Loc.t) Protect.E.t) -> 'a -> ('b, Loc.t) Protect.E.t
+
 (** Drop the proofs from the state *)
 val drop_proofs : st:t -> t
 
