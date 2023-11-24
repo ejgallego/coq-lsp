@@ -17,7 +17,7 @@ type id_info =
 let info_of_ind env sigma ((sp, i) : Names.Ind.t) =
   let mib = Environ.lookup_mind sp env in
   let u =
-    UVars.make_abstract_instance (Declareops.inductive_polymorphic_context mib)
+    Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib)
   in
   let mip = mib.Declarations.mind_packets.(i) in
   let paramdecls = Inductive.inductive_paramdecls (mib, u) in
