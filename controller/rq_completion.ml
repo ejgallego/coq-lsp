@@ -78,9 +78,11 @@ let validate_line ~(doc : Fleche.Doc.t) ~line =
 (* This returns a byte-based char offset for the line *)
 let validate_position ~doc ~point =
   let line, char = point in
-  Option.bind (validate_line ~doc ~line) (fun line ->
+  Option.map
+    (fun line ->
       let char = Coq.Utf8.get_byte_offset_from_utf16_pos line char in
-      Option.bind char (fun index -> Some (String.get line index)))
+      String.get line char)
+    (validate_line ~doc ~line)
 
 let get_char_at_point ~(doc : Fleche.Doc.t) ~point =
   let line, char = point in

@@ -48,5 +48,15 @@ val index_of_char : line:string -> char:char -> index option
 val length : string -> char
 
 (** Get the byte potition of a code point indexed in UTF-16 code units in a
-    UTF-8 encoded string. *)
-val get_byte_offset_from_utf16_pos : string -> int -> int option
+    UTF-8 encoded string. Returns the position of the last character if the
+    UTF-16 position was out of bounds. *)
+val get_byte_offset_from_utf16_pos : string -> int -> int
+
+(** Get the unicode potition of a code point indexed in UTF-16 code units in a
+    utf-8 encoded string. Returns the position of the last character if the
+    utf-16 position was out of bounds. *)
+val get_unicode_offset_from_utf16_pos : string -> int -> int
+
+(** Get the utf16 potition of a code point indexed in unicode code points in a
+    UTF-8 encoded string. The position must be in bounds. *)
+val get_utf16_offset_from_unicode_offset : string -> int -> int
