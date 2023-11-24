@@ -37,6 +37,11 @@ module E : sig
   val map_loc : f:('l -> 'm) -> ('a, 'l) t -> ('a, 'm) t
   val bind : f:('a -> ('b, 'l) t) -> ('a, 'l) t -> ('b, 'l) t
   val ok : 'a -> ('a, 'l) t
+
+  module O : sig
+    val ( let+ ) : ('a, 'l) t -> ('a -> 'b) -> ('b, 'l) t
+    val ( let* ) : ('a, 'l) t -> ('a -> ('b, 'l) t) -> ('b, 'l) t
+  end
 end
 
 (** Must be hooked to allow [Protect] to capture the feedback. *)

@@ -1,3 +1,44 @@
+# unreleased
+-----------
+
+ - new option `show_loc_info_on_hover` that will display parsing debug
+   information on hover; previous flag was fixed in code, which is way
+   less flexible. This also fixes the option being on in 0.1.8 by
+   mistake (@ejgallego, #588)
+ - hover plugins can now access the full document, this is convenient
+   for many use cases (@ejgallego, #591)
+ - fix hover position computation on the presence of Utf characters
+   (@ejgallego, #597, thanks to Pierre Courtieu for the report and
+   example, closes #594)
+ - fix activation bug that prevented extension activation for `.mv`
+   files, see discussion in the issues about the upstream policy
+   (@ejgallego @r3m0t, #598, cc #596, reported by Théo Zimmerman)
+ - require VSCode >= 1.82 in package.json . Our VSCode extension uses
+   `vscode-languageclient` 9 which imposes this. (@ejgallego, #599,
+   thanks to Théo Zimmerman for the report)
+ - `proof/goals` request: new `mode` parameter, to specify goals
+   after/before sentence display; renamed `pretac` to `command`, as to
+   provide official support for speculative execution (@ejgallego, #600)
+ - fix some cases where interrupted computations where memoized
+   (@ejgallego, #603)
+ - [internal] Flèche [Doc.t] API will now absorb errors on document
+   update and creation into the document itself. Thus, a document that
+   failed to create or update is still valid, but in the right failed
+   state. This is a much needed API change for a lot of use cases
+   (@ejgallego, #604)
+ - support OCaml 5.1.x (@ejgallego, #606)
+ - update progress indicator correctly on End Of File (@ejgallego,
+   #605, fixes #445)
+ - [plugins] New `astdump` plugin to dump AST of files into JSON and
+   SEXP (@ejgallego, #607)
+ - errors on save where not properly caught (@ejgallego, #608)
+ - switch default of `goal_after_tactic` to `true` (@Alizter,
+   @ejgallego, cc: #614)
+ - error recovery: Recognize `Defined` and `Admitted` in lex recovery
+   (@ejgallego, #616)
+ - completion: correctly understand UTF-16 code points on completion
+   request (Léo Stefanesco, #613, fixes #531)
+
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
 
@@ -78,7 +119,7 @@
    (@ejgallego, #438, reported by David Ilcinkas)
  - Fix "Error message browser becomes non-visible when there are many
    goals" by using a fixed-position separated error display (@TDiazT,
-   #445, fixes #441)
+   #455, fixes #441)
  - Message about workspace detection was printing the wrong file,
    (@ejgallego, #444, reported by Alex Sanchez-Stern)
  - Display the list of pending obligations in info panel (@ejgallego,

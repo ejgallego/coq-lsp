@@ -17,6 +17,12 @@
 
 module R : sig
   type t = (Yojson.Safe.t, int * string) Result.t
+
+  (* We don't allow to pass the feedback to the [f] handler yet, that's not
+     hard, but I'd suggest waiting until the conversion of character points is
+     working better. *)
+  val of_execution :
+    name:string -> f:('a -> (t, Loc.t) Coq.Protect.E.t) -> 'a -> t
 end
 
 type document = doc:Fleche.Doc.t -> R.t
@@ -43,4 +49,5 @@ module Data : sig
   val serve : doc:Fleche.Doc.t -> t -> R.t
 end
 
+(** Returns an empty list of results for any position / document *)
 val empty : position

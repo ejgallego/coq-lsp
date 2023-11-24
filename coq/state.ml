@@ -197,6 +197,11 @@ let in_state ~st ~f a =
   in
   Protect.eval ~f a
 
+let in_stateM ~st ~f a =
+  let open Protect.E.O in
+  let* () = Protect.eval ~f:Vernacstate.unfreeze_interp_state st in
+  f a
+
 let admit ~st () =
   let () = Vernacstate.unfreeze_interp_state st in
   match st.Vernacstate.lemmas with

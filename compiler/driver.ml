@@ -6,7 +6,7 @@ let coq_init ~debug =
 
 let replace_test_path exp message =
   let home_re = Str.regexp (exp ^ ".*$") in
-  Str.global_replace home_re "coqlib is at: [TEST_PATH]" message
+  Str.global_replace home_re (exp ^ "[TEST_PATH]") message
 
 let sanitize_paths message =
   match Sys.getenv_opt "FCC_TEST" with
@@ -21,8 +21,9 @@ let sanitize_paths message =
 let log_workspace ~io (dir, w) =
   let message, extra = Coq.Workspace.describe w in
   Fleche.Io.Log.trace "workspace" ("initialized " ^ dir) ~extra;
+  let lvl = Fleche.Io.Level.info in
   let message = sanitize_paths message in
-  Fleche.Io.Report.message ~io ~lvl:3 ~message
+  Fleche.Io.Report.message ~io ~lvl ~message
 
 let load_plugin plugin_name = Fl_dynload.load_packages [ plugin_name ]
 let plugin_init = List.iter load_plugin

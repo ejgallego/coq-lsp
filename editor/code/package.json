@@ -2,7 +2,7 @@
   "name": "coq-lsp",
   "displayName": "Coq LSP",
   "description": "Coq LSP provides native vsCode support for checking Coq proof documents",
-  "version": "0.1.8",
+  "version": "0.1.9-dev",
   "contributors": [
     "Emilio Jesús Gallego Arias <e@x80.org>",
     "Ali Caglayan <alizter@gmail.com>",
@@ -11,7 +11,7 @@
   ],
   "publisher": "ejgallego",
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.82.0"
   },
   "categories": [
     "Programming Languages",
@@ -28,6 +28,9 @@
     "type": "git",
     "url": "https://github.com/ejgallego/coq-lsp"
   },
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
   "contributes": {
     "languages": [
       {
@@ -150,11 +153,22 @@
             "type": "number",
             "default": 150,
             "description": "Maximum number of errors per file, after that, coq-lsp will stop checking the file."
-          },
+          }
+        }
+      },
+      {
+        "title": "Hover",
+        "type": "object",
+        "properties": {
           "coq-lsp.show_stats_on_hover": {
             "type": "boolean",
             "default": false,
             "description": "Show timing and memory stats for a sentence on hover."
+          },
+          "coq-lsp.show_loc_info_on_hover": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show parsing information for a sentence on hover."
           }
         }
       },

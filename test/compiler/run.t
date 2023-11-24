@@ -5,23 +5,23 @@ Describe the project
   $ fcc --root proj1
   [message] Configuration loaded from Command-line arguments
    - coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
    - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
-     + coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
 
 Compile a single file
   $ fcc --root proj1 proj1/a.v
   [message] Configuration loaded from Command-line arguments
    - coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
    - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
-     + coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
   
   $ ls proj1
@@ -37,12 +37,12 @@ Compile a dependent file
   $ fcc --root proj1 proj1/b.v
   [message] Configuration loaded from Command-line arguments
    - coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
    - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
-     + coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
   [message] compiling file proj1/b.v
   
   $ ls proj1
@@ -58,12 +58,12 @@ Compile both files
   $ fcc --root proj1 proj1/a.v proj1/b.v
   [message] Configuration loaded from Command-line arguments
    - coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
    - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
-     + coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
   
   [message] compiling file proj1/b.v
@@ -86,12 +86,12 @@ Compile a dependent file without the dep being built
   $ fcc --root proj1 proj1/b.v
   [message] Configuration loaded from Command-line arguments
    - coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
    - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
-     + coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
   [message] compiling file proj1/b.v
   
   $ ls proj1
@@ -108,6 +108,14 @@ Compile a dependent file without the dep being built
     },
     "severity": 4,
     "message": "aa is defined"
+  }
+  {
+    "range": {
+      "start": { "line": 6, "character": 0 },
+      "end": { "line": 6, "character": 4 }
+    },
+    "severity": 4,
+    "message": "foo is defined"
   }
   $ cat proj1/b.diags
   {
@@ -132,20 +140,20 @@ Use two workspaces
   $ fcc --root proj1 --root proj2 proj1/a.v proj2/b.v
   [message] Configuration loaded from Command-line arguments
    - coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
    - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
-     + coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
   [message] Configuration loaded from Command-line arguments
    - coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
    - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
-     + coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
   
   [message] compiling file proj2/b.v
@@ -159,12 +167,38 @@ Load the example plugin
   $ fcc --plugin=coq-lsp.plugin.example --root proj1 proj1/a.v
   [message] Configuration loaded from Command-line arguments
    - coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
    - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
-     + coqlib is at: [TEST_PATH]
-     + coqlib is at: [TEST_PATH]
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
   
-  [example plugin] file checking for proj1/a.v was completed
+  [message] [example plugin] file checking for proj1/a.v was completed
+
+Load the astdump plugin
+  $ fcc --plugin=coq-lsp.plugin.astdump --root proj1 proj1/a.v
+  [message] Configuration loaded from Command-line arguments
+   - coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
+   - Modules [Coq.Init.Prelude] will be loaded by default
+   - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
+   - ocamlpath wasn't overriden
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
+  [message] compiling file proj1/a.v
+  
+  [message] [ast plugin] dumping ast for proj1/a.v ...
+  [message] [ast plugin] dumping ast for proj1/a.v was completed!
+
+EJGA: I'd be nice to check the checksum of files here, however
+`md5sum` is not avilable on all of our CI platforms yet. `ls -l`
+output is also not fully portable, so we settle for this check for now.
+
+Another way to test this would be to have an `undump` plugin, so we
+de-serialize the document back and check.
+
+  $ ls proj1/a.v.json.astdump proj1/a.v.sexp.astdump
+  proj1/a.v.json.astdump
+  proj1/a.v.sexp.astdump

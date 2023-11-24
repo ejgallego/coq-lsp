@@ -1,3 +1,15 @@
+module Level = struct
+  type t = int
+
+  (* We follow LSP spec *)
+  let error = 1
+  let warning = 2
+  let info = 3
+  let log = 4
+  let debug = 5
+  let to_int x = x
+end
+
 module CallBack = struct
   type t =
     { trace : string -> ?extra:string -> string -> unit

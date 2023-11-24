@@ -11,4 +11,9 @@ type format =
 
 (** [goals ~pp_format ?pretac] Serve goals at point; users can request
     pre-processing and formatting using the provided parameters. *)
-val goals : pp_format:format -> ?pretac:string -> unit -> Request.position
+val goals :
+     pp_format:format
+  -> mode:Fleche.Info.approx
+  -> pretac:string option
+  -> unit
+  -> Request.position
