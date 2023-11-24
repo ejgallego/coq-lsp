@@ -5,6 +5,7 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+(* XXX: this doesn't work for Unicode either... *)
 (* Common with completion... refactor and make proper *)
 let is_id_char x =
   ('a' <= x && x <= 'z')
@@ -43,5 +44,9 @@ let get_id_at_point ~contents ~point =
   let { Fleche.Contents.lines; _ } = contents in
   if line <= Array.length lines then
     let line = Array.get lines line in
-    if character <= String.length line then find_id line character else None
+    (* XXX UTF this will fail on unicode chars that differ among UTF-8/16 (cc
+       #531) *)
+    match Coq.Utf8.index_of_char ~line ~char:character with
+    | None -> None
+    | Some character -> find_id line character
   else None

@@ -16,7 +16,7 @@ let ensure_no_pending_proofs ~in_file ~st =
       (fun pm -> Declare.Obls.check_solved_obligations ~what_for ~pm)
       pm
 
-let save_vo ~st ~ldir ~in_file =
+let save_vo ~st ~ldir in_file =
   let st = State.to_coq st in
   let () = ensure_no_pending_proofs ~in_file ~st in
   let out_vo = Filename.(remove_extension in_file) ^ ".vo" in
@@ -26,3 +26,5 @@ let save_vo ~st ~ldir ~in_file =
     Library.save_library_to todo_proofs ~output_native_objects ldir out_vo
   in
   ()
+
+let save_vo ~st ~ldir ~in_file = Protect.eval ~f:(save_vo ~st ~ldir) in_file
