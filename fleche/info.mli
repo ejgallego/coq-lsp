@@ -55,7 +55,8 @@ module Goals : sig
   val goals :
     st:Coq.State.t -> (Pp.t Coq.Goals.reified_pp option, Loc.t) Coq.Protect.E.t
 
-  val program : st:Coq.State.t -> Coq.State.Declare.OblState.View.t Names.Id.Map.t
+  val program :
+    st:Coq.State.t -> Coq.State.Declare.OblState.View.t Names.Id.Map.t
 end
 
 module Completion : sig
