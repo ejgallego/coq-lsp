@@ -1,4 +1,4 @@
-# Coq LSP <img style="height: 1.3em; float: right" src="./etc/img/inria-logo.png"/>  <!-- omit in toc -->
+# Coq LSP <img align="right" height="1.3em" src="./etc/img/inria-logo.png"/>  <!-- omit in toc -->
 
 [![Github CI][ci-badge]][ci-link]
 
