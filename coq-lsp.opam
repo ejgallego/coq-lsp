@@ -30,8 +30,8 @@ depends: [
   # waterproof parser
   "menhir"       { >= "20220210" }
 
-  # for unit testing
-  "alcotest"     { >= "1.6.0" & with-test }
+  # unit testing
+  "ppx_inline_test"     { >= "0.14.1" }
 
   # Uncomment this for releases
   # "coq"          { >= "8.17" < "8.18"  }
