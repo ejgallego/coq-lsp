@@ -1,4 +1,4 @@
-import { ExtensionContext, workspace } from "vscode";
+import { DocumentSelector, ExtensionContext, workspace } from "vscode";
 
 export interface CoqLspServerConfig {
   client_version: string;
@@ -54,3 +54,7 @@ export namespace CoqLspClientConfig {
     return obj;
   }
 }
+export const coqLSPDocumentSelector: DocumentSelector = [
+  { language: "coq" },
+  { language: "markdown", pattern: "**/*.mv" },
+];

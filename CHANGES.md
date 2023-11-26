@@ -38,6 +38,8 @@
    (@ejgallego, #616)
  - completion: correctly understand UTF-16 code points on completion
    request (Léo Stefanesco, #613, fixes #531)
+ - don't trigger the goals window in general markdown buffer
+   (@ejgallego, #625, reported by Théo Zimmerman)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
