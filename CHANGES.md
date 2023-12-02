@@ -40,6 +40,7 @@
    request (Léo Stefanesco, #613, fixes #531)
  - don't trigger the goals window in general markdown buffer
    (@ejgallego, #625, reported by Théo Zimmerman)
+ - allow not to postpone full document requests (#626, @ejgallego)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------

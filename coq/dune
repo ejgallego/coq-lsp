@@ -4,5 +4,6 @@
  ; Unfortunate we have to link the STM due to the LTAC plugin
  ; depending on it, we should fix this upstream
  (inline_tests)
- (preprocess (pps ppx_inline_test))
+ (preprocess
+  (pps ppx_inline_test))
  (libraries lang coq-core.vernac coq-serapi.serlib))
