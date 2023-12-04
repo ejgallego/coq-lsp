@@ -361,14 +361,17 @@ let do_completion =
   do_position_request ~postpone:true ~handler:Rq_completion.completion
 
 (* Requires the full document to be processed *)
-let do_document_request ~params ~handler =
+let do_document_request ~postpone ~params ~handler =
   let uri = Helpers.get_uri params in
-  Rq.Action.Data (Request.Data.DocRequest { uri; handler })
+  Rq.Action.Data (Request.Data.DocRequest { uri; postpone; handler })
 
-let do_symbols = do_document_request ~handler:Rq_symbols.symbols
-let do_document = do_document_request ~handler:Rq_document.request
-let do_save_vo = do_document_request ~handler:Rq_save.request
-let do_lens = do_document_request ~handler:Rq_lens.request
+let do_symbols = do_document_request ~postpone:true ~handler:Rq_symbols.symbols
+
+let do_document =
+  do_document_request ~postpone:true ~handler:Rq_document.request
+
+let do_save_vo = do_document_request ~postpone:true ~handler:Rq_save.request
+let do_lens = do_document_request ~postpone:true ~handler:Rq_lens.request
 
 let do_cancel ~ofn ~params =
   let id = int_field "id" params in
