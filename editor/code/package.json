@@ -259,6 +259,13 @@
             "default": true,
             "description": "If a `Qed.` command fails, admit the proof automatically."
           }
+        },
+        "properties": {
+          "coq-lsp.check_only_on_request": {
+            "type": "boolean",
+            "default": false,
+            "description": "Check files lazily, that is to say, goal state for a point will only be computed when the data is actually demanded. Note that this option is experimental and not recommended for use yet; we expose it only for testing and further development."
+          }
         }
       },
       {

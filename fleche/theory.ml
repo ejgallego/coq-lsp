@@ -196,21 +196,31 @@ end = struct
 
   let get_check_target pt_requests =
     let target_of_pt_handle (_, (l, c)) = Doc.Target.Position (l, c) in
-    Option.cata target_of_pt_handle Doc.Target.End (List.nth_opt pt_requests 0)
+    Option.map target_of_pt_handle (List.nth_opt pt_requests 0)
 
   (* Notification handling; reply is optional / asynchronous *)
   let check ~io ~uri =
     Io.Log.trace "process_queue" "resuming document checking";
     match Handle.find_opt ~uri with
-    | Some handle ->
+    | Some handle -> (
       let target = get_check_target handle.pt_requests in
-      let doc = Doc.check ~io ~target ~doc:handle.doc () in
-      let requests = Handle.update_doc_info ~handle ~doc in
-      if Doc.Completion.is_completed doc.completed then Register.fire ~io ~doc;
-      (* Remove from the queu *)
-      if Doc.Completion.is_completed doc.completed then
+      match target with
+      (* If we are in lazy mode and we don't have any full document requests
+         pending, we just deschedule *)
+      | None
+        when !Config.v.check_only_on_request
+             && Int.Set.is_empty handle.cp_requests ->
         pending := pend_pop !pending;
-      Some (requests, doc)
+        None
+      | (None | Some _) as tgt ->
+        let target = Option.default Doc.Target.End tgt in
+        let doc = Doc.check ~io ~target ~doc:handle.doc () in
+        let requests = Handle.update_doc_info ~handle ~doc in
+        if Doc.Completion.is_completed doc.completed then Register.fire ~io ~doc;
+        (* Remove from the queue *)
+        if Doc.Completion.is_completed doc.completed then
+          pending := pend_pop !pending;
+        Some (requests, doc))
     | None ->
       pending := pend_pop !pending;
       Io.Log.trace "Check.check"
