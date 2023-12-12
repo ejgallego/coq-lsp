@@ -25,3 +25,4 @@ end
 
 val mk_diagnostics :
   uri:Lang.LUri.File.t -> version:int -> Lang.Diagnostic.t list -> Yojson.Safe.t
+
