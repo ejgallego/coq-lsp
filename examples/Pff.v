@@ -8,12 +8,67 @@ It is the work of Sylvie Boldo, Marc Daumas, Laurence Rideau, and Laurent Théry
 Require Export Reals.
 Require Export ZArith.
 Require Export List.
-Require Export Div2.
-Require Export Even.
+Require Export PeanoNat.
 Require Import Psatz.
 
+(* Compatibility workaround, remove once requiring Coq >= 8.16 *)
+Module Import Compat.
+
+Lemma Even_0 : Nat.Even 0.
+Proof. exists 0; reflexivity. Qed.
+
+Lemma Even_1 : ~ Nat.Even 1.
+Proof.
+  intros ([|], H); try discriminate.
+  simpl in H.
+  now rewrite <- plus_n_Sm in H.
+Qed.
+
+Lemma Odd_0 : ~ Nat.Odd 0.
+Proof. now intros ([|], H). Qed.
+
+Lemma Odd_1 : Nat.Odd 1.
+Proof. exists 0; reflexivity. Qed.
+
+Definition Even_Odd_double n :
+  (Nat.Even n <-> n = Nat.double (Nat.div2 n)) /\ (Nat.Odd n <-> n = S (Nat.double (Nat.div2 n))).
+Proof.
+  revert n.
+  fix Even_Odd_double 1.
+    intros n; destruct n as [|[|n]].
+    - (* n = 0 *)
+      split; split; intros H; [ reflexivity | apply Even_0 | apply Odd_0 in H as [] | inversion H ].
+    - (* n = 1 *)
+      split; split; intros H; [ apply Even_1 in H as [] | inversion H | reflexivity | apply Odd_1 ].
+    - (* n = (S (S n')) *)
+      destruct (Even_Odd_double n) as ((Ev,Ev'),(Od,Od')).
+      split; split; simpl Nat.div2; rewrite ? double_S, ? Even_succ_succ, ? Odd_succ_succ.
+      + rewrite Nat.Even_succ_succ; intro H.
+        rewrite (Ev H) at 1.
+        now unfold Nat.double; rewrite <-Nat.add_succ_r.
+      + injection 1.
+        rewrite Nat.add_succ_r, Nat.Even_succ_succ.
+        injection 1; intro H'; exact (Ev' H').
+      + rewrite Nat.Odd_succ_succ; intro H.
+        rewrite (Od H) at 1.
+        now unfold Nat.double; rewrite <-Nat.add_succ_r.
+      + injection 1.
+        rewrite Nat.add_succ_r, Nat.Odd_succ_succ.
+        intro H'; exact (Od' H').
+Qed.
+
+(* replace with Nat.Even_double *)
+Definition Even_double n : Nat.Even n -> n = Nat.double (Nat.div2 n).
+Proof proj1 (proj1 (Even_Odd_double n)).
+
+(* replace with Nat.Odd_double *)
+Definition Odd_double n : Nat.Odd n -> n = S (Nat.double (Nat.div2 n)).
+Proof proj1 (proj2 (Even_Odd_double n)).
+
+End Compat.
+
 (*** was file sTactic.v  ***)
-Set Warnings "-deprecated-syntactic-definition".
+
 (****************************************************************************
 
           IEEE754  :  sTactic
@@ -104,7 +159,7 @@ Qed.
 
 Theorem ZleLe : forall x y : nat, (Z_of_nat x <= Z_of_nat y)%Z -> x <= y.
 intros x y H'.
-case (le_or_lt x y); auto with arith.
+case (Nat.le_gt_cases x y); auto with arith.
 intros H'0; contradict H'; auto with zarith.
 Qed.
 
@@ -238,9 +293,9 @@ Qed.
 
 
 Theorem lt_Zlt_inv : forall n m : nat, (Z_of_nat n < Z_of_nat m)%Z -> n < m.
-intros n m H'; case (le_or_lt n m); auto.
+intros n m H'; case (Nat.le_gt_cases n m); auto.
 intros H'0.
-case (le_lt_or_eq _ _ H'0); auto with zarith.
+case (proj1 (Nat.lt_eq_cases _ _) H'0); auto with zarith.
 intros H'1.
 contradict H'.
 apply Zle_not_lt; auto with zarith.
@@ -453,7 +508,7 @@ Qed.
 Theorem Zpower_nat_anti_monotone_lt :
  forall p q : nat, (Zpower_nat n p < Zpower_nat n q)%Z -> p < q.
 intros p q H'.
-case (le_or_lt q p); auto; (intros H'1; generalize H'; case H'1).
+case (Nat.le_gt_cases q p); auto; (intros H'1; generalize H'; case H'1).
 intros H'0; contradict H'0; auto with zarith.
 intros m H'0 H'2; contradict H'2; auto with zarith.
 apply Zle_not_lt, Zlt_le_weak, Zpower_nat_monotone_lt; auto with zarith.
@@ -461,7 +516,7 @@ Qed.
 
 Theorem Zpower_nat_monotone_le :
  forall p q : nat, p <= q -> (Zpower_nat n p <= Zpower_nat n q)%Z.
-intros p q H'; case (le_lt_or_eq _ _ H'); auto with zarith.
+intros p q H'; case (proj1 (Nat.lt_eq_cases _ _) H'); auto with zarith.
 intros H1; apply Zlt_le_weak, Zpower_nat_monotone_lt; auto with zarith.
 intros H1; rewrite H1; auto with zarith.
 Qed.
@@ -629,8 +684,8 @@ Theorem digitInv :
  forall (q : Z) (r : nat),
  (Zpower_nat n (pred r) <= Z.abs q)%Z ->
  (Z.abs q < Zpower_nat n r)%Z -> digit q = r.
-intros q r H' H'0; case (le_or_lt (digit q) r).
-intros H'1; case (le_lt_or_eq _ _ H'1); auto; intros H'2.
+intros q r H' H'0; case (Nat.le_gt_cases (digit q) r).
+intros H'1; case (proj1 (Nat.lt_eq_cases _ _) H'1); auto; intros H'2.
 absurd (Z.abs q < Zpower_nat n (digit q))%Z; auto with zarith.
 apply Zle_not_lt; auto with zarith.
 apply Z.le_trans with (m := Zpower_nat n (pred r)); auto with zarith.
@@ -652,7 +707,7 @@ Qed.
 
 Theorem digit_monotone :
  forall p q : Z, (Z.abs p <= Z.abs q)%Z -> digit p <= digit q.
-intros p q H; case (le_or_lt (digit p) (digit q)); auto; intros H1;
+intros p q H; case (Nat.le_gt_cases (digit p) (digit q)); auto; intros H1;
  contradict H.
 apply Zlt_not_le.
 cut (p <> 0%Z); [ intros H2 | idtac ].
@@ -670,7 +725,7 @@ Qed.
 
 Theorem digitNotZero : forall q : Z, q <> 0%Z -> 0 < digit q.
 intros q H'.
-apply lt_le_trans with (m := digit 1); auto with zarith.
+apply Nat.lt_le_trans with (m := digit 1); auto with zarith.
 apply digit_monotone.
 generalize H'; case q; simpl in |- *; auto with zarith; intros q'; case q';
  simpl in |- *; auto with zarith arith; intros; red in |- *;
@@ -711,7 +766,7 @@ intros H' p q H'0.
 case (Zle_or_lt (Z.abs q) (Z.abs p)); auto; intros H'1.
 contradict H'0.
 case (Zle_lt_or_eq _ _ H'1); intros H'2.
-apply le_not_lt; auto with arith.
+apply Nat.le_ngt; auto with arith.
 now apply digit_monotone.
 rewrite <- (digit_abs p); rewrite <- (digit_abs q); rewrite H'2;
  auto with arith.
@@ -787,9 +842,9 @@ apply pow_lt; auto with real.
 apply Rlt_trans with (r2 := 1%R); auto with real.
 apply Rlt_minus; auto with real.
 apply Rlt_pow_R1; auto with arith.
-apply plus_lt_reg_l with (p := n); auto with arith.
-rewrite le_plus_minus_r; auto with arith; rewrite <- plus_n_O; auto.
-rewrite plus_comm; auto with arith.
+apply Nat.add_lt_mono_l with (p := n); auto with arith.
+rewrite Nat.add_0_r, Nat.add_comm, Nat.sub_add; auto with arith.
+rewrite Nat.add_comm; auto with arith.
 Qed.
 
 
@@ -876,17 +931,17 @@ intros H' H'0; rewrite Pcompare_Eq_eq with (1 := H'); auto with real.
 intros H' H'0; rewrite (nat_of_P_minus_morphism n1 m1); auto with real.
 rewrite (pow_RN_plus e (nat_of_P n1 - nat_of_P m1) (nat_of_P m1));
  auto with real.
-rewrite plus_comm; rewrite le_plus_minus_r; auto with real.
+rewrite Nat.sub_add.
 rewrite Rinv_mult_distr; auto with real.
 rewrite Rinv_involutive; auto with real.
-apply lt_le_weak.
+apply Nat.lt_le_incl.
 apply nat_of_P_lt_Lt_compare_morphism; auto.
 apply ZC2; auto.
 intros H' H'0; rewrite (nat_of_P_minus_morphism m1 n1); auto with real.
 rewrite (pow_RN_plus e (nat_of_P m1 - nat_of_P n1) (nat_of_P n1));
  auto with real.
-rewrite plus_comm; rewrite le_plus_minus_r; auto with real.
-apply lt_le_weak.
+rewrite Nat.sub_add; auto with real.
+apply Nat.lt_le_incl.
 change (nat_of_P m1 > nat_of_P n1) in |- *.
 apply nat_of_P_gt_Gt_compare_morphism; auto.
 intros n1 m1. rewrite Z.pos_sub_spec; unfold Pos.compare.
@@ -895,16 +950,16 @@ intros H' H'0; rewrite Pcompare_Eq_eq with (1 := H'); auto with real.
 intros H' H'0; rewrite (nat_of_P_minus_morphism m1 n1); auto with real.
 rewrite (pow_RN_plus e (nat_of_P m1 - nat_of_P n1) (nat_of_P n1));
  auto with real.
-rewrite plus_comm; rewrite le_plus_minus_r; auto with real.
+rewrite Nat.sub_add.
 rewrite Rinv_mult_distr; auto with real.
-apply lt_le_weak.
+apply Nat.lt_le_incl.
 apply nat_of_P_lt_Lt_compare_morphism; auto.
 apply ZC2; auto.
 intros H' H'0; rewrite (nat_of_P_minus_morphism n1 m1); auto with real.
 rewrite (pow_RN_plus e (nat_of_P n1 - nat_of_P m1) (nat_of_P m1));
  auto with real.
-rewrite plus_comm; rewrite le_plus_minus_r; auto with real.
-apply lt_le_weak.
+rewrite Nat.sub_add; auto with real.
+apply Nat.lt_le_incl.
 change (nat_of_P n1 > nat_of_P m1) in |- *.
 apply nat_of_P_gt_Gt_compare_morphism; auto.
 intros n1 m1; rewrite nat_of_P_plus_morphism; auto with real.
@@ -2319,7 +2374,7 @@ Qed.
 
 Theorem FnormalPrecision :
  forall p : float, Fnormal p -> Fdigit radix p = precision.
-intros p H; apply le_antisym.
+intros p H; apply Nat.le_antisymm.
 apply pGivesDigit; apply H.
 apply le_S_n.
 rewrite <- digitVNumiSPrecision.
@@ -2333,7 +2388,7 @@ apply H.
 destruct H as (H1,H2).
 intros H3; contradict H2; rewrite H3.
 lia.
-rewrite plus_comm; simpl in |- *; auto.
+rewrite Nat.add_comm; simpl in |- *; auto.
 Qed.
 
 
@@ -2486,7 +2541,7 @@ Theorem FsubnormalDigit :
 intros p H; unfold Fdigit in |- *.
 case (Z.eq_dec (Fnum p) 0); intros Z1.
 rewrite Z1; simpl in |- *; auto with zarith.
-apply lt_S_n; apply le_lt_n_Sm.
+rewrite Nat.succ_lt_mono, Nat.lt_succ_r.
 rewrite <- digitPredVNumiSPrecision.
 replace (S (digit radix (Fnum p))) with (digit radix (Fnum p) + 1).
 rewrite <- digitAdd; auto with zarith.
@@ -2494,7 +2549,7 @@ apply digit_monotone; try assumption.
 rewrite (fun x => Z.abs_eq (Z.pred x)) by lia.
 rewrite Zmult_comm; rewrite Zpower_nat_1.
 generalize (proj2 (proj2 H)); lia.
-rewrite plus_comm; simpl in |- *; auto.
+rewrite Nat.add_comm; simpl in |- *; auto.
 Qed.
 
 
@@ -2587,9 +2642,9 @@ unfold Fnormalize in |- *; case (Z_zerop (Fnum p)); try easy.
 intros H'0.
 apply digitGivesBoundedNum; auto.
 rewrite FshiftFdigit; auto.
-apply le_trans with (m := Fdigit radix p + (precision - Fdigit radix p));
+apply Nat.le_trans with (m := Fdigit radix p + (precision - Fdigit radix p));
  auto with arith.
-rewrite <- le_plus_minus; auto.
+rewrite Nat.add_comm, Nat.sub_add; auto.
 apply pGivesDigit; auto.
 unfold Fnormalize in |- *; case (Z_zerop (Fnum p)); auto.
 simpl in |- *; auto with zarith.
@@ -2633,7 +2688,7 @@ generalize (digitNotZero _ radixMoreThanOne _ H'1);
  case (digit radix (Fnum p)); simpl in |- *; auto.
 intros tmp; contradict tmp; auto with arith.
 intros n H H0; change (precision = S n + (precision - S n)) in |- *.
-apply le_plus_minus; auto.
+rewrite Nat.add_comm, Nat.sub_add; auto.
 repeat rewrite Zabs_Zmult.
 apply Zle_Zmult_comp_l.
 apply Z.abs_nonneg.
@@ -3805,7 +3860,7 @@ apply Zplus_lt_compat_r; auto.
 apply Zlt_succ_pred.
 replace (Z.succ 0) with (Z_of_nat 1); [ idtac | simpl in |- *; auto ].
 rewrite <- (Zpower_nat_O radix); unfold nNormMin in |- *.
-apply Zpower_nat_monotone_lt. assumption. now apply lt_pred.
+apply Zpower_nat_monotone_lt. assumption. now apply Nat.lt_succ_lt_pred.
 apply Zle_Zpred_Zpred. apply Zle_Zmult_comp_r; auto with zarith.
 apply Z.lt_le_incl; apply nNormPos; auto with zarith.
 Qed.
@@ -5348,9 +5403,7 @@ apply f_equal with (f := S); repeat rewrite (fun x y => mult_comm x (S y));
  repeat rewrite ZL6; unfold nat_of_P in |- *;
  simpl in |- *; ring.
 intros H3; unfold nat_of_P in |- *; simpl in |- *;
- repeat rewrite ZL6; unfold nat_of_P in |- *;
- repeat rewrite (fun x y => plus_comm x (S y)); simpl in |- *;
- apply f_equal with (f := S); ring.
+ repeat rewrite ZL6; unfold nat_of_P in |- *; ring.
 intros H3; case (Pminus_mask_Gt _ _ H3); intros h (H4, (H5, H6));
  unfold Pminus in |- *; rewrite H4.
 apply
@@ -5368,7 +5421,7 @@ intros H3; rewrite <- (Pcompare_Eq_eq _ _ H3); simpl in |- *;
  repeat rewrite ZL6; unfold nat_of_P in |- *; simpl in |- *;
  apply f_equal with (f := S);ring.
 intros H3; unfold nat_of_P in |- *; simpl in |- *;
- repeat rewrite (fun x y => plus_comm x (S y));
+ repeat rewrite (fun x y => Nat.add_comm x (S y));
  simpl in |- *; apply f_equal with (f := S); repeat rewrite ZL6;
    unfold nat_of_P in |- *; simpl in |- *; ring.
 intros H3; case (Pminus_mask_Gt _ _ H3); intros h (H4, (H5, H6));
@@ -5409,11 +5462,11 @@ intros; apply lt_O_nat_of_P; auto.
 intros H H0; apply nat_of_P_lt_Lt_compare_morphism; auto.
 intros H3 H7; case (Pminus_mask_Gt _ _ H3); intros h (H4, (H5, H6));
  unfold Pminus in |- *; rewrite H4;
- apply plus_lt_reg_l with (p := nat_of_P q);
+ apply (proj2 (Nat.add_lt_mono_l _ _ (nat_of_P q)));
  rewrite <- (nat_of_P_plus_morphism q); rewrite H5;
  unfold nat_of_P in |- *; simpl in |- *; repeat rewrite ZL6;
  unfold nat_of_P in |- *;
- apply le_lt_trans with (Pmult_nat r2 1 + Pmult_nat q 1);
+ apply Nat.le_lt_trans with (Pmult_nat r2 1 + Pmult_nat q 1);
  auto with arith.
 intros r2 HH; case q; simpl in |- *; auto.
 intros p2; apply nat_of_P_lt_Lt_compare_morphism; easy.
@@ -5425,11 +5478,11 @@ intros; apply lt_O_nat_of_P; auto.
 intros H3; apply nat_of_P_lt_Lt_compare_morphism; auto.
 intros H3; case (Pminus_mask_Gt _ _ H3); intros h (H4, (H5, H6));
  unfold Pminus in |- *; rewrite H4;
- apply plus_lt_reg_l with (p := nat_of_P q);
+ apply (proj2 (Nat.add_lt_mono_l _ _ (nat_of_P q)));
  rewrite <- (nat_of_P_plus_morphism q); rewrite H5;
  unfold nat_of_P in |- *; simpl in |- *; repeat rewrite ZL6;
  unfold nat_of_P in |- *;
- apply le_lt_trans with (Pmult_nat r2 1 + Pmult_nat q 1);
+ apply Nat.le_lt_trans with (Pmult_nat r2 1 + Pmult_nat q 1);
  auto with arith.
 intros HH; case q; simpl in |- *; auto.
 intros p2; apply nat_of_P_lt_Lt_compare_morphism; easy.
@@ -5485,12 +5538,12 @@ intros; apply lt_O_nat_of_P; auto.
 intros H H0; apply nat_of_P_lt_Lt_compare_morphism; auto.
 intros H3 H7; case (Pminus_mask_Gt _ _ H3); intros h (H4, (H5, H6));
  unfold Pminus in |- *; rewrite H4;
- apply plus_lt_reg_l with (p := nat_of_P q);
+ apply (proj2 (Nat.add_lt_mono_l _ _ (nat_of_P q)));
  rewrite <- (nat_of_P_plus_morphism q); rewrite H5;
  unfold nat_of_P in |- *; simpl in |- *;
  unfold nat_of_P in |- *; simpl in |- *; repeat rewrite ZL6;
  unfold nat_of_P in |- *;
- apply lt_trans with (Pmult_nat r2 1 + Pmult_nat q 1);
+ apply Nat.lt_trans with (Pmult_nat r2 1 + Pmult_nat q 1);
  auto with arith.
 intros; apply lt_O_nat_of_P; auto.
 intros r2 HH. rewrite Z.pos_sub_spec; unfold Pos.compare.
@@ -5500,11 +5553,11 @@ intros; apply lt_O_nat_of_P; auto.
 intros H3; apply nat_of_P_lt_Lt_compare_morphism; auto.
 intros H3; case (Pminus_mask_Gt _ _ H3); intros h (H4, (H5, H6));
  unfold Pminus in |- *; rewrite H4;
- apply plus_lt_reg_l with (p := nat_of_P q);
+ apply (proj2 (Nat.add_lt_mono_l _ _ (nat_of_P q)));
  rewrite <- (nat_of_P_plus_morphism q); rewrite H5;
  unfold nat_of_P in |- *; simpl in |- *; repeat rewrite ZL6;
  unfold nat_of_P in |- *;
- apply lt_trans with (Pmult_nat r2 1 + Pmult_nat q 1);
+ apply Nat.lt_trans with (Pmult_nat r2 1 + Pmult_nat q 1);
  auto with arith.
 auto.
 rewrite ZL6; generalize (Pos2Nat.is_pos q1); auto with zarith arith.
@@ -6077,7 +6130,7 @@ apply IZR_le; auto.
 unfold Fdigit in |- *; auto with arith.
 apply digitLess; auto.
 unfold Fdigit in |- *.
-apply not_eq_sym; apply lt_O_neq; apply digitNotZero; auto.
+rewrite Nat.neq_0_lt_0; apply digitNotZero; auto.
 apply IZR_neq; lia.
 Qed.
 
@@ -12936,7 +12989,7 @@ rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
 cut (Z.abs (Zpower_nat radix (minus t s)) = Zpower_nat radix (minus t s)).
 intros H; pattern (Zpower_nat radix (minus t s)) at 2 in |- *; rewrite <- H.
 rewrite Zabs_absolu.
-rewrite <- (S_pred (Z.abs_nat (Zpower_nat radix (minus t s))) 0);
+rewrite (Nat.lt_succ_pred 0 (Z.abs_nat (Zpower_nat radix (minus t s))));
  auto with arith zarith.
 apply lt_Zlt_inv; simpl in |- *; auto with zarith arith.
 rewrite <- Zabs_absolu; rewrite H; auto with arith zarith.
@@ -16075,7 +16128,7 @@ apply
 unfold Z_of_nat in |- *; rewrite nat_of_P_o_P_of_succ_nat_eq_succ;
  auto with zarith.
 rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
-rewrite <- S_pred with (Z.abs_nat (Zpower_nat radix (s))) 0; auto with zarith.
+rewrite Nat.lt_succ_pred with 0 (Z.abs_nat (Zpower_nat radix (s))); auto with zarith.
 rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
 apply Zpower_NR0; auto with zarith.
 cut ( 0 < Z.abs_nat (Zpower_nat radix s))%Z; auto with zarith.
@@ -16131,7 +16184,7 @@ apply
 unfold Z_of_nat in |- *; rewrite nat_of_P_o_P_of_succ_nat_eq_succ;
  auto with zarith.
 rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
-rewrite <- S_pred with (Z.abs_nat (Zpower_nat radix (s-1))) 0; auto with zarith.
+rewrite Nat.lt_succ_pred with 0 (Z.abs_nat (Zpower_nat radix (s-1))); auto with zarith.
 rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
 apply Zpower_NR0; lia.
 cut ( 0 < Z.abs_nat (Zpower_nat radix (s-1)))%Z; auto with zarith.
@@ -16158,7 +16211,7 @@ apply
 unfold Z_of_nat in |- *; rewrite nat_of_P_o_P_of_succ_nat_eq_succ;
  auto with zarith.
 rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
-rewrite <- S_pred with (Z.abs_nat (Zpower_nat radix (s-1))) 0; auto with zarith.
+rewrite Nat.lt_succ_pred with 0 (Z.abs_nat (Zpower_nat radix (s-1))); auto with zarith.
 rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
 apply Zpower_NR0; lia.
 cut ( 0 < Z.abs_nat (Zpower_nat radix (s-1)))%Z; auto with zarith.
@@ -17310,7 +17363,7 @@ rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
 cut (Z.abs (Zpower_nat radix s) = Zpower_nat radix s).
 intros H; pattern (Zpower_nat radix s) at 2 in |- *; rewrite <- H.
 rewrite Zabs_absolu.
-rewrite <- (S_pred (Z.abs_nat (Zpower_nat radix s)) 0);
+rewrite (Nat.lt_succ_pred 0 (Z.abs_nat (Zpower_nat radix s)));
  auto with arith zarith.
 apply lt_Zlt_inv; simpl in |- *; auto with zarith arith.
 rewrite <- Zabs_absolu; rewrite H; auto with arith zarith.
@@ -17433,7 +17486,7 @@ Hypothesis Cy: (Fnormal radix b y).
 
 Hypothesis Expoxy: (-dExp b <= Fexp x+Fexp y)%Z.
 
-Let s:= t- div2 t.
+Let s:= t- Nat.div2 t.
 
 Hypothesis A1: (Closest b radix (x*((powerRZ radix s)+1))%R p).
 Hypothesis A2: (Closest b radix (x-p)%R  q).
@@ -17461,62 +17514,62 @@ Hypothesis D5: (Closest b radix (t3-x2y2)%R  t4).
 
 Lemma SLe: (2 <= s).
 unfold s; auto with zarith.
-assert (2<= t-div2 t)%Z; auto with zarith.
+assert (2<= t-Nat.div2 t)%Z; auto with zarith.
 apply Zmult_le_reg_r with 2%Z; try lia.
-replace ((t-div2 t)*2)%Z with (2*t-2*div2 t)%Z by ring.
-replace (2*div2 t)%Z with (Z_of_nat (Div2.double (div2 t))).
-case (even_or_odd t); intros I.
-rewrite <- even_double by easy. lia.
-apply Z.le_trans with (2*t+1-(S ( Div2.double (div2 t))))%Z; try lia.
-rewrite <- odd_double by easy. lia.
-unfold Div2.double; rewrite inj_plus; ring.
+replace ((t-Nat.div2 t)*2)%Z with (2*t-2*Nat.div2 t)%Z by ring.
+replace (2*Nat.div2 t)%Z with (Z_of_nat (Nat.double (Nat.div2 t))).
+case (Nat.Even_or_Odd t); intros I.
+rewrite <- Even_double by easy. lia.
+apply Z.le_trans with (2*t+1-(S ( Nat.double (Nat.div2 t))))%Z; try lia.
+rewrite <- Odd_double by easy. lia.
+unfold Nat.double; rewrite inj_plus; ring.
 Qed.
 
 
 Lemma SGe: (s <= t-2).
 unfold s.
-cut (2<= div2 t)%Z. lia.
+cut (2<= Nat.div2 t)%Z. lia.
 apply Zmult_le_reg_r with 2%Z; try lia.
-replace (div2 t*2)%Z with (Z_of_nat (Div2.double (div2 t))).
-case (even_or_odd t); intros I.
-rewrite <- even_double by easy. lia.
-apply Z.le_trans with (-1+(S ( Div2.double (div2 t))))%Z. 2: lia.
-rewrite <- odd_double; auto with zarith.
+replace (Nat.div2 t*2)%Z with (Z_of_nat (Nat.double (Nat.div2 t))).
+case (Nat.Even_or_Odd t); intros I.
+rewrite <- Even_double by easy. lia.
+apply Z.le_trans with (-1+(S ( Nat.double (Nat.div2 t))))%Z. 2: lia.
+rewrite <- Odd_double; auto with zarith.
 case (Zle_lt_or_eq 4 t); auto with zarith.
-intros I2; absurd (odd t); auto.
-intros I3; apply not_even_and_odd with t; auto.
+intros I2; absurd (Nat.Odd t); auto.
+intros I3; apply Nat.Even_Odd_False with t; auto.
 replace t with (4) by auto with zarith.
-apply even_S; apply odd_S; apply even_S; apply odd_S; apply even_O.
-unfold Div2.double; rewrite inj_plus; ring.
+now exists 2.
+unfold Nat.double; rewrite inj_plus; ring.
 Qed.
 
 Lemma s2Ge: (t <= s + s)%Z.
 unfold s.
-cut (2*(div2 t) <= t)%Z. lia.
-case (even_or_odd t); intros I.
-apply Z.le_trans with  (Div2.double (div2 t)).
-unfold Div2.double; rewrite inj_plus; auto with zarith.
-rewrite <- even_double; auto with zarith.
-apply Z.le_trans with (-1+(S ( Div2.double (div2 t))))%Z.
+cut (2*(Nat.div2 t) <= t)%Z. lia.
+case (Nat.Even_or_Odd t); intros I.
+apply Z.le_trans with  (Nat.double (Nat.div2 t)).
+unfold Nat.double; rewrite inj_plus; auto with zarith.
+rewrite <- Even_double; auto with zarith.
+apply Z.le_trans with (-1+(S ( Nat.double (Nat.div2 t))))%Z.
 rewrite inj_S; unfold Z.succ; auto with zarith.
-unfold Div2.double; rewrite inj_plus; auto with zarith.
-rewrite <- odd_double by easy. lia.
+unfold Nat.double; rewrite inj_plus; auto with zarith.
+rewrite <- Odd_double by easy. lia.
 Qed.
 
 
 Lemma s2Le: (s + s <= t + 1)%Z.
 unfold s.
 rewrite inj_minus1; auto with zarith.
-2: generalize (lt_div2 t); auto with zarith.
-assert (t<= 2*(div2 t)+1)%Z; auto with zarith.
-case (even_or_odd t); intros I.
-apply Z.le_trans with  ((Div2.double (div2 t)+1))%Z.
-2:unfold Div2.double; rewrite inj_plus; auto with zarith.
-rewrite <- even_double; auto with zarith.
-apply Z.le_trans with ((S ( Div2.double (div2 t))))%Z; auto with zarith.
+2: generalize (Nat.lt_div2 t); auto with zarith.
+assert (t<= 2*(Nat.div2 t)+1)%Z; auto with zarith.
+case (Nat.Even_or_Odd t); intros I.
+apply Z.le_trans with  ((Nat.double (Nat.div2 t)+1))%Z.
+2:unfold Nat.double; rewrite inj_plus; auto with zarith.
+rewrite <- Even_double; auto with zarith.
+apply Z.le_trans with ((S ( Nat.double (Nat.div2 t))))%Z; auto with zarith.
 2: rewrite inj_S; unfold Z.succ; auto with zarith.
-2: unfold Div2.double; rewrite inj_plus; auto with zarith.
-rewrite <- odd_double; auto with zarith.
+2: unfold Nat.double; rewrite inj_plus; auto with zarith.
+rewrite <- Odd_double; auto with zarith.
 Qed.
 
 
@@ -17640,7 +17693,7 @@ Qed.
 
 
 
-Theorem Boundedx2y2: (radix=2)%Z \/ (even t) ->
+Theorem Boundedx2y2: (radix=2)%Z \/ (Nat.Even t) ->
     (exists x':float, (FtoRradix x'=tx*ty)%R /\ (Fbounded b x') /\ (Fexp x+Fexp y <= Fexp x')%Z).
 intros H; case H; clear H; intros H.
 generalize SLe; intros Sle; generalize SGe; intros Sge.
@@ -17685,7 +17738,7 @@ rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
 cut (Z.abs (Zpower_nat radix (s-1)) = Zpower_nat radix (s-1)).
 intros HA; pattern (Zpower_nat radix (s-1)) at 2 in |- *; rewrite <- HA.
 rewrite Zabs_absolu.
-rewrite <- (S_pred (Z.abs_nat (Zpower_nat radix (s-1))) 0);
+rewrite (Nat.lt_succ_pred 0 (Z.abs_nat (Zpower_nat radix (s-1))));
  auto with arith zarith.
 apply lt_Zlt_inv; simpl in |- *; auto with zarith arith.
 rewrite <- Zabs_absolu; rewrite HA; auto with arith zarith.
@@ -17731,11 +17784,11 @@ rewrite <- Zpower_nat_is_exp; rewrite pGivesBound; auto with zarith.
 apply Zpower_nat_monotone_le; auto with zarith.
 assert (2*s <= t)%Z; auto with zarith.
 unfold s.
-rewrite inj_minus1 by (generalize (lt_div2 t); auto with zarith).
-assert (t <= 2*(div2 t))%Z; auto with zarith.
-apply Z.le_trans with  (Div2.double (div2 t)).
-2: unfold Div2.double; rewrite inj_plus; auto with zarith.
-rewrite <- even_double; auto with zarith.
+rewrite inj_minus1 by (generalize (Nat.lt_div2 t); auto with zarith).
+assert (t <= 2*(Nat.div2 t))%Z; auto with zarith.
+apply Z.le_trans with  (Nat.double (Nat.div2 t)).
+2: unfold Nat.double; rewrite inj_plus; auto with zarith.
+rewrite <- Even_double; auto with zarith.
 apply sym_eq; apply p''GivesBound; auto.
 apply Z.le_trans with (Fexp (Fnormalize radix b t x)+Fexp (Fnormalize radix b t y))%Z; auto with zarith.
 rewrite FcanonicFnormalizeEq; auto with zarith.
@@ -17750,7 +17803,7 @@ left; auto.
 simpl; auto with zarith.
 Qed.
 
-Theorem DekkerN: (radix=2)%Z \/ (even t) ->  (x*y=r-t4)%R.
+Theorem DekkerN: (radix=2)%Z \/ (Nat.Even t) ->  (x*y=r-t4)%R.
 intros H; apply Dekker_aux.
 elim Boundedx2y2; auto.
 intros f T; exists f; intuition.
@@ -17784,7 +17837,7 @@ Hypothesis Cy: (Fsubnormal radix b y).
 
 Hypothesis Expoxy: (-dExp b <= Fexp x+Fexp y)%Z.
 
-Let s:= t- div2 t.
+Let s:= t- Nat.div2 t.
 
 Hypothesis A1: (Closest b radix (x*((powerRZ radix s)+1))%R p).
 Hypothesis A2: (Closest b radix (x-p)%R  q).
@@ -17811,7 +17864,7 @@ Hypothesis D5: (Closest b radix (t3-x2y2)%R  t4).
 
 
 
-Theorem DekkerS1: (radix=2)%Z \/ (even t) ->  (x*y=r-t4)%R.
+Theorem DekkerS1: (radix=2)%Z \/ (Nat.Even t) ->  (x*y=r-t4)%R.
 Proof.
 intros H; unfold FtoRradix.
 case (Req_dec 0%R y); intros Ny.
@@ -17879,9 +17932,9 @@ apply Zplus_le_reg_l with (Fexp y).
 rewrite (Zplus_comm (Fexp y) (Fexp x)); apply Z.le_trans with (2:=Expoxy).
 elim Cy; intros F1' F2'; elim F2'; auto with zarith.
 assert (Closest (plusExp t b) radix
-   (FtoR radix x * (powerRZ radix (t - div2 t)%nat + 1)) p).
-cut (FtoR radix x * (powerRZ radix (t - div2 t)%nat + 1) =
-    (FtoRradix (Fmult x (Float (Zpower_nat radix (t - div2 t)%nat + 1) 0))))%R.
+   (FtoR radix x * (powerRZ radix (t - Nat.div2 t)%nat + 1)) p).
+cut (FtoR radix x * (powerRZ radix (t - Nat.div2 t)%nat + 1) =
+    (FtoRradix (Fmult x (Float (Zpower_nat radix (t - Nat.div2 t)%nat + 1) 0))))%R.
 intros K'; rewrite K'.
 unfold FtoRradix; apply Closestbbplus with 2 t; auto with zarith.
 unfold Fmult; simpl.
@@ -17910,9 +17963,9 @@ unfold Fminus; simpl; apply Zmin_Zle.
 assert (K:Fbounded b x);[elim Cx; auto|elim K; auto with zarith].
 assert (K:Fbounded b hx);[elim A3; auto|elim K; auto with zarith].
 rewrite Fminus_correct; auto.
-assert (Closest (plusExp t b) radix (FtoR radix yy * (powerRZ radix (t - div2 t)%nat + 1)) p').
-rewrite X1; cut (FtoR radix y * (powerRZ radix (t - div2 t)%nat + 1) =
-    (FtoRradix (Fmult y (Float (Zpower_nat radix (t - div2 t)%nat + 1) 0))))%R.
+assert (Closest (plusExp t b) radix (FtoR radix yy * (powerRZ radix (t - Nat.div2 t)%nat + 1)) p').
+rewrite X1; cut (FtoR radix y * (powerRZ radix (t - Nat.div2 t)%nat + 1) =
+    (FtoRradix (Fmult y (Float (Zpower_nat radix (t - Nat.div2 t)%nat + 1) 0))))%R.
 intros K'; rewrite K'.
 unfold FtoRradix; apply Closestbbplus with 2 t; auto with zarith.
 unfold Fmult; simpl.
@@ -18037,7 +18090,7 @@ Hypothesis Cy: (Fnormal radix b y).
 
 Hypothesis Expoxy: (-dExp b <= Fexp x+Fexp y)%Z.
 
-Let s:= t- div2 t.
+Let s:= t- Nat.div2 t.
 
 Hypothesis A1: (Closest b radix (x*((powerRZ radix s)+1))%R p).
 Hypothesis A2: (Closest b radix (x-p)%R  q).
@@ -18064,7 +18117,7 @@ Hypothesis D5: (Closest b radix (t3-x2y2)%R  t4).
 
 
 
-Theorem DekkerS2: (radix=2)%Z \/ (even t) ->  (x*y=r-t4)%R.
+Theorem DekkerS2: (radix=2)%Z \/ (Nat.Even t) ->  (x*y=r-t4)%R.
 Proof.
 intros H; unfold FtoRradix.
 case (Req_dec 0%R x); intros Ny.
@@ -18131,9 +18184,9 @@ apply Zplus_le_reg_l with (Fexp x).
 apply Z.le_trans with (2:=Expoxy).
 elim Cx; intros F1' F2'; elim F2'; auto with zarith.
 assert (Closest (plusExp t b) radix
-   (FtoR radix y * (powerRZ radix (t - div2 t)%nat + 1)) p').
-cut (FtoR radix y * (powerRZ radix (t - div2 t)%nat + 1) =
-    (FtoRradix (Fmult y (Float (Zpower_nat radix (t - div2 t)%nat + 1) 0))))%R.
+   (FtoR radix y * (powerRZ radix (t - Nat.div2 t)%nat + 1)) p').
+cut (FtoR radix y * (powerRZ radix (t - Nat.div2 t)%nat + 1) =
+    (FtoRradix (Fmult y (Float (Zpower_nat radix (t - Nat.div2 t)%nat + 1) 0))))%R.
 intros K'; rewrite K'.
 unfold FtoRradix; apply Closestbbplus with 2 t; auto with zarith.
 unfold Fmult; simpl.
@@ -18162,9 +18215,9 @@ unfold Fminus; simpl; apply Zmin_Zle.
 assert (K:Fbounded b y);[elim Cy; auto|elim K; auto with zarith].
 assert (K:Fbounded b hy);[elim B3; auto|elim K; auto with zarith].
 rewrite Fminus_correct; auto.
-assert (Closest (plusExp t b) radix (FtoR radix xx * (powerRZ radix (t - div2 t)%nat + 1)) p).
-rewrite X1; cut (FtoR radix x * (powerRZ radix (t - div2 t)%nat + 1) =
-    (FtoRradix (Fmult x (Float (Zpower_nat radix (t - div2 t)%nat + 1) 0))))%R.
+assert (Closest (plusExp t b) radix (FtoR radix xx * (powerRZ radix (t - Nat.div2 t)%nat + 1)) p).
+rewrite X1; cut (FtoR radix x * (powerRZ radix (t - Nat.div2 t)%nat + 1) =
+    (FtoRradix (Fmult x (Float (Zpower_nat radix (t - Nat.div2 t)%nat + 1) 0))))%R.
 intros K'; rewrite K'.
 unfold FtoRradix; apply Closestbbplus with 2 t; auto with zarith.
 unfold Fmult; simpl.
@@ -18290,7 +18343,7 @@ Hypothesis Cy: (Fcanonic radix b y).
 
 Hypothesis Expoxy: (-dExp b <= Fexp x+Fexp y)%Z.
 
-Let s:= t- div2 t.
+Let s:= t- Nat.div2 t.
 
 Hypothesis A1: (Closest b radix (x*((powerRZ radix s)+1))%R p).
 Hypothesis A2: (Closest b radix (x-p)%R  q).
@@ -18317,7 +18370,7 @@ Hypothesis D5: (Closest b radix (t3-x2y2)%R  t4).
 Hypothesis dExpPos: ~(Z_of_N(dExp b)=0)%Z.
 
 
-Theorem Dekker1: (radix=2)%Z \/ (even t) ->  (x*y=r-t4)%R.
+Theorem Dekker1: (radix=2)%Z \/ (Nat.Even t) ->  (x*y=r-t4)%R.
 case Cy; case Cx; intros.
 unfold FtoRradix; apply DekkerN  with b t p q hx tx p' q' hy ty x1y1 x1y2 x2y1 x2y2 t1 t2 t3; auto.
 unfold FtoRradix; apply DekkerS2 with  b t p q hx tx p' q' hy ty x1y1 x1y2 x2y1 x2y2 t1 t2 t3; auto.
@@ -18346,7 +18399,7 @@ Let radixMoreThanZERO := Zlt_1_O _ (Zlt_le_weak _ _ radixMoreThanOne).
 
 Hypothesis pGivesBound: Zpos (vNum b)=(Zpower_nat radix t).
 Hypotheses pGe: (4 <= t).
-Let s:= t- div2 t.
+Let s:= t- Nat.div2 t.
 
 Variables x y:float.
 
@@ -18506,7 +18559,7 @@ Qed.
 
 Theorem Dekker2_aux:
   (FtoRradix x <>0) -> (FtoRradix y <>0) ->
-  (radix=2)%Z \/ (even t) ->  (Rabs (x*y-(r-t4)) <= (7/2)*powerRZ radix (-(dExp b)))%R.
+  (radix=2)%Z \/ (Nat.Even t) ->  (Rabs (x*y-(r-t4)) <= (7/2)*powerRZ radix (-(dExp b)))%R.
 intros P1 P2.
 intros; generalize dExpPrim; intros.
 elim (NormalbPrim x); auto.
@@ -18642,7 +18695,7 @@ apply
 unfold Z_of_nat in |- *; rewrite nat_of_P_o_P_of_succ_nat_eq_succ;
  auto with zarith.
 rewrite nat_of_P_o_P_of_succ_nat_eq_succ; auto with arith zarith.
-rewrite <- S_pred with (Z.abs_nat (Zpower_nat radix (i))) 0; auto with zarith.
+rewrite Nat.lt_succ_pred with 0 (Z.abs_nat (Zpower_nat radix (i))); auto with zarith.
 rewrite <- Zabs_absolu; rewrite Z.abs_eq; auto with zarith.
 apply Zpower_NR0; auto with zarith.
 cut ( 0 < Z.abs_nat (Zpower_nat radix (i)))%Z; auto with zarith.
@@ -18755,7 +18808,7 @@ Qed.
 
 
 Theorem Dekker2:
-  (radix=2)%Z \/ (even t) ->  (Rabs (x*y-(r-t4)) <= (7/2)*powerRZ radix (-(dExp b)))%R.
+  (radix=2)%Z \/ (Nat.Even t) ->  (Rabs (x*y-(r-t4)) <= (7/2)*powerRZ radix (-(dExp b)))%R.
 intros.
 case (Req_dec 0%R x); intros Ny.
 cut (FtoRradix r=0)%R;[intros Z1|idtac].
@@ -18889,7 +18942,7 @@ Hypothesis Cx: (Fcanonic radix b x).
 Hypothesis Cy: (Fcanonic radix b y).
 
 
-Let s:= t- div2 t.
+Let s:= t- Nat.div2 t.
 
 Hypothesis A1: (Closest b radix (x*((powerRZ radix s)+1))%R p).
 Hypothesis A2: (Closest b radix (x-p)%R  q).
@@ -18916,7 +18969,7 @@ Hypothesis D5: (Closest b radix (t3+x2y2)%R  t4).
 Hypothesis dExpPos: ~(Z_of_N (dExp b)=0)%Z.
 
 
-Theorem Dekker: (radix=2)%Z \/ (even t) ->
+Theorem Dekker: (radix=2)%Z \/ (Nat.Even t) ->
   ((-dExp b <= Fexp x+Fexp y)%Z ->  (x*y=r+t4)%R) /\
     (Rabs (x*y-(r+t4)) <= (7/2)*powerRZ radix (-(dExp b)))%R.
 intros.

@@ -1,4 +1,4 @@
-import { ExtensionContext, workspace } from "vscode";
+import { DocumentSelector, ExtensionContext, workspace } from "vscode";
 
 export interface CoqLspServerConfig {
   client_version: string;
@@ -13,6 +13,7 @@ export interface CoqLspServerConfig {
   pp_type: 0 | 1 | 2;
   show_stats_on_hover: boolean;
   show_loc_info_on_hover: boolean;
+  check_only_on_request: boolean;
 }
 
 export namespace CoqLspServerConfig {
@@ -33,6 +34,7 @@ export namespace CoqLspServerConfig {
       pp_type: wsConfig.pp_type,
       show_stats_on_hover: wsConfig.show_stats_on_hover,
       show_loc_info_on_hover: wsConfig.show_loc_info_on_hover,
+      check_only_on_request: wsConfig.check_only_on_request,
     };
   }
 }
@@ -54,3 +56,7 @@ export namespace CoqLspClientConfig {
     return obj;
   }
 }
+export const coqLSPDocumentSelector: DocumentSelector = [
+  { language: "coq" },
+  { language: "markdown", pattern: "**/*.mv" },
+];

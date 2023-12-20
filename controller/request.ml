@@ -48,6 +48,7 @@ module Data = struct
   type t =
     | DocRequest of
         { uri : Lang.LUri.File.t
+        ; postpone : bool
         ; handler : document
         }
     | PosRequest of
@@ -60,7 +61,8 @@ module Data = struct
 
   (* Debug printing *)
   let data fmt = function
-    | DocRequest { uri = _; handler = _ } -> Format.fprintf fmt "{k:doc}"
+    | DocRequest { uri = _; postpone; handler = _ } ->
+      Format.fprintf fmt "{k:doc | p: %B}" postpone
     | PosRequest { uri = _; point; version; postpone; handler = _ } ->
       Format.fprintf fmt "{k:pos | l: %d, c: %d v: %a p: %B}" (fst point)
         (snd point)
@@ -69,13 +71,14 @@ module Data = struct
 
   let dm_request pr =
     match pr with
-    | DocRequest { uri; handler = _ } -> Fleche.Theory.Request.(FullDoc { uri })
+    | DocRequest { uri; postpone; handler = _ } ->
+      Fleche.Theory.Request.(FullDoc { uri; postpone })
     | PosRequest { uri; point; version; postpone; handler = _ } ->
       Fleche.Theory.Request.(PosInDoc { uri; point; version; postpone })
 
   let serve ~doc pr =
     match pr with
-    | DocRequest { uri = _; handler } -> handler ~doc
+    | DocRequest { uri = _; postpone = _; handler } -> handler ~doc
     | PosRequest { uri = _; point; version = _; postpone = _; handler } ->
       handler ~point ~doc
 end

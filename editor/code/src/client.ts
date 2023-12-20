@@ -12,6 +12,8 @@ import {
   ThemeColor,
   WorkspaceConfiguration,
   Disposable,
+  DocumentSelector,
+  languages,
 } from "vscode";
 
 import {
@@ -29,7 +31,11 @@ import {
   GoalAnswer,
   PpString,
 } from "../lib/types";
-import { CoqLspClientConfig, CoqLspServerConfig } from "./config";
+import {
+  CoqLspClientConfig,
+  CoqLspServerConfig,
+  coqLSPDocumentSelector,
+} from "./config";
 import { InfoPanel, goalReq } from "./goals";
 import { FileProgressManager } from "./progress";
 import { coqPerfData, PerfDataView } from "./perf";
@@ -208,10 +214,8 @@ export function activateCoqLSP(
     textEditor: TextEditor,
     callKind: TextEditorSelectionChangeKind | undefined
   ) => {
-    if (
-      textEditor.document.languageId != "coq" &&
-      textEditor.document.languageId != "markdown"
-    )
+    // Don't trigger the goals if the buffer is not owned by us
+    if (languages.match(coqLSPDocumentSelector, textEditor.document) < 1)
       return;
 
     const kind =
