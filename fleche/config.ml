@@ -48,6 +48,7 @@ type t =
   ; verbosity : int [@default 2]
         (** Verbosity, 1 = reduced, 2 = default. As of today reduced will
             disable all logging, and the diagnostics and perf_data notification *)
+  ; check_only_on_request : bool [@default false]
   }
 
 let default =
@@ -69,6 +70,7 @@ let default =
   ; pp_json = false
   ; send_perf_data = true
   ; send_diags = true
+  ; check_only_on_request = false
   }
 
 let v = ref default

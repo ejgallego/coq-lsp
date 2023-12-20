@@ -424,7 +424,11 @@ The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
 Work on this server has been made possible thanks to many discussions,
 inspirations, and sharing of ideas from colleagues. In particular, we'd like to
 thank Rudi Grinberg, Andrey Mokhov, Clément Pit-Claudel, and Makarius Wenzel for
-their help and advice.
+their help and advice. Gaëtan Gilbert contributed many key and challenging Coq
+patches essential to `coq-lsp`; we also thank Guillaume Munch-Maccagnoni for his
+[memprof-limits](https://guillaume.munch.name/software/ocaml/memprof-limits/index.html)
+library, which is essential to make `coq-lsp` on the real world, as well for
+many advice w.r.t. OCaml.
 
 As noted above, the original implementation was based on the Lambdapi LSP
 server, thanks to all the collaborators in that project!

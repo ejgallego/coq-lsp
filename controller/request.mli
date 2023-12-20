@@ -33,6 +33,7 @@ module Data : sig
   type t =
     | DocRequest of
         { uri : Lang.LUri.File.t
+        ; postpone : bool
         ; handler : document
         }
     | PosRequest of
