@@ -189,3 +189,31 @@ let get_byte_offset_from_utf16_pos line (char : int) =
     ()
   done;
   if !byte_idx < String.length line then Some !byte_idx else None
+
+let%test_unit "utf16 offsets" =
+  let testcases_x =
+    [ ("aax", 2, true)
+    ; ("  xoo", 2, true)
+    ; ("0123", 4, false)
+    ; ("  𝒞x", 4, true)
+    ; ("  𝒞x𝒞", 4, true)
+    ; ("  𝒞∫x", 5, true)
+    ; ("  𝒞", 4, false)
+    ; ("∫x.dy", 1, true)
+    ]
+  in
+  List.iter
+    (fun (s, i, b) ->
+      let res = get_byte_offset_from_utf16_pos s i in
+      if b then
+        let res = Option.map (fun i -> s.[i]) res in
+        match res with
+        | Some x when x = 'x' -> ()
+        | Some x ->
+          failwith
+            (Printf.sprintf "Didn't find x in test %s : %d, instead: %c" s i x)
+        | None ->
+          failwith (Printf.sprintf "Didn't not find x in test %s : %d" s i)
+      else if res != None then
+        failwith (Printf.sprintf "Shouldn't find x in test %s : %d" s i))
+    testcases_x
