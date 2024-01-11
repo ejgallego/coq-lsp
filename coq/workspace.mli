@@ -32,6 +32,10 @@ module Warning : sig
   val apply : t list -> unit
 end
 
+module Module : sig
+  type t
+end
+
 type t = private
   { coqlib : string
   ; coqcorelib : string
@@ -42,6 +46,7 @@ type t = private
       (string * string option * Vernacexpr.export_with_cats option) list
   ; flags : Flags.t
   ; warnings : Warning.t list
+  ; modules : Module.t list
   ; kind : string  (** How the workspace was built *)
   ; debug : bool  (** Enable backtraces *)
   }
