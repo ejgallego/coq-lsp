@@ -13,6 +13,7 @@ let to_completed = function
   | Fleche.Doc.Completion.Yes range ->
     { Lsp.JFleche.CompletionStatus.status = `Yes; range }
   | Stopped range -> { status = `Stopped; range }
+  | Waiting (range, uri) -> { status = `Waiting uri; range }
   | Failed range -> { status = `Failed; range }
 
 let request ~token:_ ~doc =
