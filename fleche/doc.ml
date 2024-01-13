@@ -235,19 +235,26 @@ module Completion = struct
   type t =
     | Yes of Lang.Range.t  (** Location of the last token in the document *)
     | Stopped of Lang.Range.t  (** Location of the last valid token *)
+    | Waiting of Lang.Range.t * Lang.LUri.File.t
     | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
+  [@@ocaml.warning "-37"]
 
   let range = function
-    | Yes range | Stopped range | Failed range -> range
+    | Yes range | Stopped range | Failed range | Waiting (range, _) -> range
 
   let to_string = function
     | Yes _ -> "fully checked"
     | Stopped _ -> "stopped"
     | Failed _ -> "failed"
+    | Waiting (_, _doc) -> "waiting for doc"
 
   let is_completed = function
     | Yes _ | Failed _ -> true
     | _ -> false
+
+  let is_waiting_for = function
+    | Waiting (_, doc) -> Some doc
+    | _ -> None
 end
 
 (** Enviroment external to the document, this includes for now the [init] Coq
@@ -483,10 +490,11 @@ let bump_version ~token ~version ~(contents : Contents.t) doc =
   match doc.completed with
   (* We can do better, but we need to handle the case where the anomaly is when
      restoring / executing the first sentence *)
-  | Failed _ ->
+  | Failed _ | Waiting _ ->
     (* re-create the document on failed, as the env may have changed *)
     recreate ~token ~doc ~version ~contents
   | Stopped _ | Yes _ -> bump_version ~init_range ~version ~contents doc
+(* | Waiting _ -> restart_doc () *)
 
 let bump_version ~token ~version ~raw doc =
   let uri = doc.uri in
@@ -774,6 +782,8 @@ type document_action =
       }
   | Interrupted of Lang.Range.t
 
+(* ..... Require a. *)
+
 let unparseable_node ~range ~prev ~parsing_diags ~parsing_feedback ~state
     ~parsing_time =
   let fb_diags, messages = Diags.of_messages ~drange:range parsing_feedback in
@@ -1052,7 +1062,12 @@ let check ~io ~token ~target ~doc () =
   | Failed _ ->
     Io.Log.trace "check" "can't resume, failed=yes, nothing to do";
     doc
-  | Stopped last_tok ->
+    (* Invariant: we only check a document if the dependencies are ready. *)
+    (* | Waiting (last_tok, dep) when not (io.file_ready dep) -> Io.Log.trace
+       "check" "the file was resumed, however the dependencies are not ready" ;
+       { doc with completed = FailedPermanent last_tok } *)
+    (* Set the document to FailedPermanet *)
+  | Waiting (last_tok, _) | Stopped last_tok ->
     DDebug.resume last_tok doc.version;
     let doc = resume_check ~io ~token ~last_tok ~doc ~target in
     log_doc_completion doc.completed;

@@ -331,7 +331,7 @@ interface FlecheDocumentParams {
 ```typescript
 // Status of the document, Yes if fully checked, range contains the last seen lexical token
 interface CompletionStatus {
-    status : ['Yes' | 'Stopped' | 'Failed']
+    status : ['Yes' | 'Stopped' | `Waiting` | 'Failed']
     range : Range
 };
 

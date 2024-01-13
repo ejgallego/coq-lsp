@@ -25,6 +25,7 @@ module Handle = struct
              "wake up when a location is reached", or always to continue the
              streaming *)
     ; pt_requests : (int * (int * int)) list (* id, point *)
+    ; rev_deps : Lang.LUri.t list
     }
 
   let pt_eq (id1, (l1, c1)) (id2, (l2, c2)) = id1 = id2 && l1 = l2 && c1 = c2
@@ -43,7 +44,7 @@ module Handle = struct
       Io.Log.trace "do_open" "file %a not properly closed by client"
         Lang.LUri.File.pp uri);
     Hashtbl.add doc_table uri
-      { doc; cp_requests = Int.Set.empty; pt_requests = [] }
+      { doc; cp_requests = Int.Set.empty; pt_requests = []; rev_deps = [] }
 
   let close ~uri = Hashtbl.remove doc_table uri
 
@@ -65,24 +66,26 @@ module Handle = struct
   let clear_requests ~uri =
     match Hashtbl.find_opt doc_table uri with
     | None -> Int.Set.empty
-    | Some { cp_requests; pt_requests; doc } ->
+    | Some { cp_requests; pt_requests; doc; rev_deps } ->
       let invalid_reqs = Int.Set.union cp_requests (pt_ids pt_requests) in
       Hashtbl.replace doc_table uri
-        { doc; cp_requests = Int.Set.empty; pt_requests = [] };
+        { doc; cp_requests = Int.Set.empty; pt_requests = []; rev_deps };
       invalid_reqs
 
   (* Clear requests and update doc *)
   let update_doc_version ~(doc : Doc.t) =
     let invalid_reqs = clear_requests ~uri:doc.uri in
+    let { rev_deps; _ } = Hashtbl.find doc_table doc.uri in
     Hashtbl.replace doc_table doc.uri
-      { doc; cp_requests = Int.Set.empty; pt_requests = [] };
+      (* TODO invalidate rev_deps *)
+      { doc; cp_requests = Int.Set.empty; pt_requests = []; rev_deps };
     invalid_reqs
 
   let map_cp_requests ~uri ~f =
     match Hashtbl.find_opt doc_table uri with
-    | Some { doc; cp_requests; pt_requests } ->
+    | Some { doc; cp_requests; pt_requests; rev_deps } ->
       let cp_requests = f cp_requests in
-      Hashtbl.replace doc_table uri { doc; cp_requests; pt_requests }
+      Hashtbl.replace doc_table uri { doc; cp_requests; pt_requests; rev_deps }
     | None -> ()
 
   let attach_cp_request ~uri ~id =
@@ -95,9 +98,9 @@ module Handle = struct
 
   let map_pt_requests ~uri ~f =
     match Hashtbl.find_opt doc_table uri with
-    | Some { doc; cp_requests; pt_requests } ->
+    | Some { doc; cp_requests; pt_requests; rev_deps } ->
       let pt_requests = f pt_requests in
-      Hashtbl.replace doc_table uri { doc; cp_requests; pt_requests }
+      Hashtbl.replace doc_table uri { doc; cp_requests; pt_requests; rev_deps }
     | None -> ()
 
   (* This needs to be insertion sort! *)
@@ -122,7 +125,7 @@ module Handle = struct
       let pt_requests = [] in
       let cp_requests = Int.Set.empty in
       ({ handle with cp_requests; pt_requests }, wake_up)
-    | Stopped range ->
+    | Stopped range | Waiting (range, _) ->
       let fullfilled, delayed =
         List.partition
           (fun (_id, point) -> Doc.Target.reached ~range point)
@@ -234,8 +237,11 @@ end = struct
           if Lang.LUri.File.equal uri doc.uri then
             match doc.completed with
             | Yes _ | Failed _ -> None
-            | Stopped range when Doc.Target.reached ~range (l, c) -> None
+            | (Waiting (range, _) | Stopped range)
+              when Doc.Target.reached ~range (l, c) -> None
             | Stopped _ -> Some (Doc.Target.Position (l, c))
+            | Waiting (_, _) ->
+              None (* should pass the uri of the new target? *)
           else None)
     | Some t -> Some t
 
@@ -251,6 +257,8 @@ end = struct
     in
     Io.Report.serverStatus ~io (ServerInfo.Status.Idle mem)
 
+  let schedule ~uri = pending := pend_push uri !pending
+
   let do_check ~io ~token ~handle ~doc target =
     let () = report_start ~io doc in
     let doc = Doc.check ~io ~token ~target ~doc () in
@@ -259,6 +267,11 @@ end = struct
     if Doc.Completion.is_completed doc.completed then (
       Register.Completed.fire ~io ~token ~doc;
       pending := pend_pop !pending);
+    (match Doc.Completion.is_waiting_for doc.completed with
+    | None -> ()
+    | Some uri ->
+      (* todo add to handler: rev_dep of uri *)
+      schedule ~uri);
     (requests, doc)
 
   (* Notification handling; reply is optional / asynchronous *)
@@ -287,8 +300,6 @@ end = struct
 
   let maybe_check ~io ~token =
     pend_try (fun uri -> check ~io ~token ~uri) !pending
-
-  let schedule ~uri = pending := pend_push uri !pending
 
   let deschedule ~uri =
     pending := CList.remove Lang.LUri.File.equal uri !pending
@@ -363,7 +374,8 @@ module Request = struct
     let in_range =
       match doc.completed with
       | Yes _ -> true
-      | Failed range | Stopped range -> Doc.Target.reached ~range (line, col)
+      | Failed range | Stopped range | Waiting (range, _) ->
+        Doc.Target.reached ~range (line, col)
     in
     let in_range =
       match version with
