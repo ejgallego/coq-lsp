@@ -206,22 +206,33 @@ module Completion = struct
   type t =
     | Yes of Lang.Range.t  (** Location of the last token in the document *)
     | Stopped of Lang.Range.t  (** Location of the last valid token *)
+    | Waiting of Lang.Range.t * Lang.LUri.File.t
     | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
     | FailedPermanent of Lang.Range.t
         (** Temporal Coq hack, avoids any computation *)
+  [@@ocaml.warning "-37"]
 
   let range = function
-    | Yes range | Stopped range | Failed range | FailedPermanent range -> range
+    | Yes range
+    | Stopped range
+    | Failed range
+    | FailedPermanent range
+    | Waiting (range, _) -> range
 
   let to_string = function
     | Yes _ -> "fully checked"
     | Stopped _ -> "stopped"
     | Failed _ -> "failed"
     | FailedPermanent _ -> "refused to create due to Coq parsing bug"
+    | Waiting (_, _doc) -> "waiting for doc"
 
   let is_completed = function
     | Yes _ | Failed _ | FailedPermanent _ -> true
     | _ -> false
+
+  let is_waiting_for = function
+    | Waiting (_, doc) -> Some doc
+    | _ -> None
 end
 
 (** Enviroment external to the document, this includes for now the [init] Coq
@@ -460,6 +471,7 @@ let bump_version ~init_range ~version ~contents doc =
   ; env
   }
 
+(* TODO what is this bumping *)
 let bump_version ~version ~(contents : Contents.t) doc =
   let init_loc = init_loc ~uri:doc.uri in
   let init_range = Coq.Utils.to_range ~lines:contents.lines init_loc in
@@ -467,10 +479,11 @@ let bump_version ~version ~(contents : Contents.t) doc =
   (* We can do better, but we need to handle the case where the anomaly is when
      restoring / executing the first sentence *)
   | FailedPermanent _ -> doc
-  | Failed _ ->
+  | Failed _ | Waiting _ ->
     (* re-create the document on failed, as the env may have changed *)
     recreate ~doc ~version ~contents
   | Stopped _ | Yes _ -> bump_version ~init_range ~version ~contents doc
+(* | Waiting _ -> restart_doc () *)
 
 let bump_version ~version ~raw doc =
   let uri = doc.uri in
@@ -696,6 +709,8 @@ type document_action =
       ; node : Node.t
       }
   | Interrupted of Lang.Range.t
+
+(* ..... Require a. *)
 
 let unparseable_node ~range ~parsing_diags ~parsing_feedback ~state
     ~parsing_time =
@@ -966,7 +981,12 @@ let check ~io ~target ~doc () =
   | FailedPermanent _ | Failed _ ->
     Io.Log.trace "check" "can't resume, failed=yes, nothing to do";
     doc
-  | Stopped last_tok ->
+    (* Invariant: we only check a document if the dependencies are ready. *)
+    (* | Waiting (last_tok, dep) when not (io.file_ready dep) -> Io.Log.trace
+       "check" "the file was resumed, however the dependencies are not ready" ;
+       { doc with completed = FailedPermanent last_tok } *)
+    (* Set the document to FailedPermanet *)
+  | Waiting (last_tok, _) | Stopped last_tok ->
     DDebug.resume last_tok doc.version;
     let doc = resume_check ~io ~last_tok ~doc ~target in
     log_doc_completion doc.completed;
