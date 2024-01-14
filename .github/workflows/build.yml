@@ -41,6 +41,10 @@ jobs:
           - name: Windows Latest
             ocaml: 4.14
             os: windows-latest
+            opam-repositories: |
+              windows-5.0: https://github.com/dra27/opam-repository.git#windows-5.0
+              opam-repository-mingw: https://github.com/ocaml-opam/opam-repository-mingw.git#sunset
+              default: https://github.com/ocaml/opam-repository.git
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -57,6 +61,7 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml }}
           dune-cache: true
+          opam-repositories: ${{ matrix.opam-repositories }}
 
       - name: 🐫🐪🐫 Get dependencies
         run: opam exec -- make opam-deps
