@@ -310,19 +310,16 @@ let close ~uri =
 
 module Request = struct
   type request =
-    | FullDoc of
-        { uri : Lang.LUri.File.t
-        ; postpone : bool
-        }
+    | FullDoc
     | PosInDoc of
-        { uri : Lang.LUri.File.t
-        ; point : int * int
+        { point : int * int
         ; version : int option
-        ; postpone : bool
         }
 
   type t =
     { id : int
+    ; uri : Lang.LUri.File.t
+    ; postpone : bool
     ; request : request
     }
 
@@ -356,9 +353,9 @@ module Request = struct
 
   (** Add a request to be served; returns [true] if request is added to the
       queue , [false] if the request can be already answered. *)
-  let add { id; request } =
+  let add { id; uri; postpone; request } =
     match request with
-    | FullDoc { uri; postpone } ->
+    | FullDoc ->
       with_doc ~uri ~f:(fun doc ->
           match (Doc.Completion.is_completed doc.completed, postpone) with
           | true, _ -> Now doc
@@ -367,7 +364,7 @@ module Request = struct
             Handle.attach_cp_request ~uri ~id;
             Check.schedule ~uri;
             Postpone)
-    | PosInDoc { uri; point; version; postpone } ->
+    | PosInDoc { point; version } ->
       with_doc ~uri ~f:(fun doc ->
           let in_range = request_in_range ~doc ~version point in
           match (in_range, postpone) with
@@ -379,8 +376,8 @@ module Request = struct
           | false, false -> Cancel)
 
   (** Removes the request from the list of things to wake up *)
-  let remove { id; request } =
+  let remove { id; uri; postpone = _; request } =
     match request with
-    | FullDoc { uri; _ } -> Handle.remove_cp_request ~uri ~id
-    | PosInDoc { uri; point; _ } -> Handle.remove_pt_request ~uri ~id ~point
+    | FullDoc -> Handle.remove_cp_request ~uri ~id
+    | PosInDoc { point; _ } -> Handle.remove_pt_request ~uri ~id ~point
 end

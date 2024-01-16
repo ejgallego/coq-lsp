@@ -175,7 +175,7 @@ end = struct
   (* private to the Rq module, just used not to retrigger canceled requests *)
   let _rtable : (int, Request.Data.t) Hashtbl.t = Hashtbl.create 673
 
-  let postpone ~id (pr : Request.Data.t) =
+  let postpone_ ~id (pr : Request.Data.t) =
     if Fleche.Debug.request_delay then
       LIO.trace "request" ("postponing rq : " ^ string_of_int id);
     Hashtbl.add _rtable id pr
@@ -194,8 +194,8 @@ end = struct
     (* fail the request, do cleanup first *)
     let f pr =
       let () =
-        let request = Request.Data.dm_request pr in
-        Fleche.Theory.Request.remove { id; request }
+        let uri, postpone, request = Request.Data.dm_request pr in
+        Fleche.Theory.Request.remove { id; uri; postpone; request }
       in
       Error (code, message)
     in
@@ -214,8 +214,8 @@ end = struct
     consume_ ~ofn ~f id
 
   let query ~ofn ~id (pr : Request.Data.t) =
-    let request = Request.Data.dm_request pr in
-    match Fleche.Theory.Request.add { id; request } with
+    let uri, postpone, request = Request.Data.dm_request pr in
+    match Fleche.Theory.Request.add { id; uri; postpone; request } with
     | Cancel ->
       let code = -32802 in
       let message = "Document is not ready" in
@@ -223,7 +223,7 @@ end = struct
     | Now doc ->
       debug_serve id pr;
       Request.Data.serve ~doc pr |> answer ~ofn ~id
-    | Postpone -> postpone ~id pr
+    | Postpone -> postpone_ ~id pr
 
   module Action = struct
     type t =
