@@ -44,19 +44,16 @@ val close : uri:Lang.LUri.File.t -> unit
 
 module Request : sig
   type request =
-    | FullDoc of
-        { uri : Lang.LUri.File.t
-        ; postpone : bool
-        }
+    | FullDoc
     | PosInDoc of
-        { uri : Lang.LUri.File.t
-        ; point : int * int
+        { point : int * int
         ; version : int option
-        ; postpone : bool
         }
 
   type t =
     { id : int
+    ; uri : Lang.LUri.File.t
+    ; postpone : bool
     ; request : request
     }
 

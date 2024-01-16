@@ -46,7 +46,7 @@ module Data : sig
 
   (* Debug printing *)
   val data : Format.formatter -> t -> unit
-  val dm_request : t -> Fleche.Theory.Request.request
+  val dm_request : t -> Lang.LUri.File.t * bool * Fleche.Theory.Request.request
   val serve : doc:Fleche.Doc.t -> t -> R.t
 end
 
