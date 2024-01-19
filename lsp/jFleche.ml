@@ -95,7 +95,7 @@ end
 (** Pull Diagnostics *)
 module CompletionStatus = struct
   type t =
-    { status : [ `Yes | `Stopped | `Waiting of JLang.LUri.File.t | `Failed ]
+    { status : [ `Yes | `Stopped | `Waiting of string list | `Failed ]
     ; range : Lang.Range.t
     }
   [@@deriving yojson]

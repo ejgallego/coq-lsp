@@ -21,3 +21,13 @@ val make : unit -> t
 
 (** [bump ()] Signal the files have changed *)
 val bump : t -> t
+
+(** Check if a file is ready *)
+module Require_result : sig
+  type t =
+    | Ready of
+        (Names.DirPath.t * CUnix.physical_path, Loadpath.Error.t) Result.t list
+    | Wait of CUnix.physical_path list
+end
+
+val requires_are_ready : files:t -> Ast.Require.t -> Require_result.t
