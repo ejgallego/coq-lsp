@@ -263,7 +263,8 @@ let do_open ~io ~token ~(state : State.t) params =
   in
   let Lsp.Doc.TextDocumentItem.{ uri; version; text; _ } = document in
   let init, workspace = State.workspace_of_uri ~uri ~state in
-  let env = Fleche.Doc.Env.make ~init ~workspace in
+  let files = Coq.Files.make () in
+  let env = Fleche.Doc.Env.make ~init ~workspace ~files in
   Fleche.Theory.create ~io ~token ~env ~uri ~raw:text ~version
 
 let do_change ~ofn ~io ~token params =
