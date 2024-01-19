@@ -258,9 +258,7 @@
             "type": "boolean",
             "default": true,
             "description": "If a `Qed.` command fails, admit the proof automatically."
-          }
-        },
-        "properties": {
+          },
           "coq-lsp.check_only_on_request": {
             "type": "boolean",
             "default": false,
