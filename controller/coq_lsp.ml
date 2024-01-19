@@ -152,7 +152,8 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
     in
 
     (* Core LSP loop context *)
-    let state = { State.root_state; cmdline; workspaces } in
+    let default_workspace = Coq.Workspace.default ~debug ~cmdline in
+    let state = { State.root_state; cmdline; workspaces; default_workspace } in
 
     (* Read workspace state (noop for now) *)
     Cache.read_from_disk ();

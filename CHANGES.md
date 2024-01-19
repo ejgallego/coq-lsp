@@ -44,6 +44,8 @@
  - new configuration value `check_only_on_request` which will delay
    checking the document until a request has been made (#629, cc: #24,
    @ejgallego)
+ - fix typo on package.json configuration section (@ejgallego, #645)
+ - be more resilient with invalid _CoqProject files (@ejgallego, #646)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------

@@ -55,6 +55,8 @@ val hash : t -> int
 (** user message, debug extra data *)
 val describe : t -> string * string
 
+val describe_guess : (t, string) Result.t -> string * string
+
 module CmdLine : sig
   type t =
     { coqlib : string
@@ -67,7 +69,11 @@ module CmdLine : sig
     }
 end
 
-val guess : debug:bool -> cmdline:CmdLine.t -> dir:string -> t
+val guess :
+  debug:bool -> cmdline:CmdLine.t -> dir:string -> (t, string) Result.t
+
+(* Fallback workspace *)
+val default : debug:bool -> cmdline:CmdLine.t -> t
 
 (** [apply libname w] will prepare Coq for a new file [libname] on workspace [w] *)
 val apply : uri:Lang.LUri.File.t -> t -> unit
