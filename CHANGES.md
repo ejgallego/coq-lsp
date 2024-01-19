@@ -46,6 +46,8 @@
    @ejgallego)
  - fix typo on package.json configuration section (@ejgallego, #645)
  - be more resilient with invalid _CoqProject files (@ejgallego, #646)
+ - interpret require thru our own custom execution env-aware path
+   (@bhaktishh, @ejgallego, #642, #643, #644)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
