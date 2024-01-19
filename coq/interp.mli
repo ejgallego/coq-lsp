@@ -15,4 +15,16 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+(** Intepretation of "pure" Coq commands, that is to say, commands that are
+    assumed not to interact with the file-system, etc... Note these commands
+    will be memoized. *)
 val interp : st:State.t -> Ast.t -> (State.t, Loc.t) Protect.E.t
+
+(** Interpretation of "require". We wrap this function for two reasons:
+
+    - to make the read-effect dependency explicit
+    - to workaround the lack of a pure interface in Coq *)
+module Require : sig
+  val interp :
+    st:State.t -> Files.t -> Ast.Require.t -> (State.t, Loc.t) Protect.E.t
+end
