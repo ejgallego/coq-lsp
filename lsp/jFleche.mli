@@ -63,7 +63,7 @@ end
 (** Coq-lsp-specific *)
 module CompletionStatus : sig
   type t =
-    { status : [ `Yes | `Stopped | `Waiting of JLang.LUri.File.t | `Failed ]
+    { status : [ `Yes | `Stopped | `Waiting of string list | `Failed ]
     ; range : Lang.Range.t
     }
   [@@deriving yojson]

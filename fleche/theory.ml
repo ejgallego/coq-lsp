@@ -268,8 +268,13 @@ end = struct
       Register.Completed.fire ~io ~token ~doc;
       pending := pend_pop !pending);
     (match Doc.Completion.is_waiting_for doc.completed with
-    | None -> ()
-    | Some uri ->
+    | [] -> ()
+    | file :: _ ->
+      let uri =
+        Lang.LUri.of_string (Format.asprintf "file:///%s" file)
+        |> Lang.LUri.File.of_uri |> Result.get_ok
+      in
+      schedule ~uri;
       (* todo add to handler: rev_dep of uri *)
       schedule ~uri);
     (requests, doc)
