@@ -227,8 +227,12 @@ end = struct
         if Doc.Completion.is_completed doc.completed then
           pending := pend_pop !pending;
         match Doc.Completion.is_waiting_for doc.completed with
-        | None -> Some (requests, doc)
-        | Some uri ->
+        | [] -> Some (requests, doc)
+        | file :: _ ->
+          let uri =
+            Lang.LUri.of_string (Format.asprintf "file:///%s" file)
+            |> Lang.LUri.File.of_uri |> Result.get_ok
+          in
           schedule ~uri;
           (* todo add to handler: rev_dep of uri *)
           Some (requests, doc)))

@@ -51,13 +51,13 @@ module Completion : sig
   type t = private
     | Yes of Lang.Range.t  (** Location of the last token in the document *)
     | Stopped of Lang.Range.t  (** Location of the last valid token *)
-    | Waiting of Lang.Range.t * Lang.LUri.File.t
+    | Waiting of Lang.Range.t * string list  (** Waiting for files *)
     | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
     | FailedPermanent of Lang.Range.t
         (** Temporal Coq hack, avoids any computation *)
 
   val is_completed : t -> bool
-  val is_waiting_for : t -> Lang.LUri.File.t option
+  val is_waiting_for : t -> string list
 end
 
 (** Enviroment external to the document, this includes for now the [init] Coq
