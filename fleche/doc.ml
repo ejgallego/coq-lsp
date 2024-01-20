@@ -28,7 +28,7 @@ module Util = struct
 
   let print_stats () =
     (if !Config.v.mem_stats then
-       let size = Memo.Interp.size () in
+       let size = Memo.all_size () in
        Io.Log.trace "stats" (string_of_int size));
     let stats = Stats.dump () in
     Io.Log.trace "cache" (Stats.to_string stats);
