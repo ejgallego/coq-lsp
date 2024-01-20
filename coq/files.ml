@@ -35,17 +35,31 @@ module Require_result = struct
     | Wait of CUnix.physical_path list
 end
 
+let pp_bind fmt (file, dp) = Stdlib.Format.fprintf fmt "@[%s / %s@]" file (Names.DirPath.to_string dp)
+
+let pp_partials fmt lp = Stdlib.Format.(fprintf fmt "@[%a@]" (pp_print_list pp_bind) lp)
+
 let check_file_ready ?root (m, _imports) =
-  match Loadpath.locate_qualified_library ?root m with
-  | Ok (dirpath, file) ->
+  let dir, _base = Libnames.repr_qualid m in
+  match Loadpath.expand_path ?root dir with
+  | [], [] -> Error "file not found in loadpath, both empty"
+  | [], partials ->
+    Stdlib.Format.eprintf "partial match:@\n @[%a@]%!" pp_partials partials;
+    Error "weird stuff happened in expand path"
+  | (file, dp) :: rr, _ -> (
     let () =
-      Stdlib.Format.eprintf "found file: %s for library %s@\n%!" file
-        (Names.DirPath.to_string dirpath)
+      Stdlib.Format.eprintf "exact match: %a@\n%!" pp_partials ((file, dp) :: rr)
     in
-    let ready = true in
-    (* Hook for the document manager *)
-    if ready then Ok (Ok (dirpath, file)) else Error file
-  | Error e -> Ok (Error e)
+    match Loadpath.locate_qualified_library ?root m with
+    | Ok (dirpath, file) ->
+      let () =
+        Stdlib.Format.eprintf "found object file: %s for library %s@\n%!" file
+          (Names.DirPath.to_string dirpath)
+      in
+      let ready = true in
+      (* Hook for the document manager *)
+      if ready then Ok (Ok (dirpath, file)) else Error file
+    | Error e -> Ok (Error e))
 
 let requires_are_ready ~files:_ { Ast.Require.from; export = _; mods; _ } =
   let root = Option.map ~f:qualid_to_dirpath from in

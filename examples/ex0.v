@@ -11,6 +11,16 @@ Proof. by elim: n. Qed.
 
 Definition m := addn0.
 
+Theorem foo n : n = n :> nat.
+Proof.
+aa.
+bb. slkjd. skl . skj .
+cc.
+dd.
+Qed.
+
+About foo.
+
 Print m.
 
 Definition a := 2.
