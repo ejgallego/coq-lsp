@@ -244,6 +244,10 @@ let describe
       n_vo n_ml ocamlpath_msg fl_config fl_location
   , extra )
 
+let describe_guess = function
+  | Ok w -> describe w
+  | Error msg -> (msg, "")
+
 (* Require a set of libraries *)
 let load_objs libs =
   let rq_file (dir, from, exp) =
@@ -294,6 +298,9 @@ let apply ~uri
   Declaremods.start_library (dirpath_of_uri ~uri);
   load_objs require_libs
 
+(* This can raise, and will do in incorrect CoqProject files *)
+let dirpath_of_string_exn coq_path = Libnames.dirpath_of_string coq_path
+
 let workspace_from_coqproject ~cmdline ~debug cp_file : t =
   (* Io.Log.error "init" "Parsing _CoqProject"; *)
   let open CoqProject_file in
@@ -306,9 +313,11 @@ let workspace_from_coqproject ~cmdline ~debug cp_file : t =
     ; recursive = true
     ; has_ml = false
     ; unix_path = unix_path.path
-    ; coq_path = Libnames.dirpath_of_string coq_path
+    ; coq_path = dirpath_of_string_exn coq_path
     }
   in
+  (* XXX: [read_project_file] will do [exit 1] on parsing error! Please someone
+     fix upstream!! *)
   let { r_includes; q_includes; ml_includes; extra_args; _ } =
     read_project_file ~warning_fn:(fun _ -> ()) cp_file
   in
@@ -336,8 +345,22 @@ let workspace_from_cmdline ~debug ~cmdline =
   let implicit = true in
   make ~cmdline ~implicit ~kind ~debug
 
-let guess ~debug ~cmdline ~dir =
+let guess ~debug ~cmdline ~dir () =
   let cp_file = Filename.concat dir "_CoqProject" in
   if Sys.file_exists cp_file then
     workspace_from_coqproject ~cmdline ~debug cp_file
   else workspace_from_cmdline ~debug ~cmdline
+
+let guess ~debug ~cmdline ~dir =
+  let { Protect.E.r; feedback } =
+    Protect.eval ~f:(guess ~debug ~cmdline ~dir) ()
+  in
+  ignore feedback;
+  match r with
+  | Protect.R.Interrupted -> Error "Workspace Scanning Interrupted"
+  | Protect.R.Completed (Error (User (_, msg)))
+  | Protect.R.Completed (Error (Anomaly (_, msg))) ->
+    Error (Format.asprintf "Workspace Scanning Errored: %a" Pp.pp_with msg)
+  | Protect.R.Completed (Ok workspace) -> Ok workspace
+
+let default ~debug ~cmdline = workspace_from_cmdline ~debug ~cmdline
