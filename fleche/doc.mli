@@ -51,11 +51,13 @@ module Completion : sig
   type t = private
     | Yes of Lang.Range.t  (** Location of the last token in the document *)
     | Stopped of Lang.Range.t  (** Location of the last valid token *)
+    | Waiting of Lang.Range.t * string list  (** Waiting for files *)
     | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
     | FailedPermanent of Lang.Range.t
         (** Temporal Coq hack, avoids any computation *)
 
   val is_completed : t -> bool
+  val is_waiting_for : t -> string list
 end
 
 (** Enviroment external to the document, this includes for now the [init] Coq
@@ -65,9 +67,11 @@ module Env : sig
   type t = private
     { init : Coq.State.t
     ; workspace : Coq.Workspace.t
+    ; files : Coq.Files.t
     }
 
-  val make : init:Coq.State.t -> workspace:Coq.Workspace.t -> t
+  val make :
+    init:Coq.State.t -> workspace:Coq.Workspace.t -> files:Coq.Files.t -> t
 end
 
 (** A Flèche document is basically a [node list], which is a crude form of a

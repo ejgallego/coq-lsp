@@ -12,7 +12,7 @@ let to_span { Fleche.Doc.Node.range; ast; _ } =
 let to_completed = function
   | Fleche.Doc.Completion.Yes range ->
     { Lsp.JFleche.CompletionStatus.status = `Yes; range }
-  | Stopped range -> { status = `Stopped; range }
+  | Stopped range | Waiting (range, _) -> { status = `Stopped; range }
   | Failed range | FailedPermanent range -> { status = `Failed; range }
 
 let request ~doc =

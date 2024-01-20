@@ -248,13 +248,17 @@ let describe_guess = function
   | Ok w -> describe w
   | Error msg -> (msg, "")
 
+let intern dp =
+  let lib_resolver = Loadpath.try_locate_absolute_library in
+  Library.intern_from_file ~lib_resolver dp
+
 (* Require a set of libraries *)
 let load_objs libs =
   let rq_file (dir, from, exp) =
     let mp = Libnames.qualid_of_string dir in
     let mfrom = Option.map Libnames.qualid_of_string from in
     Flags_.silently
-      (Vernacentries.vernac_require mfrom exp)
+      (Vernacentries.vernac_require ~intern mfrom exp)
       [ (mp, Vernacexpr.ImportAll) ]
   in
   List.(iter rq_file (rev libs))
