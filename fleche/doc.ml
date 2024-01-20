@@ -2,7 +2,7 @@
 (* Flèche => document manager: Document                                 *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
 (* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
-(* Written by: Emilio J. Gallego Arias                                  *)
+(* Written by: Emilio J. Gallego Arias & coq-lsp contributors           *)
 (************************************************************************)
 
 (* Should be moved to the right place *)
@@ -157,13 +157,10 @@ end = struct
 
   (* ast-dependent error diagnostic generation *)
   let extra_diagnostics_of_ast ast =
-    match (Node.Ast.to_coq ast).v with
-    | Vernacexpr.
-        { expr = VernacSynterp (VernacRequire (prefix, _export, module_refs))
-        ; _
-        } ->
-      let refs = List.map fst module_refs in
-      Some [ Lang.Diagnostic.Extra.FailedRequire { prefix; refs } ]
+    match Coq.Ast.Require.extract ast.Node.Ast.v with
+    | Some { Coq.Ast.Require.from; mods; _ } ->
+      let refs = List.map fst mods in
+      Some [ Lang.Diagnostic.Extra.FailedRequire { prefix = from; refs } ]
     | _ -> None
 
   let error ~range ~msg ~ast =

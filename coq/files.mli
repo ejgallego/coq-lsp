@@ -10,18 +10,14 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2022-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
-(* Written by: Emilio J. Gallego Arias                                  *)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Written by: Emilio J. Gallego Arias & Bhakti Shah                    *)
 (************************************************************************)
 
-(** Specific to Coq *)
-val to_range : lines:string array -> Loc.t -> Lang.Range.t
+type t [@@deriving hash, compare]
 
-val to_orange : lines:string array -> Loc.t option -> Lang.Range.t option
+val make : unit -> t
 
-(** Separation of parsing and execution made this API hard to use for us *)
-val with_control :
-     fn:(unit -> unit)
-  -> control:Vernacexpr.control_flag list
-  -> st:State.t
-  -> unit
+(** [bump ()] Signal the files have changed *)
+val bump : t -> t
