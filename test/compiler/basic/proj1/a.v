@@ -1,7 +1,11 @@
+From Coq Require Reals.
+
 Definition aa := 3.
 
 Lemma foo : True.
-Proof.
+Proof. 
 (* Some comment *)
-auto.
+auto .
 Qed.
+
+Optimize Heap.

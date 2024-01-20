@@ -31,3 +31,4 @@ module Require_result : sig
 end
 
 val requires_are_ready : files:t -> Ast.Require.t -> Require_result.t
+val intern : Names.DirPath.t -> Library.library_t
