@@ -5,5 +5,5 @@
  ; depending on it, we should fix this upstream
  (inline_tests)
  (preprocess
-  (pps ppx_inline_test))
+  (pps ppx_compare ppx_hash ppx_inline_test))
  (libraries lang coq-core.vernac coq-serapi.serlib))

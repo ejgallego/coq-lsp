@@ -11,9 +11,8 @@ module Error : sig
     | Anomaly of 'l payload
 end
 
-(** This "monad" could be related to "Runners in action" (Ahman,
-    Bauer), thanks to Guillaume Munch-Maccagnoni for the reference and
-    for many useful tips! *)
+(** This "monad" could be related to "Runners in action" (Ahman, Bauer), thanks
+    to Guillaume Munch-Maccagnoni for the reference and for many useful tips! *)
 module R : sig
   type ('a, 'l) t = private
     | Completed of ('a, 'l Error.t) result

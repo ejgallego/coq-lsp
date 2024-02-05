@@ -24,6 +24,43 @@ module Id = struct
   module Map = Names.Id.Map
 end
 
+module Require = struct
+  type ast = t
+
+  open Ppx_hash_lib.Std.Hash.Builtin
+  open Ppx_compare_lib.Builtin
+  module Loc = Serlib.Ser_loc
+  module Libnames = Serlib.Ser_libnames
+  module Attributes = Serlib.Ser_attributes
+  module Vernacexpr = Serlib.Ser_vernacexpr
+
+  type t =
+    { from : Libnames.qualid option
+    ; export : Vernacexpr.export_with_cats option
+    ; mods : (Libnames.qualid * Vernacexpr.import_filter_expr) list
+    ; loc : Loc.t option
+          [@ignore]
+          [@hash.ignore]
+          (* We need to ignore the loc of the Require statement, maybe it'd be
+             better to keep the wrapping of the original vernac into a
+             CAst.t? *)
+    ; attrs : Attributes.vernac_flag list
+    ; control : Vernacexpr.control_flag list
+    }
+  [@@deriving hash, compare]
+
+  (** Determine if the Ast is a Require *)
+  let extract = function
+    | { CAst.v =
+          { Vernacexpr.expr = Vernacexpr.(VernacRequire (from, export, mods))
+          ; control
+          ; attrs
+          }
+      ; loc
+      } -> Some { from; export; mods; loc; attrs; control }
+    | _ -> None
+end
+
 module Kinds = struct
   (* LSP kinds *)
   let _file = 1
