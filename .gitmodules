@@ -1,6 +1,0 @@
-[submodule "coq"]
-	path = vendor/coq
-	url = https://github.com/coq/coq.git
-[submodule "coq-serapi"]
-	path = vendor/coq-serapi
-	url = https://github.com/ejgallego/coq-serapi.git
