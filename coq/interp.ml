@@ -21,3 +21,24 @@ let coq_interp ~st cmd =
   Vernacinterp.interp ~st cmd |> State.of_coq
 
 let interp ~st cmd = Protect.eval cmd ~f:(coq_interp ~st)
+
+module Require = struct
+  (* We could improve this Coq upstream by making the API a bit more
+     orthogonal *)
+  let interp ~st _files
+      { Ast.Require.from; export; mods; loc = _; attrs; control } =
+    let () = Vernacstate.unfreeze_full_state (State.to_coq st) in
+    let fn () = Vernacentries.vernac_require from export mods in
+    (* Check generic attributes *)
+    let fn () =
+      Synterp.with_generic_atts ~check:true attrs (fun ~atts ->
+          (* Fail if attributes are not empty *)
+          Attributes.unsupported_attributes atts;
+          fn ())
+    in
+    (* Execute control commands *)
+    let () = Utils.with_control ~fn ~control ~st in
+    Vernacstate.freeze_full_state () |> State.of_coq
+
+  let interp ~st files cmd = Protect.eval ~f:(interp ~st files) cmd
+end

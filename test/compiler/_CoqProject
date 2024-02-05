@@ -1,4 +1,4 @@
--R proj1 .
+-R . proj1
 
 a.v
 b.v

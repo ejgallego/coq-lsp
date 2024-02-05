@@ -342,6 +342,8 @@ that have some fixes backported:
   Code extension, Visual Studio Code gets confused and neither of them may
   work. `coq-lsp` will warn about that. You can disable the `VSCoq` extension as
   a workaround.
+- `_CoqProject` file parsing library will often `exit 1` on bad `_CoqProject`
+  files! There is little `coq-lsp` can do here, until upstream fixes this.
 
 ### Troubleshooting
 

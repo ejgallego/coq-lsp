@@ -100,7 +100,8 @@ module State = struct
   type t =
     { cmdline : Coq.Workspace.CmdLine.t
     ; root_state : Coq.State.t
-    ; workspaces : (string * Coq.Workspace.t) list
+    ; workspaces : (string * (Coq.Workspace.t, string) Result.t) list
+    ; default_workspace : Coq.Workspace.t (* fail safe *)
     }
 
   open Lsp.Workspace
@@ -128,13 +129,16 @@ module State = struct
     CList.prefix_of String.equal dir_c file_c
 
   let workspace_of_uri ~uri ~state =
-    let { root_state; workspaces; _ } = state in
+    let { root_state; workspaces; default_workspace; _ } = state in
     let file = Lang.LUri.File.to_string_file uri in
     match List.find_opt (fun (dir, _) -> is_in_dir ~dir ~file) workspaces with
     | None ->
       LIO.logMessage ~lvl:1 ~message:("file not in workspace: " ^ file);
-      (root_state, snd (List.hd workspaces))
-    | Some (_, workspace) -> (root_state, workspace)
+      (root_state, default_workspace)
+    | Some (_, Error _) ->
+      LIO.logMessage ~lvl:1 ~message:("file in errored workspace: " ^ file);
+      (root_state, default_workspace)
+    | Some (_, Ok workspace) -> (root_state, workspace)
 end
 
 let do_changeWorkspaceFolders ~ofn:_ ~state params =
@@ -175,7 +179,7 @@ end = struct
   (* private to the Rq module, just used not to retrigger canceled requests *)
   let _rtable : (int, Request.Data.t) Hashtbl.t = Hashtbl.create 673
 
-  let postpone ~id (pr : Request.Data.t) =
+  let postpone_ ~id (pr : Request.Data.t) =
     if Fleche.Debug.request_delay then
       LIO.trace "request" ("postponing rq : " ^ string_of_int id);
     Hashtbl.add _rtable id pr
@@ -194,8 +198,8 @@ end = struct
     (* fail the request, do cleanup first *)
     let f pr =
       let () =
-        let request = Request.Data.dm_request pr in
-        Fleche.Theory.Request.remove { id; request }
+        let uri, postpone, request = Request.Data.dm_request pr in
+        Fleche.Theory.Request.remove { id; uri; postpone; request }
       in
       Error (code, message)
     in
@@ -214,8 +218,8 @@ end = struct
     consume_ ~ofn ~f id
 
   let query ~ofn ~id (pr : Request.Data.t) =
-    let request = Request.Data.dm_request pr in
-    match Fleche.Theory.Request.add { id; request } with
+    let uri, postpone, request = Request.Data.dm_request pr in
+    match Fleche.Theory.Request.add { id; uri; postpone; request } with
     | Cancel ->
       let code = -32802 in
       let message = "Document is not ready" in
@@ -223,7 +227,7 @@ end = struct
     | Now doc ->
       debug_serve id pr;
       Request.Data.serve ~doc pr |> answer ~ofn ~id
-    | Postpone -> postpone ~id pr
+    | Postpone -> postpone_ ~id pr
 
   module Action = struct
     type t =
@@ -387,7 +391,7 @@ let do_cancel ~ofn ~params =
 exception Lsp_exit
 
 let log_workspace (dir, w) =
-  let message, extra = Coq.Workspace.describe w in
+  let message, extra = Coq.Workspace.describe_guess w in
   LIO.trace "workspace" ("initialized " ^ dir) ~extra;
   LIO.logMessage ~lvl:3 ~message
 
@@ -402,7 +406,7 @@ let version () =
 
 module Init_effect = struct
   type t =
-    | Success of (string * Coq.Workspace.t) list
+    | Success of (string * (Coq.Workspace.t, string) Result.t) list
     | Loop
     | Exit
 end

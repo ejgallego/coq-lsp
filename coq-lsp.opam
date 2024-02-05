@@ -19,7 +19,7 @@ doc: "https://ejgallego.github.io/coq-lsp/"
 
 depends: [
   "ocaml"        { >= "4.11.0" }
-  "dune"         { >= "3.5.0"  }
+  "dune"         { >= "3.2.0" }
 
   # lsp dependencies
   "cmdliner"     { >= "1.1.0" }
@@ -35,7 +35,7 @@ depends: [
 
   # Uncomment this for releases
   "coq"          { >= "8.18" < "8.19"  }
-  "coq-serapi"   { >= "8.18" < "8.19"  }
+  "coq-serapi"   { >= "8.18.0+0.18.2" < "8.19"  }
 ]
 
 build: [ [ "dune" "build" "-p" name "-j" jobs ] ]
