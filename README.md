@@ -224,16 +224,17 @@ ready.
 
 ### 🏘️ Supported Coq Versions
 
-`coq-lsp` supports Coq 8.15, 8.16, Coq 8.17, Coq 8.18, and Coq's `master`
-branch. Code for each Coq version can be found in the corresponding branch.
+`coq-lsp` supports Coq 8.20, Coq 8.19, Coq 8.18, Coq 8.17, and Coq's `master`
+branch.  Code for each Coq version can be found in the corresponding branch.
 
-We recommended a minimum of Coq 8.17, due to better test coverage for that
-version. For 8.16, we recommend users to install the custom Coq tree as detailed
-in [Working With Multiple Files](#working-with-multiple-files)
+We recommended using Coq 8.19 or `master` version. For other Coq versions, we
+recommend users to install the custom Coq tree as detailed in [Coq Upstream
+Bugs](#coq-upstream-bugs).
 
-Support for older Coq versions is possible; it is possible to make `coq-lsp`
-work with Coq back to Coq 8.10/8.9. If you are interested in making that happen
-don't hesitate to get in touch with us.
+Support for Coq 8.15 and 8.16 has been phased out due to lack of development
+resources, but if you are interested it should possible to bring it back with
+reasonable effort. Support for older Coq versions is also possible, with a bit
+more effort; `coq-lsp` should work with Coq versions back to Coq 8.10/8.9.
 
 Note that this section covers user installs, if you would like to contribute to
 `coq-lsp` and build a development version, please check our [contributing
@@ -324,6 +325,8 @@ Unfortunately Coq releases contain bugs that affect `coq-lsp`. We strongly
 recommend that if you are installing via opam, you use the following branches
 that have some fixes backported:
 
+- For 8.20: No known problems
+- For 8.19: No known problems
 - For 8.18: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.18+lsp`
 - For 8.17: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.17+lsp`
 - For 8.16: `opam pin add coq      https://github.com/ejgallego/coq.git#v8.16+lsp`

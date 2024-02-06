@@ -46,6 +46,8 @@
    @ejgallego)
  - fix typo on package.json configuration section (@ejgallego, #645)
  - be more resilient with invalid _CoqProject files (@ejgallego, #646)
+ - support for Coq 8.16 has been abandoned due to lack of dev
+   resources (@ejgallego, #649)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
