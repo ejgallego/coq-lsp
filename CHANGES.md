@@ -60,6 +60,9 @@
    (@bhaktishh, @ejgallego, #642, #643, #644)
  - new `coq-lsp.plugin.goaldump` plugin, as an example on how to dump
    goals from a document (@ejgallego @gbdrt, #619)
+ - new trim command (both in the server and in VSCode) to liberate
+   space used in the cache (@ejgallego, #662, fixes #367 cc: #253 #236
+   #348)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

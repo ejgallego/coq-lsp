@@ -571,6 +571,8 @@ Proof.
   intro x; rewrite sin_plus; rewrite sin_PI2; rewrite cos_PI2; ring.
 Qed.
 
+(* We do what we can; it is what it is... *)
+
 Lemma PI2_RGT_0 : 0 < PI / 2.
 Proof.
   unfold Rdiv in |- *; apply Rmult_lt_0_compat;

@@ -46,7 +46,7 @@ module Helpers = struct
       | Error err ->
         (* ppx_deriving_yojson error messages leave a lot to be desired *)
         let message = Format.asprintf "json parsing failed: %s" err in
-        LIO.logMessage ~lvl:1 ~message;
+        LIO.logMessage ~lvl:Error ~message;
         (* XXX Fixme *)
         CErrors.user_err (Pp.str "failed to parse uri")
     in
@@ -133,10 +133,10 @@ module State = struct
     let file = Lang.LUri.File.to_string_file uri in
     match List.find_opt (fun (dir, _) -> is_in_dir ~dir ~file) workspaces with
     | None ->
-      LIO.logMessage ~lvl:1 ~message:("file not in workspace: " ^ file);
+      LIO.logMessage ~lvl:Error ~message:("file not in workspace: " ^ file);
       (root_state, default_workspace)
     | Some (_, Error _) ->
-      LIO.logMessage ~lvl:1 ~message:("file in errored workspace: " ^ file);
+      LIO.logMessage ~lvl:Error ~message:("file in errored workspace: " ^ file);
       (root_state, default_workspace)
     | Some (_, Ok workspace) -> (root_state, workspace)
 end
@@ -393,6 +393,8 @@ let do_cancel ~ofn ~params =
   let message = "Cancelled by client" in
   Rq.cancel ~ofn ~code ~message id
 
+let do_cache_trim () = Nt_cache_trim.notification ()
+
 (***********************************************************************)
 
 (** LSP Init routine *)
@@ -401,7 +403,7 @@ exception Lsp_exit
 let log_workspace (dir, w) =
   let message, extra = Coq.Workspace.describe_guess w in
   LIO.trace "workspace" ("initialized " ^ dir) ~extra;
-  LIO.logMessage ~lvl:3 ~message
+  LIO.logMessage ~lvl:Info ~message
 
 let version () =
   let dev_version =
@@ -426,12 +428,12 @@ let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
     let message =
       Format.asprintf "Initializing coq-lsp server %s" (version ())
     in
-    LIO.logMessage ~lvl:3 ~message;
+    LIO.logMessage ~lvl:Info ~message;
     let result, dirs = Rq_init.do_initialize ~params in
     (* We don't need to interrupt this *)
     let token = Coq.Limits.Token.create () in
     Rq.Action.now (Ok result) |> Rq.serve ~ofn ~token ~id;
-    LIO.logMessage ~lvl:3 ~message:"Server initialized";
+    LIO.logMessage ~lvl:Info ~message:"Server initialized";
     (* Workspace initialization *)
     let debug = debug || !Fleche.Config.v.debug in
     let workspaces =
@@ -463,6 +465,8 @@ let dispatch_notification ~io ~ofn ~token ~state ~method_ ~params : unit =
   | "textDocument/didChange" -> do_change ~io ~ofn ~token params
   | "textDocument/didClose" -> do_close ~ofn params
   | "textDocument/didSave" -> Cache.save_to_disk ()
+  (* Specific to coq-lsp *)
+  | "coq/trimCaches" -> do_cache_trim ()
   (* Cancel Request *)
   | "$/cancelRequest" -> do_cancel ~ofn ~params
   (* NOOPs *)

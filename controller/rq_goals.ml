@@ -41,7 +41,7 @@ let parse_and_execute_in ~token ~loc tac st =
   let open Coq.Protect.E.O in
   let* ast = parse ~token ~loc tac st in
   match ast with
-  | Some ast -> (Fleche.Memo.Interp.eval ~token (st, ast)).res
+  | Some ast -> Fleche.Memo.Interp.eval ~token (st, ast)
   (* On EOF we return the previous state, the command was the empty string or a
      comment *)
   | None -> Coq.Protect.E.ok st
