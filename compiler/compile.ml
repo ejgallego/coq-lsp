@@ -17,13 +17,7 @@ let workspace_of_uri ~io ~uri ~workspaces ~default =
     default
   | Some (_, Ok workspace) -> workspace
 
-(* Improve errors *)
-let save_vo_file ~doc =
-  match Fleche.Doc.save ~doc with
-  | { r = Completed (Ok ()); feedback = _ } -> ()
-  | { r = Completed (Error _); feedback = _ } -> ()
-  | { r = Interrupted; feedback = _ } -> ()
-
+(** Move to a plugin *)
 let save_diags_file ~(doc : Fleche.Doc.t) =
   let file = Lang.LUri.File.to_string_file doc.uri in
   let file = Filename.remove_extension file ^ ".diags" in
@@ -45,8 +39,8 @@ let compile_file ~cc file =
     match Theory.Check.maybe_check ~io with
     | None -> ()
     | Some (_, doc) ->
-      save_vo_file ~doc;
       save_diags_file ~doc;
+      (* Vo file saving is now done by a plugin *)
       Theory.close ~uri)
 
 let compile ~cc = List.iter (compile_file ~cc)
