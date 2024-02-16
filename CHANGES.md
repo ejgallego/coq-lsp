@@ -46,6 +46,11 @@
    @ejgallego)
  - fix typo on package.json configuration section (@ejgallego, #645)
  - be more resilient with invalid _CoqProject files (@ejgallego, #646)
+ - support for Coq 8.16 has been abandoned due to lack of dev
+   resources (@ejgallego, #649)
+ - new option `--no_vo` for `fcc`, which will skip the `.vo` saving
+   step. `.vo` saving is now an `fcc` plugins, but for now, it is
+   enabled by default (@ejgallego, #650)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
