@@ -72,10 +72,6 @@ jobs:
       - name: 🐫🐪🐫 Get dependencies
         run: opam exec -- make opam-deps
 
-      - name: 🐛 Special Windows Config [only on Win CI]
-        if: matrix.os == 'windows-latest'
-        run: opam exec -- make winconfig
-
       - name: 🧱 Build coq-lsp
         run: opam exec -- make build
 
@@ -84,27 +80,6 @@ jobs:
 
       - name: 🐛 Test fcc
         run: opam exec -- make test-compiler
-
-  build-nix:
-    name: Nix
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macOS-latest]
-      fail-fast: false
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: 🔭 Checkout code
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: ❄️ Setup Nix
-        uses: cachix/install-nix-action@v22
-
-      - name: 🧱 Build coq-lsp
-        run: nix build .?submodules=1
 
   client-compile:
     runs-on: ubuntu-latest
