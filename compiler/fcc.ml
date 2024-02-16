@@ -3,7 +3,7 @@ open Cmdliner
 open Fcc_lib
 
 let fcc_main roots display debug plugins files coqlib coqcorelib ocamlpath
-    rload_path load_path require_libraries =
+    rload_path load_path require_libraries no_vo =
   let vo_load_path = rload_path @ load_path in
   let ml_include_path = [] in
   let args = [] in
@@ -17,6 +17,7 @@ let fcc_main roots display debug plugins files coqlib coqcorelib ocamlpath
     ; require_libraries
     }
   in
+  let plugins = Args.compute_default_plugins ~no_vo ~plugins in
   let args = Args.{ cmdline; roots; display; files; debug; plugins } in
   Driver.go args
 
@@ -89,7 +90,7 @@ let display : Args.Display.t Term.t =
 
 let debug : bool Term.t =
   let doc = "Enable debug mode" in
-  Arg.(value & flag & info [ "debug" ] ~docv:"DISPLAY" ~doc)
+  Arg.(value & flag & info [ "debug" ] ~doc)
 
 let file : string list Term.t =
   let doc = "File(s) to compile" in
@@ -111,6 +112,10 @@ let rifrom : (string option * string) list Term.t =
         & opt_all (pair string string) []
         & info [ "rifrom"; "require-import-from" ] ~docv:"FROM,LIBRARY" ~doc))
 
+let no_vo : bool Term.t =
+  let doc = "Don't generate .vo files at the end of compilation" in
+  Arg.(value & flag & info [ "no_vo" ] ~doc)
+
 let fcc_cmd : unit Cmd.t =
   let doc = "Flèche Coq Compiler" in
   let man =
@@ -124,7 +129,7 @@ let fcc_cmd : unit Cmd.t =
   let fcc_term =
     Term.(
       const fcc_main $ roots $ display $ debug $ plugins $ file $ coqlib
-      $ coqcorelib $ ocamlpath $ rload_path $ load_path $ rifrom)
+      $ coqcorelib $ ocamlpath $ rload_path $ load_path $ rifrom $ no_vo)
   in
   Cmd.(v (Cmd.info "fcc" ~version ~doc ~man) fcc_term)
 

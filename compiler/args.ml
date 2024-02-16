@@ -13,3 +13,6 @@ type t =
   ; display : Display.t  (** display level *)
   ; plugins : string list  (** Flèche plugins to load *)
   }
+
+let compute_default_plugins ~no_vo ~plugins =
+  if no_vo then plugins else "coq-lsp.plugin.save_vo" :: plugins
