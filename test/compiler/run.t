@@ -12,7 +12,24 @@ Describe the project
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
 
-Compile a single file
+Compile a single file, don't generate a `.vo` file:
+  $ fcc --no_vo --root proj1 proj1/a.v
+  [message] Configuration loaded from Command-line arguments
+   - coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
+   - Modules [Coq.Init.Prelude] will be loaded by default
+   - 2 Coq path directory bindings in scope; 23 Coq plugin directory bindings in scope
+   - ocamlpath wasn't overriden
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
+  [message] compiling file proj1/a.v
+  
+  $ ls proj1
+  a.diags
+  a.v
+  b.v
+
+Compile a single file, generate a .vo file
   $ fcc --root proj1 proj1/a.v
   [message] Configuration loaded from Command-line arguments
    - coqlib is at: [TEST_PATH]
