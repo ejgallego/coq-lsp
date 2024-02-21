@@ -23,6 +23,11 @@ let odict_field name dict =
     U.(to_option to_assoc (option_default List.(assoc_opt name dict) `Null))
     []
 
+module ClientCaps = struct end
+
+let do_client_caps _ = ()
+(* diagnostic :? {} *)
+
 (* Request Handling: The client expects a reply *)
 let do_client_options coq_lsp_options : unit =
   LIO.trace "init" "custom client options:";
@@ -109,6 +114,7 @@ let do_initialize ~params =
   let dir = determine_workspace_root ~params in
   let trace = get_trace ~params in
   LIO.set_trace_value trace;
+  let _client_capabilities = do_client_caps params in
   let coq_lsp_options = odict_field "initializationOptions" params in
   do_client_options coq_lsp_options;
   check_client_version !Fleche.Config.v.client_version;
@@ -135,7 +141,12 @@ let do_initialize ~params =
             , `Assoc
                 [ ("supported", `Bool true)
                 ; ("changeNotifications", `Bool true)
-                ] )
+                ] )])
+    ; ( "diagnosticProvider"
+      , `Assoc
+          [ ("interFileDependencies", `Bool true)
+          ; ("workspaceDiagnostics", `Bool false)
+          ; ("workDoneProgress", `Bool true)
           ] )
     ]
   in
