@@ -93,6 +93,12 @@ export class InfoPanel {
     commands.executeCommand("vizx.lspRender", goals);
   }
 
+    requestVizCarDisplay(goals: GoalAnswer<PpString>) {
+    console.log(goals);
+    commands.executeCommand("vizcar.lspRender", goals);
+  }
+
+
   // notify the info panel that we found an error
   requestError(e: any) {
     this.postMessage("infoError", e);
@@ -112,6 +118,15 @@ export class InfoPanel {
     console.log(params.pp_format);
     client.sendRequest(goalReq, params).then(
       (goals) => this.requestVizxDisplay(goals),
+      (reason) => this.requestError(reason)
+    );
+  }
+
+  sendVizCarRequest(client: BaseLanguageClient, params: GoalRequest) {
+    this.requestSent(params);
+    console.log(params.pp_format);
+    client.sendRequest(goalReq, params).then(
+      (goals) => this.requestVizCarDisplay(goals),
       (reason) => this.requestError(reason)
     );
   }
@@ -139,6 +154,11 @@ export class InfoPanel {
     if (vizx?.isActive) {
       console.log("vizx active in updateFromServer");
       this.sendVizxRequest(client, strCursor);
+    }
+    let vizcar = extensions.getExtension("inQWIRE.vizcar");
+    if (vizcar?.isActive) {
+      console.log("vizcar active in updateFromServer");
+      this.sendVizcarRequest(client, strCursor);
     }
   }
 }
