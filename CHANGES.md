@@ -119,6 +119,8 @@
    Implement `workspace/didChangeConfiguration` (@ejgallego, #702)
  - [Coq API] Add functions to retrieve list of declarations done in
    .vo files (@ejallego, @eytans, #704)
+ - New `petanque` API to interact directly with Coq's proof
+   engine. (@ejgallego, @gbdrt, #703, thanks to Alex Sanchez-Stern)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

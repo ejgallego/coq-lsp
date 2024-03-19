@@ -1,0 +1,4 @@
+(tests
+ (names basic_api)
+ (deps test.v)
+ (libraries petanque))

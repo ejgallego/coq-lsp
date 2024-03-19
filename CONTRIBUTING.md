@@ -3,17 +3,23 @@ Contributing to Coq LSP
 
 Thank you very much for willing to contribute to coq-lsp!
 
-`coq-lsp` has two components:
+The `coq-lsp` repository contains several tightly coupled components
+in a single repository, also known as a monorepo, in particular:
 
-- a LSP server for Coq project written in OCaml.
-- a `coq-lsp` VS Code extension written in TypeScript and React, in
-  the `editor/code` directory.
+- Flèche: an incremental document engine for Coq supporting literate
+  programming and programability, written in OCaml
+- `fcc`: an extensible command line compiler built on top of Flèche
+- `petanque`: direct access to Coq's proof engine
+- `coq-lsp`a LSP server for the Coq project, written in OCaml on top of Flèche
+- a `coq-lsp/VSCode` extension written in TypeScript and React, in
+  the `editor/code` directory
 
-Read coq-lsp [FAQ](etc/FAQ.md) for an explanation on what the above mean.
+Read coq-lsp [FAQ](etc/FAQ.md) to learn more about LSP and
+server/client roles.
 
-It is possible to hack only in the server, on the client, or on both at the same
-time. We have thus structured this guide in 3 sections: general guidelines,
-server, and VS Code client.
+It is possible to hack only in the server, on the client, or on both
+at the same time. We have thus structured this guide in 3 sections:
+general guidelines, server, and VS Code client.
 
 ## General guidelines
 
@@ -184,14 +190,17 @@ coq-lsp.packages.${system}.default
 
 The `coq-lsp` server consists of several components, we present them bottom-up
 
+- `vendor/coq`: [vendored] Coq version to build coq-lsp against
 - `vendor/coq-serapi`: [vendored] improved utility functions to handle Coq AST
 - `coq`: Utility library / abstracted Coq API. This is the main entry point for
   communication with Coq, and it reifies Coq calls as to present a purely
   functional interface to Coq.
+- `lang`: base language definitions for Flèche
 - `fleche`: incremental document processing backend. Exposes a generic API, but
   closely modelled to match LSP
 - `lsp`: small generic LSP utilities, at some point to be replaced by a generic
   library
+- `petanque`: low-level access to Coq's API
 - `controller`: LSP controller, a thin layer translating LSP transport layer to
   `flèche` surface API, plus some custom event queues for Coq.
 - `controller-js`: LSP controller for Javascript, used for `vscode.dev` and

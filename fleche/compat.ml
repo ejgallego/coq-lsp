@@ -1,3 +1,5 @@
+(* Compatibility file *)
+
 module Ocaml_414 = struct
   module In_channel = struct
     (* 4.14 can do this: In_channel.with_open_bin file In_channel.input_all, so
@@ -8,6 +10,7 @@ module Ocaml_414 = struct
       Fun.protect ~finally:(fun () -> Stdlib.close_in_noerr ic) (fun () -> f ic)
 
     let with_open_bin s f = with_open Stdlib.open_in_bin s f
+    let with_open_text s f = with_open Stdlib.open_in s f
 
     (* Read up to [len] bytes into [buf], starting at [ofs]. Return total bytes
        read. *)
@@ -95,9 +98,14 @@ module Ocaml_414 = struct
   end
 end
 
-let input_all file =
-  let open Ocaml_414 in
-  In_channel.with_open_bin file In_channel.input_all
+module Result = struct
+  include Result
+
+  module O = struct
+    let ( let+ ) r f = map f r
+    let ( let* ) r f = bind r f
+  end
+end
 
 let format_to_file ~file ~f x =
   let open Ocaml_414 in

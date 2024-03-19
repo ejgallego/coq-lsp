@@ -20,7 +20,11 @@ val name : t -> Names.DirPath.t
 
     There have been several upstream Coq PRs trying to improve this situation,
     but so far they didn't make enough progress. *)
-val toc : t list -> (string * Constr.t) list
+val toc :
+     token:Limits.Token.t
+  -> st:State.t
+  -> t list
+  -> ((string * Constr.t) list, Loc.t) Protect.E.t
 
 (** Recovers the list of loaded libraries for state [st] *)
 val loaded : token:Limits.Token.t -> st:State.t -> (t list, Loc.t) Protect.E.t
