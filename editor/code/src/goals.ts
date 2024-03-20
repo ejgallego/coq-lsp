@@ -93,11 +93,10 @@ export class InfoPanel {
     commands.executeCommand("vizx.lspRender", goals);
   }
 
-    requestVizCarDisplay(goals: GoalAnswer<PpString>) {
+  requestVizCarDisplay(goals: GoalAnswer<PpString>) {
     console.log(goals);
     commands.executeCommand("vizcar.lspRender", goals);
   }
-
 
   // notify the info panel that we found an error
   requestError(e: any) {
