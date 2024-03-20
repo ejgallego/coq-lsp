@@ -24,8 +24,8 @@ export function Message({
     typeof message === "string"
       ? message
       : typeof message === "object" && "text" in message
-        ? message.text
-        : message;
+      ? message.text
+      : message;
 
   return (
     <li key={key} className={"coq-message"} ref={ref}>
