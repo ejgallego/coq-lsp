@@ -158,7 +158,7 @@ export class InfoPanel {
     let vizcar = extensions.getExtension("inQWIRE.vizcar");
     if (vizcar?.isActive) {
       console.log("vizcar active in updateFromServer");
-      this.sendVizcarRequest(client, strCursor);
+      this.sendVizCarRequest(client, strCursor);
     }
   }
 }
