@@ -19,7 +19,8 @@ doc: "https://ejgallego.github.io/coq-lsp/"
 
 depends: [
   "ocaml"        { >= "4.11.0" }
-  "dune"         { >= "3.6.1" & < "3.8.0" } # This is 3.2.0 for non-composed builds
+  "dune"         { >= "3.13.0" } # Version interval [3.8-3.12] was
+                                 # broken for composed builds with Coq
 
   # lsp dependencies
   "cmdliner"     { >= "1.1.0" }
