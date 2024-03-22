@@ -143,6 +143,7 @@ let definition_detail = function
   | Instance -> "Instance"
   | Method -> "Method"
   | Let -> "Let"
+  | LetContext -> "LetContext"
 
 let theorem_detail = function
   | Decls.Theorem -> "Theorem"
