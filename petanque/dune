@@ -1,14 +1,4 @@
 (library
  (public_name coq-lsp.petanque)
  (name petanque)
- (wrapped false)
- (modules :standard \ pet)
  (libraries fleche))
-
-(executable
- (name pet)
- (public_name pet)
- (modules pet)
- (preprocess
-  (pps ppx_deriving_yojson))
- (libraries cmdliner petanque))

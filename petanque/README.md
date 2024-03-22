@@ -1,6 +1,9 @@
 _Petanque_ (pronounced "petanque") is a gym-like environment for the
 Coq Proof Assistant.
 
+_Petanque_ is geared towards use cases where interacting at the
+document-level (like Flèche provides) in not enough
+
 ## Authors
 
 - Guilaume Baudart (Inria)
@@ -9,11 +12,11 @@ Coq Proof Assistant.
 
 ## Acknowlements
 
-Alex-Sánchez Stern
+- Alex-Sánchez Stern
 
 ## Install instructions
 
-Once in a `coq-lsp` dev environment, you need 
+Once in a `coq-lsp` dev environment, you need
 
 Then do the `ocaml-in-python` setup:
 
@@ -31,10 +34,22 @@ You should register the "ocaml" package in your Python environment.
 
 ## Running `pet shell`
 
+Only once, setup the coq-lsp build environment (if you haven't already):
+```
+opam install --deps-only .
+make submodules-init
+```
+
+to build and execute `petanque` do:
 ```
 make
 dune exec -- rlwrap %{bin:pet}
 ```
+
+`rlwrap` is just a convenience, if your dune version is too old and
+don't recognize the `%{bin:pet}` form, you can just do `dune exec -- pet`.
+
+### A first example:
 
 Please use one line per json input. json input examples are:
 ```json
@@ -67,5 +82,4 @@ ocaml.require("coq-lsp.petanque")
 from ocaml import Petanque
 
 Petanque.Agent.start()
-
 ```

@@ -1,5 +1,7 @@
 (* Petanque *)
 
+let pet_debug = false
+
 module State = struct
   type t = Coq.State.t
 
@@ -59,15 +61,19 @@ let find_thm ~(doc : Fleche.Doc.t) ~thm =
   let { Fleche.Doc.toc; _ } = doc in
   match CString.Map.find_opt thm toc with
   | None ->
-    Format.eprintf "@[[find_thm] Theorem not found!@\n@]%!";
-    None
+    let msg = Format.asprintf "@[[find_thm] Theorem not found!@]" in
+    Error msg
   | Some range ->
-    Format.eprintf "@[[find_thm] Theorem found!@\n@]%!";
+    if pet_debug then Format.eprintf "@[[find_thm] Theorem found!@\n@]%!";
     (* let point = (range.start.line, range.start.character) in *)
     let point = (range.end_.line, range.end_.character) in
     let approx = Fleche.Info.PrevIfEmpty in
     let node = Fleche.Info.LC.node ~doc ~point approx in
-    Option.map Fleche.Doc.Node.state node
+    let error =
+      Format.asprintf "@[[find_thm] No node found for point (%d, %d) @]"
+        (fst point) (snd point)
+    in
+    Base.Result.of_option ~error node |> Result.map Fleche.Doc.Node.state
 
 let pp_diag fmt { Lang.Diagnostic.message; _ } =
   Format.fprintf fmt "%a" Pp.pp_with message
@@ -77,7 +83,7 @@ let print_diags (doc : Fleche.Doc.t) =
   Format.(eprintf "@[<v>%a@]" (pp_print_list pp_diag) d)
 
 let start ~uri ~thm =
-  let debug = true in
+  let debug = false in
   let env = init_fleche ~debug in
   let raw = read_raw ~uri in
   (* Format.eprintf "raw: @[%s@]%!" raw; *)
@@ -105,13 +111,14 @@ let parse_and_execute_in ~loc tac st =
      comment *)
   | None -> Coq.Protect.E.ok st
 
-let protect_to_option (r : _ Coq.Protect.E.t) : _ option =
+let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
   match r with
-  | { r = Interrupted; feedback = _ } -> None
-  | { r = Completed r; feedback = _ } -> Result.to_option r
+  | { r = Interrupted; feedback = _ } -> Error "operation interrupted"
+  | { r = Completed (Error _); feedback = _ } -> Error "operation errored"
+  | { r = Completed (Ok r); feedback = _ } -> Ok r
 
-let run_tac ~st ~tac =
+let run_tac ~st ~tac : (Coq.State.t, Run_error.t) Result.t =
   (* Improve with thm? *)
   let loc = None in
   Coq.State.in_stateM ~st ~f:(parse_and_execute_in ~loc tac) st
-  |> protect_to_option
+  |> protect_to_result

@@ -1,0 +1,7 @@
+(executable
+ (name pet)
+ (public_name pet)
+ (modules :standard)
+ (preprocess
+  (pps ppx_deriving_yojson))
+ (libraries cmdliner petanque))
