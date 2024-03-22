@@ -6,4 +6,4 @@
  (inline_tests)
  (preprocess
   (pps ppx_compare ppx_hash ppx_inline_test))
- (libraries lang coq-core.vernac coq-serapi.serlib))
+ (libraries memprof-limits lang coq-core.vernac coq-serapi.serlib))
