@@ -1,5 +1,5 @@
 # unreleased
------------
+------------
 
  - new option `show_loc_info_on_hover` that will display parsing debug
    information on hover; previous flag was fixed in code, which is way
@@ -51,7 +51,12 @@
  - new option `--no_vo` for `fcc`, which will skip the `.vo` saving
    step. `.vo` saving is now an `fcc` plugins, but for now, it is
    enabled by default (@ejgallego, #650)
-- call to VizCar vscode extension, mirroring behavior for vizx. (@bhaktishh, #655)
+
+# coq-lsp 0.1.8.1: Spring fix
+-----------------------------
+
+ - call to VizCar vscode extension, mirroring behavior for
+   vizx. (@bhaktishh, #655)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
