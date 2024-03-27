@@ -1,0 +1,164 @@
+This demo is based on lists of natural numbers. These `list`s are
+inductively defined with the constructors `nil` for the empty list and
+ `cons` for adding a number to an existing list.
+
+```coq
+From Tactician Require Import Ltac1.
+
+Inductive list :=
+| nil  : list
+| cons : nat -> list -> list.
+```
+
+With these lists we define the notations `[]` for the empty list and
+`n :: ls` to append the number `n` to the list `ls`.
+
+```coq
+Notation "[]" := nil.
+Notation "n :: ls" := (cons n ls).
+```
+
+We are going to prove things about the concatenation operation on
+lists. Concatenation is defined below as the function `concat` with
+the notation `ls1 ++ ls2` representing the concatenation of the lists
+ `ls1` and `ls2`.
+
+```coq
+Fixpoint concat ls1 ls2 :=
+  match ls1 with
+  | []      => ls2
+  | x::ls1' => x::(concat ls1' ls2)
+  end where "ls1 ++ ls2" := (concat ls1 ls2).
+```
+
+The first thing we whish to prove is that the empty list `[]` is the
+right identity of concatenation:
+
+```coq
+Lemma concat_nil_r : forall ls, ls ++ [] = ls.
+Proof.
+```
+
+Now we need to prove this lemma, as can be seen with in the goal on
+the right panel. This is where Tactician's automation comes in. The
+two main commands that Tactician provides are <code>Suggest</code> and
+`synth`. You can try `Suggest` now, but because we have not proven
+anything yet Tactician has not learnt any tactics yet and is unable
+ to suggest anything:
+
+```coq
+Suggest.
+```
+
+Therefore, we will have to manually prove this lemma to give Tactician
+something to learn from:
+
+```coq
+intros.
+induction ls.
+- simpl. reflexivity.
+- simpl. f_equal. apply IHls.
+Qed.
+```
+
+The system has immediately learnt from this lemma. (It was even
+learning during the proof of the lemma, you can see this by inserting
+`Suggest` in different places in the proof above.) Tactician is now
+ready to help you prove the next lemma, namely the associativity of
+list concatenation.
+
+```coq
+Lemma concat_assoc :
+  forall ls ls2 ls3, (ls ++ ls2) ++ ls3 = ls ++ (ls2 ++ ls3).
+Proof.
+```
+
+We can again ask for suggestions, and this time Tactician is able to
+give some answers:
+
+```coq
+Suggest.
+```
+
+If you wish, you can follow some of the suggestions by copying them
+into the editor. You can then repeatedly ask for more suggestions.
+Sometimes they will be good and sometimes not. Alternatively, you can
+also ask Tactician to search for a complete proof:
+
+```coq
+synth.
+```
+
+Tactician now immediately solves the goal. Notice that it has also
+printed a caching tactic in the right panel. You can copy this tactic
+and replace the original `synth` tactic above with it. Now, when you
+re-prove this lemma, Tactician will first try to prove it using the
+cache, only resorting to proof search if the cache fails (this can
+happen when you change definitions the lemma relies on).
+
+```coq
+Qed.
+```
+
+# A more advanced example
+
+In this example, we show how you can teach Tactician about
+user-defined, domain-specific tactics. This is very useful as it
+allows you to teach Tactician the "tricks of the trade". We start with
+an inductive type that incodes the property that one list is a
+non-contiguous sublist of another:
+
+```coq
+Inductive nc_sublist : list -> list -> Prop :=
+| ns_nil : nc_sublist [] []
+| ns_cons1 ls1 ls2 n : nc_sublist ls1 ls2 -> nc_sublist ls1 (n::ls2)
+| ns_cons2 ls1 ls2 n : nc_sublist ls1 ls2 -> nc_sublist (n::ls1) (n::ls2).
+```
+
+Here, `nc_sublist ls1 ls2` means that `ls1` is a non-contiguous
+sublist of `ls2`. We might now try to prove the proposition
+`nc_sublist (9::3::[]) (4::7::9::3::[])`. Altough this is clearly
+true, manually choosing the right constructors of `nc_sublist` to
+prove this is not entirely trivial. Instead, we can write a tactic
+that automates this for us. The following tactic will repeatedly try
+to use the constructors `ns_cons1` and `ns_cons2` until it can finish
+the proof with `ns_nil`, backtracking if it reaches a dead-end.
+
+```coq
+Ltac solve_nc_sublist := solve [match goal with
+| |- nc_sublist [] [] => apply ns_nil
+| |- nc_sublist (_::_) [] => fail
+| |- nc_sublist _ _ =>
+       (apply ns_cons1 + apply ns_cons2); solve_nc_sublist
+| |- _ => solve [auto]
+end].
+```
+
+Now, we can easily prove our proposition with this custom tactic:
+
+```coq
+Lemma ex1 : nc_sublist (9::3::[]) (4::7::9::3::[]).
+solve_nc_sublist.
+Qed.
+```
+
+As with other tactics, Tactician has immediately learned about
+`solve_nc_sublist`. Before we ask Tactician to use it, we will first
+teach it about using the lemma `concate_nil_r` to rewrite a goal:
+
+```coq
+Lemma ex2 ls : 1::2::ls ++ [] = 1::2::ls.
+rewrite concat_nil_r. reflexivity.
+Qed.
+```
+
+We will now ask Tactician to use the things it learned from these two
+examples to prove a more complicated lemma (although this is still a
+toy example).
+
+```coq
+Lemma dec2 ls1 ls2: nc_sublist ls1 ls2 ->
+  nc_sublist (7::9::13::ls1) (8::5::7::[] ++ 9::13::ls2 ++ []).
+synth.
+Qed.
+```
