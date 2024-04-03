@@ -23,7 +23,6 @@ Compile a single file, don't generate a `.vo` file:
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
-  
   $ ls proj1
   a.diags
   a.v
@@ -40,7 +39,6 @@ Compile a single file, generate a .vo file
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
-  
   $ ls proj1
   a.diags
   a.v
@@ -61,7 +59,6 @@ Compile a dependent file
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/b.v
-  
   $ ls proj1
   a.diags
   a.v
@@ -82,9 +79,7 @@ Compile both files
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
-  
   [message] compiling file proj1/b.v
-  
   $ ls proj1
   a.diags
   a.v
@@ -105,7 +100,6 @@ Compile a dependent file without the dep being built
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/b.v
-  
   $ ls proj1
   a.diags
   a.v
@@ -167,9 +161,7 @@ Use two workspaces
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
-  
   [message] compiling file proj2/b.v
-  
   fcc: internal error, uncaught exception:
        Sys_error("proj2/b.v: No such file or directory")
        
@@ -186,7 +178,6 @@ Load the example plugin
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
-  
   [message] [example plugin] file checking for proj1/a.v was completed
 
 Load the astdump plugin
@@ -200,7 +191,6 @@ Load the astdump plugin
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
-  
   [message] [ast plugin] dumping ast for proj1/a.v ...
   [message] [ast plugin] dumping ast for proj1/a.v was completed!
 
@@ -214,3 +204,19 @@ de-serialize the document back and check.
   $ ls proj1/a.v.json.astdump proj1/a.v.sexp.astdump
   proj1/a.v.json.astdump
   proj1/a.v.sexp.astdump
+
+We do the same for the goaldump plugin:
+  $ fcc --plugin=coq-lsp.plugin.goaldump --root proj1 proj1/a.v
+  [message] Configuration loaded from Command-line arguments
+   - coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
+   - Modules [Coq.Init.Prelude] will be loaded by default
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
+   - ocamlpath wasn't overriden
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
+  [message] compiling file proj1/a.v
+  [message] [goaldump plugin] dumping goals for proj1/a.v ...
+  [message] [ast plugin] dumping ast for proj1/a.v was completed!
+  $ ls proj1/a.v.json.goaldump
+  proj1/a.v.json.goaldump
