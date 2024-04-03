@@ -149,10 +149,10 @@ module O = Make (Offset)
 
 (* Related to goal request *)
 module Goals = struct
-  let pr_goal st =
+  let pr_goal ~token st =
     let ppx env sigma x =
       let { Coq.Protect.E.r; feedback } =
-        Coq.Print.pr_letype_env ~goal_concl_style:true env sigma x
+        Coq.Print.pr_letype_env ~token ~goal_concl_style:true env sigma x
       in
       (* XXX: We ideally want to thread this in the monad too, but it'd be
          better if the printer was more functional *)
@@ -167,7 +167,7 @@ module Goals = struct
 
   (* We need to use [in_state] here due to printing not being pure, but we want
      a better design here eventually *)
-  let goals ~st = Coq.State.in_state ~st ~f:pr_goal st
+  let goals ~token ~st = Coq.State.in_state ~token ~st ~f:(pr_goal ~token) st
   let program ~st = Coq.State.program ~st
 end
 
@@ -182,9 +182,9 @@ module Completion = struct
      needed *)
   let to_qualid p = try Some (Libnames.qualid_of_string p) with _ -> None
 
-  let candidates ~st prefix =
+  let candidates ~token ~st prefix =
     let ( let* ) = Option.bind in
-    Coq.State.in_state ~st prefix ~f:(fun prefix ->
+    Coq.State.in_state ~token ~st prefix ~f:(fun prefix ->
         let* p = to_qualid prefix in
         Nametab.completion_canditates p
         |> List.map (fun x -> Pp.string_of_ppcmds (pr_extref x))

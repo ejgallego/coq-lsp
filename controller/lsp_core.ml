@@ -106,10 +106,10 @@ module State = struct
 
   open Lsp.Workspace
 
-  let add_workspace state { WorkspaceFolder.uri; _ } =
+  let add_workspace ~token state { WorkspaceFolder.uri; _ } =
     let dir = Lang.LUri.File.to_string_file uri in
     let { cmdline; workspaces; _ } = state in
-    let ws = Coq.Workspace.guess ~debug:false ~cmdline ~dir in
+    let ws = Coq.Workspace.guess ~token ~debug:false ~cmdline ~dir in
     { state with workspaces = (dir, ws) :: workspaces }
 
   let del_workspace state { WorkspaceFolder.uri; _ } =
@@ -141,13 +141,13 @@ module State = struct
     | Some (_, Ok workspace) -> (root_state, workspace)
 end
 
-let do_changeWorkspaceFolders ~ofn:_ ~state params =
+let do_changeWorkspaceFolders ~ofn:_ ~token ~state params =
   let open Lsp.Workspace in
   let { DidChangeWorkspaceFoldersParams.event } =
     DidChangeWorkspaceFoldersParams.of_yojson (`Assoc params) |> Result.get_ok
   in
   let { WorkspaceFoldersChangeEvent.added; removed } = event in
-  let state = List.fold_left State.add_workspace state added in
+  let state = List.fold_left (State.add_workspace ~token) state added in
   let state = List.fold_left State.del_workspace state removed in
   state
 
@@ -163,11 +163,17 @@ module Rq : sig
     val error : int * string -> t
   end
 
-  val serve : ofn:(J.t -> unit) -> id:int -> Action.t -> unit
+  val serve :
+    ofn:(J.t -> unit) -> token:Coq.Limits.Token.t -> id:int -> Action.t -> unit
+
   val cancel : ofn:(J.t -> unit) -> code:int -> message:string -> int -> unit
 
   val serve_postponed :
-    ofn:(J.t -> unit) -> doc:Fleche.Doc.t -> Int.Set.t -> unit
+       ofn:(J.t -> unit)
+    -> token:Coq.Limits.Token.t
+    -> doc:Fleche.Doc.t
+    -> Int.Set.t
+    -> unit
 end = struct
   (* Answer a request, private *)
   let answer ~ofn ~id result =
@@ -210,14 +216,14 @@ end = struct
       LIO.trace "serving"
         (Format.asprintf "rq: %d | %a" id Request.Data.data pr)
 
-  let serve_postponed ~ofn ~doc id =
+  let serve_postponed ~ofn ~token ~doc id =
     let f pr =
       debug_serve id pr;
-      Request.Data.serve ~doc pr
+      Request.Data.serve ~token ~doc pr
     in
     consume_ ~ofn ~f id
 
-  let query ~ofn ~id (pr : Request.Data.t) =
+  let query ~ofn ~token ~id (pr : Request.Data.t) =
     let uri, postpone, request = Request.Data.dm_request pr in
     match Fleche.Theory.Request.add { id; uri; postpone; request } with
     | Cancel ->
@@ -226,7 +232,7 @@ end = struct
       Error (code, message) |> answer ~ofn ~id
     | Now doc ->
       debug_serve id pr;
-      Request.Data.serve ~doc pr |> answer ~ofn ~id
+      Request.Data.serve ~token ~doc pr |> answer ~ofn ~id
     | Postpone -> postpone_ ~id pr
 
   module Action = struct
@@ -238,18 +244,19 @@ end = struct
     let error (code, msg) = now (Error (code, msg))
   end
 
-  let serve ~ofn ~id action =
+  let serve ~ofn ~token ~id action =
     match action with
     | Action.Immediate r -> answer ~ofn ~id r
-    | Action.Data p -> query ~ofn ~id p
+    | Action.Data p -> query ~ofn ~token ~id p
 
-  let serve_postponed ~ofn ~doc rl = Int.Set.iter (serve_postponed ~ofn ~doc) rl
+  let serve_postponed ~ofn ~token ~doc rl =
+    Int.Set.iter (serve_postponed ~ofn ~token ~doc) rl
 end
 
 (***********************************************************************)
 (* Start of protocol handlers: document notifications                  *)
 
-let do_open ~io ~(state : State.t) params =
+let do_open ~io ~token ~(state : State.t) params =
   let document =
     field "textDocument" params
     |> Lsp.Doc.TextDocumentItem.of_yojson |> Result.get_ok
@@ -257,9 +264,9 @@ let do_open ~io ~(state : State.t) params =
   let Lsp.Doc.TextDocumentItem.{ uri; version; text; _ } = document in
   let init, workspace = State.workspace_of_uri ~uri ~state in
   let env = Fleche.Doc.Env.make ~init ~workspace in
-  Fleche.Theory.create ~io ~env ~uri ~raw:text ~version
+  Fleche.Theory.create ~io ~token ~env ~uri ~raw:text ~version
 
-let do_change ~ofn ~io params =
+let do_change ~ofn ~io ~token params =
   let uri, version = Helpers.get_uri_version params in
   let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
   match changes with
@@ -272,7 +279,7 @@ let do_change ~ofn ~io params =
     ()
   | change :: _ ->
     let raw = string_field "text" change in
-    let invalid_rq = Fleche.Theory.change ~io ~uri ~version ~raw in
+    let invalid_rq = Fleche.Theory.change ~io ~token ~uri ~version ~raw in
     let code = -32802 in
     let message = "Request got old in server" in
     Int.Set.iter (Rq.cancel ~ofn ~code ~message) invalid_rq
@@ -420,12 +427,16 @@ let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
     in
     LIO.logMessage ~lvl:3 ~message;
     let result, dirs = Rq_init.do_initialize ~params in
-    Rq.Action.now (Ok result) |> Rq.serve ~ofn ~id;
+    (* We don't need to interrupt this *)
+    let token = Coq.Limits.Token.create () in
+    Rq.Action.now (Ok result) |> Rq.serve ~ofn ~token ~id;
     LIO.logMessage ~lvl:3 ~message:"Server initialized";
     (* Workspace initialization *)
     let debug = debug || !Fleche.Config.v.debug in
     let workspaces =
-      List.map (fun dir -> (dir, Coq.Workspace.guess ~cmdline ~debug ~dir)) dirs
+      List.map
+        (fun dir -> (dir, Coq.Workspace.guess ~token ~cmdline ~debug ~dir))
+        dirs
     in
     List.iter log_workspace workspaces;
     Success workspaces
@@ -440,15 +451,15 @@ let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
     Loop
 
 (** Dispatching *)
-let dispatch_notification ~io ~ofn ~state ~method_ ~params : unit =
+let dispatch_notification ~io ~ofn ~token ~state ~method_ ~params : unit =
   match method_ with
   (* Lifecycle *)
   | "exit" -> raise Lsp_exit
   (* setTrace *)
   | "$/setTrace" -> do_trace params
   (* Document lifetime *)
-  | "textDocument/didOpen" -> do_open ~io ~state params
-  | "textDocument/didChange" -> do_change ~io ~ofn params
+  | "textDocument/didOpen" -> do_open ~io ~token ~state params
+  | "textDocument/didChange" -> do_change ~io ~ofn ~token params
   | "textDocument/didClose" -> do_close ~ofn params
   | "textDocument/didSave" -> Cache.save_to_disk ()
   (* Cancel Request *)
@@ -458,13 +469,14 @@ let dispatch_notification ~io ~ofn ~state ~method_ ~params : unit =
   (* Generic handler *)
   | msg -> LIO.trace "no_handler" msg
 
-let dispatch_state_notification ~io ~ofn ~state ~method_ ~params : State.t =
+let dispatch_state_notification ~io ~ofn ~token ~state ~method_ ~params :
+    State.t =
   match method_ with
   (* Workspace *)
   | "workspace/didChangeWorkspaceFolders" ->
-    do_changeWorkspaceFolders ~ofn ~state params
+    do_changeWorkspaceFolders ~ofn ~token ~state params
   | _ ->
-    dispatch_notification ~io ~ofn ~state ~method_ ~params;
+    dispatch_notification ~io ~ofn ~token ~state ~method_ ~params;
     state
 
 let dispatch_request ~method_ ~params : Rq.Action.t =
@@ -493,15 +505,15 @@ let dispatch_request ~method_ ~params : Rq.Action.t =
     LIO.trace "no_handler" msg;
     Rq.Action.error (-32601, "method not found")
 
-let dispatch_request ~ofn ~id ~method_ ~params =
-  dispatch_request ~method_ ~params |> Rq.serve ~ofn ~id
+let dispatch_request ~ofn ~token ~id ~method_ ~params =
+  dispatch_request ~method_ ~params |> Rq.serve ~ofn ~token ~id
 
-let dispatch_message ~io ~ofn ~state (com : LSP.Message.t) : State.t =
+let dispatch_message ~io ~ofn ~token ~state (com : LSP.Message.t) : State.t =
   match com with
   | Notification { method_; params } ->
-    dispatch_state_notification ~io ~ofn ~state ~method_ ~params
+    dispatch_state_notification ~io ~ofn ~token ~state ~method_ ~params
   | Request { id; method_; params } ->
-    dispatch_request ~ofn ~id ~method_ ~params;
+    dispatch_request ~ofn ~token ~id ~method_ ~params;
     state
 
 (* Queue handling *)
@@ -513,15 +525,29 @@ let dispatch_message ~io ~ofn ~state (com : LSP.Message.t) : State.t =
    Note that we should add a method to detect stale requests; maybe cancel them
    when a new edit comes. *)
 
+let current_token = ref None
+
+let token_factory () =
+  let token = Coq.Limits.Token.create () in
+  current_token := Some token;
+  token
+
+let set_current_token () =
+  match !current_token with
+  | None -> ()
+  | Some tok ->
+    current_token := None;
+    Coq.Limits.Token.set tok
+
 type 'a cont =
   | Cont of 'a
   | Yield of 'a
 
-let check_or_yield ~io ~ofn ~state =
-  match Fleche.Theory.Check.maybe_check ~io with
+let check_or_yield ~io ~ofn ~token ~state =
+  match Fleche.Theory.Check.maybe_check ~io ~token with
   | None -> Yield state
   | Some (ready, doc) ->
-    let () = Rq.serve_postponed ~ofn ~doc ready in
+    let () = Rq.serve_postponed ~ofn ~token ~doc ready in
     Cont state
 
 module LspQueue : sig
@@ -558,13 +584,13 @@ let dispatch_or_resume_check ~io ~ofn ~state =
   | None ->
     (* This is where we make progress on document checking; kind of IDLE
        workqueue. *)
-    Control.interrupt := false;
-    check_or_yield ~io ~ofn ~state
+    let token = token_factory () in
+    check_or_yield ~io ~ofn ~token ~state
   | Some com ->
     LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
     (* We let Coq work normally now *)
-    Control.interrupt := false;
-    Cont (dispatch_message ~io ~ofn ~state com)
+    let token = token_factory () in
+    Cont (dispatch_message ~io ~ofn ~token ~state com)
 
 (* Wrapper for the top-level call *)
 let dispatch_or_resume_check ~io ~ofn ~state =
@@ -597,4 +623,4 @@ let enqueue_message (com : LSP.Message.t) =
   (* TODO: this is the place to cancel pending requests that are invalid, and in
      general, to perform queue optimizations *)
   LspQueue.push_and_optimize com;
-  Control.interrupt := true
+  set_current_token ()

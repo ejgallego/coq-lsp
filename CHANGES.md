@@ -54,6 +54,8 @@
  - depend on `memprof-limits` on OCaml 4.x (@ejgallego, #660)
  - bump minimal OCaml version to 4.12 due to `memprof-limits`
    (@ejgallego, #660)
+ - monitor all Coq-level calls under an interruption token
+   (@ejgallego, #661)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

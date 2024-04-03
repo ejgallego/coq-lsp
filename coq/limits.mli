@@ -16,3 +16,4 @@ end
 
 module Coq : Intf
 module Mp : Intf
+include Intf

@@ -53,12 +53,17 @@ module O : S with module P := Offset
 (** We move towards a more modular design here, for preprocessing *)
 module Goals : sig
   val goals :
-    st:Coq.State.t -> (Pp.t Coq.Goals.reified_pp option, Loc.t) Coq.Protect.E.t
+       token:Coq.Limits.Token.t
+    -> st:Coq.State.t
+    -> (Pp.t Coq.Goals.reified_pp option, Loc.t) Coq.Protect.E.t
 
   val program : st:Coq.State.t -> Declare.OblState.View.t Names.Id.Map.t
 end
 
 module Completion : sig
   val candidates :
-    st:Coq.State.t -> string -> (string list option, Loc.t) Coq.Protect.E.t
+       token:Coq.Limits.Token.t
+    -> st:Coq.State.t
+    -> string
+    -> (string list option, Loc.t) Coq.Protect.E.t
 end
