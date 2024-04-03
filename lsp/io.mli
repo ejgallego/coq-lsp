@@ -47,8 +47,21 @@ end
 (** Set the trace value *)
 val set_trace_value : TraceValue.t -> unit
 
+module Lvl : sig
+  (* 1-5 *)
+  type t =
+    | Error
+    | Warning
+    | Info
+    | Log
+    | Debug
+end
+
 (** Send a [window/logMessage] notification to the client *)
-val logMessage : lvl:int -> message:string -> unit
+val logMessage : lvl:Lvl.t -> message:string -> unit
+
+(** Send a [window/logMessage] notification to the client *)
+val logMessageInt : lvl:int -> message:string -> unit
 
 (** Send a [$/logTrace] notification to the client *)
 val logTrace : message:string -> extra:string option -> unit

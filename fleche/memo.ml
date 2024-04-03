@@ -39,7 +39,15 @@ end
 
 module MemoTable = struct
   module type S = sig
-    include Hashtbl.S
+    (* Stronger than Hashtbl.S due to the more advanced cache *)
+    type key
+    type !'a t
+
+    val create : int -> 'a t
+    val find_opt : 'a t -> key -> 'a option
+
+    (* Clears the cache *)
+    val clear : 'a t -> unit
 
     val add_execution :
       ('a, 'l) Coq.Protect.E.t t -> key -> ('a, 'l) Coq.Protect.E.t -> unit
@@ -49,10 +57,35 @@ module MemoTable = struct
       -> key
       -> 'v * ('a, 'l) Coq.Protect.E.t
       -> unit
+
+    (** sorted *)
+    val all_freqs : unit -> int list
   end
 
   module Make (H : Hashtbl.HashedType) : S with type key = H.t = struct
     include Hashtbl.Make (H)
+
+    (* Number of times a value has been found *)
+    let count = create 1000
+
+    let clear t =
+      clear count;
+      clear t
+
+    let add t k v =
+      replace count k 0;
+      add t k v
+
+    let find_opt t k =
+      match find_opt t k with
+      | None -> None
+      | Some res ->
+        replace count k (find count k + 1);
+        Some res
+
+    let all_freqs () =
+      to_seq_values count |> List.of_seq
+      |> List.sort (fun x y -> -Int.compare x y)
 
     let add_execution t k ({ Coq.Protect.E.r; _ } as v) =
       match r with
@@ -116,34 +149,81 @@ module type EvalType = sig
   type output
 
   val eval : token:Coq.Limits.Token.t -> t -> (output, Loc.t) Coq.Protect.E.t
+  val input_info : t -> string
 end
 
-module SEval (E : EvalType) = struct
-  type t = E.t
+(** Flèche memo / cache tables, with some advanced features *)
+module type S = sig
+  type input
+  type output
+
+  (** [eval i] Eval an input [i] *)
+  val eval :
+    token:Coq.Limits.Token.t -> input -> (output, Loc.t) Coq.Protect.E.t
+
+  (** [eval i] Eval an input [i] and produce stats *)
+  val evalS :
+    token:Coq.Limits.Token.t -> input -> (output, Loc.t) Coq.Protect.E.t Stats.t
+
+  (** [size ()] Return the cache size in words, expensive *)
+  val size : unit -> int
+
+  (** [freqs ()]: (sorted) histogram *)
+  val all_freqs : unit -> int list
+
+  (** debug data for input *)
+  val input_info : input -> string
+
+  (** clears the cache *)
+  val clear : unit -> unit
+end
+
+module SEval (E : EvalType) :
+  S with type input = E.t and type output = E.output = struct
+  type input = E.t
+  type output = E.output
 
   module HC = MemoTable.Make (E)
 
   let cache = HC.create 1000
   let size () = Obj.reachable_words (Obj.magic cache)
+  let input_info i = E.input_info i
+  let all_freqs = HC.all_freqs
+  let clear () = HC.clear cache
 
   let eval ~token v =
     match HC.find_opt cache v with
     | None ->
-      let admitted_st = E.eval ~token v in
-      HC.add_execution cache v admitted_st;
-      admitted_st
-    | Some admitted_st -> admitted_st
+      let res = E.eval ~token v in
+      HC.add_execution cache v res;
+      res
+    | Some cached_res -> cached_res
+
+  let in_cache i =
+    let kind = CS.Kind.Hashing in
+    CS.record ~kind ~f:(HC.find_opt cache) i
+
+  let evalS ~token i =
+    match in_cache i with
+    | Some cached_res, time -> Stats.make ~cache_hit:true ~time cached_res
+    | None, time_hash ->
+      let kind = CS.Kind.Exec in
+      let f i = E.eval ~token i in
+      let res, time_interp = CS.record ~kind ~f i in
+      let () = HC.add_execution cache i res in
+      let time = time_hash +. time_interp in
+      Stats.make ~cache_hit:false ~time res
 end
 
 module type LocEvalType = sig
   include EvalType
 
   val loc_of_input : t -> Loc.t
-  val input_info : t -> string
 end
 
 module CEval (E : LocEvalType) = struct
-  type t = E.t
+  type input = E.t
+  type output = E.output
 
   module HC = MemoTable.Make (E)
 
@@ -154,17 +234,19 @@ module CEval (E : LocEvalType) = struct
 
   type cache = Result.t HC.t
 
-  let cache : cache ref = ref (HC.create 1000)
+  let cache : cache = HC.create 1000
 
   (* This is very expensive *)
   let size () = Obj.reachable_words (Obj.magic cache)
+  let all_freqs = HC.all_freqs
   let input_info = E.input_info
+  let clear () = HC.clear cache
 
   let in_cache i =
     let kind = CS.Kind.Hashing in
-    CS.record ~kind ~f:(HC.find_opt !cache) i
+    CS.record ~kind ~f:(HC.find_opt cache) i
 
-  let eval ~token i : _ Stats.t =
+  let evalS ~token i : _ Stats.t =
     let stm_loc = E.loc_of_input i in
     match in_cache i with
     | Some (cached_loc, res), time ->
@@ -177,9 +259,11 @@ module CEval (E : LocEvalType) = struct
       CacheStats.miss ();
       let kind = CS.Kind.Exec in
       let res, time_interp = CS.record ~kind ~f:(E.eval ~token) i in
-      let () = HC.add_execution_loc !cache i (stm_loc, res) in
+      let () = HC.add_execution_loc cache i (stm_loc, res) in
       let time = time_hash +. time_interp in
       Stats.make ~time res
+
+  let eval ~token i = (evalS ~token i).res
 end
 
 module VernacEval = struct
@@ -238,6 +322,7 @@ module Admit = SEval (struct
 
   type output = Coq.State.t
 
+  let input_info st = Format.asprintf "st %d" (Hashtbl.hash st)
   let eval ~token st = Coq.State.admit ~token ~st
 end)
 
@@ -259,6 +344,11 @@ module InitEval = struct
 
   let eval ~token (root_state, workspace, uri) =
     Coq.Init.doc_init ~token ~root_state ~workspace ~uri
+
+  let input_info (st, ws, file) =
+    Format.asprintf "st %d | ws %d | file %s" (Hashtbl.hash st)
+      (Hashtbl.hash ws)
+      (Lang.LUri.File.to_string_file file)
 end
 
 module Init = SEval (InitEval)

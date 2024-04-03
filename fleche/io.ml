@@ -13,7 +13,7 @@ end
 module CallBack = struct
   type t =
     { trace : string -> ?extra:string -> string -> unit
-    ; message : lvl:int -> message:string -> unit
+    ; message : lvl:Level.t -> message:string -> unit
     ; diagnostics :
         uri:Lang.LUri.File.t -> version:int -> Lang.Diagnostic.t list -> unit
     ; fileProgress :

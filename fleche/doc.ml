@@ -637,8 +637,8 @@ end
 
 let interp_and_info ~st ~files ast =
   match Coq.Ast.Require.extract ast with
-  | None -> Memo.Interp.eval (st, ast)
-  | Some ast -> Memo.Require.eval (st, files, ast)
+  | None -> Memo.Interp.evalS (st, ast)
+  | Some ast -> Memo.Require.evalS (st, files, ast)
 
 let interp_and_info ~token ~parsing_time ~st ~files ast =
   let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
