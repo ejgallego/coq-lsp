@@ -51,6 +51,9 @@
  - new option `--no_vo` for `fcc`, which will skip the `.vo` saving
    step. `.vo` saving is now an `fcc` plugins, but for now, it is
    enabled by default (@ejgallego, #650)
+ - depend on `memprof-limits` on OCaml 4.x (@ejgallego, #660)
+ - bump minimal OCaml version to 4.12 due to `memprof-limits`
+   (@ejgallego, #660)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
