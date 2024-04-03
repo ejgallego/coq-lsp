@@ -56,6 +56,8 @@
    (@ejgallego, #660)
  - monitor all Coq-level calls under an interruption token
    (@ejgallego, #661)
+ - interpret require thru our own custom execution env-aware path
+   (@bhaktishh, @ejgallego, #642, #643, #644)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

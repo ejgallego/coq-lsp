@@ -65,9 +65,11 @@ module Env : sig
   type t = private
     { init : Coq.State.t
     ; workspace : Coq.Workspace.t
+    ; files : Coq.Files.t
     }
 
-  val make : init:Coq.State.t -> workspace:Coq.Workspace.t -> t
+  val make :
+    init:Coq.State.t -> workspace:Coq.Workspace.t -> files:Coq.Files.t -> t
 end
 
 (** A Flèche document is basically a [node list], which is a crude form of a

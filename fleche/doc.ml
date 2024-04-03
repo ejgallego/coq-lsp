@@ -231,9 +231,10 @@ module Env = struct
   type t =
     { init : Coq.State.t
     ; workspace : Coq.Workspace.t
+    ; files : Coq.Files.t
     }
 
-  let make ~init ~workspace = { init; workspace }
+  let make ~init ~workspace ~files = { init; workspace; files }
 end
 
 (** A Flèche document is basically a [node list], which is a crude form of a
@@ -634,11 +635,16 @@ end = struct
     | Completed (Error _) -> st
 end
 
-let interp_and_info ~token ~parsing_time ~st ast =
+let interp_and_info ~st ~files ast =
+  match Coq.Ast.Require.extract ast with
+  | None -> Memo.Interp.eval (st, ast)
+  | Some ast -> Memo.Require.eval (st, files, ast)
+
+let interp_and_info ~token ~parsing_time ~st ~files ast =
   let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
   (* memo memory stats are disabled: slow and misleading *)
   let { Memo.Stats.res; cache_hit; memory = _; time } =
-    Memo.Interp.eval ~token (st, ast)
+    interp_and_info ~token ~st ~files ast
   in
   let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in
   let stats = Stats.dump () in
@@ -779,8 +785,10 @@ let document_action ~token ~st ~parsing_diags ~parsing_feedback ~parsing_time
     Continue { state = st; last_tok; node }
   (* We can interpret the command now *)
   | Process ast -> (
-    let lines = doc.contents.lines in
-    let process_res, info = interp_and_info ~token ~parsing_time ~st ast in
+    let lines, files = (doc.contents.lines, doc.env.files) in
+    let process_res, info =
+      interp_and_info ~token ~parsing_time ~st ~files ast
+    in
     let f = Coq.Utils.to_range ~lines in
     let { Coq.Protect.E.r; feedback } = Coq.Protect.E.map_loc ~f process_res in
     match r with
