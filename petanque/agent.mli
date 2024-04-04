@@ -143,7 +143,7 @@ val run :
 val goals :
      token:Coq.Limits.Token.t
   -> st:State.t
-  -> string Coq.Goals.reified_pp option R.t
+  -> (string, string) Coq.Goals.reified option R.t
 
 module Premise : sig
   module Info : sig

@@ -1,4 +1,4 @@
 (library
- (name layoutPrinter)
+ (name layout)
  (public_name coq-lsp.layout-printer)
  (libraries coq-core.interp coq-core.parsing coq-core.printing tyxml))

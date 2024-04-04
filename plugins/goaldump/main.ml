@@ -22,11 +22,11 @@ module AstGoals = struct
   module Lang = Lsp.JLang
   module Coq = Lsp.JCoq
 
-  type 'a t =
+  type ('g, 'pp) t =
     { raw : string
     ; range : Lang.Range.t
     ; ast : Coq.Ast.t option
-    ; goals : 'a Coq.Goals.reified_pp option
+    ; goals : ('g, 'pp) Coq.Goals.reified option
     }
   [@@deriving to_yojson]
 
@@ -35,12 +35,16 @@ module AstGoals = struct
     let raw = Fleche.Contents.extract_raw ~contents ~range in
     let ast = Option.map (fun n -> n.Doc.Node.Ast.v) node.ast in
     let st = node.state in
-    let goals = of_execution ~io ~what:"goals" (Info.Goals.goals ~token ~st) in
+    let pr = Info.Goals.to_pp in
+    let goals =
+      of_execution ~io ~what:"goals" (Info.Goals.goals ~token ~pr ~st)
+    in
     { raw; range; ast; goals }
 end
 
 let pp_json pp fmt (astgoal : _ AstGoals.t) =
-  AstGoals.to_yojson pp astgoal |> Yojson.Safe.pretty_print fmt
+  AstGoals.to_yojson pp (fun x -> Lsp.JCoq.Pp.to_yojson x) astgoal
+  |> Yojson.Safe.pretty_print fmt
 
 (* For now we have not added sexp serialization, but we can easily do so *)
 (* let pp_sexp fmt (astgoal : AstGoals.t) = *)
