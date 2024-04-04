@@ -839,6 +839,18 @@ let max_errors_node ~state ~range =
   unparseable_node ~range ~parsing_diags ~parsing_feedback:[] ~state
     ~parsing_time:0.0
 
+module Stop_cond = struct
+  type t =
+    | Target
+    | Max_errors
+    | Continue
+
+  let should_stop acc_errors last_tok target =
+    if acc_errors > !Config.v.max_errors then Max_errors
+    else if beyond_target last_tok target then Target
+    else Continue
+end
+
 (* main interpretation loop *)
 let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
   let rec stm doc st (last_tok : Lang.Range.t) acc_errors =
@@ -846,12 +858,13 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
     let doc = send_eager_diagnostics ~io ~uri ~version ~doc in
     report_progress ~io ~doc last_tok;
     if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
-    if acc_errors > !Config.v.max_errors then
+    match Stop_cond.should_stop acc_errors last_tok target with
+    | Max_errors ->
       let completed = Completion.Failed last_tok in
       let node = max_errors_node ~state:st ~range:last_tok in
       let doc = add_node ~node doc in
       set_completion ~completed doc
-    else if beyond_target last_tok target then
+    | Target ->
       let () = log_beyond_target last_tok target in
       (* We set to Completed.Yes when we have reached the EOI *)
       let completed =
@@ -860,7 +873,7 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
         else Completion.Stopped last_tok
       in
       set_completion ~completed doc
-    else
+    | Continue -> (
       (* Parsing *)
       let lines = doc.contents.lines in
       let action, parsing_diags, parsing_feedback, parsing_time =
@@ -881,7 +894,7 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
       | Continue { state; last_tok; node } ->
         let n_errors = CList.count Lang.Diagnostic.is_error node.Node.diags in
         let doc = add_node ~node doc in
-        stm doc state last_tok (acc_errors + n_errors)
+        stm doc state last_tok (acc_errors + n_errors))
   in
   (* Reporting of progress and diagnostics (if stopped or failed, if completed
      the doc manager will take care of it) *)
