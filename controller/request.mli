@@ -25,8 +25,12 @@ module R : sig
     name:string -> f:('a -> (t, Loc.t) Coq.Protect.E.t) -> 'a -> t
 end
 
-type document = doc:Fleche.Doc.t -> R.t
-type position = doc:Fleche.Doc.t -> point:int * int -> R.t
+(* We could classify the requests that don't need to call-back Coq (and thus
+   don't need the interruption token; but it is not worth it. *)
+type document = token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> R.t
+
+type position =
+  token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> point:int * int -> R.t
 
 (** Requests that require data access *)
 module Data : sig
@@ -47,7 +51,7 @@ module Data : sig
   (* Debug printing *)
   val data : Format.formatter -> t -> unit
   val dm_request : t -> Lang.LUri.File.t * bool * Fleche.Theory.Request.request
-  val serve : doc:Fleche.Doc.t -> t -> R.t
+  val serve : token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> t -> R.t
 end
 
 (** Returns an empty list of results for any position / document *)

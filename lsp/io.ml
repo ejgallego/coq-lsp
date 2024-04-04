@@ -93,7 +93,31 @@ end
 let trace_value = ref TraceValue.Off
 let set_trace_value value = trace_value := value
 
+module Lvl = struct
+  (* 1-5 *)
+  type t =
+    | Error
+    | Warning
+    | Info
+    | Log
+    | Debug
+
+  let to_int = function
+    | Error -> 1
+    | Warning -> 2
+    | Info -> 3
+    | Log -> 4
+    | Debug -> 5
+end
+
 let logMessage ~lvl ~message =
+  let method_ = "window/logMessage" in
+  let lvl = Lvl.to_int lvl in
+  let params = `Assoc [ ("type", `Int lvl); ("message", `String message) ] in
+  let msg = Base.mk_notification ~method_ ~params in
+  !fn msg
+
+let logMessageInt ~lvl ~message =
   let method_ = "window/logMessage" in
   let params = `Assoc [ ("type", `Int lvl); ("message", `String message) ] in
   let msg = Base.mk_notification ~method_ ~params in

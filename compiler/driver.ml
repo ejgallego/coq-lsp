@@ -37,11 +37,14 @@ let go args =
   let root_state = coq_init ~debug in
   let roots = if List.length roots < 1 then [ Sys.getcwd () ] else roots in
   let default = Coq.Workspace.default ~debug ~cmdline in
+  let token = Coq.Limits.Token.create () in
   let workspaces =
-    List.map (fun dir -> (dir, Coq.Workspace.guess ~cmdline ~debug ~dir)) roots
+    List.map
+      (fun dir -> (dir, Coq.Workspace.guess ~token ~cmdline ~debug ~dir))
+      roots
   in
   List.iter (log_workspace ~io) workspaces;
-  let cc = Cc.{ root_state; workspaces; default; io } in
+  let cc = Cc.{ root_state; workspaces; default; io; token } in
   (* Initialize plugins *)
   plugin_init plugins;
   Compile.compile ~cc files

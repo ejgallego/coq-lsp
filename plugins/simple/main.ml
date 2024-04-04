@@ -1,6 +1,6 @@
 open Fleche
 
-let simple_action ~io ~doc =
+let simple_action ~io ~token:_ ~doc =
   let uri = Lang.LUri.File.to_string_uri doc.Doc.uri in
   let lvl = Io.Level.info in
   let message =

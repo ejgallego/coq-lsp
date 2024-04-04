@@ -19,7 +19,7 @@ let dump_asts ~out_file pp asts =
   Format.pp_print_flush fmt ();
   Stdlib.close_out out
 
-let dump_ast ~io ~(doc : Doc.t) =
+let dump_ast ~io ~token:_ ~(doc : Doc.t) =
   let uri = doc.uri in
   let uri_str = Lang.LUri.File.to_string_uri uri in
   let out_file_j = Lang.LUri.File.to_string_file uri ^ ".json.astdump" in

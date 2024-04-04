@@ -27,7 +27,7 @@ open Lsp_core
 (* Do cleanup here if necessary *)
 let exit_message () =
   let message = "server exiting" in
-  LIO.logMessage ~lvl:1 ~message
+  LIO.logMessage ~lvl:Error ~message
 
 let lsp_cleanup () = exit_message ()
 
@@ -63,7 +63,7 @@ let concise_cb ofn =
 let lsp_cb ofn =
   let message ~lvl ~message =
     let lvl = Fleche.Io.Level.to_int lvl in
-    LIO.logMessage ~lvl ~message
+    LIO.logMessageInt ~lvl ~message
   in
   Fleche.Io.CallBack.
     { trace = LIO.trace
@@ -165,7 +165,7 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
   with
   | Lsp_exit ->
     let message = "[LSP shutdown] EOF\n" in
-    LIO.logMessage ~lvl:1 ~message
+    LIO.logMessage ~lvl:Error ~message
   | exn ->
     let bt = Printexc.get_backtrace () in
     let exn, info = Exninfo.capture exn in
@@ -175,7 +175,7 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
       Pp.(string_of_ppcmds CErrors.(iprint (exn, info)));
     LIO.trace "server crash" (exn_msg ^ bt);
     let message = "[uncontrolled LSP shutdown] server crash\n" ^ exn_msg in
-    LIO.logMessage ~lvl:1 ~message
+    LIO.logMessage ~lvl:Error ~message
 
 (* Arguments handling *)
 open Cmdliner

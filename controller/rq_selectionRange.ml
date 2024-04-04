@@ -15,7 +15,7 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-let request ~doc ~point =
+let request ~token:_ ~doc ~point =
   let approx = Fleche.Info.Exact in
   match Fleche.Info.LC.node ~doc ~point approx with
   | None -> Ok `Null

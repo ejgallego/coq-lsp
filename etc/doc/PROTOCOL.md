@@ -303,3 +303,8 @@ export interface DocumentPerfParams {
 #### Changelog
 
 - v0.1.7: Initial version
+
+### Trim cache notification
+
+The `coq/trimCaches` notification from client to server tells the
+server to free memory. It has no parameters.

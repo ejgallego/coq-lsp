@@ -4,4 +4,5 @@ type t =
   ; workspaces : (string * (Coq.Workspace.t, string) Result.t) list
   ; default : Coq.Workspace.t
   ; io : Fleche.Io.CallBack.t
+  ; token : Coq.Limits.Token.t
   }

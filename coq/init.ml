@@ -98,5 +98,5 @@ let doc_init ~root_state ~workspace ~uri () =
   (* We return the state at this point! *)
   Vernacstate.freeze_interp_state ~marshallable:false |> State.of_coq
 
-let doc_init ~root_state ~workspace ~uri =
-  Protect.eval ~f:(doc_init ~root_state ~workspace ~uri) ()
+let doc_init ~token ~root_state ~workspace ~uri =
+  Protect.eval ~token ~f:(doc_init ~root_state ~workspace ~uri) ()
