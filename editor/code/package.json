@@ -101,6 +101,10 @@
       {
         "command": "coq-lsp.save",
         "title": "Coq LSP: Save .vo file for the current buffer"
+      },
+      {
+        "command": "coq-lsp.trim",
+        "title": "Coq LSP: Request the server to trim caches and compact memory (useful to try reduce memory comsumption)"
       }
     ],
     "keybindings": [

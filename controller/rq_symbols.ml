@@ -26,7 +26,7 @@ let rec mk_syminfo info =
 let mk_syminfo info = mk_syminfo info |> Lsp.Core.DocumentSymbol.to_yojson
 let definition_info { Fleche.Doc.Node.Ast.ast_info; _ } = ast_info
 
-let symbols ~(doc : Fleche.Doc.t) =
+let symbols ~token:_ ~(doc : Fleche.Doc.t) =
   let definfo =
     Fleche.Doc.asts doc |> List.filter_map definition_info |> List.concat
   in

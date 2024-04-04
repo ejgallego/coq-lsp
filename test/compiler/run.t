@@ -23,7 +23,6 @@ Compile a single file, don't generate a `.vo` file:
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
-  
   $ ls proj1
   a.diags
   a.v
@@ -40,7 +39,6 @@ Compile a single file, generate a .vo file
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
-  
   $ ls proj1
   a.diags
   a.v
@@ -61,7 +59,6 @@ Compile a dependent file
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/b.v
-  
   $ ls proj1
   a.diags
   a.v
@@ -82,9 +79,10 @@ Compile both files
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
-  
   [message] compiling file proj1/b.v
-  
+<<<<<<< HEAD
+=======
+>>>>>>> main
   $ ls proj1
   a.diags
   a.v
@@ -105,7 +103,9 @@ Compile a dependent file without the dep being built
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/b.v
-  
+<<<<<<< HEAD
+=======
+>>>>>>> main
   $ ls proj1
   a.diags
   a.v
@@ -167,13 +167,17 @@ Use two workspaces
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
-  
   [message] compiling file proj2/b.v
-  
   fcc: internal error, uncaught exception:
        Sys_error("proj2/b.v: No such file or directory")
        
   [125]
+<<<<<<< HEAD
+=======
+>>>>>>> main
+<<<<<<< HEAD
+=======
+>>>>>>> main
 
 Load the example plugin
   $ fcc --plugin=coq-lsp.plugin.example --root proj1 proj1/a.v
@@ -186,8 +190,10 @@ Load the example plugin
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
-  
   [message] [example plugin] file checking for proj1/a.v was completed
+<<<<<<< HEAD
+=======
+>>>>>>> main
 
 Load the astdump plugin
   $ fcc --plugin=coq-lsp.plugin.astdump --root proj1 proj1/a.v
@@ -200,9 +206,11 @@ Load the astdump plugin
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
-  
   [message] [ast plugin] dumping ast for proj1/a.v ...
   [message] [ast plugin] dumping ast for proj1/a.v was completed!
+<<<<<<< HEAD
+=======
+>>>>>>> main
 
 EJGA: I'd be nice to check the checksum of files here, however
 `md5sum` is not avilable on all of our CI platforms yet. `ls -l`
@@ -214,3 +222,19 @@ de-serialize the document back and check.
   $ ls proj1/a.v.json.astdump proj1/a.v.sexp.astdump
   proj1/a.v.json.astdump
   proj1/a.v.sexp.astdump
+
+We do the same for the goaldump plugin:
+  $ fcc --plugin=coq-lsp.plugin.goaldump --root proj1 proj1/a.v
+  [message] Configuration loaded from Command-line arguments
+   - coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
+   - Modules [Coq.Init.Prelude] will be loaded by default
+   - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
+   - ocamlpath wasn't overriden
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
+  [message] compiling file proj1/a.v
+  [message] [goaldump plugin] dumping goals for proj1/a.v ...
+  [message] [ast plugin] dumping ast for proj1/a.v was completed!
+  $ ls proj1/a.v.json.goaldump
+  proj1/a.v.json.goaldump

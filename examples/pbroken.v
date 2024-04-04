@@ -9,3 +9,7 @@ Ltac CaseEq name :=
 Theorem min_or :
  forall n m : nat, min n m = n /\ n <= m \/ min n m = m /\ m < n.
 Admitted.
+
+(* Some other printing example from vscoq issue tracker *)
+Universe u v.
+Print Universes Subgraph (u v).

@@ -106,9 +106,9 @@ let info_of_id ~st id =
   in
   info_of_id env sigma id
 
-let info_of_id_at_point ~node id =
+let info_of_id_at_point ~token ~node id =
   let st = node.Fleche.Doc.Node.state in
-  Coq.State.in_state ~st ~f:(info_of_id ~st) id
+  Coq.State.in_state ~token ~st ~f:(info_of_id ~st) id
 
 let pp_typ id = function
   | Def typ ->
@@ -120,9 +120,9 @@ let pp_typ id = function
 
 let to_list x = Option.cata (fun x -> [ x ]) [] x
 
-let info_type ~contents ~point ~node : string option =
+let info_type ~token ~contents ~point ~node : string option =
   Option.bind (Rq_common.get_id_at_point ~contents ~point) (fun id ->
-      match info_of_id_at_point ~node id with
+      match info_of_id_at_point ~token ~node id with
       | Coq.Protect.{ E.r = R.Completed (Ok (Some info)); feedback = _ } ->
         Some (pp_typ id info)
       | _ -> None)
@@ -155,7 +155,7 @@ let info_notation ~point (ast : Fleche.Doc.Node.Ast.t) =
     Some (ntn_key_info key)
   | _ -> None
 
-let info_notation ~contents:_ ~point ~node : string option =
+let info_notation ~token:_ ~contents:_ ~point ~node : string option =
   Option.bind node.Fleche.Doc.Node.ast (info_notation ~point)
 
 open Fleche
@@ -164,10 +164,18 @@ open Fleche
 module Handler = struct
   (** Returns [Some markdown] if there is some hover to match *)
   type 'node h_node =
-    contents:Contents.t -> point:int * int -> node:'node -> string option
+       token:Coq.Limits.Token.t
+    -> contents:Contents.t
+    -> point:int * int
+    -> node:'node
+    -> string option
 
   type h_doc =
-    doc:Doc.t -> point:int * int -> node:Doc.Node.t option -> string option
+       token:Coq.Limits.Token.t
+    -> doc:Doc.t
+    -> point:int * int
+    -> node:Doc.Node.t option
+    -> string option
 
   type t =
     | MaybeNode : Doc.Node.t option h_node -> t
@@ -180,22 +188,23 @@ module type HoverProvider = sig
 end
 
 module Loc_info : HoverProvider = struct
-  let h ~contents:_ ~point:_ ~node =
+  let h ~token:_ ~contents:_ ~point:_ ~node =
     match node with
     | None -> "no node here"
     | Some node ->
       let range = Doc.Node.range node in
       Format.asprintf "%a" Lang.Range.pp range
 
-  let h ~contents ~point ~node =
-    if !Config.v.show_loc_info_on_hover then Some (h ~contents ~point ~node)
+  let h ~token ~contents ~point ~node =
+    if !Config.v.show_loc_info_on_hover then
+      Some (h ~token ~contents ~point ~node)
     else None
 
   let h = Handler.MaybeNode h
 end
 
 module Stats : HoverProvider = struct
-  let h ~contents:_ ~point:_ ~node =
+  let h ~token:_ ~contents:_ ~point:_ ~node =
     if !Config.v.show_stats_on_hover then Some Doc.Node.(Info.print (info node))
     else None
 
@@ -214,25 +223,25 @@ module Register = struct
   let handlers : Handler.t list ref = ref []
   let add fn = handlers := fn :: !handlers
 
-  let handle ~(doc : Doc.t) ~point ~node =
+  let handle ~token ~(doc : Doc.t) ~point ~node =
     let contents = doc.contents in
     function
-    | Handler.MaybeNode h -> h ~contents ~point ~node
+    | Handler.MaybeNode h -> h ~token ~contents ~point ~node
     | Handler.WithNode h ->
-      Option.bind node (fun node -> h ~contents ~point ~node)
-    | Handler.WithDoc h -> h ~doc ~point ~node
+      Option.bind node (fun node -> h ~token ~contents ~point ~node)
+    | Handler.WithDoc h -> h ~token ~doc ~point ~node
 
-  let fire ~doc ~point ~node =
-    List.filter_map (handle ~doc ~point ~node) !handlers
+  let fire ~token ~doc ~point ~node =
+    List.filter_map (handle ~token ~doc ~point ~node) !handlers
 end
 
 (* Register in-file hover plugins *)
 let () = List.iter Register.add [ Loc_info.h; Stats.h; Type.h; Notation.h ]
 
-let hover ~doc ~point =
+let hover ~token ~doc ~point =
   let node = Info.LC.node ~doc ~point Exact in
   let range = Option.map Doc.Node.range node in
-  let hovers = Register.fire ~doc ~point ~node in
+  let hovers = Register.fire ~token ~doc ~point ~node in
   match hovers with
   | [] -> `Null
   | hovers ->
@@ -240,4 +249,4 @@ let hover ~doc ~point =
     let contents = { HoverContents.kind = "markdown"; value } in
     HoverInfo.(to_yojson { contents; range })
 
-let hover ~doc ~point = hover ~doc ~point |> Result.ok
+let hover ~token ~doc ~point = hover ~token ~doc ~point |> Result.ok

@@ -1,5 +1,5 @@
 # unreleased
------------
+------------
 
  - new option `show_loc_info_on_hover` that will display parsing debug
    information on hover; previous flag was fixed in code, which is way
@@ -51,6 +51,24 @@
  - new option `--no_vo` for `fcc`, which will skip the `.vo` saving
    step. `.vo` saving is now an `fcc` plugins, but for now, it is
    enabled by default (@ejgallego, #650)
+ - depend on `memprof-limits` on OCaml 4.x (@ejgallego, #660)
+ - bump minimal OCaml version to 4.12 due to `memprof-limits`
+   (@ejgallego, #660)
+ - monitor all Coq-level calls under an interruption token
+   (@ejgallego, #661)
+ - interpret require thru our own custom execution env-aware path
+   (@bhaktishh, @ejgallego, #642, #643, #644)
+ - new `coq-lsp.plugin.goaldump` plugin, as an example on how to dump
+   goals from a document (@ejgallego @gbdrt, #619)
+ - new trim command (both in the server and in VSCode) to liberate
+   space used in the cache (@ejgallego, #662, fixes #367 cc: #253 #236
+   #348)
+
+# coq-lsp 0.1.8.1: Spring fix
+-----------------------------
+
+ - call to VizCar vscode extension, mirroring behavior for
+   vizx. (@bhaktishh, #655)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
