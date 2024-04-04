@@ -15,12 +15,19 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-let request ~token:_ ~doc ~point =
+let point_to_result ~doc ((line, character) as point) =
   let approx = Fleche.Info.Exact in
-  match Fleche.Info.LC.node ~doc ~point approx with
-  | None -> Ok `Null
-  | Some node ->
-    let range = Fleche.Doc.Node.range node in
-    let parent = None in
-    let answer = Lsp.Core.SelectionRange.({ range; parent } |> to_yojson) in
-    Ok (`List [ answer ])
+  let range =
+    match Fleche.Info.LC.node ~doc ~point approx with
+    | None ->
+      let point = { Lang.Point.line; character; offset = -1 } in
+      { Lang.Range.start = point; end_ = point }
+    | Some node -> Fleche.Doc.Node.range node
+  in
+  let parent = None in
+  Lsp.Core.SelectionRange.{ range; parent }
+
+let request ~points ~token:_ ~doc ~point:_ =
+  let results = List.map (point_to_result ~doc) points in
+  let answers = List.map Lsp.Core.SelectionRange.to_yojson results in
+  Ok (`List answers)

@@ -65,6 +65,8 @@
    #348)
  - fix Coq performance view display (@ejgallego, #663, regression in
    #513)
+ - allow more than one input position in `selectionRange` LSP call
+   (@ejgallego, #667, fixes #663)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
