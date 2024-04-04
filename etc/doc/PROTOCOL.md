@@ -271,7 +271,8 @@ supports the `proof/goals` request, parameters are:
 interface GoalRequest {
     textDocument: VersionedTextDocumentIdentifier;
     position: Position;
-    pp_format?: 'Pp' | 'Str';
+    pp_format?: 'Box' | 'Pp' | 'Str';
+    pretac?: string;
     command?: string;
     mode?: 'Prev' | 'After';
 }
@@ -312,12 +313,12 @@ interface Goal<Pp> {
   ty: Pp;
 }
 
-interface GoalConfig<Pp> {
-  goals : Goal<Pp>[];
-  stack : [Goal<Pp>[], Goal<Pp>[]][];
+interface GoalConfig<G, Pp> {
+  goals : Goal<G>[];
+  stack : [Goal<G>[], Goal<G>[]][];
   bullet ?: Pp;
-  shelf : Goal<Pp>[];
-  given_up : Goal<Pp>[];
+  shelf : Goal<G>[];
+  given_up : Goal<G>[];
 }
 
 export interface Message<Pp> {
@@ -326,11 +327,11 @@ export interface Message<Pp> {
   text : Pp
 }
 
-interface GoalAnswer<Pp> {
+interface GoalAnswer<G, Pp> {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
   range?: Range;
-  goals?: GoalConfig<Pp>;
+  goals?: GoalConfig<G, Pp>;
   messages: Pp[] | Message<Pp>[];
   error?: Pp;
   program?: ProgramInfo;
@@ -386,10 +387,12 @@ implementation, and we adapted it to `coq-lsp`.
 <!-- TOC --><a name="selecting-an-output-format"></a>
 #### Selecting an output format
 
-As of today, the output format type parameter `Pp` is controlled by
-the server option `pp_type : number`, see `package.json` for different
-values. `0` is guaranteed to be `Pp = string`. Prior to 0.1.6 `string`
-was the default.
+As of today, the _default_ output format type parameter `Pp` is
+controlled by the server option `pp_type : number`, if the `pp_format`
+field is not present. see `package.json` for different values. `0` is
+guaranteed to be `Pp = string`, the other values are
+Coq-implementation-specific and generally not stable; tho we provide
+utils for those interested in richer printing formats.
 
 <!-- TOC --><a name="changelog"></a>
 #### Changelog
@@ -397,8 +400,9 @@ was the default.
 - v0.2.3: new field in answer `range`, which contains the range of the
   sentence at `position`
 - v0.1.9: backwards compatible with 0.1.8
-  + new optional `mode : "Prev" | "After"` field to indicate desired goal position
   + `command` field, alias of `pretac`, as this is not limited to tactics
+  + new optional `mode : "Prev" | "After"` field to indicate desired goal position
+  + generic type is now more flexible, for the new `Box` output format
 - v0.1.8: new optional `pretac` field for post-processing, backwards compatible with 0.1.7
 - v0.1.7: program information added, rest of fields compatible with 0.1.6
 - v0.1.7: pp_format field added to request, backwards compatible

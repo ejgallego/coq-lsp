@@ -8,6 +8,7 @@
 type format =
   | Pp
   | Str
+  | Box
 
 (** [goals ~pp_format ?pretac] Serve goals at point; users can request
     pre-processing and formatting using the provided parameters. *)

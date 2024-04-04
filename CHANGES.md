@@ -14,6 +14,9 @@ unreleased
    refactor the response type to accommodate different meta-data. Note:
    (!) breaking change. (@ejgallego, #985, thanks to the Alectryon
    team)
+ - [coq] incorporate experimental `coq-layout-engine` printer, both in
+   client and server parts (@ejgallego, #668, see also #72 and
+   https://github.com/jscoq/jscoq/pull/282 )
 
 # coq-lsp 0.2.3: Barrage
 ------------------------
