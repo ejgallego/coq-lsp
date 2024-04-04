@@ -57,6 +57,7 @@ let concise_cb ofn =
           if List.length diags > 0 then
             Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)
     ; fileProgress = (fun ~uri:_ ~version:_ _progress -> ())
+    ; perfData = (fun ~uri:_ ~version:_ _perf -> ())
     }
 
 (* Main loop *)
@@ -74,6 +75,9 @@ let lsp_cb ofn =
     ; fileProgress =
         (fun ~uri ~version progress ->
           Lsp.JFleche.mk_progress ~uri ~version progress |> ofn)
+    ; perfData =
+        (fun ~uri ~version perf ->
+          Lsp.JFleche.mk_perf ~uri ~version perf |> ofn)
     }
 
 let coq_init ~debug =
