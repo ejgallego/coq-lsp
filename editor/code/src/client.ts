@@ -39,6 +39,7 @@ import {
   PpString,
   DocumentPerfParams,
   ViewRangeParams,
+  BoxString,
 } from "../lib/types";
 
 import {
@@ -108,12 +109,12 @@ export interface CoqLspAPI {
   /**
    * Query goals from Coq
    */
-  goalsRequest(params: GoalRequest): Promise<GoalAnswer<PpString>>;
+  goalsRequest(params: GoalRequest): Promise<GoalAnswer<BoxString, PpString>>;
 
   /**
    * Register callback on user-initiated goals request
    */
-  onUserGoals(fn: (goals: GoalAnswer<String>) => void): Disposable;
+  onUserGoals(fn: (goals: GoalAnswer<String, String>) => void): Disposable;
 }
 
 export function activateCoqLSP(
