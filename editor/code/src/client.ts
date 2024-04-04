@@ -68,9 +68,13 @@ export type ClientFactoryType = (
 export interface CoqLspAPI {
   /**
    * Query goals from Coq
-   * @param params goal request parameters
    */
   goalsRequest(params: GoalRequest): Promise<GoalAnswer<PpString>>;
+
+  /**
+   * Register callback on user-initiated goals request
+   */
+  onUserGoals(fn: (goals: GoalAnswer<String>) => void): Disposable;
 }
 
 export function activateCoqLSP(
@@ -362,6 +366,10 @@ export function activateCoqLSP(
   return {
     goalsRequest: (params) => {
       return client.sendRequest(goalReq, params);
+    },
+    onUserGoals: (fn) => {
+      infoPanel.registerObserver(fn);
+      return new Disposable(() => infoPanel.unregisterObserver(fn));
     },
   };
 }
