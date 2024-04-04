@@ -63,6 +63,7 @@
  - new trim command (both in the server and in VSCode) to liberate
    space used in the cache (@ejgallego, #662, fixes #367 cc: #253 #236
    #348)
+ - completion and notation display (@ejgallego, #41 ???)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

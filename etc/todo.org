@@ -4,13 +4,16 @@ info.
 
 * Coq LSP Todos
 
+** 0.2
+ - jump to definition
+ - warnings suggestions / fix
+
+** 0.3
  - profit from command refinement
  - lsp server process and coq-lsp-checker client for every document
  - dune integration, auto-build, dap
  - documentation links
- - jump to definition
  - integration with tracing
- - warnings suggestions / fix
  - flags for coq process
  - Implement onsave => compile vo file? [see on-disk cache issues below]
 
