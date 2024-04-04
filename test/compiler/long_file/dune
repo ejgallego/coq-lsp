@@ -1,0 +1,5 @@
+(cram
+ (deps
+  ; For the plugins to be built
+  (package coq-lsp)
+  %{bin:fcc}))

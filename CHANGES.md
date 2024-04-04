@@ -63,6 +63,8 @@
  - new trim command (both in the server and in VSCode) to liberate
    space used in the cache (@ejgallego, #662, fixes #367 cc: #253 #236
    #348)
+ - fix Coq performance view display (@ejgallego, #663, regression in
+   #507)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
