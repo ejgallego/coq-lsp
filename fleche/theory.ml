@@ -139,28 +139,28 @@ let diags_of_doc doc = List.concat_map Doc.Node.diags doc.Doc.nodes
    general structure *)
 module Register : sig
   module Completed : sig
-    type t = io:Io.CallBack.t -> doc:Doc.t -> unit
+    type t = io:Io.CallBack.t -> token:Coq.Limits.Token.t -> doc:Doc.t -> unit
   end
 
   val add : Completed.t -> unit
-  val fire : io:Io.CallBack.t -> doc:Doc.t -> unit
+  val fire : io:Io.CallBack.t -> token:Coq.Limits.Token.t -> doc:Doc.t -> unit
 end = struct
   module Completed = struct
-    type t = io:Io.CallBack.t -> doc:Doc.t -> unit
+    type t = io:Io.CallBack.t -> token:Coq.Limits.Token.t -> doc:Doc.t -> unit
   end
 
   let callback : Completed.t list ref = ref []
   let add fn = callback := fn :: !callback
-  let fire ~io ~doc = List.iter (fun f -> f ~io ~doc) !callback
+  let fire ~io ~token ~doc = List.iter (fun f -> f ~io ~token ~doc) !callback
 end
 
-let send_diags ~io ~doc =
+let send_diags ~io ~token:_ ~doc =
   let diags = diags_of_doc doc in
   if List.length diags > 0 || !Config.v.send_diags then
     let uri, version = (doc.uri, doc.version) in
     Io.Report.diagnostics ~io ~uri ~version diags
 
-let send_perf_data ~io ~(doc : Doc.t) =
+let send_perf_data ~io ~token:_ ~(doc : Doc.t) =
   (* The if below needs to be moved to registrationt time, but for now we keep
      it for now until the plugin workflow is clearer *)
   if !Config.v.send_perf_data then
@@ -173,7 +173,9 @@ let () = Register.add send_diags
 module Check : sig
   val schedule : uri:Lang.LUri.File.t -> unit
   val deschedule : uri:Lang.LUri.File.t -> unit
-  val maybe_check : io:Io.CallBack.t -> (Int.Set.t * Doc.t) option
+
+  val maybe_check :
+    io:Io.CallBack.t -> token:Coq.Limits.Token.t -> (Int.Set.t * Doc.t) option
 end = struct
   let pending = ref []
 
@@ -199,7 +201,7 @@ end = struct
     Option.map target_of_pt_handle (List.nth_opt pt_requests 0)
 
   (* Notification handling; reply is optional / asynchronous *)
-  let check ~io ~uri =
+  let check ~io ~token ~uri =
     Io.Log.trace "process_queue" "resuming document checking";
     match Handle.find_opt ~uri with
     | Some handle -> (
@@ -214,9 +216,10 @@ end = struct
         None
       | (None | Some _) as tgt ->
         let target = Option.default Doc.Target.End tgt in
-        let doc = Doc.check ~io ~target ~doc:handle.doc () in
+        let doc = Doc.check ~io ~token ~target ~doc:handle.doc () in
         let requests = Handle.update_doc_info ~handle ~doc in
-        if Doc.Completion.is_completed doc.completed then Register.fire ~io ~doc;
+        if Doc.Completion.is_completed doc.completed then
+          Register.fire ~io ~token ~doc;
         (* Remove from the queue *)
         if Doc.Completion.is_completed doc.completed then
           pending := pend_pop !pending;
@@ -227,15 +230,17 @@ end = struct
         ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
       None
 
-  let maybe_check ~io = pend_try (fun uri -> check ~io ~uri) !pending
+  let maybe_check ~io ~token =
+    pend_try (fun uri -> check ~io ~token ~uri) !pending
+
   let schedule ~uri = pending := pend_push uri !pending
 
   let deschedule ~uri =
     pending := CList.remove Lang.LUri.File.equal uri !pending
 end
 
-let create ~env ~uri ~raw ~version =
-  let doc = Doc.create ~env ~uri ~raw ~version in
+let create ~token ~env ~uri ~raw ~version =
+  let doc = Doc.create ~token ~env ~uri ~raw ~version in
   Handle.create ~uri ~doc;
   Check.schedule ~uri
 
@@ -254,7 +259,7 @@ let sane_coq_version =
 (* Can't wait for the day this goes away *)
 let tainted = ref false
 
-let create ~io ~env ~uri ~raw ~version =
+let create ~io ~token ~env ~uri ~raw ~version =
   if !tainted && not sane_coq_version then (
     (* Error due to Coq bug *)
     let message =
@@ -271,16 +276,16 @@ let create ~io ~env ~uri ~raw ~version =
     Check.schedule ~uri)
   else (
     tainted := true;
-    create ~env ~uri ~raw ~version)
+    create ~token ~env ~uri ~raw ~version)
 
-let change ~io:_ ~(doc : Doc.t) ~version ~raw =
+let change ~io:_ ~token ~(doc : Doc.t) ~version ~raw =
   let uri = doc.uri in
   Io.Log.trace "bump file"
     (Lang.LUri.File.to_string_uri uri ^ " / version: " ^ string_of_int version);
   let tb = Unix.gettimeofday () in
   (* The discrepancy here will be solved once we remove the [Protect.*.t] types
      from `doc.mli` *)
-  let doc = Doc.bump_version ~version ~raw doc in
+  let doc = Doc.bump_version ~token ~version ~raw doc in
   let diff = Unix.gettimeofday () -. tb in
   Io.Log.trace "bump file took" (Format.asprintf "%f" diff);
   (* Just in case for the future, we update the document before requesting it to
@@ -289,14 +294,14 @@ let change ~io:_ ~(doc : Doc.t) ~version ~raw =
   Check.schedule ~uri;
   invalid
 
-let change ~io ~uri ~version ~raw =
+let change ~io ~token ~uri ~version ~raw =
   match Handle.find_opt ~uri with
   | None ->
     Io.Log.trace "DocHandle.find"
       ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
     Int.Set.empty
   | Some { doc; _ } ->
-    if version > doc.version then change ~io ~doc ~version ~raw
+    if version > doc.version then change ~io ~token ~doc ~version ~raw
     else
       (* That's a weird case, get got changes without a version bump? Do nothing
          for now *)

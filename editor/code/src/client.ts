@@ -19,6 +19,7 @@ import {
 import {
   BaseLanguageClient,
   LanguageClientOptions,
+  NotificationType,
   RequestType,
   RevealOutputChannelOn,
   VersionedTextDocumentIdentifier,
@@ -259,6 +260,12 @@ export function activateCoqLSP(
     client.sendRequest(docReq, params).then((fd) => console.log(fd));
   };
 
+  const trimNot = new NotificationType<{}>("coq/trimCaches");
+
+  const cacheTrim = () => {
+    client.sendNotification(trimNot, {});
+  };
+
   const saveReq = new RequestType<FlecheDocumentParams, void, void>(
     "coq/saveVo"
   );
@@ -325,6 +332,7 @@ export function activateCoqLSP(
 
   coqCommand("restart", restart);
   coqCommand("toggle", toggle);
+  coqCommand("trim", cacheTrim);
 
   coqEditorCommand("goals", goals);
   coqEditorCommand("document", getDocument);

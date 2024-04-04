@@ -15,7 +15,7 @@ let to_completed = function
   | Stopped range -> { status = `Stopped; range }
   | Failed range | FailedPermanent range -> { status = `Failed; range }
 
-let request ~doc =
+let request ~token:_ ~doc =
   let { Fleche.Doc.nodes; completed; _ } = doc in
   let spans = List.map to_span nodes in
   let completed = to_completed completed in

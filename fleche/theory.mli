@@ -19,12 +19,14 @@ module Check : sig
   (** Check pending documents, return [None] if there is none pending, or
       [Some rqs] the list of requests ready to execute after the check. Sends
       progress and diagnostics notifications using output function [ofn]. *)
-  val maybe_check : io:Io.CallBack.t -> (Int.Set.t * Doc.t) option
+  val maybe_check :
+    io:Io.CallBack.t -> token:Coq.Limits.Token.t -> (Int.Set.t * Doc.t) option
 end
 
 (** Create a document inside a theory *)
 val create :
      io:Io.CallBack.t
+  -> token:Coq.Limits.Token.t
   -> env:Doc.Env.t
   -> uri:Lang.LUri.File.t
   -> raw:string
@@ -34,6 +36,7 @@ val create :
 (** Update a document inside a theory, returns the list of not valid requests *)
 val change :
      io:Io.CallBack.t
+  -> token:Coq.Limits.Token.t
   -> uri:Lang.LUri.File.t
   -> version:int
   -> raw:string
@@ -74,7 +77,7 @@ end
 (* Experimental plugin API, not stable yet *)
 module Register : sig
   module Completed : sig
-    type t = io:Io.CallBack.t -> doc:Doc.t -> unit
+    type t = io:Io.CallBack.t -> token:Coq.Limits.Token.t -> doc:Doc.t -> unit
   end
 
   val add : Completed.t -> unit

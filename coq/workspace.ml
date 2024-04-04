@@ -10,8 +10,8 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2016-2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+ *)
+(* Copyright 2019-2024 Inria           -- Dual License LGPL 2.1 / GPL3+ *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
@@ -351,9 +351,9 @@ let guess ~debug ~cmdline ~dir () =
     workspace_from_coqproject ~cmdline ~debug cp_file
   else workspace_from_cmdline ~debug ~cmdline
 
-let guess ~debug ~cmdline ~dir =
+let guess ~token ~debug ~cmdline ~dir =
   let { Protect.E.r; feedback } =
-    Protect.eval ~f:(guess ~debug ~cmdline ~dir) ()
+    Protect.eval ~token ~f:(guess ~debug ~cmdline ~dir) ()
   in
   ignore feedback;
   match r with

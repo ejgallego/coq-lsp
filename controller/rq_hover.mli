@@ -12,10 +12,18 @@ open Fleche
 module Handler : sig
   (** Returns [Some markdown] if there is some hover to match *)
   type 'node h_node =
-    contents:Contents.t -> point:int * int -> node:'node -> string option
+       token:Coq.Limits.Token.t
+    -> contents:Contents.t
+    -> point:int * int
+    -> node:'node
+    -> string option
 
   type h_doc =
-    doc:Doc.t -> point:int * int -> node:Doc.Node.t option -> string option
+       token:Coq.Limits.Token.t
+    -> doc:Doc.t
+    -> point:int * int
+    -> node:Doc.Node.t option
+    -> string option
 
   (** Many use cases could be grouped into a hook that would pass an
       [Identifier_context.] object, containing the object, its location,

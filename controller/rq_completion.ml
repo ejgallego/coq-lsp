@@ -91,7 +91,7 @@ let get_char_at_point ~(doc : Fleche.Doc.t) ~point =
     None
 
 (* point is a utf char! *)
-let completion ~doc ~point =
+let completion ~token:_ ~doc ~point =
   (* Instead of get_char_at_point we should have a CompletionContext.t, to be
      addressed in further completion PRs *)
   (match get_char_at_point ~doc ~point with
