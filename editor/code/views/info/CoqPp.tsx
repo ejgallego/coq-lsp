@@ -1,13 +1,14 @@
-import { PpString } from "../../lib/types";
+import { PpString, BoxString } from "../../lib/types";
 import { FormatPrettyPrint } from "../../lib/format-pprint/js/main";
 
 import "./media/coqpp.css";
+import "./media/boxmodel.css";
 
 export function CoqPp({
   content,
   inline,
 }: {
-  content: PpString;
+  content: BoxString;
   inline: boolean;
 }) {
   if (typeof content == "string") {
@@ -15,6 +16,26 @@ export function CoqPp({
       return <code style={{ whiteSpace: "pre" }}>{content}</code>;
     } else {
       return <pre className="coqpp">{content}</pre>;
+    }
+  } else if (content[0] == "box") {
+    let html = content[1];
+    if (inline) {
+      return (
+        <div
+          style={{ display: "inline" }}
+          dangerouslySetInnerHTML={{
+            __html: html,
+          }}
+        ></div>
+      );
+    } else {
+      return (
+        <div
+          dangerouslySetInnerHTML={{
+            __html: html,
+          }}
+        ></div>
+      );
     }
   } else {
     // https://reactjs.org/docs/integrating-with-other-libraries.html

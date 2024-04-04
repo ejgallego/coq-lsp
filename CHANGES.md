@@ -50,6 +50,9 @@ unreleased
    #1020)
  - [lsp] [didOpen] `languageId` now takes priority over uri extension
    in LSP `didOpen`. (@ejgallego, #1021, fixes #1005)
+ - [coq] incorporate experimental `coq-layout-engine` printer, both in
+   client and server parts (@ejgallego, #668, see also #72 and
+   https://github.com/jscoq/jscoq/pull/282 )
 
 # coq-lsp 0.2.3: Barrage
 ------------------------

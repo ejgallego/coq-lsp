@@ -26,7 +26,7 @@ module Stdlib = Lsp.JStdlib
 module Result = Stdlib.Result
 
 module Goals = struct
-  type t = string Lsp.JCoq.Goals.reified_pp option [@@deriving yojson]
+  type t = (string, string) Lsp.JCoq.Goals.reified option [@@deriving yojson]
 end
 
 module Ast = struct
