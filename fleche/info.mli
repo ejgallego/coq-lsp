@@ -62,10 +62,18 @@ module Goals : sig
        Coq.Goals.t
        option
 
+  type 'a printer =
+    token:Coq.Limits.Token.t -> Environ.env -> Evd.evar_map -> EConstr.t -> 'a
+
+  val to_pp : Pp.t printer
+
   val goals :
        token:Coq.Limits.Token.t
+    -> pr:'a printer
     -> st:Coq.State.t
-    -> (Pp.t Coq.Goals.reified_pp option, Loc.t) Coq.Protect.E.t
+    -> ( ('a Coq.Goals.Reified_goal.t, Pp.t) Coq.Goals.t option
+       , Loc.t )
+       Coq.Protect.E.t
 
   val program : st:Coq.State.t -> Declare.OblState.View.t Names.Id.Map.t
 end

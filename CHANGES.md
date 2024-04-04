@@ -45,6 +45,9 @@
  - [ci] [deps] Remove support for OCaml 4.12 and 4.13, following
    upstream's coq/coq#20576 Note that these compiler versions have
    been unsupported for a long time, please upgrade (@ejgallego, #951)
+ - [coq] incorporate experimental `coq-layout-engine` printer, both in
+   client and server parts (@ejgallego, #668, see also #72 and
+   https://github.com/jscoq/jscoq/pull/282 )
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
