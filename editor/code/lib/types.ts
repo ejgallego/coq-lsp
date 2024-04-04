@@ -15,12 +15,12 @@ export interface Goal<Pp> {
   hyps: Hyp<Pp>[];
 }
 
-export interface GoalConfig<Pp> {
-  goals: Goal<Pp>[];
-  stack: [Goal<Pp>[], Goal<Pp>[]][];
+export interface GoalConfig<G, Pp> {
+  goals: Goal<G>[];
+  stack: [Goal<G>[], Goal<G>[]][];
   bullet?: Pp;
-  shelf: Goal<Pp>[];
-  given_up: Goal<Pp>[];
+  shelf: Goal<G>[];
+  given_up: Goal<G>[];
 }
 
 export interface Message<Pp> {
@@ -57,11 +57,11 @@ export interface OblsView {
 
 export type ProgramInfo = [Id, OblsView][];
 
-export interface GoalAnswer<Pp> {
+export interface GoalAnswer<Goals, Pp> {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
   range?: Range;
-  goals?: GoalConfig<Pp>;
+  goals?: GoalConfig<Goals, Pp>;
   program?: ProgramInfo;
   messages: Pp[] | Message<Pp>[];
   error?: Pp;
@@ -70,7 +70,7 @@ export interface GoalAnswer<Pp> {
 export interface GoalRequest {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
-  pp_format?: "Pp" | "Str";
+  pp_format?: "Box" | "Pp" | "Str";
   pretac?: string;
   command?: string;
   mode?: "Prev" | "After";
@@ -88,10 +88,14 @@ export type Pp =
 
 export type PpString = Pp | string;
 
+export type Box = ["box", string];
+
+export type BoxString = Box | Pp | string;
+
 export interface FlecheDocumentParams {
   textDocument: VersionedTextDocumentIdentifier;
   ast?: boolean;
-  goals?: "Pp" | "Str";
+  goals?: "Box" | "Pp" | "Str";
 }
 
 // Status of the document, Yes if fully checked, range contains the last seen lexical token
@@ -103,14 +107,14 @@ export interface CompletionStatus {
 // Implementation-specific span information, `range` is assured, the
 // other parameters will be present when requested in the call For
 // goals, we use the printing mode specified at initalization time
-export interface SpanInfo<Pp> {
+export interface SpanInfo<Goals, Pp> {
   range: Range;
   ast?: any;
-  goals?: GoalAnswer<Pp>;
+  goals?: GoalAnswer<Goals, Pp>;
 }
 
-export interface FlecheDocument<Pp> {
-  spans: SpanInfo<Pp>[];
+export interface FlecheDocument<Goals, Pp> {
+  spans: SpanInfo<Goals, Pp>[];
   completed: CompletionStatus;
 }
 
@@ -143,7 +147,7 @@ export interface DocumentPerfParams<R> {
 // View messaging interfaces; should go on their own file
 export interface RenderGoals {
   method: "renderGoals";
-  params: GoalAnswer<PpString>;
+  params: GoalAnswer<BoxString, PpString>;
 }
 
 export interface WaitingForInfo {

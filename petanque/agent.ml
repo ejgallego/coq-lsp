@@ -239,7 +239,9 @@ let goals ~token ~st =
     (* XXX: Fixme, take feedback into account *)
     fun _feedback -> Option.map (Coq.Goals.map ~f ~g) goals
   in
-  Coq.Protect.E.map ~f (Fleche.Info.Goals.goals ~token ~st) |> protect_to_result
+  let pr = Fleche.Info.Goals.to_pp in
+  Coq.Protect.E.map ~f (Fleche.Info.Goals.goals ~token ~pr ~st)
+  |> protect_to_result
 
 module Premise = struct
   module Info = struct

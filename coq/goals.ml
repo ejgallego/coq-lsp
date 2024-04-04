@@ -59,7 +59,7 @@ let map ~f ~g { goals; stack; bullet; shelf; given_up } =
   let given_up = List.map f given_up in
   { goals; stack; bullet; shelf; given_up }
 
-type 'pp reified_pp = ('pp Reified_goal.t, 'pp) t
+type ('goals, 'pp) reified = ('goals Reified_goal.t, 'pp) t
 
 (** XXX: Do we need to perform evar normalization? *)
 

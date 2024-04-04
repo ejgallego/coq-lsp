@@ -67,18 +67,18 @@ export enum ShowGoalsOnCursorChange {
 
 export interface CoqLspClientConfig {
   show_goals_on: ShowGoalsOnCursorChange;
-  pp_format: "Pp" | "Str";
+  pp_format: "Str" | "Pp" | "Box";
   check_on_scroll: boolean;
 }
 
-function pp_type_to_pp_format(pp_type: 0 | 1 | 2): "Pp" | "Str" {
+function pp_type_to_pp_format(pp_type: 0 | 1 | 2): "Str" | "Pp" | "Box" {
   switch (pp_type) {
     case 0:
       return "Str";
     case 1:
       return "Pp";
     case 2:
-      return "Pp";
+      return "Box";
   }
 }
 
