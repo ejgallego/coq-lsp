@@ -20,14 +20,6 @@ Compile normally, even with errors, we exit 0:
   $ cat Demo.diags
   {
     "range": {
-      "start": { "line": 8, "character": 0 },
-      "end": { "line": 8, "character": 4 }
-    },
-    "severity": 4,
-    "message": "add_0_r is defined"
-  }
-  {
-    "range": {
       "start": { "line": 11, "character": 8 },
       "end": { "line": 11, "character": 15 }
     },

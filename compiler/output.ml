@@ -56,16 +56,18 @@ let set_callbacks (display : Args.Display.t) =
   Fleche.Io.CallBack.set cb;
   cb
 
-let set_config ~perfData =
+let set_config ~perfData ~coq_diags_level =
+  let show_coq_info_messages = coq_diags_level > 1 in
+  let show_notices_as_diagnostics = coq_diags_level > 0 in
   Fleche.Config.(
     v :=
       { !v with
         send_perf_data = perfData
       ; eager_diagnostics = false
-      ; show_coq_info_messages = true
-      ; show_notices_as_diagnostics = true
+      ; show_coq_info_messages
+      ; show_notices_as_diagnostics
       })
 
-let init display ~perfData =
-  set_config ~perfData;
+let init ~display ~coq_diags_level ~perfData =
+  set_config ~perfData ~coq_diags_level;
   set_callbacks display
