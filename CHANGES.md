@@ -70,6 +70,11 @@
  - new VSCode commands to allow to move one sentence backwards /
    forward, this is particularly useful when combined with lazy
    checking mode (@ejgallego, #671, fixes #263, fixes #580)
+ - change diagnostic `extra` field to `data`, so we now conform to the
+   LSP spec, include the data only when the `send_diags_extra_data`
+   server-side option is enabled (@ejgallego, #670)
+ - include range of full sentence in error diagnostic extra data
+   (@ejgallego, #670 , thanks to @driverag22 for the idea, cc: #663).
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

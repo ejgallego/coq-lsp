@@ -49,6 +49,9 @@ type t =
         (** Verbosity, 1 = reduced, 2 = default. As of today reduced will
             disable all logging, and the diagnostics and perf_data notification *)
   ; check_only_on_request : bool [@default false]
+        (** Experimental setting to check document lazily *)
+  ; send_diags_extra_data : bool [@default false]
+        (** Send extra diagnostic data on the `data` diagnostic field. *)
   }
 
 let default =
@@ -71,6 +74,7 @@ let default =
   ; send_perf_data = true
   ; send_diags = true
   ; check_only_on_request = false
+  ; send_diags_extra_data = false
   }
 
 let v = ref default

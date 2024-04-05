@@ -72,6 +72,18 @@ to determine the content type. Supported extensions are:
 As of today, `coq-lsp` implements two extensions to the LSP spec. Note
 that none of them are stable yet:
 
+### Extra diagnostics data
+
+This is enabled if the server-side option `send_diags_extra_data` is
+set to `true`. In this case, some diagnostics may come with extra data
+in the optional `data` field.
+
+This field is experimental, and it can change without warning. As of
+today we offer two kinds of extra information on errors:
+
+- range of the full sentence that displayed the error,
+- if the error was on a Require, information about the library that failed.
+
 ### Goal Display
 
 In order to display proof goals and information at point, `coq-lsp` supports the `proof/goals` request, parameters are:
