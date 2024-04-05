@@ -37,6 +37,15 @@ end
 module Diagnostic = struct
   module Libnames = Serlib.Ser_libnames
 
+  module Data = struct
+    module Lang = struct
+      module Range = Range
+      module Diagnostic = Lang.Diagnostic
+    end
+
+    type t = [%import: Lang.Diagnostic.Data.t] [@@deriving yojson]
+  end
+
   (* LSP Ranges, a bit different from Fleche's ranges as points don't include
      offsets *)
   module Point = struct
@@ -69,14 +78,15 @@ module Diagnostic = struct
     { range : Range.t
     ; severity : int
     ; message : string
+    ; data : Data.t list option [@default None]
     }
   [@@deriving yojson]
 
-  let to_yojson { Lang.Diagnostic.range; severity; message; extra = _ } =
+  let to_yojson { Lang.Diagnostic.range; severity; message; data } =
     let range = Range.conv range in
     let severity = Lang.Diagnostic.Severity.to_int severity in
     let message = Pp.to_string message in
-    _t_to_yojson { range; severity; message }
+    _t_to_yojson { range; severity; message; data }
 end
 
 let mk_diagnostics ~uri ~version ld : Yojson.Safe.t =
