@@ -67,6 +67,9 @@
    #513)
  - allow more than one input position in `selectionRange` LSP call
    (@ejgallego, #667, fixes #663)
+ - new VSCode commands to allow to move one sentence backwards /
+   forward, this is particularly useful when combined with lazy
+   checking mode (@ejgallego, #671, fixes #263, fixes #580)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
