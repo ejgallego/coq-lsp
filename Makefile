@@ -46,7 +46,7 @@ build-all: coq_boot
 	dune build $(DUNEOPT) @all
 
 vendor/coq:
-	$(error Submodules not initialized, plese do "make submodules-init")
+	$(error Submodules not initialized, please do "make submodules-init")
 
 # We set -libdir due to a Coq bug on win32, see
 # https://github.com/coq/coq/pull/17289 , this can be removed once we
