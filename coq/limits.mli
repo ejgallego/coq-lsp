@@ -24,3 +24,5 @@ type backend =
 
 (** *Must* be called *only* once *)
 val select : backend -> unit
+
+val create_atomic : unit -> Token.t

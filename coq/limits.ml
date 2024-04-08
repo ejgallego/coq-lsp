@@ -61,6 +61,7 @@ module Token = struct
   type t =
     | C of Coq.Token.t
     | M of Mp.Token.t
+    | A (* Atomic operation *)
 
   let create () =
     let module M = (val !backend) in
@@ -71,11 +72,15 @@ module Token = struct
   let set = function
     | C token -> Coq.Token.set token
     | M token -> Mp.Token.set token
+    | A -> ()
 
   let is_set = function
     | C token -> Coq.Token.is_set token
     | M token -> Mp.Token.is_set token
+    | A -> false
 end
+
+let create_atomic () = Token.A
 
 let start () =
   let module M = (val !backend) in
@@ -86,6 +91,9 @@ let limit ~token ~f x =
   match token with
   | Token.C token -> Coq.limit ~token ~f x
   | Token.M token -> Mp.limit ~token ~f x
+  | Token.A ->
+    let () = Control.interrupt := false in
+    Ok (f x)
 
 let name = "select backend"
 let available = true
