@@ -4,8 +4,9 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module Extra = struct
+module Data = struct
   type t =
+    | SentenceRange of Range.t
     | FailedRequire of
         { prefix : Libnames.qualid option
         ; refs : Libnames.qualid list
@@ -26,7 +27,7 @@ type t =
   { range : Range.t
   ; severity : Severity.t
   ; message : Pp.t
-  ; extra : Extra.t list option
+  ; data : Data.t list option [@default None]
   }
 
 let is_error { severity; _ } = severity = 1

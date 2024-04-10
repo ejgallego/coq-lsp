@@ -306,7 +306,16 @@ let do_position_request ~postpone ~params ~handler =
   Rq.Action.Data
     (Request.Data.PosRequest { uri; handler; point; version; postpone })
 
-(* For now we only pick the first item *)
+(* XXX Duplicate with theory.ml; inverse comparsion so larger points come
+   first *)
+let compare p1 p2 =
+  let x1, y1 = p1 in
+  let x2, y2 = p2 in
+  let xres = Int.compare x1 x2 in
+  if xres = 0 then -Int.compare y1 y2 else -xres
+
+(* A little bit hacky, but selectionRange is the only request that needs this...
+   so we will survive *)
 let do_position_list_request ~postpone ~params ~handler =
   let uri, version = Helpers.get_uri_oversion params in
   let points = Helpers.get_position_array params in
@@ -315,7 +324,9 @@ let do_position_list_request ~postpone ~params ~handler =
     let point, handler = ((0, 0), Request.empty) in
     Rq.Action.Data
       (Request.Data.PosRequest { uri; handler; point; version; postpone })
-  | point :: _ ->
+  | points ->
+    let handler = handler ~points in
+    let point = List.hd (List.sort compare points) in
     Rq.Action.Data
       (Request.Data.PosRequest { uri; handler; point; version; postpone })
 

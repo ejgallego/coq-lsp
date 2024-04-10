@@ -10,10 +10,14 @@ import { Range } from "vscode-languageserver-types";
 import { DocumentPerfParams } from "../../lib/types";
 
 const vscode: WebviewApi<DocumentPerfParams> = acquireVsCodeApi();
-let init: DocumentPerfParams = vscode.getState() || {
+
+let empty: DocumentPerfParams = {
+  textDocument: { uri: "", version: 0 },
   summary: "No Data Yet",
   timings: [],
 };
+
+let init = vscode.getState() || empty;
 
 interface CoqMessageEvent extends MessageEvent {}
 
@@ -67,6 +71,10 @@ function App() {
         vscode.setState(event.data.params);
         setPerfData(event.data.params);
         break;
+      case "reset":
+        vscode.setState(empty);
+        setPerfData(empty);
+        break;
       default:
         console.log("unknown method", event.data);
         break;
@@ -79,7 +87,8 @@ function App() {
 
   return (
     <main>
-      <pre>{perfData.summary}</pre>
+      <pre>uri: {perfData.textDocument.uri}</pre>
+      <pre>summary: {perfData.summary}</pre>
       <VSCodeDataGrid aria-label="Timing Information">
         <VSCodeDataGridRow key={0} rowType="sticky-header">
           <>

@@ -8,8 +8,10 @@ let replace_test_path exp message =
   let home_re = Str.regexp (exp ^ ".*$") in
   Str.global_replace home_re (exp ^ "[TEST_PATH]") message
 
+let fcc_test = Sys.getenv_opt "FCC_TEST"
+
 let sanitize_paths message =
-  match Sys.getenv_opt "FCC_TEST" with
+  match fcc_test with
   | None -> message
   | Some _ ->
     message
@@ -30,8 +32,9 @@ let plugin_init = List.iter load_plugin
 
 let go args =
   let { Args.cmdline; roots; display; debug; files; plugins } = args in
-  (* Initialize event callbacks *)
-  let io = Output.init display in
+  (* Initialize event callbacks, in testing don't do perfData *)
+  let perfData = Option.is_empty fcc_test in
+  let io = Output.init display ~perfData in
   (* Initialize Coq *)
   let debug = debug || Fleche.Debug.backtraces || !Fleche.Config.v.debug in
   let root_state = coq_init ~debug in

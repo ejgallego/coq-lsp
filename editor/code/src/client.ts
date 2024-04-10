@@ -12,7 +12,6 @@ import {
   ThemeColor,
   WorkspaceConfiguration,
   Disposable,
-  DocumentSelector,
   languages,
 } from "vscode";
 
@@ -40,6 +39,7 @@ import {
 import { InfoPanel, goalReq } from "./goals";
 import { FileProgressManager } from "./progress";
 import { coqPerfData, PerfDataView } from "./perf";
+import { sentenceNext, sentenceBack } from "./edit";
 
 let config: CoqLspClientConfig;
 let client: BaseLanguageClient;
@@ -337,6 +337,9 @@ export function activateCoqLSP(
   coqEditorCommand("goals", goals);
   coqEditorCommand("document", getDocument);
   coqEditorCommand("save", saveDocument);
+
+  coqEditorCommand("sentenceNext", sentenceNext);
+  coqEditorCommand("sentenceBack", sentenceBack);
 
   createEnableButton();
 
