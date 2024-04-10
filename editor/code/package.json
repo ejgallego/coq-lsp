@@ -105,6 +105,14 @@
       {
         "command": "coq-lsp.trim",
         "title": "Coq LSP: Request the server to trim caches and compact memory (useful to try reduce memory comsumption)"
+      },
+      {
+        "command": "coq-lsp.sentenceNext",
+        "title": "Coq LSP: try to jump to next Coq sentence"
+      },
+      {
+        "command": "coq-lsp.sentenceBack",
+        "title": "Coq LSP: try to jump to previous Coq sentence"
       }
     ],
     "keybindings": [
@@ -157,6 +165,11 @@
             "type": "number",
             "default": 150,
             "description": "Maximum number of errors per file, after that, coq-lsp will stop checking the file."
+          },
+          "coq-lsp.send_diags_extra_data": {
+            "type": "boolean",
+            "default": false,
+            "description": "Send extra diagnostics data, usually on error"
           }
         }
       },

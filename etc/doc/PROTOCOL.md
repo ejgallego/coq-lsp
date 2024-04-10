@@ -45,7 +45,7 @@ If a feature doesn't appear here it usually means it is not planned in the short
 | `textDocument/publishDiagnostics`     | Yes     |                                                            |
 | `textDocument/diagnostic`             | No      | Planned, issue #49                                         |
 | `textDocument/codeAction`             | No      | Planned                                                    |
-| `textDocument/selectionRange`         | Partial | We only take into account the first selection; no parents  |
+| `textDocument/selectionRange`         | Partial | Selection for a point is its span; no parents              |
 |---------------------------------------|---------|------------------------------------------------------------|
 | `workspace/workspaceFolders`          | Yes     | Each folder should have a `_CoqProject` file at the root.  |
 | `workspace/didChangeWorkspaceFolders` | Yes     |                                                            |
@@ -71,6 +71,18 @@ to determine the content type. Supported extensions are:
 
 As of today, `coq-lsp` implements two extensions to the LSP spec. Note
 that none of them are stable yet:
+
+### Extra diagnostics data
+
+This is enabled if the server-side option `send_diags_extra_data` is
+set to `true`. In this case, some diagnostics may come with extra data
+in the optional `data` field.
+
+This field is experimental, and it can change without warning. As of
+today we offer two kinds of extra information on errors:
+
+- range of the full sentence that displayed the error,
+- if the error was on a Require, information about the library that failed.
 
 ### Goal Display
 

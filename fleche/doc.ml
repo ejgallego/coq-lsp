@@ -132,7 +132,7 @@ module Diags : sig
 
   (** Build simple diagnostic *)
   val make :
-       ?extra:Lang.Diagnostic.Extra.t list
+       ?data:Lang.Diagnostic.Data.t list
     -> Lang.Range.t
     -> Lang.Diagnostic.Severity.t
     -> Pp.t
@@ -140,7 +140,11 @@ module Diags : sig
 
   (** Build advanced diagnostic with AST analysis *)
   val error :
-    range:Lang.Range.t -> msg:Pp.t -> ast:Node.Ast.t -> Lang.Diagnostic.t
+       lines:string array
+    -> range:Lang.Range.t
+    -> msg:Pp.t
+    -> ast:Node.Ast.t
+    -> Lang.Diagnostic.t
 
   (** [of_messages drange msgs] process feedback messages, and convert some to
       diagnostics based on user-config. Default range [drange] is used for
@@ -152,20 +156,30 @@ module Diags : sig
 end = struct
   let err = Lang.Diagnostic.Severity.error
 
-  let make ?extra range severity message =
-    Lang.Diagnostic.{ range; severity; message; extra }
+  let make ?data range severity message =
+    Lang.Diagnostic.{ range; severity; message; data }
 
   (* ast-dependent error diagnostic generation *)
-  let extra_diagnostics_of_ast ast =
+  let extra_diagnostics_of_ast ~lines ast =
+    let stm_range = ast.Node.Ast.v |> Coq.Ast.loc |> Option.get in
+    let stm_range = Coq.Utils.to_range ~lines stm_range in
+    let stm_range = Lang.Diagnostic.Data.SentenceRange stm_range in
     match Coq.Ast.Require.extract ast.Node.Ast.v with
     | Some { Coq.Ast.Require.from; mods; _ } ->
       let refs = List.map fst mods in
-      Some [ Lang.Diagnostic.Extra.FailedRequire { prefix = from; refs } ]
-    | _ -> None
+      Some
+        [ stm_range
+        ; Lang.Diagnostic.Data.FailedRequire { prefix = from; refs }
+        ]
+    | _ -> Some [ stm_range ]
 
-  let error ~range ~msg ~ast =
-    let extra = extra_diagnostics_of_ast ast in
-    make ?extra range Lang.Diagnostic.Severity.error msg
+  let extra_diagnostics_of_ast ~lines ast =
+    if !Config.v.send_diags_extra_data then extra_diagnostics_of_ast ~lines ast
+    else None
+
+  let error ~lines ~range ~msg ~ast =
+    let data = extra_diagnostics_of_ast ~lines ast in
+    make ?data range Lang.Diagnostic.Severity.error msg
 
   let of_feed ~drange (range, severity, message) =
     let range = Option.default drange range in
@@ -734,7 +748,7 @@ let strategy_of_coq_err ~node ~state ~last_tok = function
   | Coq.Protect.Error.Anomaly _ -> Stop (Failed last_tok, node)
   | User _ -> Continue { state; last_tok; node }
 
-let node_of_coq_result ~token ~doc ~range ~ast ~st ~parsing_diags
+let node_of_coq_result ~lines ~token ~doc ~range ~ast ~st ~parsing_diags
     ~parsing_feedback ~feedback ~info last_tok res =
   match res with
   | Ok state ->
@@ -746,7 +760,7 @@ let node_of_coq_result ~token ~doc ~range ~ast ~st ~parsing_diags
   | Error (Coq.Protect.Error.Anomaly (err_range, msg) as coq_err)
   | Error (User (err_range, msg) as coq_err) ->
     let err_range = Option.default range err_range in
-    let err_diags = [ Diags.error ~range:err_range ~msg ~ast ] in
+    let err_diags = [ Diags.error ~lines ~range:err_range ~msg ~ast ] in
     let contents, nodes = (doc.contents, doc.nodes) in
     let context =
       Recovery_context.make ~contents ~last_tok ~nodes ~ast:ast.v ()
@@ -803,8 +817,8 @@ let document_action ~token ~st ~parsing_diags ~parsing_feedback ~parsing_time
          this point then, hence the new last valid token last_tok_new *)
       let last_tok_new = Coq.Parsing.Parsable.loc doc_handle in
       let last_tok_new = Coq.Utils.to_range ~lines last_tok_new in
-      node_of_coq_result ~token ~doc ~range:ast_range ~ast ~st ~parsing_diags
-        ~parsing_feedback ~feedback ~info last_tok_new res)
+      node_of_coq_result ~lines ~token ~doc ~range:ast_range ~ast ~st
+        ~parsing_diags ~parsing_feedback ~feedback ~info last_tok_new res)
 
 module Target = struct
   type t =
@@ -837,6 +851,18 @@ let max_errors_node ~state ~range =
   unparseable_node ~range ~parsing_diags ~parsing_feedback:[] ~state
     ~parsing_time:0.0
 
+module Stop_cond = struct
+  type t =
+    | Target
+    | Max_errors
+    | Continue
+
+  let should_stop acc_errors last_tok target =
+    if acc_errors > !Config.v.max_errors then Max_errors
+    else if beyond_target last_tok target then Target
+    else Continue
+end
+
 (* main interpretation loop *)
 let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
   let rec stm doc st (last_tok : Lang.Range.t) acc_errors =
@@ -844,12 +870,13 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
     let doc = send_eager_diagnostics ~io ~uri ~version ~doc in
     report_progress ~io ~doc last_tok;
     if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
-    if acc_errors > !Config.v.max_errors then
+    match Stop_cond.should_stop acc_errors last_tok target with
+    | Max_errors ->
       let completed = Completion.Failed last_tok in
       let node = max_errors_node ~state:st ~range:last_tok in
       let doc = add_node ~node doc in
       set_completion ~completed doc
-    else if beyond_target last_tok target then
+    | Target ->
       let () = log_beyond_target last_tok target in
       (* We set to Completed.Yes when we have reached the EOI *)
       let completed =
@@ -858,7 +885,7 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
         else Completion.Stopped last_tok
       in
       set_completion ~completed doc
-    else
+    | Continue -> (
       (* Parsing *)
       let lines = doc.contents.lines in
       let action, parsing_diags, parsing_feedback, parsing_time =
@@ -879,7 +906,7 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
       | Continue { state; last_tok; node } ->
         let n_errors = CList.count Lang.Diagnostic.is_error node.Node.diags in
         let doc = add_node ~node doc in
-        stm doc state last_tok (acc_errors + n_errors)
+        stm doc state last_tok (acc_errors + n_errors))
   in
   (* Reporting of progress and diagnostics (if stopped or failed, if completed
      the doc manager will take care of it) *)
