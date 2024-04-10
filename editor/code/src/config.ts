@@ -1,4 +1,4 @@
-import { DocumentSelector, ExtensionContext, workspace } from "vscode";
+import { DocumentSelector } from "vscode";
 
 export interface CoqLspServerConfig {
   client_version: string;
@@ -48,14 +48,30 @@ export enum ShowGoalsOnCursorChange {
 
 export interface CoqLspClientConfig {
   show_goals_on: ShowGoalsOnCursorChange;
+  pp_format: "Pp" | "Str";
+}
+
+function pp_type_to_pp_format(pp_type: 0 | 1 | 2): "Pp" | "Str" {
+  switch (pp_type) {
+    case 0:
+      return "Str";
+    case 1:
+      return "Pp";
+    case 2:
+      return "Pp";
+  }
 }
 
 export namespace CoqLspClientConfig {
   export function create(wsConfig: any): CoqLspClientConfig {
-    let obj: CoqLspClientConfig = { show_goals_on: wsConfig.show_goals_on };
+    let obj: CoqLspClientConfig = {
+      show_goals_on: wsConfig.show_goals_on,
+      pp_format: pp_type_to_pp_format(wsConfig.pp_type),
+    };
     return obj;
   }
 }
+
 export const coqLSPDocumentSelector: DocumentSelector = [
   { language: "coq" },
   { language: "markdown", pattern: "**/*.mv" },
