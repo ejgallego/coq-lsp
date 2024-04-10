@@ -128,3 +128,11 @@ module DocumentPerfData = struct
     }
   [@@deriving yojson]
 end
+
+let mk_perf ~uri ~version perf =
+  let textDocument = { Doc.VersionedTextDocumentIdentifier.uri; version } in
+  let params =
+    let { Fleche.Perf.summary; timings } = perf in
+    DocumentPerfData.(to_yojson { textDocument; summary; timings })
+  in
+  Base.mk_notification ~method_:"$/coq/filePerfData" ~params

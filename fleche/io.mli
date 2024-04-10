@@ -22,6 +22,7 @@ module CallBack : sig
         uri:Lang.LUri.File.t -> version:int -> Lang.Diagnostic.t list -> unit
     ; fileProgress :
         uri:Lang.LUri.File.t -> version:int -> Progress.Info.t list -> unit
+    ; perfData : uri:Lang.LUri.File.t -> version:int -> Perf.t -> unit
     }
 
   val set : t -> unit
