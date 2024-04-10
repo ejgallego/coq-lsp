@@ -90,7 +90,11 @@ let info_of_id env sigma id =
         | IndRef ir -> info_of_ind env sigma ir
         | ConstructRef cr -> info_of_constructor env cr |> print_type env sigma)
         |> fun x -> Some x
-      | Abbrev kn -> Some (Notation (Prettyp.print_abbreviation (Library.indirect_accessor[@warning "-3"]) env sigma kn))
+      | Abbrev kn ->
+        Some
+          (Notation
+             (Prettyp.print_abbreviation
+                (Library.indirect_accessor [@warning "-3"]) env sigma kn))
     with _ -> None)
 
 let info_of_id ~st id =
