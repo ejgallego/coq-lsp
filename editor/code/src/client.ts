@@ -79,6 +79,14 @@ export function activateCoqLSP(
 ): CoqLspAPI {
   window.showInformationMessage("Coq LSP Extension: Going to activate!");
 
+  workspace.onDidChangeConfiguration((cfgChange) => {
+    if (cfgChange.affectsConfiguration("coq-lsp")) {
+      // Refactor to remove the duplicate call below
+      const wsConfig = workspace.getConfiguration("coq-lsp");
+      config = CoqLspClientConfig.create(wsConfig);
+    }
+  });
+
   function coqCommand(command: string, fn: () => void) {
     let disposable = commands.registerCommand("coq-lsp." + command, fn);
     context.subscriptions.push(disposable);
@@ -208,7 +216,13 @@ export function activateCoqLSP(
     let uri = editor.document.uri;
     let version = editor.document.version;
     let position = editor.selection.active;
-    infoPanel.updateFromServer(client, uri, version, position);
+    infoPanel.updateFromServer(
+      client,
+      uri,
+      version,
+      position,
+      config.pp_format
+    );
   };
 
   const goalsCall = (

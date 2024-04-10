@@ -134,21 +134,26 @@ export class InfoPanel {
     client: BaseLanguageClient,
     uri: Uri,
     version: number,
-    position: Position
+    position: Position,
+    pp_format: "Pp" | "Str"
   ) {
     let textDocument = VersionedTextDocumentIdentifier.create(
       uri.toString(),
       version
     );
-    // let pretac = "idtac.";
-    // let cursor: GoalRequest = { textDocument, position, pretac };
-    let cursor: GoalRequest = { textDocument, position };
+
+    // Example to test the `command` parameter
+    // let command = "idtac.";
+    // let cursor: GoalRequest = { textDocument, position, command };
+    let cursor: GoalRequest = { textDocument, position, pp_format };
+    this.sendGoalsRequest(client, cursor);
+
     let strCursor: GoalRequest = {
       textDocument,
       position,
       pp_format: "Str",
     };
-    this.sendGoalsRequest(client, cursor);
+
     let vizx = extensions.getExtension("inQWIRE.vizx");
     if (vizx?.isActive) {
       console.log("vizx active in updateFromServer");
