@@ -22,56 +22,6 @@ let fcc_main roots display debug plugins files coqlib coqcorelib ocamlpath
   Driver.go args
 
 (****************************************************************************)
-(* XXX: Common with coq-lsp.exe *)
-let coqlib =
-  let doc =
-    "Load Coq.Init.Prelude from $(docv); theories and user-contrib should live \
-     there."
-  in
-  Arg.(
-    value & opt string Coq_config.coqlib & info [ "coqlib" ] ~docv:"COQLIB" ~doc)
-
-let coqcorelib =
-  let doc = "Path to Coq plugin directories." in
-  Arg.(
-    value
-    & opt string (Filename.concat Coq_config.coqlib "../coq-core/")
-    & info [ "coqcorelib" ] ~docv:"COQCORELIB" ~doc)
-
-let ocamlpath =
-  let doc = "Path to OCaml's lib" in
-  Arg.(
-    value & opt (some string) None & info [ "ocamlpath" ] ~docv:"OCAMLPATH" ~doc)
-
-let coq_lp_conv ~implicit (unix_path, lp) =
-  { Loadpath.coq_path = Libnames.dirpath_of_string lp
-  ; unix_path
-  ; has_ml = true
-  ; implicit
-  ; recursive = true
-  }
-
-let rload_path : Loadpath.vo_path list Term.t =
-  let doc =
-    "Bind a logical loadpath LP to a directory DIR and implicitly open its \
-     namespace."
-  in
-  Term.(
-    const List.(map (coq_lp_conv ~implicit:true))
-    $ Arg.(
-        value
-        & opt_all (pair dir string) []
-        & info [ "R"; "rec-load-path" ] ~docv:"DIR,LP" ~doc))
-
-let load_path : Loadpath.vo_path list Term.t =
-  let doc = "Bind a logical loadpath LP to a directory DIR" in
-  Term.(
-    const List.(map (coq_lp_conv ~implicit:false))
-    $ Arg.(
-        value
-        & opt_all (pair dir string) []
-        & info [ "Q"; "load-path" ] ~docv:"DIR,LP" ~doc))
-(****************************************************************************)
 
 (* Specific to fcc *)
 let roots : string list Term.t =
@@ -88,10 +38,6 @@ let display : Args.Display.t Term.t =
     & opt (enum dparse) Args.Display.Normal
     & info [ "display" ] ~docv:"DISPLAY" ~doc)
 
-let debug : bool Term.t =
-  let doc = "Enable debug mode" in
-  Arg.(value & flag & info [ "debug" ] ~doc)
-
 let file : string list Term.t =
   let doc = "File(s) to compile" in
   Arg.(value & pos_all string [] & info [] ~docv:"FILES" ~doc)
@@ -99,18 +45,6 @@ let file : string list Term.t =
 let plugins : string list Term.t =
   let doc = "Compiler plugins to load" in
   Arg.(value & opt_all string [] & info [ "plugin" ] ~docv:"PLUGINS" ~doc)
-
-let rifrom : (string option * string) list Term.t =
-  let doc =
-    "FROM Require Import LIBRARY before creating the document, à la From Coq \
-     Require Import Prelude"
-  in
-  Term.(
-    const (List.map (fun (x, y) -> (Some x, y)))
-    $ Arg.(
-        value
-        & opt_all (pair string string) []
-        & info [ "rifrom"; "require-import-from" ] ~docv:"FROM,LIBRARY" ~doc))
 
 let no_vo : bool Term.t =
   let doc = "Don't generate .vo files at the end of compilation" in
@@ -127,9 +61,10 @@ let fcc_cmd : unit Cmd.t =
   in
   let version = Fleche.Version.server in
   let fcc_term =
+    let open Coq.Args in
     Term.(
       const fcc_main $ roots $ display $ debug $ plugins $ file $ coqlib
-      $ coqcorelib $ ocamlpath $ rload_path $ load_path $ rifrom $ no_vo)
+      $ coqcorelib $ ocamlpath $ rload_paths $ qload_paths $ ri_from $ no_vo)
   in
   Cmd.(v (Cmd.info "fcc" ~version ~doc ~man) fcc_term)
 
