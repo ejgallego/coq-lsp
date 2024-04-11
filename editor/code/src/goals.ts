@@ -6,6 +6,7 @@ import {
   ViewColumn,
   extensions,
   commands,
+  TextDocument,
 } from "vscode";
 import {
   BaseLanguageClient,
@@ -27,6 +28,7 @@ export const goalReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
 export class InfoPanel {
   private panel: WebviewPanel | null = null;
   private extensionUri: Uri;
+  private listeners: Array<(goals: GoalAnswer<String>) => void> = [];
 
   constructor(extensionUri: Uri) {
     this.extensionUri = extensionUri;
@@ -35,6 +37,17 @@ export class InfoPanel {
 
   dispose() {
     this.panel?.dispose();
+  }
+
+  registerObserver(fn: (goals: GoalAnswer<String>) => void) {
+    this.listeners.push(fn);
+  }
+
+  unregisterObserver(fn: (goals: GoalAnswer<String>) => void) {
+    let index = this.listeners.indexOf(fn);
+    if (index >= 0) {
+      this.listeners.splice(index, 1);
+    }
   }
 
   panelFactory() {
@@ -95,16 +108,6 @@ export class InfoPanel {
     this.postMessage({ method: "renderGoals", params: goals });
   }
 
-  requestVizxDisplay(goals: GoalAnswer<PpString>) {
-    console.log(goals);
-    commands.executeCommand("vizx.lspRender", goals);
-  }
-
-  requestVizCarDisplay(goals: GoalAnswer<PpString>) {
-    console.log(goals);
-    commands.executeCommand("vizcar.lspRender", goals);
-  }
-
   // notify the info panel that we found an error
   requestError(e: ErrorData) {
     this.postMessage({ method: "infoError", params: e });
@@ -120,7 +123,7 @@ export class InfoPanel {
   }
 
   // LSP Protocol extension for Goals
-  sendGoalsRequest(client: BaseLanguageClient, params: GoalRequest) {
+  updateInfoPanelForCursor(client: BaseLanguageClient, params: GoalRequest) {
     this.requestSent(params);
     client.sendRequest(goalReq, params).then(
       (goals) => this.requestDisplay(goals),
@@ -128,24 +131,19 @@ export class InfoPanel {
     );
   }
 
-  sendVizxRequest(client: BaseLanguageClient, params: GoalRequest) {
-    this.requestSent(params);
-    console.log(params.pp_format);
-    client.sendRequest(goalReq, params).then(
-      (goals) => this.requestVizxDisplay(goals),
-      (reason) => this.requestError(reason)
-    );
+  updateAPIClientForCursor(client: BaseLanguageClient, params: GoalRequest) {
+    if (this.listeners.length > 0) {
+      params.pp_format = "Str";
+      client.sendRequest(goalReq, params).then(
+        (goals) => {
+          let goals_fn = goals as GoalAnswer<String>;
+          this.listeners.forEach((fn) => fn(goals_fn));
+        },
+        // We should actually provide a better setup so we can pass the rejection of the promise to our clients, YMMV tho.
+        (reason) => this.requestError(reason)
+      );
+    }
   }
-
-  sendVizCarRequest(client: BaseLanguageClient, params: GoalRequest) {
-    this.requestSent(params);
-    console.log(params.pp_format);
-    client.sendRequest(goalReq, params).then(
-      (goals) => this.requestVizCarDisplay(goals),
-      (reason) => this.requestError(reason)
-    );
-  }
-
   updateFromServer(
     client: BaseLanguageClient,
     uri: Uri,
@@ -162,23 +160,7 @@ export class InfoPanel {
     // let command = "idtac.";
     // let cursor: GoalRequest = { textDocument, position, command };
     let cursor: GoalRequest = { textDocument, position, pp_format };
-    this.sendGoalsRequest(client, cursor);
-
-    let strCursor: GoalRequest = {
-      textDocument,
-      position,
-      pp_format: "Str",
-    };
-
-    let vizx = extensions.getExtension("inQWIRE.vizx");
-    if (vizx?.isActive) {
-      console.log("vizx active in updateFromServer");
-      this.sendVizxRequest(client, strCursor);
-    }
-    let vizcar = extensions.getExtension("inQWIRE.vizcar");
-    if (vizcar?.isActive) {
-      console.log("vizcar active in updateFromServer");
-      this.sendVizCarRequest(client, strCursor);
-    }
+    this.updateInfoPanelForCursor(client, cursor);
+    this.updateAPIClientForCursor(client, cursor);
   }
 }
