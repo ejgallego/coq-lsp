@@ -1,4 +1,4 @@
-import { DocumentSelector } from "vscode";
+import { TextDocumentFilter } from "vscode-languageclient";
 
 export interface CoqLspServerConfig {
   client_version: string;
@@ -72,7 +72,20 @@ export namespace CoqLspClientConfig {
   }
 }
 
-export const coqLSPDocumentSelector: DocumentSelector = [
-  { language: "coq" },
-  { language: "markdown", pattern: "**/*.mv" },
-];
+export namespace CoqSelector {
+  // All Coq files, regardless of the scheme.
+  export const all: TextDocumentFilter[] = [
+    { language: "coq" },
+    { language: "markdown", pattern: "**/*.mv" },
+  ];
+
+  // Local Coq files, suitable for interaction with a local server
+  export const local: TextDocumentFilter[] = all.map((selector) => {
+    return { ...selector, scheme: "file" };
+  });
+
+  // VSCode Live Share URIs
+  export const vsls: TextDocumentFilter[] = all.map((selector) => {
+    return { ...selector, scheme: "vsls" };
+  });
+}

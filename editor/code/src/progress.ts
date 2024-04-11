@@ -11,7 +11,7 @@ import {
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 import { BaseLanguageClient } from "vscode-languageclient";
-import { coqLSPDocumentSelector } from "./config";
+import { CoqSelector } from "./config";
 
 enum CoqFileProgressKind {
   Processing = 1,
@@ -71,7 +71,7 @@ export class FileProgressManager {
   });
   private cleanDecos() {
     for (const editor of window.visibleTextEditors) {
-      if (languages.match(coqLSPDocumentSelector, editor.document) > 0) {
+      if (languages.match(CoqSelector.all, editor.document) > 0) {
         editor.setDecorations(progressDecoration, []);
       }
     }
