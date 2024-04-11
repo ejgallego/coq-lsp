@@ -31,15 +31,12 @@ import {
   GoalAnswer,
   PpString,
 } from "../lib/types";
-import {
-  CoqLspClientConfig,
-  CoqLspServerConfig,
-  coqLSPDocumentSelector,
-} from "./config";
+import { CoqLspClientConfig, CoqLspServerConfig, CoqSelector } from "./config";
 import { InfoPanel, goalReq } from "./goals";
 import { FileProgressManager } from "./progress";
 import { coqPerfData, PerfDataView } from "./perf";
 import { sentenceNext, sentenceBack } from "./edit";
+import { text } from "stream/consumers";
 
 let config: CoqLspClientConfig;
 let client: BaseLanguageClient;
@@ -151,10 +148,7 @@ export function activateCoqLSP(
     );
 
     const clientOptions: LanguageClientOptions = {
-      documentSelector: [
-        { scheme: "file", language: "coq" },
-        { scheme: "file", language: "markdown", pattern: "**/*.mv" },
-      ],
+      documentSelector: CoqSelector.local,
       outputChannelName: "Coq LSP Server Events",
       revealOutputChannelOn: RevealOutputChannelOn.Info,
       initializationOptions,
@@ -229,8 +223,16 @@ export function activateCoqLSP(
     textEditor: TextEditor,
     callKind: TextEditorSelectionChangeKind | undefined
   ) => {
-    // Don't trigger the goals if the buffer is not owned by us
-    if (languages.match(coqLSPDocumentSelector, textEditor.document) < 1)
+    // Don't trigger the goals if the buffer is not a local Coq buffer
+    if (languages.match(CoqSelector.vsls, textEditor.document) > 0) {
+      // handle VSLS
+      let uri = textEditor.document.uri.toString();
+      let version = textEditor.document.version;
+      let position = textEditor.selection.active;
+      let textDocument = { uri, version };
+      infoPanel.notifyLackOfVSLS(textDocument, position);
+      return;
+    } else if (languages.match(CoqSelector.local, textEditor.document) < 1)
       return;
 
     const kind =

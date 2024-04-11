@@ -124,3 +124,31 @@ export interface DocumentPerfParams {
   summary: string;
   timings: SentencePerfParams[];
 }
+
+// View messaging interfaces; should go on their own file
+export interface RenderGoals {
+  method: "renderGoals";
+  params: GoalAnswer<PpString>;
+}
+
+export interface WaitingForInfo {
+  method: "waitingForInfo";
+  params: GoalRequest;
+}
+
+export interface ErrorData {
+  textDocument: VersionedTextDocumentIdentifier;
+  position: Position;
+  message: string;
+}
+
+export interface InfoError {
+  method: "infoError";
+  params: ErrorData;
+}
+
+export type CoqMessagePayload = RenderGoals | WaitingForInfo | InfoError;
+
+export interface CoqMessageEvent extends MessageEvent {
+  data: CoqMessagePayload;
+}

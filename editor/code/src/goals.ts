@@ -12,7 +12,13 @@ import {
   RequestType,
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
-import { GoalRequest, GoalAnswer, PpString } from "../lib/types";
+import {
+  GoalRequest,
+  GoalAnswer,
+  PpString,
+  CoqMessagePayload,
+  ErrorData,
+} from "../lib/types";
 
 export const goalReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
   "proof/goals"
@@ -74,18 +80,19 @@ export class InfoPanel {
       this.panelFactory();
     }
   }
-  postMessage(method: string, params: any) {
+  postMessage({ method, params }: CoqMessagePayload) {
     this.ensurePanel();
     this.panel?.webview.postMessage({ method, params });
   }
+
   // notify the display that we are waiting for info
   requestSent(cursor: GoalRequest) {
-    this.postMessage("waitingForInfo", cursor);
+    this.postMessage({ method: "waitingForInfo", params: cursor });
   }
 
   // notify the info panel that we have fresh goals to render
   requestDisplay(goals: GoalAnswer<PpString>) {
-    this.postMessage("renderGoals", goals);
+    this.postMessage({ method: "renderGoals", params: goals });
   }
 
   requestVizxDisplay(goals: GoalAnswer<PpString>) {
@@ -99,8 +106,17 @@ export class InfoPanel {
   }
 
   // notify the info panel that we found an error
-  requestError(e: any) {
-    this.postMessage("infoError", e);
+  requestError(e: ErrorData) {
+    this.postMessage({ method: "infoError", params: e });
+  }
+
+  notifyLackOfVSLS(
+    textDocument: VersionedTextDocumentIdentifier,
+    position: Position
+  ) {
+    let message =
+      "Support for Goal Display is not available (yet) under Visual Studio Live Share";
+    this.requestError({ textDocument, position, message });
   }
 
   // LSP Protocol extension for Goals
