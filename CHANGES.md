@@ -81,6 +81,9 @@
  - new public VSCode extension API so other extensions can perform
    actions when the user request the goals (@ejgallego, @bhaktishh,
    #672, fixes #538)
+ - Support Visual Studio Live Share URIs better (`vsls://`), in
+   particular don't try to display goals if the URI is VSLS one
+   (@ejgallego, #676)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
