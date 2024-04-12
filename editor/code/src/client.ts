@@ -36,7 +36,6 @@ import { InfoPanel, goalReq } from "./goals";
 import { FileProgressManager } from "./progress";
 import { coqPerfData, PerfDataView } from "./perf";
 import { sentenceNext, sentenceBack } from "./edit";
-import { text } from "stream/consumers";
 
 let config: CoqLspClientConfig;
 let client: BaseLanguageClient;
