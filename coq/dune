@@ -14,4 +14,7 @@
    (!memprof-limits -> limits_mp_impl.fake.ml))
   lang
   coq-core.vernac
-  coq-serapi.serlib))
+  coq-serapi.serlib
+  ; EJGA: This is due to Coq.Args, feel free to move to its own lib if
+  ; needed
+  cmdliner))

@@ -8,5 +8,5 @@ let simple_action ~io ~token:_ ~doc =
   in
   Io.Report.message ~io ~lvl ~message
 
-let main () = Theory.Register.add simple_action
+let main () = Theory.Register.Completed.add simple_action
 let () = main ()

@@ -31,11 +31,7 @@ import {
   GoalAnswer,
   PpString,
 } from "../lib/types";
-import {
-  CoqLspClientConfig,
-  CoqLspServerConfig,
-  coqLSPDocumentSelector,
-} from "./config";
+import { CoqLspClientConfig, CoqLspServerConfig, CoqSelector } from "./config";
 import { InfoPanel, goalReq } from "./goals";
 import { FileProgressManager } from "./progress";
 import { coqPerfData, PerfDataView } from "./perf";
@@ -68,9 +64,13 @@ export type ClientFactoryType = (
 export interface CoqLspAPI {
   /**
    * Query goals from Coq
-   * @param params goal request parameters
    */
   goalsRequest(params: GoalRequest): Promise<GoalAnswer<PpString>>;
+
+  /**
+   * Register callback on user-initiated goals request
+   */
+  onUserGoals(fn: (goals: GoalAnswer<String>) => void): Disposable;
 }
 
 export function activateCoqLSP(
@@ -78,6 +78,14 @@ export function activateCoqLSP(
   clientFactory: ClientFactoryType
 ): CoqLspAPI {
   window.showInformationMessage("Coq LSP Extension: Going to activate!");
+
+  workspace.onDidChangeConfiguration((cfgChange) => {
+    if (cfgChange.affectsConfiguration("coq-lsp")) {
+      // Refactor to remove the duplicate call below
+      const wsConfig = workspace.getConfiguration("coq-lsp");
+      config = CoqLspClientConfig.create(wsConfig);
+    }
+  });
 
   function coqCommand(command: string, fn: () => void) {
     let disposable = commands.registerCommand("coq-lsp." + command, fn);
@@ -143,10 +151,7 @@ export function activateCoqLSP(
     );
 
     const clientOptions: LanguageClientOptions = {
-      documentSelector: [
-        { scheme: "file", language: "coq" },
-        { scheme: "file", language: "markdown", pattern: "**/*.mv" },
-      ],
+      documentSelector: CoqSelector.local,
       outputChannelName: "Coq LSP Server Events",
       revealOutputChannelOn: RevealOutputChannelOn.Info,
       initializationOptions,
@@ -208,15 +213,29 @@ export function activateCoqLSP(
     let uri = editor.document.uri;
     let version = editor.document.version;
     let position = editor.selection.active;
-    infoPanel.updateFromServer(client, uri, version, position);
+    infoPanel.updateFromServer(
+      client,
+      uri,
+      version,
+      position,
+      config.pp_format
+    );
   };
 
   const goalsCall = (
     textEditor: TextEditor,
     callKind: TextEditorSelectionChangeKind | undefined
   ) => {
-    // Don't trigger the goals if the buffer is not owned by us
-    if (languages.match(coqLSPDocumentSelector, textEditor.document) < 1)
+    // Don't trigger the goals if the buffer is not a local Coq buffer
+    if (languages.match(CoqSelector.vsls, textEditor.document) > 0) {
+      // handle VSLS
+      let uri = textEditor.document.uri.toString();
+      let version = textEditor.document.version;
+      let position = textEditor.selection.active;
+      let textDocument = { uri, version };
+      infoPanel.notifyLackOfVSLS(textDocument, position);
+      return;
+    } else if (languages.match(CoqSelector.local, textEditor.document) < 1)
       return;
 
     const kind =
@@ -348,6 +367,10 @@ export function activateCoqLSP(
   return {
     goalsRequest: (params) => {
       return client.sendRequest(goalReq, params);
+    },
+    onUserGoals: (fn) => {
+      infoPanel.registerObserver(fn);
+      return new Disposable(() => infoPanel.unregisterObserver(fn));
     },
   };
 }
