@@ -7,5 +7,5 @@ let save_vo_file ~io:_ ~token ~doc =
   | { r = Completed (Error _); feedback = _ } -> ()
   | { r = Interrupted; feedback = _ } -> ()
 
-let main () = Theory.Register.add save_vo_file
+let main () = Theory.Register.Completed.add save_vo_file
 let () = main ()

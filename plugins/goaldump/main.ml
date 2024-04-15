@@ -96,5 +96,5 @@ let dump_ast ~io ~token ~(doc : Doc.t) =
   Io.Report.message ~io ~lvl ~message;
   ()
 
-let main () = Theory.Register.add dump_ast
+let main () = Theory.Register.Completed.add dump_ast
 let () = main ()

@@ -84,6 +84,9 @@
  - Support Visual Studio Live Share URIs better (`vsls://`), in
    particular don't try to display goals if the URI is VSLS one
    (@ejgallego, #676)
+ - New `InjectRequire` plugin API for plugins to be able to instrument
+   the default import list of files (@ejgallego @corwin-of-amber,
+   #679)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

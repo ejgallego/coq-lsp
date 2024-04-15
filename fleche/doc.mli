@@ -70,6 +70,8 @@ module Env : sig
 
   val make :
     init:Coq.State.t -> workspace:Coq.Workspace.t -> files:Coq.Files.t -> t
+
+  val inject_requires : extra_requires:Coq.Workspace.Require.t list -> t -> t
 end
 
 (** A Flèche document is basically a [node list], which is a crude form of a
