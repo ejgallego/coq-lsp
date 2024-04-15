@@ -48,19 +48,29 @@ end = struct
     CWarnings.set_flags (old_warn ^ "," ^ new_warn)
 end
 
+module Require = struct
+  type t =
+    { library : string
+    ; from : string option
+    ; flags : Vernacexpr.export_with_cats option
+    }
+end
+
 type t =
   { coqlib : string
   ; coqcorelib : string
   ; ocamlpath : string option
   ; vo_load_path : Loadpath.vo_path list
   ; ml_include_path : string list
-  ; require_libs :
-      (string * string option * Vernacexpr.export_with_cats option) list
+  ; require_libs : Require.t list
   ; flags : Flags.t
   ; warnings : Warning.t list
   ; kind : string
   ; debug : bool
   }
+
+let inject_requires ~extra_requires (ws : t) =
+  { ws with require_libs = ws.require_libs @ extra_requires }
 
 let hash = Hashtbl.hash
 let compare = Stdlib.compare
@@ -110,7 +120,9 @@ module CmdLine = struct
     }
 end
 
-let mk_require_from (from, lib) = (lib, from, Some (Lib.Import, None))
+let mk_require_from (from, library) =
+  let flags = Some (Lib.Import, None) in
+  { Require.library; from; flags }
 
 let make ~cmdline ~implicit ~kind ~debug =
   let { CmdLine.coqcorelib
@@ -196,7 +208,8 @@ let describe
     ; debug = _
     } =
   let require_msg =
-    String.concat " " (List.map (fun (s, _, _) -> s) require_libs)
+    String.concat " "
+      (List.map (fun { Require.library; _ } -> library) require_libs)
   in
   let n_vo = List.length vo_load_path in
   let n_ml = List.length ml_include_path in
@@ -250,11 +263,11 @@ let describe_guess = function
 
 (* Require a set of libraries *)
 let load_objs libs =
-  let rq_file (dir, from, exp) =
-    let mp = Libnames.qualid_of_string dir in
+  let rq_file { Require.library; from; flags } =
+    let mp = Libnames.qualid_of_string library in
     let mfrom = Option.map Libnames.qualid_of_string from in
     Flags_.silently
-      (Vernacentries.vernac_require mfrom exp)
+      (Vernacentries.vernac_require mfrom flags)
       [ (mp, Vernacexpr.ImportAll) ]
   in
   List.(iter rq_file (rev libs))
