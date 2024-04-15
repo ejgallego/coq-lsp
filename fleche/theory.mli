@@ -76,9 +76,18 @@ end
 
 (* Experimental plugin API, not stable yet *)
 module Register : sig
-  module Completed : sig
-    type t = io:Io.CallBack.t -> token:Coq.Limits.Token.t -> doc:Doc.t -> unit
+  (** List of additional includes to inject into a document *)
+  module InjectRequire : sig
+    type t = io:Io.CallBack.t -> Coq.Workspace.Require.t list
+
+    val add : t -> unit
   end
 
-  val add : Completed.t -> unit
+  (** Run an action when a document has completed checking, attention, with or
+      without errors. *)
+  module Completed : sig
+    type t = io:Io.CallBack.t -> token:Coq.Limits.Token.t -> doc:Doc.t -> unit
+
+    val add : t -> unit
+  end
 end

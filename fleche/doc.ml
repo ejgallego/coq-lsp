@@ -249,6 +249,10 @@ module Env = struct
     }
 
   let make ~init ~workspace ~files = { init; workspace; files }
+
+  let inject_requires ~extra_requires { init; workspace; files } =
+    let workspace = Coq.Workspace.inject_requires ~extra_requires workspace in
+    { init; workspace; files }
 end
 
 (** A Flèche document is basically a [node list], which is a crude form of a
