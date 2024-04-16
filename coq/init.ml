@@ -65,7 +65,7 @@ let coq_init opts =
     { load_plugin = opts.load_plugin
     ; load_module = opts.load_module
     ; add_dir = (fun _ -> ())
-    ; ml_loop = (fun _ -> ())
+    ; ml_loop = (fun ?init_file:_ _ -> ())
     }
   in
   Mltop.set_top ser_mltop;
