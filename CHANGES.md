@@ -87,6 +87,10 @@
  - New `InjectRequire` plugin API for plugins to be able to instrument
    the default import list of files (@ejgallego @corwin-of-amber,
    #679)
+ - Add `--max_errors=n` option to `fcc`, this way users can set
+   `--max_errors=0` to imitate `coqc` behavior (@ejgallego, #680)
+ - Fix `fcc` exit status when checking terminates with fatal errors
+   (@ejgallego, @Alizter, #680)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

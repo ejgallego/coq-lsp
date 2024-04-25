@@ -30,8 +30,15 @@ let log_workspace ~io (dir, w) =
 let load_plugin plugin_name = Fl_dynload.load_packages [ plugin_name ]
 let plugin_init = List.iter load_plugin
 
+let apply_config ~max_errors =
+  Option.iter
+    (fun max_errors -> Fleche.Config.v := { !Fleche.Config.v with max_errors })
+    max_errors
+
 let go args =
-  let { Args.cmdline; roots; display; debug; files; plugins } = args in
+  let { Args.cmdline; roots; display; debug; files; plugins; max_errors } =
+    args
+  in
   (* Initialize event callbacks, in testing don't do perfData *)
   let perfData = Option.is_empty fcc_test in
   let io = Output.init display ~perfData in
@@ -47,6 +54,7 @@ let go args =
       roots
   in
   List.iter (log_workspace ~io) workspaces;
+  let () = apply_config ~max_errors in
   let cc = Cc.{ root_state; workspaces; default; io; token } in
   (* Initialize plugins *)
   plugin_init plugins;

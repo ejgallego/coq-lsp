@@ -3,7 +3,7 @@ open Cmdliner
 open Fcc_lib
 
 let fcc_main roots display debug plugins files coqlib coqcorelib ocamlpath
-    rload_path load_path require_libraries no_vo =
+    rload_path load_path require_libraries no_vo max_errors =
   let vo_load_path = rload_path @ load_path in
   let ml_include_path = [] in
   let args = [] in
@@ -18,7 +18,9 @@ let fcc_main roots display debug plugins files coqlib coqcorelib ocamlpath
     }
   in
   let plugins = Args.compute_default_plugins ~no_vo ~plugins in
-  let args = Args.{ cmdline; roots; display; files; debug; plugins } in
+  let args =
+    Args.{ cmdline; roots; display; files; debug; plugins; max_errors }
+  in
   Driver.go args
 
 (****************************************************************************)
@@ -50,7 +52,36 @@ let no_vo : bool Term.t =
   let doc = "Don't generate .vo files at the end of compilation" in
   Arg.(value & flag & info [ "no_vo" ] ~doc)
 
-let fcc_cmd : unit Cmd.t =
+let max_errors : int option Term.t =
+  let doc = "Maximum errors in files before aborting" in
+  Arg.(
+    value & opt (some int) None & info [ "max_errors" ] ~docv:"MAX_ERRORS" ~doc)
+
+module Exit_codes = struct
+  let fatal : Cmd.Exit.info =
+    let doc =
+      "A fatal error was found. This is typically due to `--max_errors` being \
+       triggered, but also failures in library / Coq setup will trigger this."
+    in
+    Cmd.Exit.info ~doc 1
+
+  let stopped : Cmd.Exit.info =
+    let doc =
+      "The document was not fully checked: this is often due to a timeout, \
+       interrupt, or resource limit."
+    in
+    Cmd.Exit.info ~doc 2
+
+  let scheduled : Cmd.Exit.info =
+    let doc = "[INTERNAL] File not scheduled" in
+    Cmd.Exit.info ~doc 102
+
+  let uri_failed : Cmd.Exit.info =
+    let doc = "[INTERNAL] URI failed" in
+    Cmd.Exit.info ~doc 222
+end
+
+let fcc_cmd : int Cmd.t =
   let doc = "Flèche Coq Compiler" in
   let man =
     [ `S "DESCRIPTION"
@@ -64,12 +95,14 @@ let fcc_cmd : unit Cmd.t =
     let open Coq.Args in
     Term.(
       const fcc_main $ roots $ display $ debug $ plugins $ file $ coqlib
-      $ coqcorelib $ ocamlpath $ rload_paths $ qload_paths $ ri_from $ no_vo)
+      $ coqcorelib $ ocamlpath $ rload_paths $ qload_paths $ ri_from $ no_vo
+      $ max_errors)
   in
-  Cmd.(v (Cmd.info "fcc" ~version ~doc ~man) fcc_term)
+  let exits = Exit_codes.[ fatal; stopped; scheduled; uri_failed ] in
+  Cmd.(v (Cmd.info "fcc" ~exits ~version ~doc ~man) fcc_term)
 
 let main () =
-  let ecode = Cmd.eval fcc_cmd in
+  let ecode = Cmd.eval' fcc_cmd in
   exit ecode
 
 let () = main ()
