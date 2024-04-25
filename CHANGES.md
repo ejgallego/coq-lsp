@@ -91,6 +91,8 @@
    `--max_errors=0` to imitate `coqc` behavior (@ejgallego, #680)
  - Fix `fcc` exit status when checking terminates with fatal errors
    (@ejgallego, @Alizter, #680)
+ - Fix (@ejgallego, #683, fixes #682, cc #479 #488, thanks to
+   @Hazardouspeach for the report)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
