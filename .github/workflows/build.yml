@@ -83,6 +83,34 @@ jobs:
       - name: 🐛 Test fcc
         run: opam exec -- make test-compiler
 
+  build-opam:
+    name: Opam dev install
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔭 Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: 🐫 Setup OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: 4.14.x
+          dune-cache: true
+
+      - name: Install Coq and SerAPI into OPAM switch
+        run: |
+          opam install vendor/coq/{coq-core,coq-stdlib,coqide-server,coq}.opam
+          opam install vendor/coq-serapi/coq-serapi.opam
+
+      - name: Install `coq-lsp` into OPAM switch
+        run: opam install .
+
+      - name: Test `coq-lsp` in installed switch
+        run: opam exec -- fcc examples/Demo.v
+
   build-nix:
     name: Nix
     strategy:
