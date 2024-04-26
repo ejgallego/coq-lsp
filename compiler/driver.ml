@@ -35,7 +35,7 @@ let apply_config ~max_errors =
     (fun max_errors -> Fleche.Config.v := { !Fleche.Config.v with max_errors })
     max_errors
 
-let go args =
+let go ~int_backend args =
   let { Args.cmdline; roots; display; debug; files; plugins; max_errors } =
     args
   in
@@ -47,6 +47,8 @@ let go args =
   let root_state = coq_init ~debug in
   let roots = if List.length roots < 1 then [ Sys.getcwd () ] else roots in
   let default = Coq.Workspace.default ~debug ~cmdline in
+  let () = Coq.Limits.select int_backend in
+  let () = Coq.Limits.start () in
   let token = Coq.Limits.Token.create () in
   let workspaces =
     List.map

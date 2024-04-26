@@ -80,8 +80,11 @@ let safe_loader loader fl_pkg =
           ++ str "failed" ++ fnl () ++ exn_msg);
     Exninfo.iraise iexn
 
+let default_loader pkgs : unit =
+  Fl_dynload.load_packages ~debug:false pkgs
+
 let plugin_handler user_loader =
-  let loader = Option.default (Fl_dynload.load_packages ~debug:false) user_loader in
+  let loader = Option.default default_loader user_loader in
   let safe_loader = safe_loader loader in
   fun fl_pkg ->
     let _, fl_pkg = Mltop.PluginSpec.repr fl_pkg in

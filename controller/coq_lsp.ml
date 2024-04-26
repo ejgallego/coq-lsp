@@ -98,7 +98,10 @@ let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug =
     | Init_effect.Success w -> w)
 
 let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
-    require_libraries delay =
+    require_libraries delay int_backend =
+  Coq.Limits.select int_backend;
+  Coq.Limits.start ();
+
   (* Try to be sane w.r.t. \r\n in Windows *)
   Stdlib.set_binary_mode_in stdin true;
   Stdlib.set_binary_mode_out stdout true;
@@ -207,7 +210,7 @@ let lsp_cmd : unit Cmd.t =
       (Cmd.info "coq-lsp" ~version:Fleche.Version.server ~doc ~man)
       Term.(
         const lsp_main $ bt $ coqcorelib $ coqlib $ ocamlpath $ vo_load_path
-        $ ml_include_path $ ri_from $ delay))
+        $ ml_include_path $ ri_from $ delay $ int_backend))
 
 let main () =
   let ecode = Cmd.eval lsp_cmd in
