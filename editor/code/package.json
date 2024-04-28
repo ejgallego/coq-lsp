@@ -113,6 +113,10 @@
       {
         "command": "coq-lsp.sentenceBack",
         "title": "Coq LSP: try to jump to previous Coq sentence"
+      },
+      {
+        "command": "coq-lsp.heatmap.toggle",
+        "title": "Coq LSP: Toggle heatmap"
       }
     ],
     "keybindings": [
@@ -307,6 +311,41 @@
             "type": "boolean",
             "default": true,
             "description": "Automatically ignore Coq object files in the workspace (.vo, .vos, ...)"
+          }
+        }
+      },
+      {
+        "title": "Heatmap",
+        "type": "object",
+        "properties": {
+          "coq-lsp.heatmap.enabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable heatmap for Coq files."
+          },
+          "coq-lsp.heatmap.warmColor": {
+            "type": "string",
+            "default": "#ff0000",
+            "description": "Defines the warm color for the heatmap."
+          },
+          "coq-lsp.heatmap.coldColor": {
+            "type": "string",
+            "default": "#000000",
+            "description": "Defines the cold color for the heatmap."
+          },
+          "coq-lsp.heatmap.heatLevels": {
+            "type": "number",
+            "default": 100,
+            "description": "Defines the number of heat levels in the heatmap."
+          },
+          "coq-lsp.heatmap.mode": {
+            "type": "string",
+            "default": "time",
+            "enum": [
+              "time",
+              "memory"
+            ],
+            "description": "Defines the heatmap mode."
           }
         }
       }

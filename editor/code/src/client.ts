@@ -15,6 +15,9 @@ import {
   languages,
 } from "vscode";
 
+import * as vscode from "vscode";
+import * as lsp from "vscode-languageserver-types";
+
 import {
   BaseLanguageClient,
   LanguageClientOptions,
@@ -30,12 +33,30 @@ import {
   GoalRequest,
   GoalAnswer,
   PpString,
+  DocumentPerfParams,
 } from "../lib/types";
+
 import { CoqLspClientConfig, CoqLspServerConfig, CoqSelector } from "./config";
 import { InfoPanel, goalReq } from "./goals";
 import { FileProgressManager } from "./progress";
 import { coqPerfData, PerfDataView } from "./perf";
 import { sentenceNext, sentenceBack } from "./edit";
+import { HeatMap, HeatMapConfig } from "./heatmap";
+
+// Convert perf data to VSCode format
+function toVsCodePerf(
+  p: DocumentPerfParams<lsp.Range>
+): DocumentPerfParams<vscode.Range> {
+  let textDocument = p.textDocument;
+  let summary = p.summary;
+  let timings = p.timings.map((t) => {
+    return {
+      range: client.protocol2CodeConverter.asRange(t.range),
+      info: t.info,
+    };
+  });
+  return { textDocument, summary, timings };
+}
 
 let config: CoqLspClientConfig;
 let client: BaseLanguageClient;
@@ -52,6 +73,8 @@ let lspStatusItem: StatusBarItem;
 // Lifetime of the perf data setup == client lifetime for the hook, extension for the webview
 let perfDataView: PerfDataView;
 let perfDataHook: Disposable;
+
+let heatMap: HeatMap;
 
 // Client Factory types
 export type ClientFactoryType = (
@@ -134,6 +157,7 @@ export function activateCoqLSP(
           infoPanel.dispose();
           fileProgress.dispose();
           perfDataHook.dispose();
+          heatMap.dispose();
         });
     }
   };
@@ -163,7 +187,9 @@ export function activateCoqLSP(
       fileProgress = new FileProgressManager(client);
       perfDataHook = client.onNotification(coqPerfData, (data) => {
         perfDataView.update(data);
+        heatMap.update(toVsCodePerf(data));
       });
+
       resolve(client);
     });
 
@@ -269,6 +295,16 @@ export function activateCoqLSP(
 
   context.subscriptions.push(goalsHook);
 
+  // Heatmap setup
+  heatMap = new HeatMap(
+    workspace.getConfiguration("coq-lsp").get("heatmap") as HeatMapConfig
+  );
+
+  const heatMapToggle = () => {
+    heatMap.toggle();
+  };
+
+  // Document request setup
   const docReq = new RequestType<FlecheDocumentParams, FlecheDocument, void>(
     "coq/getDocument"
   );
@@ -284,12 +320,14 @@ export function activateCoqLSP(
     client.sendRequest(docReq, params).then((fd) => console.log(fd));
   };
 
+  // Trim notification setup
   const trimNot = new NotificationType<{}>("coq/trimCaches");
 
   const cacheTrim = () => {
     client.sendNotification(trimNot, {});
   };
 
+  // Save request setup
   const saveReq = new RequestType<FlecheDocumentParams, void, void>(
     "coq/saveVo"
   );
@@ -364,6 +402,8 @@ export function activateCoqLSP(
 
   coqEditorCommand("sentenceNext", sentenceNext);
   coqEditorCommand("sentenceBack", sentenceBack);
+
+  coqEditorCommand("heatmap.toggle", heatMapToggle);
 
   createEnableButton();
 

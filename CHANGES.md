@@ -1,6 +1,11 @@
 # unreleased
 ------------
 
+ - Added new heatmap feature allowing timing data to be seen in the
+   editor. Can be enabled with the `Coq LSP: Toggle heatmap`
+   comamnd. Can be configured to show memory usage. Colors and
+   granularity are configurable. (@Alizter and @ejgallego, #686,
+   grants #681).
  - new option `show_loc_info_on_hover` that will display parsing debug
    information on hover; previous flag was fixed in code, which is way
    less flexible. This also fixes the option being on in 0.1.8 by
