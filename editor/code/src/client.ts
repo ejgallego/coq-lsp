@@ -242,10 +242,10 @@ export function activateCoqLSP(
       callKind == TextEditorSelectionChangeKind.Mouse
         ? 1
         : callKind == TextEditorSelectionChangeKind.Keyboard
-        ? 2
-        : callKind
-        ? callKind
-        : 3;
+          ? 2
+          : callKind
+            ? callKind
+            : 3;
     // When evt.kind is null, it often means it was due to an
     // edit, we want to re-trigger in that case
 
