@@ -95,6 +95,7 @@
    fixes #682, cc #479 #488, thanks to @Hazardouspeach for the report)
  - New `--int_backend={Coq,Mp}` command line parameter to select the
    interruption method for Coq (@ejgallego, #684)
+ - Update `package-lock.json` for latest bugfixes (@ejgallego, #687)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
