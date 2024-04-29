@@ -116,7 +116,7 @@ Proof.
   2:{ apply pow_nonzero; assumption. }
   unfold Rsqr; ring.
 Qed.
-Definition muuu := 3.
+
 (**********)
 Lemma continuity_cos : continuity cos.
 Proof.

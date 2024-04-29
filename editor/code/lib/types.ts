@@ -31,6 +31,7 @@ export interface Message<Pp> {
 
 export type Id = ["Id", string];
 
+// XXX: Only used in obligations, move them to Range
 export interface Loc {
   fname: any;
   line_nb: number;
@@ -113,10 +114,20 @@ export interface FlecheSaveParams {
   textDocument: VersionedTextDocumentIdentifier;
 }
 
-export interface SentencePerfParams {
-  Range: Range;
+export interface PerfInfo {
+  // Original Execution Time (when not cached)
   time: number;
+  // Difference in words allocated in the heap using `Gc.quick_stat`
   memory: number;
+  // Whether the execution was cached
+  cache_hit: boolean;
+  // Caching overhead
+  time_hash: number;
+}
+
+export interface SentencePerfParams {
+  range: Range;
+  info: PerfInfo;
 }
 
 export interface DocumentPerfParams {
@@ -151,4 +162,20 @@ export type CoqMessagePayload = RenderGoals | WaitingForInfo | InfoError;
 
 export interface CoqMessageEvent extends MessageEvent {
   data: CoqMessagePayload;
+}
+
+// For perf panel data
+export interface PerfUpdate {
+  method: "update";
+  params: DocumentPerfParams;
+}
+
+export interface PerfReset {
+  method: "reset";
+}
+
+export type PerfMessagePayload = PerfUpdate | PerfReset;
+
+export interface PerfMessageEvent extends MessageEvent {
+  data: PerfMessagePayload;
 }

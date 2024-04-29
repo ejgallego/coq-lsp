@@ -116,6 +116,10 @@ module FlecheDocument = struct
   [@@deriving yojson]
 end
 
+module Info = struct
+  type t = [%import: Fleche.Perf.Info.t] [@@deriving yojson]
+end
+
 module SentencePerfData = struct
   type t = [%import: Fleche.Perf.Sentence.t] [@@deriving yojson]
 end

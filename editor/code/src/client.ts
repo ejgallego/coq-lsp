@@ -210,9 +210,14 @@ export function activateCoqLSP(
 
   const goals = (editor: TextEditor) => {
     if (!client.isRunning()) return;
-    let uri = editor.document.uri;
+    let uri = editor.document.uri.toString();
     let version = editor.document.version;
-    let position = editor.selection.active;
+
+    // XXX: EJGA: For some reason TS doesn't catch the typing error here,
+    // beware, because this creates many problems once out of the standard
+    // Node-base Language client and object are serialized!
+    let cursor = editor.selection.active;
+    let position = client.code2ProtocolConverter.asPosition(cursor);
     infoPanel.updateFromServer(
       client,
       uri,
