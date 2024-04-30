@@ -2,8 +2,11 @@
 
 type t = Vernacexpr.vernac_control
 
-let hash x = Serlib.Ser_vernacexpr.hash_vernac_control x
-let compare x y = Serlib.Ser_vernacexpr.compare_vernac_control x y
+(* let hash x = Serlib.Ser_vernacexpr.hash_vernac_control x *)
+(* let compare x y = Serlib.Ser_vernacexpr.compare_vernac_control x y *)
+
+let hash x = Hashtbl.hash x
+let compare x y = Stdlib.compare x y
 let to_coq x = x
 let of_coq x = x
 let loc { CAst.loc; _ } = loc
@@ -63,7 +66,7 @@ let pp_loc ?(print_file = false) fmt loc =
     if print_file then
       match loc.fname with
       | ToplevelInput -> "Toplevel input: "
-      | InFile { file; _ } -> "File \"" ^ file ^ "\": "
+      | InFile file -> "File \"" ^ file ^ "\": "
     else ""
   in
   Format.fprintf fmt "%sline: %d, col: %d -- line: %d, col: %d / {%d-%d}" file
@@ -144,8 +147,8 @@ let constructor_info ~lines ((_, (id, _typ)) : constructor_expr) =
 let local_decl_expr_info ~lines ~kind ~detail (l : local_decl_expr) =
   let name =
     match l with
-    | AssumExpr (ln, _, _) -> mk_name ~lines ln
-    | DefExpr (ln, _, _, _) -> mk_name ~lines ln
+    | AssumExpr (ln, _) -> mk_name ~lines ln
+    | DefExpr (ln, _, _) -> mk_name ~lines ln
   in
   let range = name.range in
   Lang.Ast.Info.make ~range ~name ~kind ~detail ()
@@ -155,8 +158,13 @@ let projection_info ~lines ((ld, _) : local_decl_expr * record_field_attr) =
   let detail = "Field" in
   local_decl_expr_info ~lines ~detail ~kind ld
 
-let inductive_info ~lines ~range ikind (expr, _) =
-  let (_, (id, _)), _, _, cons = expr in
+
+
+  (* ident_decl with_coercion * local_binder_expr list * constr_expr option * inductive_kind * *)
+  (*   constructor_list_or_record_decl_expr *)
+
+let inductive_info ~lines ~range ((expr : Vernacexpr.inductive_expr), _) =
+  let ((_, (id, _)), _, _, ikind, cons) = expr in
   let name = mk_id ~lines id in
   match cons with
   | Constructors ci ->
@@ -168,10 +176,10 @@ let inductive_info ~lines ~range ikind (expr, _) =
     let kind, detail = inductive_detail ikind in
     Lang.Ast.Info.make ~range ~name ~kind ~detail ~children ()
 
-let inductives_info ~lines ~range ikind idecls =
+let inductives_info ~lines ~range idecls =
   match idecls with
   | [] -> None
-  | inds -> Some (List.map (inductive_info ~lines ~range ikind) inds)
+  | inds -> Some (List.map (inductive_info ~lines ~range) inds)
 
 let ident_decl_info ~lines ~kind ~detail (lident, _) =
   let range = Option.get lident.loc in
@@ -210,8 +218,8 @@ let make_info ~st:_ ~lines CAst.{ loc; v } : Lang.Ast.Info.t list option =
         let name = mk_id ~lines id in
         Some [ Lang.Ast.Info.make ~range ~name ~detail ~kind () ]
       | [] -> None)
-    | VernacInductive (ikind, idecls) ->
-      inductives_info ~lines ~range ikind idecls
+    | VernacInductive (_, _, _, idecls) ->
+      inductives_info ~lines ~range idecls
     | VernacAssumption ((_, kind), _, ids) ->
       Some (List.concat_map (assumption_info ~lines kind) ids)
     | VernacFixpoint (_, f_expr) ->

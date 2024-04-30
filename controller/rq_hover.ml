@@ -8,12 +8,16 @@
 open Lsp.Core
 
 (* Taken from printmod.ml, funny stuff! *)
-let build_ind_type mip = Inductive.type_of_inductive mip
+let _build_ind_type mip = Inductive.type_of_inductive mip
 
 type id_info =
   | Notation of Pp.t
   | Def of Pp.t
 
+let info_of_ind _ _ _ = Def (Pp.str "XXX")
+let info_of_const _ _ _ = Def (Pp.str "XXX")
+
+(*
 let info_of_ind env sigma ((sp, i) : Names.Ind.t) =
   let mib = Environ.lookup_mind sp env in
   let u =
@@ -51,6 +55,7 @@ let info_of_const env sigma cr =
   in
   let impargs = List.map Impargs.binding_kind_of_status impargs in
   Def (Printer.pr_ltype_env env sigma ~impargs typ)
+*)
 
 let info_of_var env vr =
   let vdef = Environ.lookup_named vr env in
@@ -96,8 +101,8 @@ let info_of_id ~st id =
   let sigma, env =
     match st with
     | { lemmas = Some pstate; _ } ->
-      Vernacstate.LemmaStack.with_top pstate
-        ~f:Declare.Proof.get_current_context
+      Vernacstate.LemmaStack.with_top_pstate pstate
+        ~f:Pfedit.get_current_context
     | _ ->
       let env = Global.env () in
       (Evd.from_env env, env)
@@ -145,7 +150,7 @@ let ntn_key_info (_entry, key) = "notation: " ^ key
 let info_notation ~point (ast : Fleche.Doc.Node.Ast.t) =
   (* XXX: Iterate over the results *)
   match extract ~point ast.v with
-  | { CAst.v = Constrexpr.CNotation (_, key, _params); _ } :: _ ->
+  | { CAst.v = Constrexpr.CNotation (key, _params); _ } :: _ ->
     Some (ntn_key_info key)
   | _ -> None
 

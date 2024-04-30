@@ -3,10 +3,4 @@
  (public_name coq-lsp.coq)
  ; Unfortunate we have to link the STM due to the LTAC plugin
  ; depending on it, we should fix this upstream
- (libraries
-  findlib.dynload
-  lang
-  coq-core.vernac
-  coq-serapi.serlib
-  camlp-streams))
-
+ (libraries findlib.dynload lang coq.vernac coq-serapi.serlib camlp-streams))

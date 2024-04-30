@@ -239,7 +239,7 @@ let rebuild_toc nodes = List.fold_left update_toc_node CString.Map.empty nodes
 
 let init_fname ~uri =
   let file = Lang.LUri.File.to_string_file uri in
-  Loc.InFile { dirpath = None; file }
+  Loc.InFile file
 
 let init_loc ~uri = Loc.initial (init_fname ~uri)
 

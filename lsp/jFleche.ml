@@ -79,6 +79,15 @@ module Message = struct
 end
 
 module GoalsAnswer = struct
+  module Names = struct
+    module Id = struct
+      module Map = struct
+        type 'a t = 'a Names.Id.Map.t
+        let to_yojson _f _map = `String "XXX"
+      end
+    end
+  end
+
   type 'pp t =
     { textDocument : Doc.VersionedTextDocumentIdentifier.t
     ; position : Lang.Point.t

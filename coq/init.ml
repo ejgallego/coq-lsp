@@ -49,11 +49,11 @@ let coq_init opts =
   (* This is only needed when statically linking *)
   Mltop.init_known_plugins ();
 
-  Global.set_impredicative_set false;
+  (* Global.set_impredicative_set false; *)
   Global.set_native_compiler false;
   Flags.set_native_compiler false;
 
-  if opts.debug then CDebug.set_flags "backtrace";
+  if opts.debug then Backtrace.record_backtrace true;
 
   (**************************************************************************)
   (* Feedback setup                                                         *)
@@ -73,6 +73,7 @@ let coq_init opts =
     { load_obj
     ; add_dir = Loader.add_ml_path
     ; ml_loop = (fun _ -> ())
+    ; use_file = (fun _ -> ())
     }
   in
   Mltop.set_top ser_mltop;

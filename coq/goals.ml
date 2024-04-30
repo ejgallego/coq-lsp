@@ -94,9 +94,9 @@ let build_info sigma g = { evar = g; name = Evd.evar_ident g sigma }
 (** Generic processor *)
 let process_goal_gen ppx sigma g : 'a reified_goal =
   (* XXX This looks cumbersome *)
-  let env = Global.env () in
+  let _env = Global.env () in
   let evi = Evd.find sigma g in
-  let env = Evd.evar_filtered_env env evi in
+  let env = Evd.evar_filtered_env evi in
   (* why is compaction neccesary... ? [eg for better display] *)
   let ctx = Termops.compact_named_context (Environ.named_context env) in
   let ppx = ppx env sigma in
@@ -110,14 +110,13 @@ let if_not_empty (pp : Pp.t) =
 let reify ~ppx lemmas =
   let lemmas = State.Proof.to_coq lemmas in
   let proof =
-    Vernacstate.LemmaStack.with_top lemmas ~f:(fun pstate ->
-        Declare.Proof.get pstate)
+    Vernacstate.LemmaStack.with_top_pstate lemmas ~f:Proof_global.get_proof
   in
-  let { Proof.goals; stack; sigma; _ } = Proof.data proof in
+  let { Proof.goals; stack; sigma; shelf; given_up; _ } = Proof.data proof in
   let ppx = List.map (process_goal_gen ppx sigma) in
   { goals = ppx goals
   ; stack = List.map (fun (g1, g2) -> (ppx g1, ppx g2)) stack
   ; bullet = if_not_empty @@ Proof_bullet.suggest proof
-  ; shelf = Evd.shelf sigma |> ppx
-  ; given_up = Evd.given_up sigma |> Evar.Set.elements |> ppx
+  ; shelf = shelf |> ppx
+  ; given_up = given_up |> ppx
   }

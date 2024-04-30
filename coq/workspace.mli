@@ -36,7 +36,7 @@ type t = private
   { coqlib : string
   ; coqcorelib : string
   ; ocamlpath : string option
-  ; vo_load_path : Loadpath.vo_path list
+  ; vo_load_path : Loadpath.coq_path list
   ; ml_include_path : string list
   ; require_libs : (string * string option * bool option) list
   ; flags : Flags.t
@@ -59,7 +59,7 @@ module CmdLine : sig
     { coqlib : string
     ; coqcorelib : string
     ; ocamlpath : string option
-    ; vo_load_path : Loadpath.vo_path list
+    ; vo_load_path : Loadpath.coq_path list
     ; ml_include_path : string list
     ; args : string list
     }

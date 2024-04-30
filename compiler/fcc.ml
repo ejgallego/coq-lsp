@@ -33,7 +33,7 @@ let coqcorelib =
   let doc = "Path to Coq plugin directories." in
   Arg.(
     value
-    & opt string (Filename.concat Coq_config.coqlib "../coq-core/")
+    & opt string Coq_config.coqlib
     & info [ "coqcorelib" ] ~docv:"COQCORELIB" ~doc)
 
 let ocamlpath =
@@ -42,14 +42,17 @@ let ocamlpath =
     value & opt (some string) None & info [ "ocamlpath" ] ~docv:"OCAMLPATH" ~doc)
 
 let coq_lp_conv ~implicit (unix_path, lp) =
-  { Loadpath.coq_path = Libnames.dirpath_of_string lp
-  ; unix_path
-  ; has_ml = true
-  ; implicit
+  Loadpath.{
+    path_spec = VoPath
+        { coq_path = Libnames.dirpath_of_string lp
+        ; unix_path
+        ; has_ml = AddRecML
+        ; implicit
+        }
   ; recursive = true
   }
 
-let rload_path : Loadpath.vo_path list Term.t =
+let rload_path : Loadpath.coq_path list Term.t =
   let doc =
     "Bind a logical loadpath LP to a directory DIR and implicitly open its \
      namespace."
@@ -61,7 +64,7 @@ let rload_path : Loadpath.vo_path list Term.t =
         & opt_all (pair dir string) []
         & info [ "R"; "rec-load-path" ] ~docv:"DIR,LP" ~doc))
 
-let load_path : Loadpath.vo_path list Term.t =
+let load_path : Loadpath.coq_path list Term.t =
   let doc = "Bind a logical loadpath LP to a directory DIR" in
   Term.(
     const List.(map (coq_lp_conv ~implicit:false))

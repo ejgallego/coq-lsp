@@ -77,7 +77,7 @@ let safe_loader loader fl_pkg =
   try loader [fl_pkg]
   with
     exn ->
-    let iexn = Exninfo.capture exn in
+    let iexn = CErrors.push exn in
     let exn_msg = CErrors.iprint iexn in
      Feedback.msg_warning
       Pp.(str "Loading findlib plugin: " ++ str fl_pkg

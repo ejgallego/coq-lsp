@@ -42,7 +42,7 @@ let eval_exn ~f x =
     Vernacstate.invalidate_cache ();
     R.Interrupted
   | exn ->
-    let e, info = Exninfo.capture exn in
+    let e, info = CErrors.push exn in
     let loc = Loc.(get_loc info) in
     let msg = CErrors.iprint (e, info) in
     Vernacstate.invalidate_cache ();

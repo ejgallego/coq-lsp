@@ -497,7 +497,7 @@ let dispatch_or_resume_check ~io ~ofn ~state =
        be wrapper in Coq.Protect. So hitting this codepath, is effectively a
        coq-lsp internal error and should be fixed *)
     let bt = Printexc.get_backtrace () in
-    let iexn = Exninfo.capture exn in
+    let iexn = CErrors.push exn in
     LIO.trace "process_queue"
       (if Printexc.backtrace_status () then "bt=true" else "bt=false");
     (* let method_name = LSP.Message.method_ com in *)

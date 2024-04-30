@@ -25,9 +25,9 @@ module Flags = struct
 
   let default = { indices_matter = false; impredicative_set = false }
 
-  let apply { indices_matter; impredicative_set } =
+  let apply { indices_matter; impredicative_set = _ } =
     Global.set_indices_matter indices_matter;
-    Global.set_impredicative_set impredicative_set
+    (* Global.set_impredicative_set impredicative_set *)
 end
 
 module Warning : sig
@@ -52,7 +52,7 @@ type t =
   { coqlib : string
   ; coqcorelib : string
   ; ocamlpath : string option
-  ; vo_load_path : Loadpath.vo_path list
+  ; vo_load_path : Loadpath.coq_path list
   ; ml_include_path : string list
   ; require_libs : (string * string option * bool option) list
   ; flags : Flags.t
@@ -69,13 +69,15 @@ let coq_root = Names.DirPath.make [ Libnames.coq_root ]
 let default_root = Libnames.default_root_prefix
 
 let mk_lp ~has_ml ~coq_path ~unix_path ~implicit =
-  { Loadpath.unix_path; coq_path; has_ml; implicit; recursive = true }
+  { Loadpath.path_spec = VoPath { unix_path; coq_path; has_ml; implicit }
+  ; recursive = true
+  }
 
 let mk_stdlib ~implicit unix_path =
-  mk_lp ~has_ml:false ~coq_path:coq_root ~implicit ~unix_path
+  mk_lp ~has_ml:AddNoML ~coq_path:coq_root ~implicit ~unix_path
 
 let mk_userlib unix_path =
-  mk_lp ~has_ml:true ~coq_path:default_root ~implicit:false ~unix_path
+  mk_lp ~has_ml:AddRecML ~coq_path:default_root ~implicit:false ~unix_path
 
 let getenv var else_ = try Sys.getenv var with Not_found -> else_
 
@@ -100,7 +102,7 @@ module CmdLine = struct
     { coqlib : string
     ; coqcorelib : string
     ; ocamlpath : string option
-    ; vo_load_path : Loadpath.vo_path list
+    ; vo_load_path : Loadpath.coq_path list
     ; ml_include_path : string list
     ; args : string list
     }
@@ -152,11 +154,13 @@ let make ~cmdline ~implicit ~kind ~debug =
   ; debug
   }
 
-let pp_load_path fmt
-    { Loadpath.unix_path; coq_path; implicit = _; has_ml = _; recursive = _ } =
-  Format.fprintf fmt "Path %s ---> %s"
-    (Names.DirPath.to_string coq_path)
-    unix_path
+let pp_load_path fmt = function
+  | Loadpath.{ path_spec = VoPath { unix_path; coq_path; implicit = _; has_ml = _; }; recursive = _ } ->
+    Format.fprintf fmt "Path %s ---> %s"
+      (Names.DirPath.to_string coq_path)
+      unix_path
+  | Loadpath.{ path_spec = MlPath _; recursive = _ } ->
+    ()
 
 (* This is a bit messy upstream, as -I both extends Coq loadpath and OCAMLPATH
    loadpath *)
@@ -274,12 +278,12 @@ let apply ~uri
     ; kind = _
     ; debug
     } =
-  if debug then CDebug.set_flags "backtrace";
+  if debug then Backtrace.record_backtrace true;
   Flags.apply flags;
   Warning.apply warnings;
-  List.iter Mltop.add_ml_dir ml_include_path;
+  List.iter (Mltop.add_ml_dir ~recursive:false) ml_include_path;
   findlib_init ~ml_include_path ~ocamlpath;
-  List.iter Loadpath.add_vo_path vo_load_path;
+  List.iter Loadpath.add_coq_path vo_load_path;
   Declaremods.start_library (dirpath_of_uri ~uri);
   load_objs require_libs
 
@@ -287,15 +291,17 @@ let workspace_from_coqproject ~cmdline ~debug cp_file : t =
   (* Io.Log.error "init" "Parsing _CoqProject"; *)
   let open CoqProject_file in
   let to_vo_loadpath f implicit =
-    let open Loadpath in
     let unix_path, coq_path = f in
     (* Lsp.Io.log_error "init"
      *   (Printf.sprintf "Path from _CoqProject: %s %s" unix_path.path coq_path); *)
-    { implicit
-    ; recursive = true
-    ; has_ml = false
-    ; unix_path = unix_path.path
-    ; coq_path = Libnames.dirpath_of_string coq_path
+    Loadpath.{
+      path_spec = VoPath {
+        implicit
+      ; unix_path = unix_path.path
+      ; coq_path = Libnames.dirpath_of_string coq_path
+      ; has_ml = AddRecML
+      }
+      ; recursive = true
     }
   in
   let { r_includes; q_includes; ml_includes; extra_args; _ } =

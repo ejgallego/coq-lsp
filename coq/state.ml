@@ -48,8 +48,6 @@ let compare (x : t) (y : t) =
   let { parsing = ps1
       ; system = is1
       ; lemmas = l1
-      ; program = g1
-      ; opaques = o1
       ; shallow = h1
       } =
     x
@@ -57,13 +55,11 @@ let compare (x : t) (y : t) =
   let { parsing = ps2
       ; system = is2
       ; lemmas = l2
-      ; program = g2
-      ; opaques = o2
       ; shallow = h2
       } =
     y
   in
-  if ps1 == ps2 && is1 == is2 && l1 == l2 && g1 == g2 && o1 == o2 && h1 == h2
+  if ps1 == ps2 && is1 == is2 && l1 == l2 && h1 == h2
   then 0
   else 1
 
@@ -123,17 +119,17 @@ module Declare = struct
       }
 
     type 'a t =
-      { prg_cinfo : constr Declare.CInfo.t
-      ; prg_info : Declare.Info.t
-      ; prg_opaque : bool
-      ; prg_hook : 'a Declare.Hook.g option
-      ; prg_body : constr
-      ; prg_uctx : UState.t
+      (* { prg_cinfo : constr Declare.CInfo.t *)
+      (* ; prg_info : Declare.Info.t *)
+      { prg_opaque : bool
+      (* ; prg_hook : 'a Declare.Hook.g option *)
+      (* ; prg_body : constr *)
+      (* ; prg_uctx : UState.t *)
       ; prg_obligations : obligations
-      ; prg_deps : Id.t list
-      ; prg_fixkind : fixpoint_kind option
-      ; prg_notations : Metasyntax.where_decl_notation list
-      ; prg_reduce : constr -> constr
+      (* ; prg_deps : Id.t list *)
+      (* ; prg_fixkind : fixpoint_kind option *)
+      (* ; prg_notations : Metasyntax.where_decl_notation list *)
+      (* ; prg_reduce : constr -> constr *)
       }
   end
 
@@ -181,7 +177,7 @@ module Declare = struct
   end
 end
 
-let program ~st = NeList.head st.Vernacstate.program |> Declare.OblState.view
+let program ~st:_ = Names.Id.Map.empty
 
 let drop_proofs ~st =
   let open Vernacstate in
@@ -202,12 +198,10 @@ let admit ~st () =
   match st.Vernacstate.lemmas with
   | None -> st
   | Some lemmas ->
-    let pm = NeList.head st.Vernacstate.program in
     let proof, lemmas = Vernacstate.(LemmaStack.pop lemmas) in
-    let pm = Declare_.Proof.save_admitted ~pm ~proof in
-    let program = NeList.map_head (fun _ -> pm) st.Vernacstate.program in
+    let () = Lemmas.save_lemma_admitted ~lemma:proof in
     let st = Vernacstate.freeze_interp_state ~marshallable:false in
-    { st with lemmas; program }
+    { st with lemmas }
 
 let admit ~st = Protect.eval ~f:(admit ~st) ()
 
@@ -216,8 +210,8 @@ let admit_goal ~st () =
   match st.Vernacstate.lemmas with
   | None -> st
   | Some lemmas ->
-    let f pf = Declare_.Proof.by Proofview.give_up pf |> fst in
-    let lemmas = Some (Vernacstate.LemmaStack.map_top ~f lemmas) in
+    let f pf = Pfedit.by Proofview.give_up pf |> fst in
+    let lemmas = Some (Vernacstate.LemmaStack.map_top_pstate ~f lemmas) in
     { st with lemmas }
 
 let admit_goal ~st = Protect.eval ~f:(admit_goal ~st) ()
