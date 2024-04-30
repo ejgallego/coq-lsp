@@ -45,9 +45,13 @@ type t = private
   ; coqcorelib : string
   ; ocamlpath : string option
   ; vo_load_path : Loadpath.vo_path list
+        (** List of -R / -Q flags passed to Coq, usually theories we depend on *)
   ; ml_include_path : string list
+        (** List of paths to look for Coq plugins, deprecated in favor of
+            findlib *)
   ; require_libs : Require.t list
-  ; flags : Flags.t
+        (** Modules to preload, usually Coq.Init.Prelude *)
+  ; flags : Flags.t  (** Coq-specific flags *)
   ; warnings : Warning.t list
   ; kind : string  (** How the workspace was built *)
   ; debug : bool  (** Enable backtraces *)
