@@ -19,12 +19,14 @@ module Check : sig
   (** Check pending documents, return [None] if there is none pending, or
       [Some rqs] the list of requests ready to execute after the check. Sends
       progress and diagnostics notifications using output function [ofn]. *)
-  val maybe_check : io:Io.CallBack.t -> (Int.Set.t * Doc.t) option
+  val maybe_check :
+    io:Io.CallBack.t -> token:Coq.Limits.Token.t -> (Int.Set.t * Doc.t) option
 end
 
 (** Create a document inside a theory *)
 val create :
      io:Io.CallBack.t
+  -> token:Coq.Limits.Token.t
   -> env:Doc.Env.t
   -> uri:Lang.LUri.File.t
   -> raw:string
@@ -34,6 +36,7 @@ val create :
 (** Update a document inside a theory, returns the list of not valid requests *)
 val change :
      io:Io.CallBack.t
+  -> token:Coq.Limits.Token.t
   -> uri:Lang.LUri.File.t
   -> version:int
   -> raw:string
@@ -44,19 +47,16 @@ val close : uri:Lang.LUri.File.t -> unit
 
 module Request : sig
   type request =
-    | FullDoc of
-        { uri : Lang.LUri.File.t
-        ; postpone : bool
-        }
+    | FullDoc
     | PosInDoc of
-        { uri : Lang.LUri.File.t
-        ; point : int * int
+        { point : int * int
         ; version : int option
-        ; postpone : bool
         }
 
   type t =
     { id : int
+    ; uri : Lang.LUri.File.t
+    ; postpone : bool
     ; request : request
     }
 
@@ -76,9 +76,18 @@ end
 
 (* Experimental plugin API, not stable yet *)
 module Register : sig
-  module Completed : sig
-    type t = io:Io.CallBack.t -> doc:Doc.t -> unit
+  (** List of additional includes to inject into a document *)
+  module InjectRequire : sig
+    type t = io:Io.CallBack.t -> Coq.Workspace.Require.t list
+
+    val add : t -> unit
   end
 
-  val add : Completed.t -> unit
+  (** Run an action when a document has completed checking, attention, with or
+      without errors. *)
+  module Completed : sig
+    type t = io:Io.CallBack.t -> token:Coq.Limits.Token.t -> doc:Doc.t -> unit
+
+    val add : t -> unit
+  end
 end

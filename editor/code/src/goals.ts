@@ -6,13 +6,20 @@ import {
   ViewColumn,
   extensions,
   commands,
+  TextDocument,
 } from "vscode";
 import {
   BaseLanguageClient,
   RequestType,
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
-import { GoalRequest, GoalAnswer, PpString } from "../lib/types";
+import {
+  GoalRequest,
+  GoalAnswer,
+  PpString,
+  CoqMessagePayload,
+  ErrorData,
+} from "../lib/types";
 
 export const goalReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
   "proof/goals"
@@ -21,6 +28,7 @@ export const goalReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
 export class InfoPanel {
   private panel: WebviewPanel | null = null;
   private extensionUri: Uri;
+  private listeners: Array<(goals: GoalAnswer<String>) => void> = [];
 
   constructor(extensionUri: Uri) {
     this.extensionUri = extensionUri;
@@ -29,6 +37,17 @@ export class InfoPanel {
 
   dispose() {
     this.panel?.dispose();
+  }
+
+  registerObserver(fn: (goals: GoalAnswer<String>) => void) {
+    this.listeners.push(fn);
+  }
+
+  unregisterObserver(fn: (goals: GoalAnswer<String>) => void) {
+    let index = this.listeners.indexOf(fn);
+    if (index >= 0) {
+      this.listeners.splice(index, 1);
+    }
   }
 
   panelFactory() {
@@ -74,32 +93,37 @@ export class InfoPanel {
       this.panelFactory();
     }
   }
-  postMessage(method: string, params: any) {
+  postMessage({ method, params }: CoqMessagePayload) {
     this.ensurePanel();
     this.panel?.webview.postMessage({ method, params });
   }
+
   // notify the display that we are waiting for info
   requestSent(cursor: GoalRequest) {
-    this.postMessage("waitingForInfo", cursor);
+    this.postMessage({ method: "waitingForInfo", params: cursor });
   }
 
   // notify the info panel that we have fresh goals to render
   requestDisplay(goals: GoalAnswer<PpString>) {
-    this.postMessage("renderGoals", goals);
-  }
-
-  requestVizxDisplay(goals: GoalAnswer<PpString>) {
-    console.log(goals);
-    commands.executeCommand("vizx.lspRender", goals);
+    this.postMessage({ method: "renderGoals", params: goals });
   }
 
   // notify the info panel that we found an error
-  requestError(e: any) {
-    this.postMessage("infoError", e);
+  requestError(e: ErrorData) {
+    this.postMessage({ method: "infoError", params: e });
+  }
+
+  notifyLackOfVSLS(
+    textDocument: VersionedTextDocumentIdentifier,
+    position: Position
+  ) {
+    let message =
+      "Support for Goal Display is not available (yet) under Visual Studio Live Share";
+    this.requestError({ textDocument, position, message });
   }
 
   // LSP Protocol extension for Goals
-  sendGoalsRequest(client: BaseLanguageClient, params: GoalRequest) {
+  updateInfoPanelForCursor(client: BaseLanguageClient, params: GoalRequest) {
     this.requestSent(params);
     client.sendRequest(goalReq, params).then(
       (goals) => this.requestDisplay(goals),
@@ -107,38 +131,36 @@ export class InfoPanel {
     );
   }
 
-  sendVizxRequest(client: BaseLanguageClient, params: GoalRequest) {
-    this.requestSent(params);
-    console.log(params.pp_format);
-    client.sendRequest(goalReq, params).then(
-      (goals) => this.requestVizxDisplay(goals),
-      (reason) => this.requestError(reason)
-    );
+  updateAPIClientForCursor(client: BaseLanguageClient, params: GoalRequest) {
+    if (this.listeners.length > 0) {
+      params.pp_format = "Str";
+      client.sendRequest(goalReq, params).then(
+        (goals) => {
+          let goals_fn = goals as GoalAnswer<String>;
+          this.listeners.forEach((fn) => fn(goals_fn));
+        },
+        // We should actually provide a better setup so we can pass the rejection of the promise to our clients, YMMV tho.
+        (reason) => this.requestError(reason)
+      );
+    }
   }
-
   updateFromServer(
     client: BaseLanguageClient,
     uri: Uri,
     version: number,
-    position: Position
+    position: Position,
+    pp_format: "Pp" | "Str"
   ) {
     let textDocument = VersionedTextDocumentIdentifier.create(
       uri.toString(),
       version
     );
-    // let pretac = "idtac.";
-    // let cursor: GoalRequest = { textDocument, position, pretac };
-    let cursor: GoalRequest = { textDocument, position };
-    let strCursor: GoalRequest = {
-      textDocument,
-      position,
-      pp_format: "Str",
-    };
-    this.sendGoalsRequest(client, cursor);
-    let vizx = extensions.getExtension("inQWIRE.vizx");
-    if (vizx?.isActive) {
-      console.log("vizx active in updateFromServer");
-      this.sendVizxRequest(client, strCursor);
-    }
+
+    // Example to test the `command` parameter
+    // let command = "idtac.";
+    // let cursor: GoalRequest = { textDocument, position, command };
+    let cursor: GoalRequest = { textDocument, position, pp_format };
+    this.updateInfoPanelForCursor(client, cursor);
+    this.updateAPIClientForCursor(client, cursor);
   }
 }

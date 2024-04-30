@@ -23,7 +23,8 @@ module State : sig
   type t =
     { cmdline : Coq.Workspace.CmdLine.t
     ; root_state : Coq.State.t
-    ; workspaces : (string * Coq.Workspace.t) list
+    ; workspaces : (string * (Coq.Workspace.t, string) Result.t) list
+    ; default_workspace : Coq.Workspace.t  (** fail safe *)
     }
 end
 
@@ -32,7 +33,9 @@ exception Lsp_exit
 (** Lsp special init loop *)
 module Init_effect : sig
   type t =
-    | Success of (string * Coq.Workspace.t) list
+    | Success of (string * (Coq.Workspace.t, string) Result.t) list
+    (* List of workspace roots, + maybe an associated Coq workspace for the
+       path *)
     | Loop
     | Exit
 end

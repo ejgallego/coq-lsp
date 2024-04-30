@@ -1,5 +1,5 @@
 # unreleased
------------
+------------
 
  - new option `show_loc_info_on_hover` that will display parsing debug
    information on hover; previous flag was fixed in code, which is way
@@ -44,6 +44,66 @@
  - new configuration value `check_only_on_request` which will delay
    checking the document until a request has been made (#629, cc: #24,
    @ejgallego)
+ - fix typo on package.json configuration section (@ejgallego, #645)
+ - be more resilient with invalid _CoqProject files (@ejgallego, #646)
+ - support for Coq 8.16 has been abandoned due to lack of dev
+   resources (@ejgallego, #649)
+ - new option `--no_vo` for `fcc`, which will skip the `.vo` saving
+   step. `.vo` saving is now an `fcc` plugins, but for now, it is
+   enabled by default (@ejgallego, #650)
+ - depend on `memprof-limits` on OCaml 4.x (@ejgallego, #660)
+ - bump minimal OCaml version to 4.12 due to `memprof-limits`
+   (@ejgallego, #660)
+ - monitor all Coq-level calls under an interruption token
+   (@ejgallego, #661)
+ - interpret require thru our own custom execution env-aware path
+   (@bhaktishh, @ejgallego, #642, #643, #644)
+ - new `coq-lsp.plugin.goaldump` plugin, as an example on how to dump
+   goals from a document (@ejgallego @gbdrt, #619)
+ - new trim command (both in the server and in VSCode) to liberate
+   space used in the cache (@ejgallego, #662, fixes #367 cc: #253 #236
+   #348)
+ - fix Coq performance view display (@ejgallego, #663, regression in
+   #513)
+ - allow more than one input position in `selectionRange` LSP call
+   (@ejgallego, #667, fixes #663)
+ - new VSCode commands to allow to move one sentence backwards /
+   forward, this is particularly useful when combined with lazy
+   checking mode (@ejgallego, #671, fixes #263, fixes #580)
+ - change diagnostic `extra` field to `data`, so we now conform to the
+   LSP spec, include the data only when the `send_diags_extra_data`
+   server-side option is enabled (@ejgallego, #670)
+ - include range of full sentence in error diagnostic extra data
+   (@ejgallego, #670 , thanks to @driverag22 for the idea, cc: #663).
+ - The `coq-lsp.pp_type` VSCode client option now takes effect
+   immediately, no more need to restart the server to get different
+   goal display formats (@ejgallego, #675)
+ - new public VSCode extension API so other extensions can perform
+   actions when the user request the goals (@ejgallego, @bhaktishh,
+   #672, fixes #538)
+ - Support Visual Studio Live Share URIs better (`vsls://`), in
+   particular don't try to display goals if the URI is VSLS one
+   (@ejgallego, #676)
+ - New `InjectRequire` plugin API for plugins to be able to instrument
+   the default import list of files (@ejgallego @corwin-of-amber,
+   #679)
+ - Add `--max_errors=n` option to `fcc`, this way users can set
+   `--max_errors=0` to imitate `coqc` behavior (@ejgallego, #680)
+ - Fix `fcc` exit status when checking terminates with fatal errors
+   (@ejgallego, @Alizter, #680)
+ - Fix install to OPAM switches from `main` branch (@ejgallego, #683,
+   fixes #682, cc #479 #488, thanks to @Hazardouspeach for the report)
+ - New `--int_backend={Coq,Mp}` command line parameter to select the
+   interruption method for Coq (@ejgallego, #684)
+ - Update `package-lock.json` for latest bugfixes (@ejgallego, #687)
+ - Update Nix flake enviroment (@Alizter, #684 #688)
+ - Update `prettier` (@Alizter @ejgallego, #684 #688)
+
+# coq-lsp 0.1.8.1: Spring fix
+-----------------------------
+
+ - call to VizCar vscode extension, mirroring behavior for
+   vizx. (@bhaktishh, #655)
 
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------

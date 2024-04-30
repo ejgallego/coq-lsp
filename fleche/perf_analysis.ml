@@ -22,7 +22,7 @@ let make (doc : Doc.t) =
   let n_stm = List.length doc.nodes in
   let stats = get_stats ~doc in
   let cache_size =
-    if display_cache_size then Memo.Interp.size () |> float_of_int else 0.0
+    if display_cache_size then Memo.all_size () |> float_of_int else 0.0
   in
   let summary =
     Format.asprintf "{ num sentences: %d@\n; stats: %s; cache: %a@\n}" n_stm

@@ -32,26 +32,27 @@ let pp ~pp_format pp =
   | Pp -> Lsp.JCoq.Pp.to_yojson pp
   | Str -> `String (Pp.string_of_ppcmds pp)
 
-let parse ~loc tac st =
+let parse ~token ~loc tac st =
   let str = Stream.of_string tac in
   let str = Coq.Parsing.Parsable.make ?loc str in
-  Coq.Parsing.parse ~st str
+  Coq.Parsing.parse ~token ~st str
 
-let parse_and_execute_in ~loc tac st =
+let parse_and_execute_in ~token ~loc tac st =
   let open Coq.Protect.E.O in
-  let* ast = parse ~loc tac st in
+  let* ast = parse ~token ~loc tac st in
   match ast with
-  | Some ast -> (Fleche.Memo.Interp.eval (st, ast)).res
+  | Some ast -> Fleche.Memo.Interp.eval ~token (st, ast)
   (* On EOF we return the previous state, the command was the empty string or a
      comment *)
   | None -> Coq.Protect.E.ok st
 
-let run_pretac ~loc ~st pretac =
+let run_pretac ~token ~loc ~st pretac =
   match pretac with
   | None -> Coq.Protect.E.ok st
-  | Some tac -> Coq.State.in_stateM ~st ~f:(parse_and_execute_in ~loc tac) st
+  | Some tac ->
+    Coq.State.in_stateM ~token ~st ~f:(parse_and_execute_in ~token ~loc tac) st
 
-let get_goal_info ~doc ~point ~mode ~pretac () =
+let get_goal_info ~token ~doc ~point ~mode ~pretac () =
   let open Fleche in
   let node = Info.LC.node ~doc ~point mode in
   match node with
@@ -61,12 +62,12 @@ let get_goal_info ~doc ~point ~mode ~pretac () =
     let st = Doc.Node.state node in
     (* XXX: Get the location from node *)
     let loc = None in
-    let* st = run_pretac ~loc ~st pretac in
-    let+ goals = Info.Goals.goals ~st in
+    let* st = run_pretac ~token ~loc ~st pretac in
+    let+ goals = Info.Goals.goals ~token ~st in
     let program = Info.Goals.program ~st in
     (goals, Some program)
 
-let goals ~pp_format ~mode ~pretac () ~doc ~point =
+let goals ~pp_format ~mode ~pretac () ~token ~doc ~point =
   let open Fleche in
   let uri, version = (doc.Doc.uri, doc.version) in
   let textDocument = Lsp.Doc.VersionedTextDocumentIdentifier.{ uri; version } in
@@ -74,7 +75,7 @@ let goals ~pp_format ~mode ~pretac () ~doc ~point =
     Lang.Point.{ line = fst point; character = snd point; offset = -1 }
   in
   let open Coq.Protect.E.O in
-  let+ goals, program = get_goal_info ~doc ~point ~mode ~pretac () in
+  let+ goals, program = get_goal_info ~token ~doc ~point ~mode ~pretac () in
   let node = Info.LC.node ~doc ~point Exact in
   let messages = mk_messages node in
   let error = Option.bind node mk_error in
@@ -83,6 +84,6 @@ let goals ~pp_format ~mode ~pretac () ~doc ~point =
     to_yojson pp { textDocument; position; goals; program; messages; error })
   |> Result.ok
 
-let goals ~pp_format ~mode ~pretac () ~doc ~point =
-  let f () = goals ~pp_format ~mode ~pretac () ~doc ~point in
+let goals ~pp_format ~mode ~pretac () ~token ~doc ~point =
+  let f () = goals ~pp_format ~mode ~pretac () ~token ~doc ~point in
   Request.R.of_execution ~name:"goals" ~f ()

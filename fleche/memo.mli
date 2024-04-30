@@ -7,34 +7,61 @@ module Stats : sig
     }
 end
 
-module Init : sig
-  type t = Coq.State.t * Coq.Workspace.t * Lang.LUri.File.t
+(** Flèche memo / cache tables, with some advanced features *)
+module type S = sig
+  type input
 
-  val eval : t -> (Coq.State.t, Loc.t) Coq.Protect.E.t
-end
+  (** For now, to generalize later if needed *)
+  type output
 
-module Interp : sig
-  type t = Coq.State.t * Coq.Ast.t
+  (** [eval i] Eval an input [i] *)
+  val eval :
+    token:Coq.Limits.Token.t -> input -> (output, Loc.t) Coq.Protect.E.t
 
-  (** Interpret a command, possibly memoizing it *)
-  val eval : t -> (Coq.State.t, Loc.t) Coq.Protect.E.t Stats.t
+  (** [eval i] Eval an input [i] and produce stats *)
+  val evalS :
+    token:Coq.Limits.Token.t -> input -> (output, Loc.t) Coq.Protect.E.t Stats.t
 
-  (** [size ()] Return the size in words, expensive *)
+  (** [size ()] Return the cache size in words, expensive *)
   val size : unit -> int
 
-  (** debug *)
-  val input_info : t -> string
+  (** [freqs ()]: (sorted) histogram *)
+  val all_freqs : unit -> int list
+
+  (** debug data for input *)
+  val input_info : input -> string
+
+  (** clears the cache *)
+  val clear : unit -> unit
 end
 
-module Admit : sig
-  type t = Coq.State.t
+(** Document creation cache *)
+module Init :
+  S
+    with type input = Coq.State.t * Coq.Workspace.t * Lang.LUri.File.t
+     and type output = Coq.State.t
 
-  val eval : t -> (Coq.State.t, Loc.t) Coq.Protect.E.t
-end
+(** Vernacular evaluation cache, invariant w.r.t. Coq's Ast locations, results
+    are repaired. *)
+module Interp :
+  S with type input = Coq.State.t * Coq.Ast.t and type output = Coq.State.t
+
+(** Require evaluation cache, also invariant w.r.t. locations inside
+    [Coq.Ast.Require.t] *)
+module Require :
+  S
+    with type input = Coq.State.t * Coq.Files.t * Coq.Ast.Require.t
+     and type output = Coq.State.t
+
+(** Admit evaluation cache *)
+module Admit : S with type input = Coq.State.t and type output = Coq.State.t
 
 module CacheStats : sig
   val reset : unit -> unit
 
-  (** Returns the hit ratio of the cache *)
+  (** Returns the hit ratio of the cache, etc... *)
   val stats : unit -> string
 end
+
+(** Size of all caches, very expensive *)
+val all_size : unit -> int

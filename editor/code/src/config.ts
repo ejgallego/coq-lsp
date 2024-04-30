@@ -1,4 +1,4 @@
-import { DocumentSelector, ExtensionContext, workspace } from "vscode";
+import { TextDocumentFilter } from "vscode-languageclient";
 
 export interface CoqLspServerConfig {
   client_version: string;
@@ -48,15 +48,44 @@ export enum ShowGoalsOnCursorChange {
 
 export interface CoqLspClientConfig {
   show_goals_on: ShowGoalsOnCursorChange;
+  pp_format: "Pp" | "Str";
+}
+
+function pp_type_to_pp_format(pp_type: 0 | 1 | 2): "Pp" | "Str" {
+  switch (pp_type) {
+    case 0:
+      return "Str";
+    case 1:
+      return "Pp";
+    case 2:
+      return "Pp";
+  }
 }
 
 export namespace CoqLspClientConfig {
   export function create(wsConfig: any): CoqLspClientConfig {
-    let obj: CoqLspClientConfig = { show_goals_on: wsConfig.show_goals_on };
+    let obj: CoqLspClientConfig = {
+      show_goals_on: wsConfig.show_goals_on,
+      pp_format: pp_type_to_pp_format(wsConfig.pp_type),
+    };
     return obj;
   }
 }
-export const coqLSPDocumentSelector: DocumentSelector = [
-  { language: "coq" },
-  { language: "markdown", pattern: "**/*.mv" },
-];
+
+export namespace CoqSelector {
+  // All Coq files, regardless of the scheme.
+  export const all: TextDocumentFilter[] = [
+    { language: "coq" },
+    { language: "markdown", pattern: "**/*.mv" },
+  ];
+
+  // Local Coq files, suitable for interaction with a local server
+  export const local: TextDocumentFilter[] = all.map((selector) => {
+    return { ...selector, scheme: "file" };
+  });
+
+  // VSCode Live Share URIs
+  export const vsls: TextDocumentFilter[] = all.map((selector) => {
+    return { ...selector, scheme: "vsls" };
+  });
+}

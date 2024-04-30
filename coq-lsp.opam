@@ -18,8 +18,10 @@ license: "LGPL-2.1-or-later"
 doc: "https://ejgallego.github.io/coq-lsp/"
 
 depends: [
-  "ocaml"        { >= "4.11.0" }
-  "dune"         { >= "3.2.0"  }
+
+  ("ocaml" {>= "5.0"} | ("ocaml" {<= "5.0"} & "memprof-limits" { >= "0.2.1" } ))
+
+  "dune"         { >= "3.2.0" }
 
   # lsp dependencies
   "cmdliner"     { >= "1.1.0" }
@@ -39,5 +41,8 @@ depends: [
   "camlp-streams" { >= "5.0" }
 ]
 
-build: [ [ "dune" "build" "-p" name "-j" jobs ] ]
+build: [
+  [ "rm" "-rf" "vendor" ]
+  [ "dune" "build" "-p" name "-j" jobs ]
+]
 run-test: [ [ "dune" "runtest" "-p" name "-j" jobs ] ]

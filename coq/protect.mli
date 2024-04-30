@@ -11,9 +11,8 @@ module Error : sig
     | Anomaly of 'l payload
 end
 
-(** This "monad" could be related to "Runners in action" (Ahman,
-    Bauer), thanks to Guillaume Munch-Maccagnoni for the reference and
-    for many useful tips! *)
+(** This "monad" could be related to "Runners in action" (Ahman, Bauer), thanks
+    to Guillaume Munch-Maccagnoni for the reference and for many useful tips! *)
 module R : sig
   type ('a, 'l) t = private
     | Completed of ('a, 'l Error.t) result
@@ -52,5 +51,5 @@ val fb_queue : Loc.t Message.t list ref
 
 (** Eval a function and reify the exceptions. Note [f] _must_ be pure, as in
     case of anomaly [f] may be re-executed with debug options. Beware, not
-    thread-safe! *)
-val eval : f:('i -> 'o) -> 'i -> ('o, Loc.t) E.t
+    thread-safe! [token] Does allow to interrupt the evaluation. *)
+val eval : token:Limits.Token.t -> f:('i -> 'o) -> 'i -> ('o, Loc.t) E.t

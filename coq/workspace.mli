@@ -10,8 +10,8 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2016-2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+ *)
+(* Copyright 2019-2024 Inria           -- Dual License LGPL 2.1 / GPL3+ *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
@@ -32,19 +32,33 @@ module Warning : sig
   val apply : t list -> unit
 end
 
+module Require : sig
+  type t =
+    { library : string
+    ; from : string option
+    ; flags : Vernacexpr.export_with_cats option
+    }
+end
+
 type t = private
   { coqlib : string
   ; coqcorelib : string
   ; ocamlpath : string option
   ; vo_load_path : Loadpath.vo_path list
+        (** List of -R / -Q flags passed to Coq, usually theories we depend on *)
   ; ml_include_path : string list
-  ; require_libs :
-      (string * string option * Vernacexpr.export_with_cats option) list
-  ; flags : Flags.t
+        (** List of paths to look for Coq plugins, deprecated in favor of
+            findlib *)
+  ; require_libs : Require.t list
+        (** Modules to preload, usually Coq.Init.Prelude *)
+  ; flags : Flags.t  (** Coq-specific flags *)
   ; warnings : Warning.t list
   ; kind : string  (** How the workspace was built *)
   ; debug : bool  (** Enable backtraces *)
   }
+
+(** Inject some requires *)
+val inject_requires : extra_requires:Require.t list -> t -> t
 
 (** compare *)
 val compare : t -> t -> int
@@ -54,6 +68,8 @@ val hash : t -> int
 
 (** user message, debug extra data *)
 val describe : t -> string * string
+
+val describe_guess : (t, string) Result.t -> string * string
 
 module CmdLine : sig
   type t =
@@ -67,7 +83,15 @@ module CmdLine : sig
     }
 end
 
-val guess : debug:bool -> cmdline:CmdLine.t -> dir:string -> t
+val guess :
+     token:Limits.Token.t
+  -> debug:bool
+  -> cmdline:CmdLine.t
+  -> dir:string
+  -> (t, string) Result.t
+
+(* Fallback workspace *)
+val default : debug:bool -> cmdline:CmdLine.t -> t
 
 (** [apply libname w] will prepare Coq for a new file [libname] on workspace [w] *)
 val apply : uri:Lang.LUri.File.t -> t -> unit

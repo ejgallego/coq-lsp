@@ -1,8 +1,8 @@
 (************************************************************************)
 (* Flèche => document manager: Document                                 *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
-(* Written by: Emilio J. Gallego Arias                                  *)
+(* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Written by: Emilio J. Gallego Arias & coq-lsp contributors           *)
 (************************************************************************)
 
 module Node : sig
@@ -65,9 +65,13 @@ module Env : sig
   type t = private
     { init : Coq.State.t
     ; workspace : Coq.Workspace.t
+    ; files : Coq.Files.t
     }
 
-  val make : init:Coq.State.t -> workspace:Coq.Workspace.t -> t
+  val make :
+    init:Coq.State.t -> workspace:Coq.Workspace.t -> files:Coq.Files.t -> t
+
+  val inject_requires : extra_requires:Coq.Workspace.Require.t list -> t -> t
 end
 
 (** A Flèche document is basically a [node list], which is a crude form of a
@@ -98,12 +102,19 @@ val diags : t -> Lang.Diagnostic.t list
 (** Create a new Coq document, this is cached! Note that this operation always
     suceeds, but the document could be created in a `Failed` state if problems
     arise. *)
-val create : env:Env.t -> uri:Lang.LUri.File.t -> version:int -> raw:string -> t
+val create :
+     token:Coq.Limits.Token.t
+  -> env:Env.t
+  -> uri:Lang.LUri.File.t
+  -> version:int
+  -> raw:string
+  -> t
 
 (** Update the contents of a document, updating the right structures for
     incremental checking. If the operation fails, the document will be left in
     `Failed` state. *)
-val bump_version : version:int -> raw:string -> t -> t
+val bump_version :
+  token:Coq.Limits.Token.t -> version:int -> raw:string -> t -> t
 
 (** Checking targets, this specifies what we expect check to reach *)
 module Target : sig
@@ -119,11 +130,17 @@ end
 (** [check ~io ~target ~doc ()], check document [doc], [target] will have Flèche
     stop after the point specified there has been reached. Output functions are
     in the [io] record, used to send partial updates. *)
-val check : io:Io.CallBack.t -> target:Target.t -> doc:t -> unit -> t
+val check :
+     io:Io.CallBack.t
+  -> token:Coq.Limits.Token.t
+  -> target:Target.t
+  -> doc:t
+  -> unit
+  -> t
 
 (** [save ~doc] will save [doc] .vo file. It will fail if proofs are open, or if
     the document completion status is not [Yes] *)
-val save : doc:t -> (unit, Loc.t) Coq.Protect.E.t
+val save : token:Coq.Limits.Token.t -> doc:t -> (unit, Loc.t) Coq.Protect.E.t
 
 (** This is internal, to workaround the Coq multiple-docs problem *)
 val create_failed_permanent :

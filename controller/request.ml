@@ -40,8 +40,10 @@ module R = struct
     | Completed (Ok r) -> r
 end
 
-type document = doc:Fleche.Doc.t -> R.t
-type position = doc:Fleche.Doc.t -> point:int * int -> R.t
+type document = token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> R.t
+
+type position =
+  token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> point:int * int -> R.t
 
 (** Requests that require data access *)
 module Data = struct
@@ -72,15 +74,15 @@ module Data = struct
   let dm_request pr =
     match pr with
     | DocRequest { uri; postpone; handler = _ } ->
-      Fleche.Theory.Request.(FullDoc { uri; postpone })
+      (uri, postpone, Fleche.Theory.Request.FullDoc)
     | PosRequest { uri; point; version; postpone; handler = _ } ->
-      Fleche.Theory.Request.(PosInDoc { uri; point; version; postpone })
+      (uri, postpone, Fleche.Theory.Request.(PosInDoc { point; version }))
 
-  let serve ~doc pr =
+  let serve ~token ~doc pr =
     match pr with
-    | DocRequest { uri = _; postpone = _; handler } -> handler ~doc
+    | DocRequest { uri = _; postpone = _; handler } -> handler ~token ~doc
     | PosRequest { uri = _; point; version = _; postpone = _; handler } ->
-      handler ~point ~doc
+      handler ~token ~point ~doc
 end
 
-let empty ~doc:_ ~point:_ = Ok (`List [])
+let empty ~token:_ ~doc:_ ~point:_ = Ok (`List [])
