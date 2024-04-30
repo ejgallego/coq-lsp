@@ -85,7 +85,7 @@ let mk_lp ~has_ml ~coq_path ~unix_path ~implicit =
   }
 
 let mk_stdlib ~implicit unix_path =
-  mk_lp ~has_ml:AddNoML ~coq_path:coq_root ~implicit ~unix_path
+  mk_lp ~has_ml:AddRecML ~coq_path:coq_root ~implicit ~unix_path
 
 let mk_userlib unix_path =
   mk_lp ~has_ml:AddRecML ~coq_path:default_root ~implicit:false ~unix_path
@@ -147,14 +147,16 @@ let make ~cmdline ~implicit ~kind ~debug =
   let dft_ml_include_path, dft_vo_load_path =
     if boot then ([], [])
     else
-      let unix_path = Filename.concat coqcorelib "plugins" in
-      ( System.all_subdirs ~unix_path |> List.map fst
+      (* let unix_path = Filename.concat coqcorelib "plugins" in *)
+      (* ( System.all_subdirs ~unix_path |> List.map fst *)
+      ( []
       , (* Setup vo_include path, note that has_ml=true does the job for
            user_contrib and plugins *)
         let userpaths = mk_path_coqlib "user-contrib" :: Envars.coqpath in
         let user_vo_path = List.map mk_userlib userpaths in
         let stdlib_vo_path = mk_path_coqlib "theories" |> mk_stdlib ~implicit in
-        stdlib_vo_path :: user_vo_path )
+        let stdlib_vo_plugins = mk_path_coqlib "plugins" |> mk_stdlib ~implicit in
+        stdlib_vo_path :: stdlib_vo_plugins :: user_vo_path )
   in
   let require_libs =
     let rq_list =
