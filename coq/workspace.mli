@@ -32,19 +32,33 @@ module Warning : sig
   val apply : t list -> unit
 end
 
+module Require : sig
+  type t =
+    { library : string
+    ; from : string option
+    ; flags : Vernacexpr.export_with_cats option
+    }
+end
+
 type t = private
   { coqlib : string
   ; coqcorelib : string
   ; ocamlpath : string option
   ; vo_load_path : Loadpath.vo_path list
+        (** List of -R / -Q flags passed to Coq, usually theories we depend on *)
   ; ml_include_path : string list
-  ; require_libs :
-      (string * string option * Vernacexpr.export_with_cats option) list
-  ; flags : Flags.t
+        (** List of paths to look for Coq plugins, deprecated in favor of
+            findlib *)
+  ; require_libs : Require.t list
+        (** Modules to preload, usually Coq.Init.Prelude *)
+  ; flags : Flags.t  (** Coq-specific flags *)
   ; warnings : Warning.t list
   ; kind : string  (** How the workspace was built *)
   ; debug : bool  (** Enable backtraces *)
   }
+
+(** Inject some requires *)
+val inject_requires : extra_requires:Require.t list -> t -> t
 
 (** compare *)
 val compare : t -> t -> int

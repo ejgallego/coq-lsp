@@ -40,5 +40,8 @@ depends: [
   "coq-serapi"   { >= "8.17.0+0.17.2" < "8.18"  }
 ]
 
-build: [ [ "dune" "build" "-p" name "-j" jobs ] ]
+build: [
+  [ "rm" "-rf" "vendor" ]
+  [ "dune" "build" "-p" name "-j" jobs ]
+]
 run-test: [ [ "dune" "runtest" "-p" name "-j" jobs ] ]

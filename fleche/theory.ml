@@ -135,23 +135,41 @@ end
 
 let diags_of_doc doc = List.concat_map Doc.Node.diags doc.Doc.nodes
 
-(* This is temporary for 0.1.7 and our ER project, we need to reify this to a
+(* This is temporary for 0.1.9 and our ER project, we need to reify this to a
    general structure *)
 module Register : sig
+  (** Run an action before a constructing the document root state. *)
+  module InjectRequire : sig
+    type t = io:Io.CallBack.t -> Coq.Workspace.Require.t list
+
+    val add : t -> unit
+    val fire : io:Io.CallBack.t -> Coq.Workspace.Require.t list
+  end
+
+  (** Run an action when a document has completed checking, attention, with or
+      without errors. *)
   module Completed : sig
     type t = io:Io.CallBack.t -> token:Coq.Limits.Token.t -> doc:Doc.t -> unit
+
+    val add : t -> unit
+    val fire : io:Io.CallBack.t -> token:Coq.Limits.Token.t -> doc:Doc.t -> unit
+  end
+end = struct
+  module InjectRequire = struct
+    type t = io:Io.CallBack.t -> Coq.Workspace.Require.t list
+
+    let callback : t list ref = ref []
+    let add fn = callback := fn :: !callback
+    let fire ~io = List.concat_map (fun f -> f ~io) !callback
   end
 
-  val add : Completed.t -> unit
-  val fire : io:Io.CallBack.t -> token:Coq.Limits.Token.t -> doc:Doc.t -> unit
-end = struct
   module Completed = struct
     type t = io:Io.CallBack.t -> token:Coq.Limits.Token.t -> doc:Doc.t -> unit
-  end
 
-  let callback : Completed.t list ref = ref []
-  let add fn = callback := fn :: !callback
-  let fire ~io ~token ~doc = List.iter (fun f -> f ~io ~token ~doc) !callback
+    let callback : t list ref = ref []
+    let add fn = callback := fn :: !callback
+    let fire ~io ~token ~doc = List.iter (fun f -> f ~io ~token ~doc) !callback
+  end
 end
 
 let send_diags ~io ~token:_ ~doc =
@@ -167,8 +185,8 @@ let send_perf_data ~io ~token:_ ~(doc : Doc.t) =
     let uri, version = (doc.uri, doc.version) in
     Io.Report.perfData ~io ~uri ~version (Perf_analysis.make doc)
 
-let () = Register.add send_perf_data
-let () = Register.add send_diags
+let () = Register.Completed.add send_perf_data
+let () = Register.Completed.add send_diags
 
 module Check : sig
   val schedule : uri:Lang.LUri.File.t -> unit
@@ -219,7 +237,7 @@ end = struct
         let doc = Doc.check ~io ~token ~target ~doc:handle.doc () in
         let requests = Handle.update_doc_info ~handle ~doc in
         if Doc.Completion.is_completed doc.completed then
-          Register.fire ~io ~token ~doc;
+          Register.Completed.fire ~io ~token ~doc;
         (* Remove from the queue *)
         if Doc.Completion.is_completed doc.completed then
           pending := pend_pop !pending;
@@ -239,7 +257,9 @@ end = struct
     pending := CList.remove Lang.LUri.File.equal uri !pending
 end
 
-let create ~token ~env ~uri ~raw ~version =
+let create ~io ~token ~env ~uri ~raw ~version =
+  let extra_requires = Register.InjectRequire.fire ~io in
+  let env = Doc.Env.inject_requires ~extra_requires env in
   let doc = Doc.create ~token ~env ~uri ~raw ~version in
   Handle.create ~uri ~doc;
   Check.schedule ~uri
@@ -276,7 +296,7 @@ let create ~io ~token ~env ~uri ~raw ~version =
     Check.schedule ~uri)
   else (
     tainted := true;
-    create ~token ~env ~uri ~raw ~version)
+    create ~io ~token ~env ~uri ~raw ~version)
 
 let change ~io:_ ~token ~(doc : Doc.t) ~version ~raw =
   let uri = doc.uri in

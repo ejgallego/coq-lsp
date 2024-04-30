@@ -75,6 +75,29 @@
    server-side option is enabled (@ejgallego, #670)
  - include range of full sentence in error diagnostic extra data
    (@ejgallego, #670 , thanks to @driverag22 for the idea, cc: #663).
+ - The `coq-lsp.pp_type` VSCode client option now takes effect
+   immediately, no more need to restart the server to get different
+   goal display formats (@ejgallego, #675)
+ - new public VSCode extension API so other extensions can perform
+   actions when the user request the goals (@ejgallego, @bhaktishh,
+   #672, fixes #538)
+ - Support Visual Studio Live Share URIs better (`vsls://`), in
+   particular don't try to display goals if the URI is VSLS one
+   (@ejgallego, #676)
+ - New `InjectRequire` plugin API for plugins to be able to instrument
+   the default import list of files (@ejgallego @corwin-of-amber,
+   #679)
+ - Add `--max_errors=n` option to `fcc`, this way users can set
+   `--max_errors=0` to imitate `coqc` behavior (@ejgallego, #680)
+ - Fix `fcc` exit status when checking terminates with fatal errors
+   (@ejgallego, @Alizter, #680)
+ - Fix install to OPAM switches from `main` branch (@ejgallego, #683,
+   fixes #682, cc #479 #488, thanks to @Hazardouspeach for the report)
+ - New `--int_backend={Coq,Mp}` command line parameter to select the
+   interruption method for Coq (@ejgallego, #684)
+ - Update `package-lock.json` for latest bugfixes (@ejgallego, #687)
+ - Update Nix flake enviroment (@Alizter, #684 #688)
+ - Update `prettier` (@Alizter @ejgallego, #684 #688)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

@@ -8,6 +8,9 @@ implements some extensions tailored to improve Coq-specific use.
 As of today, this document is written for the 3.17 version of the LSP specification:
 https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification
 
+For documentation on the API of the VSCode/VSCodium `coq-lsp`
+extension see the [VSCODE_API](./VSCODE_API.md) file instead.
+
 See also the upstream LSP issue on generic support for Proof
 Assistants
 https://github.com/microsoft/language-server-protocol/issues/1414
