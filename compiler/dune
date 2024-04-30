@@ -7,4 +7,5 @@
 (executable
  (public_name fcc)
  (modules fcc)
- (libraries cmdliner fcc_lib))
+ (link_flags -linkall)
+ (libraries cmdliner fcc_lib num))
