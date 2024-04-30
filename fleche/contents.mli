@@ -25,4 +25,9 @@ module R : sig
   val map : f:('a -> 'b) -> 'a t -> 'b t
 end
 
+(** Process contents *)
 val make : uri:Lang.LUri.File.t -> raw:string -> t R.t
+
+(** Make an object of type [t] but don't process the text, this is only used
+    internally to still provide some contents when [make] fails. *)
+val make_raw : raw:string -> t

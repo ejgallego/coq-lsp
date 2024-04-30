@@ -5,7 +5,7 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-let request ~(doc : Fleche.Doc.t) ~point =
+let request ~token:_ ~(doc : Fleche.Doc.t) ~point =
   let { Fleche.Doc.contents; _ } = doc in
   Option.cata
     (fun id_at_point ->

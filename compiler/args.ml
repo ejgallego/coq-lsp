@@ -12,4 +12,9 @@ type t =
   ; debug : bool  (** run in debug mode *)
   ; display : Display.t  (** display level *)
   ; plugins : string list  (** Flèche plugins to load *)
+  ; max_errors : int option
+        (** Maximum erros before aborting the compilation *)
   }
+
+let compute_default_plugins ~no_vo ~plugins =
+  if no_vo then plugins else "coq-lsp.plugin.save_vo" :: plugins

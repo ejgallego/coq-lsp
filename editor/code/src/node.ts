@@ -1,8 +1,13 @@
 import { ExtensionContext } from "vscode";
 import { LanguageClient, ServerOptions } from "vscode-languageclient/node";
-import { activateCoqLSP, ClientFactoryType, deactivateCoqLSP } from "./client";
+import {
+  activateCoqLSP,
+  ClientFactoryType,
+  CoqLspAPI,
+  deactivateCoqLSP,
+} from "./client";
 
-export function activate(context: ExtensionContext): void {
+export function activate(context: ExtensionContext): CoqLspAPI {
   const cf: ClientFactoryType = (context, clientOptions, wsConfig) => {
     const serverOptions: ServerOptions = {
       command: wsConfig.path,

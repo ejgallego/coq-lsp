@@ -1,5 +1,112 @@
-# coq-lsp 0.1.8: Dot / Bracket
-------------------------------
+# unreleased
+------------
+
+ - new option `show_loc_info_on_hover` that will display parsing debug
+   information on hover; previous flag was fixed in code, which is way
+   less flexible. This also fixes the option being on in 0.1.8 by
+   mistake (@ejgallego, #588)
+ - hover plugins can now access the full document, this is convenient
+   for many use cases (@ejgallego, #591)
+ - fix hover position computation on the presence of Utf characters
+   (@ejgallego, #597, thanks to Pierre Courtieu for the report and
+   example, closes #594)
+ - fix activation bug that prevented extension activation for `.mv`
+   files, see discussion in the issues about the upstream policy
+   (@ejgallego @r3m0t, #598, cc #596, reported by Théo Zimmerman)
+ - require VSCode >= 1.82 in package.json . Our VSCode extension uses
+   `vscode-languageclient` 9 which imposes this. (@ejgallego, #599,
+   thanks to Théo Zimmerman for the report)
+ - `proof/goals` request: new `mode` parameter, to specify goals
+   after/before sentence display; renamed `pretac` to `command`, as to
+   provide official support for speculative execution (@ejgallego, #600)
+ - fix some cases where interrupted computations where memoized
+   (@ejgallego, #603)
+ - [internal] Flèche [Doc.t] API will now absorb errors on document
+   update and creation into the document itself. Thus, a document that
+   failed to create or update is still valid, but in the right failed
+   state. This is a much needed API change for a lot of use cases
+   (@ejgallego, #604)
+ - support OCaml 5.1.x (@ejgallego, #606)
+ - update progress indicator correctly on End Of File (@ejgallego,
+   #605, fixes #445)
+ - [plugins] New `astdump` plugin to dump AST of files into JSON and
+   SEXP (@ejgallego, #607)
+ - errors on save where not properly caught (@ejgallego, #608)
+ - switch default of `goal_after_tactic` to `true` (@Alizter,
+   @ejgallego, cc: #614)
+ - error recovery: Recognize `Defined` and `Admitted` in lex recovery
+   (@ejgallego, #616)
+ - completion: correctly understand UTF-16 code points on completion
+   request (Léo Stefanesco, #613, fixes #531)
+ - don't trigger the goals window in general markdown buffer
+   (@ejgallego, #625, reported by Théo Zimmerman)
+ - allow not to postpone full document requests (#626, @ejgallego)
+ - new configuration value `check_only_on_request` which will delay
+   checking the document until a request has been made (#629, cc: #24,
+   @ejgallego)
+ - fix typo on package.json configuration section (@ejgallego, #645)
+ - be more resilient with invalid _CoqProject files (@ejgallego, #646)
+ - support for Coq 8.16 has been abandoned due to lack of dev
+   resources (@ejgallego, #649)
+ - new option `--no_vo` for `fcc`, which will skip the `.vo` saving
+   step. `.vo` saving is now an `fcc` plugins, but for now, it is
+   enabled by default (@ejgallego, #650)
+ - depend on `memprof-limits` on OCaml 4.x (@ejgallego, #660)
+ - bump minimal OCaml version to 4.12 due to `memprof-limits`
+   (@ejgallego, #660)
+ - monitor all Coq-level calls under an interruption token
+   (@ejgallego, #661)
+ - interpret require thru our own custom execution env-aware path
+   (@bhaktishh, @ejgallego, #642, #643, #644)
+ - new `coq-lsp.plugin.goaldump` plugin, as an example on how to dump
+   goals from a document (@ejgallego @gbdrt, #619)
+ - new trim command (both in the server and in VSCode) to liberate
+   space used in the cache (@ejgallego, #662, fixes #367 cc: #253 #236
+   #348)
+ - fix Coq performance view display (@ejgallego, #663, regression in
+   #513)
+ - allow more than one input position in `selectionRange` LSP call
+   (@ejgallego, #667, fixes #663)
+ - new VSCode commands to allow to move one sentence backwards /
+   forward, this is particularly useful when combined with lazy
+   checking mode (@ejgallego, #671, fixes #263, fixes #580)
+ - change diagnostic `extra` field to `data`, so we now conform to the
+   LSP spec, include the data only when the `send_diags_extra_data`
+   server-side option is enabled (@ejgallego, #670)
+ - include range of full sentence in error diagnostic extra data
+   (@ejgallego, #670 , thanks to @driverag22 for the idea, cc: #663).
+ - The `coq-lsp.pp_type` VSCode client option now takes effect
+   immediately, no more need to restart the server to get different
+   goal display formats (@ejgallego, #675)
+ - new public VSCode extension API so other extensions can perform
+   actions when the user request the goals (@ejgallego, @bhaktishh,
+   #672, fixes #538)
+ - Support Visual Studio Live Share URIs better (`vsls://`), in
+   particular don't try to display goals if the URI is VSLS one
+   (@ejgallego, #676)
+ - New `InjectRequire` plugin API for plugins to be able to instrument
+   the default import list of files (@ejgallego @corwin-of-amber,
+   #679)
+ - Add `--max_errors=n` option to `fcc`, this way users can set
+   `--max_errors=0` to imitate `coqc` behavior (@ejgallego, #680)
+ - Fix `fcc` exit status when checking terminates with fatal errors
+   (@ejgallego, @Alizter, #680)
+ - Fix install to OPAM switches from `main` branch (@ejgallego, #683,
+   fixes #682, cc #479 #488, thanks to @Hazardouspeach for the report)
+ - New `--int_backend={Coq,Mp}` command line parameter to select the
+   interruption method for Coq (@ejgallego, #684)
+ - Update `package-lock.json` for latest bugfixes (@ejgallego, #687)
+ - Update Nix flake enviroment (@Alizter, #684 #688)
+ - Update `prettier` (@Alizter @ejgallego, #684 #688)
+
+# coq-lsp 0.1.8.1: Spring fix
+-----------------------------
+
+ - call to VizCar vscode extension, mirroring behavior for
+   vizx. (@bhaktishh, #655)
+
+# coq-lsp 0.1.8: Trick-or-treat
+-------------------------------
 
  - Update VSCode client dependencies, should bring some performance
    improvements to goal pretty printing (@ejgallego, #530)
@@ -36,6 +143,28 @@
  - New lexical qed detection error recovery rule; this makes a very
    large usability difference in practice when editing inside proofs.
    (@ejgallego, #567, fixes #33)
+ - `coq-lsp` is now supported by the `coq-nix-toolbox` (@Zimmi48,
+   @CohenCyril, #572, via
+   https://github.com/coq-community/coq-nix-toolbox/pull/164 )
+ - Support for `-rifrom` in `_CoqProject` and in command line
+   (`--rifrom`). Thanks to Lasse Blaauwbroek for the report.
+   (@ejgallego, #581, fixes #579)
+ - Export Query Goals API in VSCode client; this way other extensions
+   can implement their own commands that query Coq goals (@amblafont,
+   @ejgallego, #576, closes #558)
+ - New `pretac` field for preprocessing of goals with a tactic using
+   speculative execution, this is experimental for now (@amblafont,
+   @ejgallego, #573, helps with #558)
+ - Implement `textDocument/selectionRange` request, that will return
+   the range of the Coq sentence underlying the cursor. In VSCode,
+   this is triggered by the "Expand Selection" command. The
+   implementation is partial: we only take into account the first
+   position, and we only return a single range (Coq sentence) without
+   parents. (@ejgallego, #582)
+ - Be more robust to mixed-separator windows paths in workspace
+   detection (@ejgallego, #583, fixes #569)
+ - Adjust printing breaks in error and message panels (@ejgallego,
+   @Alizter, #586, fixes #457 , fixes #458 , fixes #571)
 
 # coq-lsp 0.1.7: Just-in-time
 -----------------------------
@@ -56,7 +185,7 @@
    (@ejgallego, #438, reported by David Ilcinkas)
  - Fix "Error message browser becomes non-visible when there are many
    goals" by using a fixed-position separated error display (@TDiazT,
-   #445, fixes #441)
+   #455, fixes #441)
  - Message about workspace detection was printing the wrong file,
    (@ejgallego, #444, reported by Alex Sanchez-Stern)
  - Display the list of pending obligations in info panel (@ejgallego,

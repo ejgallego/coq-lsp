@@ -15,6 +15,23 @@ module Id : sig
   module Map : CMap.ExtS with type key = t and module Set := Set
 end
 
+module Require : sig
+  type ast = t
+
+  type t = private
+    { from : Libnames.qualid option
+    ; export : bool option
+    ; mods : Libnames.qualid list
+    ; loc : Loc.t option
+    ; attrs : Attributes.vernac_flag list
+    ; control : Vernacexpr.control_flag list
+    }
+  [@@deriving hash, compare]
+
+  (** Determine if the Ast is a Require *)
+  val extract : ast -> t option
+end
+
 (** [make_info ~st ast] Compute info about a possible definition in [ast], we
     need [~st] to compute the type. *)
 val make_info :

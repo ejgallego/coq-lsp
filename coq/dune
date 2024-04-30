@@ -3,10 +3,20 @@
  (public_name coq-lsp.coq)
  ; Unfortunate we have to link the STM due to the LTAC plugin
  ; depending on it, we should fix this upstream
+ (inline_tests)
+ (preprocess
+  (pps ppx_compare ppx_hash ppx_inline_test))
  (libraries
   findlib.dynload
+  (select
+   limits_mp_impl.ml
+   from
+   (memprof-limits -> limits_mp_impl.real.ml)
+   (!memprof-limits -> limits_mp_impl.fake.ml))
   lang
   coq-core.vernac
   coq-serapi.serlib
+  ; EJGA: This is due to Coq.Args, feel free to move to its own lib if
+  ; needed
+  cmdliner
   camlp-streams))
-

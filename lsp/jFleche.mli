@@ -97,3 +97,6 @@ module DocumentPerfData : sig
     }
   [@@deriving yojson]
 end
+
+val mk_perf :
+  uri:Lang.LUri.File.t -> version:int -> Fleche.Perf.t -> Yojson.Safe.t

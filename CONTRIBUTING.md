@@ -58,11 +58,26 @@ generate it from the relevant entries in `CHANGES.md` at release time.
 
 ### Compilation
 
-#### Opam/Dune
 The server project uses a standard OCaml development setup based on
 Opam and Dune. This also works on Windows using the [Coq Platform
 Source
 Install](https://github.com/coq/platform/blob/main/doc/README_Windows.md#installation-by-compiling-from-sources-using-opam-on-cygwin)
+
+The default development environment for `coq-lsp` is a "composed"
+build that includes git submodules for `coq` and `coq-serapi` in the
+`vendor/` directory. This allows us to easily work with PRs using
+experimental Coq branches, and some other advantages like a better CI
+build cache and easier bisects.
+
+This will however install a local Coq version which may not be
+convenient for all use cases; we thus detail below an alternative
+install method for those that would like to install a `coq-lsp`
+development branch into an OPAM switch.
+
+#### Default development setup, local Coq / `coq-lsp`
+
+This setup will build Coq and `coq-lsp` locally; it is the recommended
+way to develop `coq-lsp` itself.
 
 1. Install the dependencies (the complete updated list of dependencies can be found in `coq-lsp.opam`).
 
@@ -84,6 +99,31 @@ Install](https://github.com/coq/platform/blob/main/doc/README_Windows.md#install
     ```
 
 Alternatively, you can also use the regular `dune build @check` etc... targets.
+
+Now, binaries for Coq and `coq-lsp` can be found under
+`_build/install/default` and used via `dune exec -- fcc` or `dune exec
+-- $your_editor`.
+
+#### Global OPAM install
+
+This setup will build Coq and `coq-lsp` and install them to the
+current OPAM switch. This is a good setup for people looking to try
+out `coq-lsp` development versions with other OPAM packages.
+
+1. Install vendored Coq and SerAPI:
+
+    ```sh
+    opam install vendor/coq/coq{-core,-stdlib,}.opam
+    opam install vendor/coq-serapi
+    ```
+
+2. Install `coq-lsp`:
+    ```sh
+    opam install .
+    ```
+
+Then, you should get a working OPAM switch with Coq and `coq-lsp` from
+your chosen `coq-lsp` branch.
 
 #### Nix
 
@@ -314,9 +354,10 @@ The checklist for the release as of today is the following:
 
 The above can be done with:
 ```
-export COQLSPV=0.1.7
+export COQLSPV=0.1.8
 git checkout main  && make                    && dune-release tag ${COQLSPV}
-git checkout v8.17 && git merge main  && make && dune-release tag ${COQLSPV}+8.17 && dune-release
+git checkout v8.18 && git merge main  && make && dune-release tag ${COQLSPV}+8.18 && dune-release
+git checkout v8.17 && git merge v8.18 && make && dune-release tag ${COQLSPV}+8.17 && dune-release
 git checkout v8.16 && git merge v8.17 && make && dune-release tag ${COQLSPV}+8.16 && dune-release
 ```
 

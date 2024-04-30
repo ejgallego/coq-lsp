@@ -45,15 +45,26 @@ module type S = sig
   type ('a, 'r) query = doc:Doc.t -> point:P.t -> 'a -> 'r option
 
   val node : (approx, Doc.Node.t) query
-  val range : (approx, Lang.Range.t) query
-  val ast : (approx, Doc.Node.Ast.t) query
-  val goals : (approx, Pp.t Coq.Goals.reified_pp) query
-  val program : (approx, Coq.State.Declare.OblState.View.t Names.Id.Map.t) query
-  val messages : (approx, Doc.Node.Message.t list) query
-  val info : (approx, Doc.Node.Info.t) query
-  val completion : (string, string list) query
-  val in_state : st:Coq.State.t -> f:('a -> 'b option) -> 'a -> 'b option
 end
 
 module LC : S with module P := LineCol
 module O : S with module P := Offset
+
+(** We move towards a more modular design here, for preprocessing *)
+module Goals : sig
+  val goals :
+       token:Coq.Limits.Token.t
+    -> st:Coq.State.t
+    -> (Pp.t Coq.Goals.reified_pp option, Loc.t) Coq.Protect.E.t
+
+  val program :
+    st:Coq.State.t -> Coq.State.Declare.OblState.View.t Names.Id.Map.t
+end
+
+module Completion : sig
+  val candidates :
+       token:Coq.Limits.Token.t
+    -> st:Coq.State.t
+    -> string
+    -> (string list option, Loc.t) Coq.Protect.E.t
+end

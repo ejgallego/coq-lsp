@@ -79,8 +79,8 @@ let validate_line ~(doc : Fleche.Doc.t) ~line =
 let validate_position ~doc ~point =
   let line, char = point in
   Option.bind (validate_line ~doc ~line) (fun line ->
-      Option.bind (Coq.Utf8.index_of_char ~line ~char) (fun index ->
-          Some (String.get line index)))
+      let char = Coq.Utf8.get_byte_offset_from_utf16_pos line char in
+      Option.bind char (fun index -> Some (String.get line index)))
 
 let get_char_at_point ~(doc : Fleche.Doc.t) ~point =
   let line, char = point in
@@ -91,7 +91,7 @@ let get_char_at_point ~(doc : Fleche.Doc.t) ~point =
     None
 
 (* point is a utf char! *)
-let completion ~doc ~point =
+let completion ~token:_ ~doc ~point =
   (* Instead of get_char_at_point we should have a CompletionContext.t, to be
      addressed in further completion PRs *)
   (match get_char_at_point ~doc ~point with

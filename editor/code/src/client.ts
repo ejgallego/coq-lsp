@@ -12,11 +12,13 @@ import {
   ThemeColor,
   WorkspaceConfiguration,
   Disposable,
+  languages,
 } from "vscode";
 
 import {
   BaseLanguageClient,
   LanguageClientOptions,
+  NotificationType,
   RequestType,
   RevealOutputChannelOn,
   VersionedTextDocumentIdentifier,
@@ -25,11 +27,15 @@ import {
   FlecheDocumentParams,
   FlecheDocument,
   FlecheSaveParams,
+  GoalRequest,
+  GoalAnswer,
+  PpString,
 } from "../lib/types";
-import { CoqLspClientConfig, CoqLspServerConfig } from "./config";
-import { InfoPanel } from "./goals";
+import { CoqLspClientConfig, CoqLspServerConfig, CoqSelector } from "./config";
+import { InfoPanel, goalReq } from "./goals";
 import { FileProgressManager } from "./progress";
 import { coqPerfData, PerfDataView } from "./perf";
+import { sentenceNext, sentenceBack } from "./edit";
 
 let config: CoqLspClientConfig;
 let client: BaseLanguageClient;
@@ -54,11 +60,32 @@ export type ClientFactoryType = (
   wsConfig: WorkspaceConfiguration
 ) => BaseLanguageClient;
 
+// Extension API type (note this doesn't live in `lib` as this is VSCode specific)
+export interface CoqLspAPI {
+  /**
+   * Query goals from Coq
+   */
+  goalsRequest(params: GoalRequest): Promise<GoalAnswer<PpString>>;
+
+  /**
+   * Register callback on user-initiated goals request
+   */
+  onUserGoals(fn: (goals: GoalAnswer<String>) => void): Disposable;
+}
+
 export function activateCoqLSP(
   context: ExtensionContext,
   clientFactory: ClientFactoryType
-): void {
+): CoqLspAPI {
   window.showInformationMessage("Coq LSP Extension: Going to activate!");
+
+  workspace.onDidChangeConfiguration((cfgChange) => {
+    if (cfgChange.affectsConfiguration("coq-lsp")) {
+      // Refactor to remove the duplicate call below
+      const wsConfig = workspace.getConfiguration("coq-lsp");
+      config = CoqLspClientConfig.create(wsConfig);
+    }
+  });
 
   function coqCommand(command: string, fn: () => void) {
     let disposable = commands.registerCommand("coq-lsp." + command, fn);
@@ -72,7 +99,9 @@ export function activateCoqLSP(
     context.subscriptions.push(disposable);
   }
   function checkForVSCoq() {
-    let vscoq = extensions.getExtension("maximedenes.vscoq");
+    let vscoq =
+      extensions.getExtension("maximedenes.vscoq") ||
+      extensions.getExtension("coq-community.vscoq1");
     if (vscoq?.isActive) {
       window.showErrorMessage(
         "Coq LSP Extension: VSCoq extension has been detected, you need to deactivate it for coq-lsp to work properly.",
@@ -122,10 +151,7 @@ export function activateCoqLSP(
     );
 
     const clientOptions: LanguageClientOptions = {
-      documentSelector: [
-        { scheme: "file", language: "coq" },
-        { scheme: "file", language: "markdown", pattern: "**/*.mv" },
-      ],
+      documentSelector: CoqSelector.local,
       outputChannelName: "Coq LSP Server Events",
       revealOutputChannelOn: RevealOutputChannelOn.Info,
       initializationOptions,
@@ -187,27 +213,39 @@ export function activateCoqLSP(
     let uri = editor.document.uri;
     let version = editor.document.version;
     let position = editor.selection.active;
-    infoPanel.updateFromServer(client, uri, version, position);
+    infoPanel.updateFromServer(
+      client,
+      uri,
+      version,
+      position,
+      config.pp_format
+    );
   };
 
   const goalsCall = (
     textEditor: TextEditor,
     callKind: TextEditorSelectionChangeKind | undefined
   ) => {
-    if (
-      textEditor.document.languageId != "coq" &&
-      textEditor.document.languageId != "markdown"
-    )
+    // Don't trigger the goals if the buffer is not a local Coq buffer
+    if (languages.match(CoqSelector.vsls, textEditor.document) > 0) {
+      // handle VSLS
+      let uri = textEditor.document.uri.toString();
+      let version = textEditor.document.version;
+      let position = textEditor.selection.active;
+      let textDocument = { uri, version };
+      infoPanel.notifyLackOfVSLS(textDocument, position);
+      return;
+    } else if (languages.match(CoqSelector.local, textEditor.document) < 1)
       return;
 
     const kind =
       callKind == TextEditorSelectionChangeKind.Mouse
         ? 1
         : callKind == TextEditorSelectionChangeKind.Keyboard
-        ? 2
-        : callKind
-        ? callKind
-        : 3;
+          ? 2
+          : callKind
+            ? callKind
+            : 3;
     // When evt.kind is null, it often means it was due to an
     // edit, we want to re-trigger in that case
 
@@ -239,6 +277,12 @@ export function activateCoqLSP(
     );
     let params: FlecheDocumentParams = { textDocument };
     client.sendRequest(docReq, params).then((fd) => console.log(fd));
+  };
+
+  const trimNot = new NotificationType<{}>("coq/trimCaches");
+
+  const cacheTrim = () => {
+    client.sendNotification(trimNot, {});
   };
 
   const saveReq = new RequestType<FlecheDocumentParams, void, void>(
@@ -307,15 +351,30 @@ export function activateCoqLSP(
 
   coqCommand("restart", restart);
   coqCommand("toggle", toggle);
+  coqCommand("trim", cacheTrim);
 
   coqEditorCommand("goals", goals);
   coqEditorCommand("document", getDocument);
   coqEditorCommand("save", saveDocument);
 
+  coqEditorCommand("sentenceNext", sentenceNext);
+  coqEditorCommand("sentenceBack", sentenceBack);
+
   createEnableButton();
 
   start();
+
+  return {
+    goalsRequest: (params) => {
+      return client.sendRequest(goalReq, params);
+    },
+    onUserGoals: (fn) => {
+      infoPanel.registerObserver(fn);
+      return new Disposable(() => infoPanel.unregisterObserver(fn));
+    },
+  };
 }
+
 export function deactivateCoqLSP(): Thenable<void> | undefined {
   if (!client) {
     return undefined;

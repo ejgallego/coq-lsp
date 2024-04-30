@@ -25,16 +25,17 @@ type coq_opts =
   ; debug : bool  (** Enable Coq Debug mode *)
   }
 
-let lvl_to_severity (lvl : Feedback.level) =
+let coq_lvl_to_severity (lvl : Feedback.level) =
+  let open Lang.Diagnostic.Severity in
   match lvl with
-  | Feedback.Debug -> 5
-  | Feedback.Info -> 4
-  | Feedback.Notice -> 3
-  | Feedback.Warning -> 2
-  | Feedback.Error -> 1
+  | Feedback.Debug -> hint (* Debug has not LSP number *)
+  | Feedback.Info -> hint
+  | Feedback.Notice -> information
+  | Feedback.Warning -> warning
+  | Feedback.Error -> error
 
 let add_message lvl loc msg q =
-  let lvl = lvl_to_severity lvl in
+  let lvl = coq_lvl_to_severity lvl in
   q := (loc, lvl, msg) :: !q
 
 let mk_fb_handler q Feedback.{ contents; _ } =
@@ -104,5 +105,7 @@ let doc_init ~root_state ~workspace ~uri () =
   (* We return the state at this point! *)
   Vernacstate.freeze_interp_state ~marshallable:false |> State.of_coq
 
-let doc_init ~root_state ~workspace ~uri =
-  Protect.eval ~f:(doc_init ~root_state ~workspace ~uri) ()
+let doc_init ~token:_ ~root_state ~workspace ~uri =
+  (* Don't interrupt document creation. *)
+  let token = Limits.create_atomic () in
+  Protect.eval ~token ~f:(doc_init ~root_state ~workspace ~uri) ()

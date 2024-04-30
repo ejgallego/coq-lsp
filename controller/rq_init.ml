@@ -41,7 +41,7 @@ let check_client_version client_version : unit =
       Format.asprintf "Incorrect client version: %s , expected %s."
         client_version server_version
     in
-    LIO.logMessage ~lvl:1 ~message
+    LIO.(logMessage ~lvl:Lvl.Error ~message)
 
 (* Maybe this should be [cwd] ? *)
 let default_workspace_root = "."
@@ -50,11 +50,11 @@ let parse_furi x = U.to_string x |> Lang.LUri.of_string |> Lang.LUri.File.of_uri
 let parse_fpath x =
   let path = U.to_string x in
   (if Filename.is_relative path then
-   let message =
-     "rootPath is not absolute: " ^ path
-     ^ " . This is not robust, please use absolute paths or rootURI"
-   in
-   LIO.logMessage ~lvl:2 ~message);
+     let message =
+       "rootPath is not absolute: " ^ path
+       ^ " . This is not robust, please use absolute paths or rootURI"
+     in
+     LIO.logMessage ~lvl:LIO.Lvl.Warning ~message);
   Lang.LUri.of_string ("file:///" ^ path) |> Lang.LUri.File.of_uri
 
 let parse_null_or f = function
@@ -128,6 +128,7 @@ let do_initialize ~params =
           ] )
     ; ("definitionProvider", `Bool true)
     ; ("codeLensProvider", `Assoc [])
+    ; ("selectionRangeProvider", `Bool true)
     ; ( "workspace"
       , `Assoc
           [ ( "workspaceFolders"

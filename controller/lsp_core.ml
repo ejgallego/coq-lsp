@@ -25,7 +25,6 @@ module U = Yojson.Safe.Util
 
 let field name dict = List.(assoc name dict)
 let int_field name dict = U.to_int (field name dict)
-let dict_field name dict = U.to_assoc (field name dict)
 let list_field name dict = U.to_list (field name dict)
 let string_field name dict = U.to_string (field name dict)
 let ofield name dict = List.(assoc_opt name dict)
@@ -47,7 +46,7 @@ module Helpers = struct
       | Error err ->
         (* ppx_deriving_yojson error messages leave a lot to be desired *)
         let message = Format.asprintf "json parsing failed: %s" err in
-        LIO.logMessage ~lvl:1 ~message;
+        LIO.logMessage ~lvl:Error ~message;
         (* XXX Fixme *)
         CErrors.user_err (Pp.str "failed to parse uri")
     in
@@ -70,10 +69,18 @@ module Helpers = struct
     let Lsp.Doc.VersionedTextDocumentIdentifier.{ uri; version } = document in
     (uri, version)
 
-  let get_position params =
-    let pos = dict_field "position" params in
+  let lsp_position_to_tuple (pos : J.t) =
+    let pos = U.to_assoc pos in
     let line, character = (int_field "line" pos, int_field "character" pos) in
     (line, character)
+
+  let get_position params =
+    let pos = field "position" params in
+    lsp_position_to_tuple pos
+
+  let get_position_array params =
+    let pos_list = list_field "positions" params in
+    List.map lsp_position_to_tuple pos_list
 end
 
 (** LSP loop internal state: mainly the data needed to create a new document. In
@@ -93,40 +100,54 @@ module State = struct
   type t =
     { cmdline : Coq.Workspace.CmdLine.t
     ; root_state : Coq.State.t
-    ; workspaces : (string * Coq.Workspace.t) list
+    ; workspaces : (string * (Coq.Workspace.t, string) Result.t) list
+    ; default_workspace : Coq.Workspace.t (* fail safe *)
     }
 
   open Lsp.Workspace
 
-  let add_workspace state { WorkspaceFolder.uri; _ } =
+  let add_workspace ~token state { WorkspaceFolder.uri; _ } =
     let dir = Lang.LUri.File.to_string_file uri in
     let { cmdline; workspaces; _ } = state in
-    let ws = Coq.Workspace.guess ~debug:false ~cmdline ~dir in
+    let ws = Coq.Workspace.guess ~token ~debug:false ~cmdline ~dir in
     { state with workspaces = (dir, ws) :: workspaces }
 
   let del_workspace state { WorkspaceFolder.uri; _ } =
     let dir = Lang.LUri.File.to_string_file uri in
     { state with workspaces = List.remove_assoc dir state.workspaces }
 
-  let is_in_dir ~dir ~file = CString.is_prefix dir file
+  let split_in_components path =
+    let phase1 = String.split_on_char '/' path in
+    let phase2 = List.map (String.split_on_char '\\') phase1 in
+    List.concat phase2
+
+  (* This is a bit more tricky in Windows, due to \ vs / paths appearing, so we
+     need to first split the dir *)
+  let is_in_dir ~dir ~file =
+    let dir_c = split_in_components dir in
+    let file_c = split_in_components file in
+    CList.prefix_of String.equal dir_c file_c
 
   let workspace_of_uri ~uri ~state =
-    let { root_state; workspaces; _ } = state in
+    let { root_state; workspaces; default_workspace; _ } = state in
     let file = Lang.LUri.File.to_string_file uri in
     match List.find_opt (fun (dir, _) -> is_in_dir ~dir ~file) workspaces with
     | None ->
-      LIO.logMessage ~lvl:1 ~message:("file not in workspace: " ^ file);
-      (root_state, snd (List.hd workspaces))
-    | Some (_, workspace) -> (root_state, workspace)
+      LIO.logMessage ~lvl:Error ~message:("file not in workspace: " ^ file);
+      (root_state, default_workspace)
+    | Some (_, Error _) ->
+      LIO.logMessage ~lvl:Error ~message:("file in errored workspace: " ^ file);
+      (root_state, default_workspace)
+    | Some (_, Ok workspace) -> (root_state, workspace)
 end
 
-let do_changeWorkspaceFolders ~ofn:_ ~state params =
+let do_changeWorkspaceFolders ~ofn:_ ~token ~state params =
   let open Lsp.Workspace in
   let { DidChangeWorkspaceFoldersParams.event } =
     DidChangeWorkspaceFoldersParams.of_yojson (`Assoc params) |> Result.get_ok
   in
   let { WorkspaceFoldersChangeEvent.added; removed } = event in
-  let state = List.fold_left State.add_workspace state added in
+  let state = List.fold_left (State.add_workspace ~token) state added in
   let state = List.fold_left State.del_workspace state removed in
   state
 
@@ -142,11 +163,17 @@ module Rq : sig
     val error : int * string -> t
   end
 
-  val serve : ofn:(J.t -> unit) -> id:int -> Action.t -> unit
+  val serve :
+    ofn:(J.t -> unit) -> token:Coq.Limits.Token.t -> id:int -> Action.t -> unit
+
   val cancel : ofn:(J.t -> unit) -> code:int -> message:string -> int -> unit
 
   val serve_postponed :
-    ofn:(J.t -> unit) -> doc:Fleche.Doc.t -> Int.Set.t -> unit
+       ofn:(J.t -> unit)
+    -> token:Coq.Limits.Token.t
+    -> doc:Fleche.Doc.t
+    -> Int.Set.t
+    -> unit
 end = struct
   (* Answer a request, private *)
   let answer ~ofn ~id result =
@@ -158,7 +185,7 @@ end = struct
   (* private to the Rq module, just used not to retrigger canceled requests *)
   let _rtable : (int, Request.Data.t) Hashtbl.t = Hashtbl.create 673
 
-  let postpone ~id (pr : Request.Data.t) =
+  let postpone_ ~id (pr : Request.Data.t) =
     if Fleche.Debug.request_delay then
       LIO.trace "request" ("postponing rq : " ^ string_of_int id);
     Hashtbl.add _rtable id pr
@@ -177,8 +204,8 @@ end = struct
     (* fail the request, do cleanup first *)
     let f pr =
       let () =
-        let request = Request.Data.dm_request pr in
-        Fleche.Theory.Request.remove { id; request }
+        let uri, postpone, request = Request.Data.dm_request pr in
+        Fleche.Theory.Request.remove { id; uri; postpone; request }
       in
       Error (code, message)
     in
@@ -189,24 +216,24 @@ end = struct
       LIO.trace "serving"
         (Format.asprintf "rq: %d | %a" id Request.Data.data pr)
 
-  let serve_postponed ~ofn ~doc id =
+  let serve_postponed ~ofn ~token ~doc id =
     let f pr =
       debug_serve id pr;
-      Request.Data.serve ~doc pr
+      Request.Data.serve ~token ~doc pr
     in
     consume_ ~ofn ~f id
 
-  let query ~ofn ~id (pr : Request.Data.t) =
-    let request = Request.Data.dm_request pr in
-    match Fleche.Theory.Request.add { id; request } with
+  let query ~ofn ~token ~id (pr : Request.Data.t) =
+    let uri, postpone, request = Request.Data.dm_request pr in
+    match Fleche.Theory.Request.add { id; uri; postpone; request } with
     | Cancel ->
       let code = -32802 in
       let message = "Document is not ready" in
       Error (code, message) |> answer ~ofn ~id
     | Now doc ->
       debug_serve id pr;
-      Request.Data.serve ~doc pr |> answer ~ofn ~id
-    | Postpone -> postpone ~id pr
+      Request.Data.serve ~token ~doc pr |> answer ~ofn ~id
+    | Postpone -> postpone_ ~id pr
 
   module Action = struct
     type t =
@@ -217,27 +244,30 @@ end = struct
     let error (code, msg) = now (Error (code, msg))
   end
 
-  let serve ~ofn ~id action =
+  let serve ~ofn ~token ~id action =
     match action with
     | Action.Immediate r -> answer ~ofn ~id r
-    | Action.Data p -> query ~ofn ~id p
+    | Action.Data p -> query ~ofn ~token ~id p
 
-  let serve_postponed ~ofn ~doc rl = Int.Set.iter (serve_postponed ~ofn ~doc) rl
+  let serve_postponed ~ofn ~token ~doc rl =
+    Int.Set.iter (serve_postponed ~ofn ~token ~doc) rl
 end
 
 (***********************************************************************)
 (* Start of protocol handlers: document notifications                  *)
 
-let do_open ~io ~(state : State.t) params =
+let do_open ~io ~token ~(state : State.t) params =
   let document =
     field "textDocument" params
     |> Lsp.Doc.TextDocumentItem.of_yojson |> Result.get_ok
   in
   let Lsp.Doc.TextDocumentItem.{ uri; version; text; _ } = document in
-  let root_state, workspace = State.workspace_of_uri ~uri ~state in
-  Fleche.Theory.create ~io ~root_state ~workspace ~uri ~raw:text ~version
+  let init, workspace = State.workspace_of_uri ~uri ~state in
+  let files = Coq.Files.make () in
+  let env = Fleche.Doc.Env.make ~init ~workspace ~files in
+  Fleche.Theory.create ~io ~token ~env ~uri ~raw:text ~version
 
-let do_change ~ofn ~io params =
+let do_change ~ofn ~io ~token params =
   let uri, version = Helpers.get_uri_version params in
   let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
   match changes with
@@ -250,7 +280,7 @@ let do_change ~ofn ~io params =
     ()
   | change :: _ ->
     let raw = string_field "text" change in
-    let invalid_rq = Fleche.Theory.change ~io ~uri ~version ~raw in
+    let invalid_rq = Fleche.Theory.change ~io ~token ~uri ~version ~raw in
     let code = -32802 in
     let message = "Request got old in server" in
     Int.Set.iter (Rq.cancel ~ofn ~code ~message) invalid_rq
@@ -276,7 +306,34 @@ let do_position_request ~postpone ~params ~handler =
   Rq.Action.Data
     (Request.Data.PosRequest { uri; handler; point; version; postpone })
 
+(* XXX Duplicate with theory.ml; inverse comparsion so larger points come
+   first *)
+let compare p1 p2 =
+  let x1, y1 = p1 in
+  let x2, y2 = p2 in
+  let xres = Int.compare x1 x2 in
+  if xres = 0 then -Int.compare y1 y2 else -xres
+
+(* A little bit hacky, but selectionRange is the only request that needs this...
+   so we will survive *)
+let do_position_list_request ~postpone ~params ~handler =
+  let uri, version = Helpers.get_uri_oversion params in
+  let points = Helpers.get_position_array params in
+  match points with
+  | [] ->
+    let point, handler = ((0, 0), Request.empty) in
+    Rq.Action.Data
+      (Request.Data.PosRequest { uri; handler; point; version; postpone })
+  | points ->
+    let handler = handler ~points in
+    let point = List.hd (List.sort compare points) in
+    Rq.Action.Data
+      (Request.Data.PosRequest { uri; handler; point; version; postpone })
+
 let do_hover = do_position_request ~postpone:false ~handler:Rq_hover.hover
+
+let do_selectionRange =
+  do_position_list_request ~postpone:false ~handler:Rq_selectionRange.request
 
 (* We get the format from the params *)
 let get_pp_format_from_config () =
@@ -297,9 +354,27 @@ let get_pp_format params =
     get_pp_format_from_config ()
   | None -> get_pp_format_from_config ()
 
+let get_pretac params =
+  Option.append (ostring_field "command" params) (ostring_field "pretac" params)
+
+let get_goals_mode_from_config () =
+  if !Fleche.Config.v.goal_after_tactic then Fleche.Info.PrevIfEmpty
+  else Fleche.Info.Prev
+
+let get_goals_mode params =
+  match ostring_field "mode" params with
+  | Some "Prev" -> Fleche.Info.Prev
+  | Some "After" -> Fleche.Info.PrevIfEmpty
+  | Some v ->
+    LIO.trace "get_goals_mode" ("error in parameter: " ^ v);
+    get_goals_mode_from_config ()
+  | None -> get_goals_mode_from_config ()
+
 let do_goals ~params =
   let pp_format = get_pp_format params in
-  let handler = Rq_goals.goals ~pp_format in
+  let mode = get_goals_mode params in
+  let pretac = get_pretac params in
+  let handler = Rq_goals.goals ~pp_format ~mode ~pretac () in
   do_position_request ~postpone:true ~handler ~params
 
 let do_definition =
@@ -309,14 +384,19 @@ let do_completion =
   do_position_request ~postpone:true ~handler:Rq_completion.completion
 
 (* Requires the full document to be processed *)
-let do_document_request ~params ~handler =
+let do_document_request ~postpone ~params ~handler =
   let uri = Helpers.get_uri params in
-  Rq.Action.Data (Request.Data.DocRequest { uri; handler })
+  Rq.Action.Data (Request.Data.DocRequest { uri; postpone; handler })
 
-let do_symbols = do_document_request ~handler:Rq_symbols.symbols
-let do_document = do_document_request ~handler:Rq_document.request
-let do_save_vo = do_document_request ~handler:Rq_save.request
-let do_lens = do_document_request ~handler:Rq_lens.request
+(* Don't postpone when in lazy mode *)
+let do_document_request_maybe ~params ~handler =
+  let postpone = not !Fleche.Config.v.check_only_on_request in
+  do_document_request ~postpone ~params ~handler
+
+let do_symbols = do_document_request_maybe ~handler:Rq_symbols.symbols
+let do_document = do_document_request_maybe ~handler:Rq_document.request
+let do_save_vo = do_document_request_maybe ~handler:Rq_save.request
+let do_lens = do_document_request_maybe ~handler:Rq_lens.request
 
 let do_cancel ~ofn ~params =
   let id = int_field "id" params in
@@ -324,15 +404,17 @@ let do_cancel ~ofn ~params =
   let message = "Cancelled by client" in
   Rq.cancel ~ofn ~code ~message id
 
+let do_cache_trim () = Nt_cache_trim.notification ()
+
 (***********************************************************************)
 
 (** LSP Init routine *)
 exception Lsp_exit
 
 let log_workspace (dir, w) =
-  let message, extra = Coq.Workspace.describe w in
+  let message, extra = Coq.Workspace.describe_guess w in
   LIO.trace "workspace" ("initialized " ^ dir) ~extra;
-  LIO.logMessage ~lvl:3 ~message
+  LIO.logMessage ~lvl:Info ~message
 
 let version () =
   let dev_version =
@@ -345,7 +427,7 @@ let version () =
 
 module Init_effect = struct
   type t =
-    | Success of (string * Coq.Workspace.t) list
+    | Success of (string * (Coq.Workspace.t, string) Result.t) list
     | Loop
     | Exit
 end
@@ -357,14 +439,18 @@ let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
     let message =
       Format.asprintf "Initializing coq-lsp server %s" (version ())
     in
-    LIO.logMessage ~lvl:3 ~message;
+    LIO.logMessage ~lvl:Info ~message;
     let result, dirs = Rq_init.do_initialize ~params in
-    Rq.Action.now (Ok result) |> Rq.serve ~ofn ~id;
-    LIO.logMessage ~lvl:3 ~message:"Server initialized";
+    (* We don't need to interrupt this *)
+    let token = Coq.Limits.Token.create () in
+    Rq.Action.now (Ok result) |> Rq.serve ~ofn ~token ~id;
+    LIO.logMessage ~lvl:Info ~message:"Server initialized";
     (* Workspace initialization *)
     let debug = debug || !Fleche.Config.v.debug in
     let workspaces =
-      List.map (fun dir -> (dir, Coq.Workspace.guess ~cmdline ~debug ~dir)) dirs
+      List.map
+        (fun dir -> (dir, Coq.Workspace.guess ~token ~cmdline ~debug ~dir))
+        dirs
     in
     List.iter log_workspace workspaces;
     Success workspaces
@@ -379,19 +465,21 @@ let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
     Loop
 
 (** Dispatching *)
-let dispatch_notification ~io ~ofn ~state ~method_ ~params : unit =
+let dispatch_notification ~io ~ofn ~token ~state ~method_ ~params : unit =
   match method_ with
   (* Lifecycle *)
   | "exit" -> raise Lsp_exit
   (* setTrace *)
   | "$/setTrace" -> do_trace params
   (* Document lifetime *)
-  | "textDocument/didOpen" -> do_open ~io ~state params
-  | "textDocument/didChange" -> do_change ~io ~ofn params
+  | "textDocument/didOpen" -> do_open ~io ~token ~state params
+  | "textDocument/didChange" -> do_change ~io ~ofn ~token params
   | "textDocument/didClose" -> do_close ~ofn params
   | "textDocument/didSave" -> Cache.save_to_disk ()
   (* Workspace *)
   | "workspace/didChangeWorkspaceFolders" -> () (* XXX *)
+  (* Specific to coq-lsp *)
+  | "coq/trimCaches" -> do_cache_trim ()
   (* Cancel Request *)
   | "$/cancelRequest" -> do_cancel ~ofn ~params
   (* NOOPs *)
@@ -399,13 +487,14 @@ let dispatch_notification ~io ~ofn ~state ~method_ ~params : unit =
   (* Generic handler *)
   | msg -> LIO.trace "no_handler" msg
 
-let dispatch_state_notification ~io ~ofn ~state ~method_ ~params : State.t =
+let dispatch_state_notification ~io ~ofn ~token ~state ~method_ ~params :
+    State.t =
   match method_ with
   (* Workspace *)
   | "workspace/didChangeWorkspaceFolders" ->
-    do_changeWorkspaceFolders ~ofn ~state params
+    do_changeWorkspaceFolders ~ofn ~token ~state params
   | _ ->
-    dispatch_notification ~io ~ofn ~state ~method_ ~params;
+    dispatch_notification ~io ~ofn ~token ~state ~method_ ~params;
     state
 
 let dispatch_request ~method_ ~params : Rq.Action.t =
@@ -422,6 +511,7 @@ let dispatch_request ~method_ ~params : Rq.Action.t =
   | "textDocument/documentSymbol" -> do_symbols ~params
   | "textDocument/hover" -> do_hover ~params
   | "textDocument/codeLens" -> do_lens ~params
+  | "textDocument/selectionRange" -> do_selectionRange ~params
   (* Proof-specific stuff *)
   | "proof/goals" -> do_goals ~params
   (* Proof-specific stuff *)
@@ -433,15 +523,15 @@ let dispatch_request ~method_ ~params : Rq.Action.t =
     LIO.trace "no_handler" msg;
     Rq.Action.error (-32601, "method not found")
 
-let dispatch_request ~ofn ~id ~method_ ~params =
-  dispatch_request ~method_ ~params |> Rq.serve ~ofn ~id
+let dispatch_request ~ofn ~token ~id ~method_ ~params =
+  dispatch_request ~method_ ~params |> Rq.serve ~ofn ~token ~id
 
-let dispatch_message ~io ~ofn ~state (com : LSP.Message.t) : State.t =
+let dispatch_message ~io ~ofn ~token ~state (com : LSP.Message.t) : State.t =
   match com with
   | Notification { method_; params } ->
-    dispatch_state_notification ~io ~ofn ~state ~method_ ~params
+    dispatch_state_notification ~io ~ofn ~token ~state ~method_ ~params
   | Request { id; method_; params } ->
-    dispatch_request ~ofn ~id ~method_ ~params;
+    dispatch_request ~ofn ~token ~id ~method_ ~params;
     state
 
 (* Queue handling *)
@@ -453,34 +543,72 @@ let dispatch_message ~io ~ofn ~state (com : LSP.Message.t) : State.t =
    Note that we should add a method to detect stale requests; maybe cancel them
    when a new edit comes. *)
 
+let current_token = ref None
+
+let token_factory () =
+  let token = Coq.Limits.Token.create () in
+  current_token := Some token;
+  token
+
+let set_current_token () =
+  match !current_token with
+  | None -> ()
+  | Some tok ->
+    current_token := None;
+    Coq.Limits.Token.set tok
+
 type 'a cont =
   | Cont of 'a
   | Yield of 'a
 
-let check_or_yield ~io ~ofn ~state =
-  match Fleche.Theory.Check.maybe_check ~io with
+let check_or_yield ~io ~ofn ~token ~state =
+  match Fleche.Theory.Check.maybe_check ~io ~token with
   | None -> Yield state
   | Some (ready, doc) ->
-    let () = Rq.serve_postponed ~ofn ~doc ready in
+    let () = Rq.serve_postponed ~ofn ~token ~doc ready in
     Cont state
 
-let request_queue = Queue.create ()
+module LspQueue : sig
+  val pop_opt : unit -> LSP.Message.t option
+  val push_and_optimize : LSP.Message.t -> unit
+end = struct
+  let request_queue = Queue.create ()
+
+  let pop_opt () =
+    match Queue.peek_opt request_queue with
+    | None -> None
+    | Some v ->
+      ignore (Queue.pop request_queue);
+      Some v
+
+  let analyze = function
+    | LSP.Message.Notification { method_ = "textDocument/didChange"; params } ->
+      let uri, version = Helpers.get_uri_version params in
+      Some (uri, version)
+    | _ -> None
+
+  let filter_queue _d = ()
+
+  (* TODO: optimize the queue? EJGA: I've found that VS Code as a client keeps
+     the queue tidy by itself, so this works fine as now *)
+  let push_and_optimize com =
+    let filter_data = analyze com in
+    filter_queue filter_data;
+    Queue.push com request_queue
+end
 
 let dispatch_or_resume_check ~io ~ofn ~state =
-  match Queue.peek_opt request_queue with
+  match LspQueue.pop_opt () with
   | None ->
     (* This is where we make progress on document checking; kind of IDLE
        workqueue. *)
-    Control.interrupt := false;
-    check_or_yield ~io ~ofn ~state
+    let token = token_factory () in
+    check_or_yield ~io ~ofn ~token ~state
   | Some com ->
-    (* TODO: optimize the queue? EJGA: I've found that VS Code as a client keeps
-       the queue tidy by itself, so this works fine as now *)
-    ignore (Queue.pop request_queue);
     LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
     (* We let Coq work normally now *)
-    Control.interrupt := false;
-    Cont (dispatch_message ~io ~ofn ~state com)
+    let token = token_factory () in
+    Cont (dispatch_message ~io ~ofn ~token ~state com)
 
 (* Wrapper for the top-level call *)
 let dispatch_or_resume_check ~io ~ofn ~state =
@@ -512,5 +640,5 @@ let enqueue_message (com : LSP.Message.t) =
     LIO.trace "-> enqueue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
   (* TODO: this is the place to cancel pending requests that are invalid, and in
      general, to perform queue optimizations *)
-  Queue.push com request_queue;
-  Control.interrupt := true
+  LspQueue.push_and_optimize com;
+  set_current_token ()

@@ -1,5 +1,11 @@
 import { useEffect, useState, lazy, Suspense } from "react";
-import { GoalAnswer, GoalRequest, PpString } from "../../lib/types";
+import {
+  GoalAnswer,
+  GoalRequest,
+  PpString,
+  CoqMessageEvent,
+  ErrorData,
+} from "../../lib/types";
 
 // Main panel components
 import { FileInfo } from "./FileInfo";
@@ -26,34 +32,21 @@ function doInfoError(e: any) {
   console.log("doInfoError", e);
 }
 
-interface RenderGoals {
-  method: "renderGoals";
-  params: GoalAnswer<PpString>;
-}
-interface WaitingForInfo {
-  method: "waitingForInfo";
-  params: GoalRequest;
-}
-interface InfoError {
-  method: "infoError";
-  params: any;
-}
-interface CoqMessageEvent extends MessageEvent {
-  data: RenderGoals | WaitingForInfo | InfoError;
-}
-
 export function InfoPanel() {
+  let [error, setError] = useState<ErrorData | null>();
   let [goals, setGoals] = useState<GoalAnswer<PpString>>();
 
   function infoViewDispatch(event: CoqMessageEvent) {
     switch (event.data.method) {
       case "renderGoals":
+        setError(null);
         setGoals(event.data.params);
         break;
       case "waitingForInfo":
         doWaitingForInfo(event.data.params);
         break;
       case "infoError":
+        setError(event.data.params);
         doInfoError(event.data.params);
         break;
       default:
@@ -68,12 +61,27 @@ export function InfoPanel() {
     return () => window.removeEventListener("message", infoViewDispatch);
   }, []);
 
+  if (error) {
+    return (
+      <div className="info-panel-container">
+        <div className="info-panel">
+          <FileInfo textDocument={error.textDocument} position={error.position}>
+            <p>
+              <b>{error.message}</b>
+            </p>
+          </FileInfo>
+        </div>
+      </div>
+    );
+  }
+
   if (!goals) return null;
 
   // We limit the number of messages as to workaround slow rendering
   // in pretty print mode, to be fixed.
   let messages = goals.messages.slice(0, 100);
 
+  // Normal goal display otherwise
   return (
     <div className="info-panel-container">
       <div className="info-panel">

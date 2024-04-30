@@ -15,6 +15,21 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type 'a interp_result = ('a, Loc.t) Protect.E.t
+(** Intepretation of "pure" Coq commands, that is to say, commands that are
+    assumed not to interact with the file-system, etc... Note these commands
+    will be memoized. *)
+val interp :
+  token:Limits.Token.t -> st:State.t -> Ast.t -> (State.t, Loc.t) Protect.E.t
 
-val interp : st:State.t -> Ast.t -> State.t interp_result
+(** Interpretation of "require". We wrap this function for two reasons:
+
+    - to make the read-effect dependency explicit
+    - to workaround the lack of a pure interface in Coq *)
+module Require : sig
+  val interp :
+       token:Limits.Token.t
+    -> st:State.t
+    -> Files.t
+    -> Ast.Require.t
+    -> (State.t, Loc.t) Protect.E.t
+end
