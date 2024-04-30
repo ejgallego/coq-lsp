@@ -83,10 +83,10 @@ module WaterProof = struct
       List.fold_left coq_block_to_span ("", start_point) code_blocks
     in
     (if waterproof_debug then
-     let msg =
-       "pos:\n" ^ String.concat "\n" code_pos ^ "\nContents:\n" ^ contents
-     in
-     Io.Log.trace "waterproof" msg);
+       let msg =
+         "pos:\n" ^ String.concat "\n" code_pos ^ "\nContents:\n" ^ contents
+       in
+       Io.Log.trace "waterproof" msg);
     R.Ok contents
 
   let from_json json =
@@ -139,3 +139,8 @@ let make ~uri ~raw =
   | R.Ok text ->
     let last, lines = get_last_text text in
     R.Ok { raw; text; last; lines }
+
+let make_raw ~raw =
+  let text = raw in
+  let last, lines = get_last_text text in
+  { raw; text; last; lines }

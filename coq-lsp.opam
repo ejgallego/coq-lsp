@@ -18,8 +18,10 @@ license: "LGPL-2.1-or-later"
 doc: "https://ejgallego.github.io/coq-lsp/"
 
 depends: [
-  "ocaml"        { >= "4.11.0" }
-  "dune"         { >= "3.2.0"  }
+
+  ("ocaml" {>= "5.0"} | ("ocaml" {<= "5.0"} & "memprof-limits" { >= "0.2.1" } ))
+
+  "dune"         { >= "3.2.0" }
 
   # lsp dependencies
   "cmdliner"     { >= "1.1.0" }
@@ -30,11 +32,17 @@ depends: [
   # waterproof parser
   "menhir"       { >= "20220210" }
 
+  # unit testing
+  "ppx_inline_test"     { >= "0.14.1" }
+
   # Uncomment this for releases
   "coq"           { >= "8.11.0" & < "8.12" }
   "coq-serapi"    { >= "8.11.0+0.11" & < "8.12" }
   "camlp-streams" { >= "5.0" }
 ]
 
-build: [ [ "dune" "build" "-p" name "-j" jobs ] ]
+build: [
+  [ "rm" "-rf" "vendor" ]
+  [ "dune" "build" "-p" name "-j" jobs ]
+]
 run-test: [ [ "dune" "runtest" "-p" name "-j" jobs ] ]

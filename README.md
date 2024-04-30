@@ -1,4 +1,4 @@
-# Coq LSP <img style="height: 1.3em; float: right" src="./etc/img/inria-logo.png"/>  <!-- omit in toc -->
+# Coq LSP <img align="right" height="42" src="./etc/img/inria-logo.png"/>  <!-- omit in toc -->
 
 [![Github CI][ci-badge]][ci-link]
 
@@ -11,7 +11,7 @@ Assistant](https://coq.inria.fr). Experimental support for [Vim](#vim) and
 **Quick Install**:
   - **🐧 Linux / 🍎 macOs:**
 ```
-$ opam install coq-lsp && code --install-extension ejgallego.coq-lsp`
+$ opam install coq-lsp && code --install-extension ejgallego.coq-lsp
 ```
   - **🪟 Windows:** Download the [Coq Platform installer](#-server)
 
@@ -65,7 +65,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [📂 Working With Multiple Files](#-working-with-multiple-files)
 - [📔 Planned Features](#-planned-features)
 - [📕 Protocol Documentation](#-protocol-documentation)
-- [🤸 Contributing](#-contributing)
+- [🤸 Contributing and Extending the System](#-contributing-and-extending-the-system)
 - [🥷 Team](#-team)
   - [🕰️ Past Contributors](#️-past-contributors)
 - [©️ Licensing Information](#️-licensing-information)
@@ -224,16 +224,17 @@ ready.
 
 ### 🏘️ Supported Coq Versions
 
-`coq-lsp` supports Coq 8.15, 8.16, Coq 8.17, Coq 8.18, and Coq's `master`
-branch. Code for each Coq version can be found in the corresponding branch.
+`coq-lsp` supports Coq 8.20, Coq 8.19, Coq 8.18, Coq 8.17, and Coq's `master`
+branch.  Code for each Coq version can be found in the corresponding branch.
 
-We recommended a minimum of Coq 8.17, due to better test coverage for that
-version. For 8.16, we recommend users to install the custom Coq tree as detailed
-in [Working With Multiple Files](#working-with-multiple-files)
+We recommended using Coq 8.19 or `master` version. For other Coq versions, we
+recommend users to install the custom Coq tree as detailed in [Coq Upstream
+Bugs](#coq-upstream-bugs).
 
-Support for older Coq versions is possible; it is possible to make `coq-lsp`
-work with Coq back to Coq 8.10/8.9. If you are interested in making that happen
-don't hesitate to get in touch with us.
+Support for Coq 8.15 and 8.16 has been phased out due to lack of development
+resources, but if you are interested it should possible to bring it back with
+reasonable effort. Support for older Coq versions is also possible, with a bit
+more effort; `coq-lsp` should work with Coq versions back to Coq 8.10/8.9.
 
 Note that this section covers user installs, if you would like to contribute to
 `coq-lsp` and build a development version, please check our [contributing
@@ -247,6 +248,9 @@ guide](./CONTRIBUTING.md)
   ```
 - **Nix**:
   - In nixpkgs: [coqPackages.coq-lsp](https://github.com/NixOS/nixpkgs/tree/master/pkgs/development/coq-modules/coq-lsp)
+  - The `coq-lsp` server is automatically put in scope when running `nix-shell` in a
+    project using the [Coq Nix Toolbox](https://github.com/coq-community/coq-nix-toolbox)
+    (added to the toolbox Oct 10th 2023).
   - An example of a `flake` that uses `coq-lsp` in a development environment is here
      https://github.com/HoTT/Coq-HoTT/blob/master/flake.nix .
 - **Windows**:
@@ -315,6 +319,18 @@ See our [list of frequently-asked questions](./etc/FAQ.md).
 
 ## ⁉️ Troubleshooting and Known Problems
 
+### Coq upstream bugs
+
+Unfortunately Coq releases contain bugs that affect `coq-lsp`. We strongly
+recommend that if you are installing via opam, you use the following branches
+that have some fixes backported:
+
+- For 8.20: No known problems
+- For 8.19: No known problems
+- For 8.18: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.18+lsp`
+- For 8.17: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.17+lsp`
+- For 8.16: `opam pin add coq      https://github.com/ejgallego/coq.git#v8.16+lsp`
+
 ### Known problems
 
 - Current rendering code can be slow with complex goals and messages, if that's
@@ -329,6 +345,8 @@ See our [list of frequently-asked questions](./etc/FAQ.md).
   Code extension, Visual Studio Code gets confused and neither of them may
   work. `coq-lsp` will warn about that. You can disable the `VSCoq` extension as
   a workaround.
+- `_CoqProject` file parsing library will often `exit 1` on bad `_CoqProject`
+  files! There is little `coq-lsp` can do here, until upstream fixes this.
 
 ### Troubleshooting
 
@@ -365,7 +383,7 @@ plus some extensions specific to Coq.
 
 Check [the `coq-lsp` protocol documentation](etc/doc/PROTOCOL.md) for more details.
 
-## 🤸 Contributing
+## 🤸 Contributing and Extending the System
 
 Contributions are very welcome! Feel free to chat with the dev team in
 [Zulip](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp) for any
@@ -377,6 +395,10 @@ the organization of the codebase, developer workflow, and more.
 Here is a [list of project ideas](etc/ContributionIdeas.md) that could be of
 help in case you are looking for contribution ideas, tho we are convinced that
 the best ideas will arise from using `coq-lsp` in your own Coq projects.
+
+Both Flèche and `coq-lsp` have a preliminary _plugin system_. The VSCode
+extension also exports and API so other extensions use its functionality
+to query and interact with Coq documents.
 
 ## 🥷 Team
 
@@ -407,7 +429,11 @@ The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
 Work on this server has been made possible thanks to many discussions,
 inspirations, and sharing of ideas from colleagues. In particular, we'd like to
 thank Rudi Grinberg, Andrey Mokhov, Clément Pit-Claudel, and Makarius Wenzel for
-their help and advice.
+their help and advice. Gaëtan Gilbert contributed many key and challenging Coq
+patches essential to `coq-lsp`; we also thank Guillaume Munch-Maccagnoni for his
+[memprof-limits](https://guillaume.munch.name/software/ocaml/memprof-limits/index.html)
+library, which is essential to make `coq-lsp` on the real world, as well for
+many advice w.r.t. OCaml.
 
 As noted above, the original implementation was based on the Lambdapi LSP
 server, thanks to all the collaborators in that project!

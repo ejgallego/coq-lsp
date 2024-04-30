@@ -8,6 +8,9 @@ implements some extensions tailored to improve Coq-specific use.
 As of today, this document is written for the 3.17 version of the LSP specification:
 https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification
 
+For documentation on the API of the VSCode/VSCodium `coq-lsp`
+extension see the [VSCODE_API](./VSCODE_API.md) file instead.
+
 See also the upstream LSP issue on generic support for Proof
 Assistants
 https://github.com/microsoft/language-server-protocol/issues/1414
@@ -45,6 +48,7 @@ If a feature doesn't appear here it usually means it is not planned in the short
 | `textDocument/publishDiagnostics`     | Yes     |                                                            |
 | `textDocument/diagnostic`             | No      | Planned, issue #49                                         |
 | `textDocument/codeAction`             | No      | Planned                                                    |
+| `textDocument/selectionRange`         | Partial | Selection for a point is its span; no parents              |
 |---------------------------------------|---------|------------------------------------------------------------|
 | `workspace/workspaceFolders`          | Yes     | Each folder should have a `_CoqProject` file at the root.  |
 | `workspace/didChangeWorkspaceFolders` | Yes     |                                                            |
@@ -71,6 +75,18 @@ to determine the content type. Supported extensions are:
 As of today, `coq-lsp` implements two extensions to the LSP spec. Note
 that none of them are stable yet:
 
+### Extra diagnostics data
+
+This is enabled if the server-side option `send_diags_extra_data` is
+set to `true`. In this case, some diagnostics may come with extra data
+in the optional `data` field.
+
+This field is experimental, and it can change without warning. As of
+today we offer two kinds of extra information on errors:
+
+- range of the full sentence that displayed the error,
+- if the error was on a Require, information about the library that failed.
+
 ### Goal Display
 
 In order to display proof goals and information at point, `coq-lsp` supports the `proof/goals` request, parameters are:
@@ -80,6 +96,9 @@ interface GoalRequest {
     textDocument: VersionedTextDocumentIdentifier;
     position: Position;
     pp_format?: 'Pp' | 'Str';
+    pretac?: string;
+    command?: string;
+    mode?: 'Prev' | 'After';
 }
 ```
 
@@ -162,6 +181,10 @@ was the default.
 
 #### Changelog
 
+- v0.1.9: backwards compatible with 0.1.8
+  + new optional `mode : "Prev" | "After"` field to indicate desired goal position
+  + `command` field, alias of `pretac`, as this is not limited to tactics
+- v0.1.8: new optional `pretac` field for post-processing, backwards compatible with 0.1.7
 - v0.1.7: program information added, rest of fields compatible with 0.1.6
 - v0.1.7: pp_format field added to request, backwards compatible
 - v0.1.6: the `Pp` parameter can now be either Coq's `Pp.t` type or `string` (default)
@@ -295,3 +318,8 @@ export interface DocumentPerfParams {
 #### Changelog
 
 - v0.1.7: Initial version
+
+### Trim cache notification
+
+The `coq/trimCaches` notification from client to server tells the
+server to free memory. It has no parameters.

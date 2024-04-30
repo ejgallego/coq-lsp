@@ -47,3 +47,9 @@ Definition baaar : Type.
 Qed.
 
 About baaar.
+
+(* Taken from https://github.com/coq/coq/issues/18682 *)
+Lemma err_bullet: Type.
+_.
+_
+Qed.

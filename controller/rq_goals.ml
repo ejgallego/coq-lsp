@@ -6,7 +6,9 @@
 (************************************************************************)
 
 (* Replace by ppx when we can print goals properly in the client *)
-let mk_message (range, level, text) = Lsp.JFleche.Message.{ range; level; text }
+let mk_message (range, level, text) =
+  let level = Lang.Diagnostic.Severity.to_int level in
+  Lsp.JFleche.Message.{ range; level; text }
 
 let mk_messages node =
   Option.map Fleche.Doc.Node.messages node
@@ -15,15 +17,10 @@ let mk_messages node =
 let mk_error node =
   let open Fleche in
   let open Lang in
-  match
-    List.filter (fun d -> d.Diagnostic.severity < 2) node.Doc.Node.diags
-  with
+  match List.filter Diagnostic.is_error node.Doc.Node.diags with
   | [] -> None
+  (* XXX FIXME! *)
   | e :: _ -> Some e.Diagnostic.message
-
-let get_goals_mode () =
-  if !Fleche.Config.v.goal_after_tactic then Fleche.Info.PrevIfEmpty
-  else Fleche.Info.Prev
 
 (** Format for goal printing *)
 type format =
@@ -35,16 +32,50 @@ let pp ~pp_format pp =
   | Pp -> Lsp.JCoq.Pp.to_yojson pp
   | Str -> `String (Pp.string_of_ppcmds pp)
 
-let goals ~pp_format ~doc ~point =
+let parse ~token ~loc tac st =
+  let str = Stream.of_string tac in
+  let str = Coq.Parsing.Parsable.make ?loc str in
+  Coq.Parsing.parse ~token ~st str
+
+let parse_and_execute_in ~token ~loc tac st =
+  let open Coq.Protect.E.O in
+  let* ast = parse ~token ~loc tac st in
+  match ast with
+  | Some ast -> Fleche.Memo.Interp.eval ~token (st, ast)
+  (* On EOF we return the previous state, the command was the empty string or a
+     comment *)
+  | None -> Coq.Protect.E.ok st
+
+let run_pretac ~token ~loc ~st pretac =
+  match pretac with
+  | None -> Coq.Protect.E.ok st
+  | Some tac ->
+    Coq.State.in_stateM ~token ~st ~f:(parse_and_execute_in ~token ~loc tac) st
+
+let get_goal_info ~token ~doc ~point ~mode ~pretac () =
+  let open Fleche in
+  let node = Info.LC.node ~doc ~point mode in
+  match node with
+  | None -> Coq.Protect.E.ok (None, None)
+  | Some node ->
+    let open Coq.Protect.E.O in
+    let st = Doc.Node.state node in
+    (* XXX: Get the location from node *)
+    let loc = None in
+    let* st = run_pretac ~token ~loc ~st pretac in
+    let+ goals = Info.Goals.goals ~token ~st in
+    let program = Info.Goals.program ~st in
+    (goals, Some program)
+
+let goals ~pp_format ~mode ~pretac () ~token ~doc ~point =
   let open Fleche in
   let uri, version = (doc.Doc.uri, doc.version) in
   let textDocument = Lsp.Doc.VersionedTextDocumentIdentifier.{ uri; version } in
   let position =
     Lang.Point.{ line = fst point; character = snd point; offset = -1 }
   in
-  let goals_mode = get_goals_mode () in
-  let goals = Info.LC.goals ~doc ~point goals_mode in
-  let program = Info.LC.program ~doc ~point goals_mode in
+  let open Coq.Protect.E.O in
+  let+ goals, program = get_goal_info ~token ~doc ~point ~mode ~pretac () in
   let node = Info.LC.node ~doc ~point Exact in
   let messages = mk_messages node in
   let error = Option.bind node mk_error in
@@ -52,3 +83,7 @@ let goals ~pp_format ~doc ~point =
   Lsp.JFleche.GoalsAnswer.(
     to_yojson pp { textDocument; position; goals; program; messages; error })
   |> Result.ok
+
+let goals ~pp_format ~mode ~pretac () ~token ~doc ~point =
+  let f () = goals ~pp_format ~mode ~pretac () ~token ~doc ~point in
+  Request.R.of_execution ~name:"goals" ~f ()

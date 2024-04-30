@@ -41,10 +41,13 @@ watch: coq_boot
 build-all: coq_boot
 	dune build $(DUNEOPT) @all
 
+vendor/coq:
+	$(error Submodules not initialized, please do "make submodules-init")
+
 # We set -libdir due to a Coq bug on win32, see
 # https://github.com/coq/coq/pull/17289 , this can be removed once we
 # drop support for Coq 8.16
-vendor/coq/config/coq_config.ml:
+vendor/coq/config/coq_config.ml: vendor/coq
 	EPATH=$(shell pwd) \
 	&& cd vendor/coq \
 	&& ./configure -no-ask -prefix "$$EPATH/_build/install/default/" \
@@ -89,7 +92,7 @@ opam-switch:
 # Install opam deps
 .PHONY: opam-deps
 opam-deps:
-	opam install ./coq-lsp.opam -y --deps-only
+	opam install ./coq-lsp.opam -y --deps-only --with-test
 
 # Install opam deps
 .PHONY: opam-dev-deps
@@ -105,6 +108,12 @@ submodules-init:
 .PHONY: submodules-deinit
 submodules-deinit:
 	git submodule deinit -f --all
+
+# Update submodules from upstream
+.PHONY: submodules-update
+submodules-update:
+	(cd vendor/coq && git checkout master && git pull upstream master)
+	(cd vendor/coq-serapi && git checkout main && git pull upstream main)
 
 # Build the vscode extension
 .PHONY: extension

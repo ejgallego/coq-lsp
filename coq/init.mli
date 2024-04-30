@@ -20,15 +20,15 @@
 
 type coq_opts =
   { load_module : string -> unit  (** callback to load cma/cmo files *)
-  ; load_plugin : string -> unit
-        (** callback to load findlib packages *)
+  ; load_plugin : string -> unit  (** callback to load findlib packages *)
   ; debug : bool  (** Enable Coq Debug mode *)
   }
 
 val coq_init : coq_opts -> State.t
 
 val doc_init :
-     root_state:State.t
+     token:Limits.Token.t
+  -> root_state:State.t
   -> workspace:Workspace.t
   -> uri:Lang.LUri.File.t
   -> (State.t, Loc.t) Protect.E.t

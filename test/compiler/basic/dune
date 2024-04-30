@@ -2,6 +2,7 @@
  (deps
   (source_tree proj1)
   (source_tree proj2)
+  (source_tree tests)
   ; For the plugins to be built
   (package coq-lsp)
   %{bin:fcc}))

@@ -1,0 +1,4 @@
+(library
+ (name Savevo_plugin)
+ (public_name coq-lsp.plugin.save_vo)
+ (libraries coq-lsp.fleche))

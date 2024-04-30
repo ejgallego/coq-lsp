@@ -14,17 +14,18 @@ let undamage_ast { CAst.loc; v } = CAst.make ?loc:(undamage_jf_opt loc) v
 
 module PCoqHack = struct
   type parsable =
-    { pa_chr_strm : char Stream.t;
-      pa_tok_strm : Tok.t Stream.t;
-      pa_loc_func : Gramlib.Plexing.location_function }
+    { pa_chr_strm : char Stream.t
+    ; pa_tok_strm : Tok.t Stream.t
+    ; pa_loc_func : Gramlib.Plexing.location_function
+    }
 
-  type t =  parsable * CLexer.lexer_state ref
+  type t = parsable * CLexer.lexer_state ref
 
   let loc (p : Pcoq.Parsable.t) : Loc.t =
     let (p, _) : t = Obj.magic p in
     let pos = Stream.count p.pa_tok_strm in
-    if pos = 0 then Loc.(initial ToplevelInput) else
-    p.pa_loc_func (pos - 1) |> undamage_jf
+    if pos = 0 then Loc.(initial ToplevelInput)
+    else p.pa_loc_func (pos - 1) |> undamage_jf
 end
 
 module Parsable = struct
@@ -42,7 +43,7 @@ let parse ~st ps =
   Vernacstate.Parser.parse st Pvernac.(main_entry mode) ps
   |> Option.map undamage_ast |> Option.map Ast.of_coq
 
-let parse ~st ps = Protect.eval ~f:(parse ~st) ps
+let parse ~token ~st ps = Protect.eval ~token ~f:(parse ~st) ps
 
 (* Read the input stream until a dot or a "end of proof" token is encountered *)
 let parse_to_terminator : unit Pcoq.Entry.t =
@@ -54,7 +55,7 @@ let parse_to_terminator : unit Pcoq.Entry.t =
     | Tok.EOI -> ()
     | _ -> dot lfun st
   in
-  Pcoq.Entry.of_parser "Coqtoplevel.dot"  dot
+  Pcoq.Entry.of_parser "Coqtoplevel.dot" dot
 
 (* If an error occurred while parsing, we try to read the input until a dot
    token is encountered. We assume that when a lexer error occurs, at least one

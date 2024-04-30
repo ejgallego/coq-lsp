@@ -27,6 +27,47 @@ module Id = struct
   module Map = Names.Id.Map
 end
 
+module Require = struct
+  type ast = t
+
+  (* open Ppx_hash_lib.Std.Hash.Builtin *)
+  (* open Ppx_compare_lib.Builtin *)
+  module Loc = Serlib.Ser_loc
+  module Libnames = Serlib.Ser_libnames
+  module Attributes = Serlib.Ser_attributes
+
+  type t =
+    { from : Libnames.qualid option
+    ; export : bool option
+    ; mods : Libnames.qualid list
+    ; loc : Loc.t option
+          [@ignore]
+          [@hash.ignore]
+          (* We need to ignore the loc of the Require statement, maybe it'd be
+             better to keep the wrapping of the original vernac into a
+             CAst.t? *)
+    ; attrs : Attributes.vernac_flag list
+    ; control : Vernacexpr.control_flag list
+    }
+  (* [@@deriving hash, compare] *)
+
+  (* Need newer serapi *)
+  let hash = Stdlib.Hashtbl.hash
+  let hash_fold_t st x = Ppx_hash_lib.Std.Hash.Builtin.hash_fold_int st (hash x)
+  let compare = Stdlib.compare
+
+  (** Determine if the Ast is a Require *)
+  let extract = function
+    | { CAst.v =
+          { Vernacexpr.expr = Vernacexpr.(VernacRequire (from, export, mods))
+          ; control
+          ; attrs
+          }
+      ; loc
+      } -> Some { from; export; mods; loc; attrs; control }
+    | _ -> None
+end
+
 module Kinds = struct
   (* LSP kinds *)
   let _file = 1
@@ -158,13 +199,8 @@ let projection_info ~lines ((ld, _) : local_decl_expr * record_field_attr) =
   let detail = "Field" in
   local_decl_expr_info ~lines ~detail ~kind ld
 
-
-
-  (* ident_decl with_coercion * local_binder_expr list * constr_expr option * inductive_kind * *)
-  (*   constructor_list_or_record_decl_expr *)
-
 let inductive_info ~lines ~range ((expr : Vernacexpr.inductive_expr), _) =
-  let ((_, (id, _)), _, _, ikind, cons) = expr in
+  let (_, (id, _)), _, _, ikind, cons = expr in
   let name = mk_id ~lines id in
   match cons with
   | Constructors ci ->
@@ -218,8 +254,7 @@ let make_info ~st:_ ~lines CAst.{ loc; v } : Lang.Ast.Info.t list option =
         let name = mk_id ~lines id in
         Some [ Lang.Ast.Info.make ~range ~name ~detail ~kind () ]
       | [] -> None)
-    | VernacInductive (_, _, _, idecls) ->
-      inductives_info ~lines ~range idecls
+    | VernacInductive (_, _, _, idecls) -> inductives_info ~lines ~range idecls
     | VernacAssumption ((_, kind), _, ids) ->
       Some (List.concat_map (assumption_info ~lines kind) ids)
     | VernacFixpoint (_, f_expr) ->

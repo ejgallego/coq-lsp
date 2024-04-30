@@ -45,23 +45,9 @@ let to_coq x = x
 (* let compare x y = compare x y *)
 let compare (x : t) (y : t) =
   let open Vernacstate in
-  let { parsing = ps1
-      ; system = is1
-      ; lemmas = l1
-      ; shallow = h1
-      } =
-    x
-  in
-  let { parsing = ps2
-      ; system = is2
-      ; lemmas = l2
-      ; shallow = h2
-      } =
-    y
-  in
-  if ps1 == ps2 && is1 == is2 && l1 == l2 && h1 == h2
-  then 0
-  else 1
+  let { parsing = ps1; system = is1; lemmas = l1; shallow = h1 } = x in
+  let { parsing = ps2; system = is2; lemmas = l2; shallow = h2 } = y in
+  if ps1 == ps2 && is1 == is2 && l1 == l2 && h1 == h2 then 0 else 1
 
 let equal x y = compare x y = 0
 let hash x = Hashtbl.hash x
@@ -119,17 +105,17 @@ module Declare = struct
       }
 
     type 'a t =
-      (* { prg_cinfo : constr Declare.CInfo.t *)
-      (* ; prg_info : Declare.Info.t *)
-      { prg_opaque : bool
-      (* ; prg_hook : 'a Declare.Hook.g option *)
-      (* ; prg_body : constr *)
-      (* ; prg_uctx : UState.t *)
+      { (* { prg_cinfo : constr Declare.CInfo.t *)
+        (* ; prg_info : Declare.Info.t *)
+        prg_opaque : bool
+            (* ; prg_hook : 'a Declare.Hook.g option *)
+            (* ; prg_body : constr *)
+            (* ; prg_uctx : UState.t *)
       ; prg_obligations : obligations
-      (* ; prg_deps : Id.t list *)
-      (* ; prg_fixkind : fixpoint_kind option *)
-      (* ; prg_notations : Metasyntax.where_decl_notation list *)
-      (* ; prg_reduce : constr -> constr *)
+            (* ; prg_deps : Id.t list *)
+            (* ; prg_fixkind : fixpoint_kind option *)
+            (* ; prg_notations : Metasyntax.where_decl_notation list *)
+            (* ; prg_reduce : constr -> constr *)
       }
   end
 
@@ -186,12 +172,17 @@ let drop_proofs ~st =
       Option.cata (fun s -> snd @@ Vernacstate.LemmaStack.pop s) None st.lemmas
   }
 
-let in_state ~st ~f a =
+let in_state ~token ~st ~f a =
   let f a =
     Vernacstate.unfreeze_interp_state st;
     f a
   in
-  Protect.eval ~f a
+  Protect.eval ~token ~f a
+
+let in_stateM ~token ~st ~f a =
+  let open Protect.E.O in
+  let* () = Protect.eval ~token ~f:Vernacstate.unfreeze_interp_state st in
+  f a
 
 let admit ~st () =
   let () = Vernacstate.unfreeze_interp_state st in
@@ -203,7 +194,7 @@ let admit ~st () =
     let st = Vernacstate.freeze_interp_state ~marshallable:false in
     { st with lemmas }
 
-let admit ~st = Protect.eval ~f:(admit ~st) ()
+let admit ~token ~st = Protect.eval ~token ~f:(admit ~st) ()
 
 let admit_goal ~st () =
   let () = Vernacstate.unfreeze_interp_state st in
@@ -214,4 +205,4 @@ let admit_goal ~st () =
     let lemmas = Some (Vernacstate.LemmaStack.map_top_pstate ~f lemmas) in
     { st with lemmas }
 
-let admit_goal ~st = Protect.eval ~f:(admit_goal ~st) ()
+let admit_goal ~token ~st = Protect.eval ~token ~f:(admit_goal ~st) ()

@@ -83,6 +83,7 @@ module GoalsAnswer = struct
     module Id = struct
       module Map = struct
         type 'a t = 'a Names.Id.Map.t
+
         let to_yojson _f _map = `String "XXX"
       end
     end
@@ -137,3 +138,11 @@ module DocumentPerfData = struct
     }
   [@@deriving yojson]
 end
+
+let mk_perf ~uri ~version perf =
+  let textDocument = { Doc.VersionedTextDocumentIdentifier.uri; version } in
+  let params =
+    let { Fleche.Perf.summary; timings } = perf in
+    DocumentPerfData.(to_yojson { textDocument; summary; timings })
+  in
+  Base.mk_notification ~method_:"$/coq/filePerfData" ~params

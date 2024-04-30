@@ -53,6 +53,9 @@ export class PerfDataView implements Disposable {
       this.updateWebView = (params: DocumentPerfParams) => {
         webview.webview.postMessage({ method: "update", params });
       };
+
+      // We reset spurious old-sessions data
+      webview.webview.postMessage({ method: "reset" });
     };
     let perfProvider: WebviewViewProvider = { resolveWebviewView };
     this.panel = window.registerWebviewViewProvider(

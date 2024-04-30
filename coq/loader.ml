@@ -14,6 +14,7 @@
 (* Copyright 2019-2022 Inria                                            *)
 (* Written by Emilio J. Gallego Arias                                   *)
 (************************************************************************)
+
 [@@@ocamlformat "disable"]
 
 let ml_path = ref []
@@ -84,8 +85,11 @@ let safe_loader loader fl_pkg =
           ++ str "failed" ++ fnl () ++ exn_msg);
     Exninfo.iraise iexn
 
+let default_loader pkgs : unit =
+  Fl_dynload.load_packages ~debug:false pkgs
+
 let plugin_handler user_loader =
-  let fl_loader = Option.default (Fl_dynload.load_packages ~debug:false) user_loader in
+  let fl_loader = Option.default default_loader user_loader in
   let dl_loader = (List.iter Dynlink.loadfile) in
   let fl_safe_loader = safe_loader fl_loader in
   let dl_safe_loader = safe_loader dl_loader in
@@ -97,4 +101,3 @@ let plugin_handler user_loader =
       let _, ml_file = System.find_file_in_path ~warn:true !ml_path ml_mod in
       (* Format.eprintf "Loading raw module: %s" ml_file; *)
       dl_safe_loader ml_file
-

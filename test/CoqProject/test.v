@@ -1,3 +1,5 @@
+Search _ list.
+
 Variable (A : nat).
 
 Set Primitive Projections.

@@ -10,8 +10,8 @@
 
 (************************************************************************)
 (* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2022 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2016-2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+ *)
+(* Copyright 2019-2024 Inria           -- Dual License LGPL 2.1 / GPL3+ *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
@@ -26,8 +26,8 @@ module Flags = struct
   let default = { indices_matter = false; impredicative_set = false }
 
   let apply { indices_matter; impredicative_set = _ } =
-    Global.set_indices_matter indices_matter;
-    (* Global.set_impredicative_set impredicative_set *)
+    Global.set_indices_matter indices_matter
+  (* Global.set_impredicative_set impredicative_set *)
 end
 
 module Warning : sig
@@ -48,18 +48,29 @@ end = struct
     CWarnings.set_flags (old_warn ^ "," ^ new_warn)
 end
 
+module Require = struct
+  type t =
+    { library : string
+    ; from : string option
+    ; flags : bool option
+    }
+end
+
 type t =
   { coqlib : string
   ; coqcorelib : string
   ; ocamlpath : string option
   ; vo_load_path : Loadpath.coq_path list
   ; ml_include_path : string list
-  ; require_libs : (string * string option * bool option) list
+  ; require_libs : Require.t list
   ; flags : Flags.t
   ; warnings : Warning.t list
   ; kind : string
   ; debug : bool
   }
+
+let inject_requires ~extra_requires (ws : t) =
+  { ws with require_libs = ws.require_libs @ extra_requires }
 
 let hash = Hashtbl.hash
 let compare = Stdlib.compare
@@ -81,21 +92,23 @@ let mk_userlib unix_path =
 
 let getenv var else_ = try Sys.getenv var with Not_found -> else_
 
-let rec parse_args args init boot f w =
+let rec parse_args args init boot libs f w =
   match args with
-  | [] -> (init, boot, f, List.rev w)
+  | [] -> (init, boot, List.rev libs, f, List.rev w)
+  | "-rifrom" :: from :: lib :: rest ->
+    parse_args rest init boot ((Some from, lib) :: libs) f w
   | "-indices-matter" :: rest ->
-    parse_args rest init boot { f with Flags.indices_matter = true } w
+    parse_args rest init boot libs { f with Flags.indices_matter = true } w
   | "-impredicative-set" :: rest ->
-    parse_args rest init boot { f with Flags.impredicative_set = true } w
-  | "-noinit" :: rest -> parse_args rest false boot f w
-  | "-boot" :: rest -> parse_args rest init true f w
+    parse_args rest init boot libs { f with Flags.impredicative_set = true } w
+  | "-noinit" :: rest -> parse_args rest false boot libs f w
+  | "-boot" :: rest -> parse_args rest init true libs f w
   | "-w" :: warn :: rest ->
     let warn = Warning.make warn in
-    parse_args rest init boot f (warn :: w)
+    parse_args rest init boot libs f (warn :: w)
   | _ :: rest ->
     (* emit warning? *)
-    parse_args rest init boot f w
+    parse_args rest init boot libs f w
 
 module CmdLine = struct
   type t =
@@ -105,8 +118,13 @@ module CmdLine = struct
     ; vo_load_path : Loadpath.coq_path list
     ; ml_include_path : string list
     ; args : string list
+    ; require_libraries : (string option * string) list
     }
 end
+
+let mk_require_from (from, library) =
+  let flags = Some false in
+  { Require.library; from; flags }
 
 let make ~cmdline ~implicit ~kind ~debug =
   let { CmdLine.coqcorelib
@@ -115,14 +133,15 @@ let make ~cmdline ~implicit ~kind ~debug =
       ; args
       ; ml_include_path
       ; vo_load_path
+      ; require_libraries
       } =
     cmdline
   in
   let coqcorelib = getenv "COQCORELIB" coqcorelib in
   let coqlib = getenv "COQLIB" coqlib in
   let mk_path_coqlib prefix = coqlib ^ "/" ^ prefix in
-  let init, boot, flags, warnings =
-    parse_args args true false Flags.default []
+  let init, boot, libs, flags, warnings =
+    parse_args args true false [] Flags.default []
   in
   (* Setup ml_include for the core plugins *)
   let dft_ml_include_path, dft_vo_load_path =
@@ -138,7 +157,11 @@ let make ~cmdline ~implicit ~kind ~debug =
         stdlib_vo_path :: user_vo_path )
   in
   let require_libs =
-    if init then [ ("Coq.Init.Prelude", None, Some false) ] else []
+    let rq_list =
+      if init then ((None, "Coq.Init.Prelude") :: require_libraries) @ libs
+      else require_libraries @ libs
+    in
+    List.map mk_require_from rq_list
   in
   let vo_load_path = dft_vo_load_path @ vo_load_path in
   let ml_include_path = dft_ml_include_path @ ml_include_path in
@@ -155,12 +178,14 @@ let make ~cmdline ~implicit ~kind ~debug =
   }
 
 let pp_load_path fmt = function
-  | Loadpath.{ path_spec = VoPath { unix_path; coq_path; implicit = _; has_ml = _; }; recursive = _ } ->
+  | Loadpath.
+      { path_spec = VoPath { unix_path; coq_path; implicit = _; has_ml = _ }
+      ; recursive = _
+      } ->
     Format.fprintf fmt "Path %s ---> %s"
       (Names.DirPath.to_string coq_path)
       unix_path
-  | Loadpath.{ path_spec = MlPath _; recursive = _ } ->
-    ()
+  | Loadpath.{ path_spec = MlPath _; recursive = _ } -> ()
 
 (* This is a bit messy upstream, as -I both extends Coq loadpath and OCAMLPATH
    loadpath *)
@@ -189,7 +214,8 @@ let describe
     ; debug = _
     } =
   let require_msg =
-    String.concat " " (List.map (fun (s, _, _) -> s) require_libs)
+    String.concat " "
+      (List.map (fun { Require.library; _ } -> library) require_libs)
   in
   let n_vo = List.length vo_load_path in
   let n_ml = List.length ml_include_path in
@@ -237,14 +263,16 @@ let describe
       n_vo n_ml ocamlpath_msg fl_config fl_location
   , extra )
 
+let describe_guess = function
+  | Ok w -> describe w
+  | Error msg -> (msg, "")
+
 (* Require a set of libraries *)
 let load_objs libs =
-  let rq_file (dir, from, exp) =
-    let mp = Libnames.qualid_of_string dir in
+  let rq_file { Require.library; from; flags } =
+    let mp = Libnames.qualid_of_string library in
     let mfrom = Option.map Libnames.qualid_of_string from in
-    Flags_.silently
-      (Vernacentries.vernac_require mfrom exp)
-      [ mp ]
+    Flags_.silently (Vernacentries.vernac_require mfrom flags) [ mp ]
   in
   List.(iter rq_file (rev libs))
 
@@ -287,6 +315,9 @@ let apply ~uri
   Declaremods.start_library (dirpath_of_uri ~uri);
   load_objs require_libs
 
+(* This can raise, and will do in incorrect CoqProject files *)
+let dirpath_of_string_exn coq_path = Libnames.dirpath_of_string coq_path
+
 let workspace_from_coqproject ~cmdline ~debug cp_file : t =
   (* Io.Log.error "init" "Parsing _CoqProject"; *)
   let open CoqProject_file in
@@ -294,16 +325,19 @@ let workspace_from_coqproject ~cmdline ~debug cp_file : t =
     let unix_path, coq_path = f in
     (* Lsp.Io.log_error "init"
      *   (Printf.sprintf "Path from _CoqProject: %s %s" unix_path.path coq_path); *)
-    Loadpath.{
-      path_spec = VoPath {
-        implicit
-      ; unix_path = unix_path.path
-      ; coq_path = Libnames.dirpath_of_string coq_path
-      ; has_ml = AddRecML
-      }
+    Loadpath.
+      { path_spec =
+          VoPath
+            { implicit
+            ; unix_path = unix_path.path
+            ; coq_path = dirpath_of_string_exn coq_path
+            ; has_ml = AddRecML
+            }
       ; recursive = true
-    }
+      }
   in
+  (* XXX: [read_project_file] will do [exit 1] on parsing error! Please someone
+     fix upstream!! *)
   let { r_includes; q_includes; ml_includes; extra_args; _ } =
     read_project_file ~warning_fn:(fun _ -> ()) cp_file
   in
@@ -331,8 +365,22 @@ let workspace_from_cmdline ~debug ~cmdline =
   let implicit = true in
   make ~cmdline ~implicit ~kind ~debug
 
-let guess ~debug ~cmdline ~dir =
+let guess ~debug ~cmdline ~dir () =
   let cp_file = Filename.concat dir "_CoqProject" in
   if Sys.file_exists cp_file then
     workspace_from_coqproject ~cmdline ~debug cp_file
   else workspace_from_cmdline ~debug ~cmdline
+
+let guess ~token ~debug ~cmdline ~dir =
+  let { Protect.E.r; feedback } =
+    Protect.eval ~token ~f:(guess ~debug ~cmdline ~dir) ()
+  in
+  ignore feedback;
+  match r with
+  | Protect.R.Interrupted -> Error "Workspace Scanning Interrupted"
+  | Protect.R.Completed (Error (User (_, msg)))
+  | Protect.R.Completed (Error (Anomaly (_, msg))) ->
+    Error (Format.asprintf "Workspace Scanning Errored: %a" Pp.pp_with msg)
+  | Protect.R.Completed (Ok workspace) -> Ok workspace
+
+let default ~debug ~cmdline = workspace_from_cmdline ~debug ~cmdline

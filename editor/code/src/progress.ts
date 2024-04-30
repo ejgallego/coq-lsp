@@ -1,10 +1,17 @@
 import { throttle } from "throttle-debounce";
-import { Disposable, Range, window, OverviewRulerLane } from "vscode";
+import {
+  Disposable,
+  Range,
+  window,
+  OverviewRulerLane,
+  languages,
+} from "vscode";
 import {
   NotificationType,
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 import { BaseLanguageClient } from "vscode-languageclient";
+import { CoqSelector } from "./config";
 
 enum CoqFileProgressKind {
   Processing = 1,
@@ -64,10 +71,7 @@ export class FileProgressManager {
   });
   private cleanDecos() {
     for (const editor of window.visibleTextEditors) {
-      if (
-        editor.document.languageId === "coq" ||
-        editor.document.languageId === "markdown"
-      ) {
+      if (languages.match(CoqSelector.all, editor.document) > 0) {
         editor.setDecorations(progressDecoration, []);
       }
     }
