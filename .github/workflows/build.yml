@@ -102,6 +102,7 @@ jobs:
 
       - name: Install Coq and SerAPI into OPAM switch
         run: |
+          opam install memprof-limits # We need to do this to avoid coq-lsp rebuilding Coq below due to deptops
           opam install vendor/coq/{coq-core,coq-stdlib,coqide-server,coq}.opam
           opam install vendor/coq-serapi/coq-serapi.opam
 
