@@ -1,5 +1,5 @@
 import { WebviewApi } from "vscode-webview";
-import React, { ReactElement, useEffect, useState } from "react";
+import { ReactElement, useEffect, useState } from "react";
 import {
   VSCodeDataGrid,
   VSCodeDataGridRow,
@@ -13,15 +13,15 @@ import {
   SentencePerfParams,
 } from "../../lib/types";
 
-const vscode: WebviewApi<DocumentPerfParams> = acquireVsCodeApi();
+const vscode: WebviewApi<DocumentPerfParams<Range>> = acquireVsCodeApi();
 
-let empty: DocumentPerfParams = {
+let empty: DocumentPerfParams<Range> = {
   textDocument: { uri: "", version: 0 },
   summary: "No Data Yet",
   timings: [],
 };
 
-function validateViewState(p: DocumentPerfParams) {
+function validateViewState(p: DocumentPerfParams<Range>) {
   return (
     p.textDocument &&
     p.summary &&
@@ -32,9 +32,11 @@ function validateViewState(p: DocumentPerfParams) {
   );
 }
 
-function validOrEmpty(p: DocumentPerfParams | undefined): DocumentPerfParams {
+function validOrEmpty(
+  p: DocumentPerfParams<Range> | undefined
+): DocumentPerfParams<Range> {
   // XXX We need to be careful here, when we update the
-  // DocumentPerfParams data type, the saved data here will make the
+  // DocumentPerfParams<Range> data type, the saved data here will make the
   // view crash
   if (p && validateViewState(p)) return p;
   else return empty;
@@ -54,7 +56,7 @@ function printWords(w: number) {
 
 // XXX: Would be nice to have typing here, but...
 interface PerfCellP {
-  field: keyof SentencePerfParams | string;
+  field: keyof SentencePerfParams<Range> | string;
   value: any;
 }
 
@@ -79,10 +81,10 @@ function SentencePerfCell({ field, value }: PerfCellP) {
 
 interface PerfParamsP {
   idx: number;
-  value: SentencePerfParams;
+  value: SentencePerfParams<Range>;
 }
 
-function perfFlatten(v: SentencePerfParams) {
+function perfFlatten(v: SentencePerfParams<Range>) {
   return {
     range: v.range,
     time: v.info.time,
@@ -109,11 +111,11 @@ function SentencePerfRow({ idx, value }: PerfParamsP) {
   );
 }
 
-function timeCmp(t1: SentencePerfParams, t2: SentencePerfParams) {
+function timeCmp(t1: SentencePerfParams<Range>, t2: SentencePerfParams<Range>) {
   return t2.info.time - t1.info.time;
 }
 
-function viewSort(p: DocumentPerfParams) {
+function viewSort(p: DocumentPerfParams<Range>) {
   let textDocument = p.textDocument;
   let summary = p.summary;
   let tlength = p.timings.length;

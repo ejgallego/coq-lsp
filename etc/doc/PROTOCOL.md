@@ -138,6 +138,8 @@ interface GoalAnswer<Pp> {
   error?: Pp;
   program?: ProgramInfo;
 }
+
+const goalReq : RequestType<GoalRequest, GoalAnswer<PpString>, void>
 ```
 
 which can be then rendered by the client in way that is desired.
@@ -268,6 +270,8 @@ interface FlecheDocument {
     spans: RangedSpan[];
     completed : CompletionStatus
 };
+
+const docReq : RequestType<FlecheDocumentParams, FlecheDocument, void>
 ```
 
 #### Changelog
@@ -303,7 +307,7 @@ option is enabled); it includes information about execution hotspots,
 caching, and memory use by sentences:
 
 ```typescript
-export interface PerfInfo {
+interface PerfInfo {
   // Original Execution Time (when not cached)
   time: number;
   // Difference in words allocated in the heap using `Gc.quick_stat`
@@ -314,16 +318,18 @@ export interface PerfInfo {
   time_hash: number;
 }
 
-export interface SentencePerfParams {
-  range: Range;
+interface SentencePerfParams<R> {
+  range: R;
   info: PerfInfo;
 }
 
-export interface DocumentPerfParams {
+interface DocumentPerfParams<R> {
   textDocument: VersionedTextDocumentIdentifier;
   summary: string;
-  timings: SentencePerfParams[];
+  timings: SentencePerfParams<R>[];
 }
+
+const coqPerfData : NotificationType<DocumentPerfParams<Range>>
 ```
 
 #### Changelog
@@ -338,6 +344,7 @@ export interface DocumentPerfParams {
   + `memory` now means difference in memory from `GC.quick_stat`
   + `filePerfData` will send the full document, ordered linearly, in
     0.1.7 we only sent the top 10 hotspots
+  + generalized typed over `R` parameter for range
 - v0.1.8: Spec was accidentally broken, types were invalid
 - v0.1.7: Initial version
 
