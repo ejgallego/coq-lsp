@@ -7,7 +7,7 @@ import {
   window,
 } from "vscode";
 import { NotificationType } from "vscode-languageclient";
-import { DocumentPerfParams } from "../lib/types";
+import { DocumentPerfParams, PerfMessagePayload } from "../lib/types";
 
 export const coqPerfData = new NotificationType<DocumentPerfParams>(
   "$/coq/filePerfData"
@@ -51,11 +51,13 @@ export class PerfDataView implements Disposable {
       </html>`;
 
       this.updateWebView = (params: DocumentPerfParams) => {
-        webview.webview.postMessage({ method: "update", params });
+        let message: PerfMessagePayload = { method: "update", params };
+        webview.webview.postMessage(message);
       };
 
       // We reset spurious old-sessions data
-      webview.webview.postMessage({ method: "reset" });
+      let message: PerfMessagePayload = { method: "reset" };
+      webview.webview.postMessage(message);
     };
     let perfProvider: WebviewViewProvider = { resolveWebviewView };
     this.panel = window.registerWebviewViewProvider(

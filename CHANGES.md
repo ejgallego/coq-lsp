@@ -99,9 +99,13 @@
  - Update Nix flake enviroment (@Alizter, #684 #688)
  - Update `prettier` (@Alizter @ejgallego, #684 #688)
  - Store original performance data in the cache, so we now display the
-   original timing and memory data even for cached commands (@ejgallego, #)
+   original timing and memory data even for cached commands (@ejgallego, #693)
  - Fix type errors in the Performance Data Notifications (@ejgallego,
-   @Alizter, #)
+   @Alizter, #689, #693)
+ - Send performance performance data for the full document
+   (@ejgallego, @Alizter, #689, #693)
+ - Better types `coq/perfData` call (@ejgallego @Alizter, #689)
+ - New server option to enable / disable `coq/perfData` (@ejgallego, #689)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

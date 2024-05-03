@@ -1,5 +1,4 @@
 import {
-  Position,
   Uri,
   WebviewPanel,
   window,
@@ -20,6 +19,8 @@ import {
   CoqMessagePayload,
   ErrorData,
 } from "../lib/types";
+
+import { URI, Position } from "vscode-languageserver-types";
 
 export const goalReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
   "proof/goals"
@@ -144,17 +145,16 @@ export class InfoPanel {
       );
     }
   }
+
+  // Protocol-level data
   updateFromServer(
     client: BaseLanguageClient,
-    uri: Uri,
+    uri: URI,
     version: number,
     position: Position,
     pp_format: "Pp" | "Str"
   ) {
-    let textDocument = VersionedTextDocumentIdentifier.create(
-      uri.toString(),
-      version
-    );
+    let textDocument = VersionedTextDocumentIdentifier.create(uri, version);
 
     // Example to test the `command` parameter
     // let command = "idtac.";

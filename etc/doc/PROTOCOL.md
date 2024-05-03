@@ -298,32 +298,47 @@ The request will return `null`, or fail if not successful.
 ### Performance Data Notification
 
 The `$/coq/filePerfData` notification is sent from server to client
-when the checking completes, and includes information about execution
-hotspots and memory use by sentences.
+when the checking completes (if the server-side `send_perf_data`
+option is enabled); it includes information about execution hotspots,
+caching, and memory use by sentences:
 
 ```typescript
+export interface PerfInfo {
+  // Original Execution Time (when not cached)
+  time: number;
+  // Difference in words allocated in the heap using `Gc.quick_stat`
+  memory: number;
+  // Whether the execution was cached
+  cache_hit: boolean;
+  // Caching overhead
+  time_hash: number;
+}
+
 export interface SentencePerfParams {
-    range: Range,
-    time: number,
-    memory, number
+  range: Range;
+  info: PerfInfo;
 }
 
 export interface DocumentPerfParams {
+  textDocument: VersionedTextDocumentIdentifier;
   summary: string;
   timings: SentencePerfParams[];
-}
 }
 ```
 
 #### Changelog
 
 - v0.1.9:
+  + new server-side option to control whether the notification is sent
   + Fields renamed: `loc -> range`, `mem -> memory`
   + Fixed type for `range`, it was always `Range`
+  + `time` and `memory` are now into a better `PerfInfo` data, which
+    correctly provides info for memoized sentences
   + We now send the real time, even if the command was cached
   + `memory` now means difference in memory from `GC.quick_stat`
-  + we send all the sentences in the document, not only the top 10
-    hotspots, and we send them in document order
+  + `filePerfData` will send the full document, ordered linearly, in
+    0.1.7 we only sent the top 10 hotspots
+- v0.1.8: Spec was accidentally broken, types were invalid
 - v0.1.7: Initial version
 
 ### Trim cache notification

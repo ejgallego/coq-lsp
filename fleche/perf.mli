@@ -5,11 +5,20 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module Info : sig
+  type t =
+    { time : float  (** Original Execution Time (when not cached) *)
+    ; memory : float
+          (** Difference in words allocated in the heap using `Gc.quick_stat` *)
+    ; cache_hit : bool  (** was the sentence cached? *)
+    ; time_hash : float  (** Memo timing overhead *)
+    }
+end
+
 module Sentence : sig
   type t =
     { range : Lang.Range.t
-    ; time : float
-    ; memory : float
+    ; info : Info.t
     }
 end
 

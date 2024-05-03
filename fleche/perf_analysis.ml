@@ -4,14 +4,19 @@ let rec list_take n = function
   | [] -> []
   | x :: xs -> if n = 0 then [] else x :: list_take (n - 1) xs
 
-let mk_loc_time (n : Doc.Node.t) =
-  let time, memory =
+let mk_info (n : Doc.Node.t) =
+  let time, memory, cache_hit, time_hash =
     Option.cata
-      (fun (stats : Memo.Stats.t) -> (stats.stats.time, stats.stats.memory))
-      (0.0, 0.0) n.info.stats
+      (fun (stats : Memo.Stats.t) ->
+        (stats.stats.time, stats.stats.memory, stats.cache_hit, stats.time_hash))
+      (0.0, 0.0, false, 0.0) n.info.stats
   in
-  let range = n.Doc.Node.range in
-  Sentence.{ range; time; memory }
+  Info.{ time; memory; cache_hit; time_hash }
+
+let mk_sentence (n : Doc.Node.t) =
+  let range = n.range in
+  let info = mk_info n in
+  Sentence.{ range; info }
 
 let get_stats ~(doc : Doc.t) =
   match List.rev doc.nodes with
@@ -45,5 +50,5 @@ let make (doc : Doc.t) =
     if hotspot then List.stable_sort node_time_compare doc.nodes |> list_take 10
     else doc.nodes
   in
-  let timings = List.map mk_loc_time timings in
+  let timings = List.map mk_sentence timings in
   { summary; timings }
