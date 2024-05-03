@@ -33,14 +33,14 @@ function printWords(w: number) {
 
 function SentencePerfCell({ field, value }) {
   switch (field) {
-    case "loc":
+    case "range":
       let r = value as Range;
       return (
         <span>{`l: ${r.start.line} c: ${r.start.character} -- l: ${r.end.line} c: ${r.end.character}`}</span>
       );
     case "time":
       return <span>{`${value.toFixed(4).toString()} secs`}</span>;
-    case "mem":
+    case "memory":
       return <span>{printWords(value)}</span>;
     default:
       return null;

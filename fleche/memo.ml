@@ -1,21 +1,21 @@
 module CS = Stats
 
 module Stats = struct
-  type 'a t =
-    { res : 'a
-    ; cache_hit : bool
-    ; memory : int
-    ; time : float
+  type t =
+    { stats : Stats.t
+    ; time_hash : float
+          (** Time in hashing consumed in the original execution *)
+    ; cache_hit : bool  (** Whether we had a cache hit *)
     }
 
-  let make ?(cache_hit = false) ~time res =
-    (* This is quite slow! *)
+  let make ~stats ?(cache_hit = false) ~time_hash () =
+    (* This is quite slow, to the point it is not really usable, but a more
+       precise option *)
     (* let memory = Obj.magic res |> Obj.reachable_words in *)
-    let memory = 0 in
-    { res; cache_hit; memory; time }
+    { stats; time_hash; cache_hit }
 end
 
-module CacheStats = struct
+module GlobalCacheStats = struct
   let nhit, ntotal = (ref 0, ref 0)
 
   let reset () =
@@ -50,12 +50,15 @@ module MemoTable = struct
     val clear : 'a t -> unit
 
     val add_execution :
-      ('a, 'l) Coq.Protect.E.t t -> key -> ('a, 'l) Coq.Protect.E.t -> unit
+         (('a, 'l) Coq.Protect.E.t * 'b) t
+      -> key
+      -> ('a, 'l) Coq.Protect.E.t * 'b
+      -> unit
 
     val add_execution_loc :
-         ('v * ('a, 'l) Coq.Protect.E.t) t
+         ('v * ('a, 'l) Coq.Protect.E.t * 'b) t
       -> key
-      -> 'v * ('a, 'l) Coq.Protect.E.t
+      -> 'v * ('a, 'l) Coq.Protect.E.t * 'b
       -> unit
 
     (** sorted *)
@@ -87,12 +90,12 @@ module MemoTable = struct
       to_seq_values count |> List.of_seq
       |> List.sort (fun x y -> -Int.compare x y)
 
-    let add_execution t k ({ Coq.Protect.E.r; _ } as v) =
+    let add_execution t k (({ Coq.Protect.E.r; _ }, _) as v) =
       match r with
       | Coq.Protect.R.Interrupted -> ()
       | _ -> add t k v
 
-    let add_execution_loc t k ((_, { Coq.Protect.E.r; _ }) as v) =
+    let add_execution_loc t k ((_, { Coq.Protect.E.r; _ }, _) as v) =
       match r with
       | Coq.Protect.R.Interrupted -> ()
       | _ -> add t k v
@@ -163,7 +166,9 @@ module type S = sig
 
   (** [eval i] Eval an input [i] and produce stats *)
   val evalS :
-    token:Coq.Limits.Token.t -> input -> (output, Loc.t) Coq.Protect.E.t Stats.t
+       token:Coq.Limits.Token.t
+    -> input
+    -> (output, Loc.t) Coq.Protect.E.t * Stats.t
 
   (** [size ()] Return the cache size in words, expensive *)
   val size : unit -> int
@@ -191,28 +196,22 @@ module SEval (E : EvalType) :
   let all_freqs = HC.all_freqs
   let clear () = HC.clear cache
 
-  let eval ~token v =
-    match HC.find_opt cache v with
-    | None ->
-      let res = E.eval ~token v in
-      HC.add_execution cache v res;
-      res
-    | Some cached_res -> cached_res
-
   let in_cache i =
     let kind = CS.Kind.Hashing in
     CS.record ~kind ~f:(HC.find_opt cache) i
 
   let evalS ~token i =
     match in_cache i with
-    | Some cached_res, time -> Stats.make ~cache_hit:true ~time cached_res
-    | None, time_hash ->
+    | Some (cached_res, stats), { time = time_hash; memory = _ } ->
+      (cached_res, Stats.make ~stats ~cache_hit:true ~time_hash ())
+    | None, { time = time_hash; memory = _ } ->
       let kind = CS.Kind.Exec in
       let f i = E.eval ~token i in
-      let res, time_interp = CS.record ~kind ~f i in
-      let () = HC.add_execution cache i res in
-      let time = time_hash +. time_interp in
-      Stats.make ~cache_hit:false ~time res
+      let res, stats = CS.record ~kind ~f i in
+      let () = HC.add_execution cache i (res, stats) in
+      (res, Stats.make ~stats ~cache_hit:false ~time_hash ())
+
+  let eval ~token i = evalS ~token i |> fst
 end
 
 module type LocEvalType = sig
@@ -229,7 +228,7 @@ module CEval (E : LocEvalType) = struct
 
   module Result = struct
     (* We store the location as to compute an offset for cached results *)
-    type t = Loc.t * (E.output, Loc.t) Coq.Protect.E.t
+    type t = Loc.t * (E.output, Loc.t) Coq.Protect.E.t * CS.t
   end
 
   type cache = Result.t HC.t
@@ -246,24 +245,23 @@ module CEval (E : LocEvalType) = struct
     let kind = CS.Kind.Hashing in
     CS.record ~kind ~f:(HC.find_opt cache) i
 
-  let evalS ~token i : _ Stats.t =
+  let evalS ~token i =
     let stm_loc = E.loc_of_input i in
     match in_cache i with
-    | Some (cached_loc, res), time ->
+    | Some (cached_loc, res, stats), { time = time_hash; memory = _ } ->
       if Debug.cache then Io.Log.trace "memo" "cache hit";
-      CacheStats.hit ();
+      GlobalCacheStats.hit ();
       let res = Loc_utils.adjust_offset ~stm_loc ~cached_loc res in
-      Stats.make ~cache_hit:true ~time res
-    | None, time_hash ->
+      (res, Stats.make ~stats ~cache_hit:true ~time_hash ())
+    | None, { time = time_hash; memory = _ } ->
       if Debug.cache then Io.Log.trace "memo" "cache miss";
-      CacheStats.miss ();
+      GlobalCacheStats.miss ();
       let kind = CS.Kind.Exec in
-      let res, time_interp = CS.record ~kind ~f:(E.eval ~token) i in
-      let () = HC.add_execution_loc cache i (stm_loc, res) in
-      let time = time_hash +. time_interp in
-      Stats.make ~time res
+      let res, stats = CS.record ~kind ~f:(E.eval ~token) i in
+      let () = HC.add_execution_loc cache i (stm_loc, res, stats) in
+      (res, Stats.make ~stats ~cache_hit:false ~time_hash ())
 
-  let eval ~token i = (evalS ~token i).res
+  let eval ~token i = evalS ~token i |> fst
 end
 
 module VernacEval = struct

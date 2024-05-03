@@ -14,13 +14,10 @@ module Node : sig
   end
 
   module Info : sig
-    type t = private
-      { cache_hit : bool
-      ; parsing_time : float
-      ; time : float option
-      ; mw_prev : float
-      ; mw_after : float
-      ; stats : Stats.t  (** Info about cumulative stats *)
+    type t =
+      { parsing_time : float
+      ; stats : Memo.Stats.t option
+      ; global_stats : Stats.Global.t  (** Info about cumulative stats *)
       }
 
     val print : t -> string

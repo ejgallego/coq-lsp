@@ -7,9 +7,9 @@
 
 module Sentence = struct
   type t =
-    { loc : Lang.Range.t
+    { range : Lang.Range.t
     ; time : float
-    ; mem : float
+    ; memory : float
     }
 end
 

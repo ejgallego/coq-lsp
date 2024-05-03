@@ -303,9 +303,9 @@ hotspots and memory use by sentences.
 
 ```typescript
 export interface SentencePerfParams {
-    loc: Loc,
+    range: Range,
     time: number,
-    mem, number
+    memory, number
 }
 
 export interface DocumentPerfParams {
@@ -317,6 +317,13 @@ export interface DocumentPerfParams {
 
 #### Changelog
 
+- v0.1.9:
+  + Fields renamed: `loc -> range`, `mem -> memory`
+  + Fixed type for `range`, it was always `Range`
+  + We now send the real time, even if the command was cached
+  + `memory` now means difference in memory from `GC.quick_stat`
+  + we send all the sentences in the document, not only the top 10
+    hotspots, and we send them in document order
 - v0.1.7: Initial version
 
 ### Trim cache notification

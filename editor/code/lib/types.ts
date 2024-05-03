@@ -114,9 +114,9 @@ export interface FlecheSaveParams {
 }
 
 export interface SentencePerfParams {
-  loc: Loc;
+  Range: Range;
   time: number;
-  mem: number;
+  memory: number;
 }
 
 export interface DocumentPerfParams {

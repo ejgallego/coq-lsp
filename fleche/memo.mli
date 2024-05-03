@@ -1,9 +1,9 @@
 module Stats : sig
-  type 'a t =
-    { res : 'a
-    ; cache_hit : bool
-    ; memory : int
-    ; time : float
+  type t =
+    { stats : Stats.t
+    ; time_hash : float
+          (** Time in hashing consumed in the original execution *)
+    ; cache_hit : bool  (** Whether we had a cache hit *)
     }
 end
 
@@ -20,7 +20,9 @@ module type S = sig
 
   (** [eval i] Eval an input [i] and produce stats *)
   val evalS :
-    token:Coq.Limits.Token.t -> input -> (output, Loc.t) Coq.Protect.E.t Stats.t
+       token:Coq.Limits.Token.t
+    -> input
+    -> (output, Loc.t) Coq.Protect.E.t * Stats.t
 
   (** [size ()] Return the cache size in words, expensive *)
   val size : unit -> int
@@ -56,7 +58,7 @@ module Require :
 (** Admit evaluation cache *)
 module Admit : S with type input = Coq.State.t and type output = Coq.State.t
 
-module CacheStats : sig
+module GlobalCacheStats : sig
   val reset : unit -> unit
 
   (** Returns the hit ratio of the cache, etc... *)
