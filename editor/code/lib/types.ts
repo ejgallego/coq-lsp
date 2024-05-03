@@ -125,15 +125,15 @@ export interface PerfInfo {
   time_hash: number;
 }
 
-export interface SentencePerfParams {
-  range: Range;
+export interface SentencePerfParams<R> {
+  range: R;
   info: PerfInfo;
 }
 
-export interface DocumentPerfParams {
+export interface DocumentPerfParams<R> {
   textDocument: VersionedTextDocumentIdentifier;
   summary: string;
-  timings: SentencePerfParams[];
+  timings: SentencePerfParams<R>[];
 }
 
 // View messaging interfaces; should go on their own file
@@ -167,7 +167,7 @@ export interface CoqMessageEvent extends MessageEvent {
 // For perf panel data
 export interface PerfUpdate {
   method: "update";
-  params: DocumentPerfParams;
+  params: DocumentPerfParams<Range>;
 }
 
 export interface PerfReset {

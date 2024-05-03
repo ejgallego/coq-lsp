@@ -6,16 +6,17 @@ import {
   WebviewViewResolveContext,
   window,
 } from "vscode";
+import { Range } from "vscode-languageserver-types";
 import { NotificationType } from "vscode-languageclient";
 import { DocumentPerfParams, PerfMessagePayload } from "../lib/types";
 
-export const coqPerfData = new NotificationType<DocumentPerfParams>(
+export const coqPerfData = new NotificationType<DocumentPerfParams<Range>>(
   "$/coq/filePerfData"
 );
 
 export class PerfDataView implements Disposable {
   private panel: Disposable;
-  private updateWebView: (data: DocumentPerfParams) => void = () => {};
+  private updateWebView: (data: DocumentPerfParams<Range>) => void = () => {};
 
   constructor(extensionUri: Uri) {
     let resolveWebviewView = (
@@ -50,7 +51,7 @@ export class PerfDataView implements Disposable {
       </body>
       </html>`;
 
-      this.updateWebView = (params: DocumentPerfParams) => {
+      this.updateWebView = (params: DocumentPerfParams<Range>) => {
         let message: PerfMessagePayload = { method: "update", params };
         webview.webview.postMessage(message);
       };
@@ -68,7 +69,7 @@ export class PerfDataView implements Disposable {
   dispose() {
     this.panel.dispose();
   }
-  update(data: DocumentPerfParams) {
+  update(data: DocumentPerfParams<Range>) {
     this.updateWebView(data);
   }
 }
