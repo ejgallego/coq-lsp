@@ -98,6 +98,10 @@
  - Update `package-lock.json` for latest bugfixes (@ejgallego, #687)
  - Update Nix flake enviroment (@Alizter, #684 #688)
  - Update `prettier` (@Alizter @ejgallego, #684 #688)
+ - Store original performance data in the cache, so we now display the
+   original timing and memory data even for cached commands (@ejgallego, #)
+ - Fix type errors in the Performance Data Notifications (@ejgallego,
+   @Alizter, #)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

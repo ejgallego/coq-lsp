@@ -30,13 +30,13 @@ module Util = struct
     (if !Config.v.mem_stats then
        let size = Memo.all_size () in
        Io.Log.trace "stats" (string_of_int size));
-    let stats = Stats.dump () in
-    Io.Log.trace "cache" (Stats.to_string stats);
-    Io.Log.trace "cache" (Memo.CacheStats.stats ());
+    let stats = Stats.Global.dump () in
+    Io.Log.trace "cache" (Stats.Global.to_string stats);
+    Io.Log.trace "cache" (Memo.GlobalCacheStats.stats ());
     (* this requires patches to Coq *)
     (* Io.Log.error "coq parsing" (CoqParsingStats.dump ()); *)
     (* CoqParsingStats.reset (); *)
-    Memo.CacheStats.reset ();
+    Memo.GlobalCacheStats.reset ();
     Stats.reset ()
 
   let safe_sub s pos len =
@@ -76,29 +76,44 @@ module Node = struct
 
   module Info = struct
     type t =
-      { cache_hit : bool
-      ; parsing_time : float
-      ; time : float option
-      ; mw_prev : float
-      ; mw_after : float
-      ; stats : Stats.t  (** Info about cumulative stats *)
+      { parsing_time : float
+      ; stats : Memo.Stats.t option
+      ; global_stats : Stats.Global.t  (** Info about cumulative stats *)
       }
 
-    let make ?(cache_hit = false) ~parsing_time ?time ~mw_prev ~mw_after ~stats
-        () =
-      { cache_hit; parsing_time; time; mw_prev; mw_after; stats }
+    let make ~parsing_time ?stats ~global_stats () =
+      { parsing_time; stats; global_stats }
+
+    let pp_cache_hit fmt = function
+      | None -> Format.fprintf fmt "N/A"
+      | Some hit -> Format.fprintf fmt "%b" hit
 
     let pp_time fmt = function
       | None -> Format.fprintf fmt "N/A"
       | Some time -> Format.fprintf fmt "%.3f" time
 
-    let print { cache_hit; parsing_time; time; mw_prev; mw_after; stats } =
-      let cptime = Stats.get_f stats ~kind:Stats.Kind.Parsing in
-      let cetime = Stats.get_f stats ~kind:Stats.Kind.Exec in
+    let pp_words fmt = function
+      | None -> Format.fprintf fmt "N/A"
+      | Some memory -> Stats.pp_words fmt memory
+
+    let osplit = function
+      | None -> (None, None, None)
+      | Some (x, y, z) -> (Some x, Some y, Some z)
+
+    let print { parsing_time; stats; global_stats } =
+      let cptime = Stats.Global.get_f global_stats ~kind:Stats.Kind.Parsing in
+      let cetime = Stats.Global.get_f global_stats ~kind:Stats.Kind.Exec in
+      let cache_hit, time, memory =
+        Option.map
+          (fun (s : Memo.Stats.t) ->
+            (s.cache_hit, s.stats.time, s.stats.memory))
+          stats
+        |> osplit
+      in
       Format.asprintf
-        "Cached: %b | P: %.3f / %.2f | E: %a / %.2f | M: %a | Diff: %a"
-        cache_hit parsing_time cptime pp_time time cetime Stats.pp_words
-        mw_after Stats.pp_words (mw_after -. mw_prev)
+        "Cached: %a | P: %.3f / %.2f | E: %a / %.2f | Mem-Diff: %a" pp_cache_hit
+        cache_hit parsing_time cptime.time pp_time time cetime.time pp_words
+        memory
   end
 
   module Message = struct
@@ -311,22 +326,19 @@ let drange =
   let end_ = Point.{ line = 0; character = 1; offset = 1 } in
   Range.{ start; end_ }
 
-let process_init_feedback ~lines ~stats state feedback =
+let process_init_feedback ~lines ~stats ~global_stats state feedback =
   let messages = List.map (Node.Message.feedback_to_message ~lines) feedback in
   if not (CList.is_empty messages) then
     let diags, messages = Diags.of_messages ~drange messages in
     let parsing_time = 0.0 in
-    let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
-    let info =
-      Node.Info.make ~parsing_time ~mw_prev ~mw_after:mw_prev ~stats ()
-    in
+    let info = Node.Info.make ~parsing_time ?stats ~global_stats () in
     let range = drange in
     [ { Node.range; ast = None; state; diags; messages; info } ]
   else []
 
 (* Memoized call to [Coq.Init.doc_init] *)
 let mk_doc ~token ~env ~uri =
-  Memo.Init.eval ~token (env.Env.init, env.workspace, uri)
+  Memo.Init.evalS ~token (env.Env.init, env.workspace, uri)
 
 (* Create empty doc, in state [~completed] *)
 let empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed =
@@ -350,17 +362,20 @@ let conv_error_doc ~raw ~uri ~version ~env ~root ~completed err =
   let err =
     (None, Diags.err, Pp.(str "Error in document conversion: " ++ str err))
   in
-  let stats = Stats.dump () in
-  let nodes = process_init_feedback ~lines ~stats root [ err ] in
+  (* No execution to add *)
+  let stats = None in
+  let global_stats = Stats.Global.dump () in
+  let nodes = process_init_feedback ~lines ~stats ~global_stats root [ err ] in
   empty_doc ~uri ~version ~env ~root ~nodes ~completed ~contents
 
 let create ~token ~env ~uri ~version ~contents =
   let () = Stats.reset () in
-  let root = mk_doc ~token ~env ~uri in
-  Coq.Protect.E.map root ~f:(fun root ->
-      let nodes = [] in
-      let completed range = Completion.Stopped range in
-      empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed)
+  let root, stats = mk_doc ~token ~env ~uri in
+  ( Coq.Protect.E.map root ~f:(fun root ->
+        let nodes = [] in
+        let completed range = Completion.Stopped range in
+        empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed)
+  , stats )
 
 (** Create a permanently failed doc, to be removed when we drop 8.16 support *)
 let handle_failed_permanent ~env ~uri ~version ~contents =
@@ -369,10 +384,12 @@ let handle_failed_permanent ~env ~uri ~version ~contents =
   let doc, feedback =
     error_doc ~loc ~message ~uri ~contents ~version ~env ~completed
   in
-  let stats = Stats.dump () in
+  let stats = None in
+  let global_stats = Stats.Global.dump () in
   let nodes =
     let lines = contents.Contents.lines in
-    process_init_feedback ~lines ~stats env.Env.init feedback @ doc.nodes
+    process_init_feedback ~lines ~stats ~global_stats env.Env.init feedback
+    @ doc.nodes
   in
   let diags_dirty = not (CList.is_empty nodes) in
   { doc with nodes; diags_dirty }
@@ -382,7 +399,7 @@ let handle_failed_permanent ~env ~uri ~version ~contents =
     the initial document. *)
 let handle_doc_creation_exec ~token ~env ~uri ~version ~contents =
   let completed range = Completion.Failed range in
-  let { Coq.Protect.E.r; feedback } =
+  let { Coq.Protect.E.r; feedback }, stats =
     create ~token ~env ~uri ~version ~contents
   in
   let doc, extra_feedback =
@@ -400,10 +417,12 @@ let handle_doc_creation_exec ~token ~env ~uri ~version ~contents =
     | Completed (Ok doc) -> (doc, [])
   in
   let state = doc.root in
-  let stats = Stats.dump () in
+  let stats = Some stats in
+  let global_stats = Stats.Global.dump () in
   let nodes =
     let lines = contents.Contents.lines in
-    process_init_feedback ~lines ~stats state (feedback @ extra_feedback)
+    process_init_feedback ~lines ~stats ~global_stats state
+      (feedback @ extra_feedback)
     @ doc.nodes
   in
   let diags_dirty = not (CList.is_empty nodes) in
@@ -659,16 +678,9 @@ let interp_and_info ~st ~files ast =
   | Some ast -> Memo.Require.evalS (st, files, ast)
 
 let interp_and_info ~token ~parsing_time ~st ~files ast =
-  let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
-  (* memo memory stats are disabled: slow and misleading *)
-  let { Memo.Stats.res; cache_hit; memory = _; time } =
-    interp_and_info ~token ~st ~files ast
-  in
-  let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in
-  let stats = Stats.dump () in
-  let info =
-    Node.Info.make ~cache_hit ~parsing_time ~time ~mw_prev ~mw_after ~stats ()
-  in
+  let res, stats = interp_and_info ~token ~st ~files ast in
+  let global_stats = Stats.Global.dump () in
+  let info = Node.Info.make ~parsing_time ~stats ~global_stats () in
   (res, info)
 
 type parse_action =
@@ -681,9 +693,10 @@ type parse_action =
 (* Returns parse_action, diags, parsing_time *)
 let parse_action ~token ~lines ~st last_tok doc_handle =
   let start_loc = Coq.Parsing.Parsable.loc doc_handle |> CLexer.after in
-  let parse_res, time = parse_stm ~token ~st doc_handle in
+  let parse_res, stats = parse_stm ~token ~st doc_handle in
   let f = Coq.Utils.to_range ~lines in
   let { Coq.Protect.E.r; feedback } = Coq.Protect.E.map_loc ~f parse_res in
+  let { Stats.time; memory = _ } = stats in
   match r with
   | Coq.Protect.R.Interrupted -> (EOF (Stopped last_tok), [], feedback, time)
   | Coq.Protect.R.Completed res -> (
@@ -727,11 +740,9 @@ let unparseable_node ~range ~parsing_diags ~parsing_feedback ~state
     ~parsing_time =
   let fb_diags, messages = Diags.of_messages ~drange:range parsing_feedback in
   let diags = fb_diags @ parsing_diags in
-  let stats = Stats.dump () in
-  let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
-  let info =
-    Node.Info.make ~parsing_time ~mw_prev ~mw_after:mw_prev ~stats ()
-  in
+  let stats = None in
+  let global_stats = Stats.Global.dump () in
+  let info = Node.Info.make ~parsing_time ?stats ~global_stats () in
   { Node.range; ast = None; diags; messages; state; info }
 
 let assemble_diags ~range ~parsing_diags ~parsing_feedback ~diags ~feedback =
@@ -933,11 +944,12 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
   let last_node = Util.hd_opt doc.nodes in
   let st, stats =
     Option.cata
-      (fun { Node.state; info = { stats; _ }; _ } -> (state, stats))
-      (doc.root, Stats.zero ())
+      (fun { Node.state; info = { global_stats; _ }; _ } ->
+        (state, global_stats))
+      (doc.root, Stats.Global.zero ())
       last_node
   in
-  Stats.restore stats;
+  Stats.Global.restore stats;
   let doc = stm doc st last_tok 0 in
   (* Set the document to "finished" mode: reverse the node list *)
   let doc = { doc with nodes = List.rev doc.nodes } in
