@@ -124,9 +124,12 @@
  - [Coq API] Add functions to retrieve list of declarations done in
    .vo files (@ejallego, @eytans, #704)
  - New `petanque` API to interact directly with Coq's proof
-   engine. (@ejgallego, @gbdrt, #703, thanks to Alex Sanchez-Stern)
+   engine. (@ejgallego, @gbdrt, Laetitia Teodorescu #703, thanks to
+   Alex Sanchez-Stern for many insightful feedback and testing)
  - New `petanque` JSON-RPC `pet.exe`, which can be used à la SerAPI
    to perform proof search and more (@ejgallego, @gbdrt, #705)
+ - New `pet-server.exe` TCP server for keep-alive sessions (@gbdrt,
+   #697)
  - Always dispose UI elements. This should improve some strange
    behaviors on extension restart (@ejgallego, #708)
  - Support Coq meta-commands (Reset, Reset Initial, Back) They are
@@ -162,6 +165,9 @@
    (@ejgallego, #727)
  - Don't expand bullet goals at previous levels by default
    (@ejgallego, @Alizter, # cc #525)
+ - [petanque] Return basic goal information after `run_tac`, so we
+   avoid a `goals` round-trip for each tactic (@gbdrt, @ejgallego,
+   #733)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
