@@ -82,7 +82,8 @@ let io =
 
 let read_raw ~uri =
   let file = Lang.LUri.File.to_string_file uri in
-  Fleche.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
+  try Ok Fleche.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
+  with Sys_error err -> Error err
 
 let find_thm ~(doc : Fleche.Doc.t) ~thm =
   let { Fleche.Doc.toc; _ } = doc in
@@ -113,13 +114,17 @@ let init ~token ~debug ~root =
   |> Result.map_error (fun msg -> Error.Coq msg)
 
 let start ~token ~env ~uri ~thm =
-  let raw = read_raw ~uri in
-  (* Format.eprintf "raw: @[%s@]%!" raw; *)
-  let doc = Fleche.Doc.create ~token ~env ~uri ~version:0 ~raw in
-  print_diags doc;
-  let target = Fleche.Doc.Target.End in
-  let doc = Fleche.Doc.check ~io ~token ~target ~doc () in
-  find_thm ~doc ~thm
+  match read_raw ~uri with
+  | Ok raw ->
+    (* Format.eprintf "raw: @[%s@]%!" raw; *)
+    let doc = Fleche.Doc.create ~token ~env ~uri ~version:0 ~raw in
+    print_diags doc;
+    let target = Fleche.Doc.Target.End in
+    let doc = Fleche.Doc.check ~io ~token ~target ~doc () in
+    find_thm ~doc ~thm
+  | Error err ->
+    let msg = Format.asprintf "@[[read_raw] File not found %s@]" err in
+    Error (Error.Theorem_not_found msg)
 
 let parse ~loc tac st =
   let str = Gramlib.Stream.of_string tac in
