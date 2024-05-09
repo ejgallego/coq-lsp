@@ -38,13 +38,12 @@ depends: [
 
   # Uncomment this for releases
   # "coq"          { >= "8.17" < "8.18"  }
-  # "coq-serapi"   { >= "8.17" < "8.18"  }
 
   # coq deps: remove this for releases
   "ocamlfind" {>= "1.8.1"}
   "zarith" {>= "1.11"}
 
-  # serapi deps: remove this for releases
+  # serlib deps: see what we need to keep for release
   "ppx_deriving"        { >= "4.2.1"    }
   "ppx_deriving_yojson" { >= "3.4"      }
   "ppx_import"          { >= "1.5-3"    }

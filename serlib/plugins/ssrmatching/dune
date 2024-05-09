@@ -1,0 +1,6 @@
+(library
+ (name serlib_ssrmatching)
+ (public_name coq-lsp.serlib.ssrmatching)
+ (synopsis "Serialization Library for Coq [SSR Matching plugin]")
+ (preprocess (staged_pps ppx_import ppx_sexp_conv ppx_deriving_yojson ppx_hash ppx_compare))
+ (libraries coq-core.plugins.ssrmatching serlib serlib_ltac sexplib))

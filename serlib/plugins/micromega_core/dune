@@ -1,0 +1,6 @@
+(library
+ (name serlib_micromega_core)
+ (public_name coq-lsp.serlib.micromega_core)
+ (synopsis "Serialization Library for Coq Micromega_core Plugin")
+ (preprocess (staged_pps ppx_import ppx_sexp_conv ppx_deriving_yojson ppx_hash ppx_compare))
+ (libraries coq-core.plugins.micromega_core serlib sexplib))

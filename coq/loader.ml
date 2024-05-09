@@ -61,7 +61,7 @@ let map_serlib fl_pkg =
   if supported
   then
     let plugin_name = String.split_on_char '.' fl_pkg |> list_last in
-    let serlib_name = "coq-serapi.serlib." ^ plugin_name in
+    let serlib_name = "coq-lsp.serlib." ^ plugin_name in
     check_package_exists serlib_name
   else None
 
