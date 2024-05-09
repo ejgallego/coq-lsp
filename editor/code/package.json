@@ -96,7 +96,7 @@
       },
       {
         "command": "coq-lsp.document",
-        "title": "Coq LSP: Get document in serialized format, print in console"
+        "title": "Coq LSP: Display current Coq document in JSON format"
       },
       {
         "command": "coq-lsp.save",
