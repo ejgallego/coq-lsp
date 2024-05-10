@@ -13,6 +13,7 @@ import {
   WorkspaceConfiguration,
   Disposable,
   languages,
+  Uri,
 } from "vscode";
 
 import {
@@ -281,7 +282,21 @@ export function activateCoqLSP(
       version
     );
     let params: FlecheDocumentParams = { textDocument };
-    client.sendRequest(docReq, params).then((fd) => console.log(fd));
+    client.sendRequest(docReq, params).then((fd) => {
+      // EJGA: uri_result could be used to set the suggested save path
+      // for the new editor, however we need to see how to do that
+      // and set `content` too for the new editor.
+      let path = `${uri.fsPath}-${version}.json`;
+      let uri_result = Uri.file(path).with({ scheme: "untitled" });
+
+      let open_options = {
+        language: "json",
+        content: JSON.stringify(fd, null, 2),
+      };
+      workspace.openTextDocument(open_options).then((document) => {
+        window.showTextDocument(document);
+      });
+    });
   };
 
   const trimNot = new NotificationType<{}>("coq/trimCaches");
