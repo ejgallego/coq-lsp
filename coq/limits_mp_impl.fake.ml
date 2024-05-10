@@ -9,5 +9,5 @@ end
 
 let start () = ()
 let limit ~token:_ ~f x = Result.Ok (f x)
-let name = "memprof-limits"
+let name () = "memprof-limits (fake)"
 let available = false
