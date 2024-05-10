@@ -10,7 +10,7 @@ module type Intf = sig
 
   val start : unit -> unit
   val limit : token:Token.t -> f:('a -> 'b) -> 'a -> ('b, exn) Result.t
-  val name : string
+  val name : unit -> string
   val available : bool
 end
 
