@@ -406,6 +406,13 @@ let do_cancel ~ofn ~params =
 
 let do_cache_trim () = Nt_cache_trim.notification ()
 
+let do_changeConfiguration params =
+  let message = "didChangeReceived" in
+  let () = LIO.(logMessage ~lvl:Lvl.Info ~message) in
+  let settings = field "settings" params |> U.to_assoc in
+  Rq_init.do_settings settings;
+  ()
+
 (***********************************************************************)
 
 (** LSP Init routine *)
@@ -469,8 +476,9 @@ let dispatch_notification ~io ~ofn ~token ~state ~method_ ~params : unit =
   match method_ with
   (* Lifecycle *)
   | "exit" -> raise Lsp_exit
-  (* setTrace *)
+  (* setTrace and settings *)
   | "$/setTrace" -> do_trace params
+  | "workspace/didChangeConfiguration" -> do_changeConfiguration params
   (* Document lifetime *)
   | "textDocument/didOpen" -> do_open ~io ~token ~state params
   | "textDocument/didChange" -> do_change ~io ~ofn ~token params
