@@ -52,6 +52,7 @@ If a feature doesn't appear here it usually means it is not planned in the short
 |---------------------------------------|---------|------------------------------------------------------------|
 | `workspace/workspaceFolders`          | Yes     | Each folder should have a `_CoqProject` file at the root.  |
 | `workspace/didChangeWorkspaceFolders` | Yes     |                                                            |
+| `workspace/didChangeConfiguration`    | Yes (*) | We still do a client -> server push, instead of pull       |
 |---------------------------------------|---------|------------------------------------------------------------|
 
 ### URIs accepted by coq-lsp
@@ -352,3 +353,38 @@ const coqPerfData : NotificationType<DocumentPerfParams<Range>>
 
 The `coq/trimCaches` notification from client to server tells the
 server to free memory. It has no parameters.
+
+### Did Change Configuration and Server Configuration parameters
+
+The server will listen to the `workspace/didChangeConfiguration`
+parameters and try to update them without a full server restart.
+
+The `settings` field corresponds to the data structure also passed in
+the `initializationOptions` parameter for the LSP `init` method.
+
+As of today, the server exposes the following parameters:
+
+```typescript
+export interface CoqLspServerConfig {
+  client_version: string;
+  eager_diagnostics: boolean;
+  goal_after_tactic: boolean;
+  show_coq_info_messages: boolean;
+  show_notices_as_diagnostics: boolean;
+  admit_on_bad_qed: boolean;
+  debug: boolean;
+  unicode_completion: "off" | "normal" | "extended";
+  max_errors: number;
+  pp_type: 0 | 1 | 2;
+  show_stats_on_hover: boolean;
+  show_loc_info_on_hover: boolean;
+  check_only_on_request: boolean;
+}
+```
+
+The settings are documented in the `package.json` file for the VSCode
+client.
+
+#### Changelog
+
+- v0.1.9: First public documentation.

@@ -18,6 +18,8 @@ import {
 
 import {
   BaseLanguageClient,
+  DidChangeConfigurationNotification,
+  DidChangeConfigurationParams,
   LanguageClientOptions,
   NotificationType,
   RequestType,
@@ -80,19 +82,27 @@ export function activateCoqLSP(
 ): CoqLspAPI {
   window.showInformationMessage("Coq LSP Extension: Going to activate!");
 
-  workspace.onDidChangeConfiguration((cfgChange) => {
-    if (cfgChange.affectsConfiguration("coq-lsp")) {
-      // Refactor to remove the duplicate call below
-      const wsConfig = workspace.getConfiguration("coq-lsp");
-      config = CoqLspClientConfig.create(wsConfig);
+  // Update config on client and server
+  function configDidChange(wsConfig: any): CoqLspServerConfig {
+    config = CoqLspClientConfig.create(wsConfig);
+    let client_version = context.extension.packageJSON.version;
+    let settings = CoqLspServerConfig.create(client_version, wsConfig);
+    let params: DidChangeConfigurationParams = { settings };
+
+    if (client && client.isRunning()) {
+      let type = DidChangeConfigurationNotification.type;
+      client.sendNotification(type, params);
     }
-  });
+
+    return settings;
+  }
 
   function coqCommand(command: string, fn: () => void) {
     let disposable = commands.registerCommand("coq-lsp." + command, fn);
     context.subscriptions.push(disposable);
   }
   function coqEditorCommand(command: string, fn: (editor: TextEditor) => void) {
+    // EJGA: we should check for document selector here.
     let disposable = commands.registerTextEditorCommand(
       "coq-lsp." + command,
       fn
@@ -143,13 +153,9 @@ export function activateCoqLSP(
     if (client && client.isRunning()) return;
 
     const wsConfig = workspace.getConfiguration("coq-lsp");
-    config = CoqLspClientConfig.create(wsConfig);
 
-    let client_version = context.extension.packageJSON.version;
-    const initializationOptions = CoqLspServerConfig.create(
-      client_version,
-      wsConfig
-    );
+    // This also sets `config` variable
+    const initializationOptions: CoqLspServerConfig = configDidChange(wsConfig);
 
     const clientOptions: LanguageClientOptions = {
       documentSelector: CoqSelector.local,
@@ -204,6 +210,17 @@ export function activateCoqLSP(
 
   // Check VSCoq is not installed
   checkForVSCoq();
+
+  // Config change events setup
+  let onDidChange = workspace.onDidChangeConfiguration((cfgChange) => {
+    if (cfgChange.affectsConfiguration("coq-lsp")) {
+      // Refactor to remove the duplicate call below
+      const wsConfig = workspace.getConfiguration("coq-lsp");
+      configDidChange(wsConfig);
+    }
+  });
+
+  context.subscriptions.push(onDidChange);
 
   // InfoPanel setup.
   infoPanel = new InfoPanel(context.extensionUri);

@@ -108,6 +108,10 @@
  - New server option to enable / disable `coq/perfData` (@ejgallego, #689)
  - The `coq-lsp.document` VSCode command will now display the returned
    JSON data in a new editor (@ejgallego, #701)
+ - New server option to enable / disable `coq/perfData` (@ejgallego,
+   #689)
+ - Update server settings on the fly when tweaking them in VSCode.
+   Implement `workspace/didChangeConfiguration` (@ejgallego, #702)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
