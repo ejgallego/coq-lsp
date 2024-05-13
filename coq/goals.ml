@@ -50,9 +50,10 @@ type ('a, 'pp) goals =
   ; given_up : 'a list
   }
 
-let map_goals ~f { goals; stack; bullet; shelf; given_up } =
+let map_goals ~f ~g { goals; stack; bullet; shelf; given_up } =
   let goals = List.map f goals in
   let stack = List.map (fun (s, r) -> (List.map f s, List.map f r)) stack in
+  let bullet = Option.map g bullet in
   let shelf = List.map f shelf in
   let given_up = List.map f given_up in
   { goals; stack; bullet; shelf; given_up }

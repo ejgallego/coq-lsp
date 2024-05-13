@@ -182,6 +182,12 @@ fully-fledged LSP client.
 add your pre/post processing passes, for example to analyze or serialize parts
 of Coq files.
 
+### 🪄 Advanced APIs for Coq Interaction
+
+Thanks to Flèche, we provide some APIs on top of it that allow advanced use
+cases with Coq. In particular, we provide direct, low-overhead access to Coq's
+proof engine using [petanque](./petanque).
+
 ### ♻️ Reusability, Standards, Modularity
 
 The incremental document checking library of `coq-lsp` has been designed to be

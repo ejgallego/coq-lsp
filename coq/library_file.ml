@@ -109,3 +109,5 @@ let toc dps : _ list =
   in
   let () = Declaremods.iter_all_interp_segments obj_action in
   List.rev !res
+
+let toc ~token ~st dps = State.in_state ~token ~st ~f:toc dps
