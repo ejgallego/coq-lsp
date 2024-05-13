@@ -22,6 +22,7 @@
 module J = Yojson.Safe
 module U = Yojson.Safe.Util
 
+let int_field name dict = U.to_int List.(assoc name dict)
 let string_field name dict = U.to_string List.(assoc name dict)
 
 let odict_field ~default name dict =
@@ -63,6 +64,40 @@ module Message = struct
     | Notification { params; _ } | Request { params; _ } -> params
 end
 
+module Response = struct
+  type t =
+    | Ok of
+        { id : int
+        ; result : Yojson.Safe.t
+        }
+    | Error of
+        { id : int
+        ; code : int
+        ; message : string
+        ; data : Yojson.Safe.t option
+        }
+
+  let of_yojson msg =
+    try
+      let dict = U.to_assoc msg in
+      let id = int_field "id" dict in
+      (match List.assoc_opt "error" dict with
+      | Some error ->
+        let error = U.to_assoc error in
+        let code = int_field "message" error in
+        let message = string_field "message" error in
+        let data = None in
+        Error { id; code; message; data }
+      | None ->
+        let result = List.assoc "result" dict in
+        Ok { id; result })
+      |> Result.ok
+    with
+    | Not_found -> Error ("missing parameter: " ^ J.to_string msg)
+    | U.Type_error (msg, obj) ->
+      Error (Format.asprintf "msg: %s; obj: %s" msg (J.to_string obj))
+end
+
 let mk_reply ~id ~result =
   `Assoc [ ("jsonrpc", `String "2.0"); ("id", `Int id); ("result", result) ]
 
@@ -71,6 +106,14 @@ let mk_request_error ~id ~code ~message =
     [ ("jsonrpc", `String "2.0")
     ; ("id", `Int id)
     ; ("error", `Assoc [ ("code", `Int code); ("message", `String message) ])
+    ]
+
+let mk_request ~method_ ~id ~params =
+  `Assoc
+    [ ("jsonrpc", `String "2.0")
+    ; ("id", `Int id)
+    ; ("method", `String method_)
+    ; ("params", params)
     ]
 
 let mk_notification ~method_ ~params =

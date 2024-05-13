@@ -35,5 +35,52 @@ two.
 
 ## Using `petanque`
 
-To use `petanque`, you need to some form of shell, or you can just
-call the API directly from your OCaml program.
+You can use `petanque` in 2 different ways:
+
+- call the API directly from your OCaml program
+- use the provided `pet` JSON-RPC shell
+
+to execute the `pet` JSON-RPC shell do:
+```
+make
+dune exec -- rlwrap %{bin:pet}
+```
+
+`rlwrap` is just a convenience, if your dune version is too old and
+don't recognize the `%{bin:pet}` form, you can just do `dune exec -- pet`.
+
+### Petanque options
+
+Petanque can be initalized from the command line by passing the `--root` parameter to it:
+```
+make
+dune exec -- rlwrap %{bin:pet} --root=/absolute/path/to/my/project
+```
+
+NOTE: If you use this option, you should not call `Init`!
+
+### A first example:
+
+Please use one line per json input. json input examples are:
+```json
+["Init",{"debug": false,"root":"file:///home/egallego/research/coq-lsp/examples/"}]
+["Init",["Ok",1]]
+
+["Start",{"env":1,"uri": "file:///home/egallego/research/coq-lsp/examples/ex0.v","thm":"addnC"}]
+["Start",["Ok",1]]
+
+["Run_tac", {"st": 1, "tac": "induction n."}]
+["Run_tac", ["Ok", 2]]
+
+["Run_tac", {"st": 2, "tac": "simpl."}]
+["Run_tac", 3]
+
+["Run_tac", {"st": 3, "tac": "auto."}]
+["Run_tac",4]
+
+["Premises", {"st": 2}]
+["Premises", ...]
+```
+
+Seems to work! (TM) (Famous last words)
+

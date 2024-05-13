@@ -35,6 +35,27 @@ module Message : sig
   val params : t -> (string * Yojson.Safe.t) list
 end
 
+(* Request response *)
+module Response : sig
+  type t =
+    | Ok of
+        { id : int
+        ; result : Yojson.Safe.t
+        }
+    | Error of
+        { id : int
+        ; code : int
+        ; message : string
+        ; data : Yojson.Safe.t option
+        }
+
+  val of_yojson : Yojson.Safe.t -> (t, string) Result.t
+end
+
+(** Build request *)
+val mk_request :
+  method_:string -> id:int -> params:Yojson.Safe.t -> Yojson.Safe.t
+
 (** Build notification *)
 val mk_notification : method_:string -> params:Yojson.Safe.t -> Yojson.Safe.t
 

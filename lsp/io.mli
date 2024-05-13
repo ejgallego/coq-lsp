@@ -23,8 +23,11 @@ val set_log_fn : (Yojson.Safe.t -> unit) -> unit
 (** Read a JSON-RPC request from channel *)
 val read_raw_request : in_channel -> Yojson.Safe.t option
 
-(** [None] signals [EOF] *)
+(** [None] signals [EOF], else [ReadError] *)
 val read_request : in_channel -> Base.Message.t option
+
+(** [None] signals [EOF] *)
+val read_response : in_channel -> (Base.Response.t, string) Result.t option
 
 exception ReadError of string
 

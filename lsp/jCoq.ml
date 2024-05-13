@@ -50,13 +50,20 @@ module Goals = struct
 
     let to_ { Coq.Goals.goals; stack; bullet; shelf; given_up } =
       { goals; stack; bullet; shelf; given_up }
+
+    let of_ { goals; stack; bullet; shelf; given_up } =
+      { Coq.Goals.goals; stack; bullet; shelf; given_up }
   end
 
   type ('a, 'pp) goals = ('a, 'pp) Coq.Goals.goals
 
   let goals_to_yojson f pp g = Goals_.to_ g |> Goals_.to_yojson f pp
 
-  type 'pp reified_pp = ('pp reified_goal, 'pp) goals [@@deriving to_yojson]
+  let goals_of_yojson f pp j =
+    let open Ppx_deriving_yojson_runtime in
+    Goals_.of_yojson f pp j >|= Goals_.of_
+
+  type 'pp reified_pp = ('pp reified_goal, 'pp) goals [@@deriving yojson]
 end
 
 module Ast = struct

@@ -29,6 +29,7 @@ module Error : sig
     | Theorem_not_found of string
 
   val to_string : t -> string
+  val to_code : t -> int
 end
 
 (** Petanque results *)

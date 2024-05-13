@@ -157,3 +157,11 @@ let rec read_request ic =
     | Error msg ->
       trace "read_request" ("error: " ^ msg);
       read_request ic)
+
+let read_response ic =
+  match read_raw_request ic with
+  | None -> None (* EOF *)
+  | Some com ->
+    if Fleche.Debug.read then trace_object "read" com;
+    Some (Base.Response.of_yojson com)
+  | exception ReadError err -> Some (Error err)
