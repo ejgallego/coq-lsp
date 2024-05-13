@@ -37,7 +37,8 @@ let run (ic, oc) =
   let* _premises = S.premises { st } in
   let* st = S.run_tac { st; tac = "induction l." } in
   let* st = r ~st ~tac:"-" in
-  let* st = r ~st ~tac:"reflexivity." in
+  (* Introduce an error *)
+  (* let* st = r ~st ~tac:"reflexivity." in *)
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"now simpl; rewrite IHl." in
   let* st = r ~st ~tac:"Qed." in
@@ -48,11 +49,13 @@ let main () =
   run (server_out, Format.formatter_of_out_channel server_in)
 
 let check_no_goals = function
-  | Error err ->
-    Format.eprintf "error: in execution: %s@\n%!" err;
+  | Error _err ->
+    (* errored as expected! *)
+    0
+  | Ok None ->
     dump_msgs ();
-    129
-  | Ok None -> 0
+    Format.eprintf "error: we did succeded when we should not@\n%!";
+    1
   | Ok (Some _goals) ->
     dump_msgs ();
     Format.eprintf "error: goals remaining@\n%!";

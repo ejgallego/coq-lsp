@@ -115,11 +115,11 @@ module RunTac = struct
   end
 
   module Response = struct
-    type t = State.t [@@deriving yojson]
+    type t = State.t Run_result.t [@@deriving yojson]
   end
 
   module Response_ = struct
-    type t = int [@@deriving yojson]
+    type t = int Run_result.t [@@deriving yojson]
   end
 
   let handler ~token { Params.st; tac } = Agent.run_tac ~token ~st ~tac
