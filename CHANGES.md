@@ -117,6 +117,8 @@
    #689)
  - Update server settings on the fly when tweaking them in VSCode.
    Implement `workspace/didChangeConfiguration` (@ejgallego, #702)
+ - [Coq API] Add functions to retrieve list of declarations done in
+   .vo files (@ejallego, @eytans, #704)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
