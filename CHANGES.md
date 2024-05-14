@@ -121,6 +121,8 @@
    .vo files (@ejallego, @eytans, #704)
  - New `petanque` API to interact directly with Coq's proof
    engine. (@ejgallego, @gbdrt, #703, thanks to Alex Sanchez-Stern)
+ - Always dispose UI elements. This should improve some strange
+   behaviors on extension restart (@ejgallego, #708)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

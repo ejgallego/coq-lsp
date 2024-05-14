@@ -159,12 +159,13 @@ export function activateCoqLSP(
       ...fexc,
     });
   }
+
   const stop = () => {
     if (client && client.isRunning()) {
       client
         .dispose(2000)
-        .then(updateStatusBar)
-        .then(() => {
+        .finally(updateStatusBar)
+        .finally(() => {
           infoPanel.dispose();
           fileProgress.dispose();
           perfDataHook.dispose();
