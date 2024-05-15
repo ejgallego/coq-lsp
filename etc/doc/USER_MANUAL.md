@@ -47,3 +47,33 @@ from `memprof-limits`. The situation is better in Coq 8.20, but users
 on Coq <= 8.19 do need to install a version of Coq with the backported
 fixes. See the information about Coq upstream bugs in the README for
 more information about available branches.
+
+## Advanced incremental tricks
+
+You can use the `Reset $id` and `Back $steps` commands to isolate
+parts of the document from each others in terms of rechecking.
+
+For example, the command `Reset $id` will make the parts of the
+document after it use the state before the node `id` was found. Thus,
+any change between `$id` and the `Reset $id` command will not trigger
+a recheck of the rest of the document.
+
+```coq
+(* Coq code 1 *)
+
+Lemma foo : T.
+Proof. ... Qed.
+
+(* Coq code 2 *)
+
+Reset foo.
+
+(* Coq code 3 *)
+```
+
+In the above code, any change in the "`Coq code 2`" section will not
+trigger a recheck of the "`Coq code 3`" Section, by virtue of the
+incremental engine.
+
+Using `Reset Initial`, you can effectively partition the document on
+`N` parts! This is pretty cool for some use cases!

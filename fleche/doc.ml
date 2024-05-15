@@ -672,13 +672,64 @@ end = struct
     | Completed (Error _) -> st
 end
 
-let interp_and_info ~st ~files ast =
+let interp_and_info ~token ~st ~files ast =
   match Coq.Ast.Require.extract ast with
-  | None -> Memo.Interp.evalS (st, ast)
-  | Some ast -> Memo.Require.evalS (st, files, ast)
+  | None -> Memo.Interp.evalS ~token (st, ast)
+  | Some ast -> Memo.Require.evalS ~token (st, files, ast)
 
-let interp_and_info ~token ~parsing_time ~st ~files ast =
-  let res, stats = interp_and_info ~token ~st ~files ast in
+(* Support for meta-commands, a bit messy, but cool in itself *)
+let search_node ~command ~doc =
+  let nstats (node : Node.t option) =
+    Option.cata
+      (fun (node : Node.t) -> Option.default Memo.Stats.zero node.info.stats)
+      Memo.Stats.zero node
+  in
+  match command with
+  | Coq.Ast.Meta.Command.Back num -> (
+    match Base.List.nth doc.nodes num with
+    | None ->
+      let ll = List.length doc.nodes in
+      let message =
+        Pp.(
+          str "not enough nodes: [" ++ int num ++ str " > " ++ int ll
+          ++ str "] available document nodes")
+      in
+      (Coq.Protect.E.error message, nstats None)
+    | Some node -> (Coq.Protect.E.ok node.state, nstats (Some node)))
+  | ResetName id -> (
+    let toc = doc.toc in
+    let id = Names.Id.to_string id.v in
+    match CString.Map.find_opt id toc with
+    | None ->
+      ( Coq.Protect.E.error Pp.(str "identifier " ++ str id ++ str " not found")
+      , Memo.Stats.zero )
+    | Some range ->
+      (* this is painful *)
+      let rec aux st node (nodes : Node.t list) =
+        match nodes with
+        | [] -> (st, nstats node)
+        | node :: nodes ->
+          if node.range.end_.offset < range.start.offset then
+            (node.state, nstats (Some node))
+          else aux node.state (Some node) nodes
+      in
+      (* We could error here too *)
+      let res, stats = aux doc.root None doc.nodes in
+      (Coq.Protect.E.ok res, stats))
+  | ResetInitial -> (Coq.Protect.E.ok doc.root, nstats None)
+
+let interp_and_info ~token ~st ~files ~doc ast =
+  match Coq.Ast.Meta.extract ast with
+  | None -> interp_and_info ~token ~st ~files ast
+  | Some { command; loc = _; attrs = _; control = _ } ->
+    (* That's an interesting point, for now we don't measure time Flèche is
+       spending on error recovery and meta stuff, we should record that time
+       actually at some point too. In this case, maybe we could recover the
+       cache hit from the original node? *)
+    search_node ~command ~doc
+
+let interp_and_info ~token ~parsing_time ~st ~files ~doc ast =
+  let res, stats = interp_and_info ~token ~st ~files ~doc ast in
   let global_stats = Stats.Global.dump () in
   let info = Node.Info.make ~parsing_time ~stats ~global_stats () in
   (res, info)
@@ -816,7 +867,7 @@ let document_action ~token ~st ~parsing_diags ~parsing_feedback ~parsing_time
   | Process ast -> (
     let lines, files = (doc.contents.lines, doc.env.files) in
     let process_res, info =
-      interp_and_info ~token ~parsing_time ~st ~files ast
+      interp_and_info ~token ~parsing_time ~st ~files ~doc ast
     in
     let f = Coq.Utils.to_range ~lines in
     let { Coq.Protect.E.r; feedback } = Coq.Protect.E.map_loc ~f process_res in

@@ -123,6 +123,9 @@
    engine. (@ejgallego, @gbdrt, #703, thanks to Alex Sanchez-Stern)
  - Always dispose UI elements. This should improve some strange
    behaviors on extension restart (@ejgallego, #708)
+ - Support Coq meta-commands (Reset, Reset Initial, Back) They are
+   actually pretty useful to hint the incremental engine to ignore
+   changes in some part of the document (@ejgallego, #709)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
