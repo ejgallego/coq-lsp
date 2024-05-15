@@ -5,6 +5,8 @@ module Stats : sig
           (** Time in hashing consumed in the original execution *)
     ; cache_hit : bool  (** Whether we had a cache hit *)
     }
+
+  val zero : t
 end
 
 (** Flèche memo / cache tables, with some advanced features *)

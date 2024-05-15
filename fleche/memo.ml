@@ -13,6 +13,12 @@ module Stats = struct
        precise option *)
     (* let memory = Obj.magic res |> Obj.reachable_words in *)
     { stats; time_hash; cache_hit }
+
+  let zero =
+    { stats = { Stats.time = 0.0; memory = 0.0 }
+    ; time_hash = 0.0
+    ; cache_hit = false
+    }
 end
 
 module GlobalCacheStats = struct
