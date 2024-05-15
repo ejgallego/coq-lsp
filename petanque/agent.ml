@@ -82,18 +82,10 @@ let find_thm ~(doc : Fleche.Doc.t) ~thm =
   | None ->
     let msg = Format.asprintf "@[[find_thm] Theorem not found!@]" in
     Error (Error.Theorem_not_found msg)
-  | Some range ->
+  | Some node ->
     if pet_debug then Format.eprintf "@[[find_thm] Theorem found!@\n@]%!";
     (* let point = (range.start.line, range.start.character) in *)
-    let point = (range.end_.line, range.end_.character) in
-    let approx = Fleche.Info.PrevIfEmpty in
-    let node = Fleche.Info.LC.node ~doc ~point approx in
-    let error =
-      Error.Theorem_not_found
-        (Format.asprintf "@[[find_thm] No node found for point (%d, %d) @]"
-           (fst point) (snd point))
-    in
-    Base.Result.of_option ~error node |> Result.map Fleche.Doc.Node.state
+    Ok (Fleche.Doc.Node.state node)
 
 let pp_diag fmt { Lang.Diagnostic.message; _ } =
   Format.fprintf fmt "%a" Pp.pp_with message
