@@ -40,6 +40,8 @@ jobs:
             ocaml: 5.0.x
           - os: ubuntu-latest
             ocaml: 5.1.x
+          - os: ubuntu-latest
+            ocaml: 5.2.x
           - os: macos-latest
             ocaml: 4.14.x
           - name: Windows Latest
