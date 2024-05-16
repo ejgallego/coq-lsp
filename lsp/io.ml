@@ -41,10 +41,8 @@ let read_raw_request ic =
   in
   J.from_string raw_obj
 
-exception ReadError of string
-
 let read_raw_request ic =
-  try Some (read_raw_request ic) with
+  try Some (Ok (read_raw_request ic)) with
   (* if the end of input is encountered while some more characters are needed to
      read the current conversion specification, or the lsp server closes *)
   | End_of_file -> None
@@ -53,7 +51,7 @@ let read_raw_request ic =
   (* if a conversion to a number is not possible. *)
   | Failure msg
   (* if the format string is invalid. *)
-  | Invalid_argument msg -> raise (ReadError msg)
+  | Invalid_argument msg -> Some (Error msg)
 
 let mut = Mutex.create ()
 let log = ref (fun _ _ -> ())
@@ -147,21 +145,18 @@ let trace_object hdr obj =
 let () = log := trace_object
 
 (** Misc helpers *)
-let rec read_request ic =
+let read_request ic =
   match read_raw_request ic with
   | None -> None (* EOF *)
-  | Some com -> (
+  | Some (Ok com) ->
     if Fleche.Debug.read then trace_object "read" com;
-    match Base.Message.from_yojson com with
-    | Ok msg -> Some msg
-    | Error msg ->
-      trace "read_request" ("error: " ^ msg);
-      read_request ic)
+    Some (Base.Message.from_yojson com)
+  | Some (Error err) -> Some (Error err)
 
 let read_response ic =
   match read_raw_request ic with
   | None -> None (* EOF *)
-  | Some com ->
+  | Some (Ok com) ->
     if Fleche.Debug.read then trace_object "read" com;
     Some (Base.Response.of_yojson com)
-  | exception ReadError err -> Some (Error err)
+  | Some (Error err) -> Some (Error err)
