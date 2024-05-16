@@ -45,7 +45,7 @@ let message_notification ~lvl ~message =
 let uri_of_string_exn uri =
   Lang.LUri.of_string uri |> Lang.LUri.File.of_uri |> Result.get_ok
 
-let trace_enabled = false
+let trace_enabled = true
 
 let pet_main debug roots =
   Coq.Limits.start ();
