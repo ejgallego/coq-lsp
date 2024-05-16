@@ -10,6 +10,7 @@ import {
 import {
   BaseLanguageClient,
   RequestType,
+  ResponseError,
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 import {
@@ -20,7 +21,11 @@ import {
   ErrorData,
 } from "../lib/types";
 
-import { URI, Position } from "vscode-languageserver-types";
+import {
+  URI,
+  Position,
+  TextDocumentIdentifier,
+} from "vscode-languageserver-types";
 
 export const goalReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
   "proof/goals"
@@ -128,7 +133,12 @@ export class InfoPanel {
     this.requestSent(params);
     client.sendRequest(goalReq, params).then(
       (goals) => this.requestDisplay(goals),
-      (reason) => this.requestError(reason)
+      (error: ResponseError<void>) => {
+        let textDocument = params.textDocument;
+        let position = params.position;
+        let message = error.message;
+        this.requestError({ textDocument, position, message });
+      }
     );
   }
 
