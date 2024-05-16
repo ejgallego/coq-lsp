@@ -15,32 +15,68 @@ Given a project root `dir`, `coq-lsp` will try to read
 there.
 
 Other tools included in the `coq-lsp` suite usually take a
-`--root=dir` command line parameter to set this information.
+`--root=dir` command line parameter to set this information up.
 
 `coq-lsp` will display information about the project root and setting
 auto-detection using the standard language server protocol messaging
 facilities. In VSCode, these settings can be usually displayed in the
 "Output > Coq-lsp server" window.
 
-## Selecting the interruption backend
+## Key features:
+
+### Incremental proof edition
+
+`coq-lsp` will recognize blocks of the form:
+```coq
+Lemma foo : T.
+Proof.
+ ...
+Qed.
+```
+
+and will allow you to edit inside the `Proof.` `Qed.` block without rechecing what is outside.
+
+### Error recovery
+
+`coq-lsp` can recover many errors automatically and allow you to
+continue document edition later on.
+
+For example, it is not necessary to put `Admitted` in proofs that are
+not fully completed.
+
+## Settings
+
+### Goal display
+
+Several settings for goal display exist.
+
+### Continuous vs on-demand mode:
+
+A setting to have `coq-lsp` check documents continuously exists.
+
+## Memory management
+
+## Advanced: Multiple workspaces
+
+## Interrupting coq-lsp
 
 When a Coq document is being checked, it is often necessary to
 _interrupt_ the checking process, for example, to check a new version,
-or to retrieve some user-facing information.
+or to retrieve some user-facing information, such as goals.
 
-`coq-lsp` supports two interruption methods, selectable at start time
-via the `--int_backend` command-line parameter:
+`coq-lsp` supports two different interruption methods, selectable at
+start time via the `--int_backend` command-line parameter:
 
-- Coq-side polling (`--int_backend=Coq`, default): in this mode, Coq
-  polls for a flag every once in a while, and will raise an
-  interruption when the flag is set. This method has the downside that
-  some paths in Coq don't check the flag often enough, for example,
-  `Qed.`, so users may face unresponsiveness, as our server can only
-  run one thread at a time.
+- Coq-side polling (`--int_backend=Coq`, default for OCaml 5.x): in
+  this mode, Coq polls for a flag every once in a while, and will
+  raise an interruption when the flag is set. This method has the
+  downside that some paths in Coq don't check the flag often enough,
+  for example, `Qed.`, so users may face unresponsiveness, as our
+  server can only run one thread at a time.
 
 - `memprof-limits` token-based interruption (`--int_backend=Mp`,
-  experimental): in this mode, Coq will use the `memprof-limits`
-  library to interrupt Coq.
+  experimental, default for OCaml 4.x): in this mode, Coq will use the
+  `memprof-limits` library to interrupt Coq.
 
 Coq has some bugs w.r.t. handling of asynchronous interruptions coming
 from `memprof-limits`. The situation is better in Coq 8.20, but users

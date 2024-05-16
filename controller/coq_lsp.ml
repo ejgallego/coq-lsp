@@ -102,7 +102,7 @@ let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug =
 
 let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
     require_libraries delay int_backend =
-  Coq.Limits.select int_backend;
+  Coq.Limits.select_best int_backend;
   Coq.Limits.start ();
 
   (* Try to be sane w.r.t. \r\n in Windows *)

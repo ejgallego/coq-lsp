@@ -455,7 +455,11 @@ let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
     let token = Coq.Limits.Token.create () in
     let result, dirs = Rq_init.do_initialize ~params in
     Rq.Action.now (Ok result) |> Rq.serve ~ofn ~token ~id;
-    LIO.logMessage ~lvl:Info ~message:"Server initialized";
+    let message =
+      Format.asprintf "Server initializing (int_backend: %s)"
+        (Coq.Limits.name ())
+    in
+    LIO.logMessage ~lvl:Info ~message;
     (* Workspace initialization *)
     let debug = debug || !Fleche.Config.v.debug in
     let workspaces =
