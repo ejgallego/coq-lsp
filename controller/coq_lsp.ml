@@ -110,12 +110,19 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
   Stdlib.set_binary_mode_out stdout true;
 
   (* We output to stdout *)
-  let ifn () = LIO.read_request stdin in
-  (* Set log channels *)
-  let ofn = LIO.send_json Format.std_formatter in
-  LIO.set_log_fn ofn;
+  let ifn () = LIO.read_message stdin in
 
-  let io = lsp_cb ofn in
+  (* Set log channels *)
+  let json_fn = LIO.send_json Format.std_formatter in
+
+  let ofn response =
+    let response = Lsp.Base.Response.to_yojson response in
+    LIO.send_json Format.std_formatter response
+  in
+
+  LIO.set_log_fn json_fn;
+
+  let io = lsp_cb json_fn in
   Fleche.Io.CallBack.set io;
 
   (* IMPORTANT: LSP spec forbids any message from server to client before
@@ -158,7 +165,7 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
         Fleche.Config.(
           v := { !v with send_diags = false; send_perf_data = false });
         LIO.set_log_fn (fun _obj -> ());
-        let io = concise_cb ofn in
+        let io = concise_cb json_fn in
         Fleche.Io.CallBack.set io;
         io)
       else io

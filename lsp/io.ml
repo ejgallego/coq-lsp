@@ -21,7 +21,7 @@ module J = Yojson.Safe
 let fn = ref (fun _ -> ())
 let set_log_fn f = fn := f
 
-let read_raw_request ic =
+let read_raw_message ic =
   let cl = input_line ic in
   let sin = Scanf.Scanning.from_string cl in
   let raw_obj =
@@ -41,8 +41,8 @@ let read_raw_request ic =
   in
   J.from_string raw_obj
 
-let read_raw_request ic =
-  try Some (Ok (read_raw_request ic)) with
+let read_raw_message ic =
+  try Some (Ok (read_raw_message ic)) with
   (* if the end of input is encountered while some more characters are needed to
      read the current conversion specification, or the lsp server closes *)
   | End_of_file -> None
@@ -111,14 +111,16 @@ end
 let logMessage ~lvl ~message =
   let method_ = "window/logMessage" in
   let lvl = Lvl.to_int lvl in
-  let params = `Assoc [ ("type", `Int lvl); ("message", `String message) ] in
-  let msg = Base.mk_notification ~method_ ~params in
+  (* Replace with the json serializer in petanque protocol *)
+  let params = [ ("type", `Int lvl); ("message", `String message) ] in
+  let msg = Base.Notification.(make ~method_ ~params () |> to_yojson) in
   !fn msg
 
 let logMessageInt ~lvl ~message =
   let method_ = "window/logMessage" in
-  let params = `Assoc [ ("type", `Int lvl); ("message", `String message) ] in
-  let msg = Base.mk_notification ~method_ ~params in
+  (* Replace with the json serializer in petanque protocol *)
+  let params = [ ("type", `Int lvl); ("message", `String message) ] in
+  let msg = Base.Notification.(make ~method_ ~params () |> to_yojson) in
   !fn msg
 
 let logTrace ~message ~extra =
@@ -126,10 +128,10 @@ let logTrace ~message ~extra =
   let params =
     match (!trace_value, extra) with
     | Verbose, Some extra ->
-      `Assoc [ ("message", `String message); ("verbose", `String extra) ]
-    | _, _ -> `Assoc [ ("message", `String message) ]
+      [ ("message", `String message); ("verbose", `String extra) ]
+    | _, _ -> [ ("message", `String message) ]
   in
-  Base.mk_notification ~method_ ~params |> !fn
+  Base.Notification.(make ~method_ ~params () |> to_yojson) |> !fn
 
 let trace hdr ?extra msg =
   let message = Format.asprintf "[%s]: @[%s@]" hdr msg in
@@ -145,18 +147,10 @@ let trace_object hdr obj =
 let () = log := trace_object
 
 (** Misc helpers *)
-let read_request ic =
-  match read_raw_request ic with
+let read_message ic =
+  match read_raw_message ic with
   | None -> None (* EOF *)
   | Some (Ok com) ->
     if Fleche.Debug.read then trace_object "read" com;
-    Some (Base.Message.from_yojson com)
-  | Some (Error err) -> Some (Error err)
-
-let read_response ic =
-  match read_raw_request ic with
-  | None -> None (* EOF *)
-  | Some (Ok com) ->
-    if Fleche.Debug.read then trace_object "read" com;
-    Some (Base.Response.of_yojson com)
+    Some (Base.Message.of_yojson com)
   | Some (Error err) -> Some (Error err)

@@ -128,6 +128,8 @@
  - Support Coq meta-commands (Reset, Reset Initial, Back) They are
    actually pretty useful to hint the incremental engine to ignore
    changes in some part of the document (@ejgallego, #709)
+ - JSON-RPC library now supports all kind of incoming messages
+   (@ejgallego, #713)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
