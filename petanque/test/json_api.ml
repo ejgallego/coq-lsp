@@ -35,7 +35,10 @@ end = struct
   let call params =
     let id = get_id () in
     let method_ = R.method_ in
-    let params = Yojson.Safe.Util.to_assoc (R.Params_.to_yojson params) in
+    let params =
+      Lsp.Base.Params.Dict
+        (Yojson.Safe.Util.to_assoc (R.Params_.to_yojson params))
+    in
     let request =
       Lsp.Base.Request.(make ~id ~method_ ~params () |> to_yojson)
     in

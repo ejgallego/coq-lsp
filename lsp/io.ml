@@ -112,14 +112,18 @@ let logMessage ~lvl ~message =
   let method_ = "window/logMessage" in
   let lvl = Lvl.to_int lvl in
   (* Replace with the json serializer in petanque protocol *)
-  let params = [ ("type", `Int lvl); ("message", `String message) ] in
+  let params =
+    Base.Params.Dict [ ("type", `Int lvl); ("message", `String message) ]
+  in
   let msg = Base.Notification.(make ~method_ ~params () |> to_yojson) in
   !fn msg
 
 let logMessageInt ~lvl ~message =
   let method_ = "window/logMessage" in
   (* Replace with the json serializer in petanque protocol *)
-  let params = [ ("type", `Int lvl); ("message", `String message) ] in
+  let params =
+    Base.Params.Dict [ ("type", `Int lvl); ("message", `String message) ]
+  in
   let msg = Base.Notification.(make ~method_ ~params () |> to_yojson) in
   !fn msg
 
@@ -128,8 +132,9 @@ let logTrace ~message ~extra =
   let params =
     match (!trace_value, extra) with
     | Verbose, Some extra ->
-      [ ("message", `String message); ("verbose", `String extra) ]
-    | _, _ -> [ ("message", `String message) ]
+      Base.Params.Dict
+        [ ("message", `String message); ("verbose", `String extra) ]
+    | _, _ -> Base.Params.Dict [ ("message", `String message) ]
   in
   Base.Notification.(make ~method_ ~params () |> to_yojson) |> !fn
 

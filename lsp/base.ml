@@ -26,21 +26,29 @@ let int_field name dict = U.to_int List.(assoc name dict)
 let string_field name dict = U.to_string List.(assoc name dict)
 
 module Params = struct
-  type t = (string * Yojson.Safe.t) list
+  type t =
+    | Dict of (string * Yojson.Safe.t) list
+    | Array of Yojson.Safe.t list
 
-  let to_yojson dict = `Assoc dict
+  let to_yojson = function
+    | Dict obj -> `Assoc obj
+    | Array objs -> `List objs
 end
 
 module Notification = struct
   type t =
     { method_ : string
-    ; params : Params.t
+    ; params : Params.t option
     }
 
-  let make ~method_ ~params () = { method_; params }
+  let make ~method_ ?params () = { method_; params }
 
   let to_yojson { method_; params } =
-    let params = [ ("params", Params.to_yojson params) ] in
+    let params =
+      Option.cata
+        (fun params -> [ ("params", Params.to_yojson params) ])
+        [] params
+    in
     `Assoc ([ ("jsonrpc", `String "2.0"); ("method", `String method_) ] @ params)
 end
 
@@ -48,13 +56,17 @@ module Request = struct
   type t =
     { id : int
     ; method_ : string
-    ; params : Params.t
+    ; params : Params.t option
     }
 
-  let make ~method_ ~id ~params () = { id; method_; params }
+  let make ~method_ ~id ?params () = { id; method_; params }
 
   let to_yojson { method_; id; params } =
-    let params = [ ("params", Params.to_yojson params) ] in
+    let params =
+      Option.cata
+        (fun params -> [ ("params", Params.to_yojson params) ])
+        [] params
+    in
     `Assoc
       ([ ("jsonrpc", `String "2.0")
        ; ("id", `Int id)
@@ -114,7 +126,8 @@ module Message = struct
 
   let request_of_yojson method_ dict =
     let params =
-      List.assoc_opt "params" dict |> Option.map U.to_assoc |> Option.default []
+      List.assoc_opt "params" dict
+      |> Option.map (fun x -> Params.Dict (U.to_assoc x))
     in
     match List.assoc_opt "id" dict with
     | None -> Notification { Notification.method_; params }
@@ -171,7 +184,7 @@ end
 
 let mk_progress ~token ~value f =
   let params = ProgressParams.(to_yojson f { token; value }) in
-  let params = U.to_assoc params in
+  let params = Some (Params.Dict (U.to_assoc params)) in
   Notification.(to_yojson { method_ = "$/progress"; params })
 
 module WorkDoneProgressBegin = struct

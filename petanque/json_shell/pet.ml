@@ -23,7 +23,9 @@ let trace_notification hdr ?extra msg =
   let method_ = M.method_ in
   let message = Format.asprintf "[%s] %s" hdr msg in
   let params = { M.Params.message; verbose = extra } in
-  let params = M.Params.to_yojson params |> Yojson.Safe.Util.to_assoc in
+  let params =
+    Lsp.Base.Params.Dict (M.Params.to_yojson params |> Yojson.Safe.Util.to_assoc)
+  in
   let notification =
     Lsp.Base.Notification.(make ~method_ ~params () |> to_yojson)
   in
@@ -33,8 +35,10 @@ let message_notification ~lvl ~message =
   let module M = Protocol.Message in
   let method_ = M.method_ in
   let type_ = Fleche.Io.Level.to_int lvl in
-  let params = M.Params.({ type_; message } |> to_yojson) in
-  let params = Yojson.Safe.Util.to_assoc params in
+  let params = { M.Params.type_; message } in
+  let params =
+    Lsp.Base.Params.Dict (M.Params.to_yojson params |> Yojson.Safe.Util.to_assoc)
+  in
   let notification =
     Lsp.Base.Notification.(make ~method_ ~params () |> to_yojson)
   in

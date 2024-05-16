@@ -453,8 +453,17 @@ let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
     in
     LIO.logMessage ~lvl:Info ~message;
     let token = Coq.Limits.Token.create () in
-    let result, dirs = Rq_init.do_initialize ~params in
-    Rq.Action.now (Ok result) |> Rq.serve ~ofn ~token ~id;
+    let response, dirs =
+      match params with
+      | Some (Dict params) ->
+        let result, dirs = Rq_init.do_initialize ~params in
+        (Ok result, dirs)
+      | _ ->
+        (* -32602: invalid method params *)
+        let error = (-32602, "wrong parameters for init method") in
+        (Error error, [])
+    in
+    Rq.Action.now response |> Rq.serve ~ofn ~token ~id;
     let message =
       Format.asprintf "Server initializing (int_backend: %s)"
         (Coq.Limits.name ())
@@ -514,6 +523,13 @@ let dispatch_state_notification ~io ~ofn ~token ~state ~method_ ~params :
     dispatch_notification ~io ~ofn ~token ~state ~method_ ~params;
     state
 
+let dispatch_state_notification ~io ~ofn ~token ~state ~method_ ~params :
+    State.t =
+  match params with
+  | Some (Lsp.Base.Params.Dict params) ->
+    dispatch_state_notification ~io ~ofn ~token ~state ~method_ ~params
+  | _ -> state
+
 let dispatch_request ~method_ ~params : Rq.Action.t =
   match method_ with
   (* Lifecyle *)
@@ -539,6 +555,11 @@ let dispatch_request ~method_ ~params : Rq.Action.t =
   | msg ->
     LIO.trace "no_handler" msg;
     Rq.Action.error (-32601, "method not found")
+
+let dispatch_request ~method_ ~params =
+  match params with
+  | Some (Lsp.Base.Params.Dict params) -> dispatch_request ~method_ ~params
+  | _ -> Rq.Action.error (-32020, "params incorrect for request")
 
 let dispatch_request ~ofn ~token ~id ~method_ ~params =
   dispatch_request ~method_ ~params |> Rq.serve ~ofn ~token ~id
@@ -605,7 +626,8 @@ end = struct
       Some v
 
   let analyze = function
-    | LSP.Message.Notification { method_ = "textDocument/didChange"; params } ->
+    | LSP.Message.Notification
+        { method_ = "textDocument/didChange"; params = Some (Dict params) } ->
       let uri, version = Helpers.get_uri_version params in
       Some (uri, version)
     | _ -> None

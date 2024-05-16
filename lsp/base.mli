@@ -17,28 +17,30 @@
 
 (* XXX: EJGA This should be an structured value (object or array) *)
 module Params : sig
-  type t = (string * Yojson.Safe.t) list
+  type t =
+    | Dict of (string * Yojson.Safe.t) list
+    | Array of Yojson.Safe.t list
 end
 
 module Notification : sig
   type t =
     { method_ : string
-    ; params : Params.t
+    ; params : Params.t option
     }
   [@@deriving to_yojson]
 
-  val make : method_:string -> params:Params.t -> unit -> t
+  val make : method_:string -> ?params:Params.t -> unit -> t
 end
 
 module Request : sig
   type t =
     { id : int
     ; method_ : string
-    ; params : Params.t
+    ; params : Params.t option
     }
   [@@deriving to_yojson]
 
-  val make : method_:string -> id:int -> params:Params.t -> unit -> t
+  val make : method_:string -> id:int -> ?params:Params.t -> unit -> t
 end
 
 (* Request response *)

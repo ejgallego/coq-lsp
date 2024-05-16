@@ -17,6 +17,16 @@ let do_request ~token (module R : Request.S) ~id ~params =
     let code = -32700 in
     Lsp.Base.Response.mk_error ~id ~code ~message
 
+let do_request ~token (module R : Request.S) ~id ~params =
+  match params with
+  | Some (Lsp.Base.Params.Dict params) ->
+    do_request ~token (module R) ~id ~params
+  | _ ->
+    (* JSON-RPC Parse error *)
+    let code = -32700 in
+    let message = "wrong parameters for request" in
+    Lsp.Base.Response.mk_error ~id ~code ~message
+
 let handle_request ~token ~id ~method_ ~params =
   match method_ with
   | s when String.equal Init.method_ s ->

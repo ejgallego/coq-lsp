@@ -93,10 +93,11 @@ let mk_diagnostics ~uri ~version ld : Yojson.Safe.t =
   let diags = List.map Diagnostic.to_yojson ld in
   let uri = Lang.LUri.File.to_string_uri uri in
   let params =
-    [ ("uri", `String uri)
-    ; ("version", `Int version)
-    ; ("diagnostics", `List diags)
-    ]
+    Base.Params.Dict
+      [ ("uri", `String uri)
+      ; ("version", `Int version)
+      ; ("diagnostics", `List diags)
+      ]
   in
   Base.Notification.(
     make ~method_:"textDocument/publishDiagnostics" ~params () |> to_yojson)

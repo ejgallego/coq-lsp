@@ -86,7 +86,7 @@ let coq_init ~debug =
   Coq.Init.(coq_init { debug; load_module; load_plugin })
 
 let exit_notification =
-  Lsp.Base.Message.(Notification { method_ = "exit"; params = [] })
+  Lsp.Base.Message.(Notification { method_ = "exit"; params = None })
 
 let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug =
   match ifn () with
