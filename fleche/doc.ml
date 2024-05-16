@@ -1089,5 +1089,4 @@ let save ~token ~doc =
       ()
   | _ ->
     let error = Pp.(str "Can't save document that failed to check") in
-    let r = Coq.Protect.R.error error in
-    Coq.Protect.E.{ r; feedback = [] }
+    Coq.Protect.E.error error
