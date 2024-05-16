@@ -16,5 +16,5 @@ val debug : Bool.t Term.t
 val bt : Bool.t Term.t
 val ml_include_path : string list Term.t
 val ri_from : (string option * string) list Term.t
-val int_backend : Limits.backend Term.t
+val int_backend : Limits.backend option Term.t
 val roots : string list Term.t

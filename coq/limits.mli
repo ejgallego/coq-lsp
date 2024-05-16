@@ -25,4 +25,7 @@ type backend =
 (** *Must* be called *only* once *)
 val select : backend -> unit
 
+(** If [None] will pick the best backend, must be called only once *)
+val select_best : backend option -> unit
+
 val create_atomic : unit -> Token.t

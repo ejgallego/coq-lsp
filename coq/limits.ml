@@ -57,6 +57,10 @@ let select = function
   | Coq -> backend := (module Coq)
   | Mp -> backend := (module Mp)
 
+let select_best = function
+  | None -> if Mp.available then select Mp else select Coq
+  | Some backend -> select backend
+
 module Token = struct
   type t =
     | C of Coq.Token.t
