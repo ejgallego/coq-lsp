@@ -1,21 +1,21 @@
 (* json rpc server *)
 open Petanque_json
 
+let interp ~token request =
+  match Interp.interp ~token request with
+  | None -> ()
+  | Some response ->
+    Lsp.Io.send_json Format.std_formatter response;
+    Format.pp_print_flush Format.std_formatter ()
+
 let rec loop ~token : unit =
-  try
-    (* Format.eprintf "reading req: @\n"; *)
-    match Lsp.Io.read_request stdin with
-    | None -> () (* EOF *)
-    | Some request -> (
-      (* Format.eprintf "req read: %s@\n" (Lsp.Base.Message.method_ request); *)
-      match Interp.interp ~token request with
-      | None -> ()
-      | Some response ->
-        Lsp.Io.send_json Format.std_formatter response;
-        Format.pp_print_flush Format.std_formatter ();
-        loop ~token)
-  with Lsp.Io.ReadError msg ->
-    Format.eprintf "@[error: %s@\n@]%!" msg;
+  match Lsp.Io.read_request stdin with
+  | None -> () (* EOF *)
+  | Some (Ok request) ->
+    interp ~token request;
+    loop ~token
+  | Some (Error err) ->
+    Format.eprintf "@[error: %s@\n@]%!" err;
     loop ~token
 
 let trace_notification hdr ?extra msg =

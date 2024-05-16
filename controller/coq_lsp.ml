@@ -91,11 +91,14 @@ let exit_notification =
 let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug =
   match ifn () with
   | None -> raise Lsp_exit
-  | Some msg -> (
+  | Some (Ok msg) -> (
     match lsp_init_process ~ofn ~cmdline ~debug msg with
     | Init_effect.Exit -> raise Lsp_exit
     | Init_effect.Loop -> lsp_init_loop ~ifn ~ofn ~cmdline ~debug
     | Init_effect.Success w -> w)
+  | Some (Error err) ->
+    Lsp.Io.trace "read_request" ("error: " ^ err);
+    lsp_init_loop ~ifn ~ofn ~cmdline ~debug
 
 let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
     require_libraries delay int_backend =
@@ -138,8 +141,11 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
     | None ->
       (* EOF, push an exit notication to the queue *)
       enqueue_message exit_notification
-    | Some msg ->
+    | Some (Ok msg) ->
       enqueue_message msg;
+      read_loop ()
+    | Some (Error err) ->
+      Lsp.Io.trace "read_request" ("error: " ^ err);
       read_loop ()
   in
 
