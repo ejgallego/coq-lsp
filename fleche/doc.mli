@@ -29,6 +29,7 @@ module Node : sig
 
   type t = private
     { range : Lang.Range.t
+    ; prev : t option
     ; ast : Ast.t option  (** Ast of node *)
     ; state : Coq.State.t  (** (Full) State of node *)
     ; diags : Lang.Diagnostic.t list  (** Diagnostics associated to the node *)
@@ -82,7 +83,7 @@ type t = private
   ; completed : Completion.t
         (** Status of the document, usually either completed, suspended, or
             waiting for some IO / external event *)
-  ; toc : Lang.Range.t CString.Map.t  (** table of contents *)
+  ; toc : Node.t CString.Map.t  (** table of contents *)
   ; env : Env.t  (** External document enviroment *)
   ; root : Coq.State.t
         (** [root] contains the first state document state, obtained by applying
