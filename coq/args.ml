@@ -89,3 +89,7 @@ let int_backend =
     value
     & opt (enum [ ("Coq", Limits.Coq); ("Mp", Limits.Mp) ]) Limits.Coq
     & info [ "int_backend" ] ~docv:"INT_BACKEND" ~doc)
+
+let roots : string list Term.t =
+  let doc = "Workspace(s) root(s)" in
+  Arg.(value & opt_all string [] & info [ "root" ] ~docv:"ROOTS" ~doc)

@@ -33,6 +33,14 @@ module Error = struct
     | Coq msg -> Format.asprintf "Coq: %s" msg
     | Anomaly msg -> Format.asprintf "Anomaly: %s" msg
     | Theorem_not_found msg -> Format.asprintf "Theorem_not_found: %s" msg
+
+  (* JSON-RPC server reserved codes *)
+  let to_code = function
+    | Interrupted -> -32001
+    | Parsing _ -> -32002
+    | Coq _ -> -32003
+    | Anomaly _ -> -32004
+    | Theorem_not_found _ -> -32005
 end
 
 module R = struct

@@ -121,6 +121,8 @@
    .vo files (@ejallego, @eytans, #704)
  - New `petanque` API to interact directly with Coq's proof
    engine. (@ejgallego, @gbdrt, #703, thanks to Alex Sanchez-Stern)
+ - New `petanque` JSON-RPC `pet.exe`, which can be used à la SerAPI
+   to perform proof search and more (@ejgallego, @gbdrt, #705)
  - Always dispose UI elements. This should improve some strange
    behaviors on extension restart (@ejgallego, #708)
  - Support Coq meta-commands (Reset, Reset Initial, Back) They are

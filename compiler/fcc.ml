@@ -25,10 +25,6 @@ let fcc_main int_backend roots display debug plugins files coqlib coqcorelib
 
 (****************************************************************************)
 (* Specific to fcc *)
-let roots : string list Term.t =
-  let doc = "Workspace(s) root(s)" in
-  Arg.(value & opt_all string [] & info [ "root" ] ~docv:"ROOTS" ~doc)
-
 let display : Args.Display.t Term.t =
   let doc = "Verbosity display settings" in
   let dparse =
