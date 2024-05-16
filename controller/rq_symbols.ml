@@ -6,9 +6,11 @@
 (************************************************************************)
 
 let rec mk_syminfo info =
-  let Lang.Ast.Info.{ range; name; kind; detail; children } = info in
+  let Lang.Ast.Info.{ range; parent; name; kind; detail; children } = info in
   let { Lang.With_range.range = selectionRange; v = name } = name in
   let name = Option.default "_" name in
+  (* Doesn't look so nice yet *)
+  (* let name = String.concat " > " (List.rev (name :: parent)) in *)
   let children = Option.map (List.map mk_syminfo) children in
   (* Need to fix this at coq.ast level *)
   (* let selectionRange = Option.get name_loc in *)

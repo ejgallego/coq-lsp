@@ -6,6 +6,7 @@ end
 module Info : sig
   type t = private
     { range : Range.t
+    ; parent : string list
     ; name : Name.t With_range.t
     ; kind : int
     ; detail : string option (* usually the type *)
@@ -14,6 +15,7 @@ module Info : sig
 
   val make :
        range:Range.t
+    -> parent:string list
     -> name:Name.t With_range.t
     -> kind:int
     -> ?detail:string

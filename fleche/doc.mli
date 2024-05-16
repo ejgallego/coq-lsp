@@ -30,6 +30,7 @@ module Node : sig
   type t = private
     { range : Lang.Range.t
     ; prev : t option
+    ; parent : t option
     ; ast : Ast.t option  (** Ast of node *)
     ; state : Coq.State.t  (** (Full) State of node *)
     ; diags : Lang.Diagnostic.t list  (** Diagnostics associated to the node *)

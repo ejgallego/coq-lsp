@@ -6,12 +6,13 @@ end
 module Info = struct
   type t =
     { range : Range.t
+    ; parent : string list
     ; name : Name.t With_range.t
     ; kind : int
     ; detail : string option (* usually the type *)
     ; children : t list option
     }
 
-  let make ~range ~name ~kind ?detail ?children () =
-    { range; name; kind; detail; children }
+  let make ~range ~parent ~name ~kind ?detail ?children () =
+    { range; parent; name; kind; detail; children }
 end

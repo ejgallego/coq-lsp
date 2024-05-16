@@ -126,6 +126,7 @@ module Node = struct
   type t =
     { range : Lang.Range.t
     ; prev : t option
+    ; parent : t option
     ; ast : Ast.t option  (** Ast of node *)
     ; state : Coq.State.t  (** (Full) State of node *)
     ; diags : Lang.Diagnostic.t list
@@ -336,7 +337,8 @@ let process_init_feedback ~lines ~stats ~global_stats state feedback =
     let info = Node.Info.make ~parsing_time ?stats ~global_stats () in
     let range = drange in
     let prev = None in
-    [ { Node.range; prev; ast = None; state; diags; messages; info } ]
+    let parent = None in
+    [ { Node.range; prev; parent; ast = None; state; diags; messages; info } ]
   else []
 
 (* Memoized call to [Coq.Init.doc_init] *)
@@ -780,14 +782,14 @@ type document_action =
       }
   | Interrupted of Lang.Range.t
 
-let unparseable_node ~range ~prev ~parsing_diags ~parsing_feedback ~state
-    ~parsing_time =
+let unparseable_node ~range ~prev ~parent ~parsing_diags ~parsing_feedback
+    ~state ~parsing_time =
   let fb_diags, messages = Diags.of_messages ~drange:range parsing_feedback in
   let diags = fb_diags @ parsing_diags in
   let stats = None in
   let global_stats = Stats.Global.dump () in
   let info = Node.Info.make ~parsing_time ?stats ~global_stats () in
-  { Node.range; prev; ast = None; diags; messages; state; info }
+  { Node.range; prev; parent; ast = None; diags; messages; state; info }
 
 let assemble_diags ~range ~parsing_diags ~parsing_feedback ~diags ~feedback =
   let parsing_fb_diags, parsing_messages =
@@ -798,24 +800,24 @@ let assemble_diags ~range ~parsing_diags ~parsing_feedback ~diags ~feedback =
   let messages = parsing_messages @ fb_messages in
   (diags, messages)
 
-let parsed_node ~range ~prev ~ast ~state ~parsing_diags ~parsing_feedback ~diags
-    ~feedback ~info =
+let parsed_node ~range ~prev ~parent ~ast ~state ~parsing_diags
+    ~parsing_feedback ~diags ~feedback ~info =
   let diags, messages =
     assemble_diags ~range ~parsing_diags ~parsing_feedback ~diags ~feedback
   in
-  { Node.range; prev; ast = Some ast; diags; messages; state; info }
+  { Node.range; prev; parent; ast = Some ast; diags; messages; state; info }
 
 let strategy_of_coq_err ~node ~state ~last_tok = function
   | Coq.Protect.Error.Anomaly _ -> Stop (Failed last_tok, node)
   | User _ -> Continue { state; last_tok; node }
 
-let node_of_coq_result ~lines ~token ~doc ~range ~prev ~ast ~st ~parsing_diags
-    ~parsing_feedback ~feedback ~info last_tok res =
+let node_of_coq_result ~lines ~token ~doc ~range ~prev ~parent ~ast ~st
+    ~parsing_diags ~parsing_feedback ~feedback ~info last_tok res =
   match res with
   | Ok state ->
     let node =
-      parsed_node ~range ~prev ~ast ~state ~parsing_diags ~parsing_feedback
-        ~diags:[] ~feedback ~info
+      parsed_node ~range ~prev ~parent ~ast ~state ~parsing_diags
+        ~parsing_feedback ~diags:[] ~feedback ~info
     in
     Continue { state; last_tok; node }
   | Error (Coq.Protect.Error.Anomaly (err_range, msg) as coq_err)
@@ -828,21 +830,34 @@ let node_of_coq_result ~lines ~token ~doc ~range ~prev ~ast ~st ~parsing_diags
     in
     let recovery_st = Recovery.handle ~token ~context ~st in
     let node =
-      parsed_node ~range ~prev ~ast ~state:recovery_st ~parsing_diags
+      parsed_node ~range ~prev ~parent ~ast ~state:recovery_st ~parsing_diags
         ~parsing_feedback ~diags:err_diags ~feedback ~info
     in
     strategy_of_coq_err ~node ~state:recovery_st ~last_tok coq_err
 
+let path_of_parent parent =
+  let rec aux acc = function
+    | None -> acc
+    | Some (node : Node.t) -> (
+        match node.ast with
+        | Some { ast_info = Some [ info ]; _ } ->
+          let name = info.Lang.Ast.Info.name.Lang.With_range.v in
+          let name = Option.default "_" name in
+          aux (name :: acc) node.parent
+        | None | _ -> aux acc node.parent)
+  in
+  aux [] parent |> List.rev
+
 (* Build a document node, possibly executing *)
 let document_action ~token ~st ~parsing_diags ~parsing_feedback ~parsing_time
-    ~prev ~doc last_tok doc_handle action =
+    ~prev ~parent ~doc last_tok doc_handle action =
   match action with
   (* End of file *)
   | EOF completed ->
     let range = Completion.range completed in
     let node =
-      unparseable_node ~range ~prev ~parsing_diags ~parsing_feedback ~state:st
-        ~parsing_time
+      unparseable_node ~range ~prev ~parent ~parsing_diags ~parsing_feedback
+        ~state:st ~parsing_time
     in
     Stop (completed, node)
   (* Parsing error *)
@@ -852,8 +867,8 @@ let document_action ~token ~st ~parsing_diags ~parsing_feedback ~parsing_time
     in
     let st = Recovery.handle ~token ~context ~st in
     let node =
-      unparseable_node ~range:span_range ~prev ~parsing_diags ~parsing_feedback
-        ~state:st ~parsing_time
+      unparseable_node ~range:span_range ~prev ~parent ~parsing_diags
+        ~parsing_feedback ~state:st ~parsing_time
     in
     Continue { state = st; last_tok; node }
   (* We can interpret the command now *)
@@ -871,15 +886,19 @@ let document_action ~token ~st ~parsing_diags ~parsing_feedback ~parsing_time
     | Coq.Protect.R.Completed res ->
       let ast_loc = Coq.Ast.loc ast |> Option.get in
       let ast_range = Coq.Utils.to_range ~lines ast_loc in
+      let parent_ = path_of_parent parent in
       let ast =
-        Node.Ast.{ v = ast; ast_info = Coq.Ast.make_info ~lines ~st ast }
+        Node.Ast.
+          { v = ast
+          ; ast_info = Coq.Ast.make_info ~lines ~st ~parent:parent_ ast
+          }
       in
       (* The evaluation by Coq fully completed, then we can resume checking from
          this point then, hence the new last valid token last_tok_new *)
       let last_tok_new = Coq.Parsing.Parsable.loc doc_handle in
       let last_tok_new = Coq.Utils.to_range ~lines last_tok_new in
-      node_of_coq_result ~lines ~token ~doc ~range:ast_range ~prev ~ast ~st
-        ~parsing_diags ~parsing_feedback ~feedback ~info last_tok_new res)
+      node_of_coq_result ~lines ~token ~doc ~range:ast_range ~prev ~parent ~ast
+        ~st ~parsing_diags ~parsing_feedback ~feedback ~info last_tok_new res)
 
 module Target = struct
   type t =
@@ -906,11 +925,11 @@ let log_beyond_target last_tok target =
     ("target reached " ^ Lang.Range.to_string last_tok);
   Io.Log.trace "beyond_target" ("target is " ^ pr_target target)
 
-let max_errors_node ~state ~range ~prev =
+let max_errors_node ~state ~range ~prev ~parent =
   let msg = Pp.str "Maximum number of errors reached" in
   let parsing_diags = [ Diags.make range Diags.err msg ] in
-  unparseable_node ~range ~prev ~parsing_diags ~parsing_feedback:[] ~state
-    ~parsing_time:0.0
+  unparseable_node ~range ~prev ~parent ~parsing_diags ~parsing_feedback:[]
+    ~state ~parsing_time:0.0
 
 module Stop_cond = struct
   type t =
@@ -924,9 +943,20 @@ module Stop_cond = struct
     else Continue
 end
 
+let new_parent = function
+  | None -> None
+  | Some (node : Node.t) -> (
+    match node.ast with
+    | None -> Option.bind node.prev (fun (node : Node.t) -> node.parent)
+    | Some ast -> (
+      match Coq.Ast.has_children ast.v with
+      | Open _section -> Some node
+      | Close _ -> Option.bind node.parent (fun node -> node.parent)
+      | Same -> node.parent))
+
 (* main interpretation loop *)
 let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
-  let rec stm doc st (last_tok : Lang.Range.t) prev acc_errors =
+  let rec stm doc st (last_tok : Lang.Range.t) prev parent acc_errors =
     (* Reporting of progress and diagnostics (if dirty) *)
     let doc = send_eager_diagnostics ~io ~uri ~version ~doc in
     report_progress ~io ~doc last_tok;
@@ -934,7 +964,7 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
     match Stop_cond.should_stop acc_errors last_tok target with
     | Max_errors ->
       let completed = Completion.Failed last_tok in
-      let node = max_errors_node ~state:st ~range:last_tok ~prev in
+      let node = max_errors_node ~state:st ~range:last_tok ~prev ~parent in
       let doc = add_node ~node doc in
       set_completion ~completed doc
     | Target ->
@@ -955,7 +985,7 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
       (* Execution *)
       let action =
         document_action ~token ~st ~parsing_diags ~parsing_feedback
-          ~parsing_time ~prev ~doc last_tok doc_handle action
+          ~parsing_time ~prev ~parent ~doc last_tok doc_handle action
       in
       match action with
       | Interrupted last_tok -> set_completion ~completed:(Stopped last_tok) doc
@@ -967,7 +997,8 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
       | Continue { state; last_tok; node } ->
         let n_errors = CList.count Lang.Diagnostic.is_error node.Node.diags in
         let doc = add_node ~node doc in
-        stm doc state last_tok (Some node) (acc_errors + n_errors))
+        stm doc state last_tok (Some node) (new_parent (Some node))
+          (acc_errors + n_errors))
   in
   (* Reporting of progress and diagnostics (if stopped or failed, if completed
      the doc manager will take care of it) *)
@@ -994,7 +1025,7 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
       last_node
   in
   Stats.Global.restore stats;
-  let doc = stm doc st last_tok last_node 0 in
+  let doc = stm doc st last_tok last_node (new_parent last_node) 0 in
   (* Set the document to "finished" mode: reverse the node list *)
   let doc = { doc with nodes = List.rev doc.nodes } in
   doc

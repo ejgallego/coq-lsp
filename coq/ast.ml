@@ -110,8 +110,8 @@ end
 module Kinds = struct
   (* LSP kinds *)
   let _file = 1
-  let _module_ = 2
-  let _namespace = 3
+  let module_ = 2
+  let namespace = 3
   let _package = 4
   let class_ = 5
   let method_ = 6
@@ -215,22 +215,22 @@ let mk_name ~lines (id : Names.lname) : Lang.Ast.Name.t Lang.With_range.t =
 let mk_id ~lines (id : Names.lident) =
   CAst.map (fun id -> Names.Name id) id |> mk_name ~lines
 
-let constructor_info ~lines ((_, (id, _typ)) : constructor_expr) =
+let constructor_info ~lines ~parent ((_, (id, _typ)) : constructor_expr) =
   let range = Option.get id.loc in
   let range = Utils.to_range ~lines range in
   let name = mk_id ~lines id in
   let detail = "Constructor" in
   let kind = Kinds.enumMember in
-  Lang.Ast.Info.make ~range ~name ~detail ~kind ()
+  Lang.Ast.Info.make ~range ~parent ~name ~detail ~kind ()
 
-let local_decl_expr_info ~lines ~kind ~detail (l : local_decl_expr) =
+let local_decl_expr_info ~lines ~parent ~kind ~detail (l : local_decl_expr) =
   let name =
     match l with
     | AssumExpr (ln, _, _) -> mk_name ~lines ln
     | DefExpr (ln, _, _, _) -> mk_name ~lines ln
   in
   let range = name.range in
-  Lang.Ast.Info.make ~range ~name ~kind ~detail ()
+  Lang.Ast.Info.make ~range ~parent ~name ~kind ~detail ()
 
 let projection_info ~lines
     ((ld, _) : local_decl_expr * record_field_attr_unparsed) =
@@ -238,41 +238,42 @@ let projection_info ~lines
   let detail = "Field" in
   local_decl_expr_info ~lines ~detail ~kind ld
 
-let inductive_info ~lines ~range ikind (expr, _) =
+let inductive_info ~lines ~range ~parent ikind (expr, _) =
   let (_, (id, _)), _, _, cons = expr in
   let name = mk_id ~lines id in
   match cons with
   | Constructors ci ->
-    let children = List.map (constructor_info ~lines) ci in
+    let children = List.map (constructor_info ~lines ~parent) ci in
     let kind, detail = inductive_detail ikind in
-    Lang.Ast.Info.make ~range ~name ~kind ~detail ~children ()
+    Lang.Ast.Info.make ~range ~parent ~name ~kind ~detail ~children ()
   | RecordDecl (_, pi, _) ->
-    let children = List.map (projection_info ~lines) pi in
+    let children = List.map (projection_info ~lines ~parent) pi in
     let kind, detail = inductive_detail ikind in
-    Lang.Ast.Info.make ~range ~name ~kind ~detail ~children ()
+    Lang.Ast.Info.make ~range ~parent ~name ~kind ~detail ~children ()
 
-let inductives_info ~lines ~range ikind idecls =
+let inductives_info ~lines ~range ~parent ikind idecls =
   match idecls with
   | [] -> None
-  | inds -> Some (List.map (inductive_info ~lines ~range ikind) inds)
+  | inds -> Some (List.map (inductive_info ~lines ~range ~parent ikind) inds)
 
-let ident_decl_info ~lines ~kind ~detail (lident, _) =
+let ident_decl_info ~lines ~parent ~kind ~detail (lident, _) =
   let range = Option.get lident.loc in
   let range = Utils.to_range ~lines range in
   let name = mk_id ~lines lident in
-  Lang.Ast.Info.make ~range ~name ~detail ~kind ()
+  Lang.Ast.Info.make ~range ~parent ~name ~detail ~kind ()
 
-let assumption_info ~lines kind (_, (ids, _)) =
+let assumption_info ~lines ~parent kind (_, (ids, _)) =
   let detail = assumption_detail kind in
   let kind = Kinds.variable in
-  List.map (ident_decl_info ~lines ~kind ~detail) ids
+  List.map (ident_decl_info ~lines ~parent ~kind ~detail) ids
 
-let fixpoint_info ~lines ~range { fname; _ } =
+let fixpoint_info ~lines ~range ~parent { fname; _ } =
   let name = mk_id ~lines fname in
   let detail = "Fixpoint" in
-  Lang.Ast.Info.make ~range ~name ~detail ~kind:Kinds.function_ ()
+  Lang.Ast.Info.make ~range ~parent ~name ~detail ~kind:Kinds.function_ ()
 
-let make_info ~st:_ ~lines CAst.{ loc; v } : Lang.Ast.Info.t list option =
+let make_info ~st:_ ~lines ~parent CAst.{ loc; v } : Lang.Ast.Info.t list option
+    =
   let open Vernacexpr in
   match loc with
   | None -> None
@@ -284,24 +285,52 @@ let make_info ~st:_ ~lines CAst.{ loc; v } : Lang.Ast.Info.t list option =
       let name = mk_name ~lines name in
       let detail = definition_detail kind in
       let kind = Kinds.function_ in
-      Some [ Lang.Ast.Info.make ~range ~name ~detail ~kind () ]
+      Some [ Lang.Ast.Info.make ~range ~parent ~name ~detail ~kind () ]
     | VernacSynPure (VernacStartTheoremProof (kind, ndecls)) -> (
       let detail = theorem_detail kind in
       let kind = Kinds.function_ in
       match ndecls with
       | ((id, _), _) :: _ ->
         let name = mk_id ~lines id in
-        Some [ Lang.Ast.Info.make ~range ~name ~detail ~kind () ]
+        Some [ Lang.Ast.Info.make ~range ~parent ~name ~detail ~kind () ]
       | [] -> None)
     | VernacSynPure (VernacInductive (ikind, idecls)) ->
-      inductives_info ~lines ~range ikind idecls
+      inductives_info ~lines ~range ~parent ikind idecls
     | VernacSynPure (VernacAssumption ((_, kind), _, ids)) ->
-      Some (List.concat_map (assumption_info ~lines kind) ids)
+      Some (List.concat_map (assumption_info ~lines ~parent kind) ids)
     | VernacSynPure (VernacFixpoint (_, f_expr)) ->
-      Some (List.map (fixpoint_info ~lines ~range) f_expr)
+      Some (List.map (fixpoint_info ~lines ~range ~parent) f_expr)
     | VernacSynPure (VernacInstance ((name, _), _, _, _, _)) ->
       let name = mk_name ~lines name in
       let kind = Kinds.method_ in
       let detail = "Instance" in
-      Some [ Lang.Ast.Info.make ~range ~name ~kind ~detail () ]
+      Some [ Lang.Ast.Info.make ~range ~parent ~name ~kind ~detail () ]
+    (* Modules and sections *)
+    | VernacSynterp (VernacBeginSection name) ->
+      let name = mk_id ~lines name in
+      let kind = Kinds.namespace in
+      let detail = "Section" in
+      Some [ Lang.Ast.Info.make ~range ~parent ~name ~kind ~detail () ]
+    | VernacSynterp (VernacDefineModule (_export, name, _bl, _sign, _body)) ->
+      let name = mk_id ~lines name in
+      let kind = Kinds.module_ in
+      let detail = "Module" in
+      Some [ Lang.Ast.Info.make ~range ~parent ~name ~kind ~detail () ]
     | _ -> None)
+
+module Structure = struct
+  type t =
+    | Open of string
+    | Close of string
+    | Same
+end
+
+let has_children CAst.{ loc = _; v } =
+  match v.expr with
+  | VernacSynterp (VernacBeginSection lid) ->
+    Structure.Open (Names.Id.to_string lid.v)
+  | VernacSynterp (VernacDefineModule (_export, id, _bl, _sign, _body)) ->
+    Structure.Open (Names.Id.to_string id.v)
+  | VernacSynterp (VernacEndSegment lid) ->
+    Structure.Close (Names.Id.to_string lid.v)
+  | _ -> Same

@@ -54,10 +54,23 @@ module Meta : sig
   val extract : ast -> t option
 end
 
+module Structure : sig
+  type t =
+    | Open of string
+    | Close of string
+    | Same
+end
+
+val has_children : t -> Structure.t
+
 (** [make_info ~st ast] Compute info about a possible definition in [ast], we
     need [~st] to compute the type. *)
 val make_info :
-  st:State.t -> lines:string array -> t -> Lang.Ast.Info.t list option
+     st:State.t
+  -> lines:string array
+  -> parent:string list
+  -> t
+  -> Lang.Ast.Info.t list option
 
 (** Printing *)
 val print : t -> Pp.t
