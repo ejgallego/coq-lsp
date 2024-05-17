@@ -111,7 +111,7 @@
         "title": "Coq LSP: try to jump to next Coq sentence"
       },
       {
-        "command": "coq-lsp.sentenceBack",
+        "command": "coq-lsp.sentencePrevious",
         "title": "Coq LSP: try to jump to previous Coq sentence"
       },
       {
@@ -124,6 +124,18 @@
         "command": "coq-lsp.goals",
         "key": "alt+enter",
         "mac": "meta+enter",
+        "when": "editorTextFocus && (editorLangId == coq || editorTextFocus && editorLangId == markdown)"
+      },
+      {
+        "command": "coq-lsp.sentenceNext",
+        "key": "Alt+N",
+        "mac": "cmd+N",
+        "when": "editorTextFocus && (editorLangId == coq || editorTextFocus && editorLangId == markdown)"
+      },
+      {
+        "command": "coq-lsp.sentencePrevious",
+        "key": "Alt+P",
+        "mac": "cmd+P",
         "when": "editorTextFocus && (editorLangId == coq || editorTextFocus && editorLangId == markdown)"
       }
     ],

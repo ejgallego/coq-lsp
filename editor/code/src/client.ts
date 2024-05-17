@@ -45,7 +45,7 @@ import { CoqLspClientConfig, CoqLspServerConfig, CoqSelector } from "./config";
 import { InfoPanel, goalReq } from "./goals";
 import { FileProgressManager } from "./progress";
 import { coqPerfData, PerfDataView } from "./perf";
-import { sentenceNext, sentenceBack } from "./edit";
+import { sentenceNext, sentencePrevious } from "./edit";
 import { HeatMap, HeatMapConfig } from "./heatmap";
 import { debounce, throttle } from "throttle-debounce";
 
@@ -461,7 +461,7 @@ export function activateCoqLSP(
   coqEditorCommand("save", saveDocument);
 
   coqEditorCommand("sentenceNext", sentenceNext);
-  coqEditorCommand("sentenceBack", sentenceBack);
+  coqEditorCommand("sentencePrevious", sentencePrevious);
 
   coqEditorCommand("heatmap.toggle", heatMapToggle);
 
