@@ -354,6 +354,18 @@ const coqPerfData : NotificationType<DocumentPerfParams<Range>>
 The `coq/trimCaches` notification from client to server tells the
 server to free memory. It has no parameters.
 
+### Viewport notification
+
+The `coq/viewRange` notification from client to server tells the
+server the visible range of the user.
+
+```typescript
+interface ViewRangeParams {
+  textDocument: VersionedTextDocumentIdentifier;
+  range: Range;
+}
+```
+
 ### Did Change Configuration and Server Configuration parameters
 
 The server will listen to the `workspace/didChangeConfiguration`

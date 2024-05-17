@@ -21,6 +21,22 @@ end
 
 module Diagnostic : sig
   type t = Lang.Diagnostic.t [@@deriving to_yojson]
+
+  module Point : sig
+    type t =
+      { line : int
+      ; character : int
+      }
+    [@@deriving yojson]
+  end
+
+  module Range : sig
+    type t =
+      { start : Point.t
+      ; end_ : Point.t [@key "end"]
+      }
+    [@@deriving yojson]
+  end
 end
 
 val mk_diagnostics :

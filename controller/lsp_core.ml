@@ -411,6 +411,17 @@ let do_cancel ~ofn ~params =
 
 let do_cache_trim () = Nt_cache_trim.notification ()
 
+let do_viewRange params =
+  match List.assoc "range" params |> Lsp.JLang.Diagnostic.Range.of_yojson with
+  | Ok range ->
+    let { Lsp.JLang.Diagnostic.Range.end_ = { line; character }; _ } = range in
+    let message = Format.asprintf "l: %d c:%d" line character in
+    LIO.trace "viewRange" message;
+    let uri = Helpers.get_uri params in
+    Fleche.Theory.Check.set_scheduler_hint ~uri ~point:(line, character);
+    ()
+  | Error err -> LIO.trace "viewRange" ("error in parsing notification: " ^ err)
+
 let do_changeConfiguration params =
   let message = "didChangeReceived" in
   let () = LIO.(logMessage ~lvl:Lvl.Info ~message) in
@@ -496,6 +507,7 @@ let dispatch_notification ~io ~ofn ~token ~state ~method_ ~params : unit =
   | "textDocument/didClose" -> do_close ~ofn params
   | "textDocument/didSave" -> Cache.save_to_disk ()
   (* Specific to coq-lsp *)
+  | "coq/viewRange" -> do_viewRange params
   | "coq/trimCaches" -> do_cache_trim ()
   (* Cancel Request *)
   | "$/cancelRequest" -> do_cancel ~ofn ~params

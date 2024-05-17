@@ -179,3 +179,8 @@ export type PerfMessagePayload = PerfUpdate | PerfReset;
 export interface PerfMessageEvent extends MessageEvent {
   data: PerfMessagePayload;
 }
+
+export interface ViewRangeParams {
+  textDocument: VersionedTextDocumentIdentifier;
+  range: Range;
+}
