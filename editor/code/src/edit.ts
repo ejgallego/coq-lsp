@@ -17,7 +17,7 @@ function setSelection(editor: TextEditor, newCursor: Position) {
   );
 }
 
-export function sentenceBack(editor: TextEditor) {
+export function sentencePrevious(editor: TextEditor) {
   // Slice from the beginning of the document
   let cursor = editor.selection.active;
   let range = new Range(editor.document.positionAt(0), cursor);
