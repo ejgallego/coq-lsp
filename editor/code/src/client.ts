@@ -123,7 +123,7 @@ export function activateCoqLSP(
     return settings;
   }
 
-  function coqCommand(command: string, fn: () => void) {
+  function coqCommand(command: string, fn: () => void | Promise<void>) {
     let disposable = commands.registerCommand("coq-lsp." + command, fn);
     context.subscriptions.push(disposable);
   }
@@ -165,7 +165,7 @@ export function activateCoqLSP(
 
   const stop = () => {
     if (client && client.isRunning()) {
-      client
+      return client
         .dispose(2000)
         .finally(updateStatusBar)
         .finally(() => {
@@ -174,7 +174,7 @@ export function activateCoqLSP(
           perfDataHook.dispose();
           heatMap.dispose();
         });
-    }
+    } else return Promise.resolve();
   };
 
   const start = () => {
@@ -204,35 +204,36 @@ export function activateCoqLSP(
       resolve(client);
     });
 
-    cP.then((client) =>
-      client
-        .start()
-        .then(updateStatusBar)
-        .then(() => {
-          if (window.activeTextEditor) {
-            goalsCall(
-              window.activeTextEditor,
-              TextEditorSelectionChangeKind.Command
-            );
-          }
-        })
-    ).catch((error) => {
-      let emsg = error.toString();
-      console.log(`Error in coq-lsp start: ${emsg}`);
-      setFailedStatuBar(emsg);
-    });
+    return cP
+      .then((client) =>
+        client
+          .start()
+          .then(updateStatusBar)
+          .then(() => {
+            if (window.activeTextEditor) {
+              goalsCall(
+                window.activeTextEditor,
+                TextEditorSelectionChangeKind.Command
+              );
+            }
+          })
+      )
+      .catch((error) => {
+        let emsg = error.toString();
+        console.log(`Error in coq-lsp start: ${emsg}`);
+        setFailedStatuBar(emsg);
+      });
   };
 
-  const restart = () => {
-    stop();
-    start();
+  const restart = async () => {
+    await stop().finally(start);
   };
 
-  const toggle = () => {
+  const toggle = async () => {
     if (client && client.isRunning()) {
-      stop();
+      await stop();
     } else {
-      start();
+      await start();
     }
   };
 

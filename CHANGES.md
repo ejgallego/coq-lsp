@@ -135,6 +135,8 @@
    the scheduler for the visible area of the document; combined with
    the new lazy checking mode, this provides checking on scroll, a
    feature inspired from Isabelle IDE (@ejgallego, #717)
+ - Have VSCode wait for full LSP client shutdown on server restart
+   (@ejgallgo, #719)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
