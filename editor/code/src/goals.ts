@@ -150,8 +150,14 @@ export class InfoPanel {
           let goals_fn = goals as GoalAnswer<String>;
           this.listeners.forEach((fn) => fn(goals_fn));
         },
-        // We should actually provide a better setup so we can pass the rejection of the promise to our clients, YMMV tho.
-        (reason) => this.requestError(reason)
+        // We should actually provide a better setup so we can pass
+        // the rejection of the promise to our clients, YMMV tho.
+        (error: ResponseError<void>) => {
+          let textDocument = params.textDocument;
+          let position = params.position;
+          let message = error.message;
+          this.requestError({ textDocument, position, message });
+        }
       );
     }
   }
