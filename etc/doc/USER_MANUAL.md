@@ -24,9 +24,37 @@ facilities. In VSCode, these settings can be usually displayed in the
 
 ## Key features:
 
+### Continuous vs on-demand mode
+
+`coq-lsp` offers two checking modes:
+
+- continuous checking [default]: `coq-lsp` will check all your open
+  documents eagerly. This is best when working with powerful machines
+  to minimize latency. When using OCaml 4.x, `coq-lsp` uses the
+  `memprof-limits` library to interrupt Coq and stay responsive.
+
+- on-demand checking [set the `check_only_on_request` option]: In this
+  mode, `coq-lsp` will stay idle and only compute information that is
+  demanded, for example, when the user asks for goals. This mode
+  disables some useful features such as `documentSymbol` as they can
+  only be implemented by checking the full file.
+
+  This mode provides the `check_on_scroll` option, which improves
+  latency by telling `coq-lsp` to check eagerly what is on view on
+  user's screen.
+
+### Goal display
+
+By default, `coq-lsp` will follow cursor and show goals at cursor
+position. This can be tweaked in options. There are commands to move
+one Coq sentence forward / backwards.
+
 ### Incremental proof edition
 
-`coq-lsp` will recognize blocks of the form:
+Once you have setup your basic proof style, you may want to work with
+`coq-lsp` in a way that is friendly to incremental checking.
+
+For example, `coq-lsp` will recognize blocks of the form:
 ```coq
 Lemma foo : T.
 Proof.
@@ -34,7 +62,8 @@ Proof.
 Qed.
 ```
 
-and will allow you to edit inside the `Proof.` `Qed.` block without rechecing what is outside.
+and will allow you to edit inside the `Proof.` `Qed.` block without
+re-checking what is outside.
 
 ### Error recovery
 
@@ -42,7 +71,9 @@ and will allow you to edit inside the `Proof.` `Qed.` block without rechecing wh
 continue document edition later on.
 
 For example, it is not necessary to put `Admitted` in proofs that are
-not fully completed.
+not fully completed. Also, you can work with bullets and `coq-lsp`
+will automatically admit unfinished ones, so you can follow the
+natural proof structure.
 
 ## Settings
 

@@ -111,6 +111,7 @@
    (@ejgallego, @Alizter, #689, #693)
  - Better types `coq/perfData` call (@ejgallego @Alizter, #689)
  - New server option to enable / disable `coq/perfData` (@ejgallego, #689)
+ - New cleint option to enable / disable `coq/perfData` (@ejgallego, #717)
  - The `coq-lsp.document` VSCode command will now display the returned
    JSON data in a new editor (@ejgallego, #701)
  - New server option to enable / disable `coq/perfData` (@ejgallego,
@@ -130,6 +131,10 @@
    changes in some part of the document (@ejgallego, #709)
  - JSON-RPC library now supports all kind of incoming messages
    (@ejgallego, #713)
+ - New `coq/viewRange` notification, from client to server, than hints
+   the scheduler for the visible area of the document; combined with
+   the new lazy checking mode, this provides checking on scroll, a
+   feature inspired from Isabelle IDE (@ejgallego, #717)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

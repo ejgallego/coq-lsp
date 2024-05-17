@@ -14,6 +14,7 @@ import {
   Disposable,
   languages,
   Uri,
+  TextEditorVisibleRangesChangeEvent,
 } from "vscode";
 
 import * as vscode from "vscode";
@@ -37,6 +38,7 @@ import {
   GoalAnswer,
   PpString,
   DocumentPerfParams,
+  ViewRangeParams,
 } from "../lib/types";
 
 import { CoqLspClientConfig, CoqLspServerConfig, CoqSelector } from "./config";
@@ -45,6 +47,7 @@ import { FileProgressManager } from "./progress";
 import { coqPerfData, PerfDataView } from "./perf";
 import { sentenceNext, sentenceBack } from "./edit";
 import { HeatMap, HeatMapConfig } from "./heatmap";
+import { debounce, throttle } from "throttle-debounce";
 
 // Convert perf data to VSCode format
 function toVsCodePerf(
@@ -313,6 +316,29 @@ export function activateCoqLSP(
   );
 
   context.subscriptions.push(goalsHook);
+
+  const viewRangeNotification = new NotificationType<ViewRangeParams>(
+    "coq/viewRange"
+  );
+
+  let viewRangeHook = window.onDidChangeTextEditorVisibleRanges(
+    throttle(400, (evt: TextEditorVisibleRangesChangeEvent) => {
+      if (
+        config.check_on_scroll &&
+        languages.match(CoqSelector.local, evt.textEditor.document) > 0 &&
+        evt.visibleRanges[0]
+      ) {
+        let uri = evt.textEditor.document.uri.toString();
+        let version = evt.textEditor.document.version;
+        let textDocument = { uri, version };
+        let range = client.code2ProtocolConverter.asRange(evt.visibleRanges[0]);
+        let params: ViewRangeParams = { textDocument, range };
+        client.sendNotification(viewRangeNotification, params);
+      }
+    })
+  );
+
+  context.subscriptions.push(viewRangeHook);
 
   // Heatmap setup
   heatMap = new HeatMap(

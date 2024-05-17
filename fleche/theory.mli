@@ -21,6 +21,8 @@ module Check : sig
       progress and diagnostics notifications using output function [ofn]. *)
   val maybe_check :
     io:Io.CallBack.t -> token:Coq.Limits.Token.t -> (Int.Set.t * Doc.t) option
+
+  val set_scheduler_hint : uri:Lang.LUri.File.t -> point:int * int -> unit
 end
 
 (** Create a document inside a theory *)
