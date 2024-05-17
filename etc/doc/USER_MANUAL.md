@@ -46,8 +46,12 @@ facilities. In VSCode, these settings can be usually displayed in the
 ### Goal display
 
 By default, `coq-lsp` will follow cursor and show goals at cursor
-position. This can be tweaked in options. There are commands to move
-one Coq sentence forward / backwards.
+position. This can be tweaked in options.
+
+The `coq-lsp.sentenceNext` and `coq-lsp.sentenceBack` commands will
+try to move the cursor one Coq sentence forward / backwards. These
+commands are bound by default to `Alt + P` / `Alt + N` (`Cmd` on
+MacOS).
 
 ### Incremental proof edition
 

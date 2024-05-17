@@ -1,5 +1,21 @@
 // Edition facilities for Coq files
-import { TextEditor, Position, Range, Selection } from "vscode";
+import {
+  TextEditor,
+  Position,
+  Range,
+  Selection,
+  TextEditorRevealType,
+} from "vscode";
+
+function setSelection(editor: TextEditor, newCursor: Position) {
+  editor.selection = new Selection(newCursor, newCursor);
+
+  // Is there not a better way?
+  editor.revealRange(
+    new Range(newCursor, newCursor),
+    TextEditorRevealType.InCenterIfOutsideViewport
+  );
+}
 
 export function sentenceBack(editor: TextEditor) {
   // Slice from the beginning of the document
@@ -19,7 +35,7 @@ export function sentenceBack(editor: TextEditor) {
       index = text.lastIndexOf(match) + match.length;
     }
     let newCursor = editor.document.positionAt(index);
-    editor.selection = new Selection(newCursor, newCursor);
+    setSelection(editor, newCursor);
   }
 }
 
@@ -40,6 +56,6 @@ export function sentenceNext(editor: TextEditor) {
     let newCursor = editor.document.positionAt(
       editor.document.offsetAt(cursor) + index
     );
-    editor.selection = new Selection(newCursor, newCursor);
+    setSelection(editor, newCursor);
   }
 }

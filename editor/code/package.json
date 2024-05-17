@@ -125,6 +125,18 @@
         "key": "alt+enter",
         "mac": "meta+enter",
         "when": "editorTextFocus && (editorLangId == coq || editorTextFocus && editorLangId == markdown)"
+      },
+      {
+        "command": "coq-lsp.sentenceNext",
+        "key": "Alt+N",
+        "mac": "cmd+N",
+        "when": "editorTextFocus && (editorLangId == coq || editorTextFocus && editorLangId == markdown)"
+      },
+      {
+        "command": "coq-lsp.sentenceBack",
+        "key": "Alt+P",
+        "mac": "cmd+P",
+        "when": "editorTextFocus && (editorLangId == coq || editorTextFocus && editorLangId == markdown)"
       }
     ],
     "viewsContainers": {

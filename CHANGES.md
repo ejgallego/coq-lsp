@@ -75,6 +75,9 @@
  - new VSCode commands to allow to move one sentence backwards /
    forward, this is particularly useful when combined with lazy
    checking mode (@ejgallego, #671, fixes #263, fixes #580)
+ - VSCode commands `coq-lsp.sentenceNext` / `coq-lsp.sentenceBack` are
+   now bound by default to `Alt + N` / `Alt + P` keybindings
+   (@ejgallego, #718)
  - change diagnostic `extra` field to `data`, so we now conform to the
    LSP spec, include the data only when the `send_diags_extra_data`
    server-side option is enabled (@ejgallego, #670)
@@ -135,8 +138,11 @@
    the scheduler for the visible area of the document; combined with
    the new lazy checking mode, this provides checking on scroll, a
    feature inspired from Isabelle IDE (@ejgallego, #717)
- - Have VSCode wait for full LSP client shutdown on server restart
+ - Have VSCode wait for full LSP client shutdown on server
+   restart. This fixes some bugs on extension restart (finally!)
    (@ejgallgo, #719)
+ - Center the view if cursor goes out of scope in
+   `sentenceNext/sentenceBack` (@ejgallego, #718)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
