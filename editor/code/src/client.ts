@@ -65,6 +65,8 @@ function toVsCodePerf(
 }
 
 let config: CoqLspClientConfig;
+let serverConfig: CoqLspServerConfig;
+
 let client: BaseLanguageClient;
 
 // Lifetime of the info panel == extension lifetime.
@@ -120,6 +122,8 @@ export function activateCoqLSP(
       client.sendNotification(type, params);
     }
 
+    // Store setting on the server for local use
+    serverConfig = settings;
     return settings;
   }
 
@@ -326,6 +330,7 @@ export function activateCoqLSP(
     throttle(400, (evt: TextEditorVisibleRangesChangeEvent) => {
       if (
         config.check_on_scroll &&
+        serverConfig.check_only_on_request &&
         languages.match(CoqSelector.local, evt.textEditor.document) > 0 &&
         evt.visibleRanges[0]
       ) {
