@@ -19,9 +19,9 @@
 let char_of_utf8_offset ~lines ~line ~byte =
   if line < Array.length lines then
     let line = Array.get lines line in
-    match Utf8.char_of_utf8_offset ~line ~offset:byte with
+    match Lang.Utf.char_of_utf8_offset ~line ~offset:byte with
     | Some char -> char
-    | None -> Utf8.length line
+    | None -> Lang.Utf.length line
   else 0
 
 let to_range ~lines (p : Loc.t) : Lang.Range.t =

@@ -242,12 +242,15 @@ end
 (* Register in-file hover plugins *)
 let () = List.iter Register.add [ Loc_info.h; Stats.h; Type.h; Notation.h ]
 
-let hover ~token ~doc ~point =
-  let point = lsp_point_to_doc_point ~doc point in
+let hover ~token ~(doc : Fleche.Doc.t) ~point =
   let node = Info.LC.node ~doc ~point Exact in
   let range = Option.map Doc.Node.range node in
   (* XXX: EJGA, ranges should be already converted, why is this needed? *)
-  let range = Option.map (doc_range_to_lsp_range ~doc) range in
+  let range =
+    let lines = doc.contents.lines in
+    (* EGJA: we will improve this soon to make it safer *)
+    Option.map (Lang.Utf.utf16_range_of_char_range ~lines) range
+  in
   let hovers = Register.fire ~token ~doc ~point ~node in
   match hovers with
   | [] -> `Null

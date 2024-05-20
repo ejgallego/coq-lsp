@@ -46,7 +46,7 @@ let get_id_at_point ~contents ~point =
     let line = Array.get lines line in
     (* XXX UTF this will fail on unicode chars that differ among UTF-8/16 (cc
        #531) *)
-    match Coq.Utf8.utf8_offset_of_char ~line ~char:character with
+    match Lang.Utf.utf8_offset_of_char ~line ~char:character with
     | None -> None
     | Some character -> find_id line character
   else None

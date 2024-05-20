@@ -80,7 +80,7 @@ let validate_position ~doc ~point =
   let line, char = point in
   Option.map
     (fun line ->
-      let char = Coq.Utf8.utf8_offset_of_utf16_offset ~line ~offset:char in
+      let char = Lang.Utf.utf8_offset_of_utf16_offset ~line ~offset:char in
       String.get line char)
     (validate_line ~doc ~line)
 

@@ -1,4 +1,7 @@
 (library
  (name lang)
  (public_name coq-lsp.lang)
+ (inline_tests)
+ (preprocess
+  (pps ppx_inline_test))
  (libraries uri coq-core.library))
