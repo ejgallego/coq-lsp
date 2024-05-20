@@ -16,10 +16,10 @@
 
 (* We convert in case of failure to some default values *)
 
-let char_of_index ~lines ~line ~byte =
+let char_of_utf8_offset ~lines ~line ~byte =
   if line < Array.length lines then
     let line = Array.get lines line in
-    match Utf8.char_of_index ~line ~byte with
+    match Utf8.char_of_utf8_offset ~line ~offset:byte with
     | Some char -> char
     | None -> Utf8.length line
   else 0
@@ -34,8 +34,8 @@ let to_range ~lines (p : Loc.t) : Lang.Range.t =
   let start_col = bp - bol_pos in
   let end_col = ep - bol_pos_last in
 
-  let start_col = char_of_index ~lines ~line:start_line ~byte:start_col in
-  let end_col = char_of_index ~lines ~line:end_line ~byte:end_col in
+  let start_col = char_of_utf8_offset ~lines ~line:start_line ~byte:start_col in
+  let end_col = char_of_utf8_offset ~lines ~line:end_line ~byte:end_col in
   Lang.Range.
     { start = { line = start_line; character = start_col; offset = bp }
     ; end_ = { line = end_line; character = end_col; offset = ep }

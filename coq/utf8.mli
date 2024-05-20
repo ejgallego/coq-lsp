@@ -29,34 +29,48 @@
 (* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 *)
 (* USA *)
 
-(* Taken from camomille *)
+(* EJGA: Taken from Camomille, but note what I wrote below *)
 
 (* utf8 utils, both Coq and Camomile have similar implementations, at some point
    we should remove this but for now we keep it internal. For now we use the
    Camomille functions *)
 
+(** Unicode terminology refresher:
+    - character, code point: The real unicode character
+    - byte or 16bit offset / code unit: The encoded version *)
+
+type utf8_string = string
 type char = int
-type index = int
+type utf8_index = int
+type utf16_index = int
 
-(** Byte index to UTF-8 character position *)
-val char_of_index : line:string -> byte:index -> char option
+(** To unicode chars *)
 
-(** UTF-8 Char to byte index position *)
-val index_of_char : line:string -> char:char -> index option
+(** Byte index to character position [also called a codepoint], line is enconded
+    in UTF-8 *)
+val char_of_utf8_offset : line:utf8_string -> offset:utf8_index -> char option
 
-(** Lenght in utf-8 chars *)
-val length : string -> char
-
-(** Get the byte potition of a code point indexed in UTF-16 code units in a
-    UTF-8 encoded string. Returns the position of the last character if the
-    UTF-16 position was out of bounds. *)
-val get_byte_offset_from_utf16_pos : string -> int -> int
-
-(** Get the unicode potition of a code point indexed in UTF-16 code units in a
-    utf-8 encoded string. Returns the position of the last character if the
+(** Get the unicode position of a code point indexed in UTF-16 code units in a
+    utf-8 encoded utf8_string. Returns the position of the last character if the
     utf-16 position was out of bounds. *)
-val get_unicode_offset_from_utf16_pos : string -> int -> int
+val char_of_utf16_offset : line:utf8_string -> offset:utf16_index -> char
 
-(** Get the utf16 potition of a code point indexed in unicode code points in a
-    UTF-8 encoded string. The position must be in bounds. *)
-val get_utf16_offset_from_unicode_offset : string -> int -> int
+(** To UTF-8 offsets *)
+
+(** UTF-8 Char to byte index position; line is enconded in UTF-8 *)
+val utf8_offset_of_char : line:utf8_string -> char:char -> utf8_index option
+
+(** Get the byte position of a code point indexed in UTF-16 code units in a
+    UTF-8 encoded utf8_string. Returns the position of the last character if the
+    UTF-16 position was out of bounds. *)
+val utf8_offset_of_utf16_offset :
+  line:utf8_string -> offset:utf16_index -> utf8_index
+
+(** To UTF-16 offsets *)
+
+(** Get the utf16 position of a code point indexed in unicode code points in a
+    UTF-8 encoded utf8_string. The position must be in bounds. *)
+val utf16_offset_of_char : line:utf8_string -> char:int -> utf16_index
+
+(** Number of characters in th utf-8-encoded utf8_string *)
+val length : utf8_string -> char

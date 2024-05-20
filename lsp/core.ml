@@ -163,18 +163,20 @@ end
 
 (* Utility functions to translate between coordinate systems *)
 
-let lsp_point_to_doc_point ~(doc : Fleche.Doc.t) point =
+let lsp_point_to_doc_point ~(doc : Fleche.Doc.t) point : int * int =
   let line, char = point in
   let line_count = Array.length doc.contents.lines in
   (* lines cannot be empty *)
   let line = min (line_count - 1) line in
-  let s = Array.get doc.contents.lines line in
-  let char = Coq.Utf8.get_unicode_offset_from_utf16_pos s char in
+  let char =
+    let line = Array.get doc.contents.lines line in
+    Coq.Utf8.char_of_utf16_offset ~line ~offset:char
+  in
   (line, char)
 
 let doc_point_to_lsp_point ~(doc : Fleche.Doc.t) (point : Lang.Point.t) =
-  let s = Array.get doc.contents.lines point.line in
-  let char = Coq.Utf8.get_utf16_offset_from_unicode_offset s point.character in
+  let line = Array.get doc.contents.lines point.line in
+  let char = Coq.Utf8.utf16_offset_of_char ~line ~char:point.character in
   { point with character = char }
 
 let doc_range_to_lsp_range ~(doc : Fleche.Doc.t) (range : Lang.Range.t) :

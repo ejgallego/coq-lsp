@@ -2,8 +2,10 @@
    we should remove this but for now we keep it internal. For now we use the
    Camomille functions *)
 
+type utf8_string = string
 type char = int
-type index = int
+type utf8_index = int
+type utf16_index = int
 
 (* Taken from camomille *)
 (* Copyright (C) 2002, 2003 Yamagata Yoriyuki.  *)
@@ -48,7 +50,7 @@ let nth s n = nth_aux s 0 n
 
 (* That's a tricky one, if the char we are requesting is out of bounds, then we
    return the last index, 0 in the case line is empty. *)
-let index_of_char ~line ~char =
+let utf8_offset_of_char ~line ~char =
   if char < length line then Some (nth line char) else None
 
 let find_char line byte =
@@ -58,11 +60,11 @@ let find_char line byte =
   in
   if byte < String.length line then Some (f 0 0) else None
 
-let char_of_index ~line ~byte =
+let char_of_utf8_offset ~line ~offset =
   (* if Debug.unicode then *)
   (*   Io.Log.trace "char_of_index" *)
   (*     (Format.asprintf "str: '%s' | byte: %d" line byte); *)
-  let char = find_char line byte in
+  let char = find_char line offset in
   (* (if Debug.unicode then *)
   (*  match char with *)
   (*  | None -> Io.Log.trace "get_last_text" "failed" *)
@@ -176,12 +178,12 @@ let string_get_utf_8_uchar s i =
 (* End of copy from Stdlib *)
 [@@@ocamlformat "disable=false"]
 
-let get_byte_offset_from_utf16_pos line (char : int) =
+let utf8_offset_of_utf16_offset ~line ~(offset : utf16_index) =
   let byte_idx = ref 0 in
   let utf16_char_count = ref 0 in
   let len = String.length line in
   (try
-     while !utf16_char_count < char do
+     while !utf16_char_count < offset do
        let ch = string_get_utf_8_uchar line !byte_idx in
        let next_idx = next line !byte_idx in
        if next_idx >= len then raise Not_found else byte_idx := next_idx;
@@ -194,13 +196,13 @@ let get_byte_offset_from_utf16_pos line (char : int) =
    with _ -> ());
   !byte_idx
 
-let get_unicode_offset_from_utf16_pos line (char : int) =
+let char_of_utf16_offset ~line ~(offset : utf16_index) =
   let byte_idx = ref 0 in
   let count = ref 0 in
   let utf16_char_count = ref 0 in
   let len = String.length line in
   (try
-     while !utf16_char_count < char do
+     while !utf16_char_count < offset do
        let ch = string_get_utf_8_uchar line !byte_idx in
        let next_idx = next line !byte_idx in
        if next_idx >= len then raise Not_found else byte_idx := next_idx;
@@ -214,7 +216,7 @@ let get_unicode_offset_from_utf16_pos line (char : int) =
    with _ -> ());
   !count
 
-let get_utf16_offset_from_unicode_offset line (char : int) =
+let utf16_offset_of_char ~line ~(char : char) =
   let offset16 = ref 0 in
   let idx = ref 0 in
   for _ = 0 to char - 1 do
@@ -240,7 +242,7 @@ let%test_unit "utf16 byte offsets" =
   in
   List.iter
     (fun (s, i, b) ->
-      let res = get_byte_offset_from_utf16_pos s i in
+      let res = utf8_offset_of_utf16_offset ~line:s ~offset:i in
       if b then (
         let res = s.[res] in
         if res != 'x' then
@@ -265,7 +267,7 @@ let%test_unit "utf16 unicode offsets" =
   in
   List.iter
     (fun (s, i, e) ->
-      let res = get_unicode_offset_from_utf16_pos s i in
+      let res = char_of_utf16_offset ~line:s ~offset:i in
       if res != e then
         failwith
           (Printf.sprintf "Wrong result: got %d expected %d in test %s" res e s))
@@ -284,9 +286,10 @@ let%test_unit "unicode utf16 offsets" =
     ]
   in
   List.iter
-    (fun (s, i, e) ->
-      let res = get_utf16_offset_from_unicode_offset s i in
+    (fun (line, char, e) ->
+      let res = utf16_offset_of_char ~line ~char in
       if res != e then
         failwith
-          (Printf.sprintf "Wrong result: got %d expected %d in test %s" res e s))
+          (Printf.sprintf "Wrong result: got %d expected %d in test %s" res e
+             line))
     testcases
