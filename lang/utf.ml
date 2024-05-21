@@ -291,15 +291,10 @@ let utf16_offset_of_char ~line ~(char : char) =
   done;
   !offset16
 
-let utf16_point_of_char_point ~(lines : utf8_string array) (point : Point.t) =
-  (* EJGA: We will make this safer soon, so not a big effort right now to
-     prevent invalid lines *)
-  let line = Array.get lines point.line in
-  let char = utf16_offset_of_char ~line ~char:point.character in
-  { point with character = char }
+let utf16_offset_of_utf8_offset ~line ~offset =
+  let char = char_of_utf8_offset ~line ~offset in
+  Option.map (fun char -> utf16_offset_of_char ~line ~char) char
 
-let utf16_range_of_char_range ~(lines : utf8_string array) (range : Range.t) :
-    Range.t =
-  { start = utf16_point_of_char_point ~lines range.start
-  ; end_ = utf16_point_of_char_point ~lines range.end_
-  }
+let length_utf16 line =
+  let length = length line in
+  if length > 0 then utf16_offset_of_char ~line ~char:(length - 1) + 1 else 0

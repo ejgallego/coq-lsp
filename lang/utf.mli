@@ -37,21 +37,9 @@ type char = int
 type utf8_index = int
 type utf16_index = int
 
-(** To unicode chars *)
-
-(** Byte index to character position [also called a codepoint], line is enconded
-    in UTF-8 *)
-val char_of_utf8_offset : line:utf8_string -> offset:utf8_index -> char option
-
-(** Get the unicode position of a code point indexed in UTF-16 code units in a
-    utf-8 encoded utf8_string. Returns the position of the last character if the
-    utf-16 position was out of bounds. *)
-val char_of_utf16_offset : line:utf8_string -> offset:utf16_index -> char
-
-(** To UTF-8 offsets *)
-
-(** UTF-8 Char to byte index position; line is enconded in UTF-8 *)
-val utf8_offset_of_char : line:utf8_string -> char:char -> utf8_index option
+(** UTF-16 offset from UTF-8 offset; line is enconded in UTF-8 *)
+val utf16_offset_of_utf8_offset :
+  line:utf8_string -> offset:utf8_index -> utf16_index option
 
 (** Get the byte position of a code point indexed in UTF-16 code units in a
     UTF-8 encoded utf8_string. Returns the position of the last character if the
@@ -61,18 +49,34 @@ val utf8_offset_of_utf16_offset :
 
 (** To UTF-16 offsets *)
 
+(** Length in UTF-16 code points *)
+val length_utf16 : utf8_string -> utf16_index
+
+(******************************************************)
+(** Not used anywhere, remove? *)
+
+(** Number of characters in the utf-8-encoded utf8_string. *)
+val length : utf8_string -> char
+
+(** Converstion from char to UTF-8/16 *)
+
+(** UTF-8 Char to byte index position; line is enconded in UTF-8 *)
+val utf8_offset_of_char : line:utf8_string -> char:char -> utf8_index option
+
 (** Get the utf16 position of a code point indexed in unicode code points in a
     UTF-8 encoded utf8_string. The position must be in bounds. *)
 val utf16_offset_of_char : line:utf8_string -> char:int -> utf16_index
 
-(** Number of characters in th utf-8-encoded utf8_string *)
-val length : utf8_string -> char
+(** Converstion to char from UTF-8/16 *)
 
-(** Translate a Fleche position into an UTF-16 LSP position. *)
-val utf16_point_of_char_point : lines:utf8_string array -> Point.t -> Point.t
+(** Byte index to character position [also called a codepoint], line is encoded
+    in UTF-8 *)
+val char_of_utf8_offset : line:utf8_string -> offset:utf8_index -> char option
 
-(** Translate a Fleche range into an UTF-16 LSP range. *)
-val utf16_range_of_char_range : lines:utf8_string array -> Range.t -> Range.t
+(** Get the unicode position of a code point indexed in UTF-16 code units in a
+    utf-8 encoded utf8_string. Returns the position of the last character if the
+    utf-16 position was out of bounds. *)
+val char_of_utf16_offset : line:utf8_string -> offset:utf16_index -> char
 
 (** For testing *)
 val next : string -> int -> int

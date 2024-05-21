@@ -44,9 +44,33 @@ let get_id_at_point ~contents ~point =
   let { Fleche.Contents.lines; _ } = contents in
   if line <= Array.length lines then
     let line = Array.get lines line in
-    (* XXX UTF this will fail on unicode chars that differ among UTF-8/16 (cc
-       #531) *)
-    match Lang.Utf.utf8_offset_of_char ~line ~char:character with
-    | None -> None
-    | Some character -> find_id line character
+    let character =
+      Lang.Utf.utf8_offset_of_utf16_offset ~line ~offset:character
+    in
+    find_id line character
   else None
+
+let validate_line ~(contents : Fleche.Contents.t) ~line =
+  if Array.length contents.lines > line then
+    Some (Array.get contents.lines line)
+  else None
+
+let validate_column char line =
+  let length = Lang.Utf.length_utf16 line in
+  if char < length then
+    let char = Lang.Utf.utf8_offset_of_utf16_offset ~line ~offset:char in
+    Some (String.get line char)
+  else None
+
+(* This returns a byte-based char offset for the line *)
+let validate_position ~contents ~point =
+  let line, char = point in
+  validate_line ~contents ~line |> fun l -> Option.bind l (validate_column char)
+
+let get_char_at_point ~contents ~point =
+  let line, char = point in
+  if char >= 1 then
+    let point = (line, char - 1) in
+    validate_position ~contents ~point
+  else (* Can't get previous char *)
+    None

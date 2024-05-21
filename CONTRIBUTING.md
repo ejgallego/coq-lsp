@@ -218,6 +218,29 @@ Some tips:
 
 [ocamlformat]: https://github.com/ocaml-ppx/ocamlformat
 
+### Unicode setup
+
+Flèche stores locations in the protocol-native format. This has the
+advantage that conversion is needed only at range creation point
+(where we usually have access to the document to perform the
+conversion).
+
+This way, we can send ranges to the client without conversion.
+
+Request that work on the raw `Contents.t` buffer must do the inverse
+conversion, but we handle this via a proper text API that is aware of
+the conversion.
+
+For now, the setup for Coq is:
+
+- protocol-level (and Flèche) encoding: UTF-16 (due to LSP)
+- `Contents.t`: UTF-8 (sent to Coq)
+
+It would be very easy to set this parameters at initialization time,
+ideal would be for LSP clients to catch up and allow UTF-8 encodings
+(so no conversion is needed, at least for Coq), but it seems that we
+will take a while to get to this point.
+
 ## Client guide (VS Code Extension)
 
 The VS Code extension is setup as a standard `npm` Typescript + React package
