@@ -112,30 +112,6 @@ let nth s n = nth_aux s 0 n
 
 (* end of camomille *)
 
-(* That's a tricky one, if the char we are requesting is out of bounds, then we
-   return the last index, 0 in the case line is empty. *)
-let utf8_offset_of_char ~line ~char =
-  if char < length line then Some (nth line char) else None
-
-let find_char line byte =
-  let rec f index n_chars =
-    let next_index = next line index in
-    if next_index > byte then n_chars else f next_index (n_chars + 1)
-  in
-  if byte < String.length line then Some (f 0 0) else None
-
-let char_of_utf8_offset ~line ~offset =
-  (* if Debug.unicode then *)
-  (*   Io.Log.trace "char_of_index" *)
-  (*     (Format.asprintf "str: '%s' | byte: %d" line byte); *)
-  let char = find_char line offset in
-  (* (if Debug.unicode then *)
-  (*  match char with *)
-  (*  | None -> Io.Log.trace "get_last_text" "failed" *)
-  (* | Some char -> Io.Log.trace "get_last_text" (Format.asprintf "char: %d"
-     char)); *)
-  char
-
 (* We disabled auto-formatting in copied code *)
 [@@@ocamlformat "disable=true"]
 
@@ -242,6 +218,21 @@ let string_get_utf_8_uchar s i =
 (* End of copy from Stdlib *)
 [@@@ocamlformat "disable=false"]
 
+let length_utf16 line =
+  let byte_idx = ref 0 in
+  let utf16_len = ref 0 in
+  let len = String.length line in
+  while !byte_idx < len do
+    let ch = string_get_utf_8_uchar line !byte_idx in
+    let next_idx = next line !byte_idx in
+    byte_idx := next_idx;
+    let l = uchar_utf_16_byte_length (uchar_utf_decode_uchar ch) / 2 in
+    utf16_len := !utf16_len + l
+  done;
+  !utf16_len
+
+(* UTF16 <-> UTF8 *)
+
 let utf8_offset_of_utf16_offset ~line ~(offset : utf16_index) =
   let byte_idx = ref 0 in
   let utf16_char_count = ref 0 in
@@ -260,6 +251,29 @@ let utf8_offset_of_utf16_offset ~line ~(offset : utf16_index) =
    with _ -> ());
   !byte_idx
 
+let utf16_offset_of_utf8_offset ~line ~(offset : utf8_index) =
+  let byte_idx = ref 0 in
+  let utf16_char_count = ref 0 in
+  let len = String.length line in
+  (try
+     while !byte_idx < offset do
+       let ch = string_get_utf_8_uchar line !byte_idx in
+       let next_idx = next line !byte_idx in
+       if next_idx > len then raise Not_found else byte_idx := next_idx;
+       let code_unit_count =
+         uchar_utf_16_byte_length (uchar_utf_decode_uchar ch) / 2
+       in
+       utf16_char_count := !utf16_char_count + code_unit_count;
+       ()
+     done
+   with _ -> ());
+  !utf16_char_count
+
+(******************************************************)
+(** Not used anywhere, remove? *)
+(******************************************************)
+
+(* UTF16 <-> Char *)
 let char_of_utf16_offset ~line ~(offset : utf16_index) =
   let byte_idx = ref 0 in
   let count = ref 0 in
@@ -291,10 +305,28 @@ let utf16_offset_of_char ~line ~(char : char) =
   done;
   !offset16
 
-let utf16_offset_of_utf8_offset ~line ~offset =
-  let char = char_of_utf8_offset ~line ~offset in
-  Option.map (fun char -> utf16_offset_of_char ~line ~char) char
+(* UTF8 <-> Char *)
 
-let length_utf16 line =
-  let length = length line in
-  if length > 0 then utf16_offset_of_char ~line ~char:(length - 1) + 1 else 0
+(* That's a tricky one, if the char we are requesting is out of bounds, then we
+   return the last index, 0 in the case line is empty. *)
+let utf8_offset_of_char ~line ~char =
+  if char < length line then Some (nth line char) else None
+
+let find_char line byte =
+  let rec f index n_chars =
+    let next_index = next line index in
+    if next_index > byte then n_chars else f next_index (n_chars + 1)
+  in
+  if byte < String.length line then Some (f 0 0) else None
+
+let char_of_utf8_offset ~line ~offset =
+  (* if Debug.unicode then *)
+  (*   Io.Log.trace "char_of_index" *)
+  (*     (Format.asprintf "str: '%s' | byte: %d" line byte); *)
+  let char = find_char line offset in
+  (* (if Debug.unicode then *)
+  (*  match char with *)
+  (*  | None -> Io.Log.trace "get_last_text" "failed" *)
+  (* | Some char -> Io.Log.trace "get_last_text" (Format.asprintf "char: %d"
+     char)); *)
+  char

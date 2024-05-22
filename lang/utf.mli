@@ -21,8 +21,8 @@ module Encoding : sig
     | Utf32
 end
 
-(* Future work: support multiple encondings *)
-(* val set_protocol_encoding : *)
+(** Future work: support setting protocol enconding *)
+(* val set_protocol_encoding : Enconding.t -> unit *)
 
 (* utf8 utils, both Coq and Camomile have similar implementations, at some point
    we should remove this but for now we keep it internal. For now we use the
@@ -39,7 +39,7 @@ type utf16_index = int
 
 (** UTF-16 offset from UTF-8 offset; line is enconded in UTF-8 *)
 val utf16_offset_of_utf8_offset :
-  line:utf8_string -> offset:utf8_index -> utf16_index option
+  line:utf8_string -> offset:utf8_index -> utf16_index
 
 (** Get the byte position of a code point indexed in UTF-16 code units in a
     UTF-8 encoded utf8_string. Returns the position of the last character if the
@@ -54,6 +54,7 @@ val length_utf16 : utf8_string -> utf16_index
 
 (******************************************************)
 (** Not used anywhere, remove? *)
+(******************************************************)
 
 (** Number of characters in the utf-8-encoded utf8_string. *)
 val length : utf8_string -> char

@@ -7,3 +7,8 @@ Goal forall Γ Δ, Γ ⊆ Δ -> P Γ.
 (* check goal is updated after the intros here properly *)
 intros Γ Δ s.
 foo.
+Abort.
+
+Goal forall Γ Δ, Γ ⊆ Δ -> P Γ.
+(* check goal is updated after the intros here properly *)
+intros Γ Δ 𝒞.    foo.
