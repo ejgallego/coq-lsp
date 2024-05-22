@@ -73,3 +73,6 @@ val utf16_point_of_char_point : lines:utf8_string array -> Point.t -> Point.t
 
 (** Translate a Fleche range into an UTF-16 LSP range. *)
 val utf16_range_of_char_range : lines:utf8_string array -> Range.t -> Range.t
+
+(** For testing *)
+val next : string -> int -> int

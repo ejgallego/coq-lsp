@@ -1,8 +1,6 @@
 (library
  (name coq)
  (public_name coq-lsp.coq)
- ; Unfortunate we have to link the STM due to the LTAC plugin
- ; depending on it, we should fix this upstream
  (preprocess
   (pps ppx_compare ppx_hash))
  (libraries
