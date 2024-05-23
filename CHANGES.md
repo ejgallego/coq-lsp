@@ -143,6 +143,8 @@
    (@ejgallgo, #719)
  - Center the view if cursor goes out of scope in
    `sentenceNext/sentencePrevious` (@ejgallego, #718)
+ - Switch Flèche range encoding to protocol native, this means UTF-16
+   for now (Léo Stefanesco, @ejgallego, #624, fixes #620, #621)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

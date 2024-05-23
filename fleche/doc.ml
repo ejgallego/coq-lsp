@@ -1020,9 +1020,7 @@ let loc_after ~lines ~uri (r : Lang.Range.t) =
   let end_index =
     let line = Array.get lines r.end_.line in
     debug_loc_after line r;
-    match Coq.Utf8.index_of_char ~line ~char:r.end_.character with
-    | None -> String.length line
-    | Some index -> index
+    Lang.Utf.utf8_offset_of_utf16_offset ~line ~offset:r.end_.character
   in
   let bol_pos_last = r.end_.offset - end_index in
   { Loc.fname = init_fname ~uri

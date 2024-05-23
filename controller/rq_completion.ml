@@ -70,31 +70,11 @@ let unicode_list point : Yojson.Safe.t list =
   (* Coq's CList.map is tail-recursive *)
   CList.map (mk_unicode_completion_item point) ulist
 
-let validate_line ~(doc : Fleche.Doc.t) ~line =
-  if Array.length doc.contents.lines > line then
-    Some (Array.get doc.contents.lines line)
-  else None
-
-(* This returns a byte-based char offset for the line *)
-let validate_position ~doc ~point =
-  let line, char = point in
-  Option.bind (validate_line ~doc ~line) (fun line ->
-      let char = Coq.Utf8.get_byte_offset_from_utf16_pos line char in
-      Option.bind char (fun index -> Some (String.get line index)))
-
-let get_char_at_point ~(doc : Fleche.Doc.t) ~point =
-  let line, char = point in
-  if char >= 1 then
-    let point = (line, char - 1) in
-    validate_position ~doc ~point
-  else (* Can't get previous char *)
-    None
-
-(* point is a utf char! *)
-let completion ~token:_ ~doc ~point =
+let completion ~token:_ ~(doc : Fleche.Doc.t) ~point =
   (* Instead of get_char_at_point we should have a CompletionContext.t, to be
      addressed in further completion PRs *)
-  (match get_char_at_point ~doc ~point with
+  let contents = doc.contents in
+  (match Rq_common.get_char_at_point ~contents ~point with
   | None ->
     let incomplete = true in
     let items = [] in
