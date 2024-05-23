@@ -97,6 +97,10 @@ export class InfoPanel {
   ensurePanel() {
     if (!this.panel) {
       this.panelFactory();
+    } else {
+      if (!this.panel.active) {
+        this.panel.reveal(2, false);
+      }
     }
   }
   postMessage({ method, params }: CoqMessagePayload) {
