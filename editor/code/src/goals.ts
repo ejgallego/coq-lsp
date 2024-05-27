@@ -99,7 +99,7 @@ export class InfoPanel {
       this.panelFactory();
     } else {
       if (!this.panel.active) {
-        this.panel.reveal(2, false);
+        this.panel.reveal(2, true);
       }
     }
   }

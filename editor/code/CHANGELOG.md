@@ -1,9 +1,6 @@
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
 
- - Give `Goals` panel focus back if it has lost it (in case of
-   multiple panels in the second viewColumn of Vscode) whenever
-   user navigates proofs
  - Update VSCode client dependencies, should bring some performance
    improvements to goal pretty printing (@ejgallego, #530)
  - Update goal display colors for light mode so they are actually
