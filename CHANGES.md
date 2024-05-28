@@ -158,6 +158,8 @@
  - Don't show types of un-expanded goals. We should add an option for
    this, but we don't have the cycles (@ejgallego, #730, workarounds
    #525 #652)
+ - Support for `.lv / .v.tex` TeX files with embedded Coq code
+   (@ejgallego, #727)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

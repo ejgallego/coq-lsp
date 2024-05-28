@@ -20,6 +20,8 @@ document checking, advanced error recovery, hybrid Coq/markdown document
 support, multiple workspace support, positional goals and information panel,
 performance data, extensible command-line compiler, plugin system, and more.
 
+See the [coq-lsp User Manual](./etc/doc/USER_MANUAL.md) for more information.
+
 `coq-lsp` aims to provide a seamless, modern interactive theorem proving
 experience, as well as to serve as a maintainable platform for research and UI
 integration with other projects.
