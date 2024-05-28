@@ -332,7 +332,7 @@ recommend that if you are installing via opam, you use the following branches
 that have some fixes backported:
 
 - For 8.20: No known problems
-- For 8.19: No known problems
+- For 8.19: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.19+lsp`
 - For 8.18: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.18+lsp`
 - For 8.17: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.17+lsp`
 - For 8.16: `opam pin add coq      https://github.com/ejgallego/coq.git#v8.16+lsp`

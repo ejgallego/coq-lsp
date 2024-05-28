@@ -79,7 +79,11 @@ not fully completed. Also, you can work with bullets and `coq-lsp`
 will automatically admit unfinished ones, so you can follow the
 natural proof structure.
 
-## Settings
+### Embedded Markdown and LaTeX documents
+
+
+
+## Coq LSP Settings
 
 ### Goal display
 
@@ -90,6 +94,9 @@ Several settings for goal display exist.
 A setting to have `coq-lsp` check documents continuously exists.
 
 ## Memory management
+
+You can tell the server to free up memory with the "Coq LSP: Free
+memory" command.
 
 ## Advanced: Multiple workspaces
 
@@ -119,10 +126,13 @@ on Coq <= 8.19 do need to install a version of Coq with the backported
 fixes. See the information about Coq upstream bugs in the README for
 more information about available branches.
 
+`coq-lsp` will reject to enable the new interruption mode by default
+on Coq < 8.20 unless the `lsp` Coq branch version is detected.
+
 ## Advanced incremental tricks
 
 You can use the `Reset $id` and `Back $steps` commands to isolate
-parts of the document from each others in terms of rechecking.
+parts of the document from each other in terms of rechecking.
 
 For example, the command `Reset $id` will make the parts of the
 document after it use the state before the node `id` was found. Thus,
