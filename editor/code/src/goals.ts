@@ -98,7 +98,7 @@ export class InfoPanel {
     if (!this.panel) {
       this.panelFactory();
     } else {
-      if (!this.panel.active) {
+      if (!this.panel.visible) {
         this.panel.reveal(2, true);
       }
     }
