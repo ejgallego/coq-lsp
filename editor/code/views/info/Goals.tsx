@@ -149,7 +149,7 @@ function StackGoals({ idx, stack }: StackSummaryP) {
       <GoalsList
         goals={goals}
         header={`Remaining goals at ${level_indicator}`}
-        open={true}
+        open={idx === 0} // Tweak, should be more configurable
         show_on_empty={false}
       />
       <div style={{ marginLeft: "0.5ex" }}>

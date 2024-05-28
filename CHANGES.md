@@ -160,6 +160,8 @@
    #525 #652)
  - Support for `.lv / .v.tex` TeX files with embedded Coq code
    (@ejgallego, #727)
+ - Don't expand bullet goals at previous levels by default
+   (@ejgallego, @Alizter, # cc #525)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

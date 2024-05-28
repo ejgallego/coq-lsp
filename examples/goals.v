@@ -53,3 +53,15 @@ Lemma err_bullet: Type.
 _.
 _
 Qed.
+
+(* Case from https://github.com/ejgallego/coq-lsp/issues/525 *)
+Reset Initial.
+
+Inductive foo := a | b | c | d | e.
+
+Goal forall x y z w v : foo, Type.
+intros [].
+- intros [].
+  + intros [].
+    * intros [].
+      -- intros [].
