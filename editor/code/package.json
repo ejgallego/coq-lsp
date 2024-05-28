@@ -29,7 +29,8 @@
     "url": "https://github.com/ejgallego/coq-lsp"
   },
   "activationEvents": [
-    "onLanguage:markdown"
+    "onLanguage:markdown",
+    "onLanguage:latex"
   ],
   "contributes": {
     "languages": [
@@ -53,6 +54,15 @@
         ],
         "extensions": [
           ".mv"
+        ]
+      },
+      {
+        "id": "latex",
+        "aliases": [
+          "LaTeX"
+        ],
+        "extensions": [
+          ".lv"
         ]
       }
     ],

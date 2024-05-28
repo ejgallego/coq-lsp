@@ -81,6 +81,8 @@ export namespace CoqSelector {
   export const all: TextDocumentFilter[] = [
     { language: "coq" },
     { language: "markdown", pattern: "**/*.mv" },
+    { language: "latex", pattern: "**/*.lv" },
+    { language: "latex", pattern: "**/*.v.tex" },
   ];
 
   // Local Coq files, suitable for interaction with a local server

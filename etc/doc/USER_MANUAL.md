@@ -79,9 +79,22 @@ not fully completed. Also, you can work with bullets and `coq-lsp`
 will automatically admit unfinished ones, so you can follow the
 natural proof structure.
 
+### Server Status
+
+
+
 ### Embedded Markdown and LaTeX documents
 
+`coq-lsp` supports checking of TeX and Markdown document with embedded
+Coq inside. As of today, to enable this feature you must:
 
+- **markdown**: open a file with `.mv` extension, `coq-lsp` will
+  recognize code blocks starting with ````coq`.
+- **TeX**: open a file with `.lv` extension, `coq-lsp` will recognize
+  code blocks delimited by `\begin{coq} ... \end{coq}`
+
+As of today, delimiters are expected at the beginning of the line,
+don't hesitate to request for further changes based on this feature.
 
 ## Coq LSP Settings
 

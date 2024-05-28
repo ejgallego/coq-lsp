@@ -1,0 +1,82 @@
+\documentclass{article}
+
+\usepackage{listings}
+
+\lstdefinelanguage{Coq}
+  {morekeywords={Theorem, Definition}}
+
+\lstnewenvironment{coq}
+  {
+    \lstset{
+        language=Coq,
+        basicstyle=\ttfamily,
+        breaklines=true,
+        columns=fullflexible}
+  }
+  {
+  }
+
+\begin{document}
+
+\section{Welcome to Coq LSP}
+
+\begin{itemize}
+\item You can edit this document as you please
+\item Coq will recognize the code snippets as Coq
+\item You will be able to save the document and link to other documents soon
+\end{itemize}
+
+\begin{coq}
+From Coq Require Import List.
+Import ListNotations.
+\end{coq}
+
+\subsection{Here is a simple Proof about Lists}
+
+$$
+  \forall~x~l,
+    \mathsf{rev}(l \mathrel{++} [x]) = x \mathrel{::} (\mathsf{rev}~l)
+$$
+
+\begin{coq}
+Lemma rev_snoc_cons A :
+  forall (x : A) (l : list A), rev (l ++ [x]) = x :: rev l.
+Proof.
+  induction l.
+  - reflexivity.
+  - simpl. rewrite IHl. simpl. reflexivity.
+Qed.
+\end{coq}
+
+\subsection{Here is another proof depending on it}
+
+Try to update \emph{above} and \textbf{below}:
+
+\begin{coq}
+Theorem rev_rev A : forall (l : list A), rev (rev l) = l.
+Proof.
+  induction l.
+  - reflexivity.
+  - simpl. rewrite rev_snoc_cons. rewrite IHl.
+    reflexivity.
+Qed.
+\end{coq}
+
+Please edit your code here!
+
+\section{Here we do some lambda terms, because we can!}
+
+\begin{coq}
+Inductive term :=
+  | Var : nat -> term
+  | Abs : term -> term
+  | Lam : term -> term -> term.
+\end{coq}
+
+\end{document}
+
+
+%%% Local Variables:
+%%% mode: LaTeX
+%%% TeX-master: "lists"
+%%% End:
