@@ -96,3 +96,10 @@ let int_backend =
 let roots : string list Term.t =
   let doc = "Workspace(s) root(s)" in
   Arg.(value & opt_all string [] & info [ "root" ] ~docv:"ROOTS" ~doc)
+
+let coq_diags_level : int Term.t =
+  let doc =
+    "Controsl whether Coq Info and Notice message appear in diagnostics.\n\
+    \ 0 = None; 1 = Notices, 2 = Notices and Info"
+  in
+  Arg.(value & opt int 0 & info [ "diags_level" ] ~docv:"DIAGS_LEVEL" ~doc)

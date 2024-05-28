@@ -18,3 +18,4 @@ val ml_include_path : string list Term.t
 val ri_from : (string option * string) list Term.t
 val int_backend : Limits.backend option Term.t
 val roots : string list Term.t
+val coq_diags_level : int Term.t
