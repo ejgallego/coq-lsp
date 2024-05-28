@@ -225,7 +225,7 @@ export function activateCoqLSP(
       .catch((error) => {
         let emsg = error.toString();
         console.log(`Error in coq-lsp start: ${emsg}`);
-        setFailedStatuBar(emsg);
+        setFailedStatusBar(emsg);
       });
   };
 
@@ -233,11 +233,22 @@ export function activateCoqLSP(
     await stop().finally(start);
   };
 
+  const set_lazy_checking = async (value: boolean) => {
+    let wsConfig = workspace.getConfiguration();
+    await wsConfig.update("coq-lsp.check_only_on_request", value);
+  };
+
+  // switches between the different status of the server
   const toggle = async () => {
-    if (client && client.isRunning()) {
+    if (client && client.isRunning() && !serverConfig.check_only_on_request) {
+      // Server on, and in continous mode, set lazy
+      await set_lazy_checking(true).then(updateStatusBar);
+    } else if (client && client.isRunning()) {
+      // Server on, and in lazy mode, stop
       await stop();
     } else {
-      await start();
+      // Server is off, set continous mode and start
+      await set_lazy_checking(false).then(start);
     }
   };
 
@@ -431,9 +442,15 @@ export function activateCoqLSP(
   // We violate this on the error case, but only because it is exceptional.
   const updateStatusBar = () => {
     if (client && client.isRunning()) {
-      lspStatusItem.text = "$(check) coq-lsp (running)";
-      lspStatusItem.backgroundColor = undefined;
-      lspStatusItem.tooltip = "coq-lsp is running. Click to disable.";
+      if (serverConfig.check_only_on_request) {
+        lspStatusItem.text = "$(check) coq-lsp (on-demand checking)";
+        lspStatusItem.backgroundColor = undefined;
+        lspStatusItem.tooltip = "coq-lsp is running. Click to disable.";
+      } else {
+        lspStatusItem.text = "$(check) coq-lsp (continous checking)";
+        lspStatusItem.backgroundColor = undefined;
+        lspStatusItem.tooltip = "coq-lsp is running. Click to disable.";
+      }
     } else {
       lspStatusItem.text = "$(circle-slash) coq-lsp (stopped)";
       lspStatusItem.backgroundColor = new ThemeColor(
@@ -443,7 +460,7 @@ export function activateCoqLSP(
     }
   };
 
-  const setFailedStatuBar = (emsg: string) => {
+  const setFailedStatusBar = (emsg: string) => {
     lspStatusItem.text = "$(circle-slash) coq-lsp (failed to start)";
     lspStatusItem.backgroundColor = new ThemeColor(
       "statusBarItem.errorBackground"

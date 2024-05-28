@@ -151,6 +151,8 @@
    user navigates proofs (@Alidra @ejgallego, #722, #725)
  - `fcc`: new option `--diags_level` to control whether Coq's notice
    and info messages appear as diagnostics
+ - Display the continous/on-request checking mode in the status bar,
+   allow to change it by clicking on it (@ejgallego, #721)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------
