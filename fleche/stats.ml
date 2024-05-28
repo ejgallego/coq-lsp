@@ -14,44 +14,59 @@ module Kind = struct
     | Exec
 end
 
-let stats = Hashtbl.create 1000
-let find kind = Hashtbl.find_opt stats kind |> Option.default 0.0
+type t =
+  { time : float
+  ; memory : float
+  }
 
-type t = float * float * float
+let stats : (Kind.t, t) Hashtbl.t = Hashtbl.create 1000
+let z = { time = 0.0; memory = 0.0 }
+let find kind = Hashtbl.find_opt stats kind |> Option.default z
 
-let zero () = (0.0, 0.0, 0.0)
-let dump () = (find Kind.Hashing, find Kind.Parsing, find Kind.Exec)
+module Global = struct
+  type nonrec 'a stats = t
+  type nonrec t = t * t * t
 
-let restore (h, p, e) =
-  Hashtbl.replace stats Kind.Hashing h;
-  Hashtbl.replace stats Kind.Parsing p;
-  Hashtbl.replace stats Kind.Exec e
+  let zero () = (z, z, z)
+  let dump () = (find Kind.Hashing, find Kind.Parsing, find Kind.Exec)
 
-let get_f (h, p, e) ~kind =
-  match kind with
-  | Kind.Hashing -> h
-  | Parsing -> p
-  | Exec -> e
+  let restore (h, p, e) =
+    Hashtbl.replace stats Kind.Hashing h;
+    Hashtbl.replace stats Kind.Parsing p;
+    Hashtbl.replace stats Kind.Exec e
 
-let bump kind time =
+  let get_f (h, p, e) ~kind =
+    match kind with
+    | Kind.Hashing -> h
+    | Parsing -> p
+    | Exec -> e
+
+  let to_string (h, p, e) =
+    Format.asprintf "hashing: %f | parsing: %f | exec: %f" h.time p.time e.time
+end
+
+let bump kind { time; memory } =
   let acc = find kind in
-  Hashtbl.replace stats kind (acc +. time)
+  let time = acc.time +. time in
+  let memory = acc.memory +. memory in
+  Hashtbl.replace stats kind { time; memory }
 
-let time f x =
+let time_and_mem f x =
+  let { Gc.major_words = mw_prev; _ } = Gc.quick_stat () in
   let before = Unix.gettimeofday () in
-  let res = f x in
+  let v = f x in
   let after = Unix.gettimeofday () in
-  (res, after -. before)
+  let { Gc.major_words = mw_after; _ } = Gc.quick_stat () in
+  let time = after -. before in
+  let memory = mw_after -. mw_prev in
+  (v, { time; memory })
 
 let record ~kind ~f x =
-  let res, time = time f x in
-  bump kind time;
-  (res, time)
+  let res, stats = time_and_mem f x in
+  bump kind stats;
+  (res, stats)
 
-let get ~kind = find kind
-
-let to_string (h, p, e) =
-  Format.asprintf "hashing: %f | parsing: %f | exec: %f" h p e
+let get_accumulated ~kind = find kind
 
 let reset () =
   Hashtbl.remove stats Kind.Hashing;

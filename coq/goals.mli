@@ -42,7 +42,8 @@ type ('a, 'pp) goals =
   ; given_up : 'a list
   }
 
-val map_goals : f:('a -> 'b) -> ('a, 'pp) goals -> ('b, 'pp) goals
+val map_goals :
+  f:('a -> 'b) -> g:('pp -> 'pp') -> ('a, 'pp) goals -> ('b, 'pp') goals
 
 type 'pp reified_pp = ('pp reified_goal, 'pp) goals
 

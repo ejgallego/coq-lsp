@@ -15,34 +15,66 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+(* XXX: EJGA This should be an structured value (object or array) *)
+module Params : sig
+  type t = (string * Yojson.Safe.t) list
+end
+
+module Notification : sig
+  type t =
+    { method_ : string
+    ; params : Params.t
+    }
+  [@@deriving to_yojson]
+
+  val make : method_:string -> params:Params.t -> unit -> t
+end
+
+module Request : sig
+  type t =
+    { id : int
+    ; method_ : string
+    ; params : Params.t
+    }
+  [@@deriving to_yojson]
+
+  val make : method_:string -> id:int -> params:Params.t -> unit -> t
+end
+
+(* Request response *)
+module Response : sig
+  type t =
+    | Ok of
+        { id : int
+        ; result : Yojson.Safe.t
+        }
+    | Error of
+        { id : int
+        ; code : int
+        ; message : string
+        ; data : Yojson.Safe.t option
+        }
+  [@@deriving to_yojson]
+
+  (** Answer to a request *)
+  val mk_ok : id:int -> result:Yojson.Safe.t -> t
+
+  (** Fail a request *)
+  val mk_error : id:int -> code:int -> message:string -> t
+
+  val id : t -> int
+end
+
 (** Basic JSON-RPC Incoming Messages *)
 module Message : sig
   type t =
-    | Notification of
-        { method_ : string
-        ; params : (string * Yojson.Safe.t) list
-        }
-    | Request of
-        { id : int
-        ; method_ : string
-        ; params : (string * Yojson.Safe.t) list
-        }
-
-  (** Reify an incoming message *)
-  val from_yojson : Yojson.Safe.t -> (t, string) Result.t
-
-  val method_ : t -> string
-  val params : t -> (string * Yojson.Safe.t) list
+    | Notification of Notification.t
+    | Request of Request.t
+    | Response of Response.t
+  [@@deriving yojson]
 end
 
-(** Build notification *)
-val mk_notification : method_:string -> params:Yojson.Safe.t -> Yojson.Safe.t
-
-(** Answer to a request *)
-val mk_reply : id:int -> result:Yojson.Safe.t -> Yojson.Safe.t
-
-(** Fail a request *)
-val mk_request_error : id:int -> code:int -> message:string -> Yojson.Safe.t
+(** Build request *)
 
 (** Progress *)
 module ProgressToken : sig

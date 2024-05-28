@@ -32,6 +32,28 @@ module Require : sig
   val extract : ast -> t option
 end
 
+module Meta : sig
+  type ast = t
+
+  module Command : sig
+    type t =
+      | Back of int
+      | ResetName of Names.lident
+      | ResetInitial
+  end
+
+  type t =
+    { command : Command.t
+    ; loc : Loc.t option
+    ; attrs : Attributes.vernac_flag list
+    ; control : Vernacexpr.control_flag list
+    }
+  [@@deriving hash, compare]
+
+  (** Determine if we are under a meta-command *)
+  val extract : ast -> t option
+end
+
 (** [make_info ~st ast] Compute info about a possible definition in [ast], we
     need [~st] to compute the type. *)
 val make_info :

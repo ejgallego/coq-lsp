@@ -5,11 +5,20 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module Info = struct
+  type t =
+    { time : float  (** Original Execution Time (when not cached) *)
+    ; memory : float
+          (** Difference in words allocated in the heap using `Gc.quick_stat` *)
+    ; cache_hit : bool  (** was the sentence cached? *)
+    ; time_hash : float  (** Memo timing overhead *)
+    }
+end
+
 module Sentence = struct
   type t =
-    { loc : Lang.Range.t
-    ; time : float
-    ; mem : float
+    { range : Lang.Range.t
+    ; info : Info.t
     }
 end
 

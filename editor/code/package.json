@@ -92,11 +92,11 @@
       },
       {
         "command": "coq-lsp.goals",
-        "title": "Coq LSP: Show Goals at Point"
+        "title": "Coq LSP: Show Goals at point"
       },
       {
         "command": "coq-lsp.document",
-        "title": "Coq LSP: Get document in serialized format, print in console"
+        "title": "Coq LSP: Serialize document to JSON"
       },
       {
         "command": "coq-lsp.save",
@@ -104,15 +104,19 @@
       },
       {
         "command": "coq-lsp.trim",
-        "title": "Coq LSP: Request the server to trim caches and compact memory (useful to try reduce memory comsumption)"
+        "title": "Coq LSP: Free memory"
       },
       {
         "command": "coq-lsp.sentenceNext",
-        "title": "Coq LSP: try to jump to next Coq sentence"
+        "title": "Coq LSP: Try to jump to next Coq sentence"
       },
       {
-        "command": "coq-lsp.sentenceBack",
-        "title": "Coq LSP: try to jump to previous Coq sentence"
+        "command": "coq-lsp.sentencePrevious",
+        "title": "Coq LSP: Try to jump to previous Coq sentence"
+      },
+      {
+        "command": "coq-lsp.heatmap.toggle",
+        "title": "Coq LSP: Toggle heatmap"
       }
     ],
     "keybindings": [
@@ -120,6 +124,18 @@
         "command": "coq-lsp.goals",
         "key": "alt+enter",
         "mac": "meta+enter",
+        "when": "editorTextFocus && (editorLangId == coq || editorTextFocus && editorLangId == markdown)"
+      },
+      {
+        "command": "coq-lsp.sentenceNext",
+        "key": "Alt+N",
+        "mac": "cmd+N",
+        "when": "editorTextFocus && (editorLangId == coq || editorTextFocus && editorLangId == markdown)"
+      },
+      {
+        "command": "coq-lsp.sentencePrevious",
+        "key": "Alt+P",
+        "mac": "cmd+P",
         "when": "editorTextFocus && (editorLangId == coq || editorTextFocus && editorLangId == markdown)"
       }
     ],
@@ -279,7 +295,12 @@
           "coq-lsp.check_only_on_request": {
             "type": "boolean",
             "default": false,
-            "description": "Check files lazily, that is to say, goal state for a point will only be computed when the data is actually demanded. Note that this option is experimental and not recommended for use yet; we expose it only for testing and further development."
+            "description": "Check files lazily, that is to say, goal state for a point will only be computed when the data is actually demanded. Note that this feature is experimental."
+          },
+          "coq-lsp.check_on_scroll": {
+            "type": "boolean",
+            "default": false,
+            "description": "When in lazy mode, check files on scroll. Note that this feature is experimental."
           }
         }
       },
@@ -307,6 +328,41 @@
             "type": "boolean",
             "default": true,
             "description": "Automatically ignore Coq object files in the workspace (.vo, .vos, ...)"
+          }
+        }
+      },
+      {
+        "title": "Heatmap",
+        "type": "object",
+        "properties": {
+          "coq-lsp.heatmap.enabled": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable heatmap for Coq files."
+          },
+          "coq-lsp.heatmap.warmColor": {
+            "type": "string",
+            "default": "#ff0000",
+            "description": "Defines the warm color for the heatmap."
+          },
+          "coq-lsp.heatmap.coldColor": {
+            "type": "string",
+            "default": "#000000",
+            "description": "Defines the cold color for the heatmap."
+          },
+          "coq-lsp.heatmap.heatLevels": {
+            "type": "number",
+            "default": 100,
+            "description": "Defines the number of heat levels in the heatmap."
+          },
+          "coq-lsp.heatmap.mode": {
+            "type": "string",
+            "default": "time",
+            "enum": [
+              "time",
+              "memory"
+            ],
+            "description": "Defines the heatmap mode."
           }
         }
       }

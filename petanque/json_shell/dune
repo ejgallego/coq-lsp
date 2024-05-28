@@ -1,0 +1,13 @@
+(library
+ (name petanque_json)
+ (public_name coq-lsp.petanque.json)
+ (modules :standard \ pet)
+ (preprocess
+  (staged_pps ppx_import ppx_deriving_yojson))
+ (libraries cmdliner lsp petanque))
+
+(executable
+ (name pet)
+ (public_name pet)
+ (modules pet)
+ (libraries petanque_json))

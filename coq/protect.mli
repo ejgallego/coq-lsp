@@ -39,6 +39,7 @@ module E : sig
   val map_loc : f:('l -> 'm) -> ('a, 'l) t -> ('a, 'm) t
   val bind : f:('a -> ('b, 'l) t) -> ('a, 'l) t -> ('b, 'l) t
   val ok : 'a -> ('a, 'l) t
+  val error : Pp.t -> ('a, 'l) t
 
   module O : sig
     val ( let+ ) : ('a, 'l) t -> ('a -> 'b) -> ('b, 'l) t

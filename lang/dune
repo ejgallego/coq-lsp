@@ -1,4 +1,15 @@
 (library
  (name lang)
  (public_name coq-lsp.lang)
+ (modules :standard \ utf_tests)
  (libraries uri coq-core.library))
+
+; We had to do this due to ppx_inline_test enabling backtraces
+
+(library
+ (name lang_tests)
+ (inline_tests)
+ (modules utf_tests)
+ (preprocess
+  (pps ppx_inline_test))
+ (libraries lang))

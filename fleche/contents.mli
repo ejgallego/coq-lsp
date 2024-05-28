@@ -31,3 +31,7 @@ val make : uri:Lang.LUri.File.t -> raw:string -> t R.t
 (** Make an object of type [t] but don't process the text, this is only used
     internally to still provide some contents when [make] fails. *)
 val make_raw : raw:string -> t
+
+(** [extract_raw contents ~range] Returns the sub-string of the [raw] part of
+    the document *)
+val extract_raw : contents:t -> range:Lang.Range.t -> string

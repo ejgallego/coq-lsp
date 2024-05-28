@@ -238,7 +238,7 @@ end
 (* Register in-file hover plugins *)
 let () = List.iter Register.add [ Loc_info.h; Stats.h; Type.h; Notation.h ]
 
-let hover ~token ~doc ~point =
+let hover ~token ~(doc : Fleche.Doc.t) ~point =
   let node = Info.LC.node ~doc ~point Exact in
   let range = Option.map Doc.Node.range node in
   let hovers = Register.fire ~token ~doc ~point ~node in

@@ -14,13 +14,10 @@ module Node : sig
   end
 
   module Info : sig
-    type t = private
-      { cache_hit : bool
-      ; parsing_time : float
-      ; time : float option
-      ; mw_prev : float
-      ; mw_after : float
-      ; stats : Stats.t  (** Info about cumulative stats *)
+    type t =
+      { parsing_time : float
+      ; stats : Memo.Stats.t option
+      ; global_stats : Stats.Global.t  (** Info about cumulative stats *)
       }
 
     val print : t -> string
@@ -32,6 +29,7 @@ module Node : sig
 
   type t = private
     { range : Lang.Range.t
+    ; prev : t option
     ; ast : Ast.t option  (** Ast of node *)
     ; state : Coq.State.t  (** (Full) State of node *)
     ; diags : Lang.Diagnostic.t list  (** Diagnostics associated to the node *)
@@ -85,7 +83,7 @@ type t = private
   ; completed : Completion.t
         (** Status of the document, usually either completed, suspended, or
             waiting for some IO / external event *)
-  ; toc : Lang.Range.t CString.Map.t  (** table of contents *)
+  ; toc : Node.t CString.Map.t  (** table of contents *)
   ; env : Env.t  (** External document enviroment *)
   ; root : Coq.State.t
         (** [root] contains the first state document state, obtained by applying
