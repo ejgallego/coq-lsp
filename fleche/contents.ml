@@ -25,6 +25,18 @@ module Util = struct
     let nl = l_c - l_p in
     let nc, padding = if l_p = l_c then (c_c - c_p, 0) else (c_c, o_c - o_p) in
     String.make padding ' ' ^ String.make nl '\n' ^ String.make nc ' '
+
+  let extract_raw ~raw ~(range : Lang.Range.t) =
+    let start = range.start.offset in
+    let length = range.end_.offset - start in
+    (* We need to be careful here as Doc.t always adds a last empty node on EOF,
+       but somehow the offset of this node seems suspicious, it seems like the
+       Coq parser increases the offset by one, we need to investigate. *)
+    let length =
+      if String.length raw < start + length then String.length raw - start
+      else length
+    in
+    String.sub raw start length
 end
 
 module Markdown = struct
@@ -130,7 +142,7 @@ let get_last_text text =
   let lines = CString.split_on_char '\n' text |> Array.of_list in
   let n_lines = Array.length lines in
   let last_line = if n_lines < 1 then "" else Array.get lines (n_lines - 1) in
-  let character = Coq.Utf8.length last_line in
+  let character = Lang.Utf.length_utf16 last_line in
   (Lang.Point.{ line = n_lines - 1; character; offset }, lines)
 
 let make ~uri ~raw =
@@ -144,3 +156,5 @@ let make_raw ~raw =
   let text = raw in
   let last, lines = get_last_text text in
   { raw; text; last; lines }
+
+let extract_raw ~contents:{ raw; _ } ~range = Util.extract_raw ~raw ~range

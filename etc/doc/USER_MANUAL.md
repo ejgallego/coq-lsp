@@ -15,35 +15,136 @@ Given a project root `dir`, `coq-lsp` will try to read
 there.
 
 Other tools included in the `coq-lsp` suite usually take a
-`--root=dir` command line parameter to set this information.
+`--root=dir` command line parameter to set this information up.
 
 `coq-lsp` will display information about the project root and setting
 auto-detection using the standard language server protocol messaging
 facilities. In VSCode, these settings can be usually displayed in the
 "Output > Coq-lsp server" window.
 
-## Selecting the interruption backend
+## Key features:
+
+### Continuous vs on-demand mode
+
+`coq-lsp` offers two checking modes:
+
+- continuous checking [default]: `coq-lsp` will check all your open
+  documents eagerly. This is best when working with powerful machines
+  to minimize latency. When using OCaml 4.x, `coq-lsp` uses the
+  `memprof-limits` library to interrupt Coq and stay responsive.
+
+- on-demand checking [set the `check_only_on_request` option]: In this
+  mode, `coq-lsp` will stay idle and only compute information that is
+  demanded, for example, when the user asks for goals. This mode
+  disables some useful features such as `documentSymbol` as they can
+  only be implemented by checking the full file.
+
+  This mode provides the `check_on_scroll` option, which improves
+  latency by telling `coq-lsp` to check eagerly what is on view on
+  user's screen.
+
+### Goal display
+
+By default, `coq-lsp` will follow cursor and show goals at cursor
+position. This can be tweaked in options.
+
+The `coq-lsp.sentenceNext` and `coq-lsp.sentencePrevious` commands will
+try to move the cursor one Coq sentence forward / backwards. These
+commands are bound by default to `Alt + N` / `Alt + P` (`Cmd` on
+MacOS).
+
+### Incremental proof edition
+
+Once you have setup your basic proof style, you may want to work with
+`coq-lsp` in a way that is friendly to incremental checking.
+
+For example, `coq-lsp` will recognize blocks of the form:
+```coq
+Lemma foo : T.
+Proof.
+ ...
+Qed.
+```
+
+and will allow you to edit inside the `Proof.` `Qed.` block without
+re-checking what is outside.
+
+### Error recovery
+
+`coq-lsp` can recover many errors automatically and allow you to
+continue document edition later on.
+
+For example, it is not necessary to put `Admitted` in proofs that are
+not fully completed. Also, you can work with bullets and `coq-lsp`
+will automatically admit unfinished ones, so you can follow the
+natural proof structure.
+
+## Settings
+
+### Goal display
+
+Several settings for goal display exist.
+
+### Continuous vs on-demand mode:
+
+A setting to have `coq-lsp` check documents continuously exists.
+
+## Memory management
+
+## Advanced: Multiple workspaces
+
+## Interrupting coq-lsp
 
 When a Coq document is being checked, it is often necessary to
 _interrupt_ the checking process, for example, to check a new version,
-or to retrieve some user-facing information.
+or to retrieve some user-facing information, such as goals.
 
-`coq-lsp` supports two interruption methods, selectable at start time
-via the `--int_backend` command-line parameter:
+`coq-lsp` supports two different interruption methods, selectable at
+start time via the `--int_backend` command-line parameter:
 
-- Coq-side polling (`--int_backend=Coq`, default): in this mode, Coq
-  polls for a flag every once in a while, and will raise an
-  interruption when the flag is set. This method has the downside that
-  some paths in Coq don't check the flag often enough, for example,
-  `Qed.`, so users may face unresponsiveness, as our server can only
-  run one thread at a time.
+- Coq-side polling (`--int_backend=Coq`, default for OCaml 5.x): in
+  this mode, Coq polls for a flag every once in a while, and will
+  raise an interruption when the flag is set. This method has the
+  downside that some paths in Coq don't check the flag often enough,
+  for example, `Qed.`, so users may face unresponsiveness, as our
+  server can only run one thread at a time.
 
 - `memprof-limits` token-based interruption (`--int_backend=Mp`,
-  experimental): in this mode, Coq will use the `memprof-limits`
-  library to interrupt Coq.
+  experimental, default for OCaml 4.x): in this mode, Coq will use the
+  `memprof-limits` library to interrupt Coq.
 
 Coq has some bugs w.r.t. handling of asynchronous interruptions coming
 from `memprof-limits`. The situation is better in Coq 8.20, but users
 on Coq <= 8.19 do need to install a version of Coq with the backported
 fixes. See the information about Coq upstream bugs in the README for
 more information about available branches.
+
+## Advanced incremental tricks
+
+You can use the `Reset $id` and `Back $steps` commands to isolate
+parts of the document from each others in terms of rechecking.
+
+For example, the command `Reset $id` will make the parts of the
+document after it use the state before the node `id` was found. Thus,
+any change between `$id` and the `Reset $id` command will not trigger
+a recheck of the rest of the document.
+
+```coq
+(* Coq code 1 *)
+
+Lemma foo : T.
+Proof. ... Qed.
+
+(* Coq code 2 *)
+
+Reset foo.
+
+(* Coq code 3 *)
+```
+
+In the above code, any change in the "`Coq code 2`" section will not
+trigger a recheck of the "`Coq code 3`" Section, by virtue of the
+incremental engine.
+
+Using `Reset Initial`, you can effectively partition the document on
+`N` parts! This is pretty cool for some use cases!

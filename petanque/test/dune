@@ -1,0 +1,13 @@
+(test
+ (name basic_api)
+ (modules basic_api)
+ (deps test.v)
+ (libraries petanque))
+
+(test
+ (name json_api)
+ (modules json_api)
+ (deps test.v %{bin:pet})
+ (enabled_if
+  (<> %{os_type} "Win32"))
+ (libraries petanque petanque_json lsp))

@@ -164,12 +164,17 @@ module Rq : sig
   end
 
   val serve :
-    ofn:(J.t -> unit) -> token:Coq.Limits.Token.t -> id:int -> Action.t -> unit
+       ofn:(LSP.Response.t -> unit)
+    -> token:Coq.Limits.Token.t
+    -> id:int
+    -> Action.t
+    -> unit
 
-  val cancel : ofn:(J.t -> unit) -> code:int -> message:string -> int -> unit
+  val cancel :
+    ofn:(LSP.Response.t -> unit) -> code:int -> message:string -> int -> unit
 
   val serve_postponed :
-       ofn:(J.t -> unit)
+       ofn:(LSP.Response.t -> unit)
     -> token:Coq.Limits.Token.t
     -> doc:Fleche.Doc.t
     -> Int.Set.t
@@ -178,8 +183,8 @@ end = struct
   (* Answer a request, private *)
   let answer ~ofn ~id result =
     (match result with
-    | Result.Ok result -> LSP.mk_reply ~id ~result
-    | Error (code, message) -> LSP.mk_request_error ~id ~code ~message)
+    | Result.Ok result -> LSP.Response.mk_ok ~id ~result
+    | Error (code, message) -> LSP.Response.mk_error ~id ~code ~message)
     |> ofn
 
   (* private to the Rq module, just used not to retrigger canceled requests *)
@@ -406,6 +411,24 @@ let do_cancel ~ofn ~params =
 
 let do_cache_trim () = Nt_cache_trim.notification ()
 
+let do_viewRange params =
+  match List.assoc "range" params |> Lsp.JLang.Diagnostic.Range.of_yojson with
+  | Ok range ->
+    let { Lsp.JLang.Diagnostic.Range.end_ = { line; character }; _ } = range in
+    let message = Format.asprintf "l: %d c:%d" line character in
+    LIO.trace "viewRange" message;
+    let uri = Helpers.get_uri params in
+    Fleche.Theory.Check.set_scheduler_hint ~uri ~point:(line, character);
+    ()
+  | Error err -> LIO.trace "viewRange" ("error in parsing notification: " ^ err)
+
+let do_changeConfiguration params =
+  let message = "didChangeReceived" in
+  let () = LIO.(logMessage ~lvl:Lvl.Info ~message) in
+  let settings = field "settings" params |> U.to_assoc in
+  Rq_init.do_settings settings;
+  ()
+
 (***********************************************************************)
 
 (** LSP Init routine *)
@@ -440,11 +463,14 @@ let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
       Format.asprintf "Initializing coq-lsp server %s" (version ())
     in
     LIO.logMessage ~lvl:Info ~message;
-    let result, dirs = Rq_init.do_initialize ~params in
-    (* We don't need to interrupt this *)
     let token = Coq.Limits.Token.create () in
+    let result, dirs = Rq_init.do_initialize ~params in
     Rq.Action.now (Ok result) |> Rq.serve ~ofn ~token ~id;
-    LIO.logMessage ~lvl:Info ~message:"Server initialized";
+    let message =
+      Format.asprintf "Server initializing (int_backend: %s)"
+        (Coq.Limits.name ())
+    in
+    LIO.logMessage ~lvl:Info ~message;
     (* Workspace initialization *)
     let debug = debug || !Fleche.Config.v.debug in
     let workspaces =
@@ -456,12 +482,15 @@ let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
     Success workspaces
   | LSP.Message.Request { id; _ } ->
     (* per spec *)
-    LSP.mk_request_error ~id ~code:(-32002) ~message:"server not initialized"
+    LSP.Response.mk_error ~id ~code:(-32002) ~message:"server not initialized"
     |> ofn;
     Loop
   | LSP.Message.Notification { method_ = "exit"; params = _ } -> Exit
   | LSP.Message.Notification _ ->
     (* We can't log before getting the initialize message *)
+    Loop
+  | LSP.Message.Response _ ->
+    (* O_O *)
     Loop
 
 (** Dispatching *)
@@ -469,14 +498,16 @@ let dispatch_notification ~io ~ofn ~token ~state ~method_ ~params : unit =
   match method_ with
   (* Lifecycle *)
   | "exit" -> raise Lsp_exit
-  (* setTrace *)
+  (* setTrace and settings *)
   | "$/setTrace" -> do_trace params
+  | "workspace/didChangeConfiguration" -> do_changeConfiguration params
   (* Document lifetime *)
   | "textDocument/didOpen" -> do_open ~io ~token ~state params
   | "textDocument/didChange" -> do_change ~io ~ofn ~token params
   | "textDocument/didClose" -> do_close ~ofn params
   | "textDocument/didSave" -> Cache.save_to_disk ()
   (* Specific to coq-lsp *)
+  | "coq/viewRange" -> do_viewRange params
   | "coq/trimCaches" -> do_cache_trim ()
   (* Cancel Request *)
   | "$/cancelRequest" -> do_cancel ~ofn ~params
@@ -527,9 +558,15 @@ let dispatch_request ~ofn ~token ~id ~method_ ~params =
 let dispatch_message ~io ~ofn ~token ~state (com : LSP.Message.t) : State.t =
   match com with
   | Notification { method_; params } ->
+    LIO.trace "process_queue" ("Serving notification: " ^ method_);
     dispatch_state_notification ~io ~ofn ~token ~state ~method_ ~params
   | Request { id; method_; params } ->
+    LIO.trace "process_queue" ("Serving Request: " ^ method_);
     dispatch_request ~ofn ~token ~id ~method_ ~params;
+    state
+  | Response r ->
+    LIO.trace "process_queue"
+      ("Serving response for: " ^ string_of_int (Lsp.Base.Response.id r));
     state
 
 (* Queue handling *)
@@ -603,7 +640,6 @@ let dispatch_or_resume_check ~io ~ofn ~state =
     let token = token_factory () in
     check_or_yield ~io ~ofn ~token ~state
   | Some com ->
-    LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
     (* We let Coq work normally now *)
     let token = token_factory () in
     Cont (dispatch_message ~io ~ofn ~token ~state com)

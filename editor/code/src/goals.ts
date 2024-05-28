@@ -1,5 +1,4 @@
 import {
-  Position,
   Uri,
   WebviewPanel,
   window,
@@ -11,6 +10,7 @@ import {
 import {
   BaseLanguageClient,
   RequestType,
+  ResponseError,
   VersionedTextDocumentIdentifier,
 } from "vscode-languageclient";
 import {
@@ -20,6 +20,12 @@ import {
   CoqMessagePayload,
   ErrorData,
 } from "../lib/types";
+
+import {
+  URI,
+  Position,
+  TextDocumentIdentifier,
+} from "vscode-languageserver-types";
 
 export const goalReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
   "proof/goals"
@@ -91,6 +97,10 @@ export class InfoPanel {
   ensurePanel() {
     if (!this.panel) {
       this.panelFactory();
+    } else {
+      if (!this.panel.active) {
+        this.panel.reveal(2, true);
+      }
     }
   }
   postMessage({ method, params }: CoqMessagePayload) {
@@ -127,7 +137,12 @@ export class InfoPanel {
     this.requestSent(params);
     client.sendRequest(goalReq, params).then(
       (goals) => this.requestDisplay(goals),
-      (reason) => this.requestError(reason)
+      (error: ResponseError<void>) => {
+        let textDocument = params.textDocument;
+        let position = params.position;
+        let message = error.message;
+        this.requestError({ textDocument, position, message });
+      }
     );
   }
 
@@ -139,22 +154,27 @@ export class InfoPanel {
           let goals_fn = goals as GoalAnswer<String>;
           this.listeners.forEach((fn) => fn(goals_fn));
         },
-        // We should actually provide a better setup so we can pass the rejection of the promise to our clients, YMMV tho.
-        (reason) => this.requestError(reason)
+        // We should actually provide a better setup so we can pass
+        // the rejection of the promise to our clients, YMMV tho.
+        (error: ResponseError<void>) => {
+          let textDocument = params.textDocument;
+          let position = params.position;
+          let message = error.message;
+          this.requestError({ textDocument, position, message });
+        }
       );
     }
   }
+
+  // Protocol-level data
   updateFromServer(
     client: BaseLanguageClient,
-    uri: Uri,
+    uri: URI,
     version: number,
     position: Position,
     pp_format: "Pp" | "Str"
   ) {
-    let textDocument = VersionedTextDocumentIdentifier.create(
-      uri.toString(),
-      version
-    );
+    let textDocument = VersionedTextDocumentIdentifier.create(uri, version);
 
     // Example to test the `command` parameter
     // let command = "idtac.";

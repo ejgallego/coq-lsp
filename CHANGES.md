@@ -1,6 +1,11 @@
 # unreleased
 ------------
 
+ - Added new heatmap feature allowing timing data to be seen in the
+   editor. Can be enabled with the `Coq LSP: Toggle heatmap`
+   comamnd. Can be configured to show memory usage. Colors and
+   granularity are configurable. (@Alizter and @ejgallego, #686,
+   grants #681).
  - new option `show_loc_info_on_hover` that will display parsing debug
    information on hover; previous flag was fixed in code, which is way
    less flexible. This also fixes the option being on in 0.1.8 by
@@ -70,6 +75,9 @@
  - new VSCode commands to allow to move one sentence backwards /
    forward, this is particularly useful when combined with lazy
    checking mode (@ejgallego, #671, fixes #263, fixes #580)
+ - VSCode commands `coq-lsp.sentenceNext` / `coq-lsp.sentencePrevious`
+   are now bound by default to `Alt + N` / `Alt + P` keybindings
+   (@ejgallego, #718)
  - change diagnostic `extra` field to `data`, so we now conform to the
    LSP spec, include the data only when the `send_diags_extra_data`
    server-side option is enabled (@ejgallego, #670)
@@ -98,6 +106,48 @@
  - Update `package-lock.json` for latest bugfixes (@ejgallego, #687)
  - Update Nix flake enviroment (@Alizter, #684 #688)
  - Update `prettier` (@Alizter @ejgallego, #684 #688)
+ - Store original performance data in the cache, so we now display the
+   original timing and memory data even for cached commands (@ejgallego, #693)
+ - Fix type errors in the Performance Data Notifications (@ejgallego,
+   @Alizter, #689, #693)
+ - Send performance performance data for the full document
+   (@ejgallego, @Alizter, #689, #693)
+ - Better types `coq/perfData` call (@ejgallego @Alizter, #689)
+ - New server option to enable / disable `coq/perfData` (@ejgallego, #689)
+ - New cleint option to enable / disable `coq/perfData` (@ejgallego, #717)
+ - The `coq-lsp.document` VSCode command will now display the returned
+   JSON data in a new editor (@ejgallego, #701)
+ - New server option to enable / disable `coq/perfData` (@ejgallego,
+   #689)
+ - Update server settings on the fly when tweaking them in VSCode.
+   Implement `workspace/didChangeConfiguration` (@ejgallego, #702)
+ - [Coq API] Add functions to retrieve list of declarations done in
+   .vo files (@ejallego, @eytans, #704)
+ - New `petanque` API to interact directly with Coq's proof
+   engine. (@ejgallego, @gbdrt, #703, thanks to Alex Sanchez-Stern)
+ - New `petanque` JSON-RPC `pet.exe`, which can be used à la SerAPI
+   to perform proof search and more (@ejgallego, @gbdrt, #705)
+ - Always dispose UI elements. This should improve some strange
+   behaviors on extension restart (@ejgallego, #708)
+ - Support Coq meta-commands (Reset, Reset Initial, Back) They are
+   actually pretty useful to hint the incremental engine to ignore
+   changes in some part of the document (@ejgallego, #709)
+ - JSON-RPC library now supports all kind of incoming messages
+   (@ejgallego, #713)
+ - New `coq/viewRange` notification, from client to server, than hints
+   the scheduler for the visible area of the document; combined with
+   the new lazy checking mode, this provides checking on scroll, a
+   feature inspired from Isabelle IDE (@ejgallego, #717)
+ - Have VSCode wait for full LSP client shutdown on server
+   restart. This fixes some bugs on extension restart (finally!)
+   (@ejgallego, #719)
+ - Center the view if cursor goes out of scope in
+   `sentenceNext/sentencePrevious` (@ejgallego, #718)
+ - Switch Flèche range encoding to protocol native, this means UTF-16
+   for now (Léo Stefanesco, @ejgallego, #624, fixes #620, #621)
+ - Give `Goals` panel focus back if it has lost it (in case of
+   multiple panels in the second viewColumn of Vscode) whenever
+   user navigates proofs (@Alidra @ejgallego, #722, #725)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

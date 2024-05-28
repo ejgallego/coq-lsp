@@ -62,8 +62,9 @@ let mk_progress ~uri ~version processing =
   let textDocument = { Doc.VersionedTextDocumentIdentifier.uri; version } in
   let params =
     FileProgress.to_yojson { FileProgress.textDocument; processing }
+    |> Yojson.Safe.Util.to_assoc
   in
-  Base.mk_notification ~method_:"$/coq/fileProgress" ~params
+  Base.Notification.(make ~method_:"$/coq/fileProgress" ~params () |> to_yojson)
 
 module Message = struct
   type 'a t =
@@ -116,6 +117,10 @@ module FlecheDocument = struct
   [@@deriving yojson]
 end
 
+module Info = struct
+  type t = [%import: Fleche.Perf.Info.t] [@@deriving yojson]
+end
+
 module SentencePerfData = struct
   type t = [%import: Fleche.Perf.Sentence.t] [@@deriving yojson]
 end
@@ -133,6 +138,7 @@ let mk_perf ~uri ~version perf =
   let textDocument = { Doc.VersionedTextDocumentIdentifier.uri; version } in
   let params =
     let { Fleche.Perf.summary; timings } = perf in
-    DocumentPerfData.(to_yojson { textDocument; summary; timings })
+    DocumentPerfData.(
+      to_yojson { textDocument; summary; timings } |> Yojson.Safe.Util.to_assoc)
   in
-  Base.mk_notification ~method_:"$/coq/filePerfData" ~params
+  Base.Notification.(make ~method_:"$/coq/filePerfData" ~params () |> to_yojson)

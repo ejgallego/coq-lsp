@@ -41,7 +41,7 @@ module Init_effect : sig
 end
 
 val lsp_init_process :
-     ofn:(Yojson.Safe.t -> unit)
+     ofn:(Lsp.Base.Response.t -> unit)
   -> cmdline:Coq.Workspace.CmdLine.t
   -> debug:bool
   -> Lsp.Base.Message.t
@@ -56,7 +56,7 @@ type 'a cont =
     wake up pending requests *)
 val dispatch_or_resume_check :
      io:Fleche.Io.CallBack.t
-  -> ofn:(Yojson.Safe.t -> unit)
+  -> ofn:(Lsp.Base.Response.t -> unit)
   -> state:State.t
   -> State.t cont option
 

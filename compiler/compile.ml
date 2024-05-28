@@ -22,7 +22,7 @@ let save_diags_file ~(doc : Fleche.Doc.t) =
   let file = Lang.LUri.File.to_string_file doc.uri in
   let file = Filename.remove_extension file ^ ".diags" in
   let diags = Fleche.Doc.diags doc in
-  Util.format_to_file ~file ~f:Output.pp_diags diags
+  Fleche.Compat.format_to_file ~file ~f:Output.pp_diags diags
 
 (** Return: exit status for file:
 
@@ -47,7 +47,9 @@ let compile_file ~cc file : int =
     let workspace = workspace_of_uri ~io ~workspaces ~uri ~default in
     let files = Coq.Files.make () in
     let env = Doc.Env.make ~init:root_state ~workspace ~files in
-    let raw = Util.input_all file in
+    let raw =
+      Fleche.Compat.Ocaml_414.In_channel.(with_open_bin file input_all)
+    in
     let () = Theory.create ~io ~token ~env ~uri ~raw ~version:1 in
     match Theory.Check.maybe_check ~io ~token with
     | None -> 102

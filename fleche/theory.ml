@@ -194,6 +194,8 @@ module Check : sig
 
   val maybe_check :
     io:Io.CallBack.t -> token:Coq.Limits.Token.t -> (Int.Set.t * Doc.t) option
+
+  val set_scheduler_hint : uri:Lang.LUri.File.t -> point:int * int -> unit
 end = struct
   let pending = ref []
 
@@ -214,9 +216,18 @@ end = struct
       | None -> pend_try f tt
       | Some r -> Some r)
 
+  let hint : (int * int) option ref = ref None
+
   let get_check_target pt_requests =
     let target_of_pt_handle (_, (l, c)) = Doc.Target.Position (l, c) in
-    Option.map target_of_pt_handle (List.nth_opt pt_requests 0)
+    match Option.map target_of_pt_handle (List.nth_opt pt_requests 0) with
+    | None ->
+      Option.map
+        (fun (l, c) ->
+          hint := None;
+          Doc.Target.Position (l, c))
+        !hint
+    | Some t -> Some t
 
   (* Notification handling; reply is optional / asynchronous *)
   let check ~io ~token ~uri =
@@ -255,6 +266,12 @@ end = struct
 
   let deschedule ~uri =
     pending := CList.remove Lang.LUri.File.equal uri !pending
+
+  let set_scheduler_hint ~uri ~point =
+    if CList.is_empty !pending then
+      let () = hint := Some point in
+      schedule ~uri (* if the hint is set we wanna override it *)
+    else if not (Option.is_empty !hint) then hint := Some point
 end
 
 let create ~io ~token ~env ~uri ~raw ~version =
