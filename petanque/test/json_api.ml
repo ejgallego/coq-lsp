@@ -13,7 +13,7 @@ let trace ?verbose:_ msg = msgs := Format.asprintf "[trace] %s" msg :: !msgs
 let message ~lvl:_ ~message = msgs := message :: !msgs
 let dump_msgs () = List.iter (Format.eprintf "%s@\n") (List.rev !msgs)
 
-let extract_st (st : Protocol.RunTac.Response_.t) =
+let extract_st (st : Protocol.RunTac.Response.t) =
   match st with
   | Proof_finished st | Current_state st -> st
 
