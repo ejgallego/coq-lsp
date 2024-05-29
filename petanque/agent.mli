@@ -37,6 +37,12 @@ module R : sig
   type 'a t = ('a, Error.t) Result.t
 end
 
+module Run_result : sig
+  type 'a t =
+    | Proof_finished of 'a
+    | Current_state of 'a
+end
+
 (** I/O handling, by default, print to stderr *)
 
 (** [trace header extra message] *)
@@ -61,7 +67,10 @@ val start :
 
 (** [run_tac ~token ~st ~tac] tries to run [tac] over state [st] *)
 val run_tac :
-  token:Coq.Limits.Token.t -> st:State.t -> tac:string -> State.t R.t
+     token:Coq.Limits.Token.t
+  -> st:State.t
+  -> tac:string
+  -> State.t Run_result.t R.t
 
 (** [goals ~token ~st] return the list of goals for a given [st] *)
 val goals :

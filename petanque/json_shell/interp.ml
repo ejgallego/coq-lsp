@@ -2,11 +2,11 @@ open Protocol
 module A = Petanque.Agent
 
 let do_request ~token (module R : Request.S) ~id ~params =
-  match R.Params.of_yojson (`Assoc params) with
+  match R.Handler.Params.of_yojson (`Assoc params) with
   | Ok params -> (
-    match R.handler ~token params with
+    match R.Handler.handler ~token params with
     | Ok result ->
-      let result = R.Response.to_yojson result in
+      let result = R.Handler.Response.to_yojson result in
       Lsp.Base.Response.mk_ok ~id ~result
     | Error err ->
       let message = A.Error.to_string err in

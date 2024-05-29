@@ -47,6 +47,12 @@ module R = struct
   type 'a t = ('a, Error.t) Result.t
 end
 
+module Run_result = struct
+  type 'a t =
+    | Proof_finished of 'a
+    | Current_state of 'a
+end
+
 let init_coq ~debug =
   let load_module = Dynlink.loadfile in
   let load_plugin = Coq.Loader.plugin_handler None in
@@ -82,7 +88,8 @@ let io =
 
 let read_raw ~uri =
   let file = Lang.LUri.File.to_string_file uri in
-  Fleche.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
+  try Ok Fleche.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
+  with Sys_error err -> Error err
 
 let find_thm ~(doc : Fleche.Doc.t) ~thm =
   let { Fleche.Doc.toc; _ } = doc in
@@ -113,27 +120,39 @@ let init ~token ~debug ~root =
   |> Result.map_error (fun msg -> Error.Coq msg)
 
 let start ~token ~env ~uri ~thm =
-  let raw = read_raw ~uri in
-  (* Format.eprintf "raw: @[%s@]%!" raw; *)
-  let doc = Fleche.Doc.create ~token ~env ~uri ~version:0 ~raw in
-  print_diags doc;
-  let target = Fleche.Doc.Target.End in
-  let doc = Fleche.Doc.check ~io ~token ~target ~doc () in
-  find_thm ~doc ~thm
+  match read_raw ~uri with
+  | Ok raw ->
+    (* Format.eprintf "raw: @[%s@]%!" raw; *)
+    let doc = Fleche.Doc.create ~token ~env ~uri ~version:0 ~raw in
+    print_diags doc;
+    let target = Fleche.Doc.Target.End in
+    let doc = Fleche.Doc.check ~io ~token ~target ~doc () in
+    find_thm ~doc ~thm
+  | Error err ->
+    let msg = Format.asprintf "@[[read_raw] File not found %s@]" err in
+    Error (Error.Theorem_not_found msg)
 
 let parse ~loc tac st =
   let str = Gramlib.Stream.of_string tac in
   let str = Coq.Parsing.Parsable.make ?loc str in
   Coq.Parsing.parse ~st str
 
+let proof_finished { Coq.Goals.goals; stack; shelf; given_up; _ } =
+  List.for_all CList.is_empty [ goals; shelf; given_up ] && CList.is_empty stack
+
 let parse_and_execute_in ~token ~loc tac st =
   let open Coq.Protect.E.O in
   let* ast = parse ~token ~loc tac st in
   match ast with
-  | Some ast -> Fleche.Memo.Interp.eval ~token (st, ast)
-  (* On EOF we return the previous state, the command was the empty string or a
-     comment *)
-  | None -> Coq.Protect.E.ok st
+  | Some ast -> (
+    let open Coq.Protect.E.O in
+    let* st = Fleche.Memo.Interp.eval ~token (st, ast) in
+    let+ goals = Fleche.Info.Goals.goals ~token ~st in
+    match goals with
+    | None -> Run_result.Proof_finished st
+    | Some goals when proof_finished goals -> Run_result.Proof_finished st
+    | _ -> Run_result.Current_state st)
+  | None -> Coq.Protect.E.ok (Run_result.Current_state st)
 
 let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
   match r with
@@ -144,7 +163,7 @@ let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
     Error (Error.Anomaly (Pp.string_of_ppcmds msg))
   | { r = Completed (Ok r); feedback = _ } -> Ok r
 
-let run_tac ~token ~st ~tac : (Coq.State.t, Error.t) Result.t =
+let run_tac ~token ~st ~tac : (_ Run_result.t, Error.t) Result.t =
   (* Improve with thm? *)
   let loc = None in
   Coq.State.in_stateM ~token ~st ~f:(parse_and_execute_in ~token ~loc tac) st
