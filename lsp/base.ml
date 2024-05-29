@@ -107,7 +107,7 @@ module Message = struct
       Response.Ok { id; result }
     | Some error ->
       let error = U.to_assoc error in
-      let code = int_field "message" error in
+      let code = int_field "code" error in
       let message = string_field "message" error in
       let data = None in
       Error { id; code; message; data }
