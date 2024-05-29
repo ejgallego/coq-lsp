@@ -6,11 +6,17 @@ module Env = Obj_map.Make (Petanque.Agent.Env)
 
 (* The typical protocol dance *)
 
-module Result = struct
-  include Result
+module Stdlib = struct
+  module Result = struct
+    include Stdlib.Result
 
-  type ('a, 'e) t = [%import: ('a, 'e) Result.t] [@@deriving yojson]
+    type ('a, 'e) t = [%import: ('a, 'e) Stdlib.Result.t] [@@deriving yojson]
+  end
 end
+
+(* What a mess result stuff is, we need this in case result is installed, as
+   then the types below will be referenced as plain result ... *)
+module Result = Stdlib.Result
 
 module Error = struct
   type t = [%import: Petanque.Agent.Error.t] [@@deriving yojson]
