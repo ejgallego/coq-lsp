@@ -101,6 +101,10 @@
         "title": "Coq LSP: Toggle the running status of Coq Language Server"
       },
       {
+        "command": "coq-lsp.toggle_mode",
+        "title": "Coq LSP: Toggle checking mode between continous / on-demand"
+      },
+      {
         "command": "coq-lsp.goals",
         "title": "Coq LSP: Show Goals at point"
       },
@@ -304,13 +308,13 @@
           },
           "coq-lsp.check_only_on_request": {
             "type": "boolean",
-            "default": false,
-            "description": "Check files lazily, that is to say, goal state for a point will only be computed when the data is actually demanded. Note that this feature is experimental."
+            "default": true,
+            "description": "(Experimental) Check files lazily, that is to say, goal state for a point will only be computed when the data is actually demanded."
           },
           "coq-lsp.check_on_scroll": {
             "type": "boolean",
-            "default": false,
-            "description": "When in lazy mode, check files on scroll. Note that this feature is experimental."
+            "default": true,
+            "description": "(Experimental) When in lazy mode, check files on scroll."
           }
         }
       },

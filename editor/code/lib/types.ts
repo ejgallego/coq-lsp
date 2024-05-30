@@ -184,3 +184,27 @@ export interface ViewRangeParams {
   textDocument: VersionedTextDocumentIdentifier;
   range: Range;
 }
+
+// Server version and status notifications
+
+export interface CoqServerVersion {
+  coq: string;
+  ocaml: string;
+  coq_lsp: string;
+}
+
+export interface CoqBusyStatus {
+  status: "Busy";
+  modname: string;
+}
+
+export interface CoqIdleStatus {
+  status: "Idle";
+  mem: string;
+}
+
+export interface CoqStoppedStatus {
+  status: "Stopped";
+}
+
+export type CoqServerStatus = CoqBusyStatus | CoqIdleStatus | CoqStoppedStatus;

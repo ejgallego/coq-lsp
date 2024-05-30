@@ -400,3 +400,45 @@ client.
 #### Changelog
 
 - v0.1.9: First public documentation.
+
+### Server Version Notification
+
+The server will send the `$/coq/serverVersion` notification to inform
+the client about `coq-lsp` version specific info.
+
+The parameters are:
+```typescript
+export interface CoqServerVersion {
+  coq: string;
+  ocaml: string;
+  coq_lsp: string;
+}
+```
+
+#### Changelog
+
+- v0.1.9: First public documentation.
+
+### Server Status Notification
+
+The server will send the `$/coq/serverStatus` notification to inform
+the client of checking status (start / end checking file)
+
+The parameters are:
+```typescript
+
+export interface CoqBusyStatus {
+  status: "Busy";
+  modname: string;
+}
+
+export interface CoqIdleStatus {
+  status: "Idle" | "Stopped";
+}
+
+export type CoqServerStatus = CoqBusyStatus | CoqIdleStatus;
+```
+
+#### Changelog
+
+- v0.1.9: First public documentation.

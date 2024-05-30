@@ -49,35 +49,52 @@ let rec process_queue ~delay ~io ~ofn ~state : unit =
   | Some (Cont state) -> process_queue ~delay ~io ~ofn ~state
 
 let concise_cb ofn =
+  let send_notification nt =
+    Lsp.Base.Message.(Notification nt |> to_yojson) |> ofn
+  in
+  let diagnostics ~uri ~version diags =
+    if List.length diags > 0 then
+      Lsp.JLang.mk_diagnostics ~uri ~version diags |> send_notification
+  in
   Fleche.Io.CallBack.
     { trace = (fun _hdr ?extra:_ _msg -> ())
     ; message = (fun ~lvl:_ ~message:_ -> ())
-    ; diagnostics =
-        (fun ~uri ~version diags ->
-          if List.length diags > 0 then
-            Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)
+    ; diagnostics
     ; fileProgress = (fun ~uri:_ ~version:_ _progress -> ())
     ; perfData = (fun ~uri:_ ~version:_ _perf -> ())
+    ; serverVersion = (fun _ -> ())
+    ; serverStatus = (fun _ -> ())
     }
 
 (* Main loop *)
 let lsp_cb ofn =
+  let send_notification nt =
+    Lsp.Base.Message.(Notification nt |> to_yojson) |> ofn
+  in
+  let trace = LIO.trace in
   let message ~lvl ~message =
     let lvl = Fleche.Io.Level.to_int lvl in
     LIO.logMessageInt ~lvl ~message
   in
+  let diagnostics ~uri ~version diags =
+    Lsp.JLang.mk_diagnostics ~uri ~version diags |> send_notification
+  in
+  let fileProgress ~uri ~version progress =
+    Lsp.JFleche.mk_progress ~uri ~version progress |> send_notification
+  in
+  let perfData ~uri ~version perf =
+    Lsp.JFleche.mk_perf ~uri ~version perf |> send_notification
+  in
+  let serverVersion vi = Lsp.JFleche.mk_serverVersion vi |> send_notification in
+  let serverStatus st = Lsp.JFleche.mk_serverStatus st |> send_notification in
   Fleche.Io.CallBack.
-    { trace = LIO.trace
+    { trace
     ; message
-    ; diagnostics =
-        (fun ~uri ~version diags ->
-          Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn)
-    ; fileProgress =
-        (fun ~uri ~version progress ->
-          Lsp.JFleche.mk_progress ~uri ~version progress |> ofn)
-    ; perfData =
-        (fun ~uri ~version perf ->
-          Lsp.JFleche.mk_perf ~uri ~version perf |> ofn)
+    ; diagnostics
+    ; fileProgress
+    ; perfData
+    ; serverVersion
+    ; serverStatus
     }
 
 let coq_init ~debug =
@@ -116,7 +133,7 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
   let json_fn = LIO.send_json Format.std_formatter in
 
   let ofn response =
-    let response = Lsp.Base.Response.to_yojson response in
+    let response = Lsp.Base.Message.to_yojson response in
     LIO.send_json Format.std_formatter response
   in
 

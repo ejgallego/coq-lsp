@@ -39,9 +39,14 @@ facilities. In VSCode, these settings can be usually displayed in the
   disables some useful features such as `documentSymbol` as they can
   only be implemented by checking the full file.
 
-  This mode provides the `check_on_scroll` option, which improves
+  This mode can use the `check_on_scroll` option, which improves
   latency by telling `coq-lsp` to check eagerly what is on view on
   user's screen.
+
+Users can change between on-demand/continuous mode by clicking on the
+"Coq language status" item in the bottom right corner for VSCode. We
+recommend pinning the language status item to see server status in
+real-time.
 
 ### Goal display
 

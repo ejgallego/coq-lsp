@@ -41,6 +41,13 @@ import {
   ViewRangeParams,
 } from "../lib/types";
 
+import {
+  CoqLanguageStatus,
+  defaultVersion,
+  defaultStatus,
+  coqServerVersion,
+  coqServerStatus,
+} from "./status";
 import { CoqLspClientConfig, CoqLspServerConfig, CoqSelector } from "./config";
 import { InfoPanel, goalReq } from "./goals";
 import { FileProgressManager } from "./progress";
@@ -77,6 +84,11 @@ let fileProgress: FileProgressManager;
 
 // Status Bar Button
 let lspStatusItem: StatusBarItem;
+
+// Language Status Indicators
+let languageStatus: CoqLanguageStatus;
+let languageVersionHook: Disposable;
+let languageStatusHook: Disposable;
 
 // Lifetime of the perf data setup == client lifetime for the hook, extension for the webview
 let perfDataView: PerfDataView;
@@ -127,7 +139,10 @@ export function activateCoqLSP(
     return settings;
   }
 
-  function coqCommand(command: string, fn: () => void | Promise<void>) {
+  function coqCommand(
+    command: string,
+    fn: (...args: any[]) => void | Promise<void>
+  ) {
     let disposable = commands.registerCommand("coq-lsp." + command, fn);
     context.subscriptions.push(disposable);
   }
@@ -177,6 +192,8 @@ export function activateCoqLSP(
           fileProgress.dispose();
           perfDataHook.dispose();
           heatMap.dispose();
+          languageVersionHook.dispose();
+          languageStatusHook.dispose();
         });
     } else return Promise.resolve();
   };
@@ -203,6 +220,14 @@ export function activateCoqLSP(
       perfDataHook = client.onNotification(coqPerfData, (data) => {
         perfDataView.update(data);
         heatMap.update(toVsCodePerf(data));
+      });
+
+      languageVersionHook = client.onNotification(coqServerVersion, (data) => {
+        languageStatus.updateVersion(data);
+      });
+
+      languageStatusHook = client.onNotification(coqServerStatus, (data) => {
+        languageStatus.updateStatus(data, serverConfig.check_only_on_request);
       });
 
       resolve(client);
@@ -233,22 +258,24 @@ export function activateCoqLSP(
     await stop().finally(start);
   };
 
-  const set_lazy_checking = async (value: boolean) => {
+  const toggle_lazy_checking = async () => {
     let wsConfig = workspace.getConfiguration();
-    await wsConfig.update("coq-lsp.check_only_on_request", value);
+    let newValue = !wsConfig.get<boolean>("coq-lsp.check_only_on_request");
+    await wsConfig.update("coq-lsp.check_only_on_request", newValue);
+    languageStatus.updateStatus({ status: "Idle", mem: "" }, newValue);
   };
 
   // switches between the different status of the server
   const toggle = async () => {
     if (client && client.isRunning() && !serverConfig.check_only_on_request) {
       // Server on, and in continous mode, set lazy
-      await set_lazy_checking(true).then(updateStatusBar);
+      await toggle_lazy_checking().then(updateStatusBar);
     } else if (client && client.isRunning()) {
       // Server on, and in lazy mode, stop
       await stop();
     } else {
       // Server is off, set continous mode and start
-      await set_lazy_checking(false).then(start);
+      await toggle_lazy_checking().then(start);
     }
   };
 
@@ -438,6 +465,9 @@ export function activateCoqLSP(
     context.subscriptions.push(lspStatusItem);
   };
 
+  // This stuff should likely go in the CoqLSP client class
+  languageStatus = new CoqLanguageStatus(defaultVersion, defaultStatus, false);
+
   // Ali notes about the status item text: we should keep it short
   // We violate this on the error case, but only because it is exceptional.
   const updateStatusBar = () => {
@@ -477,6 +507,8 @@ export function activateCoqLSP(
   coqCommand("restart", restart);
   coqCommand("toggle", toggle);
   coqCommand("trim", cacheTrim);
+
+  coqCommand("toggle_mode", toggle_lazy_checking);
 
   coqEditorCommand("goals", goals);
   coqEditorCommand("document", getDocument);

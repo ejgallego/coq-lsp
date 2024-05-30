@@ -39,6 +39,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
 
 - [🎁 Features](#-features)
   - [⏩ Incremental Compilation and Continuous Document Checking](#-incremental-compilation-and-continuous-document-checking)
+  - [👁 On-demand, Follow The Viewport Document Checking](#-on-demand-follow-the-viewport-document-checking)
   - [🧠 Smart, Cache-Aware Error Recovery](#-smart-cache-aware-error-recovery)
   - [🥅 Whole-Document Goal Display](#-whole-document-goal-display)
   - [🗒️ Markdown Support](#️-markdown-support)
@@ -88,6 +89,14 @@ restart your proof session where you left it at the last time.
 
 Incremental support is undergoing refinement, if `coq-lsp` rechecks when it
 should not, please file a bug!
+
+### 👁 On-demand, Follow The Viewport Document Checking
+
+`coq-lsp` does also support on-demand checking. Two modes are available: follow
+the cursor, or follow the viewport; the modes can be toggled using the Language
+Status Item in Code's bottom right corner:
+
+<img alt="On-demand checking" height="572px" src="etc/img/on_demand.gif"/>
 
 ### 🧠 Smart, Cache-Aware Error Recovery
 

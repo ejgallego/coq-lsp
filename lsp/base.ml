@@ -138,6 +138,9 @@ module Message = struct
     | Notification n -> Notification.to_yojson n
     | Request r -> Request.to_yojson r
     | Response r -> Response.to_yojson r
+
+  let notification n = Notification n
+  let response r = Response r
 end
 
 module ProgressToken : sig

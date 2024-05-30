@@ -1,11 +1,6 @@
 # unreleased
 ------------
 
- - Added new heatmap feature allowing timing data to be seen in the
-   editor. Can be enabled with the `Coq LSP: Toggle heatmap`
-   comamnd. Can be configured to show memory usage. Colors and
-   granularity are configurable. (@Alizter and @ejgallego, #686,
-   grants #681).
  - new option `show_loc_info_on_hover` that will display parsing debug
    information on hover; previous flag was fixed in code, which is way
    less flexible. This also fixes the option being on in 0.1.8 by
@@ -132,19 +127,25 @@
    #697)
  - Always dispose UI elements. This should improve some strange
    behaviors on extension restart (@ejgallego, #708)
- - Support Coq meta-commands (Reset, Reset Initial, Back) They are
-   actually pretty useful to hint the incremental engine to ignore
-   changes in some part of the document (@ejgallego, #709)
+ - [code] Added new heatmap feature allowing timing data to be seen in
+   the editor. Can be enabled with the `Coq LSP: Toggle heatmap`
+   comamnd. Can be configured to show memory usage. Colors and
+   granularity are configurable. (@Alizter and @ejgallego, #686,
+   grants #681).
+ - [server] Support Coq meta-commands (Reset, Reset Initial, Back)
+   They are actually pretty useful to hint the incremental engine to
+   ignore changes in some part of the document (@ejgallego, #709)
  - JSON-RPC library now supports all kind of incoming messages
    (@ejgallego, #713)
- - New `coq/viewRange` notification, from client to server, than hints
-   the scheduler for the visible area of the document; combined with
-   the new lazy checking mode, this provides checking on scroll, a
-   feature inspired from Isabelle IDE (@ejgallego, #717)
- - Have VSCode wait for full LSP client shutdown on server
+ - [code/server] New `coq/viewRange` notification, from client to
+   server, than hints the scheduler for the visible area of the
+   document; combined with the new lazy checking mode, this provides
+   checking on scroll, a feature inspired from Isabelle IDE
+   (@ejgallego, #717)
+ - [code] Have VSCode wait for full LSP client shutdown on server
    restart. This fixes some bugs on extension restart (finally!)
    (@ejgallego, #719)
- - Center the view if cursor goes out of scope in
+ - [code] Center the view if cursor goes out of scope in
    `sentenceNext/sentencePrevious` (@ejgallego, #718)
  - Switch Flèche range encoding to protocol native, this means UTF-16
    code points for now (Léo Stefanesco, @ejgallego, #624, fixes #620,
@@ -154,7 +155,7 @@
    user navigates proofs (@Alidra @ejgallego, #722, #725)
  - `fcc`: new option `--diags_level` to control whether Coq's notice
    and info messages appear as diagnostics
- - Display the continous/on-request checking mode in the status bar,
+ - [code] Display the continous/on-request checking mode in the status bar,
    allow to change it by clicking on it (@ejgallego, #721)
  - Add an example of multiple workspaces (@ejgallego, @Blaisorblade,
    #611)
@@ -173,6 +174,10 @@
  - [petanque] Return extra premise information: file name, position,
    raw_text, using the above support for reading .glob files
    (@ejgallego, #735)
+ - [code] Display server status using the `LanguageStatusItem`
+   facility, for now we display version and checking status
+   information (moved from #721), and we also allow to toggle the
+   checking mode from there (@ejgallego, #728)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

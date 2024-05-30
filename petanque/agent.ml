@@ -84,7 +84,16 @@ let io =
   let diagnostics ~uri:_ ~version:_ _diags = () in
   let fileProgress ~uri:_ ~version:_ _pinfo = () in
   let perfData ~uri:_ ~version:_ _perf = () in
-  { Fleche.Io.CallBack.trace; message; diagnostics; fileProgress; perfData }
+  let serverVersion _ = () in
+  let serverStatus _ = () in
+  { Fleche.Io.CallBack.trace
+  ; message
+  ; diagnostics
+  ; fileProgress
+  ; perfData
+  ; serverVersion
+  ; serverStatus
+  }
 
 let read_raw ~uri =
   let file = Lang.LUri.File.to_string_file uri in
