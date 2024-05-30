@@ -33,7 +33,7 @@ have three options:
 See the contributing guide for instructions on how to perform the last
 two.
 
-## Using `petanque`
+## Running `petanque` JSON shell
 
 You can use `petanque` in 2 different ways:
 
@@ -84,3 +84,47 @@ Please use one line per json input. json input examples are:
 
 Seems to work! (TM) (Famous last words)
 
+## Running `pet-server`
+
+After building Petanque, you can launch a TCP server with:
+```
+dune exec -- pet-server
+```
+
+Default address is 127.0.0.1 and default port is 8765.
+
+```
+❯ dune exec -- pet-server --help
+PET(1)                            Pet Manual                            PET(1)
+
+NAME
+       pet - Petanque Server
+
+SYNOPSIS
+       pet [--address=ADDRESS] [--backlog=BACKLOG] [--port=PORT] [OPTION]…
+
+DESCRIPTION
+       Launch a petanque server to interact with Coq
+
+USAGE
+       See the documentation on the project's webpage for more information
+
+OPTIONS
+       -a ADDRESS, --address=ADDRESS (absent=127.0.0.1)
+           address to listen to
+
+       -b BACKLOG, --backlog=BACKLOG (absent=10)
+           socket backlog
+
+       -p PORT, --port=PORT (absent=8765)
+           port to listen to
+
+COMMON OPTIONS
+       --help[=FMT] (default=auto)
+           Show this help in format FMT. The value FMT must be one of auto,
+           pager, groff or plain. With auto, the format is pager or plain
+           whenever the TERM env var is dumb or undefined.
+
+       --version
+           Show version information.
+```

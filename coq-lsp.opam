@@ -54,6 +54,8 @@ depends: [
   "ppx_hash"            { >= "v0.13.0" & < "v0.17" }
 ]
 
+depopts: ["lwt" "logs"]
+
 build: [
   [ "rm" "-rf" "vendor" ]
   [ "dune" "build" "-p" name "-j" jobs ]

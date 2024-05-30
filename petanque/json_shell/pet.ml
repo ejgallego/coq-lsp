@@ -40,11 +40,6 @@ let message_notification ~lvl ~message =
   in
   Lsp.Io.send_json Format.std_formatter notification
 
-(* XXX: Flèche LSP backend already handles the conversion at the protocol
-   level *)
-let uri_of_string_exn uri =
-  Lang.LUri.of_string uri |> Lang.LUri.File.of_uri |> Result.get_ok
-
 let trace_enabled = true
 
 let pet_main debug roots =
@@ -54,19 +49,7 @@ let pet_main debug roots =
     Petanque.Agent.trace_ref := trace_notification;
     Petanque.Agent.message_ref := message_notification);
   let token = Coq.Limits.Token.create () in
-  let () =
-    match roots with
-    | [] -> ()
-    | [ root ] | root :: _ -> (
-      let root = uri_of_string_exn root in
-      match Petanque.Agent.init ~token ~debug ~root with
-      | Ok env ->
-        (* hack until we fix the stuff *)
-        let _ : Yojson.Safe.t = JAgent.Env.to_yojson env in
-        ()
-      | Error err ->
-        Format.eprintf "Error: %s@\n%!" (Petanque.Agent.Error.to_string err))
-  in
+  let () = Utils.set_roots ~token ~debug ~roots in
   loop ~token
 
 open Cmdliner
