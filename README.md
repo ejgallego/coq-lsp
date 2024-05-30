@@ -60,6 +60,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [✅ Vim](#-vim)
   - [🩱 Neovim](#-neovim)
   - [🐍 Python](#-python)
+- [⇨ `coq-lsp` users and extensions](#️-coq-lsp-users-and-extensions)
 - [🗣️ Discussion Channel](#️-discussion-channel)
 - [☎ Weekly Calls](#-weekly-calls)
 - [❓FAQ](#faq)
@@ -308,6 +309,17 @@ guide](./CONTRIBUTING.md)
 
 - Interact programmatically with Coq files by using the [Python `coq-lsp` client](https://github.com/sr-lab/coq-lsp-pyclient)
   by Pedro Carrott and Nuno Saavedra.
+
+## ⇨ `coq-lsp` users and extensions
+
+The below projects are using `coq-lsp`, we recommend you try them!
+
+- [CoqPilot uses Large Language Models to generate multiple potential proofs and then uses coq-lsp to typecheck them](https://github.com/JetBrains-Research/coqpilot).
+- [jsCoq: use Coq from your browser](https://github.com/jscoq/jscoq)
+- [Pytanque: a Python library implementing RL Environments](https://github.com/LLM4Coq/pytanque)
+- [ViZX: A Visualizer for the ZX Calculus](https://github.com/inQWIRE/ViZX).
+- [The Waterproof vscode extension helps students learn how to write mathematical proofs](https://github.com/impermeable/waterproof-vscode).
+- [Yade: Support for the YADE diagram editor in VSCode](https://github.com/amblafont/vscode-yade-example).
 
 ## 🗣️ Discussion Channel
 

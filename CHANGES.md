@@ -1,11 +1,6 @@
 # coq-lsp 0.1.9: Hasta el 40 de Mayo...
 ---------------------------------------
 
- - Added new heatmap feature allowing timing data to be seen in the
-   editor. Can be enabled with the `Coq LSP: Toggle heatmap`
-   comamnd. Can be configured to show memory usage. Colors and
-   granularity are configurable. (@Alizter and @ejgallego, #686,
-   grants #681).
  - new option `show_loc_info_on_hover` that will display parsing debug
    information on hover; previous flag was fixed in code, which is way
    less flexible. This also fixes the option being on in 0.1.8 by
@@ -70,6 +65,11 @@
    #348)
  - fix Coq performance view display (@ejgallego, #663, regression in
    #513)
+ - Added new heatmap feature allowing timing data to be seen in the
+   editor. Can be enabled with the `Coq LSP: Toggle heatmap`
+   command. Can be configured to show memory usage. Colors and
+   granularity are configurable. (@Alizter and @ejgallego, #686,
+   grants #681).
  - allow more than one input position in `selectionRange` LSP call
    (@ejgallego, #667, fixes #663)
  - new VSCode commands to allow to move one sentence backwards /
@@ -162,7 +162,7 @@
  - Support for `.lv / .v.tex` TeX files with embedded Coq code
    (@ejgallego, #727)
  - Don't expand bullet goals at previous levels by default
-   (@ejgallego, @Alizter, # cc #525)
+   (@ejgallego, @Alizter, #731 cc #525)
  - [petanque] Return basic goal information after `run_tac`, so we
    avoid a `goals` round-trip for each tactic (@gbdrt, @ejgallego,
    #733)
