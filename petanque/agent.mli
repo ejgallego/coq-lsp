@@ -78,7 +78,20 @@ val goals :
   -> st:State.t
   -> string Coq.Goals.reified_pp option R.t
 
+module Premise : sig
+  type t =
+    { full_name : string
+          (* should be a Coq DirPath, but let's go step by step *)
+    ; file : string (* file (in FS format) where the premise is found *)
+    ; kind : (string, string) Result.t (* type of object *)
+    ; range : (Lang.Range.t, string) Result.t (* a range if known *)
+    ; offset : (int * int, string) Result.t
+          (* a offset in the file if known (from .glob files) *)
+    ; raw_text : (string, string) Result.t (* raw text of the premise *)
+    }
+end
+
 (** Return the list of defined constants and inductives for a given state. For
     now we just return their fully qualified name, but more options are of
     course possible. *)
-val premises : token:Coq.Limits.Token.t -> st:State.t -> string list R.t
+val premises : token:Coq.Limits.Token.t -> st:State.t -> Premise.t list R.t

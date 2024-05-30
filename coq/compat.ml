@@ -105,6 +105,14 @@ module Result = struct
     let ( let+ ) r f = map f r
     let ( let* ) r f = bind r f
   end
+
+  let split = function
+    | Ok (x1, x2) -> (Ok x1, Ok x2)
+    | Error err -> (Error err, Error err)
+
+  let pp pp_r pp_e fmt = function
+    | Ok r -> Format.fprintf fmt "@[Ok: @[%a@]@]" pp_r r
+    | Error e -> Format.fprintf fmt "@[Error: @[%a@]@]" pp_e e
 end
 
 let format_to_file ~file ~f x =
