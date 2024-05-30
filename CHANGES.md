@@ -1,5 +1,5 @@
-# unreleased
-------------
+# coq-lsp 0.1.9: Hasta el 40 de Mayo...
+---------------------------------------
 
  - Added new heatmap feature allowing timing data to be seen in the
    editor. Can be enabled with the `Coq LSP: Toggle heatmap`
@@ -114,11 +114,9 @@
    (@ejgallego, @Alizter, #689, #693)
  - Better types `coq/perfData` call (@ejgallego @Alizter, #689)
  - New server option to enable / disable `coq/perfData` (@ejgallego, #689)
- - New cleint option to enable / disable `coq/perfData` (@ejgallego, #717)
+ - New client option to enable / disable `coq/perfData` (@ejgallego, #717)
  - The `coq-lsp.document` VSCode command will now display the returned
    JSON data in a new editor (@ejgallego, #701)
- - New server option to enable / disable `coq/perfData` (@ejgallego,
-   #689)
  - Update server settings on the fly when tweaking them in VSCode.
    Implement `workspace/didChangeConfiguration` (@ejgallego, #702)
  - [Coq API] Add functions to retrieve list of declarations done in
