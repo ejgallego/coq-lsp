@@ -19,6 +19,8 @@ module CallBack = struct
     ; fileProgress :
         uri:Lang.LUri.File.t -> version:int -> Progress.Info.t list -> unit
     ; perfData : uri:Lang.LUri.File.t -> version:int -> Perf.t -> unit
+    ; serverVersion : ServerInfo.Version.t -> unit
+    ; serverStatus : ServerInfo.Status.t -> unit
     }
 
   let default =
@@ -27,6 +29,8 @@ module CallBack = struct
     ; diagnostics = (fun ~uri:_ ~version:_ _ -> ())
     ; fileProgress = (fun ~uri:_ ~version:_ _ -> ())
     ; perfData = (fun ~uri:_ ~version:_ _ -> ())
+    ; serverVersion = (fun _ -> ())
+    ; serverStatus = (fun _ -> ())
     }
 
   let cb = ref default
@@ -52,4 +56,6 @@ module Report = struct
     io.CallBack.fileProgress ~uri ~version d
 
   let perfData ~io ~uri ~version pd = io.CallBack.perfData ~uri ~version pd
+  let serverVersion ~io vi = io.CallBack.serverVersion vi
+  let serverStatus ~io st = io.CallBack.serverStatus st
 end

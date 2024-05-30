@@ -28,7 +28,7 @@ val mk_progress :
      uri:Lang.LUri.File.t
   -> version:int
   -> Fleche.Progress.Info.t list
-  -> Yojson.Safe.t
+  -> Base.Notification.t
 
 module FileProgress : sig
   type t =
@@ -99,4 +99,8 @@ module DocumentPerfData : sig
 end
 
 val mk_perf :
-  uri:Lang.LUri.File.t -> version:int -> Fleche.Perf.t -> Yojson.Safe.t
+  uri:Lang.LUri.File.t -> version:int -> Fleche.Perf.t -> Base.Notification.t
+
+(* Server status notifications *)
+val mk_serverVersion : Fleche.ServerInfo.Version.t -> Base.Notification.t
+val mk_serverStatus : Fleche.ServerInfo.Status.t -> Base.Notification.t

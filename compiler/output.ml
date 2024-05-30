@@ -9,7 +9,6 @@ let pp_diags fmt dl =
 (* We will use this when we set eager diagnotics to true *)
 let diagnostics ~uri:_ ~version:_ _diags = ()
 let fileProgress ~uri:_ ~version:_ _progress = ()
-let perfData ~uri:_ ~version:_ _perf = ()
 
 (* We print trace and messages, and perfData summary *)
 module Fcc_verbose = struct
@@ -24,26 +23,30 @@ module Fcc_verbose = struct
   let perfData ~uri:_ ~version:_ { Fleche.Perf.summary; _ } =
     Format.(eprintf "[perfdata]@\n@[%s@]@\n%!" summary)
 
+  let serverVersion _ = ()
+  let serverStatus _ = ()
+
   let cb =
-    Fleche.Io.CallBack.{ trace; message; diagnostics; fileProgress; perfData }
+    Fleche.Io.CallBack.
+      { trace
+      ; message
+      ; diagnostics
+      ; fileProgress
+      ; perfData
+      ; serverVersion
+      ; serverStatus
+      }
 end
 
 (* We print trace, messages *)
 module Fcc_normal = struct
   let trace _ ?extra:_ _ = ()
-  let message = Fcc_verbose.message
-  let perfData = Fcc_verbose.perfData
-
-  let cb =
-    Fleche.Io.CallBack.{ trace; message; diagnostics; fileProgress; perfData }
+  let cb = { Fcc_verbose.cb with trace }
 end
 
 module Fcc_quiet = struct
-  let trace _ ?extra:_ _ = ()
   let message ~lvl:_ ~message:_ = ()
-
-  let cb =
-    Fleche.Io.CallBack.{ trace; message; diagnostics; fileProgress; perfData }
+  let cb = { Fcc_normal.cb with message }
 end
 
 let set_callbacks (display : Args.Display.t) =
