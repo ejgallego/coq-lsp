@@ -7,6 +7,14 @@ type t
 (** Logical path of the library *)
 val name : t -> Names.DirPath.t
 
+module Entry : sig
+  type t =
+    { name : string
+    ; typ : Constr.t
+    ; file : string
+    }
+end
+
 (** [toc libs] Returns the list of constants and inductives found on .vo
     libraries [libs], as pairs of [name, typ]. Note that the constants are
     returned in the order they appear on the file.
@@ -24,7 +32,7 @@ val toc :
      token:Limits.Token.t
   -> st:State.t
   -> t list
-  -> ((string * Constr.t) list, Loc.t) Protect.E.t
+  -> (Entry.t list, Loc.t) Protect.E.t
 
 (** Recovers the list of loaded libraries for state [st] *)
 val loaded : token:Limits.Token.t -> st:State.t -> (t list, Loc.t) Protect.E.t

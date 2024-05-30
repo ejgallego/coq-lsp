@@ -168,6 +168,11 @@
  - [petanque] Return basic goal information after `run_tac`, so we
    avoid a `goals` round-trip for each tactic (@gbdrt, @ejgallego,
    #733)
+ - [coq] Add support for reading glob files metadata (@ejgallego,
+   #735)
+ - [petanque] Return extra premise information: file name, position,
+   raw_text, using the above support for reading .glob files
+   (@ejgallego, #735)
 
 # coq-lsp 0.1.8.1: Spring fix
 -----------------------------

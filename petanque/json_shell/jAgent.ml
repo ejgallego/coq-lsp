@@ -33,3 +33,13 @@ end
 module Goals = struct
   type t = string Lsp.JCoq.Goals.reified_pp option [@@deriving yojson]
 end
+
+module Lang = struct
+  module Range = struct
+    type t = Lsp.JLang.Range.t [@@deriving yojson]
+  end
+end
+
+module Premise = struct
+  type t = [%import: Petanque.Agent.Premise.t] [@@deriving yojson]
+end

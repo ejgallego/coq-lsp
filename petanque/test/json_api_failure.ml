@@ -18,7 +18,7 @@ let extract_st (st : Protocol.RunTac.Response.t) =
   | Proof_finished st | Current_state st -> st
 
 let run (ic, oc) =
-  let open Fleche.Compat.Result.O in
+  let open Coq.Compat.Result.O in
   let debug = false in
   let module S = Client.S (struct
     let ic = ic

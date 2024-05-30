@@ -17,8 +17,28 @@ let extract_st (st : Protocol.RunTac.Response.t) =
   match st with
   | Proof_finished st | Current_state st -> st
 
+let pp_offset fmt (bp, ep) = Format.fprintf fmt "(%d,%d)" bp ep
+
+let pp_res_str =
+  Coq.Compat.Result.pp Format.pp_print_string Format.pp_print_string
+
+let pp_premise fmt
+    { Petanque.Agent.Premise.full_name
+    ; kind
+    ; file
+    ; range = _
+    ; offset
+    ; raw_text
+    } =
+  Format.(
+    fprintf fmt
+      "@[{ name = %s;@ file = %s;@ kind = %a;@ offset = %a;@ raw_text = %a}@]@\n"
+      full_name file pp_res_str kind
+      (Coq.Compat.Result.pp pp_offset pp_print_string)
+      offset pp_res_str raw_text)
+
 let run (ic, oc) =
-  let open Fleche.Compat.Result.O in
+  let open Coq.Compat.Result.O in
   let debug = false in
   let module S = Client.S (struct
     let ic = ic
@@ -34,7 +54,8 @@ let run (ic, oc) =
   let root, uri = prepare_paths () in
   let* env = S.init { debug; root } in
   let* st = S.start { env; uri; thm = "rev_snoc_cons" } in
-  let* _premises = S.premises { st } in
+  let* premises = S.premises { st } in
+  Format.(eprintf "@[%a@]@\n%!" (pp_print_list pp_premise) premises);
   let* st = S.run_tac { st; tac = "induction l." } in
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"reflexivity." in

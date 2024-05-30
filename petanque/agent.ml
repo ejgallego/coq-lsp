@@ -88,7 +88,7 @@ let io =
 
 let read_raw ~uri =
   let file = Lang.LUri.File.to_string_file uri in
-  try Ok Fleche.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
+  try Ok Coq.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
   with Sys_error err -> Error err
 
 let find_thm ~(doc : Fleche.Doc.t) ~thm =
@@ -113,7 +113,7 @@ let init ~token ~debug ~root =
   let init = init_coq ~debug in
   Fleche.Io.CallBack.set io;
   let dir = Lang.LUri.File.to_string_file root in
-  (let open Fleche.Compat.Result.O in
+  (let open Coq.Compat.Result.O in
    let+ workspace = Coq.Workspace.guess ~token ~debug ~cmdline ~dir in
    let files = Coq.Files.make () in
    Fleche.Doc.Env.make ~init ~workspace ~files)
@@ -177,9 +177,81 @@ let goals ~token ~st =
   in
   Coq.Protect.E.map ~f (Fleche.Info.Goals.goals ~token ~st) |> protect_to_result
 
+module Premise = struct
+  type t =
+    { full_name : string
+          (* should be a Coq DirPath, but let's go step by step *)
+    ; file : string (* file (in FS format) where the premise is found *)
+    ; kind : (string, string) Result.t (* type of object *)
+    ; range : (Lang.Range.t, string) Result.t (* a range if known *)
+    ; offset : (int * int, string) Result.t
+          (* a offset in the file if known (from .glob files) *)
+    ; raw_text : (string, string) Result.t (* raw text of the premise *)
+    }
+end
+
+(* We need some caching here otherwise it is very expensive to re-parse the glob
+   files all the time.
+
+   XXX move this caching to Flèche. *)
+module Memo = struct
+  module H = Hashtbl.Make (CString)
+
+  let table_glob = H.create 1000
+
+  let open_file glob =
+    match H.find_opt table_glob glob with
+    | Some g -> g
+    | None ->
+      let g = Coq.Glob.open_file glob in
+      H.add table_glob glob g;
+      g
+
+  let table_source = H.create 1000
+
+  let input_source file =
+    match H.find_opt table_source file with
+    | Some res -> res
+    | None ->
+      if Sys.file_exists file then (
+        let res =
+          Ok Coq.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
+        in
+        H.add table_source file res;
+        res)
+      else
+        let res = Error "source file is not available" in
+        H.add table_source file res;
+        res
+end
+
+let info_of ~glob ~name =
+  let open Coq.Compat.Result.O in
+  let* g = Memo.open_file glob in
+  let+ { Coq.Glob.Info.kind; offset } = Coq.Glob.get_info g name in
+  (kind, offset)
+
+let raw_of ~file ~offset =
+  match offset with
+  | Ok (bp, ep) ->
+    let open Coq.Compat.Result.O in
+    let* c = Memo.input_source file in
+    if String.length c < ep then Error "offset out of bounds"
+    else Ok (String.sub c bp (ep - bp + 1))
+  | Error err -> Error ("offset information is not available: " ^ err)
+
+let to_premise (p : Coq.Library_file.Entry.t) : Premise.t =
+  let { Coq.Library_file.Entry.name; typ = _; file } = p in
+  let file = Filename.(remove_extension file ^ ".v") in
+  let glob = Filename.(remove_extension file ^ ".glob") in
+  let range = Error "not implemented yet" in
+  let kind, offset = info_of ~glob ~name |> Coq.Compat.Result.split in
+  let raw_text = raw_of ~file ~offset in
+  { full_name = name; file; kind; range; offset; raw_text }
+
 let premises ~token ~st =
   (let open Coq.Protect.E.O in
    let* all_libs = Coq.Library_file.loaded ~token ~st in
    let+ all_premises = Coq.Library_file.toc ~token ~st all_libs in
-   List.map fst all_premises)
+   List.map to_premise all_premises)
   |> protect_to_result

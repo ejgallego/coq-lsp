@@ -166,7 +166,7 @@ module Premises = struct
   end
 
   module Response = struct
-    type t = string list [@@deriving yojson]
+    type t = Premise.t list [@@deriving yojson]
   end
 
   module Handler = struct

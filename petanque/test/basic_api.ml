@@ -21,7 +21,7 @@ let start ~token =
   Petanque.Agent.trace_ref := trace;
   Petanque.Agent.message_ref := message;
   (* Will this work on Windows? *)
-  let open Fleche.Compat.Result.O in
+  let open Coq.Compat.Result.O in
   let root, uri = prepare_paths () in
   let* env = Agent.init ~token ~debug ~root in
   Agent.start ~token ~env ~uri ~thm:"rev_snoc_cons"
@@ -31,7 +31,7 @@ let extract_st (st : _ Agent.Run_result.t) =
   | Proof_finished st | Current_state st -> st
 
 let main () =
-  let open Fleche.Compat.Result.O in
+  let open Coq.Compat.Result.O in
   let token = Coq.Limits.create_atomic () in
   let r ~st ~tac =
     let st = extract_st st in
