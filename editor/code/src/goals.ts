@@ -38,7 +38,12 @@ export class InfoPanel {
 
   constructor(extensionUri: Uri) {
     this.extensionUri = extensionUri;
-    this.panelFactory();
+
+    // We don't create the panel until we actually try to show
+    // something on it; this will fix the panel appearing when the
+    // extension is actived but actually chooses not to handle a file, cc #737
+
+    // this.panelFactory();
   }
 
   dispose() {

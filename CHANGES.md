@@ -2,7 +2,9 @@
 -----------------------------------------------------
 
  - [code] Add `.v.tex` file extension to contributed language support
-   (@ejgallego, #).
+   (@ejgallego, #740).
+ - [code] Don't show the panel on extension activation (@ejgallego,
+   #741, fix #737)
 
 # coq-lsp 0.1.9: Hasta el 40 de Mayo...
 ---------------------------------------
