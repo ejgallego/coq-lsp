@@ -64,7 +64,7 @@ let mk_progress ~uri ~version processing =
     FileProgress.to_yojson { FileProgress.textDocument; processing }
     |> Yojson.Safe.Util.to_assoc
   in
-  Base.Notification.(make ~method_:"$/coq/fileProgress" ~params () |> to_yojson)
+  Base.Notification.make ~method_:"$/coq/fileProgress" ~params ()
 
 module Message = struct
   type 'a t =
@@ -141,4 +141,22 @@ let mk_perf ~uri ~version perf =
     DocumentPerfData.(
       to_yojson { textDocument; summary; timings } |> Yojson.Safe.Util.to_assoc)
   in
-  Base.Notification.(make ~method_:"$/coq/filePerfData" ~params () |> to_yojson)
+  Base.Notification.make ~method_:"$/coq/filePerfData" ~params ()
+
+module ServerVersion = struct
+  type t = [%import: Fleche.ServerInfo.Version.t] [@@deriving yojson]
+end
+
+let mk_serverVersion vi =
+  let params = ServerVersion.to_yojson vi |> Yojson.Safe.Util.to_assoc in
+  Base.Notification.make ~method_:"$/coq/serverVersion" ~params ()
+
+let mk_serverStatus (st : Fleche.ServerInfo.Status.t) =
+  let params =
+    match st with
+    | Stopped -> [ ("status", `String "Stopped") ]
+    | Idle mem -> [ ("status", `String "Idle"); ("mem", `String mem) ]
+    | Running modname ->
+      [ ("status", `String "Busy"); ("modname", `String modname) ]
+  in
+  Base.Notification.make ~method_:"$/coq/serverStatus" ~params ()

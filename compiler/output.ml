@@ -9,7 +9,6 @@ let pp_diags fmt dl =
 (* We will use this when we set eager diagnotics to true *)
 let diagnostics ~uri:_ ~version:_ _diags = ()
 let fileProgress ~uri:_ ~version:_ _progress = ()
-let perfData ~uri:_ ~version:_ _perf = ()
 
 (* We print trace and messages, and perfData summary *)
 module Fcc_verbose = struct
@@ -24,26 +23,30 @@ module Fcc_verbose = struct
   let perfData ~uri:_ ~version:_ { Fleche.Perf.summary; _ } =
     Format.(eprintf "[perfdata]@\n@[%s@]@\n%!" summary)
 
+  let serverVersion _ = ()
+  let serverStatus _ = ()
+
   let cb =
-    Fleche.Io.CallBack.{ trace; message; diagnostics; fileProgress; perfData }
+    Fleche.Io.CallBack.
+      { trace
+      ; message
+      ; diagnostics
+      ; fileProgress
+      ; perfData
+      ; serverVersion
+      ; serverStatus
+      }
 end
 
 (* We print trace, messages *)
 module Fcc_normal = struct
   let trace _ ?extra:_ _ = ()
-  let message = Fcc_verbose.message
-  let perfData = Fcc_verbose.perfData
-
-  let cb =
-    Fleche.Io.CallBack.{ trace; message; diagnostics; fileProgress; perfData }
+  let cb = { Fcc_verbose.cb with trace }
 end
 
 module Fcc_quiet = struct
-  let trace _ ?extra:_ _ = ()
   let message ~lvl:_ ~message:_ = ()
-
-  let cb =
-    Fleche.Io.CallBack.{ trace; message; diagnostics; fileProgress; perfData }
+  let cb = { Fcc_normal.cb with message }
 end
 
 let set_callbacks (display : Args.Display.t) =
@@ -56,16 +59,18 @@ let set_callbacks (display : Args.Display.t) =
   Fleche.Io.CallBack.set cb;
   cb
 
-let set_config ~perfData =
+let set_config ~perfData ~coq_diags_level =
+  let show_coq_info_messages = coq_diags_level > 1 in
+  let show_notices_as_diagnostics = coq_diags_level > 0 in
   Fleche.Config.(
     v :=
       { !v with
         send_perf_data = perfData
       ; eager_diagnostics = false
-      ; show_coq_info_messages = true
-      ; show_notices_as_diagnostics = true
+      ; show_coq_info_messages
+      ; show_notices_as_diagnostics
       })
 
-let init display ~perfData =
-  set_config ~perfData;
+let init ~display ~coq_diags_level ~perfData =
+  set_config ~perfData ~coq_diags_level;
   set_callbacks display

@@ -14,6 +14,8 @@ type t =
   ; plugins : string list  (** Flèche plugins to load *)
   ; max_errors : int option
         (** Maximum erros before aborting the compilation *)
+  ; coq_diags_level : int
+        (** Whether to include feedback messages in the diagnostics *)
   }
 
 let compute_default_plugins ~no_vo ~plugins =

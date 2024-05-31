@@ -1,3 +1,87 @@
+# coq-lsp 0.1.9: Hasta el 40 de Mayo...
+---------------------------------------
+
+ - new configuration value `check_only_on_request` which will delay
+   checking the document until a request has been made. This means
+   users can now switch between continuous and on-demand modes. (#629,
+   cc: #24, @ejgallego)
+ - display the continous/on-request checking mode in the status bar,
+   allow to change it by clicking on it (@ejgallego, #721)
+ - new Coq Language Status Item that display server status, version,
+   and memory use. We recommend the users to pin it.
+ - new heatmap feature allowing timing data to be seen in the
+   editor. use the `Coq LSP: Toggle heatmap` command. Colors and
+   granularity are configurable, see settings (@Alizter, #686)
+ - new VSCode commands to allow to move one sentence backwards /
+   forward, this is particularly useful when combined with lazy
+   checking mode (@ejgallego, #671, fixes #263, fixes #580)
+ - VSCode commands `coq-lsp.sentenceNext` / `coq-lsp.sentencePrevious`
+   are now bound by default to `Alt + N` / `Alt + P` keybindings
+   (@ejgallego, #718)
+ - new option `show_loc_info_on_hover` that will display parsing debug
+   information on hover
+ - fix activation bug that prevented extension activation for `.mv`
+   files (@ejgallego @r3m0t, #598, cc #596, reported by Théo Zimmerman)
+ - require VSCode >= 1.82 in package.json. (@ejgallego, #599,
+   thanks to Théo Zimmerman for the report)
+ - update progress indicator correctly on End Of File (@ejgallego,
+   #605, fixes #445)
+ - switch default of `goal_after_tactic` to `true` (@Alizter,
+   @ejgallego, cc: #614)
+ - error recovery: Recognize `Defined` and `Admitted` in lex recovery
+   (@ejgallego, #616)
+ - don't trigger the goals window in general markdown buffer
+   (@ejgallego, #625, reported by Théo Zimmerman)
+ - fix typo on package.json configuration section (@ejgallego, #645)
+ - support for Coq 8.16 has been abandoned due to lack of dev
+   resources (@ejgallego, #649)
+ - new "Coq LSP: Free Memory" command to liberate space used in the
+   cache (@ejgallego, #662, fixes #367 cc: #253 #236 #348)
+ - fix Coq performance view display panel (@ejgallego, #663,
+   regression in #513)
+ - new public VSCode extension API so other extensions can perform
+   actions when the user request the goals (@ejgallego, @bhaktishh,
+   #672, fixes #538)
+ - Support Visual Studio Live Share URIs better (`vsls://`), in
+   particular don't try to display goals if the URI is VSLS one
+   (@ejgallego, #676)
+ - Send performance performance data for the full document
+   (@ejgallego, @Alizter, #689, #693)
+ - New client option to enable / disable `coq/perfData` (@ejgallego, #717)
+ - The `coq-lsp.document` VSCode command will now display the returned
+   JSON data in a new editor (@ejgallego, #701)
+ - Update server settings on the fly when tweaking them in VSCode.
+   Implement `workspace/didChangeConfiguration` (@ejgallego, #702)
+ - Always dispose UI elements. This should improve some strange
+   behaviors on extension restart (@ejgallego, #708)
+ - Support Coq meta-commands (Reset, Reset Initial, Back) They are
+   actually pretty useful to hint the incremental engine to ignore
+   changes in some part of the document (@ejgallego, #709)
+ - New `coq/viewRange` notification, from client to server, than hints
+   the scheduler for the visible area of the document; combined with
+   the new lazy checking mode, this provides checking on scroll, a
+   feature inspired from Isabelle IDE (@ejgallego, #717)
+ - Have VSCode wait for full LSP client shutdown on server
+   restart. This fixes some bugs on extension restart (finally!)
+   (@ejgallego, #719)
+ - Center the view if cursor goes out of scope in
+   `sentenceNext/sentencePrevious` (@ejgallego, #718)
+ - Switch Flèche range encoding to protocol native, this means UTF-16
+   code points for now (Léo Stefanesco, @ejgallego, #624, fixes #620,
+   #621)
+ - Give `Goals` panel focus back if it has lost it (in case of
+   multiple panels in the second viewColumn of Vscode) whenever
+   user navigates proofs (@Alidra @ejgallego, #722, #725)
+ - Add an example of multiple workspaces (@ejgallego, @Blaisorblade,
+   #611)
+ - Don't show types of un-expanded goals. We should add an option for
+   this, but we don't have the cycles (@ejgallego, #730, workarounds
+   #525 #652)
+ - Support for `.lv / .v.tex` TeX files with embedded Coq code
+   (@ejgallego, #727)
+ - Don't expand bullet goals at previous levels by default
+   (@ejgallego, @Alizter, #731 cc #525)
+
 # coq-lsp 0.1.8: Trick-or-treat
 -------------------------------
 

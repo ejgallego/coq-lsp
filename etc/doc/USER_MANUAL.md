@@ -39,9 +39,14 @@ facilities. In VSCode, these settings can be usually displayed in the
   disables some useful features such as `documentSymbol` as they can
   only be implemented by checking the full file.
 
-  This mode provides the `check_on_scroll` option, which improves
+  This mode can use the `check_on_scroll` option, which improves
   latency by telling `coq-lsp` to check eagerly what is on view on
   user's screen.
+
+Users can change between on-demand/continuous mode by clicking on the
+"Coq language status" item in the bottom right corner for VSCode. We
+recommend pinning the language status item to see server status in
+real-time.
 
 ### Goal display
 
@@ -79,7 +84,24 @@ not fully completed. Also, you can work with bullets and `coq-lsp`
 will automatically admit unfinished ones, so you can follow the
 natural proof structure.
 
-## Settings
+### Server Status
+
+
+
+### Embedded Markdown and LaTeX documents
+
+`coq-lsp` supports checking of TeX and Markdown document with embedded
+Coq inside. As of today, to enable this feature you must:
+
+- **markdown**: open a file with `.mv` extension, `coq-lsp` will
+  recognize code blocks starting with ````coq`.
+- **TeX**: open a file with `.lv` extension, `coq-lsp` will recognize
+  code blocks delimited by `\begin{coq} ... \end{coq}`
+
+As of today, delimiters are expected at the beginning of the line,
+don't hesitate to request for further changes based on this feature.
+
+## Coq LSP Settings
 
 ### Goal display
 
@@ -91,7 +113,21 @@ A setting to have `coq-lsp` check documents continuously exists.
 
 ## Memory management
 
-## Advanced: Multiple workspaces
+You can tell the server to free up memory with the "Coq LSP: Free
+memory" command.
+
+## Advanced: Multiple Workspaces
+
+`coq-lsp` does support projects that combine multiple Coq project
+roots in a single workspace. That way, one can develop on several
+distinct Coq developments seamlessly.
+
+To enable this, use the "Add Folder" option in VSCode, where each root
+must be a folder containing a `_CoqProject` file.
+
+Check the example at
+[../../examples/multiple_workspaces/](../../examples/multiple_workspaces/)
+to see it in action!
 
 ## Interrupting coq-lsp
 
@@ -119,10 +155,13 @@ on Coq <= 8.19 do need to install a version of Coq with the backported
 fixes. See the information about Coq upstream bugs in the README for
 more information about available branches.
 
+`coq-lsp` will reject to enable the new interruption mode by default
+on Coq < 8.20 unless the `lsp` Coq branch version is detected.
+
 ## Advanced incremental tricks
 
 You can use the `Reset $id` and `Back $steps` commands to isolate
-parts of the document from each others in terms of rechecking.
+parts of the document from each other in terms of rechecking.
 
 For example, the command `Reset $id` will make the parts of the
 document after it use the state before the node `id` was found. Thus,

@@ -244,8 +244,17 @@ end = struct
         pending := pend_pop !pending;
         None
       | (None | Some _) as tgt ->
+        let uri_short =
+          Lang.LUri.File.to_string_file uri |> Filename.basename
+        in
         let target = Option.default Doc.Target.End tgt in
+        Io.Report.serverStatus ~io (ServerInfo.Status.Running uri_short);
         let doc = Doc.check ~io ~token ~target ~doc:handle.doc () in
+        let mem =
+          Format.asprintf "%a" Stats.pp_words
+            (Gc.((quick_stat ()).heap_words) |> Float.of_int)
+        in
+        Io.Report.serverStatus ~io (ServerInfo.Status.Idle mem);
         let requests = Handle.update_doc_info ~handle ~doc in
         if Doc.Completion.is_completed doc.completed then
           Register.Completed.fire ~io ~token ~doc;

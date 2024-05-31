@@ -25,4 +25,13 @@ module Result : sig
     val ( let+ ) : ('a, 'l) t -> ('a -> 'b) -> ('b, 'l) t
     val ( let* ) : ('a, 'l) t -> ('a -> ('b, 'l) t) -> ('b, 'l) t
   end
+
+  val split : ('a * 'b, 'e) t -> ('a, 'e) t * ('b, 'e) t
+
+  val pp :
+       (Format.formatter -> 'r -> unit)
+    -> (Format.formatter -> 'e -> unit)
+    -> Format.formatter
+    -> ('r, 'e) Result.t
+    -> unit
 end

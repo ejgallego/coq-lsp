@@ -1,5 +1,9 @@
 (** Initialize Console Output System *)
-val init : Args.Display.t -> perfData:bool -> Fleche.Io.CallBack.t
+val init :
+     display:Args.Display.t
+  -> coq_diags_level:int
+  -> perfData:bool
+  -> Fleche.Io.CallBack.t
 
 (** Report progress on file compilation *)
 (* val report : unit -> unit *)

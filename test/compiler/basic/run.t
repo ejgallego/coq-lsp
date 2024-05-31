@@ -113,22 +113,6 @@ Compile a dependent file without the dep being built
   b.v
   b.vo
   $ cat proj1/a.diags
-  {
-    "range": {
-      "start": { "line": 0, "character": 0 },
-      "end": { "line": 0, "character": 19 }
-    },
-    "severity": 4,
-    "message": "aa is defined"
-  }
-  {
-    "range": {
-      "start": { "line": 6, "character": 0 },
-      "end": { "line": 6, "character": 4 }
-    },
-    "severity": 4,
-    "message": "foo is defined"
-  }
   $ cat proj1/b.diags
   {
     "range": {
@@ -145,6 +129,47 @@ Compile a dependent file without the dep being built
     },
     "severity": 1,
     "message": "The reference a.aa was not found in the current environment."
+  }
+
+Compile a file with all messages:
+  $ rm -f proj1/a.{diags,vo}
+  $ fcc --root proj1 --diags_level=1 proj1/a.v
+  [message] Configuration loaded from Command-line arguments
+   - coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
+   - Modules [Coq.Init.Prelude] will be loaded by default
+   - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
+   - ocamlpath wasn't overriden
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
+  [message] compiling file proj1/a.v
+  $ cat proj1/a.diags
+  $ fcc --root proj1 --diags_level=2 proj1/a.v
+  [message] Configuration loaded from Command-line arguments
+   - coqlib is at: [TEST_PATH]
+     + coqcorelib is at: [TEST_PATH]
+   - Modules [Coq.Init.Prelude] will be loaded by default
+   - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
+   - ocamlpath wasn't overriden
+     + findlib config: [TEST_PATH]
+     + findlib default location: [TEST_PATH]
+  [message] compiling file proj1/a.v
+  $ cat proj1/a.diags
+  {
+    "range": {
+      "start": { "line": 0, "character": 0 },
+      "end": { "line": 0, "character": 19 }
+    },
+    "severity": 4,
+    "message": "aa is defined"
+  }
+  {
+    "range": {
+      "start": { "line": 6, "character": 0 },
+      "end": { "line": 6, "character": 4 }
+    },
+    "severity": 4,
+    "message": "foo is defined"
   }
 
 Use two workspaces

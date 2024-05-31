@@ -107,7 +107,7 @@ module Message = struct
       Response.Ok { id; result }
     | Some error ->
       let error = U.to_assoc error in
-      let code = int_field "message" error in
+      let code = int_field "code" error in
       let message = string_field "message" error in
       let data = None in
       Error { id; code; message; data }
@@ -138,6 +138,9 @@ module Message = struct
     | Notification n -> Notification.to_yojson n
     | Request r -> Request.to_yojson r
     | Response r -> Response.to_yojson r
+
+  let notification n = Notification n
+  let response r = Response r
 end
 
 module ProgressToken : sig
