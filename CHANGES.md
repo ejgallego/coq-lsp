@@ -1,3 +1,9 @@
+# coq-lsp 0.1.9.1: Hasta el 40 de Mayo _en effect_...
+-----------------------------------------------------
+
+ - [code] Add `.v.tex` file extension to contributed language support
+   (@ejgallego, #).
+
 # coq-lsp 0.1.9: Hasta el 40 de Mayo...
 ---------------------------------------
 
