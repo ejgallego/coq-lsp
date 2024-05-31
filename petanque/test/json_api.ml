@@ -39,6 +39,8 @@ let pp_premise fmt
       (Coq.Compat.Result.pp pp_offset pp_print_string)
       offset pp_res_str raw_text)
 
+let print_premises = false
+
 let run (ic, oc) =
   let open Coq.Compat.Result.O in
   let debug = false in
