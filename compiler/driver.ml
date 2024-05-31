@@ -36,12 +36,20 @@ let apply_config ~max_errors =
     max_errors
 
 let go ~int_backend args =
-  let { Args.cmdline; roots; display; debug; files; plugins; max_errors } =
+  let { Args.cmdline
+      ; roots
+      ; display
+      ; debug
+      ; files
+      ; plugins
+      ; max_errors
+      ; coq_diags_level
+      } =
     args
   in
   (* Initialize event callbacks, in testing don't do perfData *)
   let perfData = Option.is_empty fcc_test in
-  let io = Output.init display ~perfData in
+  let io = Output.init ~display ~perfData ~coq_diags_level in
   (* Initialize Coq *)
   let debug = debug || Fleche.Debug.backtraces || !Fleche.Config.v.debug in
   let root_state = coq_init ~debug in

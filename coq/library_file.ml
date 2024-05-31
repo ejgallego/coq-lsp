@@ -31,7 +31,7 @@ let iter_constructors indsp u fn env nconstr =
     fn (Names.GlobRef.ConstructRef (indsp, i)) typ
   done
 
-let ind_handler fn prefix (id, _) =
+let ind_handler fn prefix (id, (_obj : DeclareInd.Internal.inductive_obj)) =
   let open Names in
   let kn = KerName.make prefix.Nametab.obj_mp (Label.of_id id) in
   let mind = Global.mind_of_delta_kn kn in
@@ -83,8 +83,32 @@ let constructor_info (gref : Names.GlobRef.t) =
 let belongs_to_lib dps dp =
   List.exists (fun p -> Libnames.is_dirpath_prefix_of p dp) dps
 
-let toc dps : _ list =
-  let res = ref [] in
+module Entry = struct
+  type t =
+    { name : string
+    ; typ : Constr.t
+    ; file : string
+    }
+end
+
+let to_result ~f x =
+  try Ok (f x)
+  with exn when CErrors.noncritical exn ->
+    let iexn = Exninfo.capture exn in
+    Error iexn
+
+let try_locate_absolute_library dir =
+  let f = Loadpath.try_locate_absolute_library in
+  to_result ~f dir
+
+let find_v_file dir =
+  match try_locate_absolute_library dir with
+  (* EJGA: we want to improve this as to pass the error to the client *)
+  | Error _ -> "error when trying to locate the .v file"
+  | Ok file -> file
+
+let toc dps : Entry.t list =
+  let res : Entry.t list ref = ref [] in
   let obj_action =
     let fn_c (cst : Names.Constant.t) (_ : Decls.logical_kind) (typ : Constr.t)
         =
@@ -93,7 +117,8 @@ let toc dps : _ list =
         (* let () = F.eprintf "cst found: %s@\n%!" (Names.Constant.to_string
            cst) in *)
         let name = Names.Constant.to_string cst in
-        res := (name, typ) :: !res
+        let file = find_v_file cst_dp in
+        res := { name; typ; file } :: !res
       else ()
     in
     (* We do nothing for inductives, note this is called both on constructors
@@ -102,7 +127,9 @@ let toc dps : _ list =
       match constructor_info gref with
       | None -> ()
       | Some (ind_dp, name) ->
-        if belongs_to_lib dps ind_dp then res := (name, typ) :: !res
+        if belongs_to_lib dps ind_dp then
+          let file = find_v_file ind_dp in
+          res := { name; typ; file } :: !res
     in
     obj_action fn_c fn_i
   in

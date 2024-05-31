@@ -3,7 +3,8 @@ open Cmdliner
 open Fcc_lib
 
 let fcc_main int_backend roots display debug plugins files coqlib coqcorelib
-    ocamlpath rload_path load_path require_libraries no_vo max_errors =
+    ocamlpath rload_path load_path require_libraries no_vo max_errors
+    coq_diags_level =
   let vo_load_path = rload_path @ load_path in
   let ml_include_path = [] in
   let args = [] in
@@ -19,7 +20,16 @@ let fcc_main int_backend roots display debug plugins files coqlib coqcorelib
   in
   let plugins = Args.compute_default_plugins ~no_vo ~plugins in
   let args =
-    Args.{ cmdline; roots; display; files; debug; plugins; max_errors }
+    Args.
+      { cmdline
+      ; roots
+      ; display
+      ; files
+      ; debug
+      ; plugins
+      ; max_errors
+      ; coq_diags_level
+      }
   in
   Driver.go ~int_backend args
 
@@ -91,7 +101,7 @@ let fcc_cmd : int Cmd.t =
     Term.(
       const fcc_main $ int_backend $ roots $ display $ debug $ plugins $ file
       $ coqlib $ coqcorelib $ ocamlpath $ rload_paths $ qload_paths $ ri_from
-      $ no_vo $ max_errors)
+      $ no_vo $ max_errors $ coq_diags_level)
   in
   let exits = Exit_codes.[ fatal; stopped; scheduled; uri_failed ] in
   Cmd.(v (Cmd.info "fcc" ~exits ~version ~doc ~man) fcc_term)

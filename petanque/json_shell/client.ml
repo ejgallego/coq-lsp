@@ -48,7 +48,7 @@ let get_id () =
   !id_counter
 
 module Wrap (R : Protocol.Request.S) (C : Chans) : sig
-  val call : R.Params_.t -> (R.Response_.t, string) Result.t
+  val call : R.Params.t -> (R.Response.t, string) Result.t
 end = struct
   let trace = C.trace
   let message = C.message
@@ -56,14 +56,14 @@ end = struct
   let call params =
     let id = get_id () in
     let method_ = R.method_ in
-    let params = Yojson.Safe.Util.to_assoc (R.Params_.to_yojson params) in
+    let params = Yojson.Safe.Util.to_assoc (R.Params.to_yojson params) in
     let request =
       Lsp.Base.Request.(make ~id ~method_ ~params () |> to_yojson)
     in
     let () = Lsp.Io.send_json C.oc request in
     read_response ~trace ~message C.ic |> fun r ->
     Result.bind r (function
-      | Ok { id = _; result } -> R.Response_.of_yojson result
+      | Ok { id = _; result } -> R.Response.of_yojson result
       | Error { id = _; code = _; message; data = _ } -> Error message)
 end
 

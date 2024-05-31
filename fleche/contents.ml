@@ -57,6 +57,24 @@ module Markdown = struct
     String.concat "\n" lines
 end
 
+module LaTeX = struct
+  let gen l = String.make (String.length l) ' '
+
+  let rec tex_map_lines coq l =
+    match l with
+    | [] -> []
+    | l :: ls ->
+      (* opening vs closing a markdown block *)
+      let code_marker = if coq then "\\end{coq}" else "\\begin{coq}" in
+      if String.equal code_marker l then gen l :: tex_map_lines (not coq) ls
+      else (if coq then l else gen l) :: tex_map_lines coq ls
+
+  let process text =
+    let lines = String.split_on_char '\n' text in
+    let lines = tex_map_lines false lines in
+    String.concat "\n" lines
+end
+
 module WaterProof = struct
   open Fleche_waterproof.Json
 
@@ -124,6 +142,7 @@ let process_contents ~uri ~raw =
   let ext = Lang.LUri.File.extension uri in
   match ext with
   | ".v" -> R.Ok raw
+  | ".lv" | ".tex" -> R.Ok (LaTeX.process raw)
   | ".mv" -> R.Ok (Markdown.process raw)
   | ".wpn" -> WaterProof.process raw
   | _ -> R.Error "unknown file format"

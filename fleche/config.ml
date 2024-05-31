@@ -52,6 +52,8 @@ type t =
         (** Experimental setting to check document lazily *)
   ; send_diags_extra_data : bool [@default false]
         (** Send extra diagnostic data on the `data` diagnostic field. *)
+  ; send_serverStatus : bool [@default true]
+        (** Send server status client notification to the client *)
   }
 
 let default =
@@ -75,6 +77,7 @@ let default =
   ; send_diags = true
   ; check_only_on_request = false
   ; send_diags_extra_data = false
+  ; send_serverStatus = true
   }
 
 let v = ref default

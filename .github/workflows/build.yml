@@ -100,6 +100,7 @@ jobs:
 
       - name: Install Coq and SerAPI into OPAM switch
         run: |
+          opam install lwt logs # Also build pet-server
           opam install memprof-limits # We need to do this to avoid coq-lsp rebuilding Coq below due to deptops
           opam install vendor/coq/{coq-core,coq-stdlib,coqide-server,coq}.opam
           opam install vendor/coq-serapi/coq-serapi.opam
@@ -109,6 +110,9 @@ jobs:
 
       - name: Test `coq-lsp` in installed switch
         run: opam exec -- fcc examples/Demo.v
+
+      - name: Test `pet-server` is built
+        run: opam exec -- which pet-server
 
   client-compile:
     runs-on: ubuntu-latest

@@ -2,7 +2,7 @@
   "name": "coq-lsp",
   "displayName": "Coq LSP",
   "description": "Coq LSP provides native vsCode support for checking Coq proof documents",
-  "version": "0.1.9-dev",
+  "version": "0.1.9",
   "contributors": [
     "Emilio Jesús Gallego Arias <e@x80.org>",
     "Ali Caglayan <alizter@gmail.com>",
@@ -29,7 +29,8 @@
     "url": "https://github.com/ejgallego/coq-lsp"
   },
   "activationEvents": [
-    "onLanguage:markdown"
+    "onLanguage:markdown",
+    "onLanguage:latex"
   ],
   "contributes": {
     "languages": [
@@ -53,6 +54,15 @@
         ],
         "extensions": [
           ".mv"
+        ]
+      },
+      {
+        "id": "latex",
+        "aliases": [
+          "LaTeX"
+        ],
+        "extensions": [
+          ".lv"
         ]
       }
     ],
@@ -89,6 +99,10 @@
       {
         "command": "coq-lsp.toggle",
         "title": "Coq LSP: Toggle the running status of Coq Language Server"
+      },
+      {
+        "command": "coq-lsp.toggle_mode",
+        "title": "Coq LSP: Toggle checking mode between continous / on-demand"
       },
       {
         "command": "coq-lsp.goals",
@@ -294,13 +308,13 @@
           },
           "coq-lsp.check_only_on_request": {
             "type": "boolean",
-            "default": false,
-            "description": "Check files lazily, that is to say, goal state for a point will only be computed when the data is actually demanded. Note that this feature is experimental."
+            "default": true,
+            "description": "(Experimental) Check files lazily, that is to say, goal state for a point will only be computed when the data is actually demanded."
           },
           "coq-lsp.check_on_scroll": {
             "type": "boolean",
-            "default": false,
-            "description": "When in lazy mode, check files on scroll. Note that this feature is experimental."
+            "default": true,
+            "description": "(Experimental) When in lazy mode, check files on scroll."
           }
         }
       },

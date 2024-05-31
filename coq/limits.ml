@@ -57,8 +57,16 @@ let select = function
   | Coq -> backend := (module Coq)
   | Mp -> backend := (module Mp)
 
+(* Set this to false for 8.19 and lower *)
+let sane_coq_base_version = true
+
+let sane_coq_branch =
+  CString.string_contains ~where:Coq_config.version ~what:"+lsp"
+
+let safe_coq = sane_coq_base_version || sane_coq_branch
+
 let select_best = function
-  | None -> if Mp.available then select Mp else select Coq
+  | None -> if Mp.available && safe_coq then select Mp else select Coq
   | Some backend -> select backend
 
 module Token = struct

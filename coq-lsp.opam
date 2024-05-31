@@ -40,6 +40,8 @@ depends: [
   "coq-serapi"   { >= "8.18.0+0.18.2" < "8.19"  }
 ]
 
+depopts: ["lwt" "logs"]
+
 build: [
   [ "rm" "-rf" "vendor" ]
   [ "dune" "build" "-p" name "-j" jobs ]

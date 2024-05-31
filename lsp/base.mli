@@ -72,6 +72,9 @@ module Message : sig
     | Request of Request.t
     | Response of Response.t
   [@@deriving yojson]
+
+  val notification : Notification.t -> t
+  val response : Response.t -> t
 end
 
 (** Build request *)

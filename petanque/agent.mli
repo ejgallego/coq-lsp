@@ -37,6 +37,12 @@ module R : sig
   type 'a t = ('a, Error.t) Result.t
 end
 
+module Run_result : sig
+  type 'a t =
+    | Proof_finished of 'a
+    | Current_state of 'a
+end
+
 (** I/O handling, by default, print to stderr *)
 
 (** [trace header extra message] *)
@@ -61,7 +67,10 @@ val start :
 
 (** [run_tac ~token ~st ~tac] tries to run [tac] over state [st] *)
 val run_tac :
-  token:Coq.Limits.Token.t -> st:State.t -> tac:string -> State.t R.t
+     token:Coq.Limits.Token.t
+  -> st:State.t
+  -> tac:string
+  -> State.t Run_result.t R.t
 
 (** [goals ~token ~st] return the list of goals for a given [st] *)
 val goals :
@@ -69,7 +78,20 @@ val goals :
   -> st:State.t
   -> string Coq.Goals.reified_pp option R.t
 
+module Premise : sig
+  type t =
+    { full_name : string
+          (* should be a Coq DirPath, but let's go step by step *)
+    ; file : string (* file (in FS format) where the premise is found *)
+    ; kind : (string, string) Result.t (* type of object *)
+    ; range : (Lang.Range.t, string) Result.t (* a range if known *)
+    ; offset : (int * int, string) Result.t
+          (* a offset in the file if known (from .glob files) *)
+    ; raw_text : (string, string) Result.t (* raw text of the premise *)
+    }
+end
+
 (** Return the list of defined constants and inductives for a given state. For
     now we just return their fully qualified name, but more options are of
     course possible. *)
-val premises : token:Coq.Limits.Token.t -> st:State.t -> string list R.t
+val premises : token:Coq.Limits.Token.t -> st:State.t -> Premise.t list R.t
