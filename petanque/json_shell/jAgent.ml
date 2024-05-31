@@ -6,6 +6,8 @@ module Env = Obj_map.Make (Petanque.Agent.Env)
 
 (* The typical protocol dance *)
 
+(* What a mess result stuff is, we need this in case result is installed, as
+   then the types below will be referenced as plain result ... *)
 module Stdlib = struct
   module Result = struct
     include Stdlib.Result
@@ -14,9 +16,10 @@ module Stdlib = struct
   end
 end
 
-(* What a mess result stuff is, we need this in case result is installed, as
-   then the types below will be referenced as plain result ... *)
 module Result = Stdlib.Result
+
+(* ppx_import < 1.10 hack, for some reason it gets confused with the aliases. *)
+module Result_ = Stdlib.Result
 
 module Error = struct
   type t = [%import: Petanque.Agent.Error.t] [@@deriving yojson]
@@ -27,7 +30,13 @@ module Run_result = struct
 end
 
 module R = struct
-  type 'a t = [%import: 'a Petanque.Agent.R.t] [@@deriving yojson]
+  type 'a t =
+    [%import:
+      ('a Petanque.Agent.R.t
+      [@with
+        Stdlib.Result.t := Result_.t;
+        Result.t := Result_.t])]
+  [@@deriving yojson]
 end
 
 module Goals = struct
@@ -41,5 +50,11 @@ module Lang = struct
 end
 
 module Premise = struct
-  type t = [%import: Petanque.Agent.Premise.t] [@@deriving yojson]
+  type t =
+    [%import:
+      (Petanque.Agent.Premise.t
+      [@with
+        Stdlib.Result.t := Result_.t;
+        Result.t := Result_.t])]
+  [@@deriving yojson]
 end
