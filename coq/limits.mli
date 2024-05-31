@@ -10,7 +10,7 @@ module type Intf = sig
 
   val start : unit -> unit
   val limit : token:Token.t -> f:('a -> 'b) -> 'a -> ('b, exn) Result.t
-  val name : string
+  val name : unit -> string
   val available : bool
 end
 
@@ -24,5 +24,8 @@ type backend =
 
 (** *Must* be called *only* once *)
 val select : backend -> unit
+
+(** If [None] will pick the best backend, must be called only once *)
+val select_best : backend option -> unit
 
 val create_atomic : unit -> Token.t

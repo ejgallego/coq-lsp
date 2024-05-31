@@ -84,8 +84,22 @@ let ri_from : (string option * string) list Term.t =
         & info [ "rifrom"; "require-import-from" ] ~docv:"FROM,LIBRARY" ~doc))
 
 let int_backend =
-  let doc = "Select Interruption Backend" in
+  let doc =
+    "Select Interruption Backend, if absent, the best available for your OCaml \
+     version will be selected"
+  in
   Arg.(
     value
-    & opt (enum [ ("Coq", Limits.Coq); ("Mp", Limits.Mp) ]) Limits.Coq
+    & opt (enum [ ("Coq", Some Limits.Coq); ("Mp", Some Limits.Mp) ]) None
     & info [ "int_backend" ] ~docv:"INT_BACKEND" ~doc)
+
+let roots : string list Term.t =
+  let doc = "Workspace(s) root(s)" in
+  Arg.(value & opt_all string [] & info [ "root" ] ~docv:"ROOTS" ~doc)
+
+let coq_diags_level : int Term.t =
+  let doc =
+    "Controsl whether Coq Info and Notice message appear in diagnostics.\n\
+    \ 0 = None; 1 = Notices, 2 = Notices and Info"
+  in
+  Arg.(value & opt int 0 & info [ "diags_level" ] ~docv:"DIAGS_LEVEL" ~doc)

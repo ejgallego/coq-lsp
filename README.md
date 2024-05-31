@@ -20,6 +20,8 @@ document checking, advanced error recovery, hybrid Coq/markdown document
 support, multiple workspace support, positional goals and information panel,
 performance data, extensible command-line compiler, plugin system, and more.
 
+See the [coq-lsp User Manual](./etc/doc/USER_MANUAL.md) for more information.
+
 `coq-lsp` aims to provide a seamless, modern interactive theorem proving
 experience, as well as to serve as a maintainable platform for research and UI
 integration with other projects.
@@ -37,6 +39,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
 
 - [🎁 Features](#-features)
   - [⏩ Incremental Compilation and Continuous Document Checking](#-incremental-compilation-and-continuous-document-checking)
+  - [👁 On-demand, Follow The Viewport Document Checking](#-on-demand-follow-the-viewport-document-checking)
   - [🧠 Smart, Cache-Aware Error Recovery](#-smart-cache-aware-error-recovery)
   - [🥅 Whole-Document Goal Display](#-whole-document-goal-display)
   - [🗒️ Markdown Support](#️-markdown-support)
@@ -58,6 +61,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [✅ Vim](#-vim)
   - [🩱 Neovim](#-neovim)
   - [🐍 Python](#-python)
+- [⇨ `coq-lsp` users and extensions](#-coq-lsp-users-and-extensions)
 - [🗣️ Discussion Channel](#️-discussion-channel)
 - [☎ Weekly Calls](#-weekly-calls)
 - [❓FAQ](#faq)
@@ -86,6 +90,14 @@ restart your proof session where you left it at the last time.
 
 Incremental support is undergoing refinement, if `coq-lsp` rechecks when it
 should not, please file a bug!
+
+### 👁 On-demand, Follow The Viewport Document Checking
+
+`coq-lsp` does also support on-demand checking. Two modes are available: follow
+the cursor, or follow the viewport; the modes can be toggled using the Language
+Status Item in Code's bottom right corner:
+
+<img alt="On-demand checking" height="572px" src="etc/img/on_demand.gif"/>
 
 ### 🧠 Smart, Cache-Aware Error Recovery
 
@@ -181,6 +193,12 @@ fully-fledged LSP client.
 `fcc` has been designed to be machine-friendly and extensible, so you can easily
 add your pre/post processing passes, for example to analyze or serialize parts
 of Coq files.
+
+### 🪄 Advanced APIs for Coq Interaction
+
+Thanks to Flèche, we provide some APIs on top of it that allow advanced use
+cases with Coq. In particular, we provide direct, low-overhead access to Coq's
+proof engine using [petanque](./petanque).
 
 ### ♻️ Reusability, Standards, Modularity
 
@@ -301,6 +319,17 @@ guide](./CONTRIBUTING.md)
 - Interact programmatically with Coq files by using the [Python `coq-lsp` client](https://github.com/sr-lab/coq-lsp-pyclient)
   by Pedro Carrott and Nuno Saavedra.
 
+## ⇨ `coq-lsp` users and extensions
+
+The below projects are using `coq-lsp`, we recommend you try them!
+
+- [CoqPilot uses Large Language Models to generate multiple potential proofs and then uses coq-lsp to typecheck them](https://github.com/JetBrains-Research/coqpilot).
+- [jsCoq: use Coq from your browser](https://github.com/jscoq/jscoq)
+- [Pytanque: a Python library implementing RL Environments](https://github.com/LLM4Coq/pytanque)
+- [ViZX: A Visualizer for the ZX Calculus](https://github.com/inQWIRE/ViZX).
+- [The Waterproof vscode extension helps students learn how to write mathematical proofs](https://github.com/impermeable/waterproof-vscode).
+- [Yade: Support for the YADE diagram editor in VSCode](https://github.com/amblafont/vscode-yade-example).
+
 ## 🗣️ Discussion Channel
 
 `coq-lsp` discussion channel it at [Coq's
@@ -326,7 +355,7 @@ recommend that if you are installing via opam, you use the following branches
 that have some fixes backported:
 
 - For 8.20: No known problems
-- For 8.19: No known problems
+- For 8.19: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.19+lsp`
 - For 8.18: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.18+lsp`
 - For 8.17: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.17+lsp`
 - For 8.16: `opam pin add coq      https://github.com/ejgallego/coq.git#v8.16+lsp`

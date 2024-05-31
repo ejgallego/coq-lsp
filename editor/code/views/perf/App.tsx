@@ -1,5 +1,5 @@
 import { WebviewApi } from "vscode-webview";
-import React, { ReactElement, useEffect, useState } from "react";
+import { ReactElement, useEffect, useState } from "react";
 import {
   VSCodeDataGrid,
   VSCodeDataGridRow,
@@ -7,19 +7,42 @@ import {
 } from "@vscode/webview-ui-toolkit/react";
 import "./media/App.css";
 import { Range } from "vscode-languageserver-types";
-import { DocumentPerfParams } from "../../lib/types";
+import {
+  DocumentPerfParams,
+  PerfMessageEvent,
+  SentencePerfParams,
+} from "../../lib/types";
 
-const vscode: WebviewApi<DocumentPerfParams> = acquireVsCodeApi();
+const vscode: WebviewApi<DocumentPerfParams<Range>> = acquireVsCodeApi();
 
-let empty: DocumentPerfParams = {
+let empty: DocumentPerfParams<Range> = {
   textDocument: { uri: "", version: 0 },
   summary: "No Data Yet",
   timings: [],
 };
 
-let init = vscode.getState() || empty;
+function validateViewState(p: DocumentPerfParams<Range>) {
+  return (
+    p.textDocument &&
+    p.summary &&
+    p.timings &&
+    p.timings[0] &&
+    p.timings[0].range &&
+    p.timings[0].info
+  );
+}
 
-interface CoqMessageEvent extends MessageEvent {}
+function validOrEmpty(
+  p: DocumentPerfParams<Range> | undefined
+): DocumentPerfParams<Range> {
+  // XXX We need to be careful here, when we update the
+  // DocumentPerfParams<Range> data type, the saved data here will make the
+  // view crash
+  if (p && validateViewState(p)) return p;
+  else return empty;
+}
+
+let init = validOrEmpty(vscode.getState());
 
 function printWords(w: number) {
   if (w < 1024) {
@@ -31,29 +54,55 @@ function printWords(w: number) {
   }
 }
 
-function SentencePerfCell({ field, value }) {
+// XXX: Would be nice to have typing here, but...
+interface PerfCellP {
+  field: keyof SentencePerfParams<Range> | string;
+  value: any;
+}
+
+function SentencePerfCell({ field, value }: PerfCellP) {
   switch (field) {
-    case "loc":
+    case "range":
       let r = value as Range;
       return (
         <span>{`l: ${r.start.line} c: ${r.start.character} -- l: ${r.end.line} c: ${r.end.character}`}</span>
       );
+    case "time_hash":
     case "time":
       return <span>{`${value.toFixed(4).toString()} secs`}</span>;
-    case "mem":
+    case "memory":
       return <span>{printWords(value)}</span>;
+    case "cache_hit":
+      return <span>{value ? "True" : "False"}</span>;
     default:
       return null;
   }
 }
-function SentencePerfRow({ idx, value }) {
+
+interface PerfParamsP {
+  idx: number;
+  value: SentencePerfParams<Range>;
+}
+
+function perfFlatten(v: SentencePerfParams<Range>) {
+  return {
+    range: v.range,
+    time: v.info.time,
+    memory: v.info.memory,
+    cache_hit: v.info.cache_hit,
+    time_hash: v.info.time_hash,
+  };
+}
+
+function SentencePerfRow({ idx, value }: PerfParamsP) {
+  console.log(value);
   return (
     <VSCodeDataGridRow key={idx + 1}>
       <>
-        {Object.entries(value).map(([field, _value], idx) => {
+        {Object.entries(perfFlatten(value)).map(([field, value], idx) => {
           return (
             <VSCodeDataGridCell key={idx + 1} grid-column={idx + 1}>
-              <SentencePerfCell field={field} value={value[field]} />
+              <SentencePerfCell field={field} value={value} />
             </VSCodeDataGridCell>
           );
         })}
@@ -62,13 +111,29 @@ function SentencePerfRow({ idx, value }) {
   );
 }
 
+function timeCmp(t1: SentencePerfParams<Range>, t2: SentencePerfParams<Range>) {
+  return t2.info.time - t1.info.time;
+}
+
+function viewSort(p: DocumentPerfParams<Range>) {
+  let textDocument = p.textDocument;
+  let summary = p.summary;
+  let tlength = p.timings.length;
+  let timings = Array.from(p.timings)
+    .sort(timeCmp)
+    .slice(0, Math.min(30, tlength));
+  return { textDocument, summary, timings };
+}
+
 function App() {
   let [perfData, setPerfData] = useState(init);
 
-  function viewDispatch(event: CoqMessageEvent) {
+  function viewDispatch(event: PerfMessageEvent) {
     switch (event.data.method) {
       case "update":
-        vscode.setState(event.data.params);
+        if (!validateViewState(event.data.params)) break;
+        let data = viewSort(event.data.params);
+        vscode.setState(data);
         setPerfData(event.data.params);
         break;
       case "reset":
@@ -92,19 +157,19 @@ function App() {
       <VSCodeDataGrid aria-label="Timing Information">
         <VSCodeDataGridRow key={0} rowType="sticky-header">
           <>
-            {Object.entries(perfData.timings[0] ?? []).map(
-              ([field, _value], idx) => {
-                return (
-                  <VSCodeDataGridCell
-                    key={field}
-                    grid-column={idx + 1}
-                    cell-type="columnheader"
-                  >
-                    {field}
-                  </VSCodeDataGridCell>
-                );
-              }
-            )}
+            {Object.entries(
+              perfData.timings[0] ? perfFlatten(perfData.timings[0]) : {}
+            ).map(([field, _value], idx) => {
+              return (
+                <VSCodeDataGridCell
+                  key={field}
+                  grid-column={idx + 1}
+                  cell-type="columnheader"
+                >
+                  {field}
+                </VSCodeDataGridCell>
+              );
+            })}
           </>
         </VSCodeDataGridRow>
         <>

@@ -52,6 +52,7 @@ If a feature doesn't appear here it usually means it is not planned in the short
 |---------------------------------------|---------|------------------------------------------------------------|
 | `workspace/workspaceFolders`          | Yes     | Each folder should have a `_CoqProject` file at the root.  |
 | `workspace/didChangeWorkspaceFolders` | Yes     |                                                            |
+| `workspace/didChangeConfiguration`    | Yes (*) | We still do a client -> server push, instead of pull       |
 |---------------------------------------|---------|------------------------------------------------------------|
 
 ### URIs accepted by coq-lsp
@@ -138,6 +139,8 @@ interface GoalAnswer<Pp> {
   error?: Pp;
   program?: ProgramInfo;
 }
+
+const goalReq : RequestType<GoalRequest, GoalAnswer<PpString>, void>
 ```
 
 which can be then rendered by the client in way that is desired.
@@ -268,6 +271,8 @@ interface FlecheDocument {
     spans: RangedSpan[];
     completed : CompletionStatus
 };
+
+const docReq : RequestType<FlecheDocumentParams, FlecheDocument, void>
 ```
 
 #### Changelog
@@ -298,28 +303,142 @@ The request will return `null`, or fail if not successful.
 ### Performance Data Notification
 
 The `$/coq/filePerfData` notification is sent from server to client
-when the checking completes, and includes information about execution
-hotspots and memory use by sentences.
+when the checking completes (if the server-side `send_perf_data`
+option is enabled); it includes information about execution hotspots,
+caching, and memory use by sentences:
 
 ```typescript
-export interface SentencePerfParams {
-    loc: Loc,
-    time: number,
-    mem, number
+interface PerfInfo {
+  // Original Execution Time (when not cached)
+  time: number;
+  // Difference in words allocated in the heap using `Gc.quick_stat`
+  memory: number;
+  // Whether the execution was cached
+  cache_hit: boolean;
+  // Caching overhead
+  time_hash: number;
 }
 
-export interface DocumentPerfParams {
+interface SentencePerfParams<R> {
+  range: R;
+  info: PerfInfo;
+}
+
+interface DocumentPerfParams<R> {
+  textDocument: VersionedTextDocumentIdentifier;
   summary: string;
-  timings: SentencePerfParams[];
+  timings: SentencePerfParams<R>[];
 }
-}
+
+const coqPerfData : NotificationType<DocumentPerfParams<Range>>
 ```
 
 #### Changelog
 
+- v0.1.9:
+  + new server-side option to control whether the notification is sent
+  + Fields renamed: `loc -> range`, `mem -> memory`
+  + Fixed type for `range`, it was always `Range`
+  + `time` and `memory` are now into a better `PerfInfo` data, which
+    correctly provides info for memoized sentences
+  + We now send the real time, even if the command was cached
+  + `memory` now means difference in memory from `GC.quick_stat`
+  + `filePerfData` will send the full document, ordered linearly, in
+    0.1.7 we only sent the top 10 hotspots
+  + generalized typed over `R` parameter for range
+- v0.1.8: Spec was accidentally broken, types were invalid
 - v0.1.7: Initial version
 
 ### Trim cache notification
 
 The `coq/trimCaches` notification from client to server tells the
 server to free memory. It has no parameters.
+
+### Viewport notification
+
+The `coq/viewRange` notification from client to server tells the
+server the visible range of the user.
+
+```typescript
+interface ViewRangeParams {
+  textDocument: VersionedTextDocumentIdentifier;
+  range: Range;
+}
+```
+
+### Did Change Configuration and Server Configuration parameters
+
+The server will listen to the `workspace/didChangeConfiguration`
+parameters and try to update them without a full server restart.
+
+The `settings` field corresponds to the data structure also passed in
+the `initializationOptions` parameter for the LSP `init` method.
+
+As of today, the server exposes the following parameters:
+
+```typescript
+export interface CoqLspServerConfig {
+  client_version: string;
+  eager_diagnostics: boolean;
+  goal_after_tactic: boolean;
+  show_coq_info_messages: boolean;
+  show_notices_as_diagnostics: boolean;
+  admit_on_bad_qed: boolean;
+  debug: boolean;
+  unicode_completion: "off" | "normal" | "extended";
+  max_errors: number;
+  pp_type: 0 | 1 | 2;
+  show_stats_on_hover: boolean;
+  show_loc_info_on_hover: boolean;
+  check_only_on_request: boolean;
+}
+```
+
+The settings are documented in the `package.json` file for the VSCode
+client.
+
+#### Changelog
+
+- v0.1.9: First public documentation.
+
+### Server Version Notification
+
+The server will send the `$/coq/serverVersion` notification to inform
+the client about `coq-lsp` version specific info.
+
+The parameters are:
+```typescript
+export interface CoqServerVersion {
+  coq: string;
+  ocaml: string;
+  coq_lsp: string;
+}
+```
+
+#### Changelog
+
+- v0.1.9: First public documentation.
+
+### Server Status Notification
+
+The server will send the `$/coq/serverStatus` notification to inform
+the client of checking status (start / end checking file)
+
+The parameters are:
+```typescript
+
+export interface CoqBusyStatus {
+  status: "Busy";
+  modname: string;
+}
+
+export interface CoqIdleStatus {
+  status: "Idle" | "Stopped";
+}
+
+export type CoqServerStatus = CoqBusyStatus | CoqIdleStatus;
+```
+
+#### Changelog
+
+- v0.1.9: First public documentation.

@@ -25,6 +25,18 @@ module Util = struct
     let nl = l_c - l_p in
     let nc, padding = if l_p = l_c then (c_c - c_p, 0) else (c_c, o_c - o_p) in
     String.make padding ' ' ^ String.make nl '\n' ^ String.make nc ' '
+
+  let extract_raw ~raw ~(range : Lang.Range.t) =
+    let start = range.start.offset in
+    let length = range.end_.offset - start in
+    (* We need to be careful here as Doc.t always adds a last empty node on EOF,
+       but somehow the offset of this node seems suspicious, it seems like the
+       Coq parser increases the offset by one, we need to investigate. *)
+    let length =
+      if String.length raw < start + length then String.length raw - start
+      else length
+    in
+    String.sub raw start length
 end
 
 module Markdown = struct
@@ -42,6 +54,24 @@ module Markdown = struct
   let process text =
     let lines = String.split_on_char '\n' text in
     let lines = md_map_lines false lines in
+    String.concat "\n" lines
+end
+
+module LaTeX = struct
+  let gen l = String.make (String.length l) ' '
+
+  let rec tex_map_lines coq l =
+    match l with
+    | [] -> []
+    | l :: ls ->
+      (* opening vs closing a markdown block *)
+      let code_marker = if coq then "\\end{coq}" else "\\begin{coq}" in
+      if String.equal code_marker l then gen l :: tex_map_lines (not coq) ls
+      else (if coq then l else gen l) :: tex_map_lines coq ls
+
+  let process text =
+    let lines = String.split_on_char '\n' text in
+    let lines = tex_map_lines false lines in
     String.concat "\n" lines
 end
 
@@ -112,6 +142,7 @@ let process_contents ~uri ~raw =
   let ext = Lang.LUri.File.extension uri in
   match ext with
   | ".v" -> R.Ok raw
+  | ".lv" | ".tex" -> R.Ok (LaTeX.process raw)
   | ".mv" -> R.Ok (Markdown.process raw)
   | ".wpn" -> WaterProof.process raw
   | _ -> R.Error "unknown file format"
@@ -130,7 +161,7 @@ let get_last_text text =
   let lines = CString.split_on_char '\n' text |> Array.of_list in
   let n_lines = Array.length lines in
   let last_line = if n_lines < 1 then "" else Array.get lines (n_lines - 1) in
-  let character = Coq.Utf8.length last_line in
+  let character = Lang.Utf.length_utf16 last_line in
   (Lang.Point.{ line = n_lines - 1; character; offset }, lines)
 
 let make ~uri ~raw =
@@ -144,3 +175,5 @@ let make_raw ~raw =
   let text = raw in
   let last, lines = get_last_text text in
   { raw; text; last; lines }
+
+let extract_raw ~contents:{ raw; _ } ~range = Util.extract_raw ~raw ~range

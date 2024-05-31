@@ -24,9 +24,9 @@ let odict_field name dict =
     []
 
 (* Request Handling: The client expects a reply *)
-let do_client_options coq_lsp_options : unit =
-  LIO.trace "init" "custom client options:";
-  LIO.trace_object "init" (`Assoc coq_lsp_options);
+let do_settings coq_lsp_options : unit =
+  LIO.trace "settings" "setting server options:";
+  LIO.trace_object "settings" (`Assoc coq_lsp_options);
   match Lsp.JFleche.Config.of_yojson (`Assoc coq_lsp_options) with
   | Ok v -> Fleche.Config.v := v
   | Error msg -> LIO.trace "CoqLspOption.of_yojson error: " msg
@@ -109,8 +109,8 @@ let do_initialize ~params =
   let dir = determine_workspace_root ~params in
   let trace = get_trace ~params in
   LIO.set_trace_value trace;
-  let coq_lsp_options = odict_field "initializationOptions" params in
-  do_client_options coq_lsp_options;
+  let coq_lsp_settings = odict_field "initializationOptions" params in
+  do_settings coq_lsp_settings;
   check_client_version !Fleche.Config.v.client_version;
   let client_capabilities = odict_field "capabilities" params in
   if Fleche.Debug.lsp_init then (

@@ -61,16 +61,24 @@ function Goal({ goal, idx, open }: GoalP) {
     }
   });
 
+  // XXX: We want to add an option for this that can be set interactively
+  let show_goal_on_header = false;
+
+  let gtyp = (
+    <div style={{ marginLeft: "1ex" }} className={className} ref={tyRef}>
+      <CoqPp content={goal.ty} inline={false} />
+    </div>
+  );
+
   return (
     <div className="coq-goal-env" ref={ref}>
       <Details summary={`Goal (${idx})`} open={open}>
         <div style={{ paddingTop: "1ex" }} />
         <Hyps hyps={goal.hyps} />
         <hr />
+        {show_goal_on_header ? "" : gtyp}
       </Details>
-      <div style={{ marginLeft: "1ex" }} className={className} ref={tyRef}>
-        <CoqPp content={goal.ty} inline={false} />
-      </div>
+      {show_goal_on_header ? gtyp : ""}
     </div>
   );
 }
@@ -141,7 +149,7 @@ function StackGoals({ idx, stack }: StackSummaryP) {
       <GoalsList
         goals={goals}
         header={`Remaining goals at ${level_indicator}`}
-        open={true}
+        open={idx === 0} // Tweak, should be more configurable
         show_on_empty={false}
       />
       <div style={{ marginLeft: "0.5ex" }}>

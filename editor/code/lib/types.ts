@@ -31,6 +31,7 @@ export interface Message<Pp> {
 
 export type Id = ["Id", string];
 
+// XXX: Only used in obligations, move them to Range
 export interface Loc {
   fname: any;
   line_nb: number;
@@ -113,16 +114,26 @@ export interface FlecheSaveParams {
   textDocument: VersionedTextDocumentIdentifier;
 }
 
-export interface SentencePerfParams {
-  loc: Loc;
+export interface PerfInfo {
+  // Original Execution Time (when not cached)
   time: number;
-  mem: number;
+  // Difference in words allocated in the heap using `Gc.quick_stat`
+  memory: number;
+  // Whether the execution was cached
+  cache_hit: boolean;
+  // Caching overhead
+  time_hash: number;
 }
 
-export interface DocumentPerfParams {
+export interface SentencePerfParams<R> {
+  range: R;
+  info: PerfInfo;
+}
+
+export interface DocumentPerfParams<R> {
   textDocument: VersionedTextDocumentIdentifier;
   summary: string;
-  timings: SentencePerfParams[];
+  timings: SentencePerfParams<R>[];
 }
 
 // View messaging interfaces; should go on their own file
@@ -152,3 +163,48 @@ export type CoqMessagePayload = RenderGoals | WaitingForInfo | InfoError;
 export interface CoqMessageEvent extends MessageEvent {
   data: CoqMessagePayload;
 }
+
+// For perf panel data
+export interface PerfUpdate {
+  method: "update";
+  params: DocumentPerfParams<Range>;
+}
+
+export interface PerfReset {
+  method: "reset";
+}
+
+export type PerfMessagePayload = PerfUpdate | PerfReset;
+
+export interface PerfMessageEvent extends MessageEvent {
+  data: PerfMessagePayload;
+}
+
+export interface ViewRangeParams {
+  textDocument: VersionedTextDocumentIdentifier;
+  range: Range;
+}
+
+// Server version and status notifications
+
+export interface CoqServerVersion {
+  coq: string;
+  ocaml: string;
+  coq_lsp: string;
+}
+
+export interface CoqBusyStatus {
+  status: "Busy";
+  modname: string;
+}
+
+export interface CoqIdleStatus {
+  status: "Idle";
+  mem: string;
+}
+
+export interface CoqStoppedStatus {
+  status: "Stopped";
+}
+
+export type CoqServerStatus = CoqBusyStatus | CoqIdleStatus | CoqStoppedStatus;

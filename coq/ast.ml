@@ -61,6 +61,51 @@ module Require = struct
     | _ -> None
 end
 
+module Meta = struct
+  type ast = t
+
+  open Ppx_hash_lib.Std.Hash.Builtin
+  open Ppx_compare_lib.Builtin
+  module Loc = Serlib.Ser_loc
+  module Names = Serlib.Ser_names
+  module Attributes = Serlib.Ser_attributes
+  module Vernacexpr = Serlib.Ser_vernacexpr
+
+  module Command = struct
+    type t =
+      | Back of int
+      | ResetName of Names.lident
+      | ResetInitial
+    [@@deriving hash, compare]
+  end
+
+  type t =
+    { command : Command.t
+    ; loc : Loc.t option
+    ; attrs : Attributes.vernac_flag list
+    ; control : Vernacexpr.control_flag list
+    }
+  [@@deriving hash, compare]
+
+  (* EJGA: Coq classification puts these commands as pure? Seems like yet
+     another bug... *)
+  let extract : ast -> t option =
+    CAst.with_loc_val (fun ?loc -> function
+      | { Vernacexpr.expr = Vernacexpr.(VernacResetName id)
+        ; control
+        ; attrs
+        } ->
+        let command = Command.ResetName id in
+        Some { command; loc; attrs; control }
+      | { expr = VernacResetInitial; control; attrs } ->
+        let command = Command.ResetInitial in
+        Some { command; loc; attrs; control }
+      | { expr = (VernacBack num); control; attrs } ->
+        let command = Command.Back num in
+        Some { command; loc; attrs; control }
+      | _ -> None)
+end
+
 module Kinds = struct
   (* LSP kinds *)
   let _file = 1

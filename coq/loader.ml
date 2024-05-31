@@ -38,6 +38,7 @@ let check_package_exists fl_pkg =
 let map_serlib fl_pkg =
   let supported = match fl_pkg with
     (* Supported by serlib *)             (* directory   *)
+    | "coq-core.plugins.btauto"           (* btauto *)
     | "coq-core.plugins.cc"               (* cc  *)
     | "coq-core.plugins.extraction"       (* extraction  *)
     | "coq-core.plugins.firstorder"       (* firstorder  *)
@@ -45,6 +46,7 @@ let map_serlib fl_pkg =
     | "coq-core.plugins.ltac"             (* ltac        *)
     | "coq-core.plugins.ltac2"            (* ltac2       *)
     | "coq-core.plugins.micromega"        (* micromega   *)
+    | "coq-core.plugins.micromega_core"   (* micromega_core *)
     | "coq-core.plugins.ring"             (* ring        *)
     | "coq-core.plugins.ssreflect"        (* ssreflect   *)
     | "coq-core.plugins.ssrmatching"      (* ssrmatching *)

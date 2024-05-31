@@ -164,23 +164,28 @@ module Rq : sig
   end
 
   val serve :
-    ofn:(J.t -> unit) -> token:Coq.Limits.Token.t -> id:int -> Action.t -> unit
+       ofn_rq:(LSP.Response.t -> unit)
+    -> token:Coq.Limits.Token.t
+    -> id:int
+    -> Action.t
+    -> unit
 
-  val cancel : ofn:(J.t -> unit) -> code:int -> message:string -> int -> unit
+  val cancel :
+    ofn_rq:(LSP.Response.t -> unit) -> code:int -> message:string -> int -> unit
 
   val serve_postponed :
-       ofn:(J.t -> unit)
+       ofn_rq:(LSP.Response.t -> unit)
     -> token:Coq.Limits.Token.t
     -> doc:Fleche.Doc.t
     -> Int.Set.t
     -> unit
 end = struct
   (* Answer a request, private *)
-  let answer ~ofn ~id result =
+  let answer ~ofn_rq ~id result =
     (match result with
-    | Result.Ok result -> LSP.mk_reply ~id ~result
-    | Error (code, message) -> LSP.mk_request_error ~id ~code ~message)
-    |> ofn
+    | Result.Ok result -> LSP.Response.mk_ok ~id ~result
+    | Error (code, message) -> LSP.Response.mk_error ~id ~code ~message)
+    |> ofn_rq
 
   (* private to the Rq module, just used not to retrigger canceled requests *)
   let _rtable : (int, Request.Data.t) Hashtbl.t = Hashtbl.create 673
@@ -191,16 +196,16 @@ end = struct
     Hashtbl.add _rtable id pr
 
   (* Consumes a request, if alive, it answers mandatorily *)
-  let consume_ ~ofn ~f id =
+  let consume_ ~ofn_rq ~f id =
     match Hashtbl.find_opt _rtable id with
     | Some pr ->
       Hashtbl.remove _rtable id;
-      f pr |> answer ~ofn ~id
+      f pr |> answer ~ofn_rq ~id
     | None ->
       LIO.trace "can't consume cancelled request: " (string_of_int id);
       ()
 
-  let cancel ~ofn ~code ~message id : unit =
+  let cancel ~ofn_rq ~code ~message id : unit =
     (* fail the request, do cleanup first *)
     let f pr =
       let () =
@@ -209,30 +214,30 @@ end = struct
       in
       Error (code, message)
     in
-    consume_ ~ofn ~f id
+    consume_ ~ofn_rq ~f id
 
   let debug_serve id pr =
     if Fleche.Debug.request_delay then
       LIO.trace "serving"
         (Format.asprintf "rq: %d | %a" id Request.Data.data pr)
 
-  let serve_postponed ~ofn ~token ~doc id =
+  let serve_postponed ~ofn_rq ~token ~doc id =
     let f pr =
       debug_serve id pr;
       Request.Data.serve ~token ~doc pr
     in
-    consume_ ~ofn ~f id
+    consume_ ~ofn_rq ~f id
 
-  let query ~ofn ~token ~id (pr : Request.Data.t) =
+  let query ~ofn_rq ~token ~id (pr : Request.Data.t) =
     let uri, postpone, request = Request.Data.dm_request pr in
     match Fleche.Theory.Request.add { id; uri; postpone; request } with
     | Cancel ->
       let code = -32802 in
       let message = "Document is not ready" in
-      Error (code, message) |> answer ~ofn ~id
+      Error (code, message) |> answer ~ofn_rq ~id
     | Now doc ->
       debug_serve id pr;
-      Request.Data.serve ~token ~doc pr |> answer ~ofn ~id
+      Request.Data.serve ~token ~doc pr |> answer ~ofn_rq ~id
     | Postpone -> postpone_ ~id pr
 
   module Action = struct
@@ -244,13 +249,13 @@ end = struct
     let error (code, msg) = now (Error (code, msg))
   end
 
-  let serve ~ofn ~token ~id action =
+  let serve ~ofn_rq ~token ~id action =
     match action with
-    | Action.Immediate r -> answer ~ofn ~id r
-    | Action.Data p -> query ~ofn ~token ~id p
+    | Action.Immediate r -> answer ~ofn_rq ~id r
+    | Action.Data p -> query ~ofn_rq ~token ~id p
 
-  let serve_postponed ~ofn ~token ~doc rl =
-    Int.Set.iter (serve_postponed ~ofn ~token ~doc) rl
+  let serve_postponed ~ofn_rq ~token ~doc rl =
+    Int.Set.iter (serve_postponed ~ofn_rq ~token ~doc) rl
 end
 
 (***********************************************************************)
@@ -267,7 +272,7 @@ let do_open ~io ~token ~(state : State.t) params =
   let env = Fleche.Doc.Env.make ~init ~workspace ~files in
   Fleche.Theory.create ~io ~token ~env ~uri ~raw:text ~version
 
-let do_change ~ofn ~io ~token params =
+let do_change ~ofn_rq ~io ~token params =
   let uri, version = Helpers.get_uri_version params in
   let changes = List.map U.to_assoc @@ list_field "contentChanges" params in
   match changes with
@@ -283,7 +288,7 @@ let do_change ~ofn ~io ~token params =
     let invalid_rq = Fleche.Theory.change ~io ~token ~uri ~version ~raw in
     let code = -32802 in
     let message = "Request got old in server" in
-    Int.Set.iter (Rq.cancel ~ofn ~code ~message) invalid_rq
+    Int.Set.iter (Rq.cancel ~ofn_rq ~code ~message) invalid_rq
 
 let do_close ~ofn:_ params =
   let uri = Helpers.get_uri params in
@@ -398,13 +403,31 @@ let do_document = do_document_request_maybe ~handler:Rq_document.request
 let do_save_vo = do_document_request_maybe ~handler:Rq_save.request
 let do_lens = do_document_request_maybe ~handler:Rq_lens.request
 
-let do_cancel ~ofn ~params =
+let do_cancel ~ofn_rq ~params =
   let id = int_field "id" params in
   let code = -32800 in
   let message = "Cancelled by client" in
-  Rq.cancel ~ofn ~code ~message id
+  Rq.cancel ~ofn_rq ~code ~message id
 
 let do_cache_trim () = Nt_cache_trim.notification ()
+
+let do_viewRange params =
+  match List.assoc "range" params |> Lsp.JLang.Diagnostic.Range.of_yojson with
+  | Ok range ->
+    let { Lsp.JLang.Diagnostic.Range.end_ = { line; character }; _ } = range in
+    let message = Format.asprintf "l: %d c:%d" line character in
+    LIO.trace "viewRange" message;
+    let uri = Helpers.get_uri params in
+    Fleche.Theory.Check.set_scheduler_hint ~uri ~point:(line, character);
+    ()
+  | Error err -> LIO.trace "viewRange" ("error in parsing notification: " ^ err)
+
+let do_changeConfiguration params =
+  let message = "didChangeReceived" in
+  let () = LIO.(logMessage ~lvl:Lvl.Info ~message) in
+  let settings = field "settings" params |> U.to_assoc in
+  Rq_init.do_settings settings;
+  ()
 
 (***********************************************************************)
 
@@ -433,6 +456,7 @@ module Init_effect = struct
 end
 
 let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
+  let ofn_rq r = Lsp.Base.Message.response r |> ofn in
   match msg with
   | LSP.Message.Request { method_ = "initialize"; id; params } ->
     (* At this point logging is allowed per LSP spec *)
@@ -440,11 +464,21 @@ let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
       Format.asprintf "Initializing coq-lsp server %s" (version ())
     in
     LIO.logMessage ~lvl:Info ~message;
-    let result, dirs = Rq_init.do_initialize ~params in
-    (* We don't need to interrupt this *)
     let token = Coq.Limits.Token.create () in
-    Rq.Action.now (Ok result) |> Rq.serve ~ofn ~token ~id;
-    LIO.logMessage ~lvl:Info ~message:"Server initialized";
+    let result, dirs = Rq_init.do_initialize ~params in
+    Rq.Action.now (Ok result) |> Rq.serve ~ofn_rq ~token ~id;
+    let vi =
+      let coq = Coq_config.version in
+      let ocaml = Sys.ocaml_version in
+      let coq_lsp = Fleche.Version.server in
+      Fleche.ServerInfo.Version.{ coq; ocaml; coq_lsp }
+    in
+    Lsp.JFleche.mk_serverVersion vi |> Lsp.Base.Message.notification |> ofn;
+    let message =
+      Format.asprintf "Server initializing (int_backend: %s)"
+        (Coq.Limits.name ())
+    in
+    LIO.logMessage ~lvl:Info ~message;
     (* Workspace initialization *)
     let debug = debug || !Fleche.Config.v.debug in
     let workspaces =
@@ -456,30 +490,36 @@ let lsp_init_process ~ofn ~cmdline ~debug msg : Init_effect.t =
     Success workspaces
   | LSP.Message.Request { id; _ } ->
     (* per spec *)
-    LSP.mk_request_error ~id ~code:(-32002) ~message:"server not initialized"
-    |> ofn;
+    LSP.Response.mk_error ~id ~code:(-32002) ~message:"server not initialized"
+    |> ofn_rq;
     Loop
   | LSP.Message.Notification { method_ = "exit"; params = _ } -> Exit
   | LSP.Message.Notification _ ->
     (* We can't log before getting the initialize message *)
     Loop
+  | LSP.Message.Response _ ->
+    (* O_O *)
+    Loop
 
 (** Dispatching *)
 let dispatch_notification ~io ~ofn ~token ~state ~method_ ~params : unit =
+  let ofn_rq r = Lsp.Base.Message.response r |> ofn in
   match method_ with
   (* Lifecycle *)
   | "exit" -> raise Lsp_exit
-  (* setTrace *)
+  (* setTrace and settings *)
   | "$/setTrace" -> do_trace params
+  | "workspace/didChangeConfiguration" -> do_changeConfiguration params
   (* Document lifetime *)
   | "textDocument/didOpen" -> do_open ~io ~token ~state params
-  | "textDocument/didChange" -> do_change ~io ~ofn ~token params
+  | "textDocument/didChange" -> do_change ~io ~ofn_rq ~token params
   | "textDocument/didClose" -> do_close ~ofn params
   | "textDocument/didSave" -> Cache.save_to_disk ()
   (* Specific to coq-lsp *)
+  | "coq/viewRange" -> do_viewRange params
   | "coq/trimCaches" -> do_cache_trim ()
   (* Cancel Request *)
-  | "$/cancelRequest" -> do_cancel ~ofn ~params
+  | "$/cancelRequest" -> do_cancel ~ofn_rq ~params
   (* NOOPs *)
   | "initialized" -> ()
   (* Generic handler *)
@@ -521,15 +561,22 @@ let dispatch_request ~method_ ~params : Rq.Action.t =
     LIO.trace "no_handler" msg;
     Rq.Action.error (-32601, "method not found")
 
-let dispatch_request ~ofn ~token ~id ~method_ ~params =
-  dispatch_request ~method_ ~params |> Rq.serve ~ofn ~token ~id
+let dispatch_request ~ofn_rq ~token ~id ~method_ ~params =
+  dispatch_request ~method_ ~params |> Rq.serve ~ofn_rq ~token ~id
 
 let dispatch_message ~io ~ofn ~token ~state (com : LSP.Message.t) : State.t =
+  let ofn_rq r = Lsp.Base.Message.response r |> ofn in
   match com with
   | Notification { method_; params } ->
+    LIO.trace "process_queue" ("Serving notification: " ^ method_);
     dispatch_state_notification ~io ~ofn ~token ~state ~method_ ~params
   | Request { id; method_; params } ->
-    dispatch_request ~ofn ~token ~id ~method_ ~params;
+    LIO.trace "process_queue" ("Serving Request: " ^ method_);
+    dispatch_request ~ofn_rq ~token ~id ~method_ ~params;
+    state
+  | Response r ->
+    LIO.trace "process_queue"
+      ("Serving response for: " ^ string_of_int (Lsp.Base.Response.id r));
     state
 
 (* Queue handling *)
@@ -560,10 +607,11 @@ type 'a cont =
   | Yield of 'a
 
 let check_or_yield ~io ~ofn ~token ~state =
+  let ofn_rq r = Lsp.Base.Message.response r |> ofn in
   match Fleche.Theory.Check.maybe_check ~io ~token with
   | None -> Yield state
   | Some (ready, doc) ->
-    let () = Rq.serve_postponed ~ofn ~token ~doc ready in
+    let () = Rq.serve_postponed ~ofn_rq ~token ~doc ready in
     Cont state
 
 module LspQueue : sig
@@ -603,7 +651,6 @@ let dispatch_or_resume_check ~io ~ofn ~state =
     let token = token_factory () in
     check_or_yield ~io ~ofn ~token ~state
   | Some com ->
-    LIO.trace "process_queue" ("Serving Request: " ^ LSP.Message.method_ com);
     (* We let Coq work normally now *)
     let token = token_factory () in
     Cont (dispatch_message ~io ~ofn ~token ~state com)

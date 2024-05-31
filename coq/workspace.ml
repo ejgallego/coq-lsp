@@ -272,6 +272,11 @@ let load_objs libs =
   in
   List.(iter rq_file (rev libs))
 
+let fleche_chop_extension basename =
+  match Filename.chop_suffix_opt ~suffix:".v.tex" basename with
+  | Some file -> file
+  | None -> Filename.chop_extension basename
+
 (* We need to compute this with the right load path *)
 let dirpath_of_uri ~uri =
   let f = Lang.LUri.File.to_string_file uri in
@@ -282,7 +287,7 @@ let dirpath_of_uri ~uri =
     with Not_found -> Libnames.default_root_prefix
   in
   let f =
-    try Filename.chop_extension (Filename.basename f)
+    try fleche_chop_extension (Filename.basename f)
     with Invalid_argument _ -> f
   in
   let id = Names.Id.of_string f in

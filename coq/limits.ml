@@ -10,7 +10,7 @@ module type Intf = sig
 
   val start : unit -> unit
   val limit : token:Token.t -> f:('a -> 'b) -> 'a -> ('b, exn) Result.t
-  val name : string
+  val name : unit -> string
   val available : bool
 end
 
@@ -41,7 +41,7 @@ module Coq : Intf = struct
       let () = Control.interrupt := false in
       try Ok (f x) with Sys.Break -> Error Sys.Break
 
-  let name = "Control.interrupt"
+  let name () = "Control.interrupt"
   let available = true
 end
 
@@ -57,6 +57,18 @@ let select = function
   | Coq -> backend := (module Coq)
   | Mp -> backend := (module Mp)
 
+(* Set this to false for 8.19 and lower *)
+let sane_coq_base_version = true
+
+let sane_coq_branch =
+  CString.string_contains ~where:Coq_config.version ~what:"+lsp"
+
+let safe_coq = sane_coq_base_version || sane_coq_branch
+
+let select_best = function
+  | None -> if Mp.available && safe_coq then select Mp else select Coq
+  | Some backend -> select backend
+
 module Token = struct
   type t =
     | C of Coq.Token.t
@@ -65,7 +77,7 @@ module Token = struct
 
   let create () =
     let module M = (val !backend) in
-    match M.name with
+    match M.name () with
     | "memprof-limits" -> M (Mp.Token.create ())
     | "Control.interrupt" | _ -> C (Coq.Token.create ())
 
@@ -95,5 +107,8 @@ let limit ~token ~f x =
     let () = Control.interrupt := false in
     Ok (f x)
 
-let name = "select backend"
+let name () =
+  let module M = (val !backend) in
+  M.name ()
+
 let available = true

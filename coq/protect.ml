@@ -82,6 +82,7 @@ module E = struct
       { r; feedback = feedback @ fb2 }
 
   let ok v = { r = Completed (Ok v); feedback = [] }
+  let error err = { r = R.error err; feedback = [] }
 
   module O = struct
     let ( let+ ) x f = map ~f x

@@ -194,6 +194,8 @@ module Check : sig
 
   val maybe_check :
     io:Io.CallBack.t -> token:Coq.Limits.Token.t -> (Int.Set.t * Doc.t) option
+
+  val set_scheduler_hint : uri:Lang.LUri.File.t -> point:int * int -> unit
 end = struct
   let pending = ref []
 
@@ -214,9 +216,18 @@ end = struct
       | None -> pend_try f tt
       | Some r -> Some r)
 
+  let hint : (int * int) option ref = ref None
+
   let get_check_target pt_requests =
     let target_of_pt_handle (_, (l, c)) = Doc.Target.Position (l, c) in
-    Option.map target_of_pt_handle (List.nth_opt pt_requests 0)
+    match Option.map target_of_pt_handle (List.nth_opt pt_requests 0) with
+    | None ->
+      Option.map
+        (fun (l, c) ->
+          hint := None;
+          Doc.Target.Position (l, c))
+        !hint
+    | Some t -> Some t
 
   (* Notification handling; reply is optional / asynchronous *)
   let check ~io ~token ~uri =
@@ -233,8 +244,17 @@ end = struct
         pending := pend_pop !pending;
         None
       | (None | Some _) as tgt ->
+        let uri_short =
+          Lang.LUri.File.to_string_file uri |> Filename.basename
+        in
         let target = Option.default Doc.Target.End tgt in
+        Io.Report.serverStatus ~io (ServerInfo.Status.Running uri_short);
         let doc = Doc.check ~io ~token ~target ~doc:handle.doc () in
+        let mem =
+          Format.asprintf "%a" Stats.pp_words
+            (Gc.((quick_stat ()).heap_words) |> Float.of_int)
+        in
+        Io.Report.serverStatus ~io (ServerInfo.Status.Idle mem);
         let requests = Handle.update_doc_info ~handle ~doc in
         if Doc.Completion.is_completed doc.completed then
           Register.Completed.fire ~io ~token ~doc;
@@ -255,6 +275,12 @@ end = struct
 
   let deschedule ~uri =
     pending := CList.remove Lang.LUri.File.equal uri !pending
+
+  let set_scheduler_hint ~uri ~point =
+    if CList.is_empty !pending then
+      let () = hint := Some point in
+      schedule ~uri (* if the hint is set we wanna override it *)
+    else if not (Option.is_empty !hint) then hint := Some point
 end
 
 let create ~io ~token ~env ~uri ~raw ~version =

@@ -14,6 +14,7 @@ export interface CoqLspServerConfig {
   show_stats_on_hover: boolean;
   show_loc_info_on_hover: boolean;
   check_only_on_request: boolean;
+  send_perf_data: boolean;
 }
 
 export namespace CoqLspServerConfig {
@@ -35,6 +36,7 @@ export namespace CoqLspServerConfig {
       show_stats_on_hover: wsConfig.show_stats_on_hover,
       show_loc_info_on_hover: wsConfig.show_loc_info_on_hover,
       check_only_on_request: wsConfig.check_only_on_request,
+      send_perf_data: wsConfig.send_perf_data,
     };
   }
 }
@@ -49,6 +51,7 @@ export enum ShowGoalsOnCursorChange {
 export interface CoqLspClientConfig {
   show_goals_on: ShowGoalsOnCursorChange;
   pp_format: "Pp" | "Str";
+  check_on_scroll: boolean;
 }
 
 function pp_type_to_pp_format(pp_type: 0 | 1 | 2): "Pp" | "Str" {
@@ -67,6 +70,7 @@ export namespace CoqLspClientConfig {
     let obj: CoqLspClientConfig = {
       show_goals_on: wsConfig.show_goals_on,
       pp_format: pp_type_to_pp_format(wsConfig.pp_type),
+      check_on_scroll: wsConfig.check_on_scroll,
     };
     return obj;
   }
@@ -77,6 +81,8 @@ export namespace CoqSelector {
   export const all: TextDocumentFilter[] = [
     { language: "coq" },
     { language: "markdown", pattern: "**/*.mv" },
+    { language: "latex", pattern: "**/*.lv" },
+    { language: "latex", pattern: "**/*.v.tex" },
   ];
 
   // Local Coq files, suitable for interaction with a local server

@@ -7,5 +7,5 @@ let limit ~token ~f x =
   let f () = f x in
   Memprof_limits.limit_with_token ~token f
 
-let name = "memprof-limits"
+let name () = "memprof-limits"
 let available = true

@@ -1,0 +1,4 @@
+(library
+ (public_name coq-lsp.petanque)
+ (name petanque)
+ (libraries fleche))

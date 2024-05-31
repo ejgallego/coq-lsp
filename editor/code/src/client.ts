@@ -13,10 +13,17 @@ import {
   WorkspaceConfiguration,
   Disposable,
   languages,
+  Uri,
+  TextEditorVisibleRangesChangeEvent,
 } from "vscode";
+
+import * as vscode from "vscode";
+import * as lsp from "vscode-languageserver-types";
 
 import {
   BaseLanguageClient,
+  DidChangeConfigurationNotification,
+  DidChangeConfigurationParams,
   LanguageClientOptions,
   NotificationType,
   RequestType,
@@ -30,14 +37,43 @@ import {
   GoalRequest,
   GoalAnswer,
   PpString,
+  DocumentPerfParams,
+  ViewRangeParams,
 } from "../lib/types";
+
+import {
+  CoqLanguageStatus,
+  defaultVersion,
+  defaultStatus,
+  coqServerVersion,
+  coqServerStatus,
+} from "./status";
 import { CoqLspClientConfig, CoqLspServerConfig, CoqSelector } from "./config";
 import { InfoPanel, goalReq } from "./goals";
 import { FileProgressManager } from "./progress";
 import { coqPerfData, PerfDataView } from "./perf";
-import { sentenceNext, sentenceBack } from "./edit";
+import { sentenceNext, sentencePrevious } from "./edit";
+import { HeatMap, HeatMapConfig } from "./heatmap";
+import { debounce, throttle } from "throttle-debounce";
+
+// Convert perf data to VSCode format
+function toVsCodePerf(
+  p: DocumentPerfParams<lsp.Range>
+): DocumentPerfParams<vscode.Range> {
+  let textDocument = p.textDocument;
+  let summary = p.summary;
+  let timings = p.timings.map((t) => {
+    return {
+      range: client.protocol2CodeConverter.asRange(t.range),
+      info: t.info,
+    };
+  });
+  return { textDocument, summary, timings };
+}
 
 let config: CoqLspClientConfig;
+let serverConfig: CoqLspServerConfig;
+
 let client: BaseLanguageClient;
 
 // Lifetime of the info panel == extension lifetime.
@@ -49,9 +85,16 @@ let fileProgress: FileProgressManager;
 // Status Bar Button
 let lspStatusItem: StatusBarItem;
 
+// Language Status Indicators
+let languageStatus: CoqLanguageStatus;
+let languageVersionHook: Disposable;
+let languageStatusHook: Disposable;
+
 // Lifetime of the perf data setup == client lifetime for the hook, extension for the webview
 let perfDataView: PerfDataView;
 let perfDataHook: Disposable;
+
+let heatMap: HeatMap;
 
 // Client Factory types
 export type ClientFactoryType = (
@@ -79,19 +122,32 @@ export function activateCoqLSP(
 ): CoqLspAPI {
   window.showInformationMessage("Coq LSP Extension: Going to activate!");
 
-  workspace.onDidChangeConfiguration((cfgChange) => {
-    if (cfgChange.affectsConfiguration("coq-lsp")) {
-      // Refactor to remove the duplicate call below
-      const wsConfig = workspace.getConfiguration("coq-lsp");
-      config = CoqLspClientConfig.create(wsConfig);
-    }
-  });
+  // Update config on client and server
+  function configDidChange(wsConfig: any): CoqLspServerConfig {
+    config = CoqLspClientConfig.create(wsConfig);
+    let client_version = context.extension.packageJSON.version;
+    let settings = CoqLspServerConfig.create(client_version, wsConfig);
+    let params: DidChangeConfigurationParams = { settings };
 
-  function coqCommand(command: string, fn: () => void) {
+    if (client && client.isRunning()) {
+      let type = DidChangeConfigurationNotification.type;
+      client.sendNotification(type, params);
+    }
+
+    // Store setting on the server for local use
+    serverConfig = settings;
+    return settings;
+  }
+
+  function coqCommand(
+    command: string,
+    fn: (...args: any[]) => void | Promise<void>
+  ) {
     let disposable = commands.registerCommand("coq-lsp." + command, fn);
     context.subscriptions.push(disposable);
   }
   function coqEditorCommand(command: string, fn: (editor: TextEditor) => void) {
+    // EJGA: we should check for document selector here.
     let disposable = commands.registerTextEditorCommand(
       "coq-lsp." + command,
       fn
@@ -125,30 +181,30 @@ export function activateCoqLSP(
       ...fexc,
     });
   }
+
   const stop = () => {
     if (client && client.isRunning()) {
-      client
+      return client
         .dispose(2000)
-        .then(updateStatusBar)
-        .then(() => {
+        .finally(updateStatusBar)
+        .finally(() => {
           infoPanel.dispose();
           fileProgress.dispose();
           perfDataHook.dispose();
+          heatMap.dispose();
+          languageVersionHook.dispose();
+          languageStatusHook.dispose();
         });
-    }
+    } else return Promise.resolve();
   };
 
   const start = () => {
     if (client && client.isRunning()) return;
 
     const wsConfig = workspace.getConfiguration("coq-lsp");
-    config = CoqLspClientConfig.create(wsConfig);
 
-    let client_version = context.extension.packageJSON.version;
-    const initializationOptions = CoqLspServerConfig.create(
-      client_version,
-      wsConfig
-    );
+    // This also sets `config` variable
+    const initializationOptions: CoqLspServerConfig = configDidChange(wsConfig);
 
     const clientOptions: LanguageClientOptions = {
       documentSelector: CoqSelector.local,
@@ -163,39 +219,63 @@ export function activateCoqLSP(
       fileProgress = new FileProgressManager(client);
       perfDataHook = client.onNotification(coqPerfData, (data) => {
         perfDataView.update(data);
+        heatMap.update(toVsCodePerf(data));
       });
+
+      languageVersionHook = client.onNotification(coqServerVersion, (data) => {
+        languageStatus.updateVersion(data);
+      });
+
+      languageStatusHook = client.onNotification(coqServerStatus, (data) => {
+        languageStatus.updateStatus(data, serverConfig.check_only_on_request);
+      });
+
       resolve(client);
     });
 
-    cP.then((client) =>
-      client
-        .start()
-        .then(updateStatusBar)
-        .then(() => {
-          if (window.activeTextEditor) {
-            goalsCall(
-              window.activeTextEditor,
-              TextEditorSelectionChangeKind.Command
-            );
-          }
-        })
-    ).catch((error) => {
-      let emsg = error.toString();
-      console.log(`Error in coq-lsp start: ${emsg}`);
-      setFailedStatuBar(emsg);
-    });
+    return cP
+      .then((client) =>
+        client
+          .start()
+          .then(updateStatusBar)
+          .then(() => {
+            if (window.activeTextEditor) {
+              goalsCall(
+                window.activeTextEditor,
+                TextEditorSelectionChangeKind.Command
+              );
+            }
+          })
+      )
+      .catch((error) => {
+        let emsg = error.toString();
+        console.log(`Error in coq-lsp start: ${emsg}`);
+        setFailedStatusBar(emsg);
+      });
   };
 
-  const restart = () => {
-    stop();
-    start();
+  const restart = async () => {
+    await stop().finally(start);
   };
 
-  const toggle = () => {
-    if (client && client.isRunning()) {
-      stop();
+  const toggle_lazy_checking = async () => {
+    let wsConfig = workspace.getConfiguration();
+    let newValue = !wsConfig.get<boolean>("coq-lsp.check_only_on_request");
+    await wsConfig.update("coq-lsp.check_only_on_request", newValue);
+    languageStatus.updateStatus({ status: "Idle", mem: "" }, newValue);
+  };
+
+  // switches between the different status of the server
+  const toggle = async () => {
+    if (client && client.isRunning() && !serverConfig.check_only_on_request) {
+      // Server on, and in continous mode, set lazy
+      await toggle_lazy_checking().then(updateStatusBar);
+    } else if (client && client.isRunning()) {
+      // Server on, and in lazy mode, stop
+      await stop();
     } else {
-      start();
+      // Server is off, set continous mode and start
+      await toggle_lazy_checking().then(start);
     }
   };
 
@@ -204,15 +284,31 @@ export function activateCoqLSP(
   // Check VSCoq is not installed
   checkForVSCoq();
 
+  // Config change events setup
+  let onDidChange = workspace.onDidChangeConfiguration((cfgChange) => {
+    if (cfgChange.affectsConfiguration("coq-lsp")) {
+      // Refactor to remove the duplicate call below
+      const wsConfig = workspace.getConfiguration("coq-lsp");
+      configDidChange(wsConfig);
+    }
+  });
+
+  context.subscriptions.push(onDidChange);
+
   // InfoPanel setup.
   infoPanel = new InfoPanel(context.extensionUri);
   context.subscriptions.push(infoPanel);
 
   const goals = (editor: TextEditor) => {
     if (!client.isRunning()) return;
-    let uri = editor.document.uri;
+    let uri = editor.document.uri.toString();
     let version = editor.document.version;
-    let position = editor.selection.active;
+
+    // XXX: EJGA: For some reason TS doesn't catch the typing error here,
+    // beware, because this creates many problems once out of the standard
+    // Node-base Language client and object are serialized!
+    let cursor = editor.selection.active;
+    let position = client.code2ProtocolConverter.asPosition(cursor);
     infoPanel.updateFromServer(
       client,
       uri,
@@ -264,6 +360,40 @@ export function activateCoqLSP(
 
   context.subscriptions.push(goalsHook);
 
+  const viewRangeNotification = new NotificationType<ViewRangeParams>(
+    "coq/viewRange"
+  );
+
+  let viewRangeHook = window.onDidChangeTextEditorVisibleRanges(
+    throttle(400, (evt: TextEditorVisibleRangesChangeEvent) => {
+      if (
+        config.check_on_scroll &&
+        serverConfig.check_only_on_request &&
+        languages.match(CoqSelector.local, evt.textEditor.document) > 0 &&
+        evt.visibleRanges[0]
+      ) {
+        let uri = evt.textEditor.document.uri.toString();
+        let version = evt.textEditor.document.version;
+        let textDocument = { uri, version };
+        let range = client.code2ProtocolConverter.asRange(evt.visibleRanges[0]);
+        let params: ViewRangeParams = { textDocument, range };
+        client.sendNotification(viewRangeNotification, params);
+      }
+    })
+  );
+
+  context.subscriptions.push(viewRangeHook);
+
+  // Heatmap setup
+  heatMap = new HeatMap(
+    workspace.getConfiguration("coq-lsp").get("heatmap") as HeatMapConfig
+  );
+
+  const heatMapToggle = () => {
+    heatMap.toggle();
+  };
+
+  // Document request setup
   const docReq = new RequestType<FlecheDocumentParams, FlecheDocument, void>(
     "coq/getDocument"
   );
@@ -276,15 +406,31 @@ export function activateCoqLSP(
       version
     );
     let params: FlecheDocumentParams = { textDocument };
-    client.sendRequest(docReq, params).then((fd) => console.log(fd));
+    client.sendRequest(docReq, params).then((fd) => {
+      // EJGA: uri_result could be used to set the suggested save path
+      // for the new editor, however we need to see how to do that
+      // and set `content` too for the new editor.
+      let path = `${uri.fsPath}-${version}.json`;
+      let uri_result = Uri.file(path).with({ scheme: "untitled" });
+
+      let open_options = {
+        language: "json",
+        content: JSON.stringify(fd, null, 2),
+      };
+      workspace.openTextDocument(open_options).then((document) => {
+        window.showTextDocument(document);
+      });
+    });
   };
 
+  // Trim notification setup
   const trimNot = new NotificationType<{}>("coq/trimCaches");
 
   const cacheTrim = () => {
     client.sendNotification(trimNot, {});
   };
 
+  // Save request setup
   const saveReq = new RequestType<FlecheDocumentParams, void, void>(
     "coq/saveVo"
   );
@@ -319,13 +465,22 @@ export function activateCoqLSP(
     context.subscriptions.push(lspStatusItem);
   };
 
+  // This stuff should likely go in the CoqLSP client class
+  languageStatus = new CoqLanguageStatus(defaultVersion, defaultStatus, false);
+
   // Ali notes about the status item text: we should keep it short
   // We violate this on the error case, but only because it is exceptional.
   const updateStatusBar = () => {
     if (client && client.isRunning()) {
-      lspStatusItem.text = "$(check) coq-lsp (running)";
-      lspStatusItem.backgroundColor = undefined;
-      lspStatusItem.tooltip = "coq-lsp is running. Click to disable.";
+      if (serverConfig.check_only_on_request) {
+        lspStatusItem.text = "$(check) coq-lsp (on-demand checking)";
+        lspStatusItem.backgroundColor = undefined;
+        lspStatusItem.tooltip = "coq-lsp is running. Click to disable.";
+      } else {
+        lspStatusItem.text = "$(check) coq-lsp (continous checking)";
+        lspStatusItem.backgroundColor = undefined;
+        lspStatusItem.tooltip = "coq-lsp is running. Click to disable.";
+      }
     } else {
       lspStatusItem.text = "$(circle-slash) coq-lsp (stopped)";
       lspStatusItem.backgroundColor = new ThemeColor(
@@ -335,7 +490,7 @@ export function activateCoqLSP(
     }
   };
 
-  const setFailedStatuBar = (emsg: string) => {
+  const setFailedStatusBar = (emsg: string) => {
     lspStatusItem.text = "$(circle-slash) coq-lsp (failed to start)";
     lspStatusItem.backgroundColor = new ThemeColor(
       "statusBarItem.errorBackground"
@@ -353,12 +508,16 @@ export function activateCoqLSP(
   coqCommand("toggle", toggle);
   coqCommand("trim", cacheTrim);
 
+  coqCommand("toggle_mode", toggle_lazy_checking);
+
   coqEditorCommand("goals", goals);
   coqEditorCommand("document", getDocument);
   coqEditorCommand("save", saveDocument);
 
   coqEditorCommand("sentenceNext", sentenceNext);
-  coqEditorCommand("sentenceBack", sentenceBack);
+  coqEditorCommand("sentencePrevious", sentencePrevious);
+
+  coqEditorCommand("heatmap.toggle", heatMapToggle);
 
   createEnableButton();
 

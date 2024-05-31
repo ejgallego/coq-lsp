@@ -11,8 +11,9 @@ let request ~token:_ ~(doc : Fleche.Doc.t) ~point =
     (fun id_at_point ->
       let { Fleche.Doc.toc; _ } = doc in
       match CString.Map.find_opt id_at_point toc with
-      | Some range ->
+      | Some node ->
         let uri = doc.uri in
+        let range = node.range in
         Lsp.Core.Location.({ uri; range } |> to_yojson)
       | None -> `Null)
     `Null

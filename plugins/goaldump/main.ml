@@ -15,19 +15,6 @@ let of_execution ~io ~what (v : (_, _) Coq.Protect.E.t) =
       None
     | Coq.Protect.R.Interrupted -> None)
 
-let extract_raw ~(contents : Contents.t) ~(range : Lang.Range.t) =
-  let start = range.start.offset in
-  let length = range.end_.offset - start in
-  (* We need to be careful here as Doc.t always adds a last empty node on EOF,
-     but somehow the offset of this node seems suspicious, it seems like the Coq
-     parser increases the offset by one, we need to investigate. *)
-  let length =
-    if String.length contents.raw < start + length then
-      String.length contents.raw - start
-    else length
-  in
-  String.sub contents.raw start length
-
 (* We output a record for each sentence in the document, linear order. Note that
    for unparseable nodes, we don't have an AST. *)
 module AstGoals = struct
@@ -45,7 +32,7 @@ module AstGoals = struct
 
   let of_node ~io ~token ~(contents : Contents.t) (node : Doc.Node.t) =
     let range = node.range in
-    let raw = extract_raw ~contents ~range in
+    let raw = Fleche.Contents.extract_raw ~contents ~range in
     let ast = Option.map (fun n -> n.Doc.Node.Ast.v) node.ast in
     let st = node.state in
     let goals = of_execution ~io ~what:"goals" (Info.Goals.goals ~token ~st) in

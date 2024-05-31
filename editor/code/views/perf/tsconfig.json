@@ -5,5 +5,5 @@
     "target": "ESNext",
     "jsx": "react-jsx"
   },
-  "include": ["**/*.ts", "../../lib/**/*"]
+  "include": ["**/*.ts", "**/*.tsx", "../../lib/**/*"]
 }
