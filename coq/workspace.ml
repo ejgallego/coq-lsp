@@ -266,8 +266,9 @@ let load_objs libs =
   let rq_file { Require.library; from; flags } =
     let mp = Libnames.qualid_of_string library in
     let mfrom = Option.map Libnames.qualid_of_string from in
+    let intern = Vernacinterp.fs_intern in
     Flags_.silently
-      (Vernacentries.vernac_require mfrom flags)
+      (Vernacentries.vernac_require ~intern mfrom flags)
       [ (mp, Vernacexpr.ImportAll) ]
   in
   List.(iter rq_file (rev libs))
