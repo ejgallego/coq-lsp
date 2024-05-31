@@ -37,6 +37,8 @@ let pp_premise fmt
       (Coq.Compat.Result.pp pp_offset pp_print_string)
       offset pp_res_str raw_text)
 
+let print_premises = false
+
 let run (ic, oc) =
   let open Coq.Compat.Result.O in
   let debug = false in
@@ -54,8 +56,9 @@ let run (ic, oc) =
   let root, uri = prepare_paths () in
   let* env = S.init { debug; root } in
   let* st = S.start { env; uri; thm = "rev_snoc_cons" } in
-  let* _premises = S.premises { st } in
-  (* Format.(eprintf "@[%a@]@\n%!" (pp_print_list pp_premise) premises); *)
+  let* premises = S.premises { st } in
+  (if print_premises then
+     Format.(eprintf "@[%a@]@\n%!" (pp_print_list pp_premise) premises));
   let* st = S.run_tac { st; tac = "induction l." } in
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"reflexivity." in
