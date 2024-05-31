@@ -60,7 +60,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [✅ Vim](#-vim)
   - [🩱 Neovim](#-neovim)
   - [🐍 Python](#-python)
-- [⇨ `coq-lsp` users and extensions](#️-coq-lsp-users-and-extensions)
+- [⇨ `coq-lsp` users and extensions](#-coq-lsp-users-and-extensions)
 - [🗣️ Discussion Channel](#️-discussion-channel)
 - [☎ Weekly Calls](#-weekly-calls)
 - [❓FAQ](#faq)
