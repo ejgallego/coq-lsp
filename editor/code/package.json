@@ -62,7 +62,8 @@
           "LaTeX"
         ],
         "extensions": [
-          ".lv"
+          ".lv",
+          "v.tex"
         ]
       }
     ],

@@ -42,7 +42,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [👁 On-demand, Follow The Viewport Document Checking](#-on-demand-follow-the-viewport-document-checking)
   - [🧠 Smart, Cache-Aware Error Recovery](#-smart-cache-aware-error-recovery)
   - [🥅 Whole-Document Goal Display](#-whole-document-goal-display)
-  - [🗒️ Markdown Support](#️-markdown-support)
+  - [🗒️ Markdown Support](#️-markdown-and-latex-support)
   - [👥 Document Outline](#-document-outline)
   - [🐝 Document Hover](#-document-hover)
   - [📁 Multiple Workspaces](#-multiple-workspaces)
@@ -125,16 +125,17 @@ pending obligations, open bullets and their goals.
 Goal display behavior is configurable in case you'd like to trigger goal display
 more conservatively.
 
-### 🗒️ Markdown Support
+### 🗒️ Markdown and LaTeX Support
 
-Open a markdown file with a `.mv` extension, `coq-lsp` will check the code parts
-that are enclosed into `coq` language blocks! `coq-lsp` places human-friendly
-documents at the core of its design ideas.
+Open a markdown file with a `.mv` extension, or a `TeX` file ending in `.lv` or
+`.v.tex`, then `coq-lsp` will check the code parts that are enclosed into `coq`
+language blocks! `coq-lsp` places human-friendly documents at the core of its
+design ideas.
 
 <img alt="Coq + Markdown Editing" height="286px" src="etc/img/lsp-markdown.gif"/>
 
-Moreover, you can use Visual Studio Code Markdown preview to render your
-markdown documents nicely!
+Moreover, you can use the usual Visual Studio Code Markdown or LaTeX preview
+facilities to render your markdown documents nicely!
 
 ### 👥 Document Outline
 
