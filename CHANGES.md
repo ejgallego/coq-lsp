@@ -120,7 +120,7 @@
  - Update server settings on the fly when tweaking them in VSCode.
    Implement `workspace/didChangeConfiguration` (@ejgallego, #702)
  - [Coq API] Add functions to retrieve list of declarations done in
-   .vo files (@ejallego, @eytans, #704)
+   .vo files (@ejgallego, @eytans, #704)
  - New `petanque` API to interact directly with Coq's proof
    engine. (@ejgallego, @gbdrt, Laetitia Teodorescu #703, thanks to
    Alex Sanchez-Stern for many insightful feedback and testing)
@@ -333,7 +333,7 @@
  - Print abbreviations on hover (@ejgallego, #384)
  - Print hover types without parenthesis (@ejgallego, #384)
  - Parse identifiers with dot for hover and jump to definition
-   (@ejallego, #385)
+   (@ejgallego, #385)
  - Update `vscode-languageclient` to 8.1.0 (@ejgallego, @Alizter,
    #383, fixes #273)
  - Fix typo on max_errors checking, this made coq-lsp stop on the
@@ -429,7 +429,7 @@
    inductive types, projections for records, etc...  (@ejgallego,
    #174, fixes #121, #122)
  - [internal] Error recovery can now execute full Coq commands as to
-   amend states, required for #319 (@ejallego, #320)
+   amend states, required for #319 (@ejgallego, #320)
  - Auto-admit the previous bullet goal when a new bullet cannot be
    opened due to an unsolved previous bullet. This also works for {}
    focusing operators. This is very useful when navigating bulleted
