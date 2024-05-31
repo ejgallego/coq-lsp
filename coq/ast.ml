@@ -91,16 +91,13 @@ module Meta = struct
      another bug... *)
   let extract : ast -> t option =
     CAst.with_loc_val (fun ?loc -> function
-      | { Vernacexpr.expr = Vernacexpr.(VernacResetName id)
-        ; control
-        ; attrs
-        } ->
+      | { Vernacexpr.expr = Vernacexpr.(VernacResetName id); control; attrs } ->
         let command = Command.ResetName id in
         Some { command; loc; attrs; control }
       | { expr = VernacResetInitial; control; attrs } ->
         let command = Command.ResetInitial in
         Some { command; loc; attrs; control }
-      | { expr = (VernacBack num); control; attrs } ->
+      | { expr = VernacBack num; control; attrs } ->
         let command = Command.Back num in
         Some { command; loc; attrs; control }
       | _ -> None)
