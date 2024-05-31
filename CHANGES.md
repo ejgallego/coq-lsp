@@ -1,3 +1,10 @@
+# unreleased
+------------
+
+- [deps] merge serlib into coq-lsp. This allow us to drop the SerAPI
+  dependency, and will greatly easy the development of tools that
+  require AST manipulation (@ejgallego, #698)
+
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
 

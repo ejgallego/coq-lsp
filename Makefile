@@ -3,7 +3,6 @@ COQ_BUILD_CONTEXT=../_build/default/coq
 PKG_SET= \
 vendor/coq/coq-core.install \
 vendor/coq/coq-stdlib.install \
-vendor/coq-serapi/coq-serapi.install \
 coq-lsp.install
 
 # Get the ocamlformat version from the .ocamlformat file
@@ -115,7 +114,6 @@ submodules-deinit:
 .PHONY: submodules-update
 submodules-update:
 	(cd vendor/coq && git checkout master && git pull upstream master)
-	(cd vendor/coq-serapi && git checkout main && git pull upstream main)
 
 # Build the vscode extension
 .PHONY: extension

@@ -1,0 +1,263 @@
+; Eventually we should use the "put binaries in scope feature of Dune"
+(rule
+ (targets test_roundtrip)
+ (deps
+  (:input test_roundtrip.in)
+  (package coq-lsp))
+ (action
+  (progn
+   ; Avoid issues on windows, (copy ) seems to add \r chars...
+   (bash "sed 's/\r$//' test_roundtrip.in > test_roundtrip")
+   (run chmod +wx test_roundtrip)
+   ; We insert the digest of the binaries to force a rebuild of the
+   ; test cases if the binary has been modified.
+   (bash
+    "for i in ../../../compiler/fcc.exe ../../../serlib/plugins/*/*.cmxs; do echo \"# $(md5sum $i)\"; done >> test_roundtrip"))))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input abstract.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input add_field.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input auto.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input case.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input clear.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input eauto.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input elim.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input exact.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input exists.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input extraction.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input firstorder.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input fix.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input functional_induction.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input functional_scheme.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input hint_rewrite.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input instantiate.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input intropattern.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input intros.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input libTactics.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input mbid.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input move.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input now.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input rename.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input replace.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input revert.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input setoid_rewrite.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input specialize.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input subst.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input symmetry.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input tactic_notation.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
+  (:input primitives.v))
+ (action
+  (bash "./%{script} %{input}")))

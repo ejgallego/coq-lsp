@@ -1,22 +1,5 @@
 {
   "nodes": {
-    "coq-serapi": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1711058787,
-        "narHash": "sha256-Gpl3HFyMRNLThJIARbjN9FgCcgMwMOVGj2IKDKtWGWg=",
-        "owner": "ejgallego",
-        "repo": "coq-serapi",
-        "rev": "bc3450a8dfdd86136ce5d9aac427548ba828d30f",
-        "type": "github"
-      },
-      "original": {
-        "owner": "ejgallego",
-        "ref": "v8.18",
-        "repo": "coq-serapi",
-        "type": "github"
-      }
-    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -155,7 +138,6 @@
     },
     "root": {
       "inputs": {
-        "coq-serapi": "coq-serapi",
         "flake-compat": "flake-compat",
         "flake-parts": "flake-parts",
         "napalm": "napalm",
