@@ -1,5 +1,5 @@
-# unreleased
-------------
+# coq-lsp 0.1.9: Hasta el 40 de Mayo...
+---------------------------------------
 
  - new option `show_loc_info_on_hover` that will display parsing debug
    information on hover; previous flag was fixed in code, which is way
@@ -65,6 +65,11 @@
    #348)
  - fix Coq performance view display (@ejgallego, #663, regression in
    #513)
+ - Added new heatmap feature allowing timing data to be seen in the
+   editor. Can be enabled with the `Coq LSP: Toggle heatmap`
+   command. Can be configured to show memory usage. Colors and
+   granularity are configurable. (@Alizter and @ejgallego, #686,
+   grants #681).
  - allow more than one input position in `selectionRange` LSP call
    (@ejgallego, #667, fixes #663)
  - new VSCode commands to allow to move one sentence backwards /
@@ -109,11 +114,9 @@
    (@ejgallego, @Alizter, #689, #693)
  - Better types `coq/perfData` call (@ejgallego @Alizter, #689)
  - New server option to enable / disable `coq/perfData` (@ejgallego, #689)
- - New cleint option to enable / disable `coq/perfData` (@ejgallego, #717)
+ - New client option to enable / disable `coq/perfData` (@ejgallego, #717)
  - The `coq-lsp.document` VSCode command will now display the returned
    JSON data in a new editor (@ejgallego, #701)
- - New server option to enable / disable `coq/perfData` (@ejgallego,
-   #689)
  - Update server settings on the fly when tweaking them in VSCode.
    Implement `workspace/didChangeConfiguration` (@ejgallego, #702)
  - [Coq API] Add functions to retrieve list of declarations done in
@@ -165,7 +168,7 @@
  - Support for `.lv / .v.tex` TeX files with embedded Coq code
    (@ejgallego, #727)
  - Don't expand bullet goals at previous levels by default
-   (@ejgallego, @Alizter, # cc #525)
+   (@ejgallego, @Alizter, #731 cc #525)
  - [petanque] Return basic goal information after `run_tac`, so we
    avoid a `goals` round-trip for each tactic (@gbdrt, @ejgallego,
    #733)
