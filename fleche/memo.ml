@@ -1,7 +1,30 @@
 module CS = Stats
 
-let intern = Vernacinterp.fs_intern
+(* XXX: We are missing good error handling here! Fix submitted upstream. *)
+module Intern = struct
+  let hc :
+      ( Names.DirPath.t
+      , Library.library_t * Library.Intern.Provenance.t )
+      Hashtbl.t =
+    Hashtbl.create 1000
 
+  let use_cache = true
+
+  let intern dp =
+    if use_cache then
+      match Hashtbl.find_opt hc dp with
+      | Some lib -> lib
+      | None ->
+        let file = Loadpath.try_locate_absolute_library dp in
+        let lib = (Library.intern_from_file file, ("file", file)) in
+        let () = Hashtbl.add hc dp lib in
+        lib
+    else Vernacinterp.fs_intern dp
+end
+
+let intern = Intern.intern
+
+(* Regular memo tables *)
 module Stats = struct
   type t =
     { stats : Stats.t

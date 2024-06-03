@@ -10,6 +10,9 @@
    heuristic is enabled (@ejgallego, #748)
  - [memo] More precise hashing for Coq states, this improves cache
    performance quite a bit (@ejgallego, #751)
+ - [fleche] This achieves an almost 50% memory reduction for example
+   when opening all of HoTT .v files (@ejgallego, @SkySkimmer,
+   @bhaktishh, #744)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
