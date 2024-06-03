@@ -262,11 +262,10 @@ let describe_guess = function
   | Error msg -> (msg, "")
 
 (* Require a set of libraries *)
-let load_objs libs =
+let load_objs ~intern libs =
   let rq_file { Require.library; from; flags } =
     let mp = Libnames.qualid_of_string library in
     let mfrom = Option.map Libnames.qualid_of_string from in
-    let intern = Vernacinterp.fs_intern in
     Flags_.silently
       (Vernacentries.vernac_require ~intern mfrom flags)
       [ (mp, Vernacexpr.ImportAll) ]
@@ -296,7 +295,7 @@ let dirpath_of_uri ~uri =
   ldir
 
 (* NOTE: Use exhaustive match below to avoid bugs by skipping fields *)
-let apply ~uri
+let apply ~intern ~uri
     { coqlib = _
     ; coqcorelib = _
     ; ocamlpath
@@ -315,7 +314,7 @@ let apply ~uri
   findlib_init ~ml_include_path ~ocamlpath;
   List.iter Loadpath.add_vo_path vo_load_path;
   Declaremods.start_library (dirpath_of_uri ~uri);
-  load_objs require_libs
+  load_objs ~intern require_libs
 
 (* This can raise, and will do in incorrect CoqProject files *)
 let dirpath_of_string_exn coq_path = Libnames.dirpath_of_string coq_path

@@ -15,21 +15,20 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-let coq_interp ~st cmd =
+let coq_interp ~intern ~st cmd =
   let st = State.to_coq st in
   let cmd = Ast.to_coq cmd in
-  let intern = Vernacinterp.fs_intern in
   Vernacinterp.interp ~intern ~st cmd |> State.of_coq
 
-let interp ~token ~st cmd = Protect.eval ~token cmd ~f:(coq_interp ~st)
+let interp ~token ~intern ~st cmd =
+  Protect.eval ~token cmd ~f:(coq_interp ~intern ~st)
 
 module Require = struct
   (* We could improve this Coq upstream by making the API a bit more
      orthogonal *)
-  let interp ~st _files
+  let interp ~intern ~st _files
       { Ast.Require.from; export; mods; loc = _; attrs; control } =
     let () = Vernacstate.unfreeze_full_state (State.to_coq st) in
-    let intern = Vernacinterp.fs_intern in
     let fn () = Vernacentries.vernac_require ~intern from export mods in
     (* Check generic attributes *)
     let fn () =
@@ -42,6 +41,6 @@ module Require = struct
     let () = Utils.with_control ~fn ~control ~st in
     Vernacstate.freeze_full_state () |> State.of_coq
 
-  let interp ~token ~st files cmd =
-    Protect.eval ~token ~f:(interp ~st files) cmd
+  let interp ~token ~intern ~st files cmd =
+    Protect.eval ~token ~f:(interp ~intern ~st files) cmd
 end

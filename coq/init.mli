@@ -29,6 +29,7 @@ val coq_init : coq_opts -> State.t
 
 val doc_init :
      token:Limits.Token.t
+  -> intern:Library.Intern.t
   -> root_state:State.t
   -> workspace:Workspace.t
   -> uri:Lang.LUri.File.t
