@@ -34,7 +34,7 @@ let status_of_doc (doc : Doc.t) =
   match doc.completed with
   | Yes _ -> 0
   | Stopped _ -> 2
-  | Failed _ | FailedPermanent _ -> 1
+  | Failed _ -> 1
 
 let compile_file ~cc file : int =
   let { Cc.io; root_state; workspaces; default; token } = cc in
