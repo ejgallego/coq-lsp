@@ -1,4 +1,5 @@
 ; Eventually we should use the "put binaries in scope feature of Dune"
+
 (rule
  (targets test_roundtrip)
  (deps

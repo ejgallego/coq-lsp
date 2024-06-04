@@ -237,20 +237,17 @@ module Completion = struct
     | Yes of Lang.Range.t  (** Location of the last token in the document *)
     | Stopped of Lang.Range.t  (** Location of the last valid token *)
     | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
-    | FailedPermanent of Lang.Range.t
-        (** Temporal Coq hack, avoids any computation *)
 
   let range = function
-    | Yes range | Stopped range | Failed range | FailedPermanent range -> range
+    | Yes range | Stopped range | Failed range -> range
 
   let to_string = function
     | Yes _ -> "fully checked"
     | Stopped _ -> "stopped"
     | Failed _ -> "failed"
-    | FailedPermanent _ -> "refused to create due to Coq parsing bug"
 
   let is_completed = function
-    | Yes _ | Failed _ | FailedPermanent _ -> true
+    | Yes _ | Failed _ -> true
     | _ -> false
 end
 
@@ -292,7 +289,7 @@ type t =
 
 (* Flatten the list of document asts *)
 let asts doc = List.filter_map Node.ast doc.nodes
-let diags doc = List.concat_map (fun node -> node.Node.diags) doc.nodes
+let diags doc = List.concat_map Node.diags doc.nodes
 
 (* TOC handling *)
 let rec add_toc_info node toc { Lang.Ast.Info.name; children; _ } =
@@ -380,23 +377,6 @@ let create ~token ~env ~uri ~version ~contents =
         empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed)
   , stats )
 
-(** Create a permanently failed doc, to be removed when we drop 8.16 support *)
-let handle_failed_permanent ~env ~uri ~version ~contents =
-  let completed range = Completion.FailedPermanent range in
-  let loc, message = (None, "Document Failed Permanently due to Coq bugs") in
-  let doc, feedback =
-    error_doc ~loc ~message ~uri ~contents ~version ~env ~completed
-  in
-  let stats = None in
-  let global_stats = Stats.Global.dump () in
-  let nodes =
-    let lines = contents.Contents.lines in
-    process_init_feedback ~lines ~stats ~global_stats env.Env.init feedback
-    @ doc.nodes
-  in
-  let diags_dirty = not (CList.is_empty nodes) in
-  { doc with nodes; diags_dirty }
-
 (** Try to create a doc, if Coq execution fails, create a failed doc with the
     corresponding errors; for now we refine the contents step as to better setup
     the initial document. *)
@@ -447,11 +427,6 @@ let create ~token ~env ~uri ~version ~raw =
 let recreate ~token ~doc ~version ~contents =
   let env, uri = (doc.env, doc.uri) in
   handle_doc_creation_exec ~token ~env ~uri ~version ~contents
-
-let create_failed_permanent ~env ~uri ~version ~raw =
-  let completed range = Completion.FailedPermanent range in
-  handle_contents_creation ~env ~uri ~version ~raw ~completed
-    handle_failed_permanent
 
 let recover_up_to_offset ~init_range doc offset =
   Io.Log.trace "prefix"
@@ -509,7 +484,6 @@ let bump_version ~token ~version ~(contents : Contents.t) doc =
   match doc.completed with
   (* We can do better, but we need to handle the case where the anomaly is when
      restoring / executing the first sentence *)
-  | FailedPermanent _ -> doc
   | Failed _ ->
     (* re-create the document on failed, as the env may have changed *)
     recreate ~token ~doc ~version ~contents
@@ -1058,7 +1032,7 @@ let check ~io ~token ~target ~doc () =
   | Yes _ ->
     Io.Log.trace "check" "resuming, completed=yes, nothing to do";
     doc
-  | FailedPermanent _ | Failed _ ->
+  | Failed _ ->
     Io.Log.trace "check" "can't resume, failed=yes, nothing to do";
     doc
   | Stopped last_tok ->
