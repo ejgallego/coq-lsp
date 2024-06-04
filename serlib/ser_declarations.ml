@@ -37,6 +37,7 @@ module Vmemitcodes = Ser_vmemitcodes
 module Retroknowledge = Ser_retroknowledge
 module Uint63  = Ser_uint63
 module Float64 = Ser_float64
+module Pstring = Ser_pstring
 module Vmlibrary = Ser_vmlibrary
 
 type template_arity =

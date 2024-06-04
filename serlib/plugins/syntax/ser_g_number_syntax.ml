@@ -16,14 +16,14 @@ module Libnames = Ser_libnames
 module Notation = Ser_notation
 
 module A2 = struct
-  type t = Ser_number.number_option
+  type t = Ser_number_string.number_option
   [@@deriving sexp,hash,compare]
 end
 
 let ser_wit_number_modifier = let module M = Ser_genarg.GSV(A2) in M.genser
 
 module A3 = struct
-  type t = Ser_number.number_option list
+  type t = Ser_number_string.number_option list
   [@@deriving sexp,hash,compare]
 end
 

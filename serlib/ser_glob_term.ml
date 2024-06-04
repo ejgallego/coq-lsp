@@ -29,6 +29,7 @@ module Names      = Ser_names
 module Univ       = Ser_univ
 module Uint63     = Ser_uint63
 module Float64    = Ser_float64
+module Pstring    = Ser_pstring
 module Constr     = Ser_constr
 module Libnames   = Ser_libnames
 module Genarg     = Ser_genarg

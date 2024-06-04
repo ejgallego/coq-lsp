@@ -42,6 +42,7 @@ module PTP = struct
   type 'a _t =
     | PT_int63
     | PT_float64
+    | PT_string
     | PT_array
   [@@deriving sexp,yojson,hash,compare]
 end
@@ -55,6 +56,7 @@ module OOTP = struct
   type ptype =
     | PT_int63
     | PT_float64
+    | PT_string
     | PT_array
   [@@deriving sexp,yojson,hash,compare]
 

@@ -23,6 +23,7 @@ open Ppx_compare_lib.Builtin
 module Names     = Ser_names
 module Uint63    = Ser_uint63
 module Float64   = Ser_float64
+module Pstring   = Ser_pstring
 module Sorts     = Ser_sorts
 module Constr    = Ser_constr
 module Evar      = Ser_evar
