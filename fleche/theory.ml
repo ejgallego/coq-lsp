@@ -223,17 +223,19 @@ end = struct
       | None -> pend_try f tt
       | Some r -> Some r)
 
-  let hint : (int * int) option ref = ref None
+  let hint : (Lang.LUri.File.t * (int * int)) option ref = ref None
 
-  let get_check_target pt_requests =
+  let get_check_target ~(doc : Doc.t) pt_requests =
     let target_of_pt_handle (_, (l, c)) = Doc.Target.Position (l, c) in
     match Option.map target_of_pt_handle (List.nth_opt pt_requests 0) with
     | None ->
-      Option.map
-        (fun (l, c) ->
-          hint := None;
-          Doc.Target.Position (l, c))
-        !hint
+      Option.bind !hint (fun (uri, (l, c)) ->
+          if Lang.LUri.File.equal uri doc.uri then
+            match doc.completed with
+            | Yes _ | Failed _ -> None
+            | Stopped range when Doc.Target.reached ~range (l, c) -> None
+            | Stopped _ -> Some (Doc.Target.Position (l, c))
+          else None)
     | Some t -> Some t
 
   let report_start ~io doc =
@@ -267,7 +269,7 @@ end = struct
       None
     in
     let f (handle : Handle.t) doc =
-      let target = get_check_target handle.pt_requests in
+      let target = get_check_target ~doc handle.pt_requests in
       match target with
       (* If we are in lazy mode and we don't have any full document requests
          pending, we just deschedule *)
@@ -292,9 +294,9 @@ end = struct
 
   let set_scheduler_hint ~uri ~point =
     if CList.is_empty !pending then
-      let () = hint := Some point in
+      let () = hint := Some (uri, point) in
       schedule ~uri (* if the hint is set we wanna override it *)
-    else if not (Option.is_empty !hint) then hint := Some point
+    else if not (Option.is_empty !hint) then hint := Some (uri, point)
 end
 
 let create ~io ~token ~env ~uri ~raw ~version =
