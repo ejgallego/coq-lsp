@@ -20,6 +20,8 @@ module Intern = struct
         let () = Hashtbl.add hc dp lib in
         lib
     else Vernacinterp.fs_intern dp
+
+  let clear () = Hashtbl.clear hc
 end
 
 let intern = Intern.intern
