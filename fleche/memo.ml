@@ -96,6 +96,8 @@ module MemoTable = struct
 
     (** sorted *)
     val all_freqs : unit -> int list
+
+    val stats : 'a t -> Hashtbl.statistics
   end
 
   module Make (H : Hashtbl.HashedType) : S with type key = H.t = struct
@@ -209,6 +211,9 @@ module type S = sig
   (** [freqs ()]: (sorted) histogram *)
   val all_freqs : unit -> int list
 
+  (** [stats ()]: hashtbl stats *)
+  val stats : unit -> Hashtbl.statistics
+
   (** debug data for input *)
   val input_info : input -> string
 
@@ -227,6 +232,7 @@ module SEval (E : EvalType) :
   let size () = Obj.reachable_words (Obj.magic cache)
   let input_info i = E.input_info i
   let all_freqs = HC.all_freqs
+  let stats () = HC.stats cache
   let clear () = HC.clear cache
 
   let in_cache i =
@@ -272,6 +278,7 @@ module CEval (E : LocEvalType) = struct
   let size () = Obj.reachable_words (Obj.magic cache)
   let all_freqs = HC.all_freqs
   let input_info = E.input_info
+  let stats () = HC.stats cache
   let clear () = HC.clear cache
 
   let in_cache i =
