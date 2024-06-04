@@ -1,9 +1,13 @@
 # unreleased
 ------------
 
-- [deps] merge serlib into coq-lsp. This allow us to drop the SerAPI
-  dependency, and will greatly easy the development of tools that
-  require AST manipulation (@ejgallego, #698)
+ - [deps] merge serlib into coq-lsp. This allow us to drop the SerAPI
+   dependency, and will greatly easy the development of tools that
+   require AST manipulation (@ejgallego, #698)
+ - [fleche] Remove 8.16 compatibility layer (@ejgallgo, #747)
+ - [fleche] Preserve view hint across document changes. With this
+   change, we get local continuous checking mode when the view-port
+   heuristic is enabled (@ejgallego, #748)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
