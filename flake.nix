@@ -65,6 +65,8 @@
               uri
               dune-build-info
               ppx_inline_test
+              logs
+              lwt
               ;
           };
         };

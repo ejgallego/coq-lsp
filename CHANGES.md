@@ -14,6 +14,9 @@
    when opening all of HoTT .v files (@ejgallego, @SkySkimmer,
    @bhaktishh, #744)
  - [memo] Provide API to query Hashtbl stats (@ejgallego, #753)
+ - [nix] Add `pet-server` deps to flake.nix (Léo Stefanesco, #754)
+ - [coq-lsp] Fix crash on `--help` option (Léo Stefanesco, @ejgallego,
+   #754)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
