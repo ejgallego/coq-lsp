@@ -85,16 +85,17 @@ let ri_from : (string option * string) list Term.t =
 
 let int_backend =
   let doc =
-    "Select Interruption Backend, if absent, the best available for your OCaml \
-     version will be selected"
+    "Select Interruption Backend. 'Mp' = memprof-limits token-based \
+     interruption , 'Coq' = Coq's polling mode (unreliable). The 'Mp' backend \
+     is only supported in OCaml 4.x series."
   in
+  let absent = "'Mp' for OCaml 4.x, 'Coq' for OCaml 5.x" in
+  let backends = [ ("Coq", Limits.Coq); ("Mp", Limits.Mp) ] in
+  let docv = Cmdliner.Arg.doc_alts_enum ~quoted:true backends in
   Arg.(
     value
-    & opt
-        (enum
-           [ ("Coq", Some Limits.Coq); ("Mp", Some Limits.Mp); ("auto", None) ])
-        None
-    & info [ "int_backend" ] ~docv:"INT_BACKEND" ~doc)
+    & opt (some (enum backends)) None
+    & info [ "int_backend" ] ~docv ~doc ~absent)
 
 let roots : string list Term.t =
   let doc = "Workspace(s) root(s)" in
@@ -102,7 +103,7 @@ let roots : string list Term.t =
 
 let coq_diags_level : int Term.t =
   let doc =
-    "Controsl whether Coq Info and Notice message appear in diagnostics.\n\
+    "Controls whether Coq Info and Notice message appear in diagnostics.\n\
     \ 0 = None; 1 = Notices, 2 = Notices and Info"
   in
   Arg.(value & opt int 0 & info [ "diags_level" ] ~docv:"DIAGS_LEVEL" ~doc)
