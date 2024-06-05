@@ -62,6 +62,7 @@ let build_message () =
     caches
 
 let cache_trim () =
+  let () = M.Intern.clear () in
   let () = M.Interp.clear () in
   let () = M.Admit.clear () in
   let () = M.Init.clear () in

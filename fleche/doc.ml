@@ -630,7 +630,10 @@ end = struct
       ->
       Io.Log.trace "recovery" "bullet";
       Coq.State.admit_goal ~token ~st
-      |> Coq.Protect.E.bind ~f:(fun st -> Coq.Interp.interp ~token ~st v)
+      |> Coq.Protect.E.bind ~f:(fun st ->
+             (* We skip the cache here, but likely we don't want to do that. *)
+             let intern = Vernacinterp.fs_intern in
+             Coq.Interp.interp ~token ~intern ~st v)
     | _ ->
       (* Fallback to qed special lex case *)
       lex_recovery_heuristic ~token last_tok contents nodes st

@@ -1,5 +1,32 @@
 module CS = Stats
 
+(* XXX: We are missing good error handling here! Fix submitted upstream. *)
+module Intern = struct
+  let hc :
+      ( Names.DirPath.t
+      , Library.library_t * Library.Intern.Provenance.t )
+      Hashtbl.t =
+    Hashtbl.create 1000
+
+  let use_cache = true
+
+  let intern dp =
+    if use_cache then
+      match Hashtbl.find_opt hc dp with
+      | Some lib -> lib
+      | None ->
+        let file = Loadpath.try_locate_absolute_library dp in
+        let lib = (Library.intern_from_file file, ("file", file)) in
+        let () = Hashtbl.add hc dp lib in
+        lib
+    else Vernacinterp.fs_intern dp
+
+  let clear () = Hashtbl.clear hc
+end
+
+let intern = Intern.intern
+
+(* Regular memo tables *)
 module Stats = struct
   type t =
     { stats : Stats.t
@@ -287,7 +314,7 @@ module VernacEval = struct
 
   type output = Coq.State.t
 
-  let eval ~token (st, stm) = Coq.Interp.interp ~token ~st stm
+  let eval ~token (st, stm) = Coq.Interp.interp ~token ~intern ~st stm
 end
 
 module Interp = CEval (VernacEval)
@@ -316,7 +343,7 @@ module RequireEval = struct
   type output = Coq.State.t
 
   let eval ~token (st, files, stm) =
-    Coq.Interp.Require.interp ~token ~st files stm
+    Coq.Interp.Require.interp ~token ~intern ~st files stm
 end
 
 module Require = CEval (RequireEval)
@@ -347,7 +374,7 @@ module InitEval = struct
   type output = Coq.State.t
 
   let eval ~token (root_state, workspace, uri) =
-    Coq.Init.doc_init ~token ~root_state ~workspace ~uri
+    Coq.Init.doc_init ~token ~intern ~root_state ~workspace ~uri
 
   let input_info (st, ws, file) =
     Format.asprintf "st %d | ws %d | file %s" (Hashtbl.hash st)
