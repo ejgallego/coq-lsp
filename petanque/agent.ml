@@ -155,8 +155,9 @@ let parse_and_execute_in ~token ~loc tac st =
   match ast with
   | Some ast -> (
     let open Coq.Protect.E.O in
+    let pr = Fleche.Info.Goals.to_pp in
     let* st = Fleche.Memo.Interp.eval ~token (st, ast) in
-    let+ goals = Fleche.Info.Goals.goals ~token ~st in
+    let+ goals = Fleche.Info.Goals.goals ~token ~pr ~st in
     match goals with
     | None -> Run_result.Proof_finished st
     | Some goals when proof_finished goals -> Run_result.Proof_finished st
@@ -184,7 +185,9 @@ let goals ~token ~st =
     let g = Pp.string_of_ppcmds in
     Option.map (Coq.Goals.map_goals ~f ~g) goals
   in
-  Coq.Protect.E.map ~f (Fleche.Info.Goals.goals ~token ~st) |> protect_to_result
+  let pr = Fleche.Info.Goals.to_pp in
+  Coq.Protect.E.map ~f (Fleche.Info.Goals.goals ~token ~pr ~st)
+  |> protect_to_result
 
 module Premise = struct
   type t =

@@ -17,6 +17,7 @@ import {
   GoalRequest,
   GoalAnswer,
   PpString,
+  BoxString,
   CoqMessagePayload,
   ErrorData,
 } from "../lib/types";
@@ -27,14 +28,16 @@ import {
   TextDocumentIdentifier,
 } from "vscode-languageserver-types";
 
-export const goalReq = new RequestType<GoalRequest, GoalAnswer<PpString>, void>(
-  "proof/goals"
-);
+export const goalReq = new RequestType<
+  GoalRequest,
+  GoalAnswer<BoxString, PpString>,
+  void
+>("proof/goals");
 
 export class InfoPanel {
   private panel: WebviewPanel | null = null;
   private extensionUri: Uri;
-  private listeners: Array<(goals: GoalAnswer<String>) => void> = [];
+  private listeners: Array<(goals: GoalAnswer<String, String>) => void> = [];
 
   constructor(extensionUri: Uri) {
     this.extensionUri = extensionUri;
@@ -50,11 +53,11 @@ export class InfoPanel {
     this.panel?.dispose();
   }
 
-  registerObserver(fn: (goals: GoalAnswer<String>) => void) {
+  registerObserver(fn: (goals: GoalAnswer<String, String>) => void) {
     this.listeners.push(fn);
   }
 
-  unregisterObserver(fn: (goals: GoalAnswer<String>) => void) {
+  unregisterObserver(fn: (goals: GoalAnswer<String, String>) => void) {
     let index = this.listeners.indexOf(fn);
     if (index >= 0) {
       this.listeners.splice(index, 1);
@@ -123,7 +126,7 @@ export class InfoPanel {
   }
 
   // notify the info panel that we have fresh goals to render
-  requestDisplay(goals: GoalAnswer<PpString>) {
+  requestDisplay(goals: GoalAnswer<BoxString, PpString>) {
     this.postMessage({ method: "renderGoals", params: goals });
   }
 
@@ -160,7 +163,7 @@ export class InfoPanel {
       params.pp_format = "Str";
       client.sendRequest(goalReq, params).then(
         (goals) => {
-          let goals_fn = goals as GoalAnswer<String>;
+          let goals_fn = goals as GoalAnswer<String, String>;
           this.listeners.forEach((fn) => fn(goals_fn));
         },
         // We should actually provide a better setup so we can pass
@@ -181,7 +184,7 @@ export class InfoPanel {
     uri: URI,
     version: number,
     position: Position,
-    pp_format: "Pp" | "Str"
+    pp_format: "Box" | "Pp" | "Str"
   ) {
     let textDocument = VersionedTextDocumentIdentifier.create(uri, version);
 

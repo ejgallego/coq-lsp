@@ -21,6 +21,9 @@
    #755, cc: #722, #725)
  - [hover] Show input howto for unicode characters on hover
    (@ejgallego, Léo Stefanesco, #756)
+ - [coq] incorporate experimental `coq-layout-engine` printer, both in
+   client and server parts (@ejgallego, #668, see also #72 and
+   https://github.com/jscoq/jscoq/pull/282 )
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
