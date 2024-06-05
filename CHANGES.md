@@ -19,6 +19,11 @@
    #754)
  - [vscode] Fix focus race when a Coq file is in column 2 (@ejgallego,
    #755, cc: #722, #725)
+ - [hover] When the `show_doc_on_hover` option is enabled, hover will
+   show coqdoc documentation when hovering on identifiers, using some
+   heuristics to infer it from the comment just before
+   it. Documentation is treated as Markdown. This feature is
+   experimental and may change in the future. (@ejgallego, #590)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
