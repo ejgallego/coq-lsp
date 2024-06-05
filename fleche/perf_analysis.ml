@@ -35,6 +35,7 @@ let node_time_compare (n1 : Doc.Node.t) (n2 : Doc.Node.t) =
 
 (* Old mode of sending only the 10 hotspots *)
 let hotspot = false
+let debug_hashtbl = false
 
 let make (doc : Doc.t) =
   let n_stm = List.length doc.nodes in
@@ -43,8 +44,15 @@ let make (doc : Doc.t) =
     if display_cache_size then Memo.all_size () |> float_of_int else 0.0
   in
   let summary =
-    Format.asprintf "{ num sentences: %d@\n; stats: %s; cache: %a@\n}" n_stm
-      stats Stats.pp_words cache_size
+    Format.asprintf "{ num sentences: %d@\n; stats: %s; cache: %a@}" n_stm stats
+      Stats.pp_words cache_size
+  in
+  let summary =
+    if debug_hashtbl then
+      summary
+      ^ Format.asprintf "{memo max bucket: %d}"
+          (Memo.Interp.stats ()).max_bucket_length
+    else summary
   in
   let timings =
     if hotspot then List.stable_sort node_time_compare doc.nodes |> list_take 10

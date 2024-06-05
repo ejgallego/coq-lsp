@@ -36,6 +36,9 @@ module type S = sig
   (** [freqs ()]: (sorted) histogram *)
   val all_freqs : unit -> int list
 
+  (** [stats ()]: hashtbl stats *)
+  val stats : unit -> Hashtbl.statistics
+
   (** debug data for input *)
   val input_info : input -> string
 
