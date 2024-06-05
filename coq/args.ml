@@ -84,14 +84,20 @@ let ri_from : (string option * string) list Term.t =
         & info [ "rifrom"; "require-import-from" ] ~docv:"FROM,LIBRARY" ~doc))
 
 let int_backend =
+  let docv = "BACKEND" in
+  let backends = [ ("Coq", Limits.Coq); ("Mp", Limits.Mp) ] in
+  let backends_str =
+    "either 'Mp', for memprof-limits token-based interruption,\n\
+    \  or 'Coq', for Coq's polling mode (unreliable). The 'Mp' backend is only \
+     supported in OCaml 4.x series."
+  in
   let doc =
-    "Select Interruption Backend. 'Mp' = memprof-limits token-based \
-     interruption , 'Coq' = Coq's polling mode (unreliable). The 'Mp' backend \
-     is only supported in OCaml 4.x series."
+    Printf.sprintf
+      "Select Interruption Backend, if absent, the best available for your \
+       OCaml version will be selected. %s is %s"
+      docv backends_str
   in
   let absent = "'Mp' for OCaml 4.x, 'Coq' for OCaml 5.x" in
-  let backends = [ ("Coq", Limits.Coq); ("Mp", Limits.Mp) ] in
-  let docv = Cmdliner.Arg.doc_alts_enum ~quoted:true backends in
   Arg.(
     value
     & opt (some (enum backends)) None
