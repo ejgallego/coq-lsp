@@ -57,10 +57,8 @@ end = struct
     let id = get_id () in
     let method_ = R.method_ in
     let params = Yojson.Safe.Util.to_assoc (R.Params.to_yojson params) in
-    let request =
-      Lsp.Base.Request.(make ~id ~method_ ~params () |> to_yojson)
-    in
-    let () = Lsp.Io.send_json C.oc request in
+    let request = Lsp.Base.Request.make ~id ~method_ ~params () in
+    let () = Lsp.Io.send_message C.oc (Lsp.Base.Message.Request request) in
     read_response ~trace ~message C.ic |> fun r ->
     Result.bind r (function
       | Ok { id = _; result } -> R.Response.of_yojson result

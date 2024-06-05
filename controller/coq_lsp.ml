@@ -49,12 +49,9 @@ let rec process_queue ~delay ~io ~ofn ~state : unit =
   | Some (Cont state) -> process_queue ~delay ~io ~ofn ~state
 
 let concise_cb ofn =
-  let send_notification nt =
-    Lsp.Base.Message.(Notification nt |> to_yojson) |> ofn
-  in
   let diagnostics ~uri ~version diags =
     if List.length diags > 0 then
-      Lsp.JLang.mk_diagnostics ~uri ~version diags |> send_notification
+      Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn
   in
   Fleche.Io.CallBack.
     { trace = (fun _hdr ?extra:_ _msg -> ())
@@ -67,35 +64,40 @@ let concise_cb ofn =
     }
 
 (* Main loop *)
-let lsp_cb ofn =
-  let send_notification nt =
-    Lsp.Base.Message.(Notification nt |> to_yojson) |> ofn
-  in
-  let trace = LIO.trace in
+module CB (O : sig
+  val ofn : Lsp.Base.Notification.t -> unit
+end) =
+struct
+  let ofn = O.ofn
+  let trace = LIO.trace
+
   let message ~lvl ~message =
     let lvl = Fleche.Io.Level.to_int lvl in
     LIO.logMessageInt ~lvl ~message
-  in
+
   let diagnostics ~uri ~version diags =
-    Lsp.JLang.mk_diagnostics ~uri ~version diags |> send_notification
-  in
+    Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn
+
   let fileProgress ~uri ~version progress =
-    Lsp.JFleche.mk_progress ~uri ~version progress |> send_notification
-  in
+    Lsp.JFleche.mk_progress ~uri ~version progress |> ofn
+
   let perfData ~uri ~version perf =
-    Lsp.JFleche.mk_perf ~uri ~version perf |> send_notification
-  in
-  let serverVersion vi = Lsp.JFleche.mk_serverVersion vi |> send_notification in
-  let serverStatus st = Lsp.JFleche.mk_serverStatus st |> send_notification in
-  Fleche.Io.CallBack.
-    { trace
-    ; message
-    ; diagnostics
-    ; fileProgress
-    ; perfData
-    ; serverVersion
-    ; serverStatus
-    }
+    Lsp.JFleche.mk_perf ~uri ~version perf |> ofn
+
+  let serverVersion vi = Lsp.JFleche.mk_serverVersion vi |> ofn
+  let serverStatus st = Lsp.JFleche.mk_serverStatus st |> ofn
+
+  let cb =
+    Fleche.Io.CallBack.
+      { trace
+      ; message
+      ; diagnostics
+      ; fileProgress
+      ; perfData
+      ; serverVersion
+      ; serverStatus
+      }
+end
 
 let coq_init ~debug =
   let load_module = Dynlink.loadfile in
@@ -130,16 +132,15 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
   let ifn () = LIO.read_message stdin in
 
   (* Set log channels *)
-  let json_fn = LIO.send_json Format.std_formatter in
+  let ofn message = LIO.send_message Format.std_formatter message in
+  let ofn_ntn not = Lsp.Base.Message.notification not |> ofn in
 
-  let ofn response =
-    let response = Lsp.Base.Message.to_yojson response in
-    LIO.send_json Format.std_formatter response
-  in
+  LIO.set_log_fn ofn_ntn;
 
-  LIO.set_log_fn json_fn;
-
-  let io = lsp_cb json_fn in
+  let module CB = CB (struct
+    let ofn = ofn_ntn
+  end) in
+  let io = CB.cb in
   Fleche.Io.CallBack.set io;
 
   (* IMPORTANT: LSP spec forbids any message from server to client before
@@ -182,7 +183,7 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
         Fleche.Config.(
           v := { !v with send_diags = false; send_perf_data = false });
         LIO.set_log_fn (fun _obj -> ());
-        let io = concise_cb json_fn in
+        let io = concise_cb ofn_ntn in
         Fleche.Io.CallBack.set io;
         io)
       else io

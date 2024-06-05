@@ -35,11 +35,10 @@ let handle_request ~token ~id ~method_ ~params =
     let message = "method not found" in
     Lsp.Base.Response.mk_error ~id ~code ~message
 
-let interp ~token (r : Lsp.Base.Message.t) : Yojson.Safe.t option =
+let interp ~token (r : Lsp.Base.Message.t) : Lsp.Base.Response.t option =
   match r with
   | Request { id; method_; params } ->
     let response = handle_request ~token ~id ~method_ ~params in
-    let response = Lsp.Base.Response.to_yojson response in
     Some response
   | Notification { method_ = _; params = _ } -> None
   | Response _ ->

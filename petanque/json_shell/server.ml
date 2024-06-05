@@ -27,7 +27,10 @@ let rec handle_connection ~token ic oc () =
       | None -> handle_connection ~token ic oc ()
       | Some reply ->
         let* () = Logs_lwt.info (fun m -> m "Sent reply") in
-        let* () = Lwt_io.fprintl oc (Yojson.Safe.to_string reply) in
+        let* () =
+          Lwt_io.fprintl oc
+            (Yojson.Safe.to_string (Lsp.Base.Response.to_yojson reply))
+        in
         handle_connection ~token ic oc ())
   with End_of_file -> return ()
 
