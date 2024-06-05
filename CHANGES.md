@@ -29,6 +29,9 @@
    (@ejgallego, #762)
  - [lsp] [definition] Try also to resolve and locate module imports
    (@ejgallego, #764)
+ - [code] Don't start server on extension activation, unless an editor
+   we own is active. We also auto-start the server if a document that
+   we own is opened later (@ejgallego, #758, fixes #750)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
