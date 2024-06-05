@@ -90,7 +90,10 @@ let int_backend =
   in
   Arg.(
     value
-    & opt (enum [ ("Coq", Some Limits.Coq); ("Mp", Some Limits.Mp) ]) None
+    & opt
+        (enum
+           [ ("Coq", Some Limits.Coq); ("Mp", Some Limits.Mp); ("auto", None) ])
+        None
     & info [ "int_backend" ] ~docv:"INT_BACKEND" ~doc)
 
 let roots : string list Term.t =
