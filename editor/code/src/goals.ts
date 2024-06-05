@@ -104,7 +104,11 @@ export class InfoPanel {
       this.panelFactory();
     } else {
       if (!this.panel.visible) {
-        this.panel.reveal(2, true);
+        // Otherwise we create a race with the active editor!
+        // Careful about this.
+        if (window.activeTextEditor?.viewColumn !== 2) {
+          this.panel.reveal(2, true);
+        }
       }
     }
   }
