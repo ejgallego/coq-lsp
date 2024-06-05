@@ -18,7 +18,8 @@
 let coq_interp ~st cmd =
   let st = State.to_coq st in
   let cmd = Ast.to_coq cmd in
-  Vernacinterp.interp ~st cmd |> State.of_coq
+  let intern = Vernacinterp.fs_intern in
+  Vernacinterp.interp ~intern ~st cmd |> State.of_coq
 
 let interp ~token ~st cmd = Protect.eval ~token cmd ~f:(coq_interp ~st)
 
@@ -28,7 +29,8 @@ module Require = struct
   let interp ~st _files
       { Ast.Require.from; export; mods; loc = _; attrs; control } =
     let () = Vernacstate.unfreeze_full_state (State.to_coq st) in
-    let fn () = Vernacentries.vernac_require from export mods in
+    let intern = Vernacinterp.fs_intern in
+    let fn () = Vernacentries.vernac_require ~intern from export mods in
     (* Check generic attributes *)
     let fn () =
       Synterp.with_generic_atts ~check:true attrs (fun ~atts ->
