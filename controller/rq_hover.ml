@@ -223,6 +223,29 @@ module Notation : HoverProvider = struct
   let h = Handler.WithNode info_notation
 end
 
+module InputHelp : HoverProvider = struct
+  let mk_map map =
+    List.fold_left
+      (fun m (tex, uni) -> CString.Map.add uni tex m)
+      CString.Map.empty map
+
+  (* A bit hackish, but OK *)
+  let unimap =
+    Lazy.from_fun (fun () -> mk_map (Unicode_bindings.from_config ()))
+
+  let input_help ~token:_ ~contents ~point ~node:_ =
+    (* check if contents at point match *)
+    match Rq_common.get_uchar_at_point ~prev:false ~contents ~point with
+    | Some (uchar, uchar_str)
+      when Lang.Compat.OCaml4_14.Uchar.utf_8_byte_length uchar > 1 ->
+      Option.map
+        (fun tex -> Format.asprintf "Input %s with %s" uchar_str tex)
+        (CString.Map.find_opt uchar_str (Lazy.force unimap))
+    | Some _ | None -> None
+
+  let h = Handler.MaybeNode input_help
+end
+
 module Register = struct
   let handlers : Handler.t list ref = ref []
   let add fn = handlers := fn :: !handlers
@@ -240,7 +263,9 @@ module Register = struct
 end
 
 (* Register in-file hover plugins *)
-let () = List.iter Register.add [ Loc_info.h; Stats.h; Type.h; Notation.h ]
+let () =
+  List.iter Register.add
+    [ Loc_info.h; Stats.h; Type.h; Notation.h; InputHelp.h ]
 
 let hover ~token ~(doc : Fleche.Doc.t) ~point =
   let node = Info.LC.node ~doc ~point Exact in

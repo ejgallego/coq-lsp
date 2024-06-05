@@ -19,6 +19,8 @@
    #754)
  - [vscode] Fix focus race when a Coq file is in column 2 (@ejgallego,
    #755, cc: #722, #725)
+ - [hover] Show input howto for unicode characters on hover
+   (@ejgallego, Léo Stefanesco, #756)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
