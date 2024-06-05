@@ -60,7 +60,12 @@ let compare (x : t) (y : t) =
   else 1
 
 let equal x y = compare x y = 0
-let hash x = Hashtbl.hash x
+
+let hash x =
+  (* OCaml's defaults are 10, 100, but not so good for us, much improved
+     settings are below (best try so far) *)
+  let meaningful, total = (64, 256) in
+  Hashtbl.hash_param meaningful total x
 
 let mode ~st =
   Option.map

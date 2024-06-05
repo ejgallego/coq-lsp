@@ -8,6 +8,8 @@
  - [fleche] Preserve view hint across document changes. With this
    change, we get local continuous checking mode when the view-port
    heuristic is enabled (@ejgallego, #748)
+ - [memo] More precise hashing for Coq states, this improves cache
+   performance quite a bit (@ejgallego, #751)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
