@@ -17,6 +17,8 @@
  - [nix] Add `pet-server` deps to flake.nix (Léo Stefanesco, #754)
  - [coq-lsp] Fix crash on `--help` option (Léo Stefanesco, @ejgallego,
    #754)
+ - [vscode] Fix focus race when a Coq file is in column 2 (@ejgallego,
+   #755, cc: #722, #725)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
