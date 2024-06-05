@@ -18,16 +18,13 @@
 (** JSON-RPC input/output *)
 
 (** Set the log function *)
-val set_log_fn : (Yojson.Safe.t -> unit) -> unit
+val set_log_fn : (Base.Notification.t -> unit) -> unit
 
-(** Read a JSON-RPC message from channel *)
-val read_raw_message : in_channel -> (Yojson.Safe.t, string) Result.t option
-
-(** [None] signals [EOF] *)
+(** Read a JSON-RPC message from channel; [None] signals [EOF] *)
 val read_message : in_channel -> (Base.Message.t, string) Result.t option
 
-(** Send a JSON-RPC request to channel *)
-val send_json : Format.formatter -> Yojson.Safe.t -> unit
+(** Send a JSON-RPC message to channel *)
+val send_message : Format.formatter -> Base.Message.t -> unit
 
 (** Logging *)
 

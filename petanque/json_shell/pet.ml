@@ -5,7 +5,8 @@ let interp ~token request =
   match Interp.interp ~token request with
   | None -> ()
   | Some response ->
-    Lsp.Io.send_json Format.std_formatter response;
+    let message = Lsp.Base.Message.response response in
+    Lsp.Io.send_message Format.std_formatter message;
     Format.pp_print_flush Format.std_formatter ()
 
 let rec loop ~token : unit =
@@ -25,9 +26,9 @@ let trace_notification hdr ?extra msg =
   let params = { M.Params.message; verbose = extra } in
   let params = M.Params.to_yojson params |> Yojson.Safe.Util.to_assoc in
   let notification =
-    Lsp.Base.Notification.(make ~method_ ~params () |> to_yojson)
+    Lsp.Base.(Notification.(make ~method_ ~params () |> Message.notification))
   in
-  Lsp.Io.send_json Format.std_formatter notification
+  Lsp.Io.send_message Format.std_formatter notification
 
 let message_notification ~lvl ~message =
   let module M = Protocol.Message in
@@ -36,9 +37,9 @@ let message_notification ~lvl ~message =
   let params = M.Params.({ type_; message } |> to_yojson) in
   let params = Yojson.Safe.Util.to_assoc params in
   let notification =
-    Lsp.Base.Notification.(make ~method_ ~params () |> to_yojson)
+    Lsp.Base.(Notification.(make ~method_ ~params () |> Message.notification))
   in
-  Lsp.Io.send_json Format.std_formatter notification
+  Lsp.Io.send_message Format.std_formatter notification
 
 let trace_enabled = true
 

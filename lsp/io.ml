@@ -68,6 +68,8 @@ let send_json fmt obj =
   F.fprintf fmt "Content-Length: %d\r\n\r\n%s%!" size msg;
   Mutex.unlock mut
 
+let send_message fmt message = send_json fmt (Base.Message.to_yojson message)
+
 (** Logging *)
 
 module TraceValue = struct
@@ -113,15 +115,13 @@ let logMessage ~lvl ~message =
   let lvl = Lvl.to_int lvl in
   (* Replace with the json serializer in petanque protocol *)
   let params = [ ("type", `Int lvl); ("message", `String message) ] in
-  let msg = Base.Notification.(make ~method_ ~params () |> to_yojson) in
-  !fn msg
+  Base.Notification.make ~method_ ~params () |> !fn
 
 let logMessageInt ~lvl ~message =
   let method_ = "window/logMessage" in
   (* Replace with the json serializer in petanque protocol *)
   let params = [ ("type", `Int lvl); ("message", `String message) ] in
-  let msg = Base.Notification.(make ~method_ ~params () |> to_yojson) in
-  !fn msg
+  Base.Notification.make ~method_ ~params () |> !fn
 
 let logTrace ~message ~extra =
   let method_ = "$/logTrace" in
@@ -131,7 +131,7 @@ let logTrace ~message ~extra =
       [ ("message", `String message); ("verbose", `String extra) ]
     | _, _ -> [ ("message", `String message) ]
   in
-  Base.Notification.(make ~method_ ~params () |> to_yojson) |> !fn
+  Base.Notification.make ~method_ ~params () |> !fn
 
 let trace hdr ?extra msg =
   let message = Format.asprintf "[%s]: @[%s@]" hdr msg in
