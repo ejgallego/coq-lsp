@@ -21,6 +21,11 @@
    #755, cc: #722, #725)
  - [hover] Show input howto for unicode characters on hover
    (@ejgallego, Léo Stefanesco, #756)
+ - [lsp] [definition] Support for jump to definition across workspace
+   files. The location information is obtained from `.glob` files, so
+   it is often not perfect. (@ejgallego, #762, fixes #317)
+ - [lsp] [hover] Show full name and provenance of identifiers
+   (@ejgallego, #762)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------

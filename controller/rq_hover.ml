@@ -12,7 +12,7 @@ let build_ind_type mip = Inductive.type_of_inductive mip
 
 type id_info =
   | Notation of Pp.t
-  | Def of Pp.t
+  | Def of (Pp.t * Names.Constant.t option * string option)
 
 let info_of_ind env sigma ((sp, i) : Names.Ind.t) =
   let mib = Environ.lookup_mind sp env in
@@ -37,7 +37,7 @@ let info_of_ind env sigma ((sp, i) : Names.Ind.t) =
       (Impargs.implicits_of_global (Names.GlobRef.IndRef (sp, i)))
   in
   let impargs = List.map Impargs.binding_kind_of_status impargs in
-  Def (Printer.pr_ltype_env ~impargs env_params sigma arity)
+  Def (Printer.pr_ltype_env ~impargs env_params sigma arity, None, None)
 
 let type_of_constant cb = cb.Declarations.const_type
 
@@ -53,7 +53,12 @@ let info_of_const env sigma cr =
       (Impargs.implicits_of_global (Names.GlobRef.ConstRef cr))
   in
   let impargs = List.map Impargs.binding_kind_of_status impargs in
-  Def (Printer.pr_ltype_env env sigma ~impargs typ)
+  let typ = Printer.pr_ltype_env env sigma ~impargs typ in
+  let dp = Names.Constant.modpath cr |> Names.ModPath.dp in
+  let source =
+    Rq_common.CoqModule.(make dp |> Result.to_option |> Option.map source)
+  in
+  Def (typ, Some cr, source)
 
 let info_of_var env vr =
   let vdef = Environ.lookup_named vr env in
@@ -70,7 +75,7 @@ let info_of_constructor env cr =
   in
   ctype
 
-let print_type env sigma x = Def (Printer.pr_ltype_env env sigma x)
+let print_type env sigma x = Def (Printer.pr_ltype_env env sigma x, None, None)
 
 let info_of_id env sigma id =
   let qid = Libnames.qualid_of_string id in
@@ -114,10 +119,22 @@ let info_of_id_at_point ~token ~node id =
   let st = node.Fleche.Doc.Node.state in
   Coq.State.in_state ~token ~st ~f:(info_of_id ~st) id
 
+let pp_cr fmt = function
+  | None -> ()
+  | Some cr ->
+    Format.fprintf fmt " - **full path**: `%a`@\n" Pp.pp_with
+      (Names.Constant.print cr)
+
+let pp_file fmt = function
+  | None -> ()
+  | Some file -> Format.fprintf fmt " - **in file**: `%s`" file
+
 let pp_typ id = function
-  | Def typ ->
+  | Def (typ, cr, file) ->
     let typ = Pp.string_of_ppcmds typ in
-    Format.(asprintf "```coq\n%s : %s\n```" id typ)
+    Format.(
+      asprintf "@[```coq\n%s : %s@\n```@\n@[%a@]@[%a@]@]" id typ pp_cr cr
+        pp_file file)
   | Notation nt ->
     let nt = Pp.string_of_ppcmds nt in
     Format.(asprintf "```coq\n%s\n```" nt)

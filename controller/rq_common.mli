@@ -20,3 +20,13 @@ val get_uchar_at_point :
   -> contents:Fleche.Contents.t
   -> point:int * int
   -> (Uchar.t * string) option
+
+module CoqModule : sig
+  type t
+
+  (* Lookup module as needed *)
+  val make : Names.DirPath.t -> (t, Loadpath.Error.t) Result.t
+  val uri : t -> Lang.LUri.File.t
+  val source : t -> string
+  val find : t -> string -> (Lang.Range.t option, string) Result.t
+end
