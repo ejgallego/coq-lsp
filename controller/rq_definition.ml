@@ -54,8 +54,27 @@ let get_from_file id_at_point =
     Fleche.Io.Log.trace "rq_definition" "No TrueGlobal Found";
     Ok None
 
-let get_from_file ~token ~st id_at_point =
-  let f = get_from_file in
+let get_from_import require_at_point =
+  match Loadpath.locate_qualified_library require_at_point with
+  | Ok (dp, _file) -> (
+    match Rq_common.CoqModule.make dp with
+    | Error _err -> None
+    | Ok mod_ ->
+      let uri = Rq_common.CoqModule.uri mod_ in
+      let start = Lang.Point.{ line = 0; character = 0; offset = 0 } in
+      let range = Lang.Range.{ start; end_ = start } in
+      Some Lsp.Core.Location.{ uri; range })
+  | Error _ -> None
+
+let get_from_file_or_import ~token ~st id_at_point =
+  let f id =
+    match get_from_file id with
+    | Error err -> Error err
+    | Ok (Some res) -> Ok (Some res)
+    | Ok None ->
+      let qualid = Libnames.qualid_of_string id_at_point in
+      Ok (get_from_import qualid)
+  in
   Coq.State.in_state ~token ~st ~f id_at_point
 
 let request ~token ~(doc : Fleche.Doc.t) ~point =
@@ -72,7 +91,7 @@ let request ~token ~(doc : Fleche.Doc.t) ~point =
         |> Option.cata
              (fun node ->
                let st = Fleche.Doc.Node.state node in
-               get_from_file ~token ~st idp)
+               get_from_file_or_import ~token ~st idp)
              (ok None))
     (ok None) idp
   |> Coq.Protect.E.map

@@ -10,9 +10,10 @@
    heuristic is enabled (@ejgallego, #748)
  - [memo] More precise hashing for Coq states, this improves cache
    performance quite a bit (@ejgallego, #751)
- - [fleche] This achieves an almost 50% memory reduction for example
-   when opening all of HoTT .v files (@ejgallego, @SkySkimmer,
-   @bhaktishh, #744)
+ - [fleche] Enable sharing of `.vo` file parsing. This enables better
+   sharing, achieving an almost 50% memory reduction for example when
+   opening all of HoTT .v files (@ejgallego, @SkySkimmer, @bhaktishh,
+   #744)
  - [memo] Provide API to query Hashtbl stats (@ejgallego, #753)
  - [nix] Add `pet-server` deps to flake.nix (Léo Stefanesco, #754)
  - [coq-lsp] Fix crash on `--help` option (Léo Stefanesco, @ejgallego,
@@ -26,6 +27,8 @@
    it is often not perfect. (@ejgallego, #762, fixes #317)
  - [lsp] [hover] Show full name and provenance of identifiers
    (@ejgallego, #762)
+ - [lsp] [definition] Try also to resolve and locate module imports
+   (@ejgallego, #764)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
