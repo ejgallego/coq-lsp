@@ -35,3 +35,12 @@ module Result : sig
     -> ('r, 'e) Result.t
     -> unit
 end
+
+module Option : sig
+  include module type of Stdlib.Option
+
+  module O : sig
+    val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
+    val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
+  end
+end

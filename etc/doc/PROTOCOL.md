@@ -19,41 +19,41 @@ https://github.com/microsoft/language-server-protocol/issues/1414
 
 If a feature doesn't appear here it usually means it is not planned in the short term:
 
-| Method                                | Support | Notes                                                      |
-|---------------------------------------|---------|------------------------------------------------------------|
-| `initialize`                          | Partial | We don't obey the advertised client capabilities           |
-| `client/registerCapability`           | No      | Not planned ATM                                            |
-| `$/setTrace`                          | Yes     |                                                            |
-| `$/logTrace`                          | Yes     |                                                            |
-| `window/logMessage`                   | Yes     |                                                            |
-|---------------------------------------|---------|------------------------------------------------------------|
-| `textDocument/didOpen`                | Yes     | We can't reuse Memo tables yet                             |
-| `textDocument/didChange`              | Yes     | We only support `TextDocumentSyncKind.Full` for now        |
-| `textDocument/didClose`               | Partial | We'd likely want to save a `.vo` file on close if possible |
-| `textDocument/didSave`                | Partial | Undergoing behavior refinement                             |
-|---------------------------------------|---------|------------------------------------------------------------|
-| `notebookDocument/didOpen`            | No      | Planned                                                    |
-|---------------------------------------|---------|------------------------------------------------------------|
-| `textDocument/declaration`            | No      | Planned, blocked on upstream issues                        |
-| `textDocument/definition`             | Partial | Working only locally on files for now                      |
-| `textDocument/references`             | No      | Planned, blocked on upstream issues                        |
-| `textDocument/hover`                  | Yes     | Shows stats and type info of identifiers at point          |
-| `textDocument/codeLens`               | No      |                                                            |
-| `textDocument/foldingRange`           | No      |                                                            |
-| `textDocument/documentSymbol`         | Yes     | Sections and modules missing (#322)                        |
-| `textDocument/semanticTokens`         | No      | Planned                                                    |
-| `textDocument/inlineValue`            | No      | Planned                                                    |
-| `textDocument/inlayHint`              | No      | Planned                                                    |
-| `textDocument/completion`             | Partial | Needs more work locally and upstream (#50)                 |
-| `textDocument/publishDiagnostics`     | Yes     |                                                            |
-| `textDocument/diagnostic`             | No      | Planned, issue #49                                         |
-| `textDocument/codeAction`             | No      | Planned                                                    |
-| `textDocument/selectionRange`         | Partial | Selection for a point is its span; no parents              |
-|---------------------------------------|---------|------------------------------------------------------------|
-| `workspace/workspaceFolders`          | Yes     | Each folder should have a `_CoqProject` file at the root.  |
-| `workspace/didChangeWorkspaceFolders` | Yes     |                                                            |
-| `workspace/didChangeConfiguration`    | Yes (*) | We still do a client -> server push, instead of pull       |
-|---------------------------------------|---------|------------------------------------------------------------|
+| Method                                | Support | Notes                                                         |
+|---------------------------------------|---------|---------------------------------------------------------------|
+| `initialize`                          | Partial | We don't obey the advertised client capabilities              |
+| `client/registerCapability`           | No      | Not planned ATM                                               |
+| `$/setTrace`                          | Yes     |                                                               |
+| `$/logTrace`                          | Yes     |                                                               |
+| `window/logMessage`                   | Yes     |                                                               |
+|---------------------------------------|---------|---------------------------------------------------------------|
+| `textDocument/didOpen`                | Yes     | We can't reuse Memo tables yet                                |
+| `textDocument/didChange`              | Yes     | We only support `TextDocumentSyncKind.Full` for now           |
+| `textDocument/didClose`               | Partial | We'd likely want to save a `.vo` file on close if possible    |
+| `textDocument/didSave`                | Partial | Undergoing behavior refinement                                |
+|---------------------------------------|---------|---------------------------------------------------------------|
+| `notebookDocument/didOpen`            | No      | Planned                                                       |
+|---------------------------------------|---------|---------------------------------------------------------------|
+| `textDocument/declaration`            | No      | Planned, blocked on upstream issues                           |
+| `textDocument/definition`             | Yes (*) | Uses .glob information which is often incomplete              |
+| `textDocument/references`             | No      | Planned, blocked on upstream issues                           |
+| `textDocument/hover`                  | Yes     | Shows stats and type info of identifiers at point, extensible |
+| `textDocument/codeLens`               | No      |                                                               |
+| `textDocument/foldingRange`           | No      |                                                               |
+| `textDocument/documentSymbol`         | Yes     | Sections and modules missing (#322)                           |
+| `textDocument/semanticTokens`         | No      | Planned                                                       |
+| `textDocument/inlineValue`            | No      | Planned                                                       |
+| `textDocument/inlayHint`              | No      | Planned                                                       |
+| `textDocument/completion`             | Partial | Needs more work locally and upstream (#50)                    |
+| `textDocument/publishDiagnostics`     | Yes     |                                                               |
+| `textDocument/diagnostic`             | No      | Planned, issue #49                                            |
+| `textDocument/codeAction`             | No      | Planned                                                       |
+| `textDocument/selectionRange`         | Partial | Selection for a point is its span; no parents                 |
+|---------------------------------------|---------|---------------------------------------------------------------|
+| `workspace/workspaceFolders`          | Yes     | Each folder should have a `_CoqProject` file at the root.     |
+| `workspace/didChangeWorkspaceFolders` | Yes     |                                                               |
+| `workspace/didChangeConfiguration`    | Yes (*) | We still do a client -> server push, instead of pull          |
+|---------------------------------------|---------|---------------------------------------------------------------|
 
 ### URIs accepted by coq-lsp
 

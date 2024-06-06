@@ -120,3 +120,12 @@ let format_to_file ~file ~f x =
   Out_channel.with_open_bin file (fun oc ->
       let of_fmt = Format.formatter_of_out_channel oc in
       Format.fprintf of_fmt "@[%a@]%!" f x)
+
+module Option = struct
+  include Stdlib.Option
+
+  module O = struct
+    let ( let+ ) r f = map f r
+    let ( let* ) r f = bind r f
+  end
+end

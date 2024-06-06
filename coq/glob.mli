@@ -18,6 +18,7 @@
 (* Glob file that was read and parsed successfully *)
 type t
 
+(* Input is a .glob file *)
 val open_file : string -> (t, string) Result.t
 
 module Info : sig
@@ -27,4 +28,4 @@ module Info : sig
     }
 end
 
-val get_info : t -> string -> (Info.t, string) Result.t
+val get_info : t -> string -> Info.t option

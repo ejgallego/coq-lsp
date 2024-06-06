@@ -184,7 +184,4 @@ let open_file file =
     Compat.Ocaml_414.In_channel.with_open_text file (Coq.read_glob (Some vfile))
   else Error (Format.asprintf "Cannot open file: %s" file)
 
-let get_info map name =
-  match DefMap.find_opt name map with
-  | Some info -> Ok info
-  | None -> Error (Format.asprintf "definition %s not found in glob table" name)
+let get_info map name = DefMap.find_opt name map

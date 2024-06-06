@@ -237,8 +237,10 @@ end
 let info_of ~glob ~name =
   let open Coq.Compat.Result.O in
   let* g = Memo.open_file glob in
-  let+ { Coq.Glob.Info.kind; offset } = Coq.Glob.get_info g name in
-  (kind, offset)
+  Ok
+    (Option.map
+       (fun { Coq.Glob.Info.kind; offset } -> (kind, offset))
+       (Coq.Glob.get_info g name))
 
 let raw_of ~file ~offset =
   match offset with
@@ -254,7 +256,12 @@ let to_premise (p : Coq.Library_file.Entry.t) : Premise.t =
   let file = Filename.(remove_extension file ^ ".v") in
   let glob = Filename.(remove_extension file ^ ".glob") in
   let range = Error "not implemented yet" in
-  let kind, offset = info_of ~glob ~name |> Coq.Compat.Result.split in
+  let kind, offset =
+    match info_of ~glob ~name with
+    | Ok None -> (Error "not in glob table", Error "not in glob table")
+    | Error err -> (Error err, Error err)
+    | Ok (Some (kind, offset)) -> (Ok kind, Ok offset)
+  in
   let raw_text = raw_of ~file ~offset in
   { full_name = name; file; kind; range; offset; raw_text }
 
