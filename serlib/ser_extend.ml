@@ -48,8 +48,3 @@ type 'lev constr_entry_key_gen =
 type constr_entry_key =
   [%import: Extend.constr_entry_key]
   [@@deriving sexp,yojson,hash,compare]
-
-type simple_constr_prod_entry_key =
-  [%import: Extend.simple_constr_prod_entry_key]
-  [@@deriving sexp,yojson,hash,compare]
-

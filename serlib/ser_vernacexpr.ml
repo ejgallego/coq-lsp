@@ -148,6 +148,14 @@ type notation_format =
   [%import: Vernacexpr.notation_format]
   [@@deriving sexp,yojson,hash,compare]
 
+type item_num_level =
+  [%import: Vernacexpr.item_num_level]
+  [@@deriving sexp,yojson,hash,compare]
+
+type item_level =
+  [%import: Vernacexpr.item_level]
+  [@@deriving sexp,yojson,hash,compare]
+
 type syntax_modifier =
   [%import: Vernacexpr.syntax_modifier]
   [@@deriving sexp,yojson,hash,compare]
