@@ -32,6 +32,8 @@
  - [code] Don't start server on extension activation, unless an editor
    we own is active. We also auto-start the server if a document that
    we own is opened later (@ejgallego, #758, fixes #750)
+ - [petanque] Allow `init` to be called multiple times (@ejgallego,
+   @gbdrt, #766)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------

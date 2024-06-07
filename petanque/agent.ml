@@ -118,15 +118,27 @@ let print_diags (doc : Fleche.Doc.t) =
   let d = Fleche.Doc.diags doc in
   Format.(eprintf "@[<v>%a@]" (pp_print_list pp_diag) d)
 
-let init ~token ~debug ~root =
-  let init = init_coq ~debug in
-  Fleche.Io.CallBack.set io;
+let setup_workspace ~token ~init ~debug ~root =
   let dir = Lang.LUri.File.to_string_file root in
   (let open Coq.Compat.Result.O in
    let+ workspace = Coq.Workspace.guess ~token ~debug ~cmdline ~dir in
    let files = Coq.Files.make () in
    Fleche.Doc.Env.make ~init ~workspace ~files)
   |> Result.map_error (fun msg -> Error.Coq msg)
+
+let init_st = ref None
+
+let init ~token ~debug ~root =
+  let init =
+    match !init_st with
+    | None ->
+      let init = init_coq ~debug in
+      Fleche.Io.CallBack.set io;
+      init_st := Some init;
+      init
+    | Some init -> init
+  in
+  setup_workspace ~token ~init ~debug ~root
 
 let start ~token ~env ~uri ~thm =
   match read_raw ~uri with
