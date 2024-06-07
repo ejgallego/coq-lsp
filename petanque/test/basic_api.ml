@@ -23,6 +23,8 @@ let start ~token =
   (* Will this work on Windows? *)
   let open Coq.Compat.Result.O in
   let root, uri = prepare_paths () in
+  (* Twice to test for #766 *)
+  let* _env = Agent.init ~token ~debug ~root in
   let* env = Agent.init ~token ~debug ~root in
   Agent.start ~token ~env ~uri ~thm:"rev_snoc_cons"
 
