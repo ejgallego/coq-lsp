@@ -31,7 +31,7 @@ let send_message msg =
 let interp ~token request =
   match Interp.interp ~token request with
   | None -> ()
-  | Some response -> Lsp.Base.Message.response response |> send_message
+  | Some message -> send_message message
 
 let rec loop ~token : unit =
   match read_message stdin with
@@ -45,24 +45,16 @@ let rec loop ~token : unit =
 
 let trace_notification hdr ?extra msg =
   let module M = Protocol.Trace in
-  let method_ = M.method_ in
   let message = Format.asprintf "[%s] %s" hdr msg in
   let params = { M.Params.message; verbose = extra } in
-  let params = M.Params.to_yojson params |> Yojson.Safe.Util.to_assoc in
-  let notification =
-    Lsp.Base.(Notification.(make ~method_ ~params () |> Message.notification))
-  in
+  let notification = M.make params in
   send_message notification
 
 let message_notification ~lvl ~message =
   let module M = Protocol.Message in
-  let method_ = M.method_ in
   let type_ = Fleche.Io.Level.to_int lvl in
-  let params = M.Params.({ type_; message } |> to_yojson) in
-  let params = Yojson.Safe.Util.to_assoc params in
-  let notification =
-    Lsp.Base.(Notification.(make ~method_ ~params () |> Message.notification))
-  in
+  let params = M.Params.{ type_; message } in
+  let notification = M.make params in
   send_message notification
 
 let trace_enabled = true
