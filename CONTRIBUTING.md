@@ -119,7 +119,7 @@ out `coq-lsp` development versions with other OPAM packages.
 1. Install vendored Coq
 
     ```sh
-    opam install vendor/coq/coq{-core,-stdlib,}.opam
+    opam install vendor/coq/coq{-core,-stdlib,ide-server,}.opam
     ```
 
 2. Install `coq-lsp`:
