@@ -26,7 +26,7 @@ let start ~token =
   (* Twice to test for #766 *)
   let* _env = Agent.init ~token ~debug ~root in
   let* env = Agent.init ~token ~debug ~root in
-  Agent.start ~token ~env ~uri ~thm:"rev_snoc_cons"
+  Agent.start ~token ~env ~uri ~thm:"rev_snoc_cons" ()
 
 let extract_st (st : _ Agent.Run_result.t) =
   match st with

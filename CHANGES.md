@@ -36,6 +36,9 @@
    @gbdrt, #766)
  - [petanque] Faster query for goals status after `run_tac`
    (@ejgallego, #768)
+ - [petanque] New parameter `pre_commands` to `start` which allows
+   instrumenting the goal before starting the proof (@ejgallego, Alex
+   Sanchez-Stern #769)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------

@@ -57,12 +57,18 @@ val message_ref : (lvl:Fleche.Io.Level.t -> message:string -> unit) ref
 val init :
   token:Coq.Limits.Token.t -> debug:bool -> root:Lang.LUri.File.t -> Env.t R.t
 
-(** [start uri thm] start a new proof for theorem [thm] in file [uri]. *)
+(** [start ~token ~env ~uri ~pre_commands ~thm] start a new proof for theorem
+    [thm] in file [uri] under [env]. [token] can be used to interrupt the
+    computation. Returns the proof state or error otherwise. [pre_commands] is a
+    string of dot-separated Coq commands that will be executed before the proof
+    starts. *)
 val start :
      token:Coq.Limits.Token.t
   -> env:Env.t
   -> uri:Lang.LUri.File.t
+  -> ?pre_commands:string
   -> thm:string
+  -> unit
   -> State.t R.t
 
 (** [run_tac ~token ~st ~tac] tries to run [tac] over state [st] *)

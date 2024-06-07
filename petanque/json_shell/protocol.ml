@@ -73,6 +73,7 @@ module Start = struct
     type t =
       { env : int
       ; uri : Lsp.JLang.LUri.File.t
+      ; pre_commands : string option [@default None]
       ; thm : string
       }
     [@@deriving yojson]
@@ -87,6 +88,7 @@ module Start = struct
       type t =
         { env : Env.t
         ; uri : Lsp.JLang.LUri.File.t
+        ; pre_commands : string option [@default None]
         ; thm : string
         }
       [@@deriving yojson]
@@ -96,8 +98,8 @@ module Start = struct
       type t = State.t [@@deriving yojson]
     end
 
-    let handler ~token { Params.env; uri; thm } =
-      Agent.start ~token ~env ~uri ~thm
+    let handler ~token { Params.env; uri; pre_commands; thm } =
+      Agent.start ~token ~env ~uri ?pre_commands ~thm ()
   end
 end
 

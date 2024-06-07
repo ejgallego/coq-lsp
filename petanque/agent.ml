@@ -109,7 +109,7 @@ let find_thm ~(doc : Fleche.Doc.t) ~thm =
   | Some node ->
     if pet_debug then Format.eprintf "@[[find_thm] Theorem found!@\n@]%!";
     (* let point = (range.start.line, range.start.character) in *)
-    Ok (Fleche.Doc.Node.state node)
+    Ok node
 
 let pp_diag fmt { Lang.Diagnostic.message; _ } =
   Format.fprintf fmt "%a" Pp.pp_with message
@@ -140,19 +140,6 @@ let init ~token ~debug ~root =
   in
   setup_workspace ~token ~init ~debug ~root
 
-let start ~token ~env ~uri ~thm =
-  match read_raw ~uri with
-  | Ok raw ->
-    (* Format.eprintf "raw: @[%s@]%!" raw; *)
-    let doc = Fleche.Doc.create ~token ~env ~uri ~version:0 ~raw in
-    print_diags doc;
-    let target = Fleche.Doc.Target.End in
-    let doc = Fleche.Doc.check ~io ~token ~target ~doc () in
-    find_thm ~doc ~thm
-  | Error err ->
-    let msg = Format.asprintf "@[[read_raw] File not found %s@]" err in
-    Error (Error.Theorem_not_found msg)
-
 let parse ~loc tac st =
   let str = Gramlib.Stream.of_string tac in
   let str = Coq.Parsing.Parsable.make ?loc str in
@@ -175,6 +162,20 @@ let parse_and_execute_in ~token ~loc tac st =
     | _ -> Run_result.Current_state st)
   | None -> Coq.Protect.E.ok (Run_result.Current_state st)
 
+let execute_precommands ~token ~pre_commands ~(node : Fleche.Doc.Node.t) =
+  match (pre_commands, node.prev, node.ast) with
+  | Some pre_commands, Some prev, Some ast ->
+    let st = prev.state in
+    let open Coq.Protect.E.O in
+    let* res = parse_and_execute_in ~token ~loc:None pre_commands st in
+    let st =
+      match res with
+      | Run_result.Current_state st | Run_result.Proof_finished st -> st
+    in
+    (* We re-interpret the lemma statement *)
+    Fleche.Memo.Interp.eval ~token (st, ast.v)
+  | _, _, _ -> Coq.Protect.E.ok node.state
+
 let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
   match r with
   | { r = Interrupted; feedback = _ } -> Error Error.Interrupted
@@ -183,6 +184,21 @@ let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
   | { r = Completed (Error (Anomaly (_loc, msg))); feedback = _ } ->
     Error (Error.Anomaly (Pp.string_of_ppcmds msg))
   | { r = Completed (Ok r); feedback = _ } -> Ok r
+
+let start ~token ~env ~uri ?pre_commands ~thm () =
+  match read_raw ~uri with
+  | Ok raw ->
+    (* Format.eprintf "raw: @[%s@]%!" raw; *)
+    let doc = Fleche.Doc.create ~token ~env ~uri ~version:0 ~raw in
+    print_diags doc;
+    let target = Fleche.Doc.Target.End in
+    let doc = Fleche.Doc.check ~io ~token ~target ~doc () in
+    let open Coq.Compat.Result.O in
+    let* node = find_thm ~doc ~thm in
+    execute_precommands ~token ~pre_commands ~node |> protect_to_result
+  | Error err ->
+    let msg = Format.asprintf "@[[read_raw] File not found %s@]" err in
+    Error (Error.Theorem_not_found msg)
 
 let run_tac ~token ~st ~tac : (_ Run_result.t, Error.t) Result.t =
   (* Improve with thm? *)
