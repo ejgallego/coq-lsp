@@ -75,33 +75,19 @@ let parse ~loc tac st =
   let str = Coq.Parsing.Parsable.make ?loc str in
   Coq.Parsing.parse ~st str
 
-let proof_finished { Coq.Goals.goals; stack; shelf; given_up; _ } =
-  List.for_all CList.is_empty [ goals; shelf; given_up ] && CList.is_empty stack
-
 let parse_and_execute_in ~token ~loc tac st =
   let open Coq.Protect.E.O in
   let* ast = parse ~token ~loc tac st in
   match ast with
-  | Some ast -> (
-    let open Coq.Protect.E.O in
-    let+ st = Fleche.Memo.Interp.eval ~token (st, ast) in
-    let goals = Fleche.Info.Goals.get_goals_unit ~st in
-    match goals with
-    | None -> Run_result.Proof_finished st
-    | Some goals when proof_finished goals -> Run_result.Proof_finished st
-    | _ -> Run_result.Current_state st)
-  | None -> Coq.Protect.E.ok (Run_result.Current_state st)
+  | Some ast -> Fleche.Memo.Interp.eval ~token (st, ast)
+  | None -> Coq.Protect.E.ok st
 
 let execute_precommands ~token ~pre_commands ~(node : Fleche.Doc.Node.t) =
   match (pre_commands, node.prev, node.ast) with
   | Some pre_commands, Some prev, Some ast ->
     let st = prev.state in
     let open Coq.Protect.E.O in
-    let* res = parse_and_execute_in ~token ~loc:None pre_commands st in
-    let st =
-      match res with
-      | Run_result.Current_state st | Run_result.Proof_finished st -> st
-    in
+    let* st = parse_and_execute_in ~token ~loc:None pre_commands st in
     (* We re-interpret the lemma statement *)
     Fleche.Memo.Interp.eval ~token (st, ast.v)
   | _, _, _ -> Coq.Protect.E.ok node.state
@@ -125,11 +111,25 @@ let start ~token ~uri ?pre_commands ~thm () =
     execute_precommands ~token ~pre_commands ~node |> protect_to_result
   | Error err -> Error err
 
+let proof_finished { Coq.Goals.goals; stack; shelf; given_up; _ } =
+  List.for_all CList.is_empty [ goals; shelf; given_up ] && CList.is_empty stack
+
+let analyze_after_run st =
+  let goals = Fleche.Info.Goals.get_goals_unit ~st in
+  match goals with
+  | None -> Run_result.Proof_finished st
+  | Some goals when proof_finished goals -> Run_result.Proof_finished st
+  | _ -> Run_result.Current_state st
+
 let run_tac ~token ~st ~tac : (_ Run_result.t, Error.t) Result.t =
   (* Improve with thm? *)
   let loc = None in
-  Coq.State.in_stateM ~token ~st ~f:(parse_and_execute_in ~token ~loc tac) st
-  |> protect_to_result
+  let f st =
+    let open Coq.Protect.E.O in
+    let+ st = parse_and_execute_in ~token ~loc tac st in
+    analyze_after_run st
+  in
+  Coq.State.in_stateM ~token ~st ~f st |> protect_to_result
 
 let goals ~token ~st =
   let f goals =
