@@ -33,7 +33,7 @@ let run (ic, oc) =
   (* Will this work on Windows? *)
   let root, uri = prepare_paths () in
   let* env = S.init { debug; root } in
-  let* st = S.start { env; uri; thm = "rev_snoc_cons" } in
+  let* st = S.start { env; uri; pre_commands = None; thm = "rev_snoc_cons" } in
   let* _premises = S.premises { st } in
   let* st = S.run_tac { st; tac = "induction l." } in
   let* st = r ~st ~tac:"-" in
