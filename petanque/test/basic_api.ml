@@ -26,8 +26,8 @@ let start ~token =
   let root, uri = prepare_paths () in
   (* Twice to test for #766 *)
   let* _env = Petanque.Shell.set_workspace ~token ~debug ~root in
-  let* env = Petanque.Shell.set_workspace ~token ~debug ~root in
-  let fn uri = Petanque.Shell.setup_doc ~token env uri in
+  let* _env = Petanque.Shell.set_workspace ~token ~debug ~root in
+  let fn = Petanque.Shell.fn in
   Agent.start ~token ~fn ~uri ~thm:"rev_snoc_cons" ()
 
 let extract_st (st : _ Agent.Run_result.t) =

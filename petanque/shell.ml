@@ -55,9 +55,13 @@ let init_agent ~debug =
   init_st := Some (init_coq ~debug);
   Fleche.Io.CallBack.set io
 
+let env = ref None
+
 let set_workspace ~token ~debug ~root =
   let init = Option.get !init_st in
-  setup_workspace ~token ~init ~debug ~root
+  let res = setup_workspace ~token ~init ~debug ~root in
+  Result.iter (fun env_ -> env := Some env_) res;
+  res
 
 (* *)
 let pp_diag fmt { Lang.Diagnostic.message; _ } =
@@ -80,3 +84,7 @@ let setup_doc ~token env uri =
     let target = Fleche.Doc.Target.End in
     Ok (Fleche.Doc.check ~io ~token ~target ~doc ())
   | Error err -> Error err
+
+let fn ~token uri =
+  let env = Option.get !env in
+  setup_doc ~token env uri

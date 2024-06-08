@@ -61,12 +61,8 @@ module SetWorkspace = struct
       type t = Env.t [@@deriving yojson]
     end
 
-    let env = ref None
-
     let handler ~token { Params.debug; root } =
-      let res = Petanque.Shell.set_workspace ~token ~debug ~root in
-      Result.iter (fun env_ -> env := Some env_) res;
-      res
+      Petanque.Shell.set_workspace ~token ~debug ~root
   end
 end
 
@@ -102,10 +98,7 @@ module Start = struct
     end
 
     let handler ~token { Params.uri; pre_commands; thm } =
-      let fn uri =
-        let env = Option.get !SetWorkspace.Handler.env in
-        Petanque.Shell.setup_doc ~token env uri
-      in
+      let fn = Petanque.Shell.fn in
       Agent.start ~token ~fn ~uri ?pre_commands ~thm ()
   end
 end

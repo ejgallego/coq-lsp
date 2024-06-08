@@ -54,7 +54,7 @@ end
     starts. *)
 val start :
      token:Coq.Limits.Token.t
-  -> fn:(Lang.LUri.File.t -> Fleche.Doc.t R.t)
+  -> fn:(token:Coq.Limits.Token.t -> Lang.LUri.File.t -> Fleche.Doc.t R.t)
   -> uri:Lang.LUri.File.t
   -> ?pre_commands:string
   -> thm:string

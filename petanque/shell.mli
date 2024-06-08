@@ -26,3 +26,8 @@ val setup_doc :
   -> Agent.Env.t
   -> Lang.LUri.File.t
   -> Fleche.Doc.t Agent.R.t
+
+val fn :
+     token:Coq.Limits.Token.t
+  -> Lang.LUri.File.t
+  -> (Fleche.Doc.t, Agent.Error.t) result
