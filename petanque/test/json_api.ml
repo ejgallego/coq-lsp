@@ -52,7 +52,7 @@ let run (ic, oc) =
   in
   (* Will this work on Windows? *)
   let root, uri = prepare_paths () in
-  let* _env = S.set_workspace { debug; root } in
+  let* () = S.set_workspace { debug; root } in
   let* st = S.start { uri; pre_commands = None; thm = "rev_snoc_cons" } in
   let* premises = S.premises { st } in
   (if print_premises then

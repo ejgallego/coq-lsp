@@ -15,13 +15,6 @@ module State : sig
   val equal : t -> t -> bool
 end
 
-module Env : sig
-  (** Coq Workspaces / project enviroments *)
-  type t = Fleche.Doc.Env.t
-
-  val name : string
-end
-
 (** Petanque errors *)
 module Error : sig
   type t =

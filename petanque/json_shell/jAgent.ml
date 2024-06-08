@@ -2,7 +2,6 @@
 
 (* Implement State.t and Env.t serialization methods *)
 module State = Obj_map.Make (Petanque.Agent.State)
-module Env = Obj_map.Make (Petanque.Agent.Env)
 
 (* The typical protocol dance *)
 

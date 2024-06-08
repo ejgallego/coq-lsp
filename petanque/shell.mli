@@ -16,17 +16,11 @@ val set_workspace :
      token:Coq.Limits.Token.t
   -> debug:bool
   -> root:Lang.LUri.File.t
-  -> Agent.Env.t Agent.R.t
+  -> unit Agent.R.t
 
-(** [setup_doc ~token env uri] Reads a file from [uri] and fully checks it with
-    Flèche, returning the doc if succesfull. It will open the file using the env
-    passed to set_workspace last time it was called. *)
-val setup_doc :
-     token:Coq.Limits.Token.t
-  -> Agent.Env.t
-  -> Lang.LUri.File.t
-  -> Fleche.Doc.t Agent.R.t
-
+(** [fn ~token uri] Reads a file from [uri] and fully checks it with Flèche,
+    returning the doc if succesfull. It will open the file using the env passed
+    to set_workspace last time it was called. *)
 val fn :
      token:Coq.Limits.Token.t
   -> Lang.LUri.File.t

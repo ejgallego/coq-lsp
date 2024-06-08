@@ -26,8 +26,8 @@ let start ~token =
   let open Coq.Compat.Result.O in
   let root, uri = prepare_paths () in
   (* Twice to test for #766 *)
-  let* _env = Petanque.Shell.set_workspace ~token ~debug ~root in
-  let* _env = Petanque.Shell.set_workspace ~token ~debug ~root in
+  let* () = Petanque.Shell.set_workspace ~token ~debug ~root in
+  let* () = Petanque.Shell.set_workspace ~token ~debug ~root in
   Agent.start ~token ~uri ~thm:"rev_snoc_cons" ()
 
 let extract_st (st : _ Agent.Run_result.t) =

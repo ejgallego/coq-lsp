@@ -1,5 +1,3 @@
-open JAgent
-
 (* set_workspace RPC *)
 module SetWorkspace = struct
   let method_ = "petanque/setWorkspace"
@@ -13,14 +11,14 @@ module SetWorkspace = struct
   end
 
   module Response = struct
-    type t = int [@@deriving yojson]
+    type t = unit [@@deriving yojson]
   end
 
   module Handler = struct
     module Params = Params
 
     module Response = struct
-      type t = Env.t [@@deriving yojson]
+      type t = unit [@@deriving yojson]
     end
 
     let handler ~token { Params.debug; root } =

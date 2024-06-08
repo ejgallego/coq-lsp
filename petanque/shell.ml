@@ -59,11 +59,11 @@ let env = ref None
 
 let set_workspace ~token ~debug ~root =
   let init = Option.get !init_st in
-  let res = setup_workspace ~token ~init ~debug ~root in
-  Result.iter (fun env_ -> env := Some env_) res;
-  res
+  let open Coq.Compat.Result.O in
+  let+ env_ = setup_workspace ~token ~init ~debug ~root in
+  env := Some env_
 
-(* *)
+(* likely duplicated somewhere else *)
 let pp_diag fmt { Lang.Diagnostic.message; _ } =
   Format.fprintf fmt "%a" Pp.pp_with message
 

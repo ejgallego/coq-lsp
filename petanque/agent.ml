@@ -15,12 +15,6 @@ module State = struct
   let name = "state"
 end
 
-module Env = struct
-  type t = Fleche.Doc.Env.t
-
-  let name = "env"
-end
-
 (** Petanque errors *)
 module Error = struct
   type t =
