@@ -153,21 +153,42 @@ module Premises = struct
   end
 end
 
-(* Notifications don't get a reply *)
-module Notification = struct
-  module type S = sig
-    val method_ : string
+module type NotSignature = sig
+  val method_ : string
 
-    module Params : sig
-      type t [@@deriving yojson]
-    end
+  module Params : sig
+    type t [@@deriving yojson]
   end
+end
+
+(* Notifications don't get a reply *)
+module type NotS = sig
+  module Params : sig
+    type t [@@deriving yojson]
+  end
+
+  val method_ : string
+  val make : Params.t -> Lsp.Base.Message.t
+end
+
+module MakeNotification (N : NotSignature) :
+  NotS with type Params.t = N.Params.t = struct
+  let method_ = N.method_
+
+  module Params = struct
+    type t = N.Params.t [@@deriving yojson]
+  end
+
+  let make params =
+    let method_ = N.method_ in
+    let params = N.Params.to_yojson params |> Yojson.Safe.Util.to_assoc in
+    Lsp.Base.Message.Notification { method_; params }
 end
 
 (* These two are identical from LSP *)
 
 (* Trace notification *)
-module Trace = struct
+module TraceSignature = struct
   let method_ = "$/logTrace"
 
   module Params = struct
@@ -177,14 +198,12 @@ module Trace = struct
       }
     [@@deriving yojson]
   end
-
-  let make params =
-    let params = Params.to_yojson params |> Yojson.Safe.Util.to_assoc in
-    Lsp.Base.Message.Notification { method_; params }
 end
 
+module Trace = MakeNotification (TraceSignature)
+
 (* Message notification *)
-module Message = struct
+module MessageSignature = struct
   let method_ = "window/logMessage"
 
   module Params = struct
@@ -194,8 +213,6 @@ module Message = struct
       }
     [@@deriving yojson]
   end
-
-  let make params =
-    let params = Params.to_yojson params |> Yojson.Safe.Util.to_assoc in
-    Lsp.Base.Message.Notification { method_; params }
 end
+
+module Message = MakeNotification (MessageSignature)

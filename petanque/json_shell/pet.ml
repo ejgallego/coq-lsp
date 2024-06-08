@@ -44,17 +44,13 @@ let rec loop ~token : unit =
     loop ~token
 
 let trace_notification hdr ?extra msg =
-  let module M = Protocol.Trace in
   let message = Format.asprintf "[%s] %s" hdr msg in
-  let params = { M.Params.message; verbose = extra } in
-  let notification = M.make params in
+  let notification = Protocol.Trace.(make { message; verbose = extra }) in
   send_message notification
 
 let message_notification ~lvl ~message =
-  let module M = Protocol.Message in
   let type_ = Fleche.Io.Level.to_int lvl in
-  let params = M.Params.{ type_; message } in
-  let notification = M.make params in
+  let notification = Protocol.Message.(make { type_; message }) in
   send_message notification
 
 let trace_enabled = true

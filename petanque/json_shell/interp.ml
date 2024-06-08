@@ -43,9 +43,9 @@ let interp ~token (r : Lsp.Base.Message.t) : Lsp.Base.Message.t option =
     Some (Lsp.Base.Message.response response)
   | Notification { method_; params = _ } ->
     let message = "unhandled notification: " ^ method_ in
-    let log = Trace.(make Params.{ message; verbose = None }) in
+    let log = Trace.(make { message; verbose = None }) in
     Some log
   | Response (Ok { id; _ }) | Response (Error { id; _ }) ->
     let message = "unhandled response: " ^ string_of_int id in
-    let log = Trace.(make Params.{ message; verbose = None }) in
+    let log = Trace.(make { message; verbose = None }) in
     Some log
