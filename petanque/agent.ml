@@ -115,8 +115,10 @@ let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
     Error (Error.Anomaly (Pp.string_of_ppcmds msg))
   | { r = Completed (Ok r); feedback = _ } -> Ok r
 
-let start ~token ~fn ~uri ?pre_commands ~thm () =
-  match fn ~token uri with
+let fn = ref (fun ~token:_ _uri -> Error (Error.System "No handler for fn"))
+
+let start ~token ~uri ?pre_commands ~thm () =
+  match !fn ~token uri with
   | Ok doc ->
     let open Coq.Compat.Result.O in
     let* node = find_thm ~doc ~thm in

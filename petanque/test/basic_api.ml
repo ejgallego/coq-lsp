@@ -21,14 +21,14 @@ let start ~token =
   let () = Petanque.Shell.init_agent ~debug in
   Petanque.Shell.trace_ref := trace;
   Petanque.Shell.message_ref := message;
+  Agent.fn := Petanque.Shell.fn;
   (* Will this work on Windows? *)
   let open Coq.Compat.Result.O in
   let root, uri = prepare_paths () in
   (* Twice to test for #766 *)
   let* _env = Petanque.Shell.set_workspace ~token ~debug ~root in
   let* _env = Petanque.Shell.set_workspace ~token ~debug ~root in
-  let fn = Petanque.Shell.fn in
-  Agent.start ~token ~fn ~uri ~thm:"rev_snoc_cons" ()
+  Agent.start ~token ~uri ~thm:"rev_snoc_cons" ()
 
 let extract_st (st : _ Agent.Run_result.t) =
   match st with

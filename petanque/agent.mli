@@ -47,6 +47,8 @@ module Run_result : sig
     | Current_state of 'a
 end
 
+val fn : (token:Coq.Limits.Token.t -> Lang.LUri.File.t -> Fleche.Doc.t R.t) ref
+
 (** [start ~token ~fn ~uri ~pre_commands ~thm] start a new proof for theorem
     [thm] in file [uri] under [fn]. [token] can be used to interrupt the
     computation. Returns the proof state or error otherwise. [pre_commands] is a
@@ -54,7 +56,6 @@ end
     starts. *)
 val start :
      token:Coq.Limits.Token.t
-  -> fn:(token:Coq.Limits.Token.t -> Lang.LUri.File.t -> Fleche.Doc.t R.t)
   -> uri:Lang.LUri.File.t
   -> ?pre_commands:string
   -> thm:string

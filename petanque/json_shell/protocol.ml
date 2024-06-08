@@ -98,8 +98,7 @@ module Start = struct
     end
 
     let handler ~token { Params.uri; pre_commands; thm } =
-      let fn = Petanque.Shell.fn in
-      Agent.start ~token ~fn ~uri ?pre_commands ~thm ()
+      Agent.start ~token ~uri ?pre_commands ~thm ()
   end
 end
 

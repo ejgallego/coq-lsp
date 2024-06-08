@@ -65,6 +65,7 @@ let pet_main debug roots http_headers =
   if trace_enabled then (
     Petanque.Shell.trace_ref := trace_notification;
     Petanque.Shell.message_ref := message_notification);
+  Petanque.Agent.fn := Petanque.Shell.fn;
   let () = Petanque.Shell.init_agent ~debug in
   let token = Coq.Limits.Token.create () in
   let () = Utils.set_roots ~token ~debug ~roots in
