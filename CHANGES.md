@@ -49,7 +49,10 @@
    (@ejgallego, Diego Rivera, #772)
  - [hover] New option `show_universes_on_hover` that will display
    universe data on hover (@ejgallego, @SkySkimmer, #666)
- - [fleche] Support meta-command `Abort All` (@ejgallego, #, fixes
+ - [hover] New plugin `unidiff` that will elaborate a summary of
+   universe data a file, in particular regarding universes added at
+   `Qed` time (@ejgallego, #773)
+ - [fleche] Support meta-command `Abort All` (@ejgallego, #774, fixes
    #550)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
