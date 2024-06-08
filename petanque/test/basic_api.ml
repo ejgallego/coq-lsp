@@ -22,7 +22,7 @@ let start ~token =
   Petanque.Shell.message_ref := message;
   (* Will this work on Windows? *)
   let open Coq.Compat.Result.O in
-  let () = Petanque.Shell.init_agent ~token ~debug ~roots:[] in
+  let _ : _ Result.t = Petanque.Shell.init_agent ~token ~debug ~roots:[] in
   (* Twice to test for #766 *)
   let root, uri = prepare_paths () in
   let* () = Petanque.Shell.set_workspace ~token ~debug ~root in

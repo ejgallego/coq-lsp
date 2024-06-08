@@ -83,13 +83,16 @@ let fn ~token uri =
   let env = Option.get !env in
   setup_doc ~token env uri
 
+(* Flèche LSP backend handles the conversion at the protocol level *)
+let to_uri uri = Lang.LUri.of_string uri |> Lang.LUri.File.of_uri
+
 let set_roots ~token ~debug ~roots =
   match roots with
-  | [] -> ()
+  | [] -> Ok ()
   | root :: _ -> (
-    match set_workspace ~token ~debug ~root with
-    | Ok () -> ()
-    | Error err -> Format.eprintf "Error: %s@\n%!" (Agent.Error.to_string err))
+    match to_uri root with
+    | Error err -> Error (Agent.Error.System err)
+    | Ok root -> set_workspace ~token ~debug ~root)
 
 let init_agent ~token ~debug ~roots =
   init_st := Some (init_coq ~debug);

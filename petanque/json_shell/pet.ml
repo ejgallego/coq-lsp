@@ -55,19 +55,17 @@ let message_notification ~lvl ~message =
 
 let trace_enabled = true
 
-(* XXX: Flèche LSP backend already handles the conversion at the protocol
-   level *)
-let to_uri uri =
-  Lang.LUri.of_string uri |> Lang.LUri.File.of_uri |> Result.get_ok
+let log_error err =
+  let message = Petanque.Agent.Error.to_string err in
+  message_notification ~lvl:Fleche.Io.Level.error ~message
 
 let pet_main debug roots http_headers =
-  let roots = List.map to_uri roots in
   Coq.Limits.start ();
   if trace_enabled then (
     Petanque.Shell.trace_ref := trace_notification;
     Petanque.Shell.message_ref := message_notification);
   let token = Coq.Limits.Token.create () in
-  let () = Petanque.Shell.init_agent ~token ~debug ~roots in
+  Result.iter_error log_error (Petanque.Shell.init_agent ~token ~debug ~roots);
   use_http_headers := http_headers;
   loop ~token
 
