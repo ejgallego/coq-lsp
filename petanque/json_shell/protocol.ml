@@ -1,19 +1,5 @@
 open Petanque
 
-let read_raw ~uri =
-  let file = Lang.LUri.File.to_string_file uri in
-  try Ok Coq.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
-  with Sys_error err -> Error (Agent.Error.Coq err)
-
-let setup_doc ~io ~token env uri =
-  match read_raw ~uri with
-  | Ok raw ->
-    let doc = Fleche.Doc.create ~token ~env ~uri ~version:0 ~raw in
-    (* print_diags doc; *)
-    let target = Fleche.Doc.Target.End in
-    Ok (Fleche.Doc.check ~io ~token ~target ~doc ())
-  | Error err -> Error err
-
 (* Serialization for agent types *)
 open JAgent
 
@@ -78,7 +64,7 @@ module SetWorkspace = struct
     let env = ref None
 
     let handler ~token { Params.debug; root } =
-      let res = Agent.set_workspace ~token ~debug ~root in
+      let res = Petanque.Shell.set_workspace ~token ~debug ~root in
       Result.iter (fun env_ -> env := Some env_) res;
       res
   end
@@ -116,8 +102,9 @@ module Start = struct
     end
 
     let handler ~token { Params.uri; pre_commands; thm } =
-      let fn ~io uri =
-        setup_doc ~io ~token (Option.get !SetWorkspace.Handler.env) uri
+      let fn uri =
+        let env = Option.get !SetWorkspace.Handler.env in
+        Petanque.Shell.setup_doc ~token env uri
       in
       Agent.start ~token ~fn ~uri ?pre_commands ~thm ()
   end

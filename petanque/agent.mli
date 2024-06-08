@@ -47,23 +47,6 @@ module Run_result : sig
     | Current_state of 'a
 end
 
-(** I/O handling, by default, print to stderr *)
-
-(** [trace header extra message] *)
-val trace_ref : (string -> ?extra:string -> string -> unit) ref
-
-(** [message level message] *)
-val message_ref : (lvl:Fleche.Io.Level.t -> message:string -> unit) ref
-
-(** To be called by the shell *)
-val init_agent : debug:bool -> unit
-
-(** [set_workspace ~root] Sets project and workspace settings from [root].
-    [root] needs to be in URI format. If called repeteadly, overrides the
-    previous call. *)
-val set_workspace :
-  token:Coq.Limits.Token.t -> debug:bool -> root:Lang.LUri.File.t -> Env.t R.t
-
 (** [start ~token ~fn ~uri ~pre_commands ~thm] start a new proof for theorem
     [thm] in file [uri] under [fn]. [token] can be used to interrupt the
     computation. Returns the proof state or error otherwise. [pre_commands] is a
@@ -71,7 +54,7 @@ val set_workspace :
     starts. *)
 val start :
      token:Coq.Limits.Token.t
-  -> fn:(io:Fleche.Io.CallBack.t -> Lang.LUri.File.t -> Fleche.Doc.t R.t)
+  -> fn:(Lang.LUri.File.t -> Fleche.Doc.t R.t)
   -> uri:Lang.LUri.File.t
   -> ?pre_commands:string
   -> thm:string

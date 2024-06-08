@@ -61,7 +61,7 @@ let create_server ~token sock =
 
 let pet_main debug roots address port backlog =
   Coq.Limits.start ();
-  let () = Petanque.Agent.init_agent ~debug in
+  let () = Petanque.Shell.init_agent ~debug in
   let token = Coq.Limits.Token.create () in
   let () = Logs.set_reporter (Logs.format_reporter ()) in
   let () = Logs.set_level (Some Logs.Info) in
