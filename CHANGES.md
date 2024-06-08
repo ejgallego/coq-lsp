@@ -42,6 +42,8 @@
  - [petanque] New `http_headers={yes,no}` parameter for `pet` json
    shell, plus some improvements on protocol handling (@ejgallego,
    #770)
+ - [petanque] Make agent agnostic of environment, allowing embedding
+   inside LSP (@ejgallego, #771)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
