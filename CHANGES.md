@@ -44,6 +44,9 @@
    #770)
  - [petanque] Make agent agnostic of environment, allowing embedding
    inside LSP (@ejgallego, #771)
+ - [diagnostics] Ensure extra diagnostics info is present in all
+   errors, not only on those sentences that did parse successfully
+   (@ejgallego, Diego Rivera, #772)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------

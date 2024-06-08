@@ -156,10 +156,11 @@ module Diags : sig
 
   (** Build advanced diagnostic with AST analysis *)
   val error :
-       lines:string array
-    -> range:Lang.Range.t
+       err_range:Lang.Range.t
     -> msg:Pp.t
-    -> ast:Node.Ast.t
+    -> stm_range:Lang.Range.t (* range for the sentence *)
+    -> ?ast:Node.Ast.t
+    -> unit
     -> Lang.Diagnostic.t
 
   (** [of_messages drange msgs] process feedback messages, and convert some to
@@ -176,11 +177,11 @@ end = struct
     Lang.Diagnostic.{ range; severity; message; data }
 
   (* ast-dependent error diagnostic generation *)
-  let extra_diagnostics_of_ast ~lines ast =
-    let stm_range = ast.Node.Ast.v |> Coq.Ast.loc |> Option.get in
-    let stm_range = Coq.Utils.to_range ~lines stm_range in
+  let extra_diagnostics_of_ast stm_range ast =
     let stm_range = Lang.Diagnostic.Data.SentenceRange stm_range in
-    match Coq.Ast.Require.extract ast.Node.Ast.v with
+    match
+      Option.bind ast (fun (ast : Node.Ast.t) -> Coq.Ast.Require.extract ast.v)
+    with
     | Some { Coq.Ast.Require.from; mods; _ } ->
       let refs = List.map fst mods in
       Some
@@ -189,13 +190,14 @@ end = struct
         ]
     | _ -> Some [ stm_range ]
 
-  let extra_diagnostics_of_ast ~lines ast =
-    if !Config.v.send_diags_extra_data then extra_diagnostics_of_ast ~lines ast
+  let extra_diagnostics_of_ast stm_range ast =
+    if !Config.v.send_diags_extra_data then
+      extra_diagnostics_of_ast stm_range ast
     else None
 
-  let error ~lines ~range ~msg ~ast =
-    let data = extra_diagnostics_of_ast ~lines ast in
-    make ?data range Lang.Diagnostic.Severity.error msg
+  let error ~err_range ~msg ~stm_range ?ast () =
+    let data = extra_diagnostics_of_ast stm_range ast in
+    make ?data err_range Lang.Diagnostic.Severity.error msg
 
   let of_feed ~drange (range, severity, message) =
     let range = Option.default drange range in
@@ -736,15 +738,19 @@ let parse_action ~token ~lines ~st last_tok doc_handle =
       (* We don't have a better alternative :(, usually missing error loc here
          means an anomaly, so we stop *)
       let err_range = last_tok in
-      let parse_diags = [ Diags.make err_range Diags.err msg ] in
+      let parse_diags =
+        [ Diags.error ~err_range ~msg ~stm_range:err_range () ]
+      in
       (EOF (Failed last_tok), parse_diags, feedback, time)
     | Error (User (Some err_range, msg)) ->
-      let parse_diags = [ Diags.make err_range Diags.err msg ] in
       Coq.Parsing.discard_to_dot doc_handle;
       let last_tok = Coq.Parsing.Parsable.loc doc_handle in
       let last_tok_range = Coq.Utils.to_range ~lines last_tok in
       let span_loc = Util.build_span start_loc last_tok in
       let span_range = Coq.Utils.to_range ~lines span_loc in
+      let parse_diags =
+        [ Diags.error ~err_range ~msg ~stm_range:span_range () ]
+      in
       (Skip (span_range, last_tok_range), parse_diags, feedback, time))
 
 (* Result of node-building action *)
@@ -786,7 +792,7 @@ let strategy_of_coq_err ~node ~state ~last_tok = function
   | Coq.Protect.Error.Anomaly _ -> Stop (Failed last_tok, node)
   | User _ -> Continue { state; last_tok; node }
 
-let node_of_coq_result ~lines ~token ~doc ~range ~prev ~ast ~st ~parsing_diags
+let node_of_coq_result ~token ~doc ~range ~prev ~ast ~st ~parsing_diags
     ~parsing_feedback ~feedback ~info last_tok res =
   match res with
   | Ok state ->
@@ -798,7 +804,7 @@ let node_of_coq_result ~lines ~token ~doc ~range ~prev ~ast ~st ~parsing_diags
   | Error (Coq.Protect.Error.Anomaly (err_range, msg) as coq_err)
   | Error (User (err_range, msg) as coq_err) ->
     let err_range = Option.default range err_range in
-    let err_diags = [ Diags.error ~lines ~range:err_range ~msg ~ast ] in
+    let err_diags = [ Diags.error ~err_range ~msg ~stm_range:range ~ast () ] in
     let contents, nodes = (doc.contents, doc.nodes) in
     let context =
       Recovery_context.make ~contents ~last_tok ~nodes ~ast:ast.v ()
@@ -855,7 +861,7 @@ let document_action ~token ~st ~parsing_diags ~parsing_feedback ~parsing_time
          this point then, hence the new last valid token last_tok_new *)
       let last_tok_new = Coq.Parsing.Parsable.loc doc_handle in
       let last_tok_new = Coq.Utils.to_range ~lines last_tok_new in
-      node_of_coq_result ~lines ~token ~doc ~range:ast_range ~prev ~ast ~st
+      node_of_coq_result ~token ~doc ~range:ast_range ~prev ~ast ~st
         ~parsing_diags ~parsing_feedback ~feedback ~info last_tok_new res)
 
 module Target = struct
