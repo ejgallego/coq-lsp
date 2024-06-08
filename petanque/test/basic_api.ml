@@ -16,6 +16,27 @@ let trace hdr ?extra:_ msg =
 let message ~lvl:_ ~message = msgs := message :: !msgs
 let dump_msgs () = List.iter (Format.eprintf "%s@\n") (List.rev !msgs)
 
+let pp_diag fmt { Lang.Diagnostic.message; _ } =
+  Format.fprintf fmt "%a" Pp.pp_with message
+
+let print_diags (doc : Fleche.Doc.t) =
+  let d = Fleche.Doc.diags doc in
+  Format.(eprintf "@[<v>%a@]" (pp_print_list pp_diag) d)
+
+let read_raw ~uri =
+  let file = Lang.LUri.File.to_string_file uri in
+  try Ok Coq.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
+  with Sys_error err -> Error (Agent.Error.Coq err)
+
+let setup_doc ~io ~token env uri =
+  match read_raw ~uri with
+  | Ok raw ->
+    let doc = Fleche.Doc.create ~token ~env ~uri ~version:0 ~raw in
+    print_diags doc;
+    let target = Fleche.Doc.Target.End in
+    Ok (Fleche.Doc.check ~io ~token ~target ~doc ())
+  | Error err -> Error err
+
 let start ~token =
   let debug = false in
   let () = Petanque.Agent.init_agent ~debug in
@@ -27,7 +48,8 @@ let start ~token =
   (* Twice to test for #766 *)
   let* _env = Agent.set_workspace ~token ~debug ~root in
   let* env = Agent.set_workspace ~token ~debug ~root in
-  Agent.start ~token ~env ~uri ~thm:"rev_snoc_cons" ()
+  let fn ~io uri = setup_doc ~io ~token env uri in
+  Agent.start ~token ~fn ~uri ~thm:"rev_snoc_cons" ()
 
 let extract_st (st : _ Agent.Run_result.t) =
   match st with

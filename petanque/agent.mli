@@ -17,7 +17,7 @@ end
 
 module Env : sig
   (** Coq Workspaces / project enviroments *)
-  type t
+  type t = Fleche.Doc.Env.t
 
   val name : string
 end
@@ -29,6 +29,7 @@ module Error : sig
     | Parsing of string
     | Coq of string
     | Anomaly of string
+    | System of string
     | Theorem_not_found of string
 
   val to_string : t -> string
@@ -57,20 +58,20 @@ val message_ref : (lvl:Fleche.Io.Level.t -> message:string -> unit) ref
 (** To be called by the shell *)
 val init_agent : debug:bool -> unit
 
-(** [set_workspace ~root] Sets project and workspace settings from
-    [root]. [root] needs to be in URI format. If called repeteadly,
-    overrides the previous call. *)
+(** [set_workspace ~root] Sets project and workspace settings from [root].
+    [root] needs to be in URI format. If called repeteadly, overrides the
+    previous call. *)
 val set_workspace :
   token:Coq.Limits.Token.t -> debug:bool -> root:Lang.LUri.File.t -> Env.t R.t
 
-(** [start ~token ~env ~uri ~pre_commands ~thm] start a new proof for theorem
-    [thm] in file [uri] under [env]. [token] can be used to interrupt the
+(** [start ~token ~fn ~uri ~pre_commands ~thm] start a new proof for theorem
+    [thm] in file [uri] under [fn]. [token] can be used to interrupt the
     computation. Returns the proof state or error otherwise. [pre_commands] is a
     string of dot-separated Coq commands that will be executed before the proof
     starts. *)
 val start :
      token:Coq.Limits.Token.t
-  -> env:Env.t
+  -> fn:(io:Fleche.Io.CallBack.t -> Lang.LUri.File.t -> Fleche.Doc.t R.t)
   -> uri:Lang.LUri.File.t
   -> ?pre_commands:string
   -> thm:string

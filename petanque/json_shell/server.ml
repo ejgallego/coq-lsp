@@ -67,7 +67,7 @@ let pet_main debug roots address port backlog =
   let () = Logs.set_level (Some Logs.Info) in
   let sock = create_socket ~address ~port ~backlog in
   let serve = create_server ~token sock in
->  let () = Utils.set_roots ~token ~debug ~roots in
+  let () = Utils.set_roots ~token ~debug ~roots in
   Lwt_main.run @@ serve ()
 
 open Cmdliner

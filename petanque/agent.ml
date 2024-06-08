@@ -28,6 +28,7 @@ module Error = struct
     | Parsing of string
     | Coq of string
     | Anomaly of string
+    | System of string
     | Theorem_not_found of string
 
   let to_string = function
@@ -35,6 +36,7 @@ module Error = struct
     | Parsing msg -> Format.asprintf "Parsing: %s" msg
     | Coq msg -> Format.asprintf "Coq: %s" msg
     | Anomaly msg -> Format.asprintf "Anomaly: %s" msg
+    | System msg -> Format.asprintf "System: %s" msg
     | Theorem_not_found msg -> Format.asprintf "Theorem_not_found: %s" msg
 
   (* JSON-RPC server reserved codes *)
@@ -43,7 +45,8 @@ module Error = struct
     | Parsing _ -> -32002
     | Coq _ -> -32003
     | Anomaly _ -> -32004
-    | Theorem_not_found _ -> -32005
+    | System _ -> -32005
+    | Theorem_not_found _ -> -32006
 end
 
 module R = struct
@@ -98,11 +101,6 @@ let io =
   ; serverStatus
   }
 
-let read_raw ~uri =
-  let file = Lang.LUri.File.to_string_file uri in
-  try Ok Coq.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
-  with Sys_error err -> Error err
-
 let find_thm ~(doc : Fleche.Doc.t) ~thm =
   let { Fleche.Doc.toc; _ } = doc in
   match CString.Map.find_opt thm toc with
@@ -113,13 +111,6 @@ let find_thm ~(doc : Fleche.Doc.t) ~thm =
     if pet_debug then Format.eprintf "@[[find_thm] Theorem found!@\n@]%!";
     (* let point = (range.start.line, range.start.character) in *)
     Ok node
-
-let pp_diag fmt { Lang.Diagnostic.message; _ } =
-  Format.fprintf fmt "%a" Pp.pp_with message
-
-let print_diags (doc : Fleche.Doc.t) =
-  let d = Fleche.Doc.diags doc in
-  Format.(eprintf "@[<v>%a@]" (pp_print_list pp_diag) d)
 
 let setup_workspace ~token ~init ~debug ~root =
   let dir = Lang.LUri.File.to_string_file root in
@@ -185,20 +176,13 @@ let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
     Error (Error.Anomaly (Pp.string_of_ppcmds msg))
   | { r = Completed (Ok r); feedback = _ } -> Ok r
 
-let start ~token ~env ~uri ?pre_commands ~thm () =
-  match read_raw ~uri with
-  | Ok raw ->
-    (* Format.eprintf "raw: @[%s@]%!" raw; *)
-    let doc = Fleche.Doc.create ~token ~env ~uri ~version:0 ~raw in
-    print_diags doc;
-    let target = Fleche.Doc.Target.End in
-    let doc = Fleche.Doc.check ~io ~token ~target ~doc () in
+let start ~token ~fn ~uri ?pre_commands ~thm () =
+  match fn ~io uri with
+  | Ok doc ->
     let open Coq.Compat.Result.O in
     let* node = find_thm ~doc ~thm in
     execute_precommands ~token ~pre_commands ~node |> protect_to_result
-  | Error err ->
-    let msg = Format.asprintf "@[[read_raw] File not found %s@]" err in
-    Error (Error.Theorem_not_found msg)
+  | Error err -> Error err
 
 let run_tac ~token ~st ~tac : (_ Run_result.t, Error.t) Result.t =
   (* Improve with thm? *)
