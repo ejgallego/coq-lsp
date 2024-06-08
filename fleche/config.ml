@@ -39,6 +39,8 @@ type t =
   ; show_stats_on_hover : bool [@default false]  (** Show stats on hover *)
   ; show_loc_info_on_hover : bool [@default false]
         (** Show loc info on hover *)
+  ; show_universes_on_hover : bool [@default false]
+        (** Show universe data on hover *)
   ; pp_json : bool [@default false]
         (** Whether to pretty print the protocol JSON on the wire *)
   ; send_perf_data : bool [@default true]
@@ -71,6 +73,7 @@ let default =
   ; pp_type = 0
   ; show_stats_on_hover = false
   ; show_loc_info_on_hover = false
+  ; show_universes_on_hover = false
   ; verbosity = 2
   ; pp_json = false
   ; send_perf_data = true

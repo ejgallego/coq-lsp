@@ -135,3 +135,23 @@ let admit_goal ~st () =
     { st with interp = { st.interp with lemmas } }
 
 let admit_goal ~token ~st = Protect.eval ~token ~f:(admit_goal ~st) ()
+
+let count_edges univ =
+  let univ = UGraph.repr univ in
+  Univ.Level.Map.fold
+    (fun _ node acc ->
+      acc
+      +
+      match node with
+      | UGraph.Alias _ -> 1
+      | Node m -> Univ.Level.Map.cardinal m)
+    univ
+    (Univ.Level.Map.cardinal univ)
+
+let info_universes ~token ~st =
+  let open Protect.E.O in
+  let+ univ = in_state ~token ~st ~f:Global.universes () in
+  let univs = UGraph.domain univ in
+  let nuniv = Univ.Level.Set.cardinal univs in
+  let nconst = count_edges univ in
+  (nuniv, nconst)
