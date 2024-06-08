@@ -1,4 +1,5 @@
 open Protocol
+open Protocol_shell
 module A = Petanque.Agent
 
 let do_request ~token (module R : Request.S) ~id ~params =

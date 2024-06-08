@@ -6,6 +6,7 @@ module type Chans = sig
 end
 
 open Protocol
+open Protocol_shell
 
 module S (C : Chans) : sig
   val set_workspace :

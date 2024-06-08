@@ -66,23 +66,26 @@ end = struct
 end
 
 module S (C : Chans) = struct
+  open Protocol
+  open Protocol_shell
+
   let set_workspace =
-    let module M = Wrap (Protocol.SetWorkspace) (C) in
+    let module M = Wrap (SetWorkspace) (C) in
     M.call
 
   let start =
-    let module M = Wrap (Protocol.Start) (C) in
+    let module M = Wrap (Start) (C) in
     M.call
 
   let run_tac =
-    let module M = Wrap (Protocol.RunTac) (C) in
+    let module M = Wrap (RunTac) (C) in
     M.call
 
   let goals =
-    let module M = Wrap (Protocol.Goals) (C) in
+    let module M = Wrap (Goals) (C) in
     M.call
 
   let premises =
-    let module M = Wrap (Protocol.Premises) (C) in
+    let module M = Wrap (Premises) (C) in
     M.call
 end
