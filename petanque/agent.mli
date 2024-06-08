@@ -76,15 +76,21 @@ val goals :
   -> string Coq.Goals.reified_pp option R.t
 
 module Premise : sig
+  module Info : sig
+    (* (from .glob files) *)
+    type t =
+      { kind : string (* type of object *)
+      ; range : Lang.Range.t option (* a range *)
+      ; offset : int * int (* a offset in the file *)
+      ; raw_text : (string, string) Result.t (* raw text of the premise *)
+      }
+  end
+
   type t =
     { full_name : string
           (* should be a Coq DirPath, but let's go step by step *)
     ; file : string (* file (in FS format) where the premise is found *)
-    ; kind : (string, string) Result.t (* type of object *)
-    ; range : (Lang.Range.t, string) Result.t (* a range if known *)
-    ; offset : (int * int, string) Result.t
-          (* a offset in the file if known (from .glob files) *)
-    ; raw_text : (string, string) Result.t (* raw text of the premise *)
+    ; info : (Info.t, string) Result.t (* Info about the object, if available *)
     }
 end
 

@@ -140,15 +140,20 @@ let goals ~token ~st =
   Coq.Protect.E.map ~f (Fleche.Info.Goals.goals ~token ~st) |> protect_to_result
 
 module Premise = struct
+  module Info = struct
+    type t =
+      { kind : string (* type of object *)
+      ; range : Lang.Range.t option (* a range *)
+      ; offset : int * int (* a offset in the file *)
+      ; raw_text : (string, string) Result.t (* raw text of the premise *)
+      }
+  end
+
   type t =
     { full_name : string
           (* should be a Coq DirPath, but let's go step by step *)
     ; file : string (* file (in FS format) where the premise is found *)
-    ; kind : (string, string) Result.t (* type of object *)
-    ; range : (Lang.Range.t, string) Result.t (* a range if known *)
-    ; offset : (int * int, string) Result.t
-          (* a offset in the file if known (from .glob files) *)
-    ; raw_text : (string, string) Result.t (* raw text of the premise *)
+    ; info : (Info.t, string) Result.t (* Info about the object, if available *)
     }
 end
 
@@ -196,27 +201,26 @@ let info_of ~glob ~name =
        (Coq.Glob.get_info g name))
 
 let raw_of ~file ~offset =
-  match offset with
-  | Ok (bp, ep) ->
-    let open Coq.Compat.Result.O in
-    let* c = Memo.input_source file in
-    if String.length c < ep then Error "offset out of bounds"
-    else Ok (String.sub c bp (ep - bp + 1))
-  | Error err -> Error ("offset information is not available: " ^ err)
+  let bp, ep = offset in
+  let open Coq.Compat.Result.O in
+  let* c = Memo.input_source file in
+  if String.length c < ep then Error "offset out of bounds"
+  else Ok (String.sub c bp (ep - bp + 1))
 
 let to_premise (p : Coq.Library_file.Entry.t) : Premise.t =
   let { Coq.Library_file.Entry.name; typ = _; file } = p in
   let file = Filename.(remove_extension file ^ ".v") in
   let glob = Filename.(remove_extension file ^ ".glob") in
-  let range = Error "not implemented yet" in
-  let kind, offset =
+  let info =
     match info_of ~glob ~name with
-    | Ok None -> (Error "not in glob table", Error "not in glob table")
-    | Error err -> (Error err, Error err)
-    | Ok (Some (kind, offset)) -> (Ok kind, Ok offset)
+    | Ok None -> Error "not in glob table"
+    | Error err -> Error err
+    | Ok (Some (kind, offset)) ->
+      let range = None in
+      let raw_text = raw_of ~file ~offset in
+      Ok { Premise.Info.kind; range; offset; raw_text }
   in
-  let raw_text = raw_of ~file ~offset in
-  { full_name = name; file; kind; range; offset; raw_text }
+  { Premise.full_name = name; file; info }
 
 let premises ~token ~st =
   (let open Coq.Protect.E.O in

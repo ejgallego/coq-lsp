@@ -50,6 +50,10 @@ module Lang = struct
 end
 
 module Premise = struct
+  module Info = struct
+    type t = [%import: Petanque.Agent.Premise.Info.t] [@@deriving yojson]
+  end
+
   type t =
     [%import:
       (Petanque.Agent.Premise.t
