@@ -167,8 +167,8 @@ let parse_and_execute_in ~token ~loc tac st =
   match ast with
   | Some ast -> (
     let open Coq.Protect.E.O in
-    let* st = Fleche.Memo.Interp.eval ~token (st, ast) in
-    let+ goals = Fleche.Info.Goals.goals ~token ~st in
+    let+ st = Fleche.Memo.Interp.eval ~token (st, ast) in
+    let goals = Fleche.Info.Goals.get_goals_unit ~st in
     match goals with
     | None -> Run_result.Proof_finished st
     | Some goals when proof_finished goals -> Run_result.Proof_finished st

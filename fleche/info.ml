@@ -149,6 +149,14 @@ module O = Make (Offset)
 
 (* Related to goal request *)
 module Goals = struct
+  let get_goals_unit ~st =
+    let ppx _env _sigma _x = () in
+    Coq.State.lemmas ~st |> Option.map (Coq.Goals.reify ~ppx)
+
+  let get_goals ~st =
+    let ppx env sigma x = (env, sigma, x) in
+    Coq.State.lemmas ~st |> Option.map (Coq.Goals.reify ~ppx)
+
   let pr_goal ~token st =
     let ppx env sigma x =
       let { Coq.Protect.E.r; feedback } =

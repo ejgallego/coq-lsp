@@ -34,6 +34,8 @@
    we own is opened later (@ejgallego, #758, fixes #750)
  - [petanque] Allow `init` to be called multiple times (@ejgallego,
    @gbdrt, #766)
+ - [petanque] Faster query for goals status after `run_tac`
+   (@ejgallego, #768)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
