@@ -660,7 +660,7 @@ let interp_and_info ~token ~st ~files ast =
   | Some ast -> Memo.Require.evalS ~token (st, files, ast)
 
 (* Support for meta-commands, a bit messy, but cool in itself *)
-let search_node ~command ~doc =
+let search_node ~command ~doc ~st =
   let nstats (node : Node.t option) =
     Option.cata
       (fun (node : Node.t) -> Option.default Memo.Stats.zero node.info.stats)
@@ -689,6 +689,9 @@ let search_node ~command ~doc =
       let node = Option.default node node.prev in
       (Coq.Protect.E.ok node.state, nstats (Some node)))
   | ResetInitial -> (Coq.Protect.E.ok doc.root, nstats None)
+  | AbortAll ->
+    let st = Coq.State.drop_all_proofs ~st in
+    (Coq.Protect.E.ok st, nstats None)
 
 let interp_and_info ~token ~st ~files ~doc ast =
   match Coq.Ast.Meta.extract ast with
@@ -698,7 +701,7 @@ let interp_and_info ~token ~st ~files ~doc ast =
        spending on error recovery and meta stuff, we should record that time
        actually at some point too. In this case, maybe we could recover the
        cache hit from the original node? *)
-    search_node ~command ~doc
+    search_node ~command ~doc ~st
 
 let interp_and_info ~token ~parsing_time ~st ~files ~doc ast =
   let res, stats = interp_and_info ~token ~st ~files ~doc ast in

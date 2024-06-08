@@ -77,6 +77,9 @@ module Meta = struct
       | Back of int
       | ResetName of Names.lident
       | ResetInitial
+      | AbortAll
+    (* Not supported, but actually easy if we want | VernacRestart | VernacUndo
+       _ | VernacUndoTo _ *)
     [@@deriving hash, compare]
   end
 
@@ -103,6 +106,9 @@ module Meta = struct
         Some { command; loc; attrs; control }
       | { expr = VernacSynPure (VernacBack num); control; attrs } ->
         let command = Command.Back num in
+        Some { command; loc; attrs; control }
+      | { expr = VernacSynPure VernacAbortAll; control; attrs } ->
+        let command = Command.AbortAll in
         Some { command; loc; attrs; control }
       | _ -> None)
 end
