@@ -10,6 +10,7 @@
 module State : sig
   type t
 
+  val name : string
   val hash : t -> int
   val equal : t -> t -> bool
 end
@@ -17,6 +18,8 @@ end
 module Env : sig
   (** Coq Workspaces / project enviroments *)
   type t
+
+  val name : string
 end
 
 (** Petanque errors *)

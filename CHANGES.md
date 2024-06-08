@@ -39,6 +39,9 @@
  - [petanque] New parameter `pre_commands` to `start` which allows
    instrumenting the goal before starting the proof (@ejgallego, Alex
    Sanchez-Stern #769)
+ - [petanque] New `http_headers={yes,no}` parameter for `pet` json
+   shell, plus some improvements on protocol handling (@ejgallego,
+   #770)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------

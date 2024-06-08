@@ -1,4 +1,6 @@
 module type Obj = sig
+  val name : string
+
   type t
   (* Not yet *)
   (* val equal : t -> t -> bool *)
@@ -32,12 +34,13 @@ module Make (O : Obj) : S with type t = O.t = struct
     let () = Memo.add memo id s in
     id
 
-  let to_obj (id : int) : O.t =
-    try Memo.find memo id
-    with Not_found ->
-      dump_memo ();
-      raise Not_found
+  let to_obj (id : int) : (O.t, _) Result.t =
+    match Memo.find_opt memo id with
+    | Some v -> Ok v
+    | None ->
+      if false then dump_memo ();
+      Error (Format.asprintf "key %d for object %s not found" id O.name)
 
-  let of_yojson json = _t_of_yojson json |> Result.map to_obj
+  let of_yojson json = _t_of_yojson json |> fun r -> Result.bind r to_obj
   let to_yojson st : Yojson.Safe.t = of_obj st |> _t_to_yojson
 end

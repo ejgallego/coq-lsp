@@ -206,6 +206,10 @@ module Trace = struct
       }
     [@@deriving yojson]
   end
+
+  let make params =
+    let params = Params.to_yojson params |> Yojson.Safe.Util.to_assoc in
+    Lsp.Base.Message.Notification { method_; params }
 end
 
 (* Message notification *)
@@ -219,4 +223,8 @@ module Message = struct
       }
     [@@deriving yojson]
   end
+
+  let make params =
+    let params = Params.to_yojson params |> Yojson.Safe.Util.to_assoc in
+    Lsp.Base.Message.Notification { method_; params }
 end

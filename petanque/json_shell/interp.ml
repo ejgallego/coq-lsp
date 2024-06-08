@@ -35,12 +35,16 @@ let handle_request ~token ~id ~method_ ~params =
     let message = "method not found" in
     Lsp.Base.Response.mk_error ~id ~code ~message
 
-let interp ~token (r : Lsp.Base.Message.t) : Lsp.Base.Response.t option =
+let interp ~token (r : Lsp.Base.Message.t) : Lsp.Base.Message.t option =
   match r with
   | Request { id; method_; params } ->
     let response = handle_request ~token ~id ~method_ ~params in
-    Some response
-  | Notification { method_ = _; params = _ } -> None
-  | Response _ ->
-    (* XXX: to implement *)
-    None
+    Some (Lsp.Base.Message.response response)
+  | Notification { method_; params = _ } ->
+    let message = "unhandled notification: " ^ method_ in
+    let log = Trace.(make Params.{ message; verbose = None }) in
+    Some log
+  | Response (Ok { id; _ }) | Response (Error { id; _ }) ->
+    let message = "unhandled response: " ^ string_of_int id in
+    let log = Trace.(make Params.{ message; verbose = None }) in
+    Some log

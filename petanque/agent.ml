@@ -12,10 +12,13 @@ module State = struct
 
   let hash = Coq.State.hash
   let equal = Coq.State.equal
+  let name = "state"
 end
 
 module Env = struct
   type t = Fleche.Doc.Env.t
+
+  let name = "env"
 end
 
 (** Petanque errors *)
