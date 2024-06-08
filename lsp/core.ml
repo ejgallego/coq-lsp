@@ -124,6 +124,23 @@ module SelectionRange = struct
   [@@deriving yojson]
 end
 
+(** Publish Diagnostics params *)
+module PublishDiagnosticsParams = struct
+  type t =
+    { uri : JLang.LUri.File.t
+    ; version : int
+    ; diagnostics : JLang.Diagnostic.t list
+    }
+  [@@deriving to_yojson]
+end
+
+let mk_diagnostics ~uri ~version diagnostics : Base.Notification.t =
+  let params =
+    PublishDiagnosticsParams.(
+      { uri; version; diagnostics } |> to_yojson |> Yojson.Safe.Util.to_assoc)
+  in
+  Base.Notification.make ~method_:"textDocument/publishDiagnostics" ~params ()
+
 (** Pull Diagnostics *)
 module DocumentDiagnosticParams = struct
   type t =
