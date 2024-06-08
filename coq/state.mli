@@ -29,8 +29,11 @@ val in_stateM :
   -> 'a
   -> ('b, Loc.t) Protect.E.t
 
-(** Drop the proofs from the state *)
-val drop_proofs : st:t -> t
+(** Drop the top proof from the state *)
+val drop_proof : st:t -> t
+
+(** Drop all proofs from the state *)
+val drop_all_proofs : st:t -> t
 
 (** Fully admit an ongoing proof *)
 val admit : token:Limits.Token.t -> st:t -> (t, Loc.t) Protect.E.t

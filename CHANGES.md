@@ -49,6 +49,8 @@
    (@ejgallego, Diego Rivera, #772)
  - [hover] New option `show_universes_on_hover` that will display
    universe data on hover (@ejgallego, @SkySkimmer, #666)
+ - [fleche] Support meta-command `Abort All` (@ejgallego, #, fixes
+   #550)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------

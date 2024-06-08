@@ -87,7 +87,7 @@ let lemmas ~st = st.Vernacstate.interp.lemmas
 let program ~st =
   NeList.head st.Vernacstate.interp.program |> Declare.OblState.view
 
-let drop_proofs ~st =
+let drop_proof ~st =
   let open Vernacstate in
   let interp =
     { st.interp with
@@ -97,6 +97,11 @@ let drop_proofs ~st =
           None st.interp.lemmas
     }
   in
+  { st with interp }
+
+let drop_all_proofs ~st =
+  let open Vernacstate in
+  let interp = { st.interp with lemmas = None } in
   { st with interp }
 
 let in_state ~token ~st ~f a =
