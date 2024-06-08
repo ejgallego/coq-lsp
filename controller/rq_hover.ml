@@ -263,6 +263,33 @@ module InputHelp : HoverProvider = struct
   let h = Handler.MaybeNode input_help
 end
 
+module UniDiff = struct
+  let show_unidiff ~token ?diff ~st () =
+    let nuniv_prev, nconst_prev =
+      match diff with
+      | Some st -> (
+        match Coq.State.info_universes ~token ~st with
+        | Coq.Protect.{ E.r = R.Completed (Ok (nuniv, nconst)); feedback = _ }
+          -> (nuniv, nconst)
+        | _ -> (0, 0))
+      | None -> (0, 0)
+    in
+    match Coq.State.info_universes ~token ~st with
+    | Coq.Protect.{ E.r = R.Completed (Ok (nuniv, nconst)); feedback = _ } ->
+      Some
+        (Format.asprintf "@[univ data (%4d,%4d) {+%d, +%d}@\n@]" nuniv nconst
+           (nuniv - nuniv_prev) (nconst - nconst_prev))
+    | _ -> None
+
+  let h ~token ~contents:_ ~point:_ ~(node : Fleche.Doc.Node.t) =
+    if !Fleche.Config.v.show_universes_on_hover then
+      let diff = Option.map Fleche.Doc.Node.state node.prev in
+      show_unidiff ~token ?diff ~st:node.state ()
+    else None
+
+  let h = Handler.WithNode h
+end
+
 module Register = struct
   let handlers : Handler.t list ref = ref []
   let add fn = handlers := fn :: !handlers
@@ -282,7 +309,7 @@ end
 (* Register in-file hover plugins *)
 let () =
   List.iter Register.add
-    [ Loc_info.h; Stats.h; Type.h; Notation.h; InputHelp.h ]
+    [ Loc_info.h; Stats.h; Type.h; Notation.h; InputHelp.h; UniDiff.h ]
 
 let hover ~token ~(doc : Fleche.Doc.t) ~point =
   let node = Info.LC.node ~doc ~point Exact in

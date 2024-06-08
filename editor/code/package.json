@@ -217,6 +217,11 @@
             "type": "boolean",
             "default": false,
             "description": "Show parsing information for a sentence on hover."
+          },
+          "coq-lsp.show_universes_on_hover": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show universe information and diff for a sentence on hover."
           }
         }
       },
