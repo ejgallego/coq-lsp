@@ -15,12 +15,6 @@ module State = struct
   let name = "state"
 end
 
-module Env = struct
-  type t = Fleche.Doc.Env.t
-
-  let name = "env"
-end
-
 (** Petanque errors *)
 module Error = struct
   type t =
@@ -28,6 +22,7 @@ module Error = struct
     | Parsing of string
     | Coq of string
     | Anomaly of string
+    | System of string
     | Theorem_not_found of string
 
   let to_string = function
@@ -35,6 +30,7 @@ module Error = struct
     | Parsing msg -> Format.asprintf "Parsing: %s" msg
     | Coq msg -> Format.asprintf "Coq: %s" msg
     | Anomaly msg -> Format.asprintf "Anomaly: %s" msg
+    | System msg -> Format.asprintf "System: %s" msg
     | Theorem_not_found msg -> Format.asprintf "Theorem_not_found: %s" msg
 
   (* JSON-RPC server reserved codes *)
@@ -43,7 +39,8 @@ module Error = struct
     | Parsing _ -> -32002
     | Coq _ -> -32003
     | Anomaly _ -> -32004
-    | Theorem_not_found _ -> -32005
+    | System _ -> -32005
+    | Theorem_not_found _ -> -32006
 end
 
 module R = struct
@@ -56,53 +53,6 @@ module Run_result = struct
     | Current_state of 'a
 end
 
-let init_coq ~debug =
-  let load_module = Dynlink.loadfile in
-  let load_plugin = Coq.Loader.plugin_handler None in
-  Coq.Init.(coq_init { debug; load_module; load_plugin })
-
-let cmdline : Coq.Workspace.CmdLine.t =
-  { coqlib = Coq_config.coqlib
-  ; coqcorelib = Filename.concat Coq_config.coqlib "../coq-core"
-  ; ocamlpath = None
-  ; vo_load_path = []
-  ; ml_include_path = []
-  ; args = []
-  ; require_libraries = []
-  }
-
-let trace_stderr hdr ?extra:_ msg =
-  Format.eprintf "@[[trace] %s | %s @]@\n%!" hdr msg
-
-let trace_ref = ref trace_stderr
-
-let message_stderr ~lvl:_ ~message =
-  Format.eprintf "@[[message] %s @]@\n%!" message
-
-let message_ref = ref message_stderr
-
-let io =
-  let trace hdr ?extra msg = !trace_ref hdr ?extra msg in
-  let message ~lvl ~message = !message_ref ~lvl ~message in
-  let diagnostics ~uri:_ ~version:_ _diags = () in
-  let fileProgress ~uri:_ ~version:_ _pinfo = () in
-  let perfData ~uri:_ ~version:_ _perf = () in
-  let serverVersion _ = () in
-  let serverStatus _ = () in
-  { Fleche.Io.CallBack.trace
-  ; message
-  ; diagnostics
-  ; fileProgress
-  ; perfData
-  ; serverVersion
-  ; serverStatus
-  }
-
-let read_raw ~uri =
-  let file = Lang.LUri.File.to_string_file uri in
-  try Ok Coq.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
-  with Sys_error err -> Error err
-
 let find_thm ~(doc : Fleche.Doc.t) ~thm =
   let { Fleche.Doc.toc; _ } = doc in
   match CString.Map.find_opt thm toc with
@@ -114,67 +64,24 @@ let find_thm ~(doc : Fleche.Doc.t) ~thm =
     (* let point = (range.start.line, range.start.character) in *)
     Ok node
 
-let pp_diag fmt { Lang.Diagnostic.message; _ } =
-  Format.fprintf fmt "%a" Pp.pp_with message
-
-let print_diags (doc : Fleche.Doc.t) =
-  let d = Fleche.Doc.diags doc in
-  Format.(eprintf "@[<v>%a@]" (pp_print_list pp_diag) d)
-
-let setup_workspace ~token ~init ~debug ~root =
-  let dir = Lang.LUri.File.to_string_file root in
-  (let open Coq.Compat.Result.O in
-   let+ workspace = Coq.Workspace.guess ~token ~debug ~cmdline ~dir in
-   let files = Coq.Files.make () in
-   Fleche.Doc.Env.make ~init ~workspace ~files)
-  |> Result.map_error (fun msg -> Error.Coq msg)
-
-let init_st = ref None
-
-let init ~token ~debug ~root =
-  let init =
-    match !init_st with
-    | None ->
-      let init = init_coq ~debug in
-      Fleche.Io.CallBack.set io;
-      init_st := Some init;
-      init
-    | Some init -> init
-  in
-  setup_workspace ~token ~init ~debug ~root
-
 let parse ~loc tac st =
   let str = Gramlib.Stream.of_string tac in
   let str = Coq.Parsing.Parsable.make ?loc str in
   Coq.Parsing.parse ~st str
 
-let proof_finished { Coq.Goals.goals; stack; shelf; given_up; _ } =
-  List.for_all CList.is_empty [ goals; shelf; given_up ] && CList.is_empty stack
-
 let parse_and_execute_in ~token ~loc tac st =
   let open Coq.Protect.E.O in
   let* ast = parse ~token ~loc tac st in
   match ast with
-  | Some ast -> (
-    let open Coq.Protect.E.O in
-    let+ st = Fleche.Memo.Interp.eval ~token (st, ast) in
-    let goals = Fleche.Info.Goals.get_goals_unit ~st in
-    match goals with
-    | None -> Run_result.Proof_finished st
-    | Some goals when proof_finished goals -> Run_result.Proof_finished st
-    | _ -> Run_result.Current_state st)
-  | None -> Coq.Protect.E.ok (Run_result.Current_state st)
+  | Some ast -> Fleche.Memo.Interp.eval ~token (st, ast)
+  | None -> Coq.Protect.E.ok st
 
 let execute_precommands ~token ~pre_commands ~(node : Fleche.Doc.Node.t) =
   match (pre_commands, node.prev, node.ast) with
   | Some pre_commands, Some prev, Some ast ->
     let st = prev.state in
     let open Coq.Protect.E.O in
-    let* res = parse_and_execute_in ~token ~loc:None pre_commands st in
-    let st =
-      match res with
-      | Run_result.Current_state st | Run_result.Proof_finished st -> st
-    in
+    let* st = parse_and_execute_in ~token ~loc:None pre_commands st in
     (* We re-interpret the lemma statement *)
     Fleche.Memo.Interp.eval ~token (st, ast.v)
   | _, _, _ -> Coq.Protect.E.ok node.state
@@ -188,26 +95,35 @@ let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
     Error (Error.Anomaly (Pp.string_of_ppcmds msg))
   | { r = Completed (Ok r); feedback = _ } -> Ok r
 
-let start ~token ~env ~uri ?pre_commands ~thm () =
-  match read_raw ~uri with
-  | Ok raw ->
-    (* Format.eprintf "raw: @[%s@]%!" raw; *)
-    let doc = Fleche.Doc.create ~token ~env ~uri ~version:0 ~raw in
-    print_diags doc;
-    let target = Fleche.Doc.Target.End in
-    let doc = Fleche.Doc.check ~io ~token ~target ~doc () in
+let fn = ref (fun ~token:_ _uri -> Error (Error.System "No handler for fn"))
+
+let start ~token ~uri ?pre_commands ~thm () =
+  match !fn ~token uri with
+  | Ok doc ->
     let open Coq.Compat.Result.O in
     let* node = find_thm ~doc ~thm in
     execute_precommands ~token ~pre_commands ~node |> protect_to_result
-  | Error err ->
-    let msg = Format.asprintf "@[[read_raw] File not found %s@]" err in
-    Error (Error.Theorem_not_found msg)
+  | Error err -> Error err
+
+let proof_finished { Coq.Goals.goals; stack; shelf; given_up; _ } =
+  List.for_all CList.is_empty [ goals; shelf; given_up ] && CList.is_empty stack
+
+let analyze_after_run st =
+  let goals = Fleche.Info.Goals.get_goals_unit ~st in
+  match goals with
+  | None -> Run_result.Proof_finished st
+  | Some goals when proof_finished goals -> Run_result.Proof_finished st
+  | _ -> Run_result.Current_state st
 
 let run_tac ~token ~st ~tac : (_ Run_result.t, Error.t) Result.t =
   (* Improve with thm? *)
   let loc = None in
-  Coq.State.in_stateM ~token ~st ~f:(parse_and_execute_in ~token ~loc tac) st
-  |> protect_to_result
+  let f st =
+    let open Coq.Protect.E.O in
+    let+ st = parse_and_execute_in ~token ~loc tac st in
+    analyze_after_run st
+  in
+  Coq.State.in_stateM ~token ~st ~f st |> protect_to_result
 
 let goals ~token ~st =
   let f goals =
@@ -218,15 +134,20 @@ let goals ~token ~st =
   Coq.Protect.E.map ~f (Fleche.Info.Goals.goals ~token ~st) |> protect_to_result
 
 module Premise = struct
+  module Info = struct
+    type t =
+      { kind : string (* type of object *)
+      ; range : Lang.Range.t option (* a range *)
+      ; offset : int * int (* a offset in the file *)
+      ; raw_text : (string, string) Result.t (* raw text of the premise *)
+      }
+  end
+
   type t =
     { full_name : string
           (* should be a Coq DirPath, but let's go step by step *)
     ; file : string (* file (in FS format) where the premise is found *)
-    ; kind : (string, string) Result.t (* type of object *)
-    ; range : (Lang.Range.t, string) Result.t (* a range if known *)
-    ; offset : (int * int, string) Result.t
-          (* a offset in the file if known (from .glob files) *)
-    ; raw_text : (string, string) Result.t (* raw text of the premise *)
+    ; info : (Info.t, string) Result.t (* Info about the object, if available *)
     }
 end
 
@@ -274,27 +195,26 @@ let info_of ~glob ~name =
        (Coq.Glob.get_info g name))
 
 let raw_of ~file ~offset =
-  match offset with
-  | Ok (bp, ep) ->
-    let open Coq.Compat.Result.O in
-    let* c = Memo.input_source file in
-    if String.length c < ep then Error "offset out of bounds"
-    else Ok (String.sub c bp (ep - bp + 1))
-  | Error err -> Error ("offset information is not available: " ^ err)
+  let bp, ep = offset in
+  let open Coq.Compat.Result.O in
+  let* c = Memo.input_source file in
+  if String.length c < ep then Error "offset out of bounds"
+  else Ok (String.sub c bp (ep - bp + 1))
 
 let to_premise (p : Coq.Library_file.Entry.t) : Premise.t =
   let { Coq.Library_file.Entry.name; typ = _; file } = p in
   let file = Filename.(remove_extension file ^ ".v") in
   let glob = Filename.(remove_extension file ^ ".glob") in
-  let range = Error "not implemented yet" in
-  let kind, offset =
+  let info =
     match info_of ~glob ~name with
-    | Ok None -> (Error "not in glob table", Error "not in glob table")
-    | Error err -> (Error err, Error err)
-    | Ok (Some (kind, offset)) -> (Ok kind, Ok offset)
+    | Ok None -> Error "not in glob table"
+    | Error err -> Error err
+    | Ok (Some (kind, offset)) ->
+      let range = None in
+      let raw_text = raw_of ~file ~offset in
+      Ok { Premise.Info.kind; range; offset; raw_text }
   in
-  let raw_text = raw_of ~file ~offset in
-  { full_name = name; file; kind; range; offset; raw_text }
+  { Premise.full_name = name; file; info }
 
 let premises ~token ~st =
   (let open Coq.Protect.E.O in

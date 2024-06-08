@@ -123,6 +123,23 @@ module SelectionRange : sig
   [@@deriving yojson]
 end
 
+(** Publish Diagnostics params *)
+module PublishDiagnosticsParams : sig
+  type t =
+    { uri : JLang.LUri.File.t
+    ; version : int
+    ; diagnostics : JLang.Diagnostic.t list
+    }
+  [@@deriving to_yojson]
+end
+
+(* create textDocument/publishDiagnostics notification *)
+val mk_diagnostics :
+     uri:Lang.LUri.File.t
+  -> version:int
+  -> Lang.Diagnostic.t list
+  -> Base.Notification.t
+
 (** Pull Diagnostics *)
 module DocumentDiagnosticParams : sig
   type t =

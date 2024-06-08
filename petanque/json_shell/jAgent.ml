@@ -2,7 +2,6 @@
 
 (* Implement State.t and Env.t serialization methods *)
 module State = Obj_map.Make (Petanque.Agent.State)
-module Env = Obj_map.Make (Petanque.Agent.Env)
 
 (* The typical protocol dance *)
 
@@ -50,6 +49,10 @@ module Lang = struct
 end
 
 module Premise = struct
+  module Info = struct
+    type t = [%import: Petanque.Agent.Premise.Info.t] [@@deriving yojson]
+  end
+
   type t =
     [%import:
       (Petanque.Agent.Premise.t

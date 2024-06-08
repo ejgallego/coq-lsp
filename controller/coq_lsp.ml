@@ -51,7 +51,7 @@ let rec process_queue ~delay ~io ~ofn ~state : unit =
 let concise_cb ofn =
   let diagnostics ~uri ~version diags =
     if List.length diags > 0 then
-      Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn
+      Lsp.Core.mk_diagnostics ~uri ~version diags |> ofn
   in
   Fleche.Io.CallBack.
     { trace = (fun _hdr ?extra:_ _msg -> ())
@@ -76,7 +76,7 @@ struct
     LIO.logMessageInt ~lvl ~message
 
   let diagnostics ~uri ~version diags =
-    Lsp.JLang.mk_diagnostics ~uri ~version diags |> ofn
+    Lsp.Core.mk_diagnostics ~uri ~version diags |> ofn
 
   let fileProgress ~uri ~version progress =
     Lsp.JFleche.mk_progress ~uri ~version progress |> ofn

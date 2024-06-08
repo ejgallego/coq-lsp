@@ -6,9 +6,12 @@ module type Chans = sig
 end
 
 open Protocol
+open Protocol_shell
 
 module S (C : Chans) : sig
-  val init : Init.Params.t -> (Init.Response.t, string) result
+  val set_workspace :
+    SetWorkspace.Params.t -> (SetWorkspace.Response.t, string) result
+
   val start : Start.Params.t -> (Start.Response.t, string) result
   val run_tac : RunTac.Params.t -> (RunTac.Response.t, string) result
   val goals : Goals.Params.t -> (Goals.Response.t, string) result

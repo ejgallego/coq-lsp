@@ -1,4 +1,5 @@
 open Protocol
+open Protocol_shell
 module A = Petanque.Agent
 
 let do_request ~token (module R : Request.S) ~id ~params =
@@ -19,8 +20,8 @@ let do_request ~token (module R : Request.S) ~id ~params =
 
 let handle_request ~token ~id ~method_ ~params =
   match method_ with
-  | s when String.equal Init.method_ s ->
-    do_request ~token (module Init) ~id ~params
+  | s when String.equal SetWorkspace.method_ s ->
+    do_request ~token (module SetWorkspace) ~id ~params
   | s when String.equal Start.method_ s ->
     do_request ~token (module Start) ~id ~params
   | s when String.equal RunTac.method_ s ->
@@ -42,9 +43,9 @@ let interp ~token (r : Lsp.Base.Message.t) : Lsp.Base.Message.t option =
     Some (Lsp.Base.Message.response response)
   | Notification { method_; params = _ } ->
     let message = "unhandled notification: " ^ method_ in
-    let log = Trace.(make Params.{ message; verbose = None }) in
-    Some log
+    let log = Lsp.Io.mk_logTrace ~message ~extra:None in
+    Some (Lsp.Base.Message.Notification log)
   | Response (Ok { id; _ }) | Response (Error { id; _ }) ->
     let message = "unhandled response: " ^ string_of_int id in
-    let log = Trace.(make Params.{ message; verbose = None }) in
-    Some log
+    let log = Lsp.Io.mk_logTrace ~message ~extra:None in
+    Some (Lsp.Base.Message.Notification log)

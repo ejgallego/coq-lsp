@@ -52,11 +52,37 @@ module Lvl : sig
     | Debug
 end
 
+module MessageParams : sig
+  val method_ : string
+
+  type t =
+    { type_ : int [@key "type"]
+    ; message : string
+    }
+  [@@deriving yojson]
+end
+
+(** Create a logMessage notification *)
+val mk_logMessage : type_:int -> message:string -> Base.Notification.t
+
 (** Send a [window/logMessage] notification to the client *)
 val logMessage : lvl:Lvl.t -> message:string -> unit
 
 (** Send a [window/logMessage] notification to the client *)
 val logMessageInt : lvl:int -> message:string -> unit
+
+module TraceParams : sig
+  val method_ : string
+
+  type t =
+    { message : string
+    ; verbose : string option [@default None]
+    }
+  [@@deriving yojson]
+end
+
+(** Create a logTrace notification *)
+val mk_logTrace : message:string -> extra:string option -> Base.Notification.t
 
 (** Send a [$/logTrace] notification to the client *)
 val logTrace : message:string -> extra:string option -> unit

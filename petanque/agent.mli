@@ -15,13 +15,6 @@ module State : sig
   val equal : t -> t -> bool
 end
 
-module Env : sig
-  (** Coq Workspaces / project enviroments *)
-  type t
-
-  val name : string
-end
-
 (** Petanque errors *)
 module Error : sig
   type t =
@@ -29,6 +22,7 @@ module Error : sig
     | Parsing of string
     | Coq of string
     | Anomaly of string
+    | System of string
     | Theorem_not_found of string
 
   val to_string : t -> string
@@ -46,28 +40,15 @@ module Run_result : sig
     | Current_state of 'a
 end
 
-(** I/O handling, by default, print to stderr *)
+val fn : (token:Coq.Limits.Token.t -> Lang.LUri.File.t -> Fleche.Doc.t R.t) ref
 
-(** [trace header extra message] *)
-val trace_ref : (string -> ?extra:string -> string -> unit) ref
-
-(** [message level message] *)
-val message_ref : (lvl:Fleche.Io.Level.t -> message:string -> unit) ref
-
-(** [init ~debug ~root] Initializes Coq, with project and workspace settings
-    from [root]. [root] needs to be in URI format. This function needs to be
-    called _once_ before all others. *)
-val init :
-  token:Coq.Limits.Token.t -> debug:bool -> root:Lang.LUri.File.t -> Env.t R.t
-
-(** [start ~token ~env ~uri ~pre_commands ~thm] start a new proof for theorem
-    [thm] in file [uri] under [env]. [token] can be used to interrupt the
+(** [start ~token ~fn ~uri ~pre_commands ~thm] start a new proof for theorem
+    [thm] in file [uri] under [fn]. [token] can be used to interrupt the
     computation. Returns the proof state or error otherwise. [pre_commands] is a
     string of dot-separated Coq commands that will be executed before the proof
     starts. *)
 val start :
      token:Coq.Limits.Token.t
-  -> env:Env.t
   -> uri:Lang.LUri.File.t
   -> ?pre_commands:string
   -> thm:string
@@ -88,15 +69,21 @@ val goals :
   -> string Coq.Goals.reified_pp option R.t
 
 module Premise : sig
+  module Info : sig
+    (* (from .glob files) *)
+    type t =
+      { kind : string (* type of object *)
+      ; range : Lang.Range.t option (* a range *)
+      ; offset : int * int (* a offset in the file *)
+      ; raw_text : (string, string) Result.t (* raw text of the premise *)
+      }
+  end
+
   type t =
     { full_name : string
           (* should be a Coq DirPath, but let's go step by step *)
     ; file : string (* file (in FS format) where the premise is found *)
-    ; kind : (string, string) Result.t (* type of object *)
-    ; range : (Lang.Range.t, string) Result.t (* a range if known *)
-    ; offset : (int * int, string) Result.t
-          (* a offset in the file if known (from .glob files) *)
-    ; raw_text : (string, string) Result.t (* raw text of the premise *)
+    ; info : (Info.t, string) Result.t (* Info about the object, if available *)
     }
 end
 

@@ -38,41 +38,13 @@ module Request = struct
   end
 end
 
-(* init RPC *)
-module Init = struct
-  let method_ = "petanque/init"
-
-  module Params = struct
-    type t =
-      { debug : bool
-      ; root : Lsp.JLang.LUri.File.t
-      }
-    [@@deriving yojson]
-  end
-
-  module Response = struct
-    type t = int [@@deriving yojson]
-  end
-
-  module Handler = struct
-    module Params = Params
-
-    module Response = struct
-      type t = Env.t [@@deriving yojson]
-    end
-
-    let handler ~token { Params.debug; root } = Agent.init ~token ~debug ~root
-  end
-end
-
 (* start RPC *)
 module Start = struct
   let method_ = "petanque/start"
 
   module Params = struct
     type t =
-      { env : int
-      ; uri : Lsp.JLang.LUri.File.t
+      { uri : Lsp.JLang.LUri.File.t
       ; pre_commands : string option [@default None]
       ; thm : string
       }
@@ -86,8 +58,7 @@ module Start = struct
   module Handler = struct
     module Params = struct
       type t =
-        { env : Env.t
-        ; uri : Lsp.JLang.LUri.File.t
+        { uri : Lsp.JLang.LUri.File.t
         ; pre_commands : string option [@default None]
         ; thm : string
         }
@@ -98,8 +69,8 @@ module Start = struct
       type t = State.t [@@deriving yojson]
     end
 
-    let handler ~token { Params.env; uri; pre_commands; thm } =
-      Agent.start ~token ~env ~uri ?pre_commands ~thm ()
+    let handler ~token { Params.uri; pre_commands; thm } =
+      Agent.start ~token ~uri ?pre_commands ~thm ()
   end
 end
 
@@ -180,51 +151,4 @@ module Premises = struct
 
     let handler ~token { Params.st } = Agent.premises ~token ~st
   end
-end
-
-(* Notifications don't get a reply *)
-module Notification = struct
-  module type S = sig
-    val method_ : string
-
-    module Params : sig
-      type t [@@deriving yojson]
-    end
-  end
-end
-
-(* These two are identical from LSP *)
-
-(* Trace notification *)
-module Trace = struct
-  let method_ = "$/logTrace"
-
-  module Params = struct
-    type t =
-      { message : string
-      ; verbose : string option [@default None]
-      }
-    [@@deriving yojson]
-  end
-
-  let make params =
-    let params = Params.to_yojson params |> Yojson.Safe.Util.to_assoc in
-    Lsp.Base.Message.Notification { method_; params }
-end
-
-(* Message notification *)
-module Message = struct
-  let method_ = "window/logMessage"
-
-  module Params = struct
-    type t =
-      { type_ : int [@key "type"]
-      ; message : string
-      }
-    [@@deriving yojson]
-  end
-
-  let make params =
-    let params = Params.to_yojson params |> Yojson.Safe.Util.to_assoc in
-    Lsp.Base.Message.Notification { method_; params }
 end

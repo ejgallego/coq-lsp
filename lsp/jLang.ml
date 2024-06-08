@@ -88,14 +88,3 @@ module Diagnostic = struct
     let message = Pp.to_string message in
     _t_to_yojson { range; severity; message; data }
 end
-
-let mk_diagnostics ~uri ~version ld : Base.Notification.t =
-  let diags = List.map Diagnostic.to_yojson ld in
-  let uri = Lang.LUri.File.to_string_uri uri in
-  let params =
-    [ ("uri", `String uri)
-    ; ("version", `Int version)
-    ; ("diagnostics", `List diags)
-    ]
-  in
-  Base.Notification.make ~method_:"textDocument/publishDiagnostics" ~params ()

@@ -22,20 +22,18 @@ let pp_offset fmt (bp, ep) = Format.fprintf fmt "(%d,%d)" bp ep
 let pp_res_str =
   Coq.Compat.Result.pp Format.pp_print_string Format.pp_print_string
 
-let pp_premise fmt
-    { Petanque.Agent.Premise.full_name
-    ; kind
-    ; file
-    ; range = _
-    ; offset
-    ; raw_text
-    } =
+let pp_info fmt info =
+  let { Petanque.Agent.Premise.Info.kind; range = _; offset; raw_text } =
+    info
+  in
+  Format.fprintf fmt "kind = %s;@ offset = %a;@ raw_text = %a" kind pp_offset
+    offset pp_res_str raw_text
+
+let pp_premise fmt { Petanque.Agent.Premise.full_name; file; info } =
   Format.(
-    fprintf fmt
-      "@[{ name = %s;@ file = %s;@ kind = %a;@ offset = %a;@ raw_text = %a}@]@\n"
-      full_name file pp_res_str kind
-      (Coq.Compat.Result.pp pp_offset pp_print_string)
-      offset pp_res_str raw_text)
+    fprintf fmt "@[{ name = %s;@ file = %s;@ %a}@]@\n" full_name file
+      (Coq.Compat.Result.pp pp_info pp_print_string)
+      info)
 
 let print_premises = false
 
@@ -54,8 +52,8 @@ let run (ic, oc) =
   in
   (* Will this work on Windows? *)
   let root, uri = prepare_paths () in
-  let* env = S.init { debug; root } in
-  let* st = S.start { env; uri; pre_commands = None; thm = "rev_snoc_cons" } in
+  let* () = S.set_workspace { debug; root } in
+  let* st = S.start { uri; pre_commands = None; thm = "rev_snoc_cons" } in
   let* premises = S.premises { st } in
   (if print_premises then
      Format.(eprintf "@[%a@]@\n%!" (pp_print_list pp_premise) premises));

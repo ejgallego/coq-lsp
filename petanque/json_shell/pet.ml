@@ -44,18 +44,14 @@ let rec loop ~token : unit =
     loop ~token
 
 let trace_notification hdr ?extra msg =
-  let module M = Protocol.Trace in
   let message = Format.asprintf "[%s] %s" hdr msg in
-  let params = { M.Params.message; verbose = extra } in
-  let notification = M.make params in
-  send_message notification
+  let notification = Lsp.Io.mk_logTrace ~message ~extra in
+  send_message (Lsp.Base.Message.Notification notification)
 
 let message_notification ~lvl ~message =
-  let module M = Protocol.Message in
   let type_ = Fleche.Io.Level.to_int lvl in
-  let params = M.Params.{ type_; message } in
-  let notification = M.make params in
-  send_message notification
+  let notification = Lsp.Io.mk_logMessage ~type_ ~message in
+  send_message (Lsp.Base.Message.Notification notification)
 
 let trace_enabled = true
 
@@ -63,8 +59,10 @@ let pet_main debug roots http_headers =
   Coq.Limits.start ();
   (* Don't trace for now *)
   if trace_enabled then (
-    Petanque.Agent.trace_ref := trace_notification;
-    Petanque.Agent.message_ref := message_notification);
+    Petanque.Shell.trace_ref := trace_notification;
+    Petanque.Shell.message_ref := message_notification);
+  Petanque.Agent.fn := Petanque.Shell.fn;
+  let () = Petanque.Shell.init_agent ~debug in
   let token = Coq.Limits.Token.create () in
   let () = Utils.set_roots ~token ~debug ~roots in
   use_http_headers := http_headers;
