@@ -352,13 +352,14 @@ let empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed =
   let completed = completed init_range in
   { uri; contents; toc; version; env; root; nodes; diags_dirty; completed }
 
-let error_doc ~loc ~message ~uri ~contents ~version ~env ~completed =
+let error_doc ~loc ~message ~uri ~contents ~version ~env =
   let feedback = [ (loc, Diags.err, Pp.str message) ] in
   let root = env.Env.init in
   let nodes = [] in
+  let completed range = Completion.Failed range in
   (empty_doc ~uri ~version ~contents ~env ~root ~nodes ~completed, feedback)
 
-let conv_error_doc ~raw ~uri ~version ~env ~root ~completed err =
+let conv_error_doc ~raw ~uri ~version ~env ~root err =
   let contents = Contents.make_raw ~raw in
   let lines = contents.lines in
   let err =
@@ -368,6 +369,7 @@ let conv_error_doc ~raw ~uri ~version ~env ~root ~completed err =
   let stats = None in
   let global_stats = Stats.Global.dump () in
   let nodes = process_init_feedback ~lines ~stats ~global_stats root [ err ] in
+  let completed range = Completion.Failed range in
   empty_doc ~uri ~version ~env ~root ~nodes ~completed ~contents
 
 let create ~token ~env ~uri ~version ~contents =
@@ -383,7 +385,6 @@ let create ~token ~env ~uri ~version ~contents =
     corresponding errors; for now we refine the contents step as to better setup
     the initial document. *)
 let handle_doc_creation_exec ~token ~env ~uri ~version ~contents =
-  let completed range = Completion.Failed range in
   let { Coq.Protect.E.r; feedback }, stats =
     create ~token ~env ~uri ~version ~contents
   in
@@ -392,13 +393,13 @@ let handle_doc_creation_exec ~token ~env ~uri ~version ~contents =
     | Interrupted ->
       let message = "Document Creation Interrupted!" in
       let loc = None in
-      error_doc ~loc ~message ~uri ~version ~contents ~env ~completed
+      error_doc ~loc ~message ~uri ~version ~contents ~env
     | Completed (Error (User (loc, err_msg)))
     | Completed (Error (Anomaly (loc, err_msg))) ->
       let message =
         Format.asprintf "Doc.create, internal error: @[%a@]" Pp.pp_with err_msg
       in
-      error_doc ~loc ~message ~uri ~version ~contents ~env ~completed
+      error_doc ~loc ~message ~uri ~version ~contents ~env
     | Completed (Ok doc) -> (doc, [])
   in
   let state = doc.root in
@@ -413,16 +414,15 @@ let handle_doc_creation_exec ~token ~env ~uri ~version ~contents =
   let diags_dirty = not (CList.is_empty nodes) in
   { doc with nodes; diags_dirty }
 
-let handle_contents_creation ~env ~uri ~version ~raw ~completed f =
+let handle_contents_creation ~env ~uri ~version ~raw f =
   match Contents.make ~uri ~raw with
   | Contents.R.Error err ->
     let root = env.Env.init in
-    conv_error_doc ~raw ~uri ~version ~env ~root ~completed err
+    conv_error_doc ~raw ~uri ~version ~env ~root err
   | Contents.R.Ok contents -> f ~env ~uri ~version ~contents
 
 let create ~token ~env ~uri ~version ~raw =
-  let completed range = Completion.Failed range in
-  handle_contents_creation ~env ~uri ~version ~raw ~completed
+  handle_contents_creation ~env ~uri ~version ~raw
     (handle_doc_creation_exec ~token)
 
 (* Used in bump, we should consolidate with create *)
@@ -495,8 +495,7 @@ let bump_version ~token ~version ~raw doc =
   let uri = doc.uri in
   match Contents.make ~uri ~raw with
   | Contents.R.Error e ->
-    let completed range = Completion.Failed range in
-    conv_error_doc ~raw ~uri ~version ~env:doc.env ~root:doc.root ~completed e
+    conv_error_doc ~raw ~uri ~version ~env:doc.env ~root:doc.root e
   | Contents.R.Ok contents -> bump_version ~token ~version ~contents doc
 
 let add_node ~node doc =
