@@ -18,14 +18,13 @@ let dump_msgs () = List.iter (Format.eprintf "%s@\n") (List.rev !msgs)
 
 let start ~token =
   let debug = false in
-  let () = Petanque.Shell.init_agent ~debug in
   Petanque.Shell.trace_ref := trace;
   Petanque.Shell.message_ref := message;
-  Agent.fn := Petanque.Shell.fn;
   (* Will this work on Windows? *)
   let open Coq.Compat.Result.O in
-  let root, uri = prepare_paths () in
+  let () = Petanque.Shell.init_agent ~token ~debug ~roots:[] in
   (* Twice to test for #766 *)
+  let root, uri = prepare_paths () in
   let* () = Petanque.Shell.set_workspace ~token ~debug ~root in
   let* () = Petanque.Shell.set_workspace ~token ~debug ~root in
   Agent.start ~token ~uri ~thm:"rev_snoc_cons" ()

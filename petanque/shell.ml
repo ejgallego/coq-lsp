@@ -83,7 +83,16 @@ let fn ~token uri =
   let env = Option.get !env in
   setup_doc ~token env uri
 
-let init_agent ~debug =
+let set_roots ~token ~debug ~roots =
+  match roots with
+  | [] -> ()
+  | root :: _ -> (
+    match set_workspace ~token ~debug ~root with
+    | Ok () -> ()
+    | Error err -> Format.eprintf "Error: %s@\n%!" (Agent.Error.to_string err))
+
+let init_agent ~token ~debug ~roots =
   init_st := Some (init_coq ~debug);
   Fleche.Io.CallBack.set io;
-  Agent.fn := fn
+  Agent.fn := fn;
+  set_roots ~token ~debug ~roots

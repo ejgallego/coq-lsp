@@ -59,18 +59,23 @@ let create_server ~token sock =
   in
   serve
 
+(* XXX: Flèche LSP backend already handles the conversion at the protocol
+   level *)
+let to_uri uri =
+  Lang.LUri.of_string uri |> Lang.LUri.File.of_uri |> Result.get_ok
+
 let pet_main debug roots address port backlog =
+  let roots = List.map to_uri roots in
   Coq.Limits.start ();
-  (* EJGA: pet-server should handle this at some point *)
-  (* Petanque.Shell.trace_ref := trace_notification; *)
-  (* Petanque.Shell.message_ref := message_notification); *)
-  let () = Petanque.Shell.init_agent ~debug in
   let token = Coq.Limits.Token.create () in
   let () = Logs.set_reporter (Logs.format_reporter ()) in
   let () = Logs.set_level (Some Logs.Info) in
   let sock = create_socket ~address ~port ~backlog in
   let serve = create_server ~token sock in
-  let () = Utils.set_roots ~token ~debug ~roots in
+  (* EJGA: pet-server should handle this at some point *)
+  (* Petanque.Shell.trace_ref := trace_notification; *)
+  (* Petanque.Shell.message_ref := message_notification); *)
+  let () = Petanque.Shell.init_agent ~token ~debug ~roots in
   Lwt_main.run @@ serve ()
 
 open Cmdliner
