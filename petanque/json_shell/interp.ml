@@ -19,8 +19,8 @@ let do_request ~token (module R : Request.S) ~id ~params =
 
 let handle_request ~token ~id ~method_ ~params =
   match method_ with
-  | s when String.equal Init.method_ s ->
-    do_request ~token (module Init) ~id ~params
+  | s when String.equal SetWorkspace.method_ s ->
+    do_request ~token (module SetWorkspace) ~id ~params
   | s when String.equal Start.method_ s ->
     do_request ~token (module Start) ~id ~params
   | s when String.equal RunTac.method_ s ->

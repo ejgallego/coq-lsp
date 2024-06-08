@@ -61,12 +61,13 @@ let create_server ~token sock =
 
 let pet_main debug roots address port backlog =
   Coq.Limits.start ();
+  let () = Petanque.Agent.init_agent ~debug in
   let token = Coq.Limits.Token.create () in
   let () = Logs.set_reporter (Logs.format_reporter ()) in
   let () = Logs.set_level (Some Logs.Info) in
   let sock = create_socket ~address ~port ~backlog in
   let serve = create_server ~token sock in
-  let () = Utils.set_roots ~token ~debug ~roots in
+>  let () = Utils.set_roots ~token ~debug ~roots in
   Lwt_main.run @@ serve ()
 
 open Cmdliner

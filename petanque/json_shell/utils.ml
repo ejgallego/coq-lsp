@@ -8,7 +8,7 @@ let set_roots ~token ~debug ~roots =
   | [] -> ()
   | [ root ] | root :: _ -> (
     let root = uri_of_string_exn root in
-    match Petanque.Agent.init ~token ~debug ~root with
+    match Petanque.Agent.set_workspace ~token ~debug ~root with
     | Ok env ->
       (* hack until we fix the stuff *)
       let _ : Yojson.Safe.t = JAgent.Env.to_yojson env in

@@ -131,16 +131,13 @@ let setup_workspace ~token ~init ~debug ~root =
 
 let init_st = ref None
 
-let init ~token ~debug ~root =
-  let init =
-    match !init_st with
-    | None ->
-      let init = init_coq ~debug in
-      Fleche.Io.CallBack.set io;
-      init_st := Some init;
-      init
-    | Some init -> init
-  in
+(* To be moved to pet *)
+let init_agent ~debug =
+  init_st := Some (init_coq ~debug);
+  Fleche.Io.CallBack.set io
+
+let set_workspace ~token ~debug ~root =
+  let init = Option.get !init_st in
   setup_workspace ~token ~init ~debug ~root
 
 let parse ~loc tac st =

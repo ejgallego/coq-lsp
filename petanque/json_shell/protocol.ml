@@ -39,8 +39,8 @@ module Request = struct
 end
 
 (* init RPC *)
-module Init = struct
-  let method_ = "petanque/init"
+module SetWorkspace = struct
+  let method_ = "petanque/setWorkspace"
 
   module Params = struct
     type t =
@@ -61,7 +61,7 @@ module Init = struct
       type t = Env.t [@@deriving yojson]
     end
 
-    let handler ~token { Params.debug; root } = Agent.init ~token ~debug ~root
+    let handler ~token { Params.debug; root } = Agent.set_workspace ~token ~debug ~root
   end
 end
 

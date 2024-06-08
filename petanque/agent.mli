@@ -54,10 +54,13 @@ val trace_ref : (string -> ?extra:string -> string -> unit) ref
 (** [message level message] *)
 val message_ref : (lvl:Fleche.Io.Level.t -> message:string -> unit) ref
 
-(** [init ~debug ~root] Initializes Coq, with project and workspace settings
-    from [root]. [root] needs to be in URI format. This function needs to be
-    called _once_ before all others. *)
-val init :
+(** To be called by the shell *)
+val init_agent : debug:bool -> unit
+
+(** [set_workspace ~root] Sets project and workspace settings from
+    [root]. [root] needs to be in URI format. If called repeteadly,
+    overrides the previous call. *)
+val set_workspace :
   token:Coq.Limits.Token.t -> debug:bool -> root:Lang.LUri.File.t -> Env.t R.t
 
 (** [start ~token ~env ~uri ~pre_commands ~thm] start a new proof for theorem

@@ -67,7 +67,7 @@ end
 
 module S (C : Chans) = struct
   let init =
-    let module M = Wrap (Protocol.Init) (C) in
+    let module M = Wrap (Protocol.SetWorkspace) (C) in
     M.call
 
   let start =
