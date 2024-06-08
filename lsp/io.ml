@@ -110,28 +110,54 @@ module Lvl = struct
     | Debug -> 5
 end
 
-let logMessage ~lvl ~message =
-  let method_ = "window/logMessage" in
-  let lvl = Lvl.to_int lvl in
-  (* Replace with the json serializer in petanque protocol *)
-  let params = [ ("type", `Int lvl); ("message", `String message) ] in
-  Base.Notification.make ~method_ ~params () |> !fn
+module MessageParams = struct
+  let method_ = "window/logMessage"
 
-let logMessageInt ~lvl ~message =
-  let method_ = "window/logMessage" in
-  (* Replace with the json serializer in petanque protocol *)
-  let params = [ ("type", `Int lvl); ("message", `String message) ] in
-  Base.Notification.make ~method_ ~params () |> !fn
+  type t =
+    { type_ : int [@key "type"]
+    ; message : string
+    }
+  [@@deriving yojson]
+end
 
-let logTrace ~message ~extra =
-  let method_ = "$/logTrace" in
+let mk_logMessage ~type_ ~message =
+  let module M = MessageParams in
+  let method_ = M.method_ in
   let params =
-    match (!trace_value, extra) with
-    | Verbose, Some extra ->
-      [ ("message", `String message); ("verbose", `String extra) ]
-    | _, _ -> [ ("message", `String message) ]
+    M.({ type_; message } |> to_yojson |> Yojson.Safe.Util.to_assoc)
   in
-  Base.Notification.make ~method_ ~params () |> !fn
+  Base.Notification.make ~method_ ~params ()
+
+let logMessage ~lvl ~message =
+  let type_ = Lvl.to_int lvl in
+  mk_logMessage ~type_ ~message |> !fn
+
+let logMessageInt ~lvl ~message = mk_logMessage ~type_:lvl ~message |> !fn
+
+module TraceParams = struct
+  let method_ = "$/logTrace"
+
+  type t =
+    { message : string
+    ; verbose : string option [@default None]
+    }
+  [@@deriving yojson]
+end
+
+let mk_logTrace ~message ~extra =
+  let module M = TraceParams in
+  let method_ = M.method_ in
+  let verbose =
+    match (!trace_value, extra) with
+    | Verbose, Some extra -> Some extra
+    | _ -> None
+  in
+  let params =
+    M.({ message; verbose } |> to_yojson |> Yojson.Safe.Util.to_assoc)
+  in
+  Base.Notification.make ~method_ ~params ()
+
+let logTrace ~message ~extra = mk_logTrace ~message ~extra |> !fn
 
 let trace hdr ?extra msg =
   let message = Format.asprintf "[%s]: @[%s@]" hdr msg in

@@ -13,12 +13,12 @@ let maybe_display_request method_ =
   if display_requests then Format.eprintf "received request: %s@\n%!" method_
 
 let do_trace ~trace params =
-  match Protocol.Trace.Params.of_yojson (`Assoc params) with
+  match Lsp.Io.TraceParams.of_yojson (`Assoc params) with
   | Ok { message; verbose } -> trace ?verbose message
   | Error _ -> ()
 
 let do_message ~message params =
-  match Protocol.Message.Params.of_yojson (`Assoc params) with
+  match Lsp.Io.MessageParams.of_yojson (`Assoc params) with
   | Ok { type_; message = msg } -> message ~lvl:type_ ~message:msg
   | Error _ -> ()
 
@@ -27,11 +27,11 @@ let rec read_response ~trace ~message ic =
   match Lsp.Io.read_message ic with
   | Some (Ok (Lsp.Base.Message.Response r)) -> Ok r
   | Some (Ok (Notification { method_; params }))
-    when String.equal method_ Protocol.Trace.method_ ->
+    when String.equal method_ Lsp.Io.TraceParams.method_ ->
     do_trace ~trace params;
     read_response ~trace ~message ic
   | Some (Ok (Notification { method_; params }))
-    when String.equal method_ Protocol.Message.method_ ->
+    when String.equal method_ Lsp.Io.MessageParams.method_ ->
     do_message ~message params;
     read_response ~trace ~message ic
   | Some (Ok (Request { method_; _ })) | Some (Ok (Notification { method_; _ }))
