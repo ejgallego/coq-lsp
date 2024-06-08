@@ -64,7 +64,6 @@ let pet_main debug roots address port backlog =
   (* EJGA: pet-server should handle this at some point *)
   (* Petanque.Shell.trace_ref := trace_notification; *)
   (* Petanque.Shell.message_ref := message_notification); *)
-  Petanque.Agent.fn := Petanque.Shell.fn;
   let () = Petanque.Shell.init_agent ~debug in
   let token = Coq.Limits.Token.create () in
   let () = Logs.set_reporter (Logs.format_reporter ()) in

@@ -49,12 +49,6 @@ let io =
   }
 
 let init_st = ref None
-
-(* To be moved to pet *)
-let init_agent ~debug =
-  init_st := Some (init_coq ~debug);
-  Fleche.Io.CallBack.set io
-
 let env = ref None
 
 let set_workspace ~token ~debug ~root =
@@ -88,3 +82,8 @@ let setup_doc ~token env uri =
 let fn ~token uri =
   let env = Option.get !env in
   setup_doc ~token env uri
+
+let init_agent ~debug =
+  init_st := Some (init_coq ~debug);
+  Fleche.Io.CallBack.set io;
+  Agent.fn := fn
