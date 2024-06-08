@@ -23,27 +23,43 @@ an OCaml API (`agent.mli`) which is then exposed via some form of RPC.
 
 ## Install instructions
 
-Please see the regular `coq-lsp` install instructions. In general you
-have three options:
+Please see the regular `coq-lsp` install instructions for more details.
 
-- use a released version from Opam
-- use a development version directly from the tree
-- install a development version using Opam
+In general, you want to install `coq-lsp` first, the `pytanque`, the
+Python companion. You have three options to install `coq-lsp`, in
+order of easiness:
 
-See the contributing guide for instructions on how to perform the last
-two.
+- use a released version from Opam:
+
+```
+$ opam install coq-lsp
+```
+
+- install a development version using Opam:
+
+```
+$ git clone ... coq-lsp && cd coq-lsp
+$ opam install vendor/coq/coq{-core,-stdlib,ide-server,}.opam
+$ opam install .
+$ opam install coq-mathcomp-ssreflect # etc...
+```
+
+- use a development version directly from the tree (expert-mode)
+
+See the contributing guide for instructions on how to do the last.
 
 ## Running `petanque` JSON shell
 
 You can use `petanque` in 2 different ways:
 
 - call the API directly from your OCaml program
-- use the provided `pet` JSON-RPC shell
+- use the provided `pet` and `pet-server` JSON-RPC shells, usually
+  with a library such as Pytanque.
 
-to execute the `pet` JSON-RPC shell do:
+To execute the `pet` JSON-RPC shell do:
 ```
 make
-dune exec -- rlwrap %{bin:pet}
+dune exec -- rlwrap %{bin:pet} --http_headers=no
 ```
 
 `rlwrap` is just a convenience, if your dune version is too old and
@@ -61,25 +77,23 @@ NOTE: If you use this option, you should not call `Init`!
 
 ### A first example:
 
-Please use one line per json input. json input examples are:
+`pet` speaks JSON-RPC, and is usable interactively (tho not designed for it):
 ```json
-["Init",{"debug": false,"root":"file:///home/egallego/research/coq-lsp/examples/"}]
-["Init",["Ok",1]]
+{ method: "petanque/setWorkspace", id: 1, params: { debug: false, root: "file:///home/egallego/research/coq-lsp/examples" } }
+ > {"jsonrpc":"2.0","id":1,"result":null}
 
-["Start",{"env":1,"uri": "file:///home/egallego/research/coq-lsp/examples/ex0.v","thm":"addnC"}]
-["Start",["Ok",1]]
+{ method: "petanque/start", id: 2, params: { uri: "file:///home/egallego/research/coq-lsp/examples/ex0.v", thm: "addnC" } }
+ > {"jsonrpc":"2.0","method":"$/logTrace","params":{"message":"[check] resuming [v: 0], from: 0 l: 0"}}
+ > ...
+ > {"jsonrpc":"2.0","id":2,"result":1}
 
-["Run_tac", {"st": 1, "tac": "induction n."}]
-["Run_tac", ["Ok", 2]]
+{ method: "petanque/run", id: 3, params: { "st": 1, "tac": "induction n."} }
+ > {"jsonrpc":"2.0","id":3,"result":["Current_state",2]}
 
-["Run_tac", {"st": 2, "tac": "simpl."}]
-["Run_tac", 3]
+{ method: "petanque/goals", id: 4, params: { "st": 2 } }
+ > {"jsonrpc":"2.0","id":4,"result":{"goals":[{"info":{"evar":["Ser_Evar",51],"name":null},"hyps":[{"names":["m"],"def":null,"ty":"nat"}],"ty":"0 + m = m + 0"},{"info":{"evar":["Ser_Evar",55],"name":null},"hyps":[{"names":["n","m"],"def":null,"ty":"nat"},{"names":["IHn"],"def":null,"ty":"n + m = m + n"}],"ty":"S n + m = m + S n"}],"stack":[],"bullet":null,"shelf":[],"given_up":[]}}
 
-["Run_tac", {"st": 3, "tac": "auto."}]
-["Run_tac",4]
-
-["Premises", {"st": 2}]
-["Premises", ...]
+...
 ```
 
 Seems to work! (TM) (Famous last words)
