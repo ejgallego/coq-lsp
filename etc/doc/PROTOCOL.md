@@ -15,66 +15,142 @@ See also the upstream LSP issue on generic support for Proof
 Assistants
 https://github.com/microsoft/language-server-protocol/issues/1414
 
+### coq-lsp basic operating model
+
+`coq-lsp` is a bit different from other servers in that checking the
+file is often very expensive, so the continuous LSP model can be too
+heavy. The philosophy of `coq-lsp` is to treat a Coq document as a
+build task, and then check the document under user-request.
+
+Thus, for example when the user requests goals at a given point,
+`coq-lsp` will check if the goals are known, otherwise try to check
+the required document parts to return answers to the user ASAP.
+
+`coq-lsp` has three main functioning modes (controlled by a regular
+parameter):
+
+- _continuous mode_: in this mode, `coq-lsp` will try to complete
+  checking of all open files when idle. This mode has shown to be very
+  useful in many contexts, for example educational, as it provides
+  very low latency.
+
+- _on-demand mode_: in this mode, `coq-lsp` will do nothing when
+  idle. This mode for example can be used to simulate the traditional
+  "step-based" Coq interaction mode, just have your client request
+  goals as the desired step position, `coq-lsp` will execute the
+  document up to that point.
+
+- _on-demand mode, with viewport hints_: in this mode, inspired by
+  Isabelle, the `coq-lsp` client will inform the server about the
+  user's viewport. This mode provides a comfortable compromise between
+  latency and CPU usage.
+
+Note that on-demand mode often implies that some requests that require
+the full document to be checked, like `documentSymbols`, will return
+less complete information.
+
+Also note that it has been hard for us to design an interaction mode
+that would fit well all client editors; for example VSCode doesn't
+implement progress on some requests that would be very useful for us.
+
+However, the underlying checking engine (`Flèche`) is very flexible,
+so don't hesitate to contact with us if your client would want things
+in a different way.
+
+### coq-lsp workspace configuration
+
+See the manual for the exact details, but indeed, coq-lsp will try to
+auto-configure Coq projects looking for `_CoqProject` files in the LSP
+workspace folders sent by the client.
+
+### A minimal client implementation:
+
+In order to implement a minimal, but working `coq-lsp` client, you need to:
+
+- setup a regular LSP client on your side,
+- setup the right parameters for `initializationOptions` on `initialize`,
+- implement the `coq/goals` request
+
+And that should be it! We recommend next supporting the
+`coq/serverStatus` notification, and maybe `coq/viewport` too.
+
 ## Language server protocol support table
 
 If a feature doesn't appear here it usually means it is not planned in the short term:
 
-| Method                                | Support | Notes                                                         |
-|---------------------------------------|---------|---------------------------------------------------------------|
-| `initialize`                          | Partial | We don't obey the advertised client capabilities              |
-| `client/registerCapability`           | No      | Not planned ATM                                               |
-| `$/setTrace`                          | Yes     |                                                               |
-| `$/logTrace`                          | Yes     |                                                               |
-| `window/logMessage`                   | Yes     |                                                               |
-|---------------------------------------|---------|---------------------------------------------------------------|
-| `textDocument/didOpen`                | Yes     | We can't reuse Memo tables yet                                |
-| `textDocument/didChange`              | Yes     | We only support `TextDocumentSyncKind.Full` for now           |
-| `textDocument/didClose`               | Partial | We'd likely want to save a `.vo` file on close if possible    |
-| `textDocument/didSave`                | Partial | Undergoing behavior refinement                                |
-|---------------------------------------|---------|---------------------------------------------------------------|
-| `notebookDocument/didOpen`            | No      | Planned                                                       |
-|---------------------------------------|---------|---------------------------------------------------------------|
-| `textDocument/declaration`            | No      | Planned, blocked on upstream issues                           |
-| `textDocument/definition`             | Yes (*) | Uses .glob information which is often incomplete              |
-| `textDocument/references`             | No      | Planned, blocked on upstream issues                           |
-| `textDocument/hover`                  | Yes     | Shows stats and type info of identifiers at point, extensible |
-| `textDocument/codeLens`               | No      |                                                               |
-| `textDocument/foldingRange`           | No      |                                                               |
-| `textDocument/documentSymbol`         | Yes     | Sections and modules missing (#322)                           |
-| `textDocument/semanticTokens`         | No      | Planned                                                       |
-| `textDocument/inlineValue`            | No      | Planned                                                       |
-| `textDocument/inlayHint`              | No      | Planned                                                       |
-| `textDocument/completion`             | Partial | Needs more work locally and upstream (#50)                    |
-| `textDocument/publishDiagnostics`     | Yes     |                                                               |
-| `textDocument/diagnostic`             | No      | Planned, issue #49                                            |
-| `textDocument/codeAction`             | No      | Planned                                                       |
-| `textDocument/selectionRange`         | Partial | Selection for a point is its span; no parents                 |
-|---------------------------------------|---------|---------------------------------------------------------------|
-| `workspace/workspaceFolders`          | Yes     | Each folder should have a `_CoqProject` file at the root.     |
-| `workspace/didChangeWorkspaceFolders` | Yes     |                                                               |
-| `workspace/didChangeConfiguration`    | Yes (*) | We still do a client -> server push, instead of pull          |
-|---------------------------------------|---------|---------------------------------------------------------------|
+| Method                                | Support | Notes                                                                    |
+|---------------------------------------|---------|--------------------------------------------------------------------------|
+| `initialize`                          | Partial | We don't obey the advertised client capabilities                         |
+| `client/registerCapability`           | No      | Not planned ATM                                                          |
+| `$/setTrace`                          | Yes     |                                                                          |
+| `$/logTrace`                          | Yes     |                                                                          |
+| `window/logMessage`                   | Yes     |                                                                          |
+|---------------------------------------|---------|--------------------------------------------------------------------------|
+| `textDocument/didOpen`                | Yes     | We can't reuse Memo tables yet                                           |
+| `textDocument/didChange`              | Yes     | We only support `TextDocumentSyncKind.Full` for now                      |
+| `textDocument/didClose`               | Partial | We'd likely want to save a `.vo` file on close if possible               |
+| `textDocument/didSave`                | Partial | Undergoing behavior refinement                                           |
+|---------------------------------------|---------|--------------------------------------------------------------------------|
+| `notebookDocument/didOpen`            | No      | Planned                                                                  |
+|---------------------------------------|---------|--------------------------------------------------------------------------|
+| `textDocument/declaration`            | No      | Planned, blocked on upstream issues                                      |
+| `textDocument/definition`             | Yes (*) | Uses .glob information which is often incomplete                         |
+| `textDocument/references`             | No      | Planned, blocked on upstream issues                                      |
+| `textDocument/hover`                  | Yes     | Shows stats, type info, and location of identifiers at point, extensible |
+| `textDocument/codeLens`               | No      |                                                                          |
+| `textDocument/foldingRange`           | No      |                                                                          |
+| `textDocument/documentSymbol`         | Yes     | Sections and modules missing (#322)                                      |
+| `textDocument/semanticTokens`         | No      | Planned                                                                  |
+| `textDocument/inlineValue`            | No      | Planned                                                                  |
+| `textDocument/inlayHint`              | No      | Planned                                                                  |
+| `textDocument/completion`             | Partial | Needs more work locally and upstream (#50)                               |
+| `textDocument/publishDiagnostics`     | Yes     |                                                                          |
+| `textDocument/diagnostic`             | No      | Planned, issue #49                                                       |
+| `textDocument/codeAction`             | No      | Planned                                                                  |
+| `textDocument/selectionRange`         | Partial | Selection for a point is its span; no parents                            |
+|---------------------------------------|---------|--------------------------------------------------------------------------|
+| `workspace/diagnostic`                | No      | Planned                                                                  |
+| `workspace/workspaceFolders`          | Yes     | Each folder should have a `_CoqProject` file at the root.                |
+| `workspace/didChangeWorkspaceFolders` | Yes     |                                                                          |
+| `workspace/didChangeConfiguration`    | Yes (*) | We still do a client -> server push, instead of pull                     |
+|---------------------------------------|---------|--------------------------------------------------------------------------|
 
 ### URIs accepted by coq-lsp
 
-`coq-lsp` only accepts `file:///` URIs; moreover, the URIs sent to the
-server must be able to be mapped back to a Coq library name, so a
-fully-checked file can be saved to a `.vo` for example.
+The `coq-lsp` server only accepts `file:///` URIs; moreover, the URIs
+sent to the server must be able to be mapped back to a Coq library
+name, so a fully-checked file can be saved to a `.vo` for example.
 
 Don't hesitate to open an issue if you need support for different kind
-of URIs in your application / client.
+of URIs in your application / client. The client does support
+`vsls:///` URIs.
 
 Additionally, `coq-lsp` will use the extension of the file in the URI
 to determine the content type. Supported extensions are:
 - `.v`: File will be interpreted as a regular Coq vernacular file,
-- `.mv`: File will be interpreted as a markdown file, and code
+- `.mv`: File will be interpreted as a markdown file. Code
   snippets between `coq` markdown code blocks will be interpreted as
   Coq code.
+- `.v.tex` or `.lv`: File will be interpreted as a LaTeX file. Code
+  snippets between `\begin{coq}/\end{coq}` LaTeX environments will be
+  interpreted as Coq code.
 
 ## Extensions to the LSP specification
 
-As of today, `coq-lsp` implements two extensions to the LSP spec. Note
-that none of them are stable yet:
+As of today, `coq-lsp` implements several extensions to the LSP
+spec. Note that none of them are stable yet.
+
+- [Extra diagnostics data](#extra-diagnostics-data)
+- [Goal display](#goal-display)
+- [File checking progress](#file-checking-progress)
+- [Document Ast](#document-ast-request)
+- [.vo file saving](#vo-file-saving)
+- [Performance data notification](#performance-data-notification)
+- [Trim cache notification](#trim-cache-notification)
+- [Viewport notification](#viewport-notification)
+- [Server configuration parameters](#did-change-configuration-and-server-configuration-parameters)
+- [Server version notification](#server-version-notification)
+- [Server status notification](#server-status-notification)
 
 ### Extra diagnostics data
 
