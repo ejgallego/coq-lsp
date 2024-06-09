@@ -127,7 +127,8 @@ let do_initialize ~params =
           ; ("resolveProvider", `Bool false)
           ] )
     ; ("definitionProvider", `Bool true)
-    ; ("codeLensProvider", `Assoc [])
+    (* EJGA: Disable this as we have no use case for now *)
+    (* ; ("codeLensProvider", `Assoc []) *)
     ; ("selectionRangeProvider", `Bool true)
     ; ( "workspace"
       , `Assoc
