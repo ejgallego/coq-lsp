@@ -279,12 +279,12 @@ guide](./CONTRIBUTING.md)
   This provides a Windows native binary that can be executed from VSCode
   normally. As of today a bit of configuration is still needed:
   - In VSCode, set the `Coq-lsp: Path` to:
-    + `C:\Coq-Platform~8.17-lsp\bin\coq-lsp.exe`
+    + `C:\Coq-Platform~8.20-lsp\bin\coq-lsp.exe`
   - In VSCode, set the `Coq-lsp: Args` to:
-    + `--coqlib=C:\Coq-Platform~8.17-lsp\lib\coq\`
-    + `--coqcorelib=C:\Coq-Platform~8.17-lsp\lib\coq-core\`
-    + `--ocamlpath=C:\Coq-Platform~8.17-lsp\lib\`
-  - Replace `C:\Coq-Platform~8.17-lsp\` by the path you have installed Coq above as needed
+    + `--coqlib=C:\Coq-Platform~8.20-lsp\lib\coq\`
+    + `--coqcorelib=C:\Coq-Platform~8.20-lsp\lib\coq-core\`
+    + `--ocamlpath=C:\Coq-Platform~8.20-lsp\lib\`
+  - Replace `C:\Coq-Platform~8.20-lsp\` by the path you have installed Coq above as needed
   - Note that the installers are unsigned (for now), so you'll have to click on
     "More info" then "Run anyway" inside the "Windows Protected your PC" dialog
   - Also note that the installers are work in progress, and may change often.
@@ -317,13 +317,14 @@ guide](./CONTRIBUTING.md)
 
 ### 🐍 Python
 
-- Interact programmatically with Coq files by using the [Python `coq-lsp` client](https://github.com/sr-lab/coq-lsp-pyclient)
+- Interact programmatically with Coq files by using the [Coqpyt](https://github.com/sr-lab/coqpyt)
   by Pedro Carrott and Nuno Saavedra.
 
 ## ⇨ `coq-lsp` users and extensions
 
 The below projects are using `coq-lsp`, we recommend you try them!
 
+- [Coqpyt, a Python client for coq-lsp](https://github.com/sr-lab/coqpyt)
 - [CoqPilot uses Large Language Models to generate multiple potential proofs and then uses coq-lsp to typecheck them](https://github.com/JetBrains-Research/coqpilot).
 - [jsCoq: use Coq from your browser](https://github.com/jscoq/jscoq)
 - [Pytanque: a Python library implementing RL Environments](https://github.com/LLM4Coq/pytanque)
