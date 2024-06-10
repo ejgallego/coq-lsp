@@ -15,6 +15,7 @@ import {
   languages,
   Uri,
   TextEditorVisibleRangesChangeEvent,
+  InputBoxOptions,
 } from "vscode";
 
 import * as vscode from "vscode";
@@ -54,6 +55,7 @@ import { FileProgressManager } from "./progress";
 import { coqPerfData, PerfDataView } from "./perf";
 import { sentenceNext, sentencePrevious } from "./edit";
 import { HeatMap, HeatMapConfig } from "./heatmap";
+import { petanqueStart, petanqueRun, petSetClient } from "./petanque";
 import { debounce, throttle } from "throttle-debounce";
 
 // Convert perf data to VSCode format
@@ -154,6 +156,7 @@ export function activateCoqLSP(
     );
     context.subscriptions.push(disposable);
   }
+
   function checkForVSCoq() {
     let vscoq =
       extensions.getExtension("maximedenes.vscoq") ||
@@ -216,6 +219,7 @@ export function activateCoqLSP(
 
     let cP = new Promise<BaseLanguageClient>((resolve) => {
       client = clientFactory(context, clientOptions, wsConfig);
+      petSetClient(client);
       fileProgress = new FileProgressManager(client);
       perfDataHook = client.onNotification(coqPerfData, (data) => {
         perfDataView.update(data);
@@ -518,6 +522,9 @@ export function activateCoqLSP(
   coqEditorCommand("sentencePrevious", sentencePrevious);
 
   coqEditorCommand("heatmap.toggle", heatMapToggle);
+
+  coqEditorCommand("petanque.start", petanqueStart);
+  coqEditorCommand("petanque.run", petanqueRun);
 
   createEnableButton();
 

@@ -427,6 +427,57 @@ let do_changeConfiguration ~io params =
   Rq_init.do_settings settings;
   ()
 
+(* Petanque bridge *)
+let petanque_init () =
+  let fn ~token:_ uri =
+    match Fleche.Theory.find_doc ~uri with
+    | Some doc -> Ok doc
+    | None ->
+      let msg = Format.asprintf "lsp_core: document not found" in
+      Error (Petanque.Agent.Error.System msg)
+  in
+  Petanque.Agent.fn := fn
+
+let petanque_handle_doc (module S : Petanque_json.Protocol.Request.S) ~params =
+  (* XXX fixme: doc is now retrieved by petanque callback, but we could use
+     this *)
+  let handler ~token ~doc:_ =
+    Petanque_json.Interp.do_request ~token (module S) ~params
+  in
+  (* XXX: The below wouldn't work due to params having uri in an incorrect
+     format, do_document_request expects the uri to be in the textDocument
+     field *)
+  let textDocument = string_field "uri" params in
+  let params =
+    ("textDocument", `Assoc [ ("uri", `String textDocument) ]) :: params
+  in
+  do_document_request ~postpone:true ~params ~handler
+
+let petanque_handle_now ~token (module S : Petanque_json.Protocol.Request.S)
+    ~params =
+  Rq.Action.now (Petanque_json.Interp.do_request ~token (module S) ~params)
+
+(* XXX: Deduplicate with Petanque_json.Protocol. *)
+let do_petanque ~token method_ params =
+  (* For now we do a manual brigde *)
+  let open Petanque_json.Protocol in
+  match method_ with
+  | s when String.equal Start.method_ s ->
+    petanque_handle_doc (module Start) ~params
+  | s when String.equal RunTac.method_ s ->
+    petanque_handle_now ~token (module RunTac) ~params
+  | s when String.equal Goals.method_ s ->
+    petanque_handle_now ~token (module Goals) ~params
+  | s when String.equal Premises.method_ s ->
+    petanque_handle_now ~token (module Premises) ~params
+  | _ ->
+    (* EJGA: should we allow this system to compose better with other LSP
+       extensions? *)
+    (* JSON-RPC method not found *)
+    let code = -32601 in
+    let message = "method not found" in
+    Rq.Action.error (code, message)
+
 (***********************************************************************)
 
 (** LSP Init routine *)
@@ -481,6 +532,7 @@ let lsp_init_process ~ofn ~io ~cmdline ~debug msg : Init_effect.t =
         dirs
     in
     List.iter (log_workspace ~io) workspaces;
+    petanque_init ();
     Success workspaces
   | LSP.Message.Request { id; _ } ->
     (* per spec *)
@@ -529,7 +581,7 @@ let dispatch_state_notification ~io ~ofn ~token ~state ~method_ ~params :
     dispatch_notification ~io ~ofn ~token ~state ~method_ ~params;
     state
 
-let dispatch_request ~method_ ~params : Rq.Action.t =
+let dispatch_request ~token ~method_ ~params : Rq.Action.t =
   match method_ with
   (* Lifecyle *)
   | "initialize" ->
@@ -552,15 +604,14 @@ let dispatch_request ~method_ ~params : Rq.Action.t =
   | "coq/getDocument" -> do_document ~params
   (* Petanque embedding *)
   | msg when Coq.Compat.Ocaml_413.String.starts_with ~prefix:"petanque/" msg ->
-    L.trace "delegating to petanque [wip]" "%s" msg;
-    Rq.Action.error (-32601, "method not found")
+    do_petanque msg ~token params
   (* Generic handler *)
   | msg ->
     L.trace "no_handler" "%s" msg;
     Rq.Action.error (-32601, "method not found")
 
 let dispatch_request ~ofn_rq ~token ~id ~method_ ~params =
-  dispatch_request ~method_ ~params |> Rq.serve ~ofn_rq ~token ~id
+  dispatch_request ~token ~method_ ~params |> Rq.serve ~ofn_rq ~token ~id
 
 let dispatch_message ~io ~ofn ~token ~state (com : LSP.Message.t) : State.t =
   let ofn_rq r = Lsp.Base.Message.response r |> ofn in
