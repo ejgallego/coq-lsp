@@ -6,14 +6,10 @@ let workspace_of_uri ~io ~uri ~workspaces ~default =
   let file = Lang.LUri.File.to_string_file uri in
   match List.find_opt (fun (dir, _) -> is_in_dir ~dir ~file) workspaces with
   | None ->
-    let lvl = Io.Level.Error in
-    let message = "file not in workspace: " ^ file in
-    Io.Report.message ~io ~lvl ~message;
+    Io.Report.msg ~io ~lvl:Error "file not in workspace: %s" file;
     default
   | Some (_, Error err) ->
-    let lvl = Io.Level.Error in
-    let message = "invalid workspace for: " ^ file ^ " " ^ err in
-    Io.Report.message ~io ~lvl ~message;
+    Io.Report.msg ~io ~lvl:Error "invalid workspace for: %s %s" file err;
     default
   | Some (_, Ok workspace) -> workspace
 
@@ -38,9 +34,7 @@ let status_of_doc (doc : Doc.t) =
 
 let compile_file ~cc file : int =
   let { Cc.io; root_state; workspaces; default; token } = cc in
-  let lvl = Io.Level.Info in
-  let message = Format.asprintf "compiling file %s" file in
-  Io.Report.message ~io ~lvl ~message;
+  Io.Report.msg ~io ~lvl:Info "compiling file %s" file;
   match Lang.LUri.(File.of_uri (of_string file)) with
   | Error _ -> 222
   | Ok uri -> (
