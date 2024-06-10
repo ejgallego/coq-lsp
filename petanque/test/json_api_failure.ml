@@ -27,15 +27,16 @@ let run (ic, oc) =
     let message = message
   end) in
   let r ~st ~tac =
+    let memo = None in
     let st = extract_st st in
-    S.run_tac { st; tac }
+    S.run_tac { memo; st; tac }
   in
   (* Will this work on Windows? *)
   let root, uri = prepare_paths () in
   let* _env = S.set_workspace { debug; root } in
   let* st = S.start { uri; pre_commands = None; thm = "rev_snoc_cons" } in
   let* _premises = S.premises { st } in
-  let* st = S.run_tac { st; tac = "induction l." } in
+  let* st = S.run_tac { memo = None; st; tac = "induction l." } in
   let* st = r ~st ~tac:"-" in
   (* Introduce an error *)
   (* let* st = r ~st ~tac:"reflexivity." in *)

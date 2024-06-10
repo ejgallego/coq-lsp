@@ -54,6 +54,8 @@
    `Qed` time (@ejgallego, #773)
  - [fleche] Support meta-command `Abort All` (@ejgallego, #774, fixes
    #550)
+ - [petanque] Allow memoization control on `petanque/run` via a new
+   parameter `memo` (@ejgallego, #780)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------

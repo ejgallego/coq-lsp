@@ -80,7 +80,9 @@ module RunTac = struct
 
   module Params = struct
     type t =
-      { st : int
+      { memo : bool option
+            [@default None] (* Whether to memoize the execution, server-side *)
+      ; st : int
       ; tac : string
       }
     [@@deriving yojson]
@@ -93,7 +95,9 @@ module RunTac = struct
   module Handler = struct
     module Params = struct
       type t =
-        { st : State.t
+        { memo : bool option
+              [@default None] (* Whether to memoize the execution *)
+        ; st : State.t
         ; tac : string
         }
       [@@deriving yojson]
@@ -103,7 +107,8 @@ module RunTac = struct
       type t = State.t Run_result.t [@@deriving yojson]
     end
 
-    let handler ~token { Params.st; tac } = Agent.run_tac ~token ~st ~tac
+    let handler ~token { Params.memo; st; tac } =
+      Agent.run ~token ?memo ~st ~tac ()
   end
 end
 

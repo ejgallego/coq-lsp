@@ -69,19 +69,25 @@ let parse ~loc tac st =
   let str = Coq.Parsing.Parsable.make ?loc str in
   Coq.Parsing.parse ~st str
 
-let parse_and_execute_in ~token ~loc tac st =
+(* Adaptor, should be supported in memo directly *)
+let eval_no_memo ~token (st, cmd) =
+  Coq.Interp.interp ~token ~intern:Vernacinterp.fs_intern ~st cmd
+
+let parse_and_execute_in ~token ~loc ~memo tac st =
+  (* To improve in memo *)
+  let eval = if memo then Fleche.Memo.Interp.eval else eval_no_memo in
   let open Coq.Protect.E.O in
   let* ast = parse ~token ~loc tac st in
   match ast with
-  | Some ast -> Fleche.Memo.Interp.eval ~token (st, ast)
+  | Some ast -> eval ~token (st, ast)
   | None -> Coq.Protect.E.ok st
 
-let execute_precommands ~token ~pre_commands ~(node : Fleche.Doc.Node.t) =
+let execute_precommands ~token ~memo ~pre_commands ~(node : Fleche.Doc.Node.t) =
   match (pre_commands, node.prev, node.ast) with
   | Some pre_commands, Some prev, Some ast ->
     let st = prev.state in
     let open Coq.Protect.E.O in
-    let* st = parse_and_execute_in ~token ~loc:None pre_commands st in
+    let* st = parse_and_execute_in ~token ~memo ~loc:None pre_commands st in
     (* We re-interpret the lemma statement *)
     Fleche.Memo.Interp.eval ~token (st, ast.v)
   | _, _, _ -> Coq.Protect.E.ok node.state
@@ -102,7 +108,9 @@ let start ~token ~uri ?pre_commands ~thm () =
   | Ok doc ->
     let open Coq.Compat.Result.O in
     let* node = find_thm ~doc ~thm in
-    execute_precommands ~token ~pre_commands ~node |> protect_to_result
+    (* Usually single shot, so we don't memoize *)
+    let memo = false in
+    execute_precommands ~token ~memo ~pre_commands ~node |> protect_to_result
   | Error err -> Error err
 
 let proof_finished { Coq.Goals.goals; stack; shelf; given_up; _ } =
@@ -115,12 +123,12 @@ let analyze_after_run st =
   | Some goals when proof_finished goals -> Run_result.Proof_finished st
   | _ -> Run_result.Current_state st
 
-let run_tac ~token ~st ~tac : (_ Run_result.t, Error.t) Result.t =
+let run ~token ?(memo = true) ~st ~tac () : (_ Run_result.t, Error.t) Result.t =
   (* Improve with thm? *)
   let loc = None in
   let f st =
     let open Coq.Protect.E.O in
-    let+ st = parse_and_execute_in ~token ~loc tac st in
+    let+ st = parse_and_execute_in ~token ~memo ~loc tac st in
     analyze_after_run st
   in
   Coq.State.in_stateM ~token ~st ~f st |> protect_to_result

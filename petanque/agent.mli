@@ -55,11 +55,15 @@ val start :
   -> unit
   -> State.t R.t
 
-(** [run_tac ~token ~st ~tac] tries to run [tac] over state [st] *)
-val run_tac :
+(** [run ~token ?memo ~st ~tac] tries to run [tac] over state [st]. [memo] (by
+    default true) controls whether the command execution will be memoized in
+    Flèche incremental engine. *)
+val run :
      token:Coq.Limits.Token.t
+  -> ?memo:bool
   -> st:State.t
   -> tac:string
+  -> unit
   -> State.t Run_result.t R.t
 
 (** [goals ~token ~st] return the list of goals for a given [st] *)
