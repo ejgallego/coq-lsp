@@ -27,35 +27,26 @@ let rec dump_univs ~token ~contents fmt (nuniv_prev, nconst_prev)
       ())
 
 let dump_univs ~token ~out_file (doc : Doc.t) =
-  let out = Stdlib.open_out out_file in
-  let fmt = Format.formatter_of_out_channel out in
-  (match Coq.State.info_universes ~token ~st:doc.root with
-  | Coq.Protect.{ E.r = R.Completed (Ok root); feedback = _ } ->
-    dump_univs ~token ~contents:doc.contents fmt root (0, 0) doc.nodes
-  | _ -> ());
-  Format.pp_print_flush fmt ();
-  Stdlib.close_out out
+  let f fmt nodes =
+    match Coq.State.info_universes ~token ~st:doc.root with
+    | Coq.Protect.{ E.r = R.Completed (Ok root); feedback = _ } ->
+      dump_univs ~token ~contents:doc.contents fmt root (0, 0) nodes
+    | _ -> ()
+  in
+  Coq.Compat.format_to_file ~file:out_file ~f doc.nodes
 
 let dump_univdiff ~io ~token ~(doc : Doc.t) =
   let uri = doc.uri in
   let uri_str = Lang.LUri.File.to_string_uri uri in
   let out_file = Lang.LUri.File.to_string_file uri ^ ".unidiff" in
-  let lvl = Io.Level.info in
+  let lvl = Io.Level.Info in
   let ndiags = Doc.diags doc |> List.length in
-  let message =
-    Format.asprintf "[univdiff plugin] %d diags present for file..." ndiags
-  in
-  Io.Report.message ~io ~lvl ~message;
-  let message =
-    Format.asprintf "[univdiff plugin] dumping universe diff for %s ..." uri_str
-  in
-  Io.Report.message ~io ~lvl ~message;
-  let () = dump_univs ~token ~out_file doc in
-  let message =
-    Format.asprintf
-      "[univdiff plugin] dumping universe diff for %s was completed!" uri_str
-  in
-  Io.Report.message ~io ~lvl ~message;
+  Io.Report.msg ~io ~lvl "[univdiff plugin] %d diags present for file..." ndiags;
+  Io.Report.msg ~io ~lvl "[univdiff plugin] dumping universe diff for %s ..."
+    uri_str;
+  dump_univs ~token ~out_file doc;
+  Io.Report.msg ~io ~lvl
+    "[univdiff plugin] dumping universe diff for %s was completed!" uri_str;
   ()
 
 let main () = Theory.Register.Completed.add dump_univdiff

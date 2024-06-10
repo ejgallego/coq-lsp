@@ -1,14 +1,10 @@
 module Level : sig
-  type t
-
-  val error : t
-  val warning : t
-  val info : t
-  val log : t
-  val debug : t
-
-  (** Convert to LSP numeric code *)
-  val to_int : t -> int
+  type t =
+    | Error
+    | Warning
+    | Info
+    | Log
+    | Debug
 end
 
 module CallBack : sig
@@ -32,7 +28,14 @@ end
 
 module Log : sig
   (** Debug trace *)
-  val trace : string -> ?extra:string -> string -> unit
+  val trace :
+    string -> ?extra:string -> ('a, Format.formatter, unit) format -> 'a
+
+  (** Raw LSP method *)
+  val trace_ : string -> ?extra:string -> string -> unit
+
+  (** Log JSON object to server info log *)
+  val trace_object : string -> Yojson.Safe.t -> unit
 
   (** For unexpected feedback, remove eventually or just assert false? *)
   val feedback : Loc.t Coq.Message.t list -> unit
@@ -40,6 +43,10 @@ end
 
 module Report : sig
   (** User-visible message *)
+  val msg :
+    io:CallBack.t -> lvl:Level.t -> ('a, Format.formatter, unit) format -> 'a
+
+  (** Raw LSP method *)
   val message : io:CallBack.t -> lvl:Level.t -> message:string -> unit
 
   val diagnostics :

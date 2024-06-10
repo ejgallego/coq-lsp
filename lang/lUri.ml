@@ -24,4 +24,5 @@ module File = struct
   let hash = Hashtbl.hash
   let compare = Stdlib.compare
   let equal = Stdlib.( = )
+  let pp fmt uri = Format.fprintf fmt "%a" Uri.pp uri.uri
 end

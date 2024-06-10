@@ -29,10 +29,10 @@ module Util = struct
   let print_stats () =
     (if !Config.v.mem_stats then
        let size = Memo.all_size () in
-       Io.Log.trace "stats" (string_of_int size));
+       Io.Log.trace "stats" "%d" size);
     let stats = Stats.Global.dump () in
-    Io.Log.trace "cache" (Stats.Global.to_string stats);
-    Io.Log.trace "cache" (Memo.GlobalCacheStats.stats ());
+    Io.Log.trace "cache" "%s" (Stats.Global.to_string stats);
+    Io.Log.trace "cache" "%s" (Memo.GlobalCacheStats.stats ());
     (* this requires patches to Coq *)
     (* Io.Log.error "coq parsing" (CoqParsingStats.dump ()); *)
     (* CoqParsingStats.reset (); *)
@@ -42,8 +42,7 @@ module Util = struct
   let safe_sub s pos len =
     if pos < 0 || len < 0 || pos > String.length s - len then (
       let s = String.sub s 0 (Stdlib.min 20 String.(length s - 1)) in
-      Io.Log.trace "string_sub"
-        (Format.asprintf "error for pos: %d len: %d str: %s" pos len s);
+      Io.Log.trace "string_sub" "error for pos: %d len: %d str: %s" pos len s;
       None)
     else Some (String.sub s pos len)
 end
@@ -51,15 +50,13 @@ end
 module DDebug = struct
   let parsed_sentence ~ast =
     let loc = Coq.Ast.loc ast |> Option.get in
-    let line = "[l: " ^ string_of_int (loc.Loc.line_nb - 1) ^ "] " in
-    Io.Log.trace "coq"
-      ("parsed sentence: " ^ line ^ Pp.string_of_ppcmds (Coq.Ast.print ast))
+    let line = loc.Loc.line_nb - 1 in
+    Io.Log.trace "coq" "parsed sentence: [l: %d] | %a" line Pp.pp_with
+      (Coq.Ast.print ast)
 
   let resume (last_tok : Lang.Range.t) version =
-    Io.Log.trace "check"
-      Format.(
-        asprintf "resuming [v: %d], from: %d l: %d" version last_tok.end_.offset
-          last_tok.end_.line)
+    Io.Log.trace "check" "resuming [v: %d], from: %d l: %d" version
+      last_tok.end_.offset last_tok.end_.line
 end
 
 (* [node list] is a very crude form of a meta-data map "loc -> data" , where for
@@ -431,15 +428,13 @@ let recreate ~token ~doc ~version ~contents =
   handle_doc_creation_exec ~token ~env ~uri ~version ~contents
 
 let recover_up_to_offset ~init_range doc offset =
-  Io.Log.trace "prefix"
-    (Format.asprintf "common prefix offset found at %d" offset);
+  Io.Log.trace "prefix" "common prefix offset found at %d" offset;
   let rec find acc_nodes acc_range nodes =
     match nodes with
     | [] -> (List.rev acc_nodes, acc_range)
     | n :: ns ->
       if Debug.scan then
-        Io.Log.trace "scan"
-          (Format.asprintf "consider node at %a" Lang.Range.pp n.Node.range);
+        Io.Log.trace "scan" "consider node at %a" Lang.Range.pp n.Node.range;
       if n.range.end_.offset >= offset then (List.rev acc_nodes, acc_range)
       else find (n :: acc_nodes) n.range ns
   in
@@ -458,7 +453,7 @@ let compute_common_prefix ~init_range ~contents (prev : t) =
   let common_idx = match_or_stop 0 in
   let nodes, range = recover_up_to_offset ~init_range prev common_idx in
   let toc = rebuild_toc nodes in
-  Io.Log.trace "prefix" ("resuming from " ^ Lang.Range.to_string range);
+  Io.Log.trace "prefix" "resuming from %a" Lang.Range.pp range;
   let completed = Completion.Stopped range in
   (nodes, completed, toc)
 
@@ -591,8 +586,8 @@ end = struct
   let log_qed_recovery v =
     Coq.Protect.E.map ~f:(fun (st, range) ->
         let loc_msg = Option.cata Lang.Range.to_string "no loc" range in
-        Io.Log.trace "recovery"
-          ("success" ^ loc_msg ^ " " ^ Memo.Interp.input_info (st, v));
+        Io.Log.trace "recovery" "success %s %s" loc_msg
+          (Memo.Interp.input_info (st, v));
         st)
 
   (* Contents-based recovery heuristic, special 'Qed.' case when `Qed.` is part
@@ -614,7 +609,7 @@ end = struct
     | Some ("Qed" as txt), _, _
     | _, Some ("Defined" as txt), _
     | _, _, Some ("Admitted" as txt) ->
-      Io.Log.trace "lex recovery" (txt ^ " detected");
+      Io.Log.trace "lex recovery" "%s detected" txt;
       recovery_for_failed_qed ~token ~default:st nodes
       |> Coq.Protect.E.map ~f:fst
     | _, _, _ -> Coq.Protect.E.ok st
@@ -882,14 +877,14 @@ let beyond_target (range : Lang.Range.t) target =
   | Target.End -> false
   | Position (cut_line, cut_col) -> Target.reached ~range (cut_line, cut_col)
 
-let pr_target = function
-  | Target.End -> "end"
-  | Target.Position (l, c) -> Format.asprintf "{cutpoint l: %02d | c: %02d" l c
+let pp_target fmt = function
+  | Target.End -> Format.fprintf fmt "end"
+  | Target.Position (l, c) ->
+    Format.fprintf fmt "{cutpoint l: %02d | c: %02d" l c
 
 let log_beyond_target last_tok target =
-  Io.Log.trace "beyond_target"
-    ("target reached " ^ Lang.Range.to_string last_tok);
-  Io.Log.trace "beyond_target" ("target is " ^ pr_target target)
+  Io.Log.trace "beyond_target" "target reached %a" Lang.Range.pp last_tok;
+  Io.Log.trace "beyond_target" "target is %a" pp_target target
 
 let max_errors_node ~state ~range ~prev =
   let msg = Pp.str "Maximum number of errors reached" in
@@ -968,8 +963,7 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
   (* Note that nodes and diags are in reversed order here *)
   (match doc.nodes with
   | [] -> ()
-  | n :: _ ->
-    Io.Log.trace "resume" ("last node :" ^ Lang.Range.to_string n.range));
+  | n :: _ -> Io.Log.trace "resume" "last node: %a" Lang.Range.pp n.range);
   let last_node = Util.hd_opt doc.nodes in
   let st, stats =
     Option.cata
@@ -988,17 +982,15 @@ let log_doc_completion (completed : Completion.t) =
   let timestamp = Unix.gettimeofday () in
   let range = Completion.range completed in
   let status = Completion.to_string completed in
-  Format.asprintf "done [%.2f]: document %s with pos %a" timestamp status
+  Io.Log.trace "check" "done [%.2f]: document %s with pos %a" timestamp status
     Lang.Range.pp range
-  |> Io.Log.trace "check"
 
 (* Rebuild a Coq loc from a range, this used to be done using [CLexer.after] but
    due to Fleche now being 100% based on unicode locations we implement our
    own *)
 let debug_loc_after line (r : Lang.Range.t) =
   if Debug.unicode then
-    Io.Log.trace "loc_after"
-      (Format.asprintf "str: '%s' | char: %d" line r.end_.character)
+    Io.Log.trace "loc_after" "str: '%s' | char: %d" line r.end_.character
 
 let loc_after ~lines ~uri (r : Lang.Range.t) =
   let line_nb_last = r.end_.line + 1 in

@@ -54,6 +54,8 @@ let read_raw_message ic =
   | Invalid_argument msg -> Some (Error msg)
 
 let mut = Mutex.create ()
+
+(* This needs a fix as to log protocol stuff not using the protocol *)
 let log = ref (fun _ _ -> ())
 
 let send_json fmt obj =
@@ -95,7 +97,7 @@ let set_trace_value value = trace_value := value
 
 module Lvl = struct
   (* 1-5 *)
-  type t =
+  type t = Fleche.Io.Level.t =
     | Error
     | Warning
     | Info
@@ -159,24 +161,14 @@ let mk_logTrace ~message ~extra =
 
 let logTrace ~message ~extra = mk_logTrace ~message ~extra |> !fn
 
-let trace hdr ?extra msg =
-  let message = Format.asprintf "[%s]: @[%s@]" hdr msg in
-  logTrace ~message ~extra
-
-let trace_object hdr obj =
-  let message =
-    Format.asprintf "[%s]: @[%a@]" hdr Yojson.Safe.(pretty_print ~std:false) obj
-  in
-  (* Fixme, use the extra parameter *)
-  trace hdr message
-
-let () = log := trace_object
+(* Disabled for now, see comment above *)
+(* let () = log := trace_object *)
 
 (** Misc helpers *)
 let read_message ic =
   match read_raw_message ic with
   | None -> None (* EOF *)
   | Some (Ok com) ->
-    if Fleche.Debug.read then trace_object "read" com;
+    if Fleche.Debug.read then !log "read" com;
     Some (Base.Message.of_yojson com)
   | Some (Error err) -> Some (Error err)

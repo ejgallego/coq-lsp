@@ -1,1 +1,1 @@
-val notification : unit -> unit
+val notification : io:Fleche.Io.CallBack.t -> unit

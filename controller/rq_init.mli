@@ -10,4 +10,6 @@ val do_settings : (string * Yojson.Safe.t) list -> unit
 
 (** Returns answer request + workspace root directory *)
 val do_initialize :
-  params:(string * Yojson.Safe.t) list -> Yojson.Safe.t * string list
+     io:Fleche.Io.CallBack.t
+  -> params:(string * Yojson.Safe.t) list
+  -> Yojson.Safe.t * string list

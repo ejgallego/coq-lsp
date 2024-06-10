@@ -37,7 +37,6 @@ module OCaml = struct
 end
 
 module M = Fleche.Memo
-module LIO = Lsp.Io
 
 let caches () =
   [ ("interp", M.Interp.all_freqs ())
@@ -55,9 +54,9 @@ let pp_cache fmt (name, freqs) =
   Format.fprintf fmt "@[%s: %d | %a @[(%a)@]@]" name (List.length freqs) pp_zsum
     zsum pp_fsum fsum
 
-let build_message () =
+let build_message fmt () =
   let caches = caches () in
-  Format.asprintf "@[Cache trim requested:@\n @[<v>%a@]@]"
+  Format.fprintf fmt "@[Cache trim requested:@\n @[<v>%a@]@]"
     (Format.pp_print_list pp_cache)
     caches
 
@@ -69,28 +68,24 @@ let cache_trim () =
   let () = M.Require.clear () in
   ()
 
-let gc_stats hd msg =
-  let message =
-    Format.asprintf "[%s] %s:@\n%a" hd msg OCaml.print_stat_simple ()
-  in
-  LIO.logMessage ~lvl:Info ~message
+let gc_stats ~io hd msg =
+  Fleche.Io.Report.msg ~io ~lvl:Info "[%s] %s:@\n%a" hd msg
+    OCaml.print_stat_simple ()
 
-let full_major hd =
-  gc_stats hd "before full major";
+let full_major ~io hd =
+  gc_stats ~io hd "before full major";
   Gc.full_major ();
-  gc_stats hd "after full major";
+  gc_stats ~io hd "after full major";
   ()
 
-let do_trim () =
-  full_major "pre ";
+let do_trim ~io =
+  full_major ~io "pre ";
   cache_trim ();
-  let message = Format.asprintf "%s@\n---------@\n" "trimming" in
-  LIO.logMessage ~lvl:Info ~message;
-  full_major "post";
+  Fleche.Io.Report.msg ~io ~lvl:Info "%s@\n---------@\n" "trimming";
+  full_major ~io "post";
   ()
 
-let notification () =
-  let message = build_message () in
-  LIO.logMessage ~lvl:Info ~message;
-  do_trim ();
+let notification ~io =
+  Fleche.Io.Report.msg ~io ~lvl:Info "%a" build_message ();
+  do_trim ~io;
   ()

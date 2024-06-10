@@ -242,6 +242,6 @@ We do the same for the goaldump plugin:
      + findlib default location: [TEST_PATH]
   [message] compiling file proj1/a.v
   [message] [goaldump plugin] dumping goals for proj1/a.v ...
-  [message] [ast plugin] dumping ast for proj1/a.v was completed!
+  [message] [goaldump plugin] dumping ast for proj1/a.v was completed!
   $ ls proj1/a.v.json.goaldump
   proj1/a.v.json.goaldump

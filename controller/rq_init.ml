@@ -6,7 +6,7 @@
 (************************************************************************)
 
 module U = Yojson.Safe.Util
-module LIO = Lsp.Io
+module L = Fleche.Io.Log
 
 (* Conditionals *)
 let option_default x d =
@@ -25,36 +25,33 @@ let odict_field name dict =
 
 (* Request Handling: The client expects a reply *)
 let do_settings coq_lsp_options : unit =
-  LIO.trace "settings" "setting server options:";
-  LIO.trace_object "settings" (`Assoc coq_lsp_options);
+  L.trace "settings" "setting server options:";
+  L.trace_object "settings" (`Assoc coq_lsp_options);
   match Lsp.JFleche.Config.of_yojson (`Assoc coq_lsp_options) with
   | Ok v -> Fleche.Config.v := v
-  | Error msg -> LIO.trace "CoqLspOption.of_yojson error: " msg
+  | Error msg -> L.trace "CoqLspOption.of_yojson" "error: %s" msg
 
-let check_client_version client_version : unit =
+let check_client_version ~io client_version : unit =
   let server_version = Fleche.Version.server in
-  LIO.trace "client_version" client_version;
+  L.trace "client_version" "%s" client_version;
   if String.(equal client_version "any" || equal client_version server_version)
   then () (* Version OK *)
   else
-    let message =
-      Format.asprintf "Incorrect client version: %s , expected %s."
-        client_version server_version
-    in
-    LIO.(logMessage ~lvl:Lvl.Error ~message)
+    Fleche.Io.Report.msg ~io ~lvl:Error
+      "Incorrect client version: %s , expected %s." client_version
+      server_version
 
 (* Maybe this should be [cwd] ? *)
 let default_workspace_root = "."
 let parse_furi x = U.to_string x |> Lang.LUri.of_string |> Lang.LUri.File.of_uri
 
-let parse_fpath x =
+let parse_fpath ~io x =
   let path = U.to_string x in
-  (if Filename.is_relative path then
-     let message =
-       "rootPath is not absolute: " ^ path
-       ^ " . This is not robust, please use absolute paths or rootURI"
-     in
-     LIO.logMessage ~lvl:LIO.Lvl.Warning ~message);
+  if Filename.is_relative path then
+    Fleche.Io.Report.msg ~io ~lvl:Warning
+      "rootPath is not absolute: %s . This is not robust, please use absolute \
+       paths or rootURI"
+      path;
   Lang.LUri.of_string ("file:///" ^ path) |> Lang.LUri.File.of_uri
 
 let parse_null_or f = function
@@ -72,9 +69,9 @@ let rec result_map ls =
 let parse_furis l = List.map parse_furi l |> result_map
 let parse_wf l = List.map (field "uri") (U.to_list l) |> parse_furis
 
-let determine_workspace_root ~params : string list =
+let determine_workspace_root ~io ~params : string list =
   (* Careful: all paths fields can be present but have value `null` *)
-  let rootPath = ofield "rootPath" params |> parse_null_or parse_fpath in
+  let rootPath = ofield "rootPath" params |> parse_null_or (parse_fpath ~io) in
   let rootUri = ofield "rootUri" params |> parse_null_or parse_furi in
   let wsFolders = ofield "workspaceFolders" params |> parse_null_or parse_wf in
   match (rootPath, rootUri, wsFolders) with
@@ -84,38 +81,38 @@ let determine_workspace_root ~params : string list =
   | Some (Ok dir_uri), None, (None | Some (Ok [])) ->
     [ Lang.LUri.File.to_string_file dir_uri ]
   | Some (Error msg), _, _ | _, Some (Error msg), _ | _, _, Some (Error msg) ->
-    LIO.trace "init" ("uri parsing failed: " ^ msg);
+    L.trace "init" "uri parsing failed: %s" msg;
     [ default_workspace_root ]
   | _, _, Some (Ok folders) -> List.map Lang.LUri.File.to_string_file folders
 
-let determine_workspace_root ~params =
-  try determine_workspace_root ~params
+let determine_workspace_root ~io ~params =
+  try determine_workspace_root ~io ~params
   with exn ->
-    LIO.trace "init"
-      ("problem determining workspace root: " ^ Printexc.to_string exn);
+    L.trace "init" "problem determining workspace root: %s"
+      (Printexc.to_string exn);
     [ default_workspace_root ]
 
 let get_trace ~params =
   match ostring_field "trace" params with
-  | None -> LIO.TraceValue.Off
+  | None -> Lsp.Io.TraceValue.Off
   | Some v -> (
-    match LIO.TraceValue.of_string v with
+    match Lsp.Io.TraceValue.of_string v with
     | Ok t -> t
     | Error e ->
-      LIO.trace "trace" ("invalid value: " ^ e);
-      LIO.TraceValue.Off)
+      L.trace "trace" "invalid value: %s" e;
+      Lsp.Io.TraceValue.Off)
 
-let do_initialize ~params =
-  let dir = determine_workspace_root ~params in
+let do_initialize ~io ~params =
+  let dir = determine_workspace_root ~io ~params in
   let trace = get_trace ~params in
-  LIO.set_trace_value trace;
+  Lsp.Io.set_trace_value trace;
   let coq_lsp_settings = odict_field "initializationOptions" params in
   do_settings coq_lsp_settings;
-  check_client_version !Fleche.Config.v.client_version;
+  check_client_version ~io !Fleche.Config.v.client_version;
   let client_capabilities = odict_field "capabilities" params in
   if Fleche.Debug.lsp_init then (
-    LIO.trace "init" "client capabilities:";
-    LIO.trace_object "init" (`Assoc client_capabilities));
+    L.trace "init" "client capabilities:";
+    L.trace_object "init" (`Assoc client_capabilities));
   let capabilities =
     [ ("textDocumentSync", `Int 1)
     ; ("documentSymbolProvider", `Bool true)

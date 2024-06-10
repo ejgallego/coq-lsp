@@ -40,10 +40,8 @@ module Handle = struct
     (match Hashtbl.find_opt doc_table uri with
     | None -> ()
     | Some _ ->
-      Io.Log.trace "do_open"
-        ("file "
-        ^ Lang.LUri.File.to_string_uri uri
-        ^ " not properly closed by client"));
+      Io.Log.trace "do_open" "file %a not properly closed by client"
+        Lang.LUri.File.pp uri);
     Hashtbl.add doc_table uri
       { doc; cp_requests = Int.Set.empty; pt_requests = [] }
 
@@ -52,8 +50,7 @@ module Handle = struct
   let with_doc ~kind ~f ~uri ~default =
     match Hashtbl.find_opt doc_table uri with
     | None ->
-      Io.Log.trace kind
-        ("document " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
+      Io.Log.trace kind "document %a not available" Lang.LUri.File.pp uri;
       default ()
     | Some handle -> f handle handle.doc
 
@@ -175,7 +172,11 @@ end = struct
 
     let callback : t list ref = ref []
     let add fn = callback := fn :: !callback
-    let fire ~io ~token ~doc = List.iter (fun f -> f ~io ~token ~doc) !callback
+
+    let fire ~io ~token ~doc =
+      (* TODO: Add a field to IO representing plugin context *)
+      let io = io in
+      List.iter (fun f -> f ~io ~token ~doc) !callback
   end
 end
 
@@ -308,12 +309,11 @@ let create ~io ~token ~env ~uri ~raw ~version =
 
 let change ~io:_ ~token ~(doc : Doc.t) ~version ~raw =
   let uri = doc.uri in
-  Io.Log.trace "bump file"
-    (Lang.LUri.File.to_string_uri uri ^ " / version: " ^ string_of_int version);
+  Io.Log.trace "bump file" "%a / version: %d" Lang.LUri.File.pp uri version;
   let tb = Unix.gettimeofday () in
   let doc = Doc.bump_version ~token ~version ~raw doc in
   let diff = Unix.gettimeofday () -. tb in
-  Io.Log.trace "bump file took" (Format.asprintf "%f" diff);
+  Io.Log.trace "bump file" "took %f seconds" diff;
   (* Just in case for the future, we update the document before requesting it to
      be checked *)
   let invalid = Handle.update_doc_version ~doc in

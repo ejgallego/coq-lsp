@@ -36,4 +36,7 @@ module File : sig
 
   (** hash *)
   val hash : t -> int
+
+  (** print *)
+  val pp : Format.formatter -> t -> unit
 end

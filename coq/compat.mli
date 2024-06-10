@@ -1,5 +1,11 @@
 (* Compatiblity and general utils *)
 
+module Ocaml_413 : sig
+  module String : sig
+    val starts_with : prefix:string -> string -> bool
+  end
+end
+
 (* We should at some point remove all of this file in favor of a standard
    library that suits our needs *)
 module Ocaml_414 : sig
