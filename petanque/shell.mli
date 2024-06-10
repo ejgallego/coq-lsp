@@ -18,3 +18,8 @@ val set_workspace :
   -> debug:bool
   -> root:Lang.LUri.File.t
   -> unit Agent.R.t
+
+val build_doc :
+     token:Coq.Limits.Token.t
+  -> uri:Lang.LUri.File.t
+  -> (Fleche.Doc.t, Agent.Error.t) Result.t

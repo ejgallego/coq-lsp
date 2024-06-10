@@ -40,16 +40,34 @@ module Run_result : sig
     | Current_state of 'a
 end
 
-val fn : (token:Coq.Limits.Token.t -> Lang.LUri.File.t -> Fleche.Doc.t R.t) ref
+(** Protocol notes:
 
-(** [start ~token ~fn ~uri ~pre_commands ~thm] start a new proof for theorem
-    [thm] in file [uri] under [fn]. [token] can be used to interrupt the
-    computation. Returns the proof state or error otherwise. [pre_commands] is a
-    string of dot-separated Coq commands that will be executed before the proof
-    starts. *)
+    The idea is that the types of the functions here have a direct translation
+    to the JSON-RPC (or any other) protocol.
+
+    Thus, types here correspond to types in the wire, except for cases where the
+    protocol layer performs an implicit mapping on types.
+
+    So far, the mappings are:
+
+    - [uri] <-> [Doc.t]
+    - [int] <-> [State.t]
+
+    The [State.t] mapping is easy to do at the protocol level with a simple
+    mapping, however [uri -> Doc.t] may need to yield to the document manager to
+    build the corresponding [doc]. This is very convenient for users, but
+    introduces a little bit more machinery.
+
+    We could imagine a future where [State.t] need to be managed asynchronously,
+    then the same approach that we use for [Doc.t] could happen. *)
+
+(** [start ~token ~doc ~pre_commands ~thm] start a new proof for theorem [thm]
+    in file [uri] under [fn]. [token] can be used to interrupt the computation.
+    Returns the proof state or error otherwise. [pre_commands] is a string of
+    dot-separated Coq commands that will be executed before the proof starts. *)
 val start :
      token:Coq.Limits.Token.t
-  -> uri:Lang.LUri.File.t
+  -> doc:Fleche.Doc.t
   -> ?pre_commands:string
   -> thm:string
   -> unit

@@ -79,9 +79,7 @@ let setup_doc ~token env uri =
     Ok (Fleche.Doc.check ~io ~token ~target ~doc ())
   | Error err -> Error err
 
-let fn ~token uri =
-  let env = Option.get !env in
-  setup_doc ~token env uri
+let build_doc ~token ~uri = setup_doc ~token (Option.get !env) uri
 
 (* Flèche LSP backend handles the conversion at the protocol level *)
 let to_uri uri = Lang.LUri.of_string uri |> Lang.LUri.File.of_uri
@@ -97,5 +95,4 @@ let set_roots ~token ~debug ~roots =
 let init_agent ~token ~debug ~roots =
   init_st := Some (init_coq ~debug);
   Fleche.Io.CallBack.set io;
-  Agent.fn := fn;
   set_roots ~token ~debug ~roots

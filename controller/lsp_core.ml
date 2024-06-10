@@ -427,49 +427,35 @@ let do_changeConfiguration ~io params =
   Rq_init.do_settings settings;
   ()
 
-(* Petanque bridge *)
-let petanque_init () =
-  let fn ~token:_ uri =
-    match Fleche.Theory.find_doc ~uri with
-    | Some doc -> Ok doc
-    | None ->
-      let msg = Format.asprintf "lsp_core: document not found" in
-      Error (Petanque.Agent.Error.System msg)
-  in
-  Petanque.Agent.fn := fn
+(* EJGA: Note that our current configuration allow petanque calls to be
+   interrupted, this can become an issue with LSP. For now, clients must choose
+   a trade-off (we could disable interruption on petanque call, but that brings
+   other downsides)
 
-let petanque_handle_doc (module S : Petanque_json.Protocol.Request.S) ~params =
-  (* XXX fixme: doc is now retrieved by petanque callback, but we could use
-     this *)
-  let handler ~token ~doc:_ =
-    Petanque_json.Interp.do_request ~token (module S) ~params
-  in
-  (* XXX: The below wouldn't work due to params having uri in an incorrect
-     format, do_document_request expects the uri to be in the textDocument
-     field *)
-  let textDocument = string_field "uri" params in
-  let params =
-    ("textDocument", `Assoc [ ("uri", `String textDocument) ]) :: params
-  in
-  do_document_request ~postpone:true ~params ~handler
+   The only real solution is to wait for OCaml 5.x support, so we can server
+   read-only queries without interrupting the main Coq thread. *)
+let petanque_handle ~token (module R : Petanque_json.Protocol.Request.S) ~params
+    =
+  let open Petanque_json in
+  match Interp.do_request (module R) ~params with
+  | Interp.Action.Now handler -> Rq.Action.now (handler ~token)
+  | Interp.Action.Doc { uri; handler } ->
+    (* Request document execution if not ready *)
+    let postpone = true in
+    Rq.Action.(Data (DocRequest { uri; postpone; handler }))
 
-let petanque_handle_now ~token (module S : Petanque_json.Protocol.Request.S)
-    ~params =
-  Rq.Action.now (Petanque_json.Interp.do_request ~token (module S) ~params)
-
-(* XXX: Deduplicate with Petanque_json.Protocol. *)
 let do_petanque ~token method_ params =
   (* For now we do a manual brigde *)
   let open Petanque_json.Protocol in
   match method_ with
   | s when String.equal Start.method_ s ->
-    petanque_handle_doc (module Start) ~params
+    petanque_handle ~token (module Start) ~params
   | s when String.equal RunTac.method_ s ->
-    petanque_handle_now ~token (module RunTac) ~params
+    petanque_handle ~token (module RunTac) ~params
   | s when String.equal Goals.method_ s ->
-    petanque_handle_now ~token (module Goals) ~params
+    petanque_handle ~token (module Goals) ~params
   | s when String.equal Premises.method_ s ->
-    petanque_handle_now ~token (module Premises) ~params
+    petanque_handle ~token (module Premises) ~params
   | _ ->
     (* EJGA: should we allow this system to compose better with other LSP
        extensions? *)
@@ -532,7 +518,6 @@ let lsp_init_process ~ofn ~io ~cmdline ~debug msg : Init_effect.t =
         dirs
     in
     List.iter (log_workspace ~io) workspaces;
-    petanque_init ();
     Success workspaces
   | LSP.Message.Request { id; _ } ->
     (* per spec *)

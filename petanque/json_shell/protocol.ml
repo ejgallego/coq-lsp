@@ -1,3 +1,4 @@
+open Lang
 open Petanque
 
 (* Serialization for agent types *)
@@ -5,6 +6,15 @@ open JAgent
 
 (* RPC-side server mappings, internal; we could split this in a different module
    eventually as to make this clearer. *)
+module HType = struct
+  type ('p, 'r) t =
+    | Immediate of (token:Coq.Limits.Token.t -> 'p -> 'r R.t)
+    | FullDoc of
+        { uri_fn : 'p -> LUri.File.t
+        ; handler : token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> 'p -> 'r R.t
+        }
+end
+
 module type Handler = sig
   (* Server-side RPC specification *)
   module Params : sig
@@ -16,7 +26,7 @@ module type Handler = sig
     type t [@@deriving to_yojson]
   end
 
-  val handler : token:Coq.Limits.Token.t -> Params.t -> Response.t R.t
+  val handler : (Params.t, Response.t) HType.t
 end
 
 (* Note that here we follow JSON-RPC / LSP capitalization conventions *)
@@ -69,8 +79,13 @@ module Start = struct
       type t = State.t [@@deriving yojson]
     end
 
-    let handler ~token { Params.uri; pre_commands; thm } =
-      Agent.start ~token ~uri ?pre_commands ~thm ()
+    let handler =
+      HType.FullDoc
+        { uri_fn = (fun { Params.uri; _ } -> uri)
+        ; handler =
+            (fun ~token ~doc { Params.uri = _; pre_commands; thm } ->
+              Agent.start ~token ~doc ?pre_commands ~thm ())
+        }
   end
 end
 
@@ -107,8 +122,10 @@ module RunTac = struct
       type t = State.t Run_result.t [@@deriving yojson]
     end
 
-    let handler ~token { Params.memo; st; tac } =
-      Agent.run ~token ?memo ~st ~tac ()
+    let handler =
+      HType.Immediate
+        (fun ~token { Params.memo; st; tac } ->
+          Agent.run ~token ?memo ~st ~tac ())
   end
 end
 
@@ -131,7 +148,8 @@ module Goals = struct
 
     module Response = Response
 
-    let handler ~token { Params.st } = Agent.goals ~token ~st
+    let handler =
+      HType.Immediate (fun ~token { Params.st } -> Agent.goals ~token ~st)
   end
 end
 
@@ -154,6 +172,7 @@ module Premises = struct
 
     module Response = Response
 
-    let handler ~token { Params.st } = Agent.premises ~token ~st
+    let handler =
+      HType.Immediate (fun ~token { Params.st } -> Agent.premises ~token ~st)
   end
 end
