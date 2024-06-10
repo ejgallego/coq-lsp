@@ -45,17 +45,17 @@ let to_coq x = x
 (* let compare x y = compare x y *)
 let compare (x : t) (y : t) =
   let open Vernacstate in
-  let { synterp = { parsing = p1; system = ss1 }
+  let { synterp = ss1
       ; interp = { system = is1; lemmas = l1; program = g1; opaques = o1 }
       } =
     x
   in
-  let { synterp = { parsing = p2; system = ss2 }
+  let { synterp = ss2
       ; interp = { system = is2; lemmas = l2; program = g2; opaques = o2 }
       } =
     y
   in
-  if p1 == p2 && ss1 == ss2 && is1 == is2 && l1 == l2 && g1 == g2 && o1 == o2
+  if ss1 == ss2 && is1 == is2 && l1 == l2 && g1 == g2 && o1 == o2
   then 0
   else 1
 
@@ -72,7 +72,7 @@ let mode ~st =
     (fun _ -> Synterp.get_default_proof_mode ())
     st.Vernacstate.interp.lemmas
 
-let parsing ~st = st.Vernacstate.synterp.parsing
+let parsing ~st = Vernacstate.(Synterp.parsing st.synterp)
 
 module Proof_ = Proof
 
