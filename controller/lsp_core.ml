@@ -422,8 +422,7 @@ let do_viewRange params =
   | Error err -> L.trace "viewRange" "error in parsing notification: %s" err
 
 let do_changeConfiguration ~io params =
-  let message = "didChangeReceived" in
-  let () = Fleche.Io.Report.message ~io ~lvl:Info ~message in
+  Fleche.Io.Report.msg ~io ~lvl:Info "didChangeReceived";
   let settings = field "settings" params |> U.to_assoc in
   Rq_init.do_settings settings;
   ()
@@ -436,7 +435,7 @@ exception Lsp_exit
 let log_workspace ~io (dir, w) =
   let message, extra = Coq.Workspace.describe_guess w in
   L.trace "workspace" ~extra "initialized %s" dir;
-  Fleche.Io.Report.message ~io ~lvl:Info ~message
+  Fleche.Io.Report.msg ~io ~lvl:Info "%s" message
 
 let version () =
   let dev_version =
@@ -466,10 +465,8 @@ let lsp_init_process ~ofn ~io ~cmdline ~debug msg : Init_effect.t =
   match msg with
   | LSP.Message.Request { method_ = "initialize"; id; params } ->
     (* At this point logging is allowed per LSP spec *)
-    let message =
-      Format.asprintf "Initializing coq-lsp server %s" (version ())
-    in
-    Fleche.Io.Report.message ~io ~lvl:Info ~message;
+    Fleche.Io.Report.msg ~io ~lvl:Info "Initializing coq-lsp server %s"
+      (version ());
     let token = Coq.Limits.Token.create () in
     let result, dirs = Rq_init.do_initialize ~io ~params in
     Rq.Action.now (Ok result) |> Rq.serve ~ofn_rq ~token ~id;

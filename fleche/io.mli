@@ -47,7 +47,7 @@ module Report : sig
     io:CallBack.t -> lvl:Level.t -> ('a, Format.formatter, unit) format -> 'a
 
   (** Raw LSP method *)
-  val message : io:CallBack.t -> lvl:Level.t -> message:string -> unit
+  val message_ : io:CallBack.t -> lvl:Level.t -> message:string -> unit
 
   val diagnostics :
        io:CallBack.t

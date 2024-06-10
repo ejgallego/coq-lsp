@@ -51,8 +51,8 @@ module Log = struct
 end
 
 module Report = struct
-  let message ~io ~lvl ~message = io.CallBack.message ~lvl ~message
-  let msg ~io ~lvl = Format.kasprintf (fun m -> message ~io ~lvl ~message:m)
+  let message_ ~io ~lvl ~message = io.CallBack.message ~lvl ~message
+  let msg ~io ~lvl = Format.kasprintf (fun m -> message_ ~io ~lvl ~message:m)
   let diagnostics ~io ~uri ~version d = io.CallBack.diagnostics ~uri ~version d
 
   let fileProgress ~io ~uri ~version d =
