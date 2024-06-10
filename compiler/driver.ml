@@ -22,8 +22,8 @@ let sanitize_paths message =
 
 let log_workspace ~io (dir, w) =
   let message, extra = Coq.Workspace.describe_guess w in
-  Fleche.Io.Log.trace "workspace" ("initialized " ^ dir) ~extra;
-  let lvl = Fleche.Io.Level.info in
+  Fleche.Io.Log.trace "workspace" ~extra "initialized %s" dir;
+  let lvl = Fleche.Io.Level.Info in
   let message = sanitize_paths message in
   Fleche.Io.Report.message ~io ~lvl ~message
 

@@ -37,8 +37,7 @@ module LineCol : Point with type t = int * int = struct
     | None -> String.length text - offset
 
   let rec to_offset cur lc (l, c) text =
-    Io.Log.trace "to_offset"
-      (Format.asprintf "cur: %d | lc: %d | l: %d c: %d" cur lc l c);
+    Io.Log.trace "to_offset" "cur: %d | lc: %d | l: %d c: %d" cur lc l c;
     if lc = l then cur + c
     else
       let ll = line_length cur text + 1 in
@@ -50,9 +49,8 @@ module LineCol : Point with type t = int * int = struct
 
   let debug_in_range hdr line col line1 col1 line2 col2 =
     if debug_in_range then
-      Io.Log.trace hdr
-        (Format.asprintf "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1 line2
-           col2)
+      Io.Log.trace hdr "(%d, %d) in (%d,%d)-(%d,%d)" line col line1 col1 line2
+        col2
 
   let in_range ?range (line, col) =
     (* Coq starts at 1, lsp at 0 *)

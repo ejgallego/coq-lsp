@@ -49,7 +49,7 @@ let trace_notification hdr ?extra msg =
   send_message (Lsp.Base.Message.Notification notification)
 
 let message_notification ~lvl ~message =
-  let type_ = Fleche.Io.Level.to_int lvl in
+  let type_ = Lsp.Io.Lvl.to_int lvl in
   let notification = Lsp.Io.mk_logMessage ~type_ ~message in
   send_message (Lsp.Base.Message.Notification notification)
 
@@ -57,7 +57,7 @@ let trace_enabled = true
 
 let log_error err =
   let message = Petanque.Agent.Error.to_string err in
-  message_notification ~lvl:Fleche.Io.Level.error ~message
+  message_notification ~lvl:Lsp.Io.Lvl.Error ~message
 
 let pet_main debug roots http_headers =
   Coq.Limits.start ();

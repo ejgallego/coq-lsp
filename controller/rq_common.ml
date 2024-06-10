@@ -28,19 +28,18 @@ let id_from_start s start =
   let end_ = if end_ > 1 && s.[end_ - 1] = '.' then end_ - 1 else end_ in
   if start < end_ then (
     let id = String.sub s start (end_ - start) in
-    Lsp.Io.trace "find_id" ("found: " ^ id);
+    Fleche.Io.Log.trace "find_id" "found: %s" id;
     Some id)
   else None
 
 let find_id s c =
   let start = find_start s c in
-  Lsp.Io.trace "find_id" ("start: " ^ string_of_int start);
+  Fleche.Io.Log.trace "find_id" "start: %d" start;
   id_from_start s start
 
 let get_id_at_point ~contents ~point =
   let line, character = point in
-  Lsp.Io.trace "get_id_at_point"
-    ("l: " ^ string_of_int line ^ " c: " ^ string_of_int character);
+  Fleche.Io.Log.trace "get_id_at_point" "l: %d c: %d)" line character;
   let { Fleche.Contents.lines; _ } = contents in
   if line <= Array.length lines then
     let line = Array.get lines line in
@@ -144,7 +143,7 @@ module CoqModule = struct
     let glob = Filename.remove_extension vo ^ ".glob" in
     match Coq.Glob.open_file glob with
     | Error err ->
-      Fleche.Io.Log.trace "rq_definition:open_file" ("Error: " ^ err);
+      Fleche.Io.Log.trace "rq_definition:open_file" "Error: %s" err;
       Error err
     | Ok g -> (
       match Coq.Glob.get_info g name with

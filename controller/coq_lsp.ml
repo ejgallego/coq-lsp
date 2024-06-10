@@ -19,27 +19,23 @@
    based in OCaml threads. *)
 
 module U = Yojson.Safe.Util
-module LIO = Lsp.Io
-module LSP = Lsp.Base
+module L = Fleche.Io.Log
 open Controller
 open Lsp_core
 
 (* Do cleanup here if necessary *)
-let exit_message () =
-  let message = "server exiting" in
-  LIO.logMessage ~lvl:Error ~message
-
-let lsp_cleanup () = exit_message ()
+let exit_message ~io = Fleche.Io.Report.msg ~io ~lvl:Error "server exiting"
+let lsp_cleanup ~io = exit_message ~io
 
 let rec process_queue ~delay ~io ~ofn ~state : unit =
   if Fleche.Debug.sched_wakeup then
-    LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
+    L.trace "<- dequeue" "%.2f" (Unix.gettimeofday ());
   match dispatch_or_resume_check ~io ~ofn ~state with
   | None ->
     (* As of now, we exit the whole program here, we could try an experiment to
        invert the threads, so the I/O routine is a thread and process_queue is
        the main driver *)
-    lsp_cleanup ();
+    lsp_cleanup ~io;
     (* We can't use [Thread.exit] here as the main thread will be blocked on
        I/O *)
     exit 0
@@ -69,11 +65,8 @@ module CB (O : sig
 end) =
 struct
   let ofn = O.ofn
-  let trace = LIO.trace
-
-  let message ~lvl ~message =
-    let lvl = Fleche.Io.Level.to_int lvl in
-    LIO.logMessageInt ~lvl ~message
+  let trace _hdr ?extra message = Lsp.Io.logTrace ~message ~extra
+  let message ~lvl ~message = Lsp.Io.logMessage ~lvl ~message
 
   let diagnostics ~uri ~version diags =
     Lsp.Core.mk_diagnostics ~uri ~version diags |> ofn
@@ -107,17 +100,17 @@ let coq_init ~debug =
 let exit_notification =
   Lsp.Base.Message.(Notification { method_ = "exit"; params = [] })
 
-let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug =
+let rec lsp_init_loop ~io ~ifn ~ofn ~cmdline ~debug =
   match ifn () with
   | None -> raise Lsp_exit
   | Some (Ok msg) -> (
-    match lsp_init_process ~ofn ~cmdline ~debug msg with
+    match lsp_init_process ~io ~ofn ~cmdline ~debug msg with
     | Init_effect.Exit -> raise Lsp_exit
-    | Init_effect.Loop -> lsp_init_loop ~ifn ~ofn ~cmdline ~debug
+    | Init_effect.Loop -> lsp_init_loop ~io ~ifn ~ofn ~cmdline ~debug
     | Init_effect.Success w -> w)
   | Some (Error err) ->
-    Lsp.Io.trace "read_request" ("error: " ^ err);
-    lsp_init_loop ~ifn ~ofn ~cmdline ~debug
+    L.trace "read_request" "error: %s" err;
+    lsp_init_loop ~io ~ifn ~ofn ~cmdline ~debug
 
 let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
     require_libraries delay int_backend =
@@ -129,13 +122,13 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
   Stdlib.set_binary_mode_out stdout true;
 
   (* We output to stdout *)
-  let ifn () = LIO.read_message stdin in
+  let ifn () = Lsp.Io.read_message stdin in
 
   (* Set log channels *)
-  let ofn message = LIO.send_message Format.std_formatter message in
+  let ofn message = Lsp.Io.send_message Format.std_formatter message in
   let ofn_ntn not = Lsp.Base.Message.notification not |> ofn in
 
-  LIO.set_log_fn ofn_ntn;
+  Lsp.Io.set_log_fn ofn_ntn;
 
   let module CB = CB (struct
     let ofn = ofn_ntn
@@ -170,19 +163,19 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
       enqueue_message msg;
       read_loop ()
     | Some (Error err) ->
-      Lsp.Io.trace "read_request" ("error: " ^ err);
+      L.trace "read_request" "error: %s" err;
       read_loop ()
   in
 
   (* Input/output will happen now *)
   try
     (* LSP Server server initialization *)
-    let workspaces = lsp_init_loop ~ifn ~ofn ~cmdline ~debug in
+    let workspaces = lsp_init_loop ~io ~ifn ~ofn ~cmdline ~debug in
     let io =
       if !Fleche.Config.v.verbosity < 2 then (
         Fleche.Config.(
           v := { !v with send_diags = false; send_perf_data = false });
-        LIO.set_log_fn (fun _obj -> ());
+        Lsp.Io.set_log_fn (fun _obj -> ());
         let io = concise_cb ofn_ntn in
         Fleche.Io.CallBack.set io;
         io)
@@ -201,19 +194,17 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
 
     read_loop ()
   with
-  | Lsp_exit ->
-    let message = "[LSP shutdown] EOF\n" in
-    LIO.logMessage ~lvl:Error ~message
+  | Lsp_exit -> Fleche.Io.Report.msg ~io ~lvl:Error "[LSP shutdown] EOF\n"
   | exn ->
     let bt = Printexc.get_backtrace () in
     let exn, info = Exninfo.capture exn in
     let exn_msg = Printexc.to_string exn in
-    LIO.trace "fatal error" (exn_msg ^ bt);
-    LIO.trace "fatal_error [coq iprint]"
-      Pp.(string_of_ppcmds CErrors.(iprint (exn, info)));
-    LIO.trace "server crash" (exn_msg ^ bt);
-    let message = "[uncontrolled LSP shutdown] server crash\n" ^ exn_msg in
-    LIO.logMessage ~lvl:Error ~message
+    L.trace "fatal error" "%s\n%s" exn_msg bt;
+    L.trace "fatal_error [coq iprint]" "%a" Pp.pp_with
+      CErrors.(iprint (exn, info));
+    L.trace "server crash" "%s\n%s" exn_msg bt;
+    Fleche.Io.Report.msg ~io ~lvl:Error
+      "[uncontrolled LSP shutdown] server crash:\n%s" exn_msg
 
 (* Arguments handling *)
 open Cmdliner

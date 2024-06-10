@@ -113,10 +113,8 @@ module WaterProof = struct
       List.fold_left coq_block_to_span ("", start_point) code_blocks
     in
     (if waterproof_debug then
-       let msg =
-         "pos:\n" ^ String.concat "\n" code_pos ^ "\nContents:\n" ^ contents
-       in
-       Io.Log.trace "waterproof" msg);
+       let code_pos = String.concat "\n" code_pos in
+       Io.Log.trace "waterproof" "pos:\n%s\nContents:\n%s" code_pos contents);
     R.Ok contents
 
   let from_json json =

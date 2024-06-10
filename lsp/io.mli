@@ -17,7 +17,7 @@
 
 (** JSON-RPC input/output *)
 
-(** Set the log function *)
+(** Set the log output function *)
 val set_log_fn : (Base.Notification.t -> unit) -> unit
 
 (** Read a JSON-RPC message from channel; [None] signals [EOF] *)
@@ -44,12 +44,14 @@ val set_trace_value : TraceValue.t -> unit
 
 module Lvl : sig
   (* 1-5 *)
-  type t =
+  type t = Fleche.Io.Level.t =
     | Error
     | Warning
     | Info
     | Log
     | Debug
+
+  val to_int : t -> int
 end
 
 module MessageParams : sig
@@ -86,10 +88,3 @@ val mk_logTrace : message:string -> extra:string option -> Base.Notification.t
 
 (** Send a [$/logTrace] notification to the client *)
 val logTrace : message:string -> extra:string option -> unit
-
-(** [log hdr ?extra message] Log [message] to server info log with header [hdr].
-    [extra] will be used when [trace_value] is set to [Verbose] *)
-val trace : string -> ?extra:string -> string -> unit
-
-(** Log JSON object to server info log *)
-val trace_object : string -> Yojson.Safe.t -> unit
