@@ -55,9 +55,7 @@ let compare (x : t) (y : t) =
       } =
     y
   in
-  if ss1 == ss2 && is1 == is2 && l1 == l2 && g1 == g2 && o1 == o2
-  then 0
-  else 1
+  if ss1 == ss2 && is1 == is2 && l1 == l2 && g1 == g2 && o1 == o2 then 0 else 1
 
 let equal x y = compare x y = 0
 
