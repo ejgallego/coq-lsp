@@ -38,11 +38,11 @@ let main () =
   let token = Coq.Limits.create_atomic () in
   let r ~st ~tac =
     let st = extract_st st in
-    Agent.run_tac ~token ~st ~tac
+    Agent.run ~token ~st ~tac ()
   in
   let* st = start ~token in
   let* _premises = Agent.premises ~token ~st in
-  let* st = Agent.run_tac ~token ~st ~tac:"induction l." in
+  let* st = Agent.run ~token ~st ~tac:"induction l." () in
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"reflexivity." in
   let* st = r ~st ~tac:"-" in

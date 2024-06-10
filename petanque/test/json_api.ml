@@ -47,8 +47,9 @@ let run (ic, oc) =
     let message = message
   end) in
   let r ~st ~tac =
+    let memo = None in
     let st = extract_st st in
-    S.run_tac { st; tac }
+    S.run_tac { memo; st; tac }
   in
   (* Will this work on Windows? *)
   let root, uri = prepare_paths () in
@@ -57,7 +58,7 @@ let run (ic, oc) =
   let* premises = S.premises { st } in
   (if print_premises then
      Format.(eprintf "@[%a@]@\n%!" (pp_print_list pp_premise) premises));
-  let* st = S.run_tac { st; tac = "induction l." } in
+  let* st = S.run_tac { memo = None; st; tac = "induction l." } in
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"reflexivity." in
   let* st = r ~st ~tac:"-" in
