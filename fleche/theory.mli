@@ -93,6 +93,3 @@ module Register : sig
     val add : t -> unit
   end
 end
-
-(* XXX this is temporal for petanque, will fix before merge *)
-val find_doc : uri:Lang.LUri.File.t -> Doc.t option
