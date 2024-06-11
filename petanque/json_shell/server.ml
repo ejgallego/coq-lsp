@@ -9,6 +9,8 @@ let rq_info (r : Lsp.Base.Message.t) =
   | Response (Ok { id; _ } | Error { id; _ }) ->
     Format.asprintf "response for: %d" id
 
+let fn = Petanque.Shell.build_doc
+
 let rec handle_connection ~token ic oc () =
   try
     let* request = Lwt_io.read_line ic in
@@ -23,7 +25,7 @@ let rec handle_connection ~token ic oc () =
       let* () = Logs_lwt.info (fun m -> m "Received: %s" (rq_info request)) in
       (* request could be a notification, so maybe we don't have to do a
          reply! *)
-      match Interp.interp ~token request with
+      match Interp.interp ~fn ~token request with
       | None -> handle_connection ~token ic oc ()
       | Some reply ->
         let* () = Logs_lwt.info (fun m -> m "Sent reply") in

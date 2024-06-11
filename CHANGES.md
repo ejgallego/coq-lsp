@@ -56,6 +56,8 @@
    #550)
  - [petanque] Allow memoization control on `petanque/run` via a new
    parameter `memo` (@ejgallego, #780)
+ - [lsp] [petanque] Allow acces to `petanque` protocol from the lsp
+   server (@ejgallego, #778)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------

@@ -21,7 +21,9 @@ module SetWorkspace = struct
       type t = unit [@@deriving yojson]
     end
 
-    let handler ~token { Params.debug; root } =
-      Petanque.Shell.set_workspace ~token ~debug ~root
+    let handler =
+      Protocol.HType.Immediate
+        (fun ~token { Params.debug; root } ->
+          Petanque.Shell.set_workspace ~token ~debug ~root)
   end
 end

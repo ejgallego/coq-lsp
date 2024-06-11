@@ -427,6 +427,43 @@ let do_changeConfiguration ~io params =
   Rq_init.do_settings settings;
   ()
 
+(* EJGA: Note that our current configuration allow petanque calls to be
+   interrupted, this can become an issue with LSP. For now, clients must choose
+   a trade-off (we could disable interruption on petanque call, but that brings
+   other downsides)
+
+   The only real solution is to wait for OCaml 5.x support, so we can server
+   read-only queries without interrupting the main Coq thread. *)
+let petanque_handle ~token (module R : Petanque_json.Protocol.Request.S) ~params
+    =
+  let open Petanque_json in
+  match Interp.do_request (module R) ~params with
+  | Interp.Action.Now handler -> Rq.Action.now (handler ~token)
+  | Interp.Action.Doc { uri; handler } ->
+    (* Request document execution if not ready *)
+    let postpone = true in
+    Rq.Action.(Data (DocRequest { uri; postpone; handler }))
+
+let do_petanque ~token method_ params =
+  (* For now we do a manual brigde *)
+  let open Petanque_json.Protocol in
+  match method_ with
+  | s when String.equal Start.method_ s ->
+    petanque_handle ~token (module Start) ~params
+  | s when String.equal RunTac.method_ s ->
+    petanque_handle ~token (module RunTac) ~params
+  | s when String.equal Goals.method_ s ->
+    petanque_handle ~token (module Goals) ~params
+  | s when String.equal Premises.method_ s ->
+    petanque_handle ~token (module Premises) ~params
+  | _ ->
+    (* EJGA: should we allow this system to compose better with other LSP
+       extensions? *)
+    (* JSON-RPC method not found *)
+    let code = -32601 in
+    let message = "method not found" in
+    Rq.Action.error (code, message)
+
 (***********************************************************************)
 
 (** LSP Init routine *)
@@ -529,7 +566,7 @@ let dispatch_state_notification ~io ~ofn ~token ~state ~method_ ~params :
     dispatch_notification ~io ~ofn ~token ~state ~method_ ~params;
     state
 
-let dispatch_request ~method_ ~params : Rq.Action.t =
+let dispatch_request ~token ~method_ ~params : Rq.Action.t =
   match method_ with
   (* Lifecyle *)
   | "initialize" ->
@@ -552,15 +589,14 @@ let dispatch_request ~method_ ~params : Rq.Action.t =
   | "coq/getDocument" -> do_document ~params
   (* Petanque embedding *)
   | msg when Coq.Compat.Ocaml_413.String.starts_with ~prefix:"petanque/" msg ->
-    L.trace "delegating to petanque [wip]" "%s" msg;
-    Rq.Action.error (-32601, "method not found")
+    do_petanque msg ~token params
   (* Generic handler *)
   | msg ->
     L.trace "no_handler" "%s" msg;
     Rq.Action.error (-32601, "method not found")
 
 let dispatch_request ~ofn_rq ~token ~id ~method_ ~params =
-  dispatch_request ~method_ ~params |> Rq.serve ~ofn_rq ~token ~id
+  dispatch_request ~token ~method_ ~params |> Rq.serve ~ofn_rq ~token ~id
 
 let dispatch_message ~io ~ofn ~token ~state (com : LSP.Message.t) : State.t =
   let ofn_rq r = Lsp.Base.Message.response r |> ofn in

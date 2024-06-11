@@ -405,3 +405,7 @@ module Request = struct
     | FullDoc -> Handle.remove_cp_request ~uri ~id
     | PosInDoc { point; _ } -> Handle.remove_pt_request ~uri ~id ~point
 end
+
+(* xxx to remove *)
+let find_doc ~uri =
+  Handle._find_opt ~uri |> Option.map (fun { Handle.doc; _ } -> doc)

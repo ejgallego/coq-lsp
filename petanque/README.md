@@ -50,11 +50,18 @@ See the contributing guide for instructions on how to do the last.
 
 ## Running `petanque` JSON shell
 
-You can use `petanque` in 2 different ways:
+You can use `petanque` in 3 different ways:
 
-- call the API directly from your OCaml program
+- call the API using JSON-RPC directly in `coq-lsp`, over the LSP
+  protocol
 - use the provided `pet` and `pet-server` JSON-RPC shells, usually
-  with a library such as Pytanque.
+  with a library such as Pytanque
+- call the API directly from your OCaml program
+
+See `agent.mli` for an overview of the API. The
+`petanque/setWorkspace` method is only available in the `pet` and
+`pet-server` shells; when `petanque` is used from LSP, the workspace
+needs to be set using LSP in the usual way.
 
 To execute the `pet` JSON-RPC shell do:
 ```
