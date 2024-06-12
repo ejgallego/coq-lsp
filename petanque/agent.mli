@@ -11,8 +11,19 @@ module State : sig
   type t
 
   val name : string
+
+  (** Fleche-based Coq state hash; it has been designed for interactive use, so
+      please report back *)
   val hash : t -> int
-  val equal : t -> t -> bool
+
+  module Inspect : sig
+    type t = Physical  (** Flèche-based "almost physical" state eq *)
+    (* | Goals *)
+    (* For Next PR*)
+  end
+
+  (** [equal ?kind st1 st2] [kind] defaults to [Inspect.Physical] *)
+  val equal : ?kind:Inspect.t -> t -> t -> bool
 end
 
 (** Petanque errors *)

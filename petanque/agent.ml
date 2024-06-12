@@ -11,8 +11,17 @@ module State = struct
   type t = Coq.State.t
 
   let hash = Coq.State.hash
-  let equal = Coq.State.equal
   let name = "state"
+
+  module Inspect = struct
+    type t = Physical  (** Flèche-based "almost physical" state eq *)
+    (* | Goals *)
+    (* For Next PR*)
+  end
+
+  let equal ?(kind = Inspect.Physical) =
+    match kind with
+    | Physical -> Coq.State.equal
 end
 
 (** Petanque errors *)
