@@ -11,8 +11,25 @@ module State = struct
   type t = Coq.State.t
 
   let hash = Coq.State.hash
-  let equal = Coq.State.equal
   let name = "state"
+
+  module Inspect = struct
+    type t =
+      | Physical  (** Flèche-based "almost physical" state eq *)
+      | Goals
+          (** Full goal equality; must faster than calling goals as it won't
+              unelaborate them. Note that this may not fully capture proof state
+              equality (it is possible to have similar goals but different
+              evar_maps, but should be enough for all practical users. *)
+  end
+
+  let equal ?(kind = Inspect.Physical) =
+    match kind with
+    | Physical -> Coq.State.equal
+    | Goals ->
+      fun st1 st2 ->
+        let st1, st2 = (Coq.State.lemmas ~st:st1, Coq.State.lemmas ~st:st2) in
+        Option.equal Coq.Goals.Equality.equal_goals st1 st2
 end
 
 (** Petanque errors *)
@@ -50,10 +67,19 @@ module R = struct
   type 'a t = ('a, Error.t) Result.t
 end
 
+module Run_opts = struct
+  type t =
+    { memo : bool [@default true]
+    ; hash : bool [@default true]
+    }
+end
+
 module Run_result = struct
   type 'a t =
-    | Proof_finished of 'a
-    | Current_state of 'a
+    { st : 'a
+    ; hash : int option [@default None]
+    ; proof_finished : bool
+    }
 end
 
 let find_thm ~(doc : Fleche.Doc.t) ~thm =
@@ -114,20 +140,31 @@ let start ~token ~doc ?pre_commands ~thm () =
 let proof_finished { Coq.Goals.goals; stack; shelf; given_up; _ } =
   List.for_all CList.is_empty [ goals; shelf; given_up ] && CList.is_empty stack
 
-let analyze_after_run st =
-  let goals = Fleche.Info.Goals.get_goals_unit ~st in
-  match goals with
-  | None -> Run_result.Proof_finished st
-  | Some goals when proof_finished goals -> Run_result.Proof_finished st
-  | _ -> Run_result.Current_state st
+let analyze_after_run ~hash st =
+  let proof_finished =
+    let goals = Fleche.Info.Goals.get_goals_unit ~st in
+    match goals with
+    | None -> true
+    | Some goals when proof_finished goals -> true
+    | _ -> false
+  in
+  let hash = if hash then Some (State.hash st) else None in
+  Run_result.{ st; hash; proof_finished }
 
-let run ~token ?(memo = true) ~st ~tac () : (_ Run_result.t, Error.t) Result.t =
+(* Would be nice to keep this in sync with the type annotations. *)
+let default_opts = function
+  | None -> { Run_opts.memo = true; hash = true }
+  | Some opts -> opts
+
+let run ~token ?opts ~st ~tac () : (_ Run_result.t, Error.t) Result.t =
+  let opts = default_opts opts in
   (* Improve with thm? *)
   let loc = None in
+  let memo, hash = (opts.memo, opts.hash) in
   let f st =
     let open Coq.Protect.E.O in
     let+ st = parse_and_execute_in ~token ~memo ~loc tac st in
-    analyze_after_run st
+    analyze_after_run ~hash st
   in
   Coq.State.in_stateM ~token ~st ~f st |> protect_to_result
 

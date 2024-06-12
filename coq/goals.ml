@@ -15,11 +15,14 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+let equal_option = Option.equal
+
 type 'a hyp =
-  { names : string list
+  { names : String.t List.t
   ; def : 'a option
   ; ty : 'a
   }
+[@@deriving equal]
 
 let map_hyp ~f { names; def; ty } =
   let def = Option.map f def in
@@ -30,12 +33,14 @@ type info =
   { evar : Evar.t
   ; name : Names.Id.t option
   }
+[@@deriving equal]
 
 type 'a reified_goal =
   { info : info
-  ; hyps : 'a hyp list
+  ; hyps : 'a hyp List.t
   ; ty : 'a
   }
+[@@deriving equal]
 
 let map_reified_goal ~f { info; ty; hyps } =
   let ty = f ty in
@@ -43,12 +48,13 @@ let map_reified_goal ~f { info; ty; hyps } =
   { info; ty; hyps }
 
 type ('a, 'pp) goals =
-  { goals : 'a list
-  ; stack : ('a list * 'a list) list
+  { goals : 'a List.t
+  ; stack : ('a List.t * 'a List.t) List.t
   ; bullet : 'pp option
-  ; shelf : 'a list
-  ; given_up : 'a list
+  ; shelf : 'a List.t
+  ; given_up : 'a List.t
   }
+[@@deriving equal]
 
 let map_goals ~f ~g { goals; stack; bullet; shelf; given_up } =
   let goals = List.map f goals in
@@ -126,3 +132,20 @@ let reify ~ppx lemmas =
   ; shelf = Evd.shelf sigma |> ppx
   ; given_up = Evd.given_up sigma |> Evar.Set.elements |> ppx
   }
+
+module Equality = struct
+  let eq_constr (_env1, evd1, c1) (_env2, evd2, c2) =
+    (* XXX Fixme, can be much faster using the advance compare functions *)
+    let c1 = EConstr.to_constr evd1 c1 in
+    let c2 = EConstr.to_constr evd2 c2 in
+    Constr.equal c1 c2
+
+  let eq_pp pp1 pp2 = pp1 = pp2
+  let eq_rgoal = equal_reified_goal eq_constr
+
+  let equal_goals st1 st2 =
+    let ppx env evd c = (env, evd, c) in
+    let g1 = reify ~ppx st1 in
+    let g2 = reify ~ppx st2 in
+    equal_goals eq_rgoal eq_pp g1 g2
+end

@@ -32,9 +32,7 @@ let start ~token =
   let* doc = Petanque.Shell.build_doc ~token ~uri in
   Agent.start ~token ~doc ~thm:"rev_snoc_cons" ()
 
-let extract_st (st : _ Agent.Run_result.t) =
-  match st with
-  | Proof_finished st | Current_state st -> st
+let extract_st { Agent.Run_result.st; _ } = st
 
 let main () =
   let open Coq.Compat.Result.O in
@@ -46,8 +44,14 @@ let main () =
   let* st = start ~token in
   let* _premises = Agent.premises ~token ~st in
   let* st = Agent.run ~token ~st ~tac:"induction l." () in
+  let h1 = Agent.State.hash st.st in
+  let* st = r ~st ~tac:"idtac." in
+  let h2 = Agent.State.hash st.st in
+  assert (Int.equal h1 h2);
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"reflexivity." in
+  let h3 = Agent.State.hash st.st in
+  assert (not (Int.equal h1 h3));
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"now simpl; rewrite IHl." in
   let* st = r ~st ~tac:"Qed." in

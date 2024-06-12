@@ -61,6 +61,11 @@
  - [petanque] Always initialize a workspace. This made `pet` crash if
    `--root` was not used and client didn't issue the optimal
    `setWorkspace` call (#782, @ejgallego, @gbdrt)
+ - [lsp] [petanque] New methods `state/eq` and `state/hash`; this
+   allows clients to implement a client-side hash; equality is
+   configurable with different methods; moreover, `petanque/run` can
+   compute some extra data like state hashing without a round-trip
+   (@ejgallego @gbdrt, #779)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------

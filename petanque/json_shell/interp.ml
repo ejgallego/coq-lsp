@@ -62,6 +62,10 @@ let handle_request ~(do_handle : 'a handle) ~unhandled ~token ~method_ ~params =
     do_handle ~token (module Goals) ~params
   | s when String.equal Premises.method_ s ->
     do_handle ~token (module Premises) ~params
+  | s when String.equal Premises.method_ s ->
+    do_handle ~token (module StateEqual) ~params
+  | s when String.equal Premises.method_ s ->
+    do_handle ~token (module StateHash) ~params
   | _ -> unhandled ()
 
 let do_handle ~fn ~token (module R : Protocol.Request.S) ~params =

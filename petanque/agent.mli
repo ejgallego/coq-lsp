@@ -11,8 +11,23 @@ module State : sig
   type t
 
   val name : string
+
+  (** Fleche-based Coq state hash; it has been designed for interactive use, so
+      please report back *)
   val hash : t -> int
-  val equal : t -> t -> bool
+
+  module Inspect : sig
+    type t =
+      | Physical  (** Flèche-based "almost physical" state eq *)
+      | Goals
+          (** Full goal equality; must faster than calling goals as it won't
+              unelaborate them. Note that this may not fully capture proof state
+              equality (it is possible to have similar goals but different
+              evar_maps, but should be enough for all practical users. *)
+  end
+
+  (** [equal ?kind st1 st2] [kind] defaults to [Inspect.Physical] *)
+  val equal : ?kind:Inspect.t -> t -> t -> bool
 end
 
 (** Petanque errors *)
@@ -36,10 +51,19 @@ module R : sig
   type 'a t = ('a, Error.t) Result.t
 end
 
+module Run_opts : sig
+  type t =
+    { memo : bool [@default true]
+    ; hash : bool [@default true]
+    }
+end
+
 module Run_result : sig
   type 'a t =
-    | Proof_finished of 'a
-    | Current_state of 'a
+    { st : 'a
+    ; hash : int option [@default None]
+    ; proof_finished : bool
+    }
 end
 
 (** Protocol notes:
@@ -80,7 +104,7 @@ val start :
     Flèche incremental engine. *)
 val run :
      token:Coq.Limits.Token.t
-  -> ?memo:bool
+  -> ?opts:Run_opts.t
   -> st:State.t
   -> tac:string
   -> unit
