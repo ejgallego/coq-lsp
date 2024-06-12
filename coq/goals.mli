@@ -15,30 +15,29 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type 'a hyp =
-  { names : string list  (** This will become [Names.Id.t list] in 0.2.0 *)
-  ; def : 'a option
-  ; ty : 'a
-  }
+module Reified_goal : sig
+  type 'a hyp =
+    { names : string list  (** This will become [Names.Id.t list] in 0.2.0 *)
+    ; def : 'a option
+    ; ty : 'a
+    }
 
-type info =
-  { evar : Evar.t
-  ; name : Names.Id.t option
-  }
+  type info =
+    { evar : Evar.t
+    ; name : Names.Id.t option
+    }
 
-type 'a reified_goal =
-  { info : info
-  ; hyps : 'a hyp list
-  ; ty : 'a
-  }
+  type 'a t =
+    { info : info
+    ; hyps : 'a hyp list
+    ; ty : 'a
+    }
 
-val map_reified_goal : f:('a -> 'b) -> 'a reified_goal -> 'b reified_goal
+  val map : f:('a -> 'b) -> 'a t -> 'b t
+  val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+end
 
-val equal_reified_goal :
-  ('a -> 'a -> bool) -> 'a reified_goal -> 'a reified_goal -> bool
-
-(* XXX: Put into a module *)
-type ('a, 'pp) goals =
+type ('a, 'pp) t =
   { goals : 'a list
   ; stack : ('a list * 'a list) list
   ; bullet : 'pp option
@@ -46,23 +45,22 @@ type ('a, 'pp) goals =
   ; given_up : 'a list
   }
 
-val equal_goals :
+val equal :
      ('a -> 'a -> bool)
   -> ('pp -> 'pp -> bool)
-  -> ('a, 'pp) goals
-  -> ('a, 'pp) goals
+  -> ('a, 'pp) t
+  -> ('a, 'pp) t
   -> bool
 
-val map_goals :
-  f:('a -> 'b) -> g:('pp -> 'pp') -> ('a, 'pp) goals -> ('b, 'pp') goals
+val map : f:('a -> 'b) -> g:('pp -> 'pp') -> ('a, 'pp) t -> ('b, 'pp') t
 
-type 'pp reified_pp = ('pp reified_goal, 'pp) goals
+type 'pp reified_pp = ('pp Reified_goal.t, 'pp) t
 
 (** Stm-independent goal processor *)
 val reify :
      ppx:(Environ.env -> Evd.evar_map -> EConstr.t -> 'pp)
   -> State.Proof.t
-  -> ('pp reified_goal, Pp.t) goals
+  -> ('pp Reified_goal.t, Pp.t) t
 
 (* equality functions with heuristics *)
 module Equality : sig

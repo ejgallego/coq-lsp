@@ -17,37 +17,39 @@
 
 let equal_option = Option.equal
 
-type 'a hyp =
-  { names : String.t List.t
-  ; def : 'a option
-  ; ty : 'a
-  }
-[@@deriving equal]
+module Reified_goal = struct
+  type 'a hyp =
+    { names : String.t List.t
+    ; def : 'a option
+    ; ty : 'a
+    }
+  [@@deriving equal]
 
-let map_hyp ~f { names; def; ty } =
-  let def = Option.map f def in
-  let ty = f ty in
-  { names; def; ty }
+  let map_hyp ~f { names; def; ty } =
+    let def = Option.map f def in
+    let ty = f ty in
+    { names; def; ty }
 
-type info =
-  { evar : Evar.t
-  ; name : Names.Id.t option
-  }
-[@@deriving equal]
+  type info =
+    { evar : Evar.t
+    ; name : Names.Id.t option
+    }
+  [@@deriving equal]
 
-type 'a reified_goal =
-  { info : info
-  ; hyps : 'a hyp List.t
-  ; ty : 'a
-  }
-[@@deriving equal]
+  type 'a t =
+    { info : info
+    ; hyps : 'a hyp List.t
+    ; ty : 'a
+    }
+  [@@deriving equal]
 
-let map_reified_goal ~f { info; ty; hyps } =
-  let ty = f ty in
-  let hyps = List.map (map_hyp ~f) hyps in
-  { info; ty; hyps }
+  let map ~f { info; ty; hyps } =
+    let ty = f ty in
+    let hyps = List.map (map_hyp ~f) hyps in
+    { info; ty; hyps }
+end
 
-type ('a, 'pp) goals =
+type ('a, 'pp) t =
   { goals : 'a List.t
   ; stack : ('a List.t * 'a List.t) List.t
   ; bullet : 'pp option
@@ -56,7 +58,7 @@ type ('a, 'pp) goals =
   }
 [@@deriving equal]
 
-let map_goals ~f ~g { goals; stack; bullet; shelf; given_up } =
+let map ~f ~g { goals; stack; bullet; shelf; given_up } =
   let goals = List.map f goals in
   let stack = List.map (fun (s, r) -> (List.map f s, List.map f r)) stack in
   let bullet = Option.map g bullet in
@@ -64,7 +66,7 @@ let map_goals ~f ~g { goals; stack; bullet; shelf; given_up } =
   let given_up = List.map f given_up in
   { goals; stack; bullet; shelf; given_up }
 
-type 'pp reified_pp = ('pp reified_goal, 'pp) goals
+type 'pp reified_pp = ('pp Reified_goal.t, 'pp) t
 
 (** XXX: Do we need to perform evar normalization? *)
 
@@ -74,19 +76,19 @@ type cdcl = EConstr.compacted_declaration
 
 let binder_name n = Context.binder_name n |> Names.Id.to_string
 
-let to_tuple ppx : cdcl -> 'pc hyp =
+let to_tuple ppx : cdcl -> 'pc Reified_goal.hyp =
   let open CDC in
   function
   | LocalAssum (idl, tm) ->
     let names = List.map binder_name idl in
-    { names; def = None; ty = ppx tm }
+    { Reified_goal.names; def = None; ty = ppx tm }
   | LocalDef (idl, tdef, tm) ->
     let names = List.map binder_name idl in
     { names; def = Some (ppx tdef); ty = ppx tm }
 
 (** gets a hypothesis *)
 let get_hyp (ppx : EConstr.t -> 'pc) (_sigma : Evd.evar_map) (hdecl : cdcl) :
-    'pc hyp =
+    'pc Reified_goal.hyp =
   to_tuple ppx hdecl
 
 (** gets the constr associated to the type of the current goal *)
@@ -100,10 +102,11 @@ let get_goal_type (ppx : EConstr.t -> 'pc) (env : Environ.env)
   in
   ppx concl
 
-let build_info sigma g = { evar = g; name = Evd.evar_ident g sigma }
+let build_info sigma g =
+  { Reified_goal.evar = g; name = Evd.evar_ident g sigma }
 
 (** Generic processor *)
-let process_goal_gen ppx sigma g : 'a reified_goal =
+let process_goal_gen ppx sigma g : 'a Reified_goal.t =
   (* XXX This looks cumbersome *)
   let env = Global.env () in
   let (EvarInfo evi) = Evd.find sigma g in
@@ -141,11 +144,11 @@ module Equality = struct
     Constr.equal c1 c2
 
   let eq_pp pp1 pp2 = pp1 = pp2
-  let eq_rgoal = equal_reified_goal eq_constr
+  let eq_rgoal = Reified_goal.equal eq_constr
 
   let equal_goals st1 st2 =
     let ppx env evd c = (env, evd, c) in
     let g1 = reify ~ppx st1 in
     let g2 = reify ~ppx st2 in
-    equal_goals eq_rgoal eq_pp g1 g2
+    equal eq_rgoal eq_pp g1 g2
 end

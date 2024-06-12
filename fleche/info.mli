@@ -53,13 +53,13 @@ module O : S with module P := Offset
 (** We move towards a more modular design here, for preprocessing *)
 module Goals : sig
   val get_goals_unit :
-    st:Coq.State.t -> (unit Coq.Goals.reified_goal, Pp.t) Coq.Goals.goals option
+    st:Coq.State.t -> (unit Coq.Goals.Reified_goal.t, Pp.t) Coq.Goals.t option
 
   val get_goals :
        st:Coq.State.t
-    -> ( (Environ.env * Evd.evar_map * EConstr.t) Coq.Goals.reified_goal
+    -> ( (Environ.env * Evd.evar_map * EConstr.t) Coq.Goals.Reified_goal.t
        , Pp.t )
-       Coq.Goals.goals
+       Coq.Goals.t
        option
 
   val goals :
