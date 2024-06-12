@@ -95,7 +95,7 @@ module RunTac = struct
 
   module Params = struct
     type t =
-      { memo : bool option
+      { opts : Run_opts.t option
             [@default None] (* Whether to memoize the execution, server-side *)
       ; st : int
       ; tac : string
@@ -110,7 +110,7 @@ module RunTac = struct
   module Handler = struct
     module Params = struct
       type t =
-        { memo : bool option
+        { opts : Run_opts.t option
               [@default None] (* Whether to memoize the execution *)
         ; st : State.t
         ; tac : string
@@ -124,8 +124,8 @@ module RunTac = struct
 
     let handler =
       HType.Immediate
-        (fun ~token { Params.memo; st; tac } ->
-          Agent.run ~token ?memo ~st ~tac ())
+        (fun ~token { Params.opts; st; tac } ->
+          Agent.run ~token ?opts ~st ~tac ())
   end
 end
 

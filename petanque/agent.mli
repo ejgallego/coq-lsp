@@ -47,10 +47,19 @@ module R : sig
   type 'a t = ('a, Error.t) Result.t
 end
 
+module Run_opts : sig
+  type t =
+    { memo : bool [@default true]
+    ; hash : bool [@default true]
+    }
+end
+
 module Run_result : sig
   type 'a t =
-    | Proof_finished of 'a
-    | Current_state of 'a
+    { st : 'a
+    ; hash : int option [@default None]
+    ; proof_finished : bool
+    }
 end
 
 (** Protocol notes:
@@ -91,7 +100,7 @@ val start :
     Flèche incremental engine. *)
 val run :
      token:Coq.Limits.Token.t
-  -> ?memo:bool
+  -> ?opts:Run_opts.t
   -> st:State.t
   -> tac:string
   -> unit

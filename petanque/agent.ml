@@ -59,10 +59,19 @@ module R = struct
   type 'a t = ('a, Error.t) Result.t
 end
 
+module Run_opts = struct
+  type t =
+    { memo : bool [@default true]
+    ; hash : bool [@default true]
+    }
+end
+
 module Run_result = struct
   type 'a t =
-    | Proof_finished of 'a
-    | Current_state of 'a
+    { st : 'a
+    ; hash : int option [@default None]
+    ; proof_finished : bool
+    }
 end
 
 let find_thm ~(doc : Fleche.Doc.t) ~thm =
@@ -123,20 +132,31 @@ let start ~token ~doc ?pre_commands ~thm () =
 let proof_finished { Coq.Goals.goals; stack; shelf; given_up; _ } =
   List.for_all CList.is_empty [ goals; shelf; given_up ] && CList.is_empty stack
 
-let analyze_after_run st =
-  let goals = Fleche.Info.Goals.get_goals_unit ~st in
-  match goals with
-  | None -> Run_result.Proof_finished st
-  | Some goals when proof_finished goals -> Run_result.Proof_finished st
-  | _ -> Run_result.Current_state st
+let analyze_after_run ~hash st =
+  let proof_finished =
+    let goals = Fleche.Info.Goals.get_goals_unit ~st in
+    match goals with
+    | None -> true
+    | Some goals when proof_finished goals -> true
+    | _ -> false
+  in
+  let hash = if hash then Some (State.hash st) else None in
+  Run_result.{ st; hash; proof_finished }
 
-let run ~token ?(memo = true) ~st ~tac () : (_ Run_result.t, Error.t) Result.t =
+(* Would be nice to keep this in sync with the type annotations. *)
+let default_opts = function
+  | None -> { Run_opts.memo = true; hash = true }
+  | Some opts -> opts
+
+let run ~token ?opts ~st ~tac () : (_ Run_result.t, Error.t) Result.t =
+  let opts = default_opts opts in
   (* Improve with thm? *)
   let loc = None in
+  let memo, hash = (opts.memo, opts.hash) in
   let f st =
     let open Coq.Protect.E.O in
     let+ st = parse_and_execute_in ~token ~memo ~loc tac st in
-    analyze_after_run st
+    analyze_after_run ~hash st
   in
   Coq.State.in_stateM ~token ~st ~f st |> protect_to_result
 

@@ -28,6 +28,10 @@ module Error = struct
   type t = [%import: Petanque.Agent.Error.t] [@@deriving yojson]
 end
 
+module Run_opts = struct
+  type t = [%import: Petanque.Agent.Run_opts.t] [@@deriving yojson]
+end
+
 module Run_result = struct
   type 'a t = [%import: 'a Petanque.Agent.Run_result.t] [@@deriving yojson]
 end

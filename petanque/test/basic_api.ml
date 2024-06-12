@@ -32,9 +32,7 @@ let start ~token =
   let* doc = Petanque.Shell.build_doc ~token ~uri in
   Agent.start ~token ~doc ~thm:"rev_snoc_cons" ()
 
-let extract_st (st : _ Agent.Run_result.t) =
-  match st with
-  | Proof_finished st | Current_state st -> st
+let extract_st { Agent.Run_result.st; _ } = st
 
 let main () =
   let open Coq.Compat.Result.O in
