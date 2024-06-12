@@ -41,6 +41,9 @@ module Error = struct
     | Anomaly _ -> -32004
     | System _ -> -32005
     | Theorem_not_found _ -> -32006
+
+  let coq e = Coq e
+  let system e = System e
 end
 
 module R = struct

@@ -19,7 +19,7 @@ let setup_workspace ~token ~init ~debug ~root =
    let+ workspace = Coq.Workspace.guess ~token ~debug ~cmdline ~dir in
    let files = Coq.Files.make () in
    Fleche.Doc.Env.make ~init ~workspace ~files)
-  |> Result.map_error (fun msg -> Agent.Error.Coq msg)
+  |> Result.map_error Agent.Error.coq
 
 let trace_stderr hdr ?extra:_ msg =
   Format.eprintf "@[[trace] %s | %s @]@\n%!" hdr msg
@@ -68,7 +68,7 @@ let print_diags (doc : Fleche.Doc.t) =
 let read_raw ~uri =
   let file = Lang.LUri.File.to_string_file uri in
   try Ok Coq.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
-  with Sys_error err -> Error (Agent.Error.Coq err)
+  with Sys_error err -> Error (Agent.Error.system err)
 
 let setup_doc ~token env uri =
   match read_raw ~uri with
@@ -82,15 +82,21 @@ let setup_doc ~token env uri =
 let build_doc ~token ~uri = setup_doc ~token (Option.get !env) uri
 
 (* Flèche LSP backend handles the conversion at the protocol level *)
-let to_uri uri = Lang.LUri.of_string uri |> Lang.LUri.File.of_uri
+let to_uri uri =
+  Lang.LUri.of_string uri |> Lang.LUri.File.of_uri
+  |> Result.map_error Agent.Error.system
+
+let uri_of_path path = Format.asprintf "file:///%s" path |> to_uri
 
 let set_roots ~token ~debug ~roots =
-  match roots with
-  | [] -> Ok ()
-  | root :: _ -> (
-    match to_uri root with
-    | Error err -> Error (Agent.Error.System err)
-    | Ok root -> set_workspace ~token ~debug ~root)
+  let root =
+    match roots with
+    | [] -> Sys.getcwd ()
+    | root :: _ -> root
+  in
+  let open Coq.Compat.Result.O in
+  let* root = uri_of_path root in
+  set_workspace ~token ~debug ~root
 
 let init_agent ~token ~debug ~roots =
   init_st := Some (init_coq ~debug);

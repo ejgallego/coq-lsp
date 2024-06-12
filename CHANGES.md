@@ -58,6 +58,9 @@
    parameter `memo` (@ejgallego, #780)
  - [lsp] [petanque] Allow acces to `petanque` protocol from the lsp
    server (@ejgallego, #778)
+ - [petanque] Always initialize a workspace. This made `pet` crash if
+   `--root` was not used and client didn't issue the optimal
+   `setWorkspace` call (#782, @ejgallego, @gbdrt)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------

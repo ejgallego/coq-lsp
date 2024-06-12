@@ -27,6 +27,8 @@ module Error : sig
 
   val to_string : t -> string
   val to_code : t -> int
+  val coq : string -> t
+  val system : string -> t
 end
 
 (** Petanque results *)
