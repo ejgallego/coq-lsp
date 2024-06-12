@@ -170,9 +170,9 @@ let run ~token ?opts ~st ~tac () : (_ Run_result.t, Error.t) Result.t =
 
 let goals ~token ~st =
   let f goals =
-    let f = Coq.Goals.map_reified_goal ~f:Pp.string_of_ppcmds in
+    let f = Coq.Goals.Reified_goal.map ~f:Pp.string_of_ppcmds in
     let g = Pp.string_of_ppcmds in
-    Option.map (Coq.Goals.map_goals ~f ~g) goals
+    Option.map (Coq.Goals.map ~f ~g) goals
   in
   Coq.Protect.E.map ~f (Fleche.Info.Goals.goals ~token ~st) |> protect_to_result
 
