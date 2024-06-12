@@ -55,9 +55,7 @@ let info_of_const env sigma cr =
   let impargs = List.map Impargs.binding_kind_of_status impargs in
   let typ = Printer.pr_ltype_env env sigma ~impargs typ in
   let dp = Names.Constant.modpath cr |> Names.ModPath.dp in
-  let source =
-    Rq_common.CoqModule.(make dp |> Result.to_option |> Option.map source)
-  in
+  let source = Coq.Module.(make dp |> Result.to_option |> Option.map source) in
   Def (typ, Some cr, source)
 
 let info_of_var env vr =

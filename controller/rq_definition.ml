@@ -25,11 +25,11 @@ let locate_extended qid =
   try Some (Nametab.locate_extended qid) with Not_found -> None
 
 let find_name_in dp name =
-  match Rq_common.CoqModule.make dp with
+  match Coq.Module.make dp with
   | Error err -> Error (err_code, lp_to_string err)
   | Ok mod_ -> (
-    let uri = Rq_common.CoqModule.uri mod_ in
-    match Rq_common.CoqModule.find mod_ name with
+    let uri = Coq.Module.uri mod_ in
+    match Coq.Module.find mod_ name with
     | Error err -> Error (err_code, err)
     | Ok range ->
       Ok (Option.map (fun range -> Lsp.Core.Location.{ uri; range }) range))
@@ -57,10 +57,10 @@ let get_from_file id_at_point =
 let get_from_import require_at_point =
   match Loadpath.locate_qualified_library require_at_point with
   | Ok (dp, _file) -> (
-    match Rq_common.CoqModule.make dp with
+    match Coq.Module.make dp with
     | Error _err -> None
     | Ok mod_ ->
-      let uri = Rq_common.CoqModule.uri mod_ in
+      let uri = Coq.Module.uri mod_ in
       let start = Lang.Point.{ line = 0; character = 0; offset = 0 } in
       let range = Lang.Range.{ start; end_ = start } in
       Some Lsp.Core.Location.{ uri; range })
