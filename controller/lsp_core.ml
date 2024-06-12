@@ -445,24 +445,15 @@ let petanque_handle ~token (module R : Petanque_json.Protocol.Request.S) ~params
     Rq.Action.(Data (DocRequest { uri; postpone; handler }))
 
 let do_petanque ~token method_ params =
-  (* For now we do a manual brigde *)
-  let open Petanque_json.Protocol in
-  match method_ with
-  | s when String.equal Start.method_ s ->
-    petanque_handle ~token (module Start) ~params
-  | s when String.equal RunTac.method_ s ->
-    petanque_handle ~token (module RunTac) ~params
-  | s when String.equal Goals.method_ s ->
-    petanque_handle ~token (module Goals) ~params
-  | s when String.equal Premises.method_ s ->
-    petanque_handle ~token (module Premises) ~params
-  | _ ->
-    (* EJGA: should we allow this system to compose better with other LSP
-       extensions? *)
+  let open Petanque_json in
+  let do_handle = petanque_handle in
+  let unhandled () =
     (* JSON-RPC method not found *)
     let code = -32601 in
     let message = "method not found" in
     Rq.Action.error (code, message)
+  in
+  Interp.handle_request ~do_handle ~unhandled ~token ~method_ ~params
 
 (***********************************************************************)
 

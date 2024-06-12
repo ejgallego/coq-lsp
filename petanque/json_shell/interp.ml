@@ -4,14 +4,15 @@ module A = Petanque.Agent
 
 (* These types ares basically duplicated with controller/request.ml; move to a
    common lib (lsp?) *)
-type r = (Yojson.Safe.t, int * string) Result.t
+type 'a r = ('a, int * string) Result.t
 
 module Action = struct
   type 'a t =
-    | Now of (token:Coq.Limits.Token.t -> r)
+    | Now of (token:Coq.Limits.Token.t -> Yojson.Safe.t r)
     | Doc of
         { uri : Lang.LUri.File.t
-        ; handler : token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> r
+        ; handler :
+            token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> Yojson.Safe.t r
         }
 end
 (* End of controller/request.ml *)
@@ -43,15 +44,13 @@ let do_request (module R : Protocol.Request.S) ~params =
     let code = -32700 in
     Action.Now (fun ~token:_ -> Error (code, message))
 
-let do_handle ~fn ~token (module R : Protocol.Request.S) ~params =
-  match do_request (module R) ~params with
-  | Action.Now handler -> handler ~token
-  | Action.Doc { uri; handler } ->
-    let open Coq.Compat.Result.O in
-    let* doc = fn ~token ~uri |> of_pet_err in
-    handler ~token ~doc
+type 'a handle =
+     token:Coq.Limits.Token.t
+  -> (module Protocol.Request.S)
+  -> params:(string * Yojson.Safe.t) list
+  -> 'a
 
-let handle_request ~token ~method_ ~params =
+let handle_request ~(do_handle : 'a handle) ~unhandled ~token ~method_ ~params =
   match method_ with
   | s when String.equal SetWorkspace.method_ s ->
     do_handle ~token (module SetWorkspace) ~params
@@ -63,15 +62,25 @@ let handle_request ~token ~method_ ~params =
     do_handle ~token (module Goals) ~params
   | s when String.equal Premises.method_ s ->
     do_handle ~token (module Premises) ~params
-  | _ ->
-    fun ~fn:_ ->
-      (* JSON-RPC method not found *)
-      let code = -32601 in
-      let message = "method not found" in
-      Error (code, message)
+  | _ -> unhandled ()
+
+let do_handle ~fn ~token (module R : Protocol.Request.S) ~params =
+  match do_request (module R) ~params with
+  | Action.Now handler -> handler ~token
+  | Action.Doc { uri; handler } ->
+    let open Coq.Compat.Result.O in
+    let* doc = fn ~token ~uri |> of_pet_err in
+    handler ~token ~doc
 
 let request ~fn ~token ~id ~method_ ~params =
-  match handle_request ~fn ~token ~method_ ~params with
+  let do_handle = do_handle ~fn in
+  let unhandled () =
+    (* JSON-RPC method not found *)
+    let code = -32601 in
+    let message = "method not found" in
+    Error (code, message)
+  in
+  match handle_request ~do_handle ~unhandled ~token ~method_ ~params with
   | Ok result -> Lsp.Base.Response.mk_ok ~id ~result
   | Error (code, message) -> Lsp.Base.Response.mk_error ~id ~code ~message
 
