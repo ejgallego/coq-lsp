@@ -3,6 +3,10 @@
 (* Implement State.t and Env.t serialization methods *)
 module State = Obj_map.Make (Petanque.Agent.State)
 
+module Inspect = struct
+  type t = [%import: Petanque.Agent.State.Inspect.t] [@@deriving yojson]
+end
+
 (* The typical protocol dance *)
 
 (* What a mess result stuff is, we need this in case result is installed, as

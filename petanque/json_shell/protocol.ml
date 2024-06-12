@@ -176,3 +176,62 @@ module Premises = struct
       HType.Immediate (fun ~token { Params.st } -> Agent.premises ~token ~st)
   end
 end
+
+(* StateEqual *)
+module StateEqual = struct
+  let method_ = "petanque/state/eq"
+
+  module Params = struct
+    type t =
+      { kind : Inspect.t option [@default None]
+      ; st1 : int
+      ; st2 : int
+      }
+    [@@deriving yojson]
+  end
+
+  module Response = struct
+    type t = bool [@@deriving yojson]
+  end
+
+  module Handler = struct
+    module Params = struct
+      type t =
+        { kind : Inspect.t option
+        ; st1 : State.t
+        ; st2 : State.t
+        }
+      [@@deriving yojson]
+    end
+
+    module Response = Response
+
+    let handler =
+      HType.Immediate
+        (fun ~token:_ { Params.kind; st1; st2 } ->
+          Ok (Agent.State.equal ?kind st1 st2))
+  end
+end
+
+module StateHash = struct
+  let method_ = "petanque/state/hash"
+
+  module Params = struct
+    type t = { st : int } [@@deriving yojson]
+  end
+
+  module Response = struct
+    type t = int [@@deriving yojson]
+  end
+
+  module Handler = struct
+    module Params = struct
+      type t = { st : State.t } [@@deriving yojson]
+    end
+
+    module Response = Response
+
+    let handler =
+      HType.Immediate (fun ~token:_ { Params.st } -> Ok (Agent.State.hash st))
+  end
+end
