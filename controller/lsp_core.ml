@@ -434,10 +434,9 @@ let do_changeConfiguration ~io params =
 
    The only real solution is to wait for OCaml 5.x support, so we can server
    read-only queries without interrupting the main Coq thread. *)
-let petanque_handle ~token (module R : Petanque_json.Protocol.Request.S) ~params
-    =
+let petanque_handle ~token =
   let open Petanque_json in
-  match Interp.do_request (module R) ~params with
+  function
   | Interp.Action.Now handler -> Rq.Action.now (handler ~token)
   | Interp.Action.Doc { uri; handler } ->
     (* Request document execution if not ready *)

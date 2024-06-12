@@ -1,3 +1,9 @@
+(************************************************************************)
+(* Coq Petanque                                                         *)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(************************************************************************)
+
 open Protocol
 open Protocol_shell
 module A = Petanque.Agent
@@ -7,7 +13,7 @@ module A = Petanque.Agent
 type 'a r = ('a, int * string) Result.t
 
 module Action = struct
-  type 'a t =
+  type t =
     | Now of (token:Coq.Limits.Token.t -> Yojson.Safe.t r)
     | Doc of
         { uri : Lang.LUri.File.t
@@ -44,60 +50,23 @@ let do_request (module R : Protocol.Request.S) ~params =
     let code = -32700 in
     Action.Now (fun ~token:_ -> Error (code, message))
 
-type 'a handle =
-     token:Coq.Limits.Token.t
-  -> (module Protocol.Request.S)
-  -> params:(string * Yojson.Safe.t) list
-  -> 'a
+type 'a handle = token:Coq.Limits.Token.t -> Action.t -> 'a
 
 let handle_request ~(do_handle : 'a handle) ~unhandled ~token ~method_ ~params =
   match method_ with
+  (* XXX move this to the _shell handler in interp_handler *)
   | s when String.equal SetWorkspace.method_ s ->
-    do_handle ~token (module SetWorkspace) ~params
+    do_handle ~token (do_request (module SetWorkspace) ~params)
   | s when String.equal Start.method_ s ->
-    do_handle ~token (module Start) ~params
+    do_handle ~token (do_request (module Start) ~params)
   | s when String.equal RunTac.method_ s ->
-    do_handle ~token (module RunTac) ~params
+    do_handle ~token (do_request (module RunTac) ~params)
   | s when String.equal Goals.method_ s ->
-    do_handle ~token (module Goals) ~params
+    do_handle ~token (do_request (module Goals) ~params)
   | s when String.equal Premises.method_ s ->
-    do_handle ~token (module Premises) ~params
-  | s when String.equal Premises.method_ s ->
-    do_handle ~token (module StateEqual) ~params
-  | s when String.equal Premises.method_ s ->
-    do_handle ~token (module StateHash) ~params
+    do_handle ~token (do_request (module Premises) ~params)
+  | s when String.equal StateEqual.method_ s ->
+    do_handle ~token (do_request (module StateEqual) ~params)
+  | s when String.equal StateHash.method_ s ->
+    do_handle ~token (do_request (module StateHash) ~params)
   | _ -> unhandled ()
-
-let do_handle ~fn ~token (module R : Protocol.Request.S) ~params =
-  match do_request (module R) ~params with
-  | Action.Now handler -> handler ~token
-  | Action.Doc { uri; handler } ->
-    let open Coq.Compat.Result.O in
-    let* doc = fn ~token ~uri |> of_pet_err in
-    handler ~token ~doc
-
-let request ~fn ~token ~id ~method_ ~params =
-  let do_handle = do_handle ~fn in
-  let unhandled () =
-    (* JSON-RPC method not found *)
-    let code = -32601 in
-    let message = "method not found" in
-    Error (code, message)
-  in
-  match handle_request ~do_handle ~unhandled ~token ~method_ ~params with
-  | Ok result -> Lsp.Base.Response.mk_ok ~id ~result
-  | Error (code, message) -> Lsp.Base.Response.mk_error ~id ~code ~message
-
-let interp ~fn ~token (r : Lsp.Base.Message.t) : Lsp.Base.Message.t option =
-  match r with
-  | Request { id; method_; params } ->
-    let response = request ~fn ~token ~id ~method_ ~params in
-    Some (Lsp.Base.Message.response response)
-  | Notification { method_; params = _ } ->
-    let message = "unhandled notification: " ^ method_ in
-    let log = Lsp.Io.mk_logTrace ~message ~extra:None in
-    Some (Lsp.Base.Message.Notification log)
-  | Response (Ok { id; _ }) | Response (Error { id; _ }) ->
-    let message = "unhandled response: " ^ string_of_int id in
-    let log = Lsp.Io.mk_logTrace ~message ~extra:None in
-    Some (Lsp.Base.Message.Notification log)

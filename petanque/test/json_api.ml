@@ -45,7 +45,7 @@ let run (ic, oc) =
   let r ~st ~tac =
     let opts = None in
     let st = extract_st st in
-    S.run_tac { opts; st; tac }
+    S.run { opts; st; tac }
   in
   (* Will this work on Windows? *)
   let root, uri = prepare_paths () in
@@ -54,9 +54,15 @@ let run (ic, oc) =
   let* premises = S.premises { st } in
   (if print_premises then
      Format.(eprintf "@[%a@]@\n%!" (pp_print_list pp_premise) premises));
-  let* st = S.run_tac { opts = None; st; tac = "induction l." } in
+  let* st = S.run { opts = None; st; tac = "induction l." } in
+  let* h1 = S.state_hash { st = st.st } in
+  let* st = r ~st ~tac:"idtac." in
+  let* h2 = S.state_hash { st = st.st } in
+  assert (Int.equal h1 h2);
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"reflexivity." in
+  let* h3 = S.state_hash { st = st.st } in
+  assert (not (Int.equal h1 h3));
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"now simpl; rewrite IHl." in
   let* st = r ~st ~tac:"Qed." in

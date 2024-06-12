@@ -77,7 +77,7 @@ module S (C : Chans) = struct
     let module M = Wrap (Start) (C) in
     M.call
 
-  let run_tac =
+  let run =
     let module M = Wrap (RunTac) (C) in
     M.call
 
@@ -87,5 +87,13 @@ module S (C : Chans) = struct
 
   let premises =
     let module M = Wrap (Premises) (C) in
+    M.call
+
+  let state_equal =
+    let module M = Wrap (StateEqual) (C) in
+    M.call
+
+  let state_hash =
+    let module M = Wrap (StateHash) (C) in
     M.call
 end

@@ -31,7 +31,7 @@ let send_message msg =
 let fn = Petanque.Shell.build_doc
 
 let interp ~token request =
-  match Interp.interp ~fn ~token request with
+  match Interp_shell.interp ~fn ~token request with
   | None -> ()
   | Some message -> send_message message
 
