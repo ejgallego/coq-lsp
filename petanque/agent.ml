@@ -14,14 +14,22 @@ module State = struct
   let name = "state"
 
   module Inspect = struct
-    type t = Physical  (** Flèche-based "almost physical" state eq *)
-    (* | Goals *)
-    (* For Next PR*)
+    type t =
+      | Physical  (** Flèche-based "almost physical" state eq *)
+      | Goals
+          (** Full goal equality; must faster than calling goals as it won't
+              unelaborate them. Note that this may not fully capture proof state
+              equality (it is possible to have similar goals but different
+              evar_maps, but should be enough for all practical users. *)
   end
 
   let equal ?(kind = Inspect.Physical) =
     match kind with
     | Physical -> Coq.State.equal
+    | Goals ->
+      fun st1 st2 ->
+        let st1, st2 = (Coq.State.lemmas ~st:st1, Coq.State.lemmas ~st:st2) in
+        Option.equal Coq.Goals.Equality.equal_goals st1 st2
 end
 
 (** Petanque errors *)

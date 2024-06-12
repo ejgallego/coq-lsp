@@ -34,6 +34,10 @@ type 'a reified_goal =
 
 val map_reified_goal : f:('a -> 'b) -> 'a reified_goal -> 'b reified_goal
 
+val equal_reified_goal :
+  ('a -> 'a -> bool) -> 'a reified_goal -> 'a reified_goal -> bool
+
+(* XXX: Put into a module *)
 type ('a, 'pp) goals =
   { goals : 'a list
   ; stack : ('a list * 'a list) list
@@ -41,6 +45,13 @@ type ('a, 'pp) goals =
   ; shelf : 'a list
   ; given_up : 'a list
   }
+
+val equal_goals :
+     ('a -> 'a -> bool)
+  -> ('pp -> 'pp -> bool)
+  -> ('a, 'pp) goals
+  -> ('a, 'pp) goals
+  -> bool
 
 val map_goals :
   f:('a -> 'b) -> g:('pp -> 'pp') -> ('a, 'pp) goals -> ('b, 'pp') goals
@@ -52,3 +63,10 @@ val reify :
      ppx:(Environ.env -> Evd.evar_map -> EConstr.t -> 'pp)
   -> State.Proof.t
   -> ('pp reified_goal, Pp.t) goals
+
+(* equality functions with heuristics *)
+module Equality : sig
+  (** Goal-based eq heuristic, will return [true] when goals are "equal", in a
+      proof search sense *)
+  val equal_goals : State.Proof.t -> State.Proof.t -> bool
+end

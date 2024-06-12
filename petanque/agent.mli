@@ -17,9 +17,13 @@ module State : sig
   val hash : t -> int
 
   module Inspect : sig
-    type t = Physical  (** Flèche-based "almost physical" state eq *)
-    (* | Goals *)
-    (* For Next PR*)
+    type t =
+      | Physical  (** Flèche-based "almost physical" state eq *)
+      | Goals
+          (** Full goal equality; must faster than calling goals as it won't
+              unelaborate them. Note that this may not fully capture proof state
+              equality (it is possible to have similar goals but different
+              evar_maps, but should be enough for all practical users. *)
   end
 
   (** [equal ?kind st1 st2] [kind] defaults to [Inspect.Physical] *)
