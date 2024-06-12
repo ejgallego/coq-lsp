@@ -1,0 +1,5 @@
+(cram
+ (deps
+  ; For the coq-lsp plugins to be built, in case we need it
+  (package coq-lsp)
+  %{bin:checkdecls}))

@@ -23,6 +23,8 @@
    provides a full working Coq enviroment in `vscode.dev`. The web
    worker version is build as an artifact on CI (@ejgallego
    @corwin-of-amber, #433)
+ - [tools] New tool `checkdecls` for Coq blueprint, inspired by the
+   Lean version (#785, @ejgallego, Andrej Bauer, Patrick Massot)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------
