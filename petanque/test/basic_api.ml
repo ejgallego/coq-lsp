@@ -42,7 +42,7 @@ let main () =
     let st = extract_st st in
     Agent.run ~token ~st ~tac ()
   in
-  let* st = start ~token in
+  let* { st; _ } = start ~token in
   let* _premises = Agent.premises ~token ~st in
   let* st = Agent.run ~token ~st ~tac:"induction l." () in
   let h1 = Agent.State.hash st.st in

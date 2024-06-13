@@ -31,10 +31,13 @@ let run (ic, oc) =
   in
   (* Will this work on Windows? *)
   let root, uri = prepare_paths () in
+  let opts = None in
   let* _env = S.set_workspace { debug; root } in
-  let* st = S.start { uri; pre_commands = None; thm = "rev_snoc_cons" } in
+  let* { st; _ } =
+    S.start { uri; opts; pre_commands = None; thm = "rev_snoc_cons" }
+  in
   let* _premises = S.premises { st } in
-  let* st = S.run { opts = None; st; tac = "induction l." } in
+  let* st = S.run { opts; st; tac = "induction l." } in
   let* st = r ~st ~tac:"-" in
   (* Introduce an error *)
   (* let* st = r ~st ~tac:"reflexivity." in *)
