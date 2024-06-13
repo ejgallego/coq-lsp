@@ -1,6 +1,6 @@
 open Lwt
 open Lwt.Syntax
-open Petanque_json
+open Petanque_shell
 
 let rq_info (r : Lsp.Base.Message.t) =
   match r with
@@ -9,7 +9,7 @@ let rq_info (r : Lsp.Base.Message.t) =
   | Response (Ok { id; _ } | Error { id; _ }) ->
     Format.asprintf "response for: %d" id
 
-let fn = Petanque.Shell.build_doc
+let fn = Shell.build_doc
 
 let rec handle_connection ~token ic oc () =
   try
@@ -76,7 +76,7 @@ let pet_main debug roots address port backlog =
   (* EJGA: pet-server should handle this at some point *)
   (* Petanque.Shell.trace_ref := trace_notification; *)
   (* Petanque.Shell.message_ref := message_notification); *)
-  Result.iter_error log_error (Petanque.Shell.init_agent ~token ~debug ~roots);
+  Result.iter_error log_error (Shell.init_agent ~token ~debug ~roots);
   Lwt_main.run @@ serve ()
 
 open Cmdliner

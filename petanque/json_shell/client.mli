@@ -1,3 +1,5 @@
+open Petanque_json
+
 module type Chans = sig
   val ic : in_channel
   val oc : Format.formatter

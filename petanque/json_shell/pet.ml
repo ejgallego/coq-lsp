@@ -1,5 +1,5 @@
 (* json rpc server *)
-open Petanque_json
+open Petanque_shell
 
 let use_http_headers = ref true
 
@@ -28,7 +28,7 @@ let send_message msg =
 (* Format.fprintf Format.std_formatter "@[%a@]@\n%!" Yojson.Safe.pretty_print
    msg *)
 
-let fn = Petanque.Shell.build_doc
+let fn = Shell.build_doc
 
 let interp ~token request =
   match Interp_shell.interp ~fn ~token request with
@@ -64,10 +64,10 @@ let log_error err =
 let pet_main debug roots http_headers =
   Coq.Limits.start ();
   if trace_enabled then (
-    Petanque.Shell.trace_ref := trace_notification;
-    Petanque.Shell.message_ref := message_notification);
+    Shell.trace_ref := trace_notification;
+    Shell.message_ref := message_notification);
   let token = Coq.Limits.Token.create () in
-  Result.iter_error log_error (Petanque.Shell.init_agent ~token ~debug ~roots);
+  Result.iter_error log_error (Shell.init_agent ~token ~debug ~roots);
   use_http_headers := http_headers;
   loop ~token
 

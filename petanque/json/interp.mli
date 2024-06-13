@@ -22,7 +22,7 @@ type 'a handle = token:Coq.Limits.Token.t -> Action.t -> 'a
 
 val handle_request :
      do_handle:'a handle
-  -> unhandled:(unit -> 'a)
+  -> unhandled:(token:Coq.Limits.Token.t -> method_:string -> 'a)
   -> token:Coq.Limits.Token.t
   -> method_:string
   -> params:(string * Yojson.Safe.t) list
@@ -31,3 +31,9 @@ val handle_request :
 (* aux function *)
 val of_pet_err :
   ('a, Petanque.Agent.Error.t) result -> ('a, int * string) Result.t
+
+(* Mostly Internal for pet-shell extensions; not for public consumption *)
+val do_request :
+     (module Protocol.Request.S)
+  -> params:(string * Yojson.Safe.t) list
+  -> Action.t

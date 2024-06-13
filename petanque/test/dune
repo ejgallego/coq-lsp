@@ -2,7 +2,7 @@
  (name basic_api)
  (modules basic_api)
  (deps test.v)
- (libraries petanque))
+ (libraries petanque_shell))
 
 (test
  (name json_api)
@@ -10,7 +10,7 @@
  (deps test.v %{bin:pet})
  (enabled_if
   (<> %{os_type} "Win32"))
- (libraries petanque petanque_json lsp))
+ (libraries petanque petanque_shell lsp))
 
 (test
  (name json_api_failure)
@@ -18,4 +18,4 @@
  (deps test.v %{bin:pet})
  (enabled_if
   (<> %{os_type} "Win32"))
- (libraries petanque petanque_json lsp))
+ (libraries petanque petanque_shell lsp))
