@@ -56,7 +56,7 @@ module TableOfContents = struct
 
     let handler =
       Protocol.HType.FullDoc
-        { uri_fn = (fun { Params.uri } -> uri)
+        { uri_fn = (fun { Params.uri } -> (uri, None))
         ; handler = (fun ~token ~doc _ -> Shell.get_toc ~token ~doc)
         }
   end
