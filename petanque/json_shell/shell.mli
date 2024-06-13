@@ -1,3 +1,5 @@
+open Petanque
+
 (** I/O handling, by default, print to stderr *)
 
 (** [trace header extra message] *)

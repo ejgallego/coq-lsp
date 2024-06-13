@@ -1,4 +1,5 @@
 open Petanque
+open Petanque_shell
 
 let prepare_paths () =
   let to_uri file =
@@ -18,18 +19,18 @@ let dump_msgs () = List.iter (Format.eprintf "%s@\n") (List.rev !msgs)
 
 let start ~token =
   let debug = false in
-  Petanque.Shell.trace_ref := trace;
-  Petanque.Shell.message_ref := message;
+  Shell.trace_ref := trace;
+  Shell.message_ref := message;
   (* Will this work on Windows? *)
   let open Coq.Compat.Result.O in
-  let _ : _ Result.t = Petanque.Shell.init_agent ~token ~debug ~roots:[] in
+  let _ : _ Result.t = Shell.init_agent ~token ~debug ~roots:[] in
   (* Twice to test for #766 *)
   let root, uri = prepare_paths () in
-  let* () = Petanque.Shell.set_workspace ~token ~debug ~root in
-  let* () = Petanque.Shell.set_workspace ~token ~debug ~root in
+  let* () = Shell.set_workspace ~token ~debug ~root in
+  let* () = Shell.set_workspace ~token ~debug ~root in
   (* Careful to call [build_doc] before we have set an environment! [pet] and
      [pet-server] are careful to always set a default one *)
-  let* doc = Petanque.Shell.build_doc ~token ~uri in
+  let* doc = Shell.build_doc ~token ~uri in
   Agent.start ~token ~doc ~thm:"rev_snoc_cons" ()
 
 let extract_st { Agent.Run_result.st; _ } = st

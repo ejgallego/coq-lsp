@@ -1,3 +1,5 @@
+open Petanque_json
+
 (* Client wrap *)
 module type Chans = sig
   val ic : in_channel
