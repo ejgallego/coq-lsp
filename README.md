@@ -250,11 +250,6 @@ We recommended using Coq 8.19 or `master` version. For other Coq versions, we
 recommend users to install the custom Coq tree as detailed in [Coq Upstream
 Bugs](#coq-upstream-bugs).
 
-Support for Coq 8.15 and 8.16 has been phased out due to lack of development
-resources, but if you are interested it should possible to bring it back with
-reasonable effort. Support for older Coq versions is also possible, with a bit
-more effort; `coq-lsp` should work with Coq versions back to Coq 8.10/8.9.
-
 Note that this section covers user installs, if you would like to contribute to
 `coq-lsp` and build a development version, please check our [contributing
 guide](./CONTRIBUTING.md)
@@ -360,7 +355,6 @@ that have some fixes backported:
 - For 8.19: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.19+lsp`
 - For 8.18: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.18+lsp`
 - For 8.17: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.17+lsp`
-- For 8.16: `opam pin add coq      https://github.com/ejgallego/coq.git#v8.16+lsp`
 
 ### Known problems
 
@@ -387,19 +381,6 @@ that have some fixes backported:
 - In VSCode, the "Output" window will have a "Coq LSP Server Events" channel
   which should contain some important information; the content of this channel
   is controlled by the `Coq LSP > Trace: Server` option.
-
-### 📂 Working With Multiple Files
-
-`coq-lsp` can't work with more than one file at the same time, due to problems
-with parsing state management upstream. This was fixed in Coq 8.17.
-
-As this is very inconvenient for users in older Coq versions, we do provide a
-fixed Coq branch that you can install using `opam pin`:
-
-- For Coq 8.16:
-  ```
-  opam pin add coq https://github.com/ejgallego/coq.git#v8.16+lsp
-  ```
 
 ## 📔 Planned Features
 
