@@ -55,6 +55,7 @@ module Start = struct
   module Params = struct
     type t =
       { uri : Lsp.JLang.LUri.File.t
+      ; opts : Run_opts.t option [@default None]
       ; pre_commands : string option [@default None]
       ; thm : string
       }
@@ -62,13 +63,14 @@ module Start = struct
   end
 
   module Response = struct
-    type t = int [@@deriving yojson]
+    type t = int Run_result.t [@@deriving yojson]
   end
 
   module Handler = struct
     module Params = struct
       type t =
         { uri : Lsp.JLang.LUri.File.t
+        ; opts : Run_opts.t option [@default None]
         ; pre_commands : string option [@default None]
         ; thm : string
         }
@@ -76,15 +78,15 @@ module Start = struct
     end
 
     module Response = struct
-      type t = State.t [@@deriving yojson]
+      type t = State.t Run_result.t [@@deriving yojson]
     end
 
     let handler =
       HType.FullDoc
         { uri_fn = (fun { Params.uri; _ } -> uri)
         ; handler =
-            (fun ~token ~doc { Params.uri = _; pre_commands; thm } ->
-              Agent.start ~token ~doc ?pre_commands ~thm ())
+            (fun ~token ~doc { Params.uri = _; opts; pre_commands; thm } ->
+              Agent.start ~token ~doc ?opts ?pre_commands ~thm ())
         }
   end
 end
@@ -95,8 +97,7 @@ module RunTac = struct
 
   module Params = struct
     type t =
-      { opts : Run_opts.t option
-            [@default None] (* Whether to memoize the execution, server-side *)
+      { opts : Run_opts.t option [@default None]
       ; st : int
       ; tac : string
       }

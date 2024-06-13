@@ -94,10 +94,11 @@ end
 val start :
      token:Coq.Limits.Token.t
   -> doc:Fleche.Doc.t
+  -> ?opts:Run_opts.t
   -> ?pre_commands:string
   -> thm:string
   -> unit
-  -> State.t R.t
+  -> State.t Run_result.t R.t
 
 (** [run ~token ?memo ~st ~tac] tries to run [tac] over state [st]. [memo] (by
     default true) controls whether the command execution will be memoized in

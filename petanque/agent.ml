@@ -130,13 +130,6 @@ let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
     Error (Error.Anomaly (Pp.string_of_ppcmds msg))
   | { r = Completed (Ok r); feedback = _ } -> Ok r
 
-let start ~token ~doc ?pre_commands ~thm () =
-  let open Coq.Compat.Result.O in
-  let* node = find_thm ~doc ~thm in
-  (* Usually single shot, so we don't memoize *)
-  let memo = false in
-  execute_precommands ~token ~memo ~pre_commands ~node |> protect_to_result
-
 let proof_finished { Coq.Goals.goals; stack; shelf; given_up; _ } =
   List.for_all CList.is_empty [ goals; shelf; given_up ] && CList.is_empty stack
 
@@ -155,6 +148,21 @@ let analyze_after_run ~hash st =
 let default_opts = function
   | None -> { Run_opts.memo = true; hash = true }
   | Some opts -> opts
+
+(* XXX: EJGA, we should not need the [Coq.State.in_stateM] here and in run *)
+let start ~token ~doc ?opts ?pre_commands ~thm () =
+  let open Coq.Compat.Result.O in
+  let* node = find_thm ~doc ~thm in
+  (* Usually single shot, so we don't memoize *)
+  let f () =
+    let opts = default_opts opts in
+    let memo, hash = (opts.memo, opts.hash) in
+    let open Coq.Protect.E.O in
+    let+ st = execute_precommands ~token ~memo ~pre_commands ~node in
+    analyze_after_run ~hash st
+  in
+  let st = node.state in
+  Coq.State.in_stateM ~token ~st ~f () |> protect_to_result
 
 let run ~token ?opts ~st ~tac () : (_ Run_result.t, Error.t) Result.t =
   let opts = default_opts opts in
