@@ -29,7 +29,7 @@ let start ~token =
   let* () = Petanque.Shell.set_workspace ~token ~debug ~root in
   (* Careful to call [build_doc] before we have set an environment! [pet] and
      [pet-server] are careful to always set a default one *)
-  let* doc = Petanque.Shell.build_doc ~token ~uri in
+  let* doc = Petanque.Shell.build_doc ~token ~uri ~contents:None in
   Agent.start ~token ~doc ~thm:"rev_snoc_cons" ()
 
 let extract_st { Agent.Run_result.st; _ } = st

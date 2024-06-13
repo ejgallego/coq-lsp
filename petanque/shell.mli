@@ -22,4 +22,5 @@ val set_workspace :
 val build_doc :
      token:Coq.Limits.Token.t
   -> uri:Lang.LUri.File.t
+  -> contents:string option
   -> (Fleche.Doc.t, Agent.Error.t) Result.t

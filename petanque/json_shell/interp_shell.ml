@@ -9,9 +9,9 @@ open Interp
 let do_handle ~fn ~token action =
   match action with
   | Action.Now handler -> handler ~token
-  | Action.Doc { uri; handler } ->
+  | Action.Doc { uri; contents; handler } ->
     let open Coq.Compat.Result.O in
-    let* doc = fn ~token ~uri |> of_pet_err in
+    let* doc = fn ~token ~uri ~contents |> of_pet_err in
     handler ~token ~doc
 
 let request ~fn ~token ~id ~method_ ~params =
@@ -29,6 +29,7 @@ let request ~fn ~token ~id ~method_ ~params =
 type doc_handler =
      token:Coq.Limits.Token.t
   -> uri:Lang.LUri.File.t
+  -> contents:string option
   -> (Fleche.Doc.t, Petanque.Agent.Error.t) Result.t
 
 let interp ~fn ~token (r : Lsp.Base.Message.t) : Lsp.Base.Message.t option =

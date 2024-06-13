@@ -10,7 +10,7 @@ module HType = struct
   type ('p, 'r) t =
     | Immediate of (token:Coq.Limits.Token.t -> 'p -> 'r R.t)
     | FullDoc of
-        { uri_fn : 'p -> LUri.File.t
+        { uri_fn : 'p -> LUri.File.t * string option
         ; handler : token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> 'p -> 'r R.t
         }
 end
@@ -55,6 +55,7 @@ module Start = struct
   module Params = struct
     type t =
       { uri : Lsp.JLang.LUri.File.t
+      ; contents : string option [@default None]
       ; pre_commands : string option [@default None]
       ; thm : string
       }
@@ -69,6 +70,7 @@ module Start = struct
     module Params = struct
       type t =
         { uri : Lsp.JLang.LUri.File.t
+        ; contents : string option [@default None]
         ; pre_commands : string option [@default None]
         ; thm : string
         }
@@ -81,9 +83,9 @@ module Start = struct
 
     let handler =
       HType.FullDoc
-        { uri_fn = (fun { Params.uri; _ } -> uri)
+        { uri_fn = (fun { Params.uri; contents; _ } -> (uri, contents))
         ; handler =
-            (fun ~token ~doc { Params.uri = _; pre_commands; thm } ->
+            (fun ~token ~doc { Params.uri = _; contents = _; pre_commands; thm } ->
               Agent.start ~token ~doc ?pre_commands ~thm ())
         }
   end

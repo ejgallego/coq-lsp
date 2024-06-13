@@ -13,6 +13,7 @@ module Action : sig
     | Now of (token:Coq.Limits.Token.t -> Yojson.Safe.t r)
     | Doc of
         { uri : Lang.LUri.File.t
+        ; contents : string option
         ; handler :
             token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> Yojson.Safe.t r
         }
