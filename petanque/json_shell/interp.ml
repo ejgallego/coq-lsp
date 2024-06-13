@@ -5,7 +5,6 @@
 (************************************************************************)
 
 open Protocol
-open Protocol_shell
 module A = Petanque.Agent
 
 (* These types ares basically duplicated with controller/request.ml; move to a
@@ -54,9 +53,6 @@ type 'a handle = token:Coq.Limits.Token.t -> Action.t -> 'a
 
 let handle_request ~(do_handle : 'a handle) ~unhandled ~token ~method_ ~params =
   match method_ with
-  (* XXX move this to the _shell handler in interp_handler *)
-  | s when String.equal SetWorkspace.method_ s ->
-    do_handle ~token (do_request (module SetWorkspace) ~params)
   | s when String.equal Start.method_ s ->
     do_handle ~token (do_request (module Start) ~params)
   | s when String.equal RunTac.method_ s ->
@@ -69,4 +65,4 @@ let handle_request ~(do_handle : 'a handle) ~unhandled ~token ~method_ ~params =
     do_handle ~token (do_request (module StateEqual) ~params)
   | s when String.equal StateHash.method_ s ->
     do_handle ~token (do_request (module StateHash) ~params)
-  | _ -> unhandled ()
+  | _ -> unhandled ~token ~method_
