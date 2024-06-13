@@ -4,7 +4,7 @@
 (* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (************************************************************************)
 
-open Interp
+open Petanque_json.Interp
 open Protocol_shell
 
 let do_handle ~fn ~token action =

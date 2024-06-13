@@ -1,3 +1,5 @@
+open Petanque_json
+
 (* set_workspace RPC *)
 module SetWorkspace = struct
   let method_ = "petanque/setWorkspace"
@@ -24,6 +26,6 @@ module SetWorkspace = struct
     let handler =
       Protocol.HType.Immediate
         (fun ~token { Params.debug; root } ->
-          Petanque.Shell.set_workspace ~token ~debug ~root)
+          Shell.set_workspace ~token ~debug ~root)
   end
 end

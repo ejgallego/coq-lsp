@@ -1,4 +1,5 @@
 open Petanque_json
+open Petanque_shell
 
 let prepare_paths () =
   let to_uri file =
