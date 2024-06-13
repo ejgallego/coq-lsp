@@ -5,6 +5,7 @@
 (************************************************************************)
 
 open Interp
+open Protocol_shell
 
 let do_handle ~fn ~token action =
   match action with
@@ -15,13 +16,17 @@ let do_handle ~fn ~token action =
     handler ~token ~doc
 
 let request ~fn ~token ~id ~method_ ~params =
-  let do_handle = do_handle ~fn in
-  let unhandled () =
-    (* JSON-RPC method not found *)
-    let code = -32601 in
-    let message = "method not found" in
-    Error (code, message)
+  let unhandled ~token ~method_ =
+    match method_ with
+    | s when String.equal SetWorkspace.method_ s ->
+      do_handle ~fn ~token (do_request (module SetWorkspace) ~params)
+    | _ ->
+      (* JSON-RPC method not found *)
+      let code = -32601 in
+      let message = Format.asprintf "method %s not found" method_ in
+      Error (code, message)
   in
+  let do_handle = do_handle ~fn in
   match handle_request ~do_handle ~unhandled ~token ~method_ ~params with
   | Ok result -> Lsp.Base.Response.mk_ok ~id ~result
   | Error (code, message) -> Lsp.Base.Response.mk_error ~id ~code ~message
