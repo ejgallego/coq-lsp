@@ -5,7 +5,6 @@
 (************************************************************************)
 
 open Protocol
-open Protocol_shell
 module A = Petanque.Agent
 
 (* These types ares basically duplicated with controller/request.ml; move to a
@@ -17,6 +16,7 @@ module Action = struct
     | Now of (token:Coq.Limits.Token.t -> Yojson.Safe.t r)
     | Doc of
         { uri : Lang.LUri.File.t
+        ; contents : string option
         ; handler :
             token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> Yojson.Safe.t r
         }
@@ -39,9 +39,9 @@ let do_request (module R : Protocol.Request.S) ~params =
     | Immediate handler ->
       Action.Now (fun ~token -> handler ~token params |> of_pet)
     | FullDoc { uri_fn; handler } ->
-      let uri = uri_fn params in
+      let uri, contents = uri_fn params in
       let handler ~token ~doc = handler ~token ~doc params |> of_pet in
-      Action.Doc { uri; handler }
+      Action.Doc { uri; contents; handler }
   in
   match R.Handler.Params.of_yojson (`Assoc params) with
   | Ok params -> handler params
@@ -54,9 +54,6 @@ type 'a handle = token:Coq.Limits.Token.t -> Action.t -> 'a
 
 let handle_request ~(do_handle : 'a handle) ~unhandled ~token ~method_ ~params =
   match method_ with
-  (* XXX move this to the _shell handler in interp_handler *)
-  | s when String.equal SetWorkspace.method_ s ->
-    do_handle ~token (do_request (module SetWorkspace) ~params)
   | s when String.equal Start.method_ s ->
     do_handle ~token (do_request (module Start) ~params)
   | s when String.equal RunTac.method_ s ->
@@ -69,4 +66,4 @@ let handle_request ~(do_handle : 'a handle) ~unhandled ~token ~method_ ~params =
     do_handle ~token (do_request (module StateEqual) ~params)
   | s when String.equal StateHash.method_ s ->
     do_handle ~token (do_request (module StateHash) ~params)
-  | _ -> unhandled ()
+  | _ -> unhandled ~token ~method_

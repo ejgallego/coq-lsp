@@ -13,6 +13,7 @@ module Action : sig
     | Now of (token:Coq.Limits.Token.t -> Yojson.Safe.t r)
     | Doc of
         { uri : Lang.LUri.File.t
+        ; contents : string option
         ; handler :
             token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> Yojson.Safe.t r
         }
@@ -22,7 +23,7 @@ type 'a handle = token:Coq.Limits.Token.t -> Action.t -> 'a
 
 val handle_request :
      do_handle:'a handle
-  -> unhandled:(unit -> 'a)
+  -> unhandled:(token:Coq.Limits.Token.t -> method_:string -> 'a)
   -> token:Coq.Limits.Token.t
   -> method_:string
   -> params:(string * Yojson.Safe.t) list
@@ -31,3 +32,9 @@ val handle_request :
 (* aux function *)
 val of_pet_err :
   ('a, Petanque.Agent.Error.t) result -> ('a, int * string) Result.t
+
+(* Mostly Internal for pet-shell extensions; not for public consumption *)
+val do_request :
+     (module Protocol.Request.S)
+  -> params:(string * Yojson.Safe.t) list
+  -> Action.t

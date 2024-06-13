@@ -438,7 +438,7 @@ let petanque_handle ~token =
   let open Petanque_json in
   function
   | Interp.Action.Now handler -> Rq.Action.now (handler ~token)
-  | Interp.Action.Doc { uri; handler } ->
+  | Interp.Action.Doc { uri; contents = _; handler } ->
     (* Request document execution if not ready *)
     let postpone = true in
     Rq.Action.(Data (DocRequest { uri; postpone; handler }))
@@ -446,10 +446,10 @@ let petanque_handle ~token =
 let do_petanque ~token method_ params =
   let open Petanque_json in
   let do_handle = petanque_handle in
-  let unhandled () =
+  let unhandled ~token:_ ~method_ =
     (* JSON-RPC method not found *)
     let code = -32601 in
-    let message = "method not found" in
+    let message = Format.asprintf "method %s not found" method_ in
     Rq.Action.error (code, message)
   in
   Interp.handle_request ~do_handle ~unhandled ~token ~method_ ~params
