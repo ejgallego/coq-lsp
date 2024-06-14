@@ -38,6 +38,7 @@ module UVars   = Ser_uvars
 module Context = Ser_context
 module Uint63  = Ser_uint63
 module Float64 = Ser_float64
+module Pstring = Ser_pstring
 
 type metavariable =
   [%import: Constr.metavariable]
@@ -128,6 +129,7 @@ type _constr =
   | Proj      of Names.Projection.t * Sorts.relevance * _constr
   | Int       of Uint63.t
   | Float     of Float64.t
+  | String    of Pstring.t
   | Array     of UVars.Instance.t * _constr array * _constr * _constr
 [@@deriving sexp,yojson,hash,compare]
 
@@ -161,6 +163,7 @@ let rec _constr_put (c : Constr.t) : _constr =
   | C.Proj(p,r,c)           -> Proj(p, r, cr c)
   | C.Int i               -> Int i
   | C.Float i             -> Float i
+  | C.String s            -> String s
   | C.Array (u,a,e,t)     -> Array(u, cra a, cr e, cr t)
 
 let rec _constr_get (c : _constr) : Constr.t =
@@ -191,6 +194,7 @@ let rec _constr_get (c : _constr) : Constr.t =
   | Proj(p,r,c)           -> C.mkProj(p, r, cr c)
   | Int i               -> C.mkInt i
   | Float f             -> C.mkFloat f
+  | String s            -> C.mkString s
   | Array (u,a,e,t)     -> C.mkArray(u, cra a, cr e, cr t)
 
 module ConstrBij = struct
