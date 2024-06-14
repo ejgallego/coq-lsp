@@ -7,8 +7,7 @@ let parse ~st ps =
      coq_protect *)
   Control.check_for_interrupt ();
   Pcoq.unfreeze pst;
-  Pcoq.Entry.parse Pvernac.(main_entry mode) ps
-  |> Option.map Ast.of_coq
+  Pcoq.Entry.parse Pvernac.(main_entry mode) ps |> Option.map Ast.of_coq
 
 let parse ~token ~st ps = Protect.eval ~token ~f:(parse ~st) ps
 

@@ -2,23 +2,40 @@ module CS = Stats
 
 (* XXX: We are missing good error handling here! Fix submitted upstream. *)
 module Intern = struct
-  let hc :
-      ( Names.DirPath.t
-      , Library.library_t * Library.Intern.Provenance.t )
-      Hashtbl.t =
-    Hashtbl.create 1000
-
+  let hc : (Names.DirPath.t, _) Hashtbl.t = Hashtbl.create 1000
   let use_cache = true
 
-  let intern dp =
+  exception LocateError of (Names.DirPath.t * Loadpath.Error.t)
+
+  let reason = function
+    | Loadpath.Error.LibUnmappedDir ->
+      "Logical path was not found (missing _CoqProject settings)"
+    | LibNotFound -> "Library wasn't found (no .vo in place?)"
+
+  let () =
+    CErrors.register_handler (function
+      | LocateError (dp, error) ->
+        Some
+          Pp.(
+            str "Couldn't find .vo file for "
+            ++ Names.DirPath.print dp ++ str " : "
+            ++ str (reason error))
+      | _ -> None)
+
+  let intern : Library.Intern.t =
+   fun dp ->
     if use_cache then
       match Hashtbl.find_opt hc dp with
       | Some lib -> lib
-      | None ->
-        let file = Loadpath.try_locate_absolute_library dp in
-        let lib = (Library.intern_from_file file, ("file", file)) in
-        let () = Hashtbl.add hc dp lib in
-        lib
+      | None -> (
+        match Loadpath.locate_absolute_library dp with
+        | Error err ->
+          let info = Exninfo.reify () in
+          (Error (LocateError (dp, err), info), ("loadpath", "DP"))
+        | Ok file ->
+          let lib = Library.intern_from_file file in
+          let () = Hashtbl.add hc dp lib in
+          lib)
     else Vernacinterp.fs_intern dp
 
   let clear () = Hashtbl.clear hc

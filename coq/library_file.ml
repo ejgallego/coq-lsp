@@ -92,12 +92,8 @@ module Entry = struct
     }
 end
 
-let try_locate_absolute_library dir =
-  let f = Loadpath.try_locate_absolute_library in
-  CErrors.to_result ~f dir
-
 let find_v_file dir =
-  match try_locate_absolute_library dir with
+  match Loadpath.locate_absolute_library dir with
   (* EJGA: we want to improve this as to pass the error to the client *)
   | Error _ -> "error when trying to locate the .v file"
   | Ok file -> file
