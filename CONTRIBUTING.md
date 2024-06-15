@@ -130,6 +130,10 @@ out `coq-lsp` development versions with other OPAM packages.
 Then, you should get a working OPAM switch with Coq and `coq-lsp` from
 your chosen `coq-lsp` branch.
 
+Remember to use `git pull --recurse-submodules` (or do `make
+submodules-init` after a `git pull`) if you want to install an updated
+`coq-lsp` server.
+
 #### Nix
 
 We have a Nix flake that you can use.
@@ -384,11 +388,12 @@ The checklist for the release as of today is the following:
 
 The above can be done with:
 ```
-export COQLSPV=0.1.8
+export COQLSPV=0.2.0
 git checkout main  && make                    && dune-release tag ${COQLSPV}
-git checkout v8.18 && git merge main  && make && dune-release tag ${COQLSPV}+8.18 && dune-release
+git checkout v8.20 && git merge main  && make && dune-release tag ${COQLSPV}+8.20 && dune-release
+git checkout v8.19 && git merge v8.20  && make && dune-release tag ${COQLSPV}+8.19 && dune-release
+git checkout v8.18 && git merge v8.19  && make && dune-release tag ${COQLSPV}+8.18 && dune-release
 git checkout v8.17 && git merge v8.18 && make && dune-release tag ${COQLSPV}+8.17 && dune-release
-git checkout v8.16 && git merge v8.17 && make && dune-release tag ${COQLSPV}+8.16 && dune-release
 ```
 
 ## Emacs
