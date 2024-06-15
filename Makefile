@@ -127,3 +127,10 @@ ts-fmt:
 
 .PHONY: make-fmt
 make-fmt: build fmt
+
+# Helper for users that want a global opam install
+.PHONY: opam-update-and-reinstall
+opam-update-and-reinstall:
+	git pull --recurse-submodules
+	for pkg in coq-core coq-stdlib coqide-server coq; do opam install -y vendor/coq/$$pkg.opam; done
+	opam install .
