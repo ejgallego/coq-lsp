@@ -116,6 +116,22 @@ This setup will build Coq and `coq-lsp` and install them to the
 current OPAM switch. This is a good setup for people looking to try
 out `coq-lsp` development versions with other OPAM packages.
 
+You can just do:
+```
+make opam-update-and-reinstall
+```
+
+or alternatively, do it step by step
+
+0. Be sure submodules and `coq-lsp` are up to date:a
+
+    ```sh
+    git pull --recurse-submodules
+    ```
+
+   alternatively you can use `make submodules-init` to refresh the
+   submodules.
+
 1. Install vendored Coq
 
     ```sh
@@ -129,10 +145,6 @@ out `coq-lsp` development versions with other OPAM packages.
 
 Then, you should get a working OPAM switch with Coq and `coq-lsp` from
 your chosen `coq-lsp` branch.
-
-Remember to use `git pull --recurse-submodules` (or do `make
-submodules-init` after a `git pull`) if you want to install an updated
-`coq-lsp` server.
 
 #### Nix
 
