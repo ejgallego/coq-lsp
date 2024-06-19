@@ -303,7 +303,7 @@ let make_info ~st:_ ~lines CAst.{ loc; v } : Lang.Ast.Info.t list option =
       inductives_info ~lines ~range ikind idecls
     | VernacSynPure (VernacAssumption ((_, kind), _, ids)) ->
       Some (List.concat_map (assumption_info ~lines kind) ids)
-    | VernacSynPure (VernacFixpoint (_, f_expr)) ->
+    | VernacSynPure (VernacFixpoint (_, (_rec_expr, f_expr))) ->
       Some (List.map (fixpoint_info ~lines ~range) f_expr)
     | VernacSynPure (VernacInstance ((name, _), _, _, _, _)) ->
       let name = mk_name ~lines name in
