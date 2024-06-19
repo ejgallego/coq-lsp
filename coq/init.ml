@@ -40,7 +40,7 @@ let add_message lvl loc msg q =
 
 let mk_fb_handler q Feedback.{ contents; _ } =
   match contents with
-  | Message (lvl, loc, msg) -> add_message lvl loc msg q
+  | Message (lvl, loc, _, msg) -> add_message lvl loc msg q
   | _ -> ()
 
 let coq_init opts =

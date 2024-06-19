@@ -16,32 +16,17 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-open Sexplib.Std
-
 module Loc = Ser_loc
+module Pp  = Ser_pp
 
-module Xml_datatype = Ser_xml_datatype
-module Pp           = Ser_pp
-module Stateid      = Ser_stateid
-module Quickfix     = Ser_quickfix
+module QFB = struct
 
-type level =
-  [%import: Feedback.level]
-  [@@deriving sexp, yojson]
+  type t = Quickfix.t
+  type _t = Loc.t * Pp.t
+  [@@deriving sexp,yojson,hash,compare]
 
-type route_id =
-  [%import: Feedback.route_id]
-  [@@deriving sexp, yojson]
+  let of_t qf = Quickfix.(loc qf, pp qf)
+  let to_t (loc, pp) = Quickfix.make ~loc pp
+end
 
-type doc_id =
-  [%import: Feedback.doc_id]
-  [@@deriving sexp, yojson]
-
-type feedback_content =
-  [%import: Feedback.feedback_content]
-  [@@deriving sexp, yojson]
-
-type feedback =
-  [%import: Feedback.feedback]
-  [@@deriving sexp, yojson]
-
+include SerType.Biject(QFB)
