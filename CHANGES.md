@@ -68,6 +68,8 @@
    (@ejgallego @gbdrt, #779)
  - [petanque] New methods to hash proof states; use proof state hash
    by default in petanque agent (@ejgallego, @gbdrt, #808)
+ - [petanque] New shell method `petanque/toc` that returns a document
+   outline in LSP-style (@ejgallego, #794)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------

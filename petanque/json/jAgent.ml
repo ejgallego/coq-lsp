@@ -54,6 +54,27 @@ module Lang = struct
   module Range = struct
     type t = Lsp.JLang.Range.t [@@deriving yojson]
   end
+
+  module With_range = struct
+    type 'a t = [%import: ('a Lang.With_range.t[@with Lang.Range.t := Range.t])]
+    [@@deriving yojson]
+  end
+
+  module Ast = struct
+    module Name = struct
+      type t = [%import: Lang.Ast.Name.t] [@@deriving yojson]
+    end
+
+    module Info = struct
+      type t =
+        [%import:
+          (Lang.Ast.Info.t
+          [@with
+            Lang.Range.t := Range.t;
+            Lang.With_range.t := With_range.t])]
+      [@@deriving yojson]
+    end
+  end
 end
 
 module Premise = struct

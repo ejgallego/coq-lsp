@@ -4,7 +4,7 @@ end
 
 (** Information about the Ast, to move to lang *)
 module Info : sig
-  type t = private
+  type t =
     { range : Range.t
     ; name : Name.t With_range.t
     ; kind : int

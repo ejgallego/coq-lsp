@@ -20,6 +20,8 @@ let request ~fn ~token ~id ~method_ ~params =
     match method_ with
     | s when String.equal SetWorkspace.method_ s ->
       do_handle ~fn ~token (do_request (module SetWorkspace) ~params)
+    | s when String.equal TableOfContents.method_ s ->
+      do_handle ~fn ~token (do_request (module TableOfContents) ~params)
     | _ ->
       (* JSON-RPC method not found *)
       let code = -32601 in
