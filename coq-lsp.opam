@@ -37,7 +37,19 @@ depends: [
 
   # Uncomment this for releases
   "coq"          { >= "8.18" < "8.19"  }
-  "coq-serapi"   { >= "8.18.0+0.18.2" < "8.19"  }
+
+  # coq deps: remove this for releases
+  "ocamlfind" {>= "1.8.1"}
+  "zarith" {>= "1.11"}
+
+  # serlib deps: see what we need to keep for release
+  "ppx_deriving"        { >= "4.2.1"    }
+  "ppx_deriving_yojson" { >= "3.4"      }
+  "ppx_import"          { >= "1.5-3"    }
+  "sexplib"             { >= "v0.13.0" & < "v0.18" }
+  "ppx_sexp_conv"       { >= "v0.13.0" & < "v0.18" }
+  "ppx_compare"         { >= "v0.13.0" & < "v0.18" }
+  "ppx_hash"            { >= "v0.13.0" & < "v0.18" }
 ]
 
 depopts: ["lwt" "logs"]

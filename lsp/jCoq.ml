@@ -32,11 +32,11 @@ module Pp = struct
 end
 
 module Goals = struct
-  type 'a hyp = [%import: 'a Coq.Goals.hyp] [@@deriving yojson]
-  type info = [%import: Coq.Goals.info] [@@deriving yojson]
-
-  type 'a reified_goal = [%import: 'a Coq.Goals.reified_goal]
-  [@@deriving yojson]
+  module Reified_goal = struct
+    type 'a hyp = [%import: 'a Coq.Goals.Reified_goal.hyp] [@@deriving yojson]
+    type info = [%import: Coq.Goals.Reified_goal.info] [@@deriving yojson]
+    type 'a t = [%import: 'a Coq.Goals.Reified_goal.t] [@@deriving yojson]
+  end
 
   module Goals_ = struct
     type ('a, 'pp) t =
@@ -55,15 +55,15 @@ module Goals = struct
       { Coq.Goals.goals; stack; bullet; shelf; given_up }
   end
 
-  type ('a, 'pp) goals = ('a, 'pp) Coq.Goals.goals
+  type ('a, 'pp) t = ('a, 'pp) Coq.Goals.t
 
-  let goals_to_yojson f pp g = Goals_.to_ g |> Goals_.to_yojson f pp
+  let to_yojson f pp g = Goals_.to_ g |> Goals_.to_yojson f pp
 
-  let goals_of_yojson f pp j =
+  let of_yojson f pp j =
     let open Ppx_deriving_yojson_runtime in
     Goals_.of_yojson f pp j >|= Goals_.of_
 
-  type 'pp reified_pp = ('pp reified_goal, 'pp) goals [@@deriving yojson]
+  type 'pp reified_pp = ('pp Reified_goal.t, 'pp) t [@@deriving yojson]
 end
 
 module Ast = struct

@@ -1,1 +1,3 @@
+(dirs :standard \ serlib serlib_8_19)
+
 (vendored_dirs vendor)

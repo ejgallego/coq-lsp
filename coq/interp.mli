@@ -19,7 +19,11 @@
     assumed not to interact with the file-system, etc... Note these commands
     will be memoized. *)
 val interp :
-  token:Limits.Token.t -> st:State.t -> Ast.t -> (State.t, Loc.t) Protect.E.t
+     token:Limits.Token.t
+  -> intern:unit
+  -> st:State.t
+  -> Ast.t
+  -> (State.t, Loc.t) Protect.E.t
 
 (** Interpretation of "require". We wrap this function for two reasons:
 
@@ -28,6 +32,7 @@ val interp :
 module Require : sig
   val interp :
        token:Limits.Token.t
+    -> intern:unit
     -> st:State.t
     -> Files.t
     -> Ast.Require.t

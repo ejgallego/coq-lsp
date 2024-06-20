@@ -11,6 +11,8 @@ Require Export List.
 Require Export PeanoNat.
 Require Import Psatz.
 
+Set Warnings "-deprecated".
+
 (* Compatibility workaround, remove once requiring Coq >= 8.16 *)
 Module Import Compat.
 

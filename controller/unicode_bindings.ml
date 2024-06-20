@@ -1697,3 +1697,10 @@ let extended =
   ; ("\\_v", "ᵥ")
   ; ("\\_x", "ₓ")
   ]
+
+let from_config () =
+  match !Fleche.Config.v.unicode_completion with
+  | Off -> []
+  | Internal_small -> small
+  | Normal -> normal
+  | Extended -> extended

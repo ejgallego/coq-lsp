@@ -45,22 +45,25 @@ let to_coq x = x
 (* let compare x y = compare x y *)
 let compare (x : t) (y : t) =
   let open Vernacstate in
-  let { synterp = { parsing = p1; system = ss1 }
+  let { synterp = ss1
       ; interp = { system = is1; lemmas = l1; program = g1; opaques = o1 }
       } =
     x
   in
-  let { synterp = { parsing = p2; system = ss2 }
+  let { synterp = ss2
       ; interp = { system = is2; lemmas = l2; program = g2; opaques = o2 }
       } =
     y
   in
-  if p1 == p2 && ss1 == ss2 && is1 == is2 && l1 == l2 && g1 == g2 && o1 == o2
-  then 0
-  else 1
+  if ss1 == ss2 && is1 == is2 && l1 == l2 && g1 == g2 && o1 == o2 then 0 else 1
 
 let equal x y = compare x y = 0
-let hash x = Hashtbl.hash x
+
+let hash x =
+  (* OCaml's defaults are 10, 100, but not so good for us, much improved
+     settings are below (best try so far) *)
+  let meaningful, total = (64, 256) in
+  Hashtbl.hash_param meaningful total x
 
 let mode ~st =
   Option.map
@@ -82,7 +85,7 @@ let lemmas ~st = st.Vernacstate.interp.lemmas
 let program ~st =
   NeList.head st.Vernacstate.interp.program |> Declare.OblState.view
 
-let drop_proofs ~st =
+let drop_proof ~st =
   let open Vernacstate in
   let interp =
     { st.interp with
@@ -92,6 +95,11 @@ let drop_proofs ~st =
           None st.interp.lemmas
     }
   in
+  { st with interp }
+
+let drop_all_proofs ~st =
+  let open Vernacstate in
+  let interp = { st.interp with lemmas = None } in
   { st with interp }
 
 let in_state ~token ~st ~f a =
@@ -130,3 +138,23 @@ let admit_goal ~st () =
     { st with interp = { st.interp with lemmas } }
 
 let admit_goal ~token ~st = Protect.eval ~token ~f:(admit_goal ~st) ()
+
+let count_edges univ =
+  let univ = UGraph.repr univ in
+  Univ.Level.Map.fold
+    (fun _ node acc ->
+      acc
+      +
+      match node with
+      | UGraph.Alias _ -> 1
+      | Node m -> Univ.Level.Map.cardinal m)
+    univ
+    (Univ.Level.Map.cardinal univ)
+
+let info_universes ~token ~st =
+  let open Protect.E.O in
+  let+ univ = in_state ~token ~st ~f:Global.universes () in
+  let univs = UGraph.domain univ in
+  let nuniv = Univ.Level.Set.cardinal univs in
+  let nconst = count_edges univ in
+  (nuniv, nconst)

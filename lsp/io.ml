@@ -54,6 +54,8 @@ let read_raw_message ic =
   | Invalid_argument msg -> Some (Error msg)
 
 let mut = Mutex.create ()
+
+(* This needs a fix as to log protocol stuff not using the protocol *)
 let log = ref (fun _ _ -> ())
 
 let send_json fmt obj =
@@ -67,6 +69,8 @@ let send_json fmt obj =
   let size = String.length msg in
   F.fprintf fmt "Content-Length: %d\r\n\r\n%s%!" size msg;
   Mutex.unlock mut
+
+let send_message fmt message = send_json fmt (Base.Message.to_yojson message)
 
 (** Logging *)
 
@@ -93,7 +97,7 @@ let set_trace_value value = trace_value := value
 
 module Lvl = struct
   (* 1-5 *)
-  type t =
+  type t = Fleche.Io.Level.t =
     | Error
     | Warning
     | Info
@@ -108,49 +112,63 @@ module Lvl = struct
     | Debug -> 5
 end
 
-let logMessage ~lvl ~message =
-  let method_ = "window/logMessage" in
-  let lvl = Lvl.to_int lvl in
-  (* Replace with the json serializer in petanque protocol *)
-  let params = [ ("type", `Int lvl); ("message", `String message) ] in
-  let msg = Base.Notification.(make ~method_ ~params () |> to_yojson) in
-  !fn msg
+module MessageParams = struct
+  let method_ = "window/logMessage"
 
-let logMessageInt ~lvl ~message =
-  let method_ = "window/logMessage" in
-  (* Replace with the json serializer in petanque protocol *)
-  let params = [ ("type", `Int lvl); ("message", `String message) ] in
-  let msg = Base.Notification.(make ~method_ ~params () |> to_yojson) in
-  !fn msg
+  type t =
+    { type_ : int [@key "type"]
+    ; message : string
+    }
+  [@@deriving yojson]
+end
 
-let logTrace ~message ~extra =
-  let method_ = "$/logTrace" in
+let mk_logMessage ~type_ ~message =
+  let module M = MessageParams in
+  let method_ = M.method_ in
   let params =
+    M.({ type_; message } |> to_yojson |> Yojson.Safe.Util.to_assoc)
+  in
+  Base.Notification.make ~method_ ~params ()
+
+let logMessage ~lvl ~message =
+  let type_ = Lvl.to_int lvl in
+  mk_logMessage ~type_ ~message |> !fn
+
+let logMessageInt ~lvl ~message = mk_logMessage ~type_:lvl ~message |> !fn
+
+module TraceParams = struct
+  let method_ = "$/logTrace"
+
+  type t =
+    { message : string
+    ; verbose : string option [@default None]
+    }
+  [@@deriving yojson]
+end
+
+let mk_logTrace ~message ~extra =
+  let module M = TraceParams in
+  let method_ = M.method_ in
+  let verbose =
     match (!trace_value, extra) with
-    | Verbose, Some extra ->
-      [ ("message", `String message); ("verbose", `String extra) ]
-    | _, _ -> [ ("message", `String message) ]
+    | Verbose, Some extra -> Some extra
+    | _ -> None
   in
-  Base.Notification.(make ~method_ ~params () |> to_yojson) |> !fn
-
-let trace hdr ?extra msg =
-  let message = Format.asprintf "[%s]: @[%s@]" hdr msg in
-  logTrace ~message ~extra
-
-let trace_object hdr obj =
-  let message =
-    Format.asprintf "[%s]: @[%a@]" hdr Yojson.Safe.(pretty_print ~std:false) obj
+  let params =
+    M.({ message; verbose } |> to_yojson |> Yojson.Safe.Util.to_assoc)
   in
-  (* Fixme, use the extra parameter *)
-  trace hdr message
+  Base.Notification.make ~method_ ~params ()
 
-let () = log := trace_object
+let logTrace ~message ~extra = mk_logTrace ~message ~extra |> !fn
+
+(* Disabled for now, see comment above *)
+(* let () = log := trace_object *)
 
 (** Misc helpers *)
 let read_message ic =
   match read_raw_message ic with
   | None -> None (* EOF *)
   | Some (Ok com) ->
-    if Fleche.Debug.read then trace_object "read" com;
+    if Fleche.Debug.read then !log "read" com;
     Some (Base.Message.of_yojson com)
   | Some (Error err) -> Some (Error err)

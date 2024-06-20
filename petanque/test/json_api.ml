@@ -1,4 +1,5 @@
 open Petanque_json
+open Petanque_shell
 
 let prepare_paths () =
   let to_uri file =
@@ -12,30 +13,24 @@ let msgs = ref []
 let trace ?verbose:_ msg = msgs := Format.asprintf "[trace] %s" msg :: !msgs
 let message ~lvl:_ ~message = msgs := message :: !msgs
 let dump_msgs () = List.iter (Format.eprintf "%s@\n") (List.rev !msgs)
-
-let extract_st (st : Protocol.RunTac.Response.t) =
-  match st with
-  | Proof_finished st | Current_state st -> st
-
+let extract_st { JAgent.Run_result.st; _ } = st
 let pp_offset fmt (bp, ep) = Format.fprintf fmt "(%d,%d)" bp ep
 
 let pp_res_str =
   Coq.Compat.Result.pp Format.pp_print_string Format.pp_print_string
 
-let pp_premise fmt
-    { Petanque.Agent.Premise.full_name
-    ; kind
-    ; file
-    ; range = _
-    ; offset
-    ; raw_text
-    } =
+let pp_info fmt info =
+  let { Petanque.Agent.Premise.Info.kind; range = _; offset; raw_text } =
+    info
+  in
+  Format.fprintf fmt "kind = %s;@ offset = %a;@ raw_text = %a" kind pp_offset
+    offset pp_res_str raw_text
+
+let pp_premise fmt { Petanque.Agent.Premise.full_name; file; info } =
   Format.(
-    fprintf fmt
-      "@[{ name = %s;@ file = %s;@ kind = %a;@ offset = %a;@ raw_text = %a}@]@\n"
-      full_name file pp_res_str kind
-      (Coq.Compat.Result.pp pp_offset pp_print_string)
-      offset pp_res_str raw_text)
+    fprintf fmt "@[{ name = %s;@ file = %s;@ %a}@]@\n" full_name file
+      (Coq.Compat.Result.pp pp_info pp_print_string)
+      info)
 
 let print_premises = false
 
@@ -49,19 +44,28 @@ let run (ic, oc) =
     let message = message
   end) in
   let r ~st ~tac =
+    let opts = None in
     let st = extract_st st in
-    S.run_tac { st; tac }
+    S.run { opts; st; tac }
   in
   (* Will this work on Windows? *)
   let root, uri = prepare_paths () in
-  let* env = S.init { debug; root } in
-  let* st = S.start { env; uri; thm = "rev_snoc_cons" } in
+  let* () = S.set_workspace { debug; root } in
+  let* { st; _ } =
+    S.start { uri; opts = None; pre_commands = None; thm = "rev_snoc_cons" }
+  in
   let* premises = S.premises { st } in
   (if print_premises then
      Format.(eprintf "@[%a@]@\n%!" (pp_print_list pp_premise) premises));
-  let* st = S.run_tac { st; tac = "induction l." } in
+  let* st = S.run { opts = None; st; tac = "induction l." } in
+  let* h1 = S.state_hash { st = st.st } in
+  let* st = r ~st ~tac:"idtac." in
+  let* h2 = S.state_hash { st = st.st } in
+  assert (Int.equal h1 h2);
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"reflexivity." in
+  let* h3 = S.state_hash { st = st.st } in
+  assert (not (Int.equal h1 h3));
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"now simpl; rewrite IHl." in
   let* st = r ~st ~tac:"Qed." in

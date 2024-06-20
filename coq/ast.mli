@@ -40,6 +40,7 @@ module Meta : sig
       | Back of int
       | ResetName of Names.lident
       | ResetInitial
+      | AbortAll
   end
 
   type t =

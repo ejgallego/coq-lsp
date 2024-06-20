@@ -60,13 +60,7 @@ let mk_unicode_completion_item point (label, newText) =
   mk_completion ~label ~labelDetails ~textEdit ~commitCharacters ()
 
 let unicode_list point : Yojson.Safe.t list =
-  let ulist =
-    match !Fleche.Config.v.unicode_completion with
-    | Off -> []
-    | Internal_small -> Unicode_bindings.small
-    | Normal -> Unicode_bindings.normal
-    | Extended -> Unicode_bindings.extended
-  in
+  let ulist = Unicode_bindings.from_config () in
   (* Coq's CList.map is tail-recursive *)
   CList.map (mk_unicode_completion_item point) ulist
 
@@ -74,7 +68,7 @@ let completion ~token:_ ~(doc : Fleche.Doc.t) ~point =
   (* Instead of get_char_at_point we should have a CompletionContext.t, to be
      addressed in further completion PRs *)
   let contents = doc.contents in
-  (match Rq_common.get_char_at_point ~contents ~point with
+  (match Rq_common.get_char_at_point ~prev:true ~contents ~point with
   | None ->
     let incomplete = true in
     let items = [] in

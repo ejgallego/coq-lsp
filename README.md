@@ -42,7 +42,7 @@ and web native usage, providing quite a few extra features from vanilla Coq.
   - [👁 On-demand, Follow The Viewport Document Checking](#-on-demand-follow-the-viewport-document-checking)
   - [🧠 Smart, Cache-Aware Error Recovery](#-smart-cache-aware-error-recovery)
   - [🥅 Whole-Document Goal Display](#-whole-document-goal-display)
-  - [🗒️ Markdown Support](#️-markdown-support)
+  - [🗒️ Markdown Support](#️-markdown-and-latex-support)
   - [👥 Document Outline](#-document-outline)
   - [🐝 Document Hover](#-document-hover)
   - [📁 Multiple Workspaces](#-multiple-workspaces)
@@ -125,16 +125,17 @@ pending obligations, open bullets and their goals.
 Goal display behavior is configurable in case you'd like to trigger goal display
 more conservatively.
 
-### 🗒️ Markdown Support
+### 🗒️ Markdown and LaTeX Support
 
-Open a markdown file with a `.mv` extension, `coq-lsp` will check the code parts
-that are enclosed into `coq` language blocks! `coq-lsp` places human-friendly
-documents at the core of its design ideas.
+Open a markdown file with a `.mv` extension, or a `TeX` file ending in `.lv` or
+`.v.tex`, then `coq-lsp` will check the code parts that are enclosed into `coq`
+language blocks! `coq-lsp` places human-friendly documents at the core of its
+design ideas.
 
 <img alt="Coq + Markdown Editing" height="286px" src="etc/img/lsp-markdown.gif"/>
 
-Moreover, you can use Visual Studio Code Markdown preview to render your
-markdown documents nicely!
+Moreover, you can use the usual Visual Studio Code Markdown or LaTeX preview
+facilities to render your markdown documents nicely!
 
 ### 👥 Document Outline
 
@@ -249,11 +250,6 @@ We recommended using Coq 8.19 or `master` version. For other Coq versions, we
 recommend users to install the custom Coq tree as detailed in [Coq Upstream
 Bugs](#coq-upstream-bugs).
 
-Support for Coq 8.15 and 8.16 has been phased out due to lack of development
-resources, but if you are interested it should possible to bring it back with
-reasonable effort. Support for older Coq versions is also possible, with a bit
-more effort; `coq-lsp` should work with Coq versions back to Coq 8.10/8.9.
-
 Note that this section covers user installs, if you would like to contribute to
 `coq-lsp` and build a development version, please check our [contributing
 guide](./CONTRIBUTING.md)
@@ -278,12 +274,12 @@ guide](./CONTRIBUTING.md)
   This provides a Windows native binary that can be executed from VSCode
   normally. As of today a bit of configuration is still needed:
   - In VSCode, set the `Coq-lsp: Path` to:
-    + `C:\Coq-Platform~8.17-lsp\bin\coq-lsp.exe`
+    + `C:\Coq-Platform~8.20-lsp\bin\coq-lsp.exe`
   - In VSCode, set the `Coq-lsp: Args` to:
-    + `--coqlib=C:\Coq-Platform~8.17-lsp\lib\coq\`
-    + `--coqcorelib=C:\Coq-Platform~8.17-lsp\lib\coq-core\`
-    + `--ocamlpath=C:\Coq-Platform~8.17-lsp\lib\`
-  - Replace `C:\Coq-Platform~8.17-lsp\` by the path you have installed Coq above as needed
+    + `--coqlib=C:\Coq-Platform~8.20-lsp\lib\coq\`
+    + `--coqcorelib=C:\Coq-Platform~8.20-lsp\lib\coq-core\`
+    + `--ocamlpath=C:\Coq-Platform~8.20-lsp\lib\`
+  - Replace `C:\Coq-Platform~8.20-lsp\` by the path you have installed Coq above as needed
   - Note that the installers are unsigned (for now), so you'll have to click on
     "More info" then "Run anyway" inside the "Windows Protected your PC" dialog
   - Also note that the installers are work in progress, and may change often.
@@ -316,13 +312,14 @@ guide](./CONTRIBUTING.md)
 
 ### 🐍 Python
 
-- Interact programmatically with Coq files by using the [Python `coq-lsp` client](https://github.com/sr-lab/coq-lsp-pyclient)
+- Interact programmatically with Coq files by using the [Coqpyt](https://github.com/sr-lab/coqpyt)
   by Pedro Carrott and Nuno Saavedra.
 
 ## ⇨ `coq-lsp` users and extensions
 
 The below projects are using `coq-lsp`, we recommend you try them!
 
+- [Coqpyt, a Python client for coq-lsp](https://github.com/sr-lab/coqpyt)
 - [CoqPilot uses Large Language Models to generate multiple potential proofs and then uses coq-lsp to typecheck them](https://github.com/JetBrains-Research/coqpilot).
 - [jsCoq: use Coq from your browser](https://github.com/jscoq/jscoq)
 - [Pytanque: a Python library implementing RL Environments](https://github.com/LLM4Coq/pytanque)
@@ -358,7 +355,6 @@ that have some fixes backported:
 - For 8.19: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.19+lsp`
 - For 8.18: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.18+lsp`
 - For 8.17: `opam pin add coq-core https://github.com/ejgallego/coq.git#v8.17+lsp`
-- For 8.16: `opam pin add coq      https://github.com/ejgallego/coq.git#v8.16+lsp`
 
 ### Known problems
 
@@ -385,19 +381,6 @@ that have some fixes backported:
 - In VSCode, the "Output" window will have a "Coq LSP Server Events" channel
   which should contain some important information; the content of this channel
   is controlled by the `Coq LSP > Trace: Server` option.
-
-### 📂 Working With Multiple Files
-
-`coq-lsp` can't work with more than one file at the same time, due to problems
-with parsing state management upstream. This was fixed in Coq 8.17.
-
-As this is very inconvenient for users in older Coq versions, we do provide a
-fixed Coq branch that you can install using `opam pin`:
-
-- For Coq 8.16:
-  ```
-  opam pin add coq https://github.com/ejgallego/coq.git#v8.16+lsp
-  ```
 
 ## 📔 Planned Features
 

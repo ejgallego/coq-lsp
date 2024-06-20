@@ -1,4 +1,5 @@
 open Petanque_json
+open Petanque_shell
 
 let prepare_paths () =
   let to_uri file =
@@ -12,10 +13,7 @@ let msgs = ref []
 let trace ?verbose:_ msg = msgs := Format.asprintf "[trace] %s" msg :: !msgs
 let message ~lvl:_ ~message = msgs := message :: !msgs
 let dump_msgs () = List.iter (Format.eprintf "%s@\n") (List.rev !msgs)
-
-let extract_st (st : Protocol.RunTac.Response.t) =
-  match st with
-  | Proof_finished st | Current_state st -> st
+let extract_st { JAgent.Run_result.st; _ } = st
 
 let run (ic, oc) =
   let open Coq.Compat.Result.O in
@@ -27,15 +25,19 @@ let run (ic, oc) =
     let message = message
   end) in
   let r ~st ~tac =
+    let opts = None in
     let st = extract_st st in
-    S.run_tac { st; tac }
+    S.run { opts; st; tac }
   in
   (* Will this work on Windows? *)
   let root, uri = prepare_paths () in
-  let* env = S.init { debug; root } in
-  let* st = S.start { env; uri; thm = "rev_snoc_cons" } in
+  let opts = None in
+  let* _env = S.set_workspace { debug; root } in
+  let* { st; _ } =
+    S.start { uri; opts; pre_commands = None; thm = "rev_snoc_cons" }
+  in
   let* _premises = S.premises { st } in
-  let* st = S.run_tac { st; tac = "induction l." } in
+  let* st = S.run { opts; st; tac = "induction l." } in
   let* st = r ~st ~tac:"-" in
   (* Introduce an error *)
   (* let* st = r ~st ~tac:"reflexivity." in *)

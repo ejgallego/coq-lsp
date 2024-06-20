@@ -1,4 +1,5 @@
 open Petanque
+open Petanque_shell
 
 let prepare_paths () =
   let to_uri file =
@@ -18,30 +19,40 @@ let dump_msgs () = List.iter (Format.eprintf "%s@\n") (List.rev !msgs)
 
 let start ~token =
   let debug = false in
-  Petanque.Agent.trace_ref := trace;
-  Petanque.Agent.message_ref := message;
+  Shell.trace_ref := trace;
+  Shell.message_ref := message;
   (* Will this work on Windows? *)
   let open Coq.Compat.Result.O in
+  let _ : _ Result.t = Shell.init_agent ~token ~debug ~roots:[] in
+  (* Twice to test for #766 *)
   let root, uri = prepare_paths () in
-  let* env = Agent.init ~token ~debug ~root in
-  Agent.start ~token ~env ~uri ~thm:"rev_snoc_cons"
+  let* () = Shell.set_workspace ~token ~debug ~root in
+  let* () = Shell.set_workspace ~token ~debug ~root in
+  (* Careful to call [build_doc] before we have set an environment! [pet] and
+     [pet-server] are careful to always set a default one *)
+  let* doc = Shell.build_doc ~token ~uri in
+  Agent.start ~token ~doc ~thm:"rev_snoc_cons" ()
 
-let extract_st (st : _ Agent.Run_result.t) =
-  match st with
-  | Proof_finished st | Current_state st -> st
+let extract_st { Agent.Run_result.st; _ } = st
 
 let main () =
   let open Coq.Compat.Result.O in
   let token = Coq.Limits.create_atomic () in
   let r ~st ~tac =
     let st = extract_st st in
-    Agent.run_tac ~token ~st ~tac
+    Agent.run ~token ~st ~tac ()
   in
-  let* st = start ~token in
+  let* { st; _ } = start ~token in
   let* _premises = Agent.premises ~token ~st in
-  let* st = Agent.run_tac ~token ~st ~tac:"induction l." in
+  let* st = Agent.run ~token ~st ~tac:"induction l." () in
+  let h1 = Agent.State.hash st.st in
+  let* st = r ~st ~tac:"idtac." in
+  let h2 = Agent.State.hash st.st in
+  assert (Int.equal h1 h2);
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"reflexivity." in
+  let h3 = Agent.State.hash st.st in
+  assert (not (Int.equal h1 h3));
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"now simpl; rewrite IHl." in
   let* st = r ~st ~tac:"Qed." in

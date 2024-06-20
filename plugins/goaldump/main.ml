@@ -8,10 +8,9 @@ let of_execution ~io ~what (v : (_, _) Coq.Protect.E.t) =
     | Coq.Protect.R.Completed (Ok goals) -> goals
     | Coq.Protect.R.Completed (Error (Anomaly err))
     | Coq.Protect.R.Completed (Error (User err)) ->
-      let message =
-        Format.asprintf "error when retrieving %s: %a" what Pp.pp_with (snd err)
-      in
-      Io.Report.message ~io ~lvl:Io.Level.error ~message;
+      let lvl = Io.Level.Error in
+      Io.Report.msg ~io ~lvl "error when retrieving %s: %a" what Pp.pp_with
+        (snd err);
       None
     | Coq.Protect.R.Interrupted -> None)
 
@@ -40,47 +39,41 @@ module AstGoals = struct
 end
 
 let pp_json pp fmt (astgoal : _ AstGoals.t) =
-  let g_json = AstGoals.to_yojson pp astgoal in
-  Yojson.Safe.pretty_print fmt g_json
+  AstGoals.to_yojson pp astgoal |> Yojson.Safe.pretty_print fmt
 
 (* For now we have not added sexp serialization, but we can easily do so *)
 (* let pp_sexp fmt (astgoal : AstGoals.t) = *)
-(*   let g_sexp = AstGoals.sexp_of astgoal in *)
-(*   Sexplib.Sexp.pp_hum fmt sast *)
+(*   AstGoals.sexp_of astgoal *)
+(*   |> Sexplib.Sexp.pp_hum fmt *)
 
 let pw pp fmt v = Format.fprintf fmt "@[%a@]@\n" pp v
 
 let pp_ast_goals ~io ~token ~contents pp fmt node =
-  let res = AstGoals.of_node ~io ~token ~contents node in
-  pw pp fmt res
+  AstGoals.of_node ~io ~token ~contents node |> pw pp fmt
 
 let dump_goals ~io ~token ~out_file ~(doc : Doc.t) pp =
-  let out = Stdlib.open_out out_file in
-  let fmt = Format.formatter_of_out_channel out in
   let contents = doc.contents in
-  List.iter (pp_ast_goals ~io ~token ~contents pp fmt) doc.nodes;
-  Format.pp_print_flush fmt ();
-  Stdlib.close_out out
+  let f fmt nodes =
+    List.iter (pp_ast_goals ~io ~token ~contents pp fmt) nodes
+  in
+  Coq.Compat.format_to_file ~file:out_file ~f doc.nodes
+
+let pp d =
+  (* Set to true to output Pp-formatted goals *)
+  let output_pp = false in
+  if output_pp then Lsp.JCoq.Pp.to_yojson d else `String (Pp.string_of_ppcmds d)
 
 let dump_ast ~io ~token ~(doc : Doc.t) =
   let uri = doc.uri in
   let uri_str = Lang.LUri.File.to_string_uri uri in
-  let message =
-    Format.asprintf "[goaldump plugin] dumping goals for %s ..." uri_str
-  in
-  let lvl = Io.Level.info in
-  Io.Report.message ~io ~lvl ~message;
+  let lvl = Io.Level.Info in
+  Io.Report.msg ~io ~lvl "[goaldump plugin] dumping goals for %s ..." uri_str;
   let out_file_j = Lang.LUri.File.to_string_file uri ^ ".json.goaldump" in
-  let pp d = `String (Pp.string_of_ppcmds d) in
-  (* Uncomment to output Pp-formatted goals *)
-  (* let pp d = Lsp.JCoq.Pp.to_yojson d in *)
   let () = dump_goals ~io ~token ~out_file:out_file_j ~doc (pp_json pp) in
   (* let out_file_s = Lang.LUri.File.to_string_file uri ^ ".sexp.goaldump" in *)
   (* let () = dump_goals ~out_file:out_file_s ~doc pp_sexp in *)
-  let message =
-    Format.asprintf "[ast plugin] dumping ast for %s was completed!" uri_str
-  in
-  Io.Report.message ~io ~lvl ~message;
+  Io.Report.msg ~io ~lvl "[goaldump plugin] dumping ast for %s was completed!"
+    uri_str;
   ()
 
 let main () = Theory.Register.Completed.add dump_ast

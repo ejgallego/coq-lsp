@@ -9,6 +9,10 @@ module Stats : sig
   val zero : t
 end
 
+module Intern : sig
+  val clear : unit -> unit
+end
+
 (** Flèche memo / cache tables, with some advanced features *)
 module type S = sig
   type input
@@ -31,6 +35,9 @@ module type S = sig
 
   (** [freqs ()]: (sorted) histogram *)
   val all_freqs : unit -> int list
+
+  (** [stats ()]: hashtbl stats *)
+  val stats : unit -> Hashtbl.statistics
 
   (** debug data for input *)
   val input_info : input -> string

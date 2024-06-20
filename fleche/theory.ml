@@ -40,15 +40,21 @@ module Handle = struct
     (match Hashtbl.find_opt doc_table uri with
     | None -> ()
     | Some _ ->
-      Io.Log.trace "do_open"
-        ("file "
-        ^ Lang.LUri.File.to_string_uri uri
-        ^ " not properly closed by client"));
+      Io.Log.trace "do_open" "file %a not properly closed by client"
+        Lang.LUri.File.pp uri);
     Hashtbl.add doc_table uri
       { doc; cp_requests = Int.Set.empty; pt_requests = [] }
 
   let close ~uri = Hashtbl.remove doc_table uri
-  let find_opt ~uri = Hashtbl.find_opt doc_table uri
+
+  let with_doc ~kind ~f ~uri ~default =
+    match Hashtbl.find_opt doc_table uri with
+    | None ->
+      Io.Log.trace kind "document %a not available" Lang.LUri.File.pp uri;
+      default ()
+    | Some handle -> f handle handle.doc
+
+  let _find_opt ~uri = Hashtbl.find_opt doc_table uri
 
   let _update_doc ~handle ~(doc : Doc.t) =
     Hashtbl.replace doc_table doc.uri { handle with doc }
@@ -124,7 +130,7 @@ module Handle = struct
       in
       let handle = { handle with pt_requests = delayed } in
       (handle, pt_ids fullfilled)
-    | Failed _ | FailedPermanent _ -> (handle, Int.Set.empty)
+    | Failed _ -> (handle, Int.Set.empty)
 
   (* trigger pending incremental requests *)
   let update_doc_info ~handle ~(doc : Doc.t) =
@@ -132,8 +138,6 @@ module Handle = struct
     Hashtbl.replace doc_table doc.uri handle;
     requests
 end
-
-let diags_of_doc doc = List.concat_map Doc.Node.diags doc.Doc.nodes
 
 (* This is temporary for 0.1.9 and our ER project, we need to reify this to a
    general structure *)
@@ -168,12 +172,16 @@ end = struct
 
     let callback : t list ref = ref []
     let add fn = callback := fn :: !callback
-    let fire ~io ~token ~doc = List.iter (fun f -> f ~io ~token ~doc) !callback
+
+    let fire ~io ~token ~doc =
+      (* TODO: Add a field to IO representing plugin context *)
+      let io = io in
+      List.iter (fun f -> f ~io ~token ~doc) !callback
   end
 end
 
 let send_diags ~io ~token:_ ~doc =
-  let diags = diags_of_doc doc in
+  let diags = Doc.diags doc in
   if List.length diags > 0 || !Config.v.send_diags then
     let uri, version = (doc.uri, doc.version) in
     Io.Report.diagnostics ~io ~uri ~version diags
@@ -216,25 +224,53 @@ end = struct
       | None -> pend_try f tt
       | Some r -> Some r)
 
-  let hint : (int * int) option ref = ref None
+  let hint : (Lang.LUri.File.t * (int * int)) option ref = ref None
 
-  let get_check_target pt_requests =
+  let get_check_target ~(doc : Doc.t) pt_requests =
     let target_of_pt_handle (_, (l, c)) = Doc.Target.Position (l, c) in
     match Option.map target_of_pt_handle (List.nth_opt pt_requests 0) with
     | None ->
-      Option.map
-        (fun (l, c) ->
-          hint := None;
-          Doc.Target.Position (l, c))
-        !hint
+      Option.bind !hint (fun (uri, (l, c)) ->
+          if Lang.LUri.File.equal uri doc.uri then
+            match doc.completed with
+            | Yes _ | Failed _ -> None
+            | Stopped range when Doc.Target.reached ~range (l, c) -> None
+            | Stopped _ -> Some (Doc.Target.Position (l, c))
+          else None)
     | Some t -> Some t
+
+  let report_start ~io doc =
+    let uri = doc.Doc.uri in
+    let uri_short = Lang.LUri.File.to_string_file uri |> Filename.basename in
+    Io.Report.serverStatus ~io (ServerInfo.Status.Running uri_short)
+
+  let report_idle ~io =
+    let mem =
+      Format.asprintf "%a" Stats.pp_words
+        (Gc.((quick_stat ()).heap_words) |> Float.of_int)
+    in
+    Io.Report.serverStatus ~io (ServerInfo.Status.Idle mem)
+
+  let do_check ~io ~token ~handle ~doc target =
+    let () = report_start ~io doc in
+    let doc = Doc.check ~io ~token ~target ~doc () in
+    let () = report_idle ~io in
+    let requests = Handle.update_doc_info ~handle ~doc in
+    if Doc.Completion.is_completed doc.completed then (
+      Register.Completed.fire ~io ~token ~doc;
+      pending := pend_pop !pending);
+    (requests, doc)
 
   (* Notification handling; reply is optional / asynchronous *)
   let check ~io ~token ~uri =
     Io.Log.trace "process_queue" "resuming document checking";
-    match Handle.find_opt ~uri with
-    | Some handle -> (
-      let target = get_check_target handle.pt_requests in
+    let kind = "Check.check" in
+    let default () =
+      pending := pend_pop !pending;
+      None
+    in
+    let f (handle : Handle.t) doc =
+      let target = get_check_target ~doc handle.pt_requests in
       match target with
       (* If we are in lazy mode and we don't have any full document requests
          pending, we just deschedule *)
@@ -244,29 +280,10 @@ end = struct
         pending := pend_pop !pending;
         None
       | (None | Some _) as tgt ->
-        let uri_short =
-          Lang.LUri.File.to_string_file uri |> Filename.basename
-        in
         let target = Option.default Doc.Target.End tgt in
-        Io.Report.serverStatus ~io (ServerInfo.Status.Running uri_short);
-        let doc = Doc.check ~io ~token ~target ~doc:handle.doc () in
-        let mem =
-          Format.asprintf "%a" Stats.pp_words
-            (Gc.((quick_stat ()).heap_words) |> Float.of_int)
-        in
-        Io.Report.serverStatus ~io (ServerInfo.Status.Idle mem);
-        let requests = Handle.update_doc_info ~handle ~doc in
-        if Doc.Completion.is_completed doc.completed then
-          Register.Completed.fire ~io ~token ~doc;
-        (* Remove from the queue *)
-        if Doc.Completion.is_completed doc.completed then
-          pending := pend_pop !pending;
-        Some (requests, doc))
-    | None ->
-      pending := pend_pop !pending;
-      Io.Log.trace "Check.check"
-        ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
-      None
+        Some (do_check ~io ~token ~handle ~doc target)
+    in
+    Handle.with_doc ~kind ~uri ~default ~f
 
   let maybe_check ~io ~token =
     pend_try (fun uri -> check ~io ~token ~uri) !pending
@@ -278,9 +295,9 @@ end = struct
 
   let set_scheduler_hint ~uri ~point =
     if CList.is_empty !pending then
-      let () = hint := Some point in
+      let () = hint := Some (uri, point) in
       schedule ~uri (* if the hint is set we wanna override it *)
-    else if not (Option.is_empty !hint) then hint := Some point
+    else if not (Option.is_empty !hint) then hint := Some (uri, point)
 end
 
 let create ~io ~token ~env ~uri ~raw ~version =
@@ -290,68 +307,31 @@ let create ~io ~token ~env ~uri ~raw ~version =
   Handle.create ~uri ~doc;
   Check.schedule ~uri
 
-(* Set this to false for < 8.17, we could parse the version but not worth it. *)
-let sane_coq_base_version = true
-
-let sane_coq_branch =
-  CString.string_contains ~where:Coq_config.version ~what:"+lsp"
-
-(* for testing in master, set this to true *)
-let force_single_mode = false
-
-let sane_coq_version =
-  (sane_coq_base_version || sane_coq_branch) && not force_single_mode
-
-(* Can't wait for the day this goes away *)
-let tainted = ref false
-
-let create ~io ~token ~env ~uri ~raw ~version =
-  if !tainted && not sane_coq_version then (
-    (* Error due to Coq bug *)
-    let message =
-      "You have opened two or more Coq files simultaneously in the server\n\
-       Unfortunately Coq's < 8.17 doesn't properly support that setup yet\n\
-       You'll need to close all files but one, and restart the server.\n\n\
-       Check coq-lsp webpage (Working with multiple files section) for\n\
-       instructions on how to install a fixed branch for earlier Coq versions."
-    in
-    let lvl = Io.Level.error in
-    Io.Report.message ~io ~lvl ~message;
-    let doc = Doc.create_failed_permanent ~env ~uri ~raw ~version in
-    Handle.create ~uri ~doc;
-    Check.schedule ~uri)
-  else (
-    tainted := true;
-    create ~io ~token ~env ~uri ~raw ~version)
-
 let change ~io:_ ~token ~(doc : Doc.t) ~version ~raw =
   let uri = doc.uri in
-  Io.Log.trace "bump file"
-    (Lang.LUri.File.to_string_uri uri ^ " / version: " ^ string_of_int version);
+  Io.Log.trace "bump file" "%a / version: %d" Lang.LUri.File.pp uri version;
   let tb = Unix.gettimeofday () in
-  (* The discrepancy here will be solved once we remove the [Protect.*.t] types
-     from `doc.mli` *)
   let doc = Doc.bump_version ~token ~version ~raw doc in
   let diff = Unix.gettimeofday () -. tb in
-  Io.Log.trace "bump file took" (Format.asprintf "%f" diff);
+  Io.Log.trace "bump file" "took %f seconds" diff;
   (* Just in case for the future, we update the document before requesting it to
      be checked *)
   let invalid = Handle.update_doc_version ~doc in
   Check.schedule ~uri;
   invalid
 
-let change ~io ~token ~uri ~version ~raw =
-  match Handle.find_opt ~uri with
-  | None ->
-    Io.Log.trace "DocHandle.find"
-      ("file " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
+let change ~io ~token ~(doc : Doc.t) ~version ~raw =
+  if version > doc.version then change ~io ~token ~doc ~version ~raw
+  else
+    (* That's a weird case, get got changes without a version bump? Do nothing
+       for now *)
     Int.Set.empty
-  | Some { doc; _ } ->
-    if version > doc.version then change ~io ~token ~doc ~version ~raw
-    else
-      (* That's a weird case, get got changes without a version bump? Do nothing
-         for now *)
-      Int.Set.empty
+
+let change ~io ~token ~uri ~version ~raw =
+  let kind = "Theory.change" in
+  let default () = Int.Set.empty in
+  let f _ doc = change ~io ~token ~doc ~version ~raw in
+  Handle.with_doc ~kind ~f ~uri ~default
 
 let close ~uri =
   (* XXX: Our handling of the "queue" is not good, handle should take care of
@@ -379,21 +359,11 @@ module Request = struct
     | Postpone
     | Cancel
 
-  let with_doc ~f ~uri =
-    match Handle.find_opt ~uri with
-    | None ->
-      Io.Log.trace "Request.add"
-        ("document " ^ Lang.LUri.File.to_string_uri uri ^ " not available");
-      (* XXX Should be cancelled *)
-      Cancel
-    | Some { doc; _ } -> f doc
-
   let request_in_range ~(doc : Doc.t) ~version (line, col) =
     let in_range =
       match doc.completed with
       | Yes _ -> true
-      | Failed range | FailedPermanent range | Stopped range ->
-        Doc.Target.reached ~range (line, col)
+      | Failed range | Stopped range -> Doc.Target.reached ~range (line, col)
     in
     let in_range =
       match version with
@@ -405,9 +375,12 @@ module Request = struct
   (** Add a request to be served; returns [true] if request is added to the
       queue , [false] if the request can be already answered. *)
   let add { id; uri; postpone; request } =
+    let kind = "Request.add" in
+    let default () = Cancel in
+    (* should be Cancelled? *)
     match request with
     | FullDoc ->
-      with_doc ~uri ~f:(fun doc ->
+      Handle.with_doc ~kind ~default ~uri ~f:(fun _ doc ->
           match (Doc.Completion.is_completed doc.completed, postpone) with
           | true, _ -> Now doc
           | false, false -> Cancel
@@ -416,7 +389,7 @@ module Request = struct
             Check.schedule ~uri;
             Postpone)
     | PosInDoc { point; version } ->
-      with_doc ~uri ~f:(fun doc ->
+      Handle.with_doc ~kind ~default ~uri ~f:(fun _ doc ->
           let in_range = request_in_range ~doc ~version point in
           match (in_range, postpone) with
           | true, _ -> Now doc

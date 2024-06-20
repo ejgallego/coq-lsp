@@ -1,18 +1,19 @@
 (************************************************************************)
 (*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
-(* <O___,, *       (see CREDITS file for the list of authors)           *)
-(*   \VV/  **************************************************************)
+(*  v      *         Copyright INRIA, CNRS and contributors             *)
+(* <O___,, * (see version control and CREDITS file for authors & dates) *)
+(*   VV/  **************************************************************)
 (*    //   *    This file is distributed under the terms of the         *)
 (*         *     GNU Lesser General Public License Version 2.1          *)
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
 (************************************************************************)
-(* Coq serialization API/Plugin                                         *)
-(* Copyright 2016-2019 MINES ParisTech                                  *)
-(* Copyright 2019-2022 Inria                                            *)
-(* Written by Emilio J. Gallego Arias                                   *)
+(* coq-lsp / SerAPI                                                     *)
+(************************************************************************)
+(* Copyright 2016-2019 MINES ParisTech -- License LGPL 2.1+             *)
+(* Copyright 2019-2024 Inria           -- License LGPL 2.1+             *)
+(* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
 [@@@ocamlformat "disable"]
@@ -61,7 +62,7 @@ let map_serlib fl_pkg =
   if supported
   then
     let plugin_name = String.split_on_char '.' fl_pkg |> list_last in
-    let serlib_name = "coq-serapi.serlib." ^ plugin_name in
+    let serlib_name = "coq-lsp.serlib." ^ plugin_name in
     check_package_exists serlib_name
   else None
 

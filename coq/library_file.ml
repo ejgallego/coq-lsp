@@ -97,12 +97,12 @@ let to_result ~f x =
     let iexn = Exninfo.capture exn in
     Error iexn
 
-let try_locate_absolute_library dir =
+let locate_absolute_library dir =
   let f = Loadpath.try_locate_absolute_library in
   to_result ~f dir
 
 let find_v_file dir =
-  match try_locate_absolute_library dir with
+  match locate_absolute_library dir with
   (* EJGA: we want to improve this as to pass the error to the client *)
   | Error _ -> "error when trying to locate the .v file"
   | Ok file -> file

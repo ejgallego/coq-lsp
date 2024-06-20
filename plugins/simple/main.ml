@@ -1,12 +1,10 @@
 open Fleche
 
-let simple_action ~io ~token:_ ~doc =
-  let uri = Lang.LUri.File.to_string_uri doc.Doc.uri in
-  let lvl = Io.Level.info in
-  let message =
-    Format.asprintf "[example plugin] file checking for %s was completed" uri
-  in
-  Io.Report.message ~io ~lvl ~message
+let msg_info ~io = Io.(Report.msg ~io ~lvl:Info)
+
+let simple_action ~io ~token:_ ~(doc : Doc.t) =
+  msg_info ~io "[example plugin] file checking for %a was completed"
+    Lang.LUri.File.pp doc.uri
 
 let main () = Theory.Register.Completed.add simple_action
 let () = main ()
