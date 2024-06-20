@@ -1,9 +1,6 @@
 COQ_BUILD_CONTEXT=../_build/default/coq
 
-PKG_SET= \
-vendor/coq/coq-core.install \
-vendor/coq/coq-stdlib.install \
-coq-lsp.install
+PKG_SET= coq-lsp.install
 
 # Get the ocamlformat version from the .ocamlformat file
 OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
@@ -73,7 +70,9 @@ winconfig:
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
 
 .PHONY: coq_boot
-coq_boot: vendor/coq/config/coq_config.ml
+coq_boot:
+# We do nothing for released versions
+# coq_boot: vendor/coq/config/coq_config.ml
 
 .PHONY: clean
 clean:

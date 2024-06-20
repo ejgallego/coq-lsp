@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - v8.21
       - v8.20
       - v8.19
       - v8.18
@@ -13,6 +14,7 @@ on:
   pull_request:
     branches:
       - main
+      - v8.21
       - v8.20
       - v8.19
       - v8.18
@@ -72,10 +74,6 @@ jobs:
       - name: 🐫🐪🐫 Get dependencies
         run: opam exec -- make opam-deps
 
-      - name: 🐛 Special Windows Config [only on Win CI]
-        if: matrix.os == 'windows-latest'
-        run: opam exec -- make winconfig
-
       - name: 🧱 Build coq-lsp
         run: opam exec -- make build
 
@@ -86,7 +84,7 @@ jobs:
         run: opam exec -- make test-compiler
 
   build-opam:
-    name: Opam dev install
+    name: Opam install
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
@@ -116,27 +114,6 @@ jobs:
 
       - name: Test `pet-server` is built
         run: opam exec -- which pet-server
-
-  build-nix:
-    name: Nix
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macOS-latest]
-      fail-fast: false
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: 🔭 Checkout code
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: ❄️ Setup Nix
-        uses: cachix/install-nix-action@v22
-
-      - name: 🧱 Build coq-lsp
-        run: nix build .?submodules=1
 
   client-compile:
     runs-on: ubuntu-latest

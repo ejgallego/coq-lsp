@@ -1,3 +1,0 @@
-[submodule "coq"]
-	path = vendor/coq
-	url = https://github.com/coq/coq.git
