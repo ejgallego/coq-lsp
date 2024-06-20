@@ -15,7 +15,7 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module LIO = Lsp.Io
+module L = Fleche.Io.Log
 
 (* Cache stuff *)
 let memo_cache_file = ".coq-lsp.cache"
@@ -23,9 +23,9 @@ let memo_cache_file = ".coq-lsp.cache"
 let memo_save_to_disk () =
   try
     (* Fleche.Memo.save_to_disk ~file:memo_cache_file; *)
-    LIO.trace "memo" "cache saved to disk"
+    L.trace "memo" "cache saved to disk"
   with exn ->
-    LIO.trace "memo" (Printexc.to_string exn);
+    L.trace "memo" "%s" (Printexc.to_string exn);
     Sys.remove memo_cache_file;
     ()
 
@@ -35,12 +35,12 @@ let save_to_disk () = if false then memo_save_to_disk ()
 let memo_read_from_disk () =
   try
     if Sys.file_exists memo_cache_file then (
-      LIO.trace "memo" "trying to load cache file";
+      L.trace "memo" "trying to load cache file";
       (* Fleche.Memo.load_from_disk ~file:memo_cache_file; *)
-      LIO.trace "memo" "cache file loaded")
-    else LIO.trace "memo" "cache file not present"
+      L.trace "memo" "cache file loaded")
+    else L.trace "memo" "cache file not present"
   with exn ->
-    LIO.trace "memo" ("loading cache failed: " ^ Printexc.to_string exn);
+    L.trace "memo" "loading cache failed: %s" (Printexc.to_string exn);
     Sys.remove memo_cache_file;
     ()
 

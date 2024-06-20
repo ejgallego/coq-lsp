@@ -1,0 +1,6 @@
+(library
+ (name petanque_json)
+ (public_name coq-lsp.petanque.json)
+ (preprocess
+  (staged_pps ppx_import ppx_deriving_yojson))
+ (libraries lsp petanque))

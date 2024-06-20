@@ -38,7 +38,12 @@ export class InfoPanel {
 
   constructor(extensionUri: Uri) {
     this.extensionUri = extensionUri;
-    this.panelFactory();
+
+    // We don't create the panel until we actually try to show
+    // something on it; this will fix the panel appearing when the
+    // extension is actived but actually chooses not to handle a file, cc #737
+
+    // this.panelFactory();
   }
 
   dispose() {
@@ -99,7 +104,11 @@ export class InfoPanel {
       this.panelFactory();
     } else {
       if (!this.panel.visible) {
-        this.panel.reveal(2, true);
+        // Otherwise we create a race with the active editor!
+        // Careful about this.
+        if (window.activeTextEditor?.viewColumn !== 2) {
+          this.panel.reveal(2, true);
+        }
       }
     }
   }

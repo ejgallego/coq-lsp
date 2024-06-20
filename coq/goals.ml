@@ -15,42 +15,50 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-type 'a hyp =
-  { names : string list
-  ; def : 'a option
-  ; ty : 'a
-  }
+let equal_option = Option.equal
 
-let map_hyp ~f { names; def; ty } =
-  let def = Option.map f def in
-  let ty = f ty in
-  { names; def; ty }
+module Reified_goal = struct
+  type 'a hyp =
+    { names : String.t List.t
+    ; def : 'a option
+    ; ty : 'a
+    }
+  [@@deriving equal]
 
-type info =
-  { evar : Evar.t
-  ; name : Names.Id.t option
-  }
+  let map_hyp ~f { names; def; ty } =
+    let def = Option.map f def in
+    let ty = f ty in
+    { names; def; ty }
 
-type 'a reified_goal =
-  { info : info
-  ; hyps : 'a hyp list
-  ; ty : 'a
-  }
+  type info =
+    { evar : Evar.t
+    ; name : Names.Id.t option
+    }
+  [@@deriving equal]
 
-let map_reified_goal ~f { info; ty; hyps } =
-  let ty = f ty in
-  let hyps = List.map (map_hyp ~f) hyps in
-  { info; ty; hyps }
+  type 'a t =
+    { info : info
+    ; hyps : 'a hyp List.t
+    ; ty : 'a
+    }
+  [@@deriving equal]
 
-type ('a, 'pp) goals =
-  { goals : 'a list
-  ; stack : ('a list * 'a list) list
+  let map ~f { info; ty; hyps } =
+    let ty = f ty in
+    let hyps = List.map (map_hyp ~f) hyps in
+    { info; ty; hyps }
+end
+
+type ('a, 'pp) t =
+  { goals : 'a List.t
+  ; stack : ('a List.t * 'a List.t) List.t
   ; bullet : 'pp option
-  ; shelf : 'a list
-  ; given_up : 'a list
+  ; shelf : 'a List.t
+  ; given_up : 'a List.t
   }
+[@@deriving equal]
 
-let map_goals ~f ~g { goals; stack; bullet; shelf; given_up } =
+let map ~f ~g { goals; stack; bullet; shelf; given_up } =
   let goals = List.map f goals in
   let stack = List.map (fun (s, r) -> (List.map f s, List.map f r)) stack in
   let bullet = Option.map g bullet in
@@ -58,7 +66,7 @@ let map_goals ~f ~g { goals; stack; bullet; shelf; given_up } =
   let given_up = List.map f given_up in
   { goals; stack; bullet; shelf; given_up }
 
-type 'pp reified_pp = ('pp reified_goal, 'pp) goals
+type 'pp reified_pp = ('pp Reified_goal.t, 'pp) t
 
 (** XXX: Do we need to perform evar normalization? *)
 
@@ -68,19 +76,19 @@ type cdcl = EConstr.compacted_declaration
 
 let binder_name n = Context.binder_name n |> Names.Id.to_string
 
-let to_tuple ppx : cdcl -> 'pc hyp =
+let to_tuple ppx : cdcl -> 'pc Reified_goal.hyp =
   let open CDC in
   function
   | LocalAssum (idl, tm) ->
     let names = List.map binder_name idl in
-    { names; def = None; ty = ppx tm }
+    { Reified_goal.names; def = None; ty = ppx tm }
   | LocalDef (idl, tdef, tm) ->
     let names = List.map binder_name idl in
     { names; def = Some (ppx tdef); ty = ppx tm }
 
 (** gets a hypothesis *)
 let get_hyp (ppx : EConstr.t -> 'pc) (_sigma : Evd.evar_map) (hdecl : cdcl) :
-    'pc hyp =
+    'pc Reified_goal.hyp =
   to_tuple ppx hdecl
 
 (** gets the constr associated to the type of the current goal *)
@@ -94,10 +102,11 @@ let get_goal_type (ppx : EConstr.t -> 'pc) (env : Environ.env)
   in
   ppx concl
 
-let build_info sigma g = { evar = g; name = Evd.evar_ident g sigma }
+let build_info sigma g =
+  { Reified_goal.evar = g; name = Evd.evar_ident g sigma }
 
 (** Generic processor *)
-let process_goal_gen ppx sigma g : 'a reified_goal =
+let process_goal_gen ppx sigma g : 'a Reified_goal.t =
   (* XXX This looks cumbersome *)
   let env = Global.env () in
   let (EvarInfo evi) = Evd.find sigma g in
@@ -126,3 +135,20 @@ let reify ~ppx lemmas =
   ; shelf = Evd.shelf sigma |> ppx
   ; given_up = Evd.given_up sigma |> Evar.Set.elements |> ppx
   }
+
+module Equality = struct
+  let eq_constr (_env1, evd1, c1) (_env2, evd2, c2) =
+    (* XXX Fixme, can be much faster using the advance compare functions *)
+    let c1 = EConstr.to_constr evd1 c1 in
+    let c2 = EConstr.to_constr evd2 c2 in
+    Constr.equal c1 c2
+
+  let eq_pp pp1 pp2 = pp1 = pp2
+  let eq_rgoal = Reified_goal.equal eq_constr
+
+  let equal_goals st1 st2 =
+    let ppx env evd c = (env, evd, c) in
+    let g1 = reify ~ppx st1 in
+    let g2 = reify ~ppx st2 in
+    equal eq_rgoal eq_pp g1 g2
+end

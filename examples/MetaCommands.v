@@ -34,5 +34,13 @@ About muu.
 About foo.
 About bar.
 
+Lemma foo : True.
+  Lemma bar : False.
+  Abort All.
+
+Lemma foo : True. now auto. Qed.
+
+Print foo.
+
 
 

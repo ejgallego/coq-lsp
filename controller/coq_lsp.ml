@@ -19,27 +19,23 @@
    based in OCaml threads. *)
 
 module U = Yojson.Safe.Util
-module LIO = Lsp.Io
-module LSP = Lsp.Base
+module L = Fleche.Io.Log
 open Controller
 open Lsp_core
 
 (* Do cleanup here if necessary *)
-let exit_message () =
-  let message = "server exiting" in
-  LIO.logMessage ~lvl:Error ~message
-
-let lsp_cleanup () = exit_message ()
+let exit_message ~io = Fleche.Io.Report.msg ~io ~lvl:Error "server exiting"
+let lsp_cleanup ~io = exit_message ~io
 
 let rec process_queue ~delay ~io ~ofn ~state : unit =
   if Fleche.Debug.sched_wakeup then
-    LIO.trace "<- dequeue" (Format.asprintf "%.2f" (Unix.gettimeofday ()));
+    L.trace "<- dequeue" "%.2f" (Unix.gettimeofday ());
   match dispatch_or_resume_check ~io ~ofn ~state with
   | None ->
     (* As of now, we exit the whole program here, we could try an experiment to
        invert the threads, so the I/O routine is a thread and process_queue is
        the main driver *)
-    lsp_cleanup ();
+    lsp_cleanup ~io;
     (* We can't use [Thread.exit] here as the main thread will be blocked on
        I/O *)
     exit 0
@@ -49,12 +45,9 @@ let rec process_queue ~delay ~io ~ofn ~state : unit =
   | Some (Cont state) -> process_queue ~delay ~io ~ofn ~state
 
 let concise_cb ofn =
-  let send_notification nt =
-    Lsp.Base.Message.(Notification nt |> to_yojson) |> ofn
-  in
   let diagnostics ~uri ~version diags =
     if List.length diags > 0 then
-      Lsp.JLang.mk_diagnostics ~uri ~version diags |> send_notification
+      Lsp.Core.mk_diagnostics ~uri ~version diags |> ofn
   in
   Fleche.Io.CallBack.
     { trace = (fun _hdr ?extra:_ _msg -> ())
@@ -67,35 +60,37 @@ let concise_cb ofn =
     }
 
 (* Main loop *)
-let lsp_cb ofn =
-  let send_notification nt =
-    Lsp.Base.Message.(Notification nt |> to_yojson) |> ofn
-  in
-  let trace = LIO.trace in
-  let message ~lvl ~message =
-    let lvl = Fleche.Io.Level.to_int lvl in
-    LIO.logMessageInt ~lvl ~message
-  in
+module CB (O : sig
+  val ofn : Lsp.Base.Notification.t -> unit
+end) =
+struct
+  let ofn = O.ofn
+  let trace _hdr ?extra message = Lsp.Io.logTrace ~message ~extra
+  let message ~lvl ~message = Lsp.Io.logMessage ~lvl ~message
+
   let diagnostics ~uri ~version diags =
-    Lsp.JLang.mk_diagnostics ~uri ~version diags |> send_notification
-  in
+    Lsp.Core.mk_diagnostics ~uri ~version diags |> ofn
+
   let fileProgress ~uri ~version progress =
-    Lsp.JFleche.mk_progress ~uri ~version progress |> send_notification
-  in
+    Lsp.JFleche.mk_progress ~uri ~version progress |> ofn
+
   let perfData ~uri ~version perf =
-    Lsp.JFleche.mk_perf ~uri ~version perf |> send_notification
-  in
-  let serverVersion vi = Lsp.JFleche.mk_serverVersion vi |> send_notification in
-  let serverStatus st = Lsp.JFleche.mk_serverStatus st |> send_notification in
-  Fleche.Io.CallBack.
-    { trace
-    ; message
-    ; diagnostics
-    ; fileProgress
-    ; perfData
-    ; serverVersion
-    ; serverStatus
-    }
+    Lsp.JFleche.mk_perf ~uri ~version perf |> ofn
+
+  let serverVersion vi = Lsp.JFleche.mk_serverVersion vi |> ofn
+  let serverStatus st = Lsp.JFleche.mk_serverStatus st |> ofn
+
+  let cb =
+    Fleche.Io.CallBack.
+      { trace
+      ; message
+      ; diagnostics
+      ; fileProgress
+      ; perfData
+      ; serverVersion
+      ; serverStatus
+      }
+end
 
 let coq_init ~debug =
   let load_module = Dynlink.loadfile in
@@ -105,17 +100,17 @@ let coq_init ~debug =
 let exit_notification =
   Lsp.Base.Message.(Notification { method_ = "exit"; params = [] })
 
-let rec lsp_init_loop ~ifn ~ofn ~cmdline ~debug =
+let rec lsp_init_loop ~io ~ifn ~ofn ~cmdline ~debug =
   match ifn () with
   | None -> raise Lsp_exit
   | Some (Ok msg) -> (
-    match lsp_init_process ~ofn ~cmdline ~debug msg with
+    match lsp_init_process ~io ~ofn ~cmdline ~debug msg with
     | Init_effect.Exit -> raise Lsp_exit
-    | Init_effect.Loop -> lsp_init_loop ~ifn ~ofn ~cmdline ~debug
+    | Init_effect.Loop -> lsp_init_loop ~io ~ifn ~ofn ~cmdline ~debug
     | Init_effect.Success w -> w)
   | Some (Error err) ->
-    Lsp.Io.trace "read_request" ("error: " ^ err);
-    lsp_init_loop ~ifn ~ofn ~cmdline ~debug
+    L.trace "read_request" "error: %s" err;
+    lsp_init_loop ~io ~ifn ~ofn ~cmdline ~debug
 
 let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
     require_libraries delay int_backend =
@@ -127,19 +122,18 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
   Stdlib.set_binary_mode_out stdout true;
 
   (* We output to stdout *)
-  let ifn () = LIO.read_message stdin in
+  let ifn () = Lsp.Io.read_message stdin in
 
   (* Set log channels *)
-  let json_fn = LIO.send_json Format.std_formatter in
+  let ofn message = Lsp.Io.send_message Format.std_formatter message in
+  let ofn_ntn not = Lsp.Base.Message.notification not |> ofn in
 
-  let ofn response =
-    let response = Lsp.Base.Message.to_yojson response in
-    LIO.send_json Format.std_formatter response
-  in
+  Lsp.Io.set_log_fn ofn_ntn;
 
-  LIO.set_log_fn json_fn;
-
-  let io = lsp_cb json_fn in
+  let module CB = CB (struct
+    let ofn = ofn_ntn
+  end) in
+  let io = CB.cb in
   Fleche.Io.CallBack.set io;
 
   (* IMPORTANT: LSP spec forbids any message from server to client before
@@ -169,20 +163,20 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
       enqueue_message msg;
       read_loop ()
     | Some (Error err) ->
-      Lsp.Io.trace "read_request" ("error: " ^ err);
+      L.trace "read_request" "error: %s" err;
       read_loop ()
   in
 
   (* Input/output will happen now *)
   try
     (* LSP Server server initialization *)
-    let workspaces = lsp_init_loop ~ifn ~ofn ~cmdline ~debug in
+    let workspaces = lsp_init_loop ~io ~ifn ~ofn ~cmdline ~debug in
     let io =
       if !Fleche.Config.v.verbosity < 2 then (
         Fleche.Config.(
           v := { !v with send_diags = false; send_perf_data = false });
-        LIO.set_log_fn (fun _obj -> ());
-        let io = concise_cb json_fn in
+        Lsp.Io.set_log_fn (fun _obj -> ());
+        let io = concise_cb ofn_ntn in
         Fleche.Io.CallBack.set io;
         io)
       else io
@@ -200,19 +194,17 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
 
     read_loop ()
   with
-  | Lsp_exit ->
-    let message = "[LSP shutdown] EOF\n" in
-    LIO.logMessage ~lvl:Error ~message
+  | Lsp_exit -> Fleche.Io.Report.msg ~io ~lvl:Error "[LSP shutdown] EOF\n"
   | exn ->
     let bt = Printexc.get_backtrace () in
     let exn, info = Exninfo.capture exn in
     let exn_msg = Printexc.to_string exn in
-    LIO.trace "fatal error" (exn_msg ^ bt);
-    LIO.trace "fatal_error [coq iprint]"
-      Pp.(string_of_ppcmds CErrors.(iprint (exn, info)));
-    LIO.trace "server crash" (exn_msg ^ bt);
-    let message = "[uncontrolled LSP shutdown] server crash\n" ^ exn_msg in
-    LIO.logMessage ~lvl:Error ~message
+    L.trace "fatal error" "%s\n%s" exn_msg bt;
+    L.trace "fatal_error [coq iprint]" "%a" Pp.pp_with
+      CErrors.(iprint (exn, info));
+    L.trace "server crash" "%s\n%s" exn_msg bt;
+    Fleche.Io.Report.msg ~io ~lvl:Error
+      "[uncontrolled LSP shutdown] server crash:\n%s" exn_msg
 
 (* Arguments handling *)
 open Cmdliner

@@ -50,8 +50,6 @@ module Completion : sig
     | Yes of Lang.Range.t  (** Location of the last token in the document *)
     | Stopped of Lang.Range.t  (** Location of the last valid token *)
     | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
-    | FailedPermanent of Lang.Range.t
-        (** Temporal Coq hack, avoids any computation *)
 
   val is_completed : t -> bool
 end
@@ -139,7 +137,3 @@ val check :
 (** [save ~doc] will save [doc] .vo file. It will fail if proofs are open, or if
     the document completion status is not [Yes] *)
 val save : token:Coq.Limits.Token.t -> doc:t -> (unit, Loc.t) Coq.Protect.E.t
-
-(** This is internal, to workaround the Coq multiple-docs problem *)
-val create_failed_permanent :
-  env:Env.t -> uri:Lang.LUri.File.t -> version:int -> raw:string -> t

@@ -57,7 +57,7 @@ val length_utf16 : utf8_string -> utf16_index
 (******************************************************)
 
 (** Number of characters in the utf-8-encoded utf8_string. *)
-val length : utf8_string -> char
+(* val length : utf8_string -> char *)
 
 (** Converstion from char to UTF-8/16 *)
 

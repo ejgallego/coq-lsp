@@ -11,11 +11,6 @@
       url = "github:edolstra/flake-compat";
       flake = false;
     };
-
-    coq-serapi = {
-      url = "github:ejgallego/coq-serapi/v8.18";
-      flake = false;
-    };
   };
 
   outputs = inputs @ {
@@ -54,20 +49,26 @@
             inherit (ocamlPackages) menhir;
           };
 
-          propagatedBuildInputs = let
-            serapi =
-              (coqPackages.lib.overrideCoqDerivation {
-                  defaultVersion = "8.18.0+0.18.0";
-                }
-                coqPackages.serapi)
-              .overrideAttrs (_: {
-                src = inputs.coq-serapi;
-              });
-          in
-            l.attrValues {
-              inherit serapi;
-              inherit (ocamlPackages) yojson cmdliner uri dune-build-info ppx_inline_test;
-            };
+          propagatedBuildInputs = l.attrValues {
+            inherit
+              (ocamlPackages)
+              cmdliner
+              findlib
+              ppx_deriving
+              ppx_deriving_yojson
+              ppx_import
+              ppx_sexp_conv
+              ppx_hash
+              sexplib
+              yojson
+              zarith
+              uri
+              dune-build-info
+              ppx_inline_test
+              logs
+              lwt
+              ;
+          };
         };
 
         treefmt.config = {

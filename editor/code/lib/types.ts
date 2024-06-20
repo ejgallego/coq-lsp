@@ -208,3 +208,15 @@ export interface CoqStoppedStatus {
 }
 
 export type CoqServerStatus = CoqBusyStatus | CoqIdleStatus | CoqStoppedStatus;
+
+// Petanque types, canonical source agent.mli
+export interface PetStartParams {
+  uri: string;
+  pre_commands: string | null;
+  thm: string;
+}
+
+export interface PetRunParams {
+  st: number;
+  tac: string;
+}

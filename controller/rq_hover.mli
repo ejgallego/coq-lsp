@@ -41,3 +41,8 @@ end
 module Register : sig
   val add : Handler.t -> unit
 end
+
+(** Auxiliary functions *)
+module UniDiff : sig
+  (** [info_universes ~node] returns [nunivs, nconstraints] *)
+end
