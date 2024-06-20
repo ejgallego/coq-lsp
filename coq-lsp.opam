@@ -37,7 +37,7 @@ depends: [
   "ppx_inline_test"     { >= "0.14.1" }
 
   # Uncomment this for releases
-  # "coq"          { >= "8.17" < "8.18"  }
+  "coq"          { >= "8.20" < "8.21"  }
 
   # coq deps: remove this for releases
   "ocamlfind" {>= "1.8.1"}

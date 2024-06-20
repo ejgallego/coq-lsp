@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - v8.21
       - v8.20
       - v8.19
       - v8.18
@@ -13,6 +14,7 @@ on:
   pull_request:
     branches:
       - main
+      - v8.21
       - v8.20
       - v8.19
       - v8.18
