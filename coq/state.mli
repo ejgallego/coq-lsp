@@ -53,14 +53,21 @@ val in_stateM :
   -> 'a
   -> ('b, Loc.t) Protect.E.t
 
-(** Drop the proofs from the state *)
-val drop_proofs : st:t -> t
+(** Drop the top proof from the state *)
+val drop_proof : st:t -> t
+
+(** Drop all proofs from the state *)
+val drop_all_proofs : st:t -> t
 
 (** Fully admit an ongoing proof *)
 val admit : token:Limits.Token.t -> st:t -> (t, Loc.t) Protect.E.t
 
 (** Admit the current sub-goal *)
 val admit_goal : token:Limits.Token.t -> st:t -> (t, Loc.t) Protect.E.t
+
+(** Info about universes *)
+val info_universes :
+  token:Limits.Token.t -> st:t -> (int * int, Loc.t) Protect.E.t
 
 (** Extra / interanl *)
 val marshal_in : in_channel -> t

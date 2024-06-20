@@ -1,3 +1,80 @@
+# unreleased
+------------
+
+ - [deps] merge serlib into coq-lsp. This allow us to drop the SerAPI
+   dependency, and will greatly easy the development of tools that
+   require AST manipulation (@ejgallego, #698)
+ - [fleche] Remove 8.16 compatibility layer (@ejgallego, #747)
+ - [fleche] Preserve view hint across document changes. With this
+   change, we get local continuous checking mode when the view-port
+   heuristic is enabled (@ejgallego, #748)
+ - [memo] More precise hashing for Coq states, this improves cache
+   performance quite a bit (@ejgallego, #751)
+ - [fleche] Enable sharing of `.vo` file parsing. This enables better
+   sharing, achieving an almost 50% memory reduction for example when
+   opening all of HoTT .v files (@ejgallego, @SkySkimmer, @bhaktishh,
+   #744)
+ - [memo] Provide API to query Hashtbl stats (@ejgallego, #753)
+ - [nix] Add `pet-server` deps to flake.nix (Léo Stefanesco, #754)
+ - [coq-lsp] Fix crash on `--help` option (Léo Stefanesco, @ejgallego,
+   #754)
+ - [vscode] Fix focus race when a Coq file is in column 2 (@ejgallego,
+   #755, cc: #722, #725)
+ - [hover] Show input howto for unicode characters on hover
+   (@ejgallego, Léo Stefanesco, #756)
+ - [lsp] [definition] Support for jump to definition across workspace
+   files. The location information is obtained from `.glob` files, so
+   it is often not perfect. (@ejgallego, #762, fixes #317)
+ - [lsp] [hover] Show full name and provenance of identifiers
+   (@ejgallego, #762)
+ - [lsp] [definition] Try also to resolve and locate module imports
+   (@ejgallego, #764)
+ - [code] Don't start server on extension activation, unless an editor
+   we own is active. We also auto-start the server if a document that
+   we own is opened later (@ejgallego, #758, fixes #750)
+ - [petanque] Allow `init` to be called multiple times (@ejgallego,
+   @gbdrt, #766)
+ - [petanque] Faster query for goals status after `run_tac`
+   (@ejgallego, #768)
+ - [petanque] New parameter `pre_commands` to `start` which allows
+   instrumenting the goal before starting the proof (@ejgallego, Alex
+   Sanchez-Stern #769)
+ - [petanque] New `http_headers={yes,no}` parameter for `pet` json
+   shell, plus some improvements on protocol handling (@ejgallego,
+   #770)
+ - [petanque] Make agent agnostic of environment, allowing embedding
+   inside LSP (@ejgallego, #771)
+ - [diagnostics] Ensure extra diagnostics info is present in all
+   errors, not only on those sentences that did parse successfully
+   (@ejgallego, Diego Rivera, #772)
+ - [hover] New option `show_universes_on_hover` that will display
+   universe data on hover (@ejgallego, @SkySkimmer, #666)
+ - [hover] New plugin `unidiff` that will elaborate a summary of
+   universe data a file, in particular regarding universes added at
+   `Qed` time (@ejgallego, #773)
+ - [fleche] Support meta-command `Abort All` (@ejgallego, #774, fixes
+   #550)
+ - [petanque] Allow memoization control on `petanque/run` via a new
+   parameter `memo` (@ejgallego, #780)
+ - [lsp] [petanque] Allow acces to `petanque` protocol from the lsp
+   server (@ejgallego, #778)
+ - [petanque] Always initialize a workspace. This made `pet` crash if
+   `--root` was not used and client didn't issue the optimal
+   `setWorkspace` call (#782, @ejgallego, @gbdrt)
+ - [lsp] [petanque] New methods `state/eq` and `state/hash`; this
+   allows clients to implement a client-side hash; equality is
+   configurable with different methods; moreover, `petanque/run` can
+   compute some extra data like state hashing without a round-trip
+   (@ejgallego @gbdrt, #779)
+
+# coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
+----------------------------------------------------
+
+ - [code] Add `.v.tex` file extension to contributed language support
+   (@ejgallego, #740).
+ - [code] Don't show the panel on extension activation (@ejgallego,
+   #741, fix #737)
+
 # coq-lsp 0.1.9: Hasta el 40 de Mayo...
 ---------------------------------------
 

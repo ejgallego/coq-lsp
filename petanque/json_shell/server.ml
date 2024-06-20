@@ -1,6 +1,6 @@
 open Lwt
 open Lwt.Syntax
-open Petanque_json
+open Petanque_shell
 
 let rq_info (r : Lsp.Base.Message.t) =
   match r with
@@ -8,6 +8,8 @@ let rq_info (r : Lsp.Base.Message.t) =
   | Request { method_; _ } -> Format.asprintf "request: %s" method_
   | Response (Ok { id; _ } | Error { id; _ }) ->
     Format.asprintf "response for: %d" id
+
+let fn = Shell.build_doc
 
 let rec handle_connection ~token ic oc () =
   try
@@ -23,11 +25,14 @@ let rec handle_connection ~token ic oc () =
       let* () = Logs_lwt.info (fun m -> m "Received: %s" (rq_info request)) in
       (* request could be a notification, so maybe we don't have to do a
          reply! *)
-      match Interp.interp ~token request with
+      match Interp_shell.interp ~fn ~token request with
       | None -> handle_connection ~token ic oc ()
       | Some reply ->
         let* () = Logs_lwt.info (fun m -> m "Sent reply") in
-        let* () = Lwt_io.fprintl oc (Yojson.Safe.to_string reply) in
+        let* () =
+          Lwt_io.fprintl oc
+            (Yojson.Safe.to_string (Lsp.Base.Message.to_yojson reply))
+        in
         handle_connection ~token ic oc ())
   with End_of_file -> return ()
 
@@ -56,6 +61,11 @@ let create_server ~token sock =
   in
   serve
 
+let log_error err =
+  let message = Petanque.Agent.Error.to_string err in
+  Format.eprintf "Error in --root option: %s@\n%!" message
+(* Logs_lwt.info (fun m -> m "%s" message) *)
+
 let pet_main debug roots address port backlog =
   Coq.Limits.start ();
   let token = Coq.Limits.Token.create () in
@@ -63,7 +73,10 @@ let pet_main debug roots address port backlog =
   let () = Logs.set_level (Some Logs.Info) in
   let sock = create_socket ~address ~port ~backlog in
   let serve = create_server ~token sock in
-  let () = Utils.set_roots ~token ~debug ~roots in
+  (* EJGA: pet-server should handle this at some point *)
+  (* Petanque.Shell.trace_ref := trace_notification; *)
+  (* Petanque.Shell.message_ref := message_notification); *)
+  Result.iter_error log_error (Shell.init_agent ~token ~debug ~roots);
   Lwt_main.run @@ serve ()
 
 open Cmdliner

@@ -86,19 +86,19 @@ let coq_init opts =
 (**************************************************************************)
 
 (* Inits the context for a document *)
-let doc_init ~root_state ~workspace ~uri () =
+let doc_init ~intern ~root_state ~workspace ~uri () =
   (* Lsp.Io.log_error "init" "starting"; *)
   Vernacstate.unfreeze_interp_state (State.to_coq root_state);
 
   (* Set load paths from workspace info. *Important*, this has to happen before
      we declare the library below as [Declaremods/Library] will infer the module
      name by looking at the load path! *)
-  Workspace.apply ~uri workspace;
+  Workspace.apply ~intern ~uri workspace;
 
   (* We return the state at this point! *)
   Vernacstate.freeze_interp_state ~marshallable:false |> State.of_coq
 
-let doc_init ~token:_ ~root_state ~workspace ~uri =
+let doc_init ~token:_ ~intern ~root_state ~workspace ~uri =
   (* Don't interrupt document creation. *)
   let token = Limits.create_atomic () in
-  Protect.eval ~token ~f:(doc_init ~root_state ~workspace ~uri) ()
+  Protect.eval ~token ~f:(doc_init ~intern ~root_state ~workspace ~uri) ()

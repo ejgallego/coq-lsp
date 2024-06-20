@@ -15,6 +15,7 @@ import {
   languages,
   Uri,
   TextEditorVisibleRangesChangeEvent,
+  InputBoxOptions,
 } from "vscode";
 
 import * as vscode from "vscode";
@@ -54,6 +55,7 @@ import { FileProgressManager } from "./progress";
 import { coqPerfData, PerfDataView } from "./perf";
 import { sentenceNext, sentencePrevious } from "./edit";
 import { HeatMap, HeatMapConfig } from "./heatmap";
+import { petanqueStart, petanqueRun, petSetClient } from "./petanque";
 import { debounce, throttle } from "throttle-debounce";
 
 // Convert perf data to VSCode format
@@ -154,6 +156,7 @@ export function activateCoqLSP(
     );
     context.subscriptions.push(disposable);
   }
+
   function checkForVSCoq() {
     let vscoq =
       extensions.getExtension("maximedenes.vscoq") ||
@@ -216,6 +219,7 @@ export function activateCoqLSP(
 
     let cP = new Promise<BaseLanguageClient>((resolve) => {
       client = clientFactory(context, clientOptions, wsConfig);
+      petSetClient(client);
       fileProgress = new FileProgressManager(client);
       perfDataHook = client.onNotification(coqPerfData, (data) => {
         perfDataView.update(data);
@@ -460,7 +464,7 @@ export function activateCoqLSP(
       0
     );
     lspStatusItem.command = "coq-lsp.toggle";
-    lspStatusItem.text = "coq-lsp (activating)";
+    lspStatusItem.text = "coq-lsp (not active)";
     lspStatusItem.show();
     context.subscriptions.push(lspStatusItem);
   };
@@ -519,9 +523,28 @@ export function activateCoqLSP(
 
   coqEditorCommand("heatmap.toggle", heatMapToggle);
 
+  coqEditorCommand("petanque.start", petanqueStart);
+  coqEditorCommand("petanque.run", petanqueRun);
+
   createEnableButton();
 
-  start();
+  // Fix for bug #750
+  const active_editors_for_us = (editors: readonly TextEditor[]) =>
+    editors.some(
+      (editor) => languages.match(CoqSelector.all, editor.document) > 0
+    );
+
+  // We track when new buffers appear, and start the client if so. We
+  // dispose of the hook too.
+  if (active_editors_for_us(window.visibleTextEditors)) {
+    start();
+  } else {
+    window.onDidChangeVisibleTextEditors((editors) => {
+      if (!client || !client.isRunning()) {
+        if (active_editors_for_us(editors)) start();
+      }
+    }, context.subscriptions);
+  }
 
   return {
     goalsRequest: (params) => {

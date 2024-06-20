@@ -12,7 +12,7 @@ let build_ind_type mip = Inductive.type_of_inductive mip
 
 type id_info =
   | Notation of Pp.t
-  | Def of Pp.t
+  | Def of (Pp.t * Names.Constant.t option * string option)
 
 let info_of_ind env sigma ((sp, i) : Names.Ind.t) =
   let mib = Environ.lookup_mind sp env in
@@ -37,7 +37,7 @@ let info_of_ind env sigma ((sp, i) : Names.Ind.t) =
       (Impargs.implicits_of_global (Names.GlobRef.IndRef (sp, i)))
   in
   let impargs = List.map Impargs.binding_kind_of_status impargs in
-  Def (Printer.pr_ltype_env ~impargs env_params sigma arity)
+  Def (Printer.pr_ltype_env ~impargs env_params sigma arity, None, None)
 
 let type_of_constant cb = cb.Declarations.const_type
 
@@ -53,7 +53,10 @@ let info_of_const env sigma cr =
       (Impargs.implicits_of_global (Names.GlobRef.ConstRef cr))
   in
   let impargs = List.map Impargs.binding_kind_of_status impargs in
-  Def (Printer.pr_ltype_env env sigma ~impargs typ)
+  let typ = Printer.pr_ltype_env env sigma ~impargs typ in
+  let dp = Names.Constant.modpath cr |> Names.ModPath.dp in
+  let source = Coq.Module.(make dp |> Result.to_option |> Option.map source) in
+  Def (typ, Some cr, source)
 
 let info_of_var env vr =
   let vdef = Environ.lookup_named vr env in
@@ -70,7 +73,7 @@ let info_of_constructor env cr =
   in
   ctype
 
-let print_type env sigma x = Def (Printer.pr_ltype_env env sigma x)
+let print_type env sigma x = Def (Printer.pr_ltype_env env sigma x, None, None)
 
 let info_of_id env sigma id =
   let qid = Libnames.qualid_of_string id in
@@ -111,10 +114,22 @@ let info_of_id_at_point ~token ~node id =
   let st = node.Fleche.Doc.Node.state in
   Coq.State.in_state ~token ~st ~f:(info_of_id ~st) id
 
+let pp_cr fmt = function
+  | None -> ()
+  | Some cr ->
+    Format.fprintf fmt " - **full path**: `%a`@\n" Pp.pp_with
+      (Names.Constant.print cr)
+
+let pp_file fmt = function
+  | None -> ()
+  | Some file -> Format.fprintf fmt " - **in file**: `%s`" file
+
 let pp_typ id = function
-  | Def typ ->
+  | Def (typ, cr, file) ->
     let typ = Pp.string_of_ppcmds typ in
-    Format.(asprintf "```coq\n%s : %s\n```" id typ)
+    Format.(
+      asprintf "@[```coq\n%s : %s@\n```@\n@[%a@]@[%a@]@]" id typ pp_cr cr
+        pp_file file)
   | Notation nt ->
     let nt = Pp.string_of_ppcmds nt in
     Format.(asprintf "```coq\n%s\n```" nt)
@@ -219,6 +234,56 @@ module Notation : HoverProvider = struct
   let h = Handler.WithNode info_notation
 end
 
+module InputHelp : HoverProvider = struct
+  let mk_map map =
+    List.fold_left
+      (fun m (tex, uni) -> CString.Map.add uni tex m)
+      CString.Map.empty map
+
+  (* A bit hackish, but OK *)
+  let unimap =
+    Lazy.from_fun (fun () -> mk_map (Unicode_bindings.from_config ()))
+
+  let input_help ~token:_ ~contents ~point ~node:_ =
+    (* check if contents at point match *)
+    match Rq_common.get_uchar_at_point ~prev:false ~contents ~point with
+    | Some (uchar, uchar_str)
+      when Lang.Compat.OCaml4_14.Uchar.utf_8_byte_length uchar > 1 ->
+      Option.map
+        (fun tex -> Format.asprintf "Input %s with %s" uchar_str tex)
+        (CString.Map.find_opt uchar_str (Lazy.force unimap))
+    | Some _ | None -> None
+
+  let h = Handler.MaybeNode input_help
+end
+
+module UniDiff = struct
+  let show_unidiff ~token ?diff ~st () =
+    let nuniv_prev, nconst_prev =
+      match diff with
+      | Some st -> (
+        match Coq.State.info_universes ~token ~st with
+        | Coq.Protect.{ E.r = R.Completed (Ok (nuniv, nconst)); feedback = _ }
+          -> (nuniv, nconst)
+        | _ -> (0, 0))
+      | None -> (0, 0)
+    in
+    match Coq.State.info_universes ~token ~st with
+    | Coq.Protect.{ E.r = R.Completed (Ok (nuniv, nconst)); feedback = _ } ->
+      Some
+        (Format.asprintf "@[univ data (%4d,%4d) {+%d, +%d}@\n@]" nuniv nconst
+           (nuniv - nuniv_prev) (nconst - nconst_prev))
+    | _ -> None
+
+  let h ~token ~contents:_ ~point:_ ~(node : Fleche.Doc.Node.t) =
+    if !Fleche.Config.v.show_universes_on_hover then
+      let diff = Option.map Fleche.Doc.Node.state node.prev in
+      show_unidiff ~token ?diff ~st:node.state ()
+    else None
+
+  let h = Handler.WithNode h
+end
+
 module Register = struct
   let handlers : Handler.t list ref = ref []
   let add fn = handlers := fn :: !handlers
@@ -236,7 +301,9 @@ module Register = struct
 end
 
 (* Register in-file hover plugins *)
-let () = List.iter Register.add [ Loc_info.h; Stats.h; Type.h; Notation.h ]
+let () =
+  List.iter Register.add
+    [ Loc_info.h; Stats.h; Type.h; Notation.h; InputHelp.h; UniDiff.h ]
 
 let hover ~token ~(doc : Fleche.Doc.t) ~point =
   let node = Info.LC.node ~doc ~point Exact in

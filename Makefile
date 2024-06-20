@@ -113,7 +113,6 @@ submodules-deinit:
 .PHONY: submodules-update
 submodules-update:
 	(cd vendor/coq && git checkout master && git pull upstream master)
-	(cd vendor/coq-serapi && git checkout main && git pull upstream main)
 
 # Build the vscode extension
 .PHONY: extension
@@ -127,3 +126,9 @@ ts-fmt:
 
 .PHONY: make-fmt
 make-fmt: build fmt
+
+# Helper for users that want a global opam install
+.PHONY: opam-update-and-reinstall
+opam-update-and-reinstall:
+	git pull
+	opam install .

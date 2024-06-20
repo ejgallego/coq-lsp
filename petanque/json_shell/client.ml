@@ -1,3 +1,5 @@
+open Petanque_json
+
 (* Client wrap *)
 module type Chans = sig
   val ic : in_channel
@@ -13,12 +15,12 @@ let maybe_display_request method_ =
   if display_requests then Format.eprintf "received request: %s@\n%!" method_
 
 let do_trace ~trace params =
-  match Protocol.Trace.Params.of_yojson (`Assoc params) with
+  match Lsp.Io.TraceParams.of_yojson (`Assoc params) with
   | Ok { message; verbose } -> trace ?verbose message
   | Error _ -> ()
 
 let do_message ~message params =
-  match Protocol.Message.Params.of_yojson (`Assoc params) with
+  match Lsp.Io.MessageParams.of_yojson (`Assoc params) with
   | Ok { type_; message = msg } -> message ~lvl:type_ ~message:msg
   | Error _ -> ()
 
@@ -27,11 +29,11 @@ let rec read_response ~trace ~message ic =
   match Lsp.Io.read_message ic with
   | Some (Ok (Lsp.Base.Message.Response r)) -> Ok r
   | Some (Ok (Notification { method_; params }))
-    when String.equal method_ Protocol.Trace.method_ ->
+    when String.equal method_ Lsp.Io.TraceParams.method_ ->
     do_trace ~trace params;
     read_response ~trace ~message ic
   | Some (Ok (Notification { method_; params }))
-    when String.equal method_ Protocol.Message.method_ ->
+    when String.equal method_ Lsp.Io.MessageParams.method_ ->
     do_message ~message params;
     read_response ~trace ~message ic
   | Some (Ok (Request { method_; _ })) | Some (Ok (Notification { method_; _ }))
@@ -57,10 +59,8 @@ end = struct
     let id = get_id () in
     let method_ = R.method_ in
     let params = Yojson.Safe.Util.to_assoc (R.Params.to_yojson params) in
-    let request =
-      Lsp.Base.Request.(make ~id ~method_ ~params () |> to_yojson)
-    in
-    let () = Lsp.Io.send_json C.oc request in
+    let request = Lsp.Base.Request.make ~id ~method_ ~params () in
+    let () = Lsp.Io.send_message C.oc (Lsp.Base.Message.Request request) in
     read_response ~trace ~message C.ic |> fun r ->
     Result.bind r (function
       | Ok { id = _; result } -> R.Response.of_yojson result
@@ -68,23 +68,34 @@ end = struct
 end
 
 module S (C : Chans) = struct
-  let init =
-    let module M = Wrap (Protocol.Init) (C) in
+  open Protocol
+  open Protocol_shell
+
+  let set_workspace =
+    let module M = Wrap (SetWorkspace) (C) in
     M.call
 
   let start =
-    let module M = Wrap (Protocol.Start) (C) in
+    let module M = Wrap (Start) (C) in
     M.call
 
-  let run_tac =
-    let module M = Wrap (Protocol.RunTac) (C) in
+  let run =
+    let module M = Wrap (RunTac) (C) in
     M.call
 
   let goals =
-    let module M = Wrap (Protocol.Goals) (C) in
+    let module M = Wrap (Goals) (C) in
     M.call
 
   let premises =
-    let module M = Wrap (Protocol.Premises) (C) in
+    let module M = Wrap (Premises) (C) in
+    M.call
+
+  let state_equal =
+    let module M = Wrap (StateEqual) (C) in
+    M.call
+
+  let state_hash =
+    let module M = Wrap (StateHash) (C) in
     M.call
 end

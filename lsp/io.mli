@@ -17,17 +17,14 @@
 
 (** JSON-RPC input/output *)
 
-(** Set the log function *)
-val set_log_fn : (Yojson.Safe.t -> unit) -> unit
+(** Set the log output function *)
+val set_log_fn : (Base.Notification.t -> unit) -> unit
 
-(** Read a JSON-RPC message from channel *)
-val read_raw_message : in_channel -> (Yojson.Safe.t, string) Result.t option
-
-(** [None] signals [EOF] *)
+(** Read a JSON-RPC message from channel; [None] signals [EOF] *)
 val read_message : in_channel -> (Base.Message.t, string) Result.t option
 
-(** Send a JSON-RPC request to channel *)
-val send_json : Format.formatter -> Yojson.Safe.t -> unit
+(** Send a JSON-RPC message to channel *)
+val send_message : Format.formatter -> Base.Message.t -> unit
 
 (** Logging *)
 
@@ -47,13 +44,28 @@ val set_trace_value : TraceValue.t -> unit
 
 module Lvl : sig
   (* 1-5 *)
-  type t =
+  type t = Fleche.Io.Level.t =
     | Error
     | Warning
     | Info
     | Log
     | Debug
+
+  val to_int : t -> int
 end
+
+module MessageParams : sig
+  val method_ : string
+
+  type t =
+    { type_ : int [@key "type"]
+    ; message : string
+    }
+  [@@deriving yojson]
+end
+
+(** Create a logMessage notification *)
+val mk_logMessage : type_:int -> message:string -> Base.Notification.t
 
 (** Send a [window/logMessage] notification to the client *)
 val logMessage : lvl:Lvl.t -> message:string -> unit
@@ -61,12 +73,18 @@ val logMessage : lvl:Lvl.t -> message:string -> unit
 (** Send a [window/logMessage] notification to the client *)
 val logMessageInt : lvl:int -> message:string -> unit
 
+module TraceParams : sig
+  val method_ : string
+
+  type t =
+    { message : string
+    ; verbose : string option [@default None]
+    }
+  [@@deriving yojson]
+end
+
+(** Create a logTrace notification *)
+val mk_logTrace : message:string -> extra:string option -> Base.Notification.t
+
 (** Send a [$/logTrace] notification to the client *)
 val logTrace : message:string -> extra:string option -> unit
-
-(** [log hdr ?extra message] Log [message] to server info log with header [hdr].
-    [extra] will be used when [trace_value] is set to [Verbose] *)
-val trace : string -> ?extra:string -> string -> unit
-
-(** Log JSON object to server info log *)
-val trace_object : string -> Yojson.Safe.t -> unit

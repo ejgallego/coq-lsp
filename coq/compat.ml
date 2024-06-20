@@ -1,5 +1,21 @@
 (* Compatibility file *)
 
+module Ocaml_413 = struct
+  module String = struct
+    open String
+
+    let starts_with ~prefix s =
+      let len_s = length s
+      and len_pre = length prefix in
+      let rec aux i =
+        if i = len_pre then true
+        else if unsafe_get s i <> unsafe_get prefix i then false
+        else aux (i + 1)
+      in
+      len_s >= len_pre && aux 0
+  end
+end
+
 module Ocaml_414 = struct
   module In_channel = struct
     (* 4.14 can do this: In_channel.with_open_bin file In_channel.input_all, so
@@ -120,3 +136,12 @@ let format_to_file ~file ~f x =
   Out_channel.with_open_bin file (fun oc ->
       let of_fmt = Format.formatter_of_out_channel oc in
       Format.fprintf of_fmt "@[%a@]%!" f x)
+
+module Option = struct
+  include Stdlib.Option
+
+  module O = struct
+    let ( let+ ) r f = map f r
+    let ( let* ) r f = bind r f
+  end
+end

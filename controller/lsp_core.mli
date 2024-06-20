@@ -42,6 +42,7 @@ end
 
 val lsp_init_process :
      ofn:(Lsp.Base.Message.t -> unit)
+  -> io:Fleche.Io.CallBack.t
   -> cmdline:Coq.Workspace.CmdLine.t
   -> debug:bool
   -> Lsp.Base.Message.t

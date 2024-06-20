@@ -68,7 +68,12 @@ let compare (x : t) (y : t) =
   else 1
 
 let equal x y = compare x y = 0
-let hash x = Hashtbl.hash x
+
+let hash x =
+  (* OCaml's defaults are 10, 100, but not so good for us, much improved
+     settings are below (best try so far) *)
+  let meaningful, total = (64, 256) in
+  Hashtbl.hash_param meaningful total x
 
 let mode ~st =
   Option.map
@@ -184,12 +189,16 @@ end
 
 let program ~st = NeList.head st.Vernacstate.program |> Declare.OblState.view
 
-let drop_proofs ~st =
+let drop_proof ~st =
   let open Vernacstate in
   { st with
     lemmas =
       Option.cata (fun s -> snd @@ Vernacstate.LemmaStack.pop s) None st.lemmas
   }
+
+let drop_all_proofs ~st =
+  let open Vernacstate in
+  { st with lemmas = None }
 
 let in_state ~token ~st ~f a =
   let f a =
@@ -227,3 +236,23 @@ let admit_goal ~st () =
     { st with lemmas }
 
 let admit_goal ~token ~st = Protect.eval ~token ~f:(admit_goal ~st) ()
+
+let count_edges univ =
+  let univ = UGraph.repr univ in
+  Univ.Level.Map.fold
+    (fun _ node acc ->
+      acc
+      +
+      match node with
+      | UGraph.Alias _ -> 1
+      | Node m -> Univ.Level.Map.cardinal m)
+    univ
+    (Univ.Level.Map.cardinal univ)
+
+let info_universes ~token ~st =
+  let open Protect.E.O in
+  let+ univ = in_state ~token ~st ~f:Global.universes () in
+  let univs = UGraph.domain univ in
+  let nuniv = Univ.Level.Set.cardinal univs in
+  let nconst = count_edges univ in
+  (nuniv, nconst)

@@ -62,7 +62,8 @@
           "LaTeX"
         ],
         "extensions": [
-          ".lv"
+          ".lv",
+          "v.tex"
         ]
       }
     ],
@@ -131,6 +132,14 @@
       {
         "command": "coq-lsp.heatmap.toggle",
         "title": "Coq LSP: Toggle heatmap"
+      },
+      {
+        "command": "coq-lsp.petanque.start",
+        "title": "Coq LSP: Start a petanque session for theorem (Coq developer-only command)"
+      },
+      {
+        "command": "coq-lsp.petanque.run",
+        "title": "Coq LSP: Run a tactic over a petanque session (Coq developer-only command)"
       }
     ],
     "keybindings": [
@@ -216,6 +225,11 @@
             "type": "boolean",
             "default": false,
             "description": "Show parsing information for a sentence on hover."
+          },
+          "coq-lsp.show_universes_on_hover": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show universe information and diff for a sentence on hover."
           }
         }
       },

@@ -9,3 +9,6 @@ val normal : (string * string) list
 
 (** All the supported bindings for unicode characters in a table. *)
 val extended : (string * string) list
+
+(** Return the list selected in config *)
+val from_config : unit -> (string * string) list

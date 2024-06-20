@@ -36,3 +36,5 @@ val toc :
 
 (** Recovers the list of loaded libraries for state [st] *)
 val loaded : token:Limits.Token.t -> st:State.t -> (t list, Loc.t) Protect.E.t
+
+val locate_absolute_library : Names.DirPath.t -> (string, Exninfo.iexn) Result.t

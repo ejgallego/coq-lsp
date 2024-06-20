@@ -1,5 +1,35 @@
 module CS = Stats
 
+(* XXX: We are missing good error handling here! Fix submitted upstream. *)
+module Intern = struct
+  let hc : (Names.DirPath.t, _) Hashtbl.t = Hashtbl.create 1000
+  let _use_cache = true
+
+  exception LocateError of (Names.DirPath.t * Loadpath.locate_error)
+  [@@warning "-38"]
+
+  let reason = function
+    | Loadpath.LibUnmappedDir ->
+      "Logical path was not found (missing _CoqProject settings)"
+    | LibNotFound -> "Library wasn't found (no .vo in place?)"
+
+  let () =
+    CErrors.register_handler (function
+      | LocateError (dp, error) ->
+        Some
+          Pp.(
+            str "Couldn't find .vo file for "
+            ++ Names.DirPath.print dp ++ str " : "
+            ++ str (reason error))
+      | _ -> None)
+
+  let intern = ()
+  let clear () = Hashtbl.clear hc
+end
+
+let intern = Intern.intern
+
+(* Regular memo tables *)
 module Stats = struct
   type t =
     { stats : Stats.t
@@ -69,6 +99,8 @@ module MemoTable = struct
 
     (** sorted *)
     val all_freqs : unit -> int list
+
+    val stats : 'a t -> Hashtbl.statistics
   end
 
   module Make (H : Hashtbl.HashedType) : S with type key = H.t = struct
@@ -182,6 +214,9 @@ module type S = sig
   (** [freqs ()]: (sorted) histogram *)
   val all_freqs : unit -> int list
 
+  (** [stats ()]: hashtbl stats *)
+  val stats : unit -> Hashtbl.statistics
+
   (** debug data for input *)
   val input_info : input -> string
 
@@ -200,6 +235,7 @@ module SEval (E : EvalType) :
   let size () = Obj.reachable_words (Obj.magic cache)
   let input_info i = E.input_info i
   let all_freqs = HC.all_freqs
+  let stats () = HC.stats cache
   let clear () = HC.clear cache
 
   let in_cache i =
@@ -245,6 +281,7 @@ module CEval (E : LocEvalType) = struct
   let size () = Obj.reachable_words (Obj.magic cache)
   let all_freqs = HC.all_freqs
   let input_info = E.input_info
+  let stats () = HC.stats cache
   let clear () = HC.clear cache
 
   let in_cache i =
@@ -287,7 +324,7 @@ module VernacEval = struct
 
   type output = Coq.State.t
 
-  let eval ~token (st, stm) = Coq.Interp.interp ~token ~st stm
+  let eval ~token (st, stm) = Coq.Interp.interp ~token ~intern ~st stm
 end
 
 module Interp = CEval (VernacEval)
@@ -316,7 +353,7 @@ module RequireEval = struct
   type output = Coq.State.t
 
   let eval ~token (st, files, stm) =
-    Coq.Interp.Require.interp ~token ~st files stm
+    Coq.Interp.Require.interp ~token ~intern ~st files stm
 end
 
 module Require = CEval (RequireEval)
@@ -347,7 +384,7 @@ module InitEval = struct
   type output = Coq.State.t
 
   let eval ~token (root_state, workspace, uri) =
-    Coq.Init.doc_init ~token ~root_state ~workspace ~uri
+    Coq.Init.doc_init ~token ~intern ~root_state ~workspace ~uri
 
   let input_info (st, ws, file) =
     Format.asprintf "st %d | ws %d | file %s" (Hashtbl.hash st)
