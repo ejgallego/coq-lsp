@@ -66,6 +66,8 @@
    configurable with different methods; moreover, `petanque/run` can
    compute some extra data like state hashing without a round-trip
    (@ejgallego @gbdrt, #779)
+ - [tools] New tool `checkdecls` for Coq blueprint, inspired by the
+   Lean version (#785, @ejgallego, Andrej Bauer, Patrick Massot)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
