@@ -5,8 +5,22 @@
 (* Written by: Andrej Bauaer, Emilio J. Gallego Arias                   *)
 (************************************************************************)
 
+(* Notes:
+
+   - we could at some point use LSP, workspace/symbols seems like the closest
+   call, then we could filter client-side *)
+
+module Config = struct
+  type t =
+    { error_debug : bool
+          (* Print extra information when a constant is not found *)
+    }
+end
+
+let config : Config.t = { error_debug = false }
 let err_fmt = Format.err_formatter
 let pf fmt = Format.kfprintf (fun fmt -> Format.pp_print_flush fmt ()) fmt
+let out = pf Format.std_formatter
 
 let coq_init ~debug =
   let load_module = Dynlink.loadfile in
@@ -63,7 +77,9 @@ let do_decl decl =
     (* pf err "decl found! %s" decl; *)
     0
   | Error err ->
-    pf err_fmt "Error when processing input %s [%s]@\n" decl err;
+    out "%s is missing.@\n" decl;
+    if config.error_debug then
+      pf err_fmt "Error when processing input %s [%s]@\n" decl err;
     1
 
 let do_decls file =
