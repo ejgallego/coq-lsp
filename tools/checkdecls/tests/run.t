@@ -21,16 +21,12 @@ Simple test with one file, succeed
   $ echo Coq.Init.Nat.add > clist
   $ echo Coq.Init.Peano.plus_n_O >> clist
   $ checkdecls clist
-  $ echo $?
-  0
 
 Simple test with one file, fail
 
   $ echo Coq.Init.Peano.not_a_constant >> clist
   $ echo Coq.Init.Nat.not_a_theorem >> clist
   $ checkdecls clist
-  Error when processing input Coq.Init.Peano.not_a_constant [Coq.Init.Peano.not_a_constant not found in name table]
-  Error when processing input Coq.Init.Nat.not_a_theorem [Coq.Init.Nat.not_a_theorem not found in name table]
+  Coq.Init.Peano.not_a_constant is missing.
+  Coq.Init.Nat.not_a_theorem is missing.
   [1]
-  $ echo $?
-  0
