@@ -21,6 +21,7 @@ open Ppx_compare_lib.Builtin
 open Sexplib.Std
 
 module CAst = Ser_cAst
+module Libnames = Ser_libnames
 
 type vernac_flag_type =
   [%import: Attributes.vernac_flag_type]
