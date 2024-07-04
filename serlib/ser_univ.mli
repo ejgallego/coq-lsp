@@ -18,7 +18,10 @@
 
 open Sexplib
 
-module Level : SerType.SJHC with type t = Univ.Level.t
+module Level : sig
+  include SerType.SJHC with type t = Univ.Level.t
+  module Set : SerType.SJHC with type t = Univ.Level.Set.t
+end
 module Universe : SerType.SJHC with type t = Univ.Universe.t
 
 type constraint_type = Univ.constraint_type [@@deriving sexp,yojson,hash,compare]
