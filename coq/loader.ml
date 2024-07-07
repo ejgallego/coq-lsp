@@ -40,8 +40,10 @@ let map_serlib fl_pkg =
   let supported = match fl_pkg with
     (* Supported by serlib *)             (* directory   *)
     | "coq-core.plugins.btauto"           (* btauto *)
+    | "coq-core.plugins.cc_core"          (* cc_core  *)
     | "coq-core.plugins.cc"               (* cc  *)
     | "coq-core.plugins.extraction"       (* extraction  *)
+    | "coq-core.plugins.firstorder_core"  (* firstorder_core  *)
     | "coq-core.plugins.firstorder"       (* firstorder  *)
     | "coq-core.plugins.funind"           (* funind      *)
     | "coq-core.plugins.ltac"             (* ltac        *)
