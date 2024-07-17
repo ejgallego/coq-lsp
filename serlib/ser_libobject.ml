@@ -66,6 +66,11 @@ type obj =
   [%import: Libobject.obj]
   [@@deriving sexp]
 
+module ExportObj = struct
+  type t = [%import: Libobject.ExportObj.t]
+  [@@unboxed] [@@deriving sexp]
+end
+
 type algebraic_objects =
   [%import: Libobject.algebraic_objects]
 and t = [%import: Libobject.t]
