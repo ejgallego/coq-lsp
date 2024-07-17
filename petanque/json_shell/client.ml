@@ -98,4 +98,12 @@ module S (C : Chans) = struct
   let state_hash =
     let module M = Wrap (StateHash) (C) in
     M.call
+
+  let state_proof_equal =
+    let module M = Wrap (StateProofEqual) (C) in
+    M.call
+
+  let state_proof_hash =
+    let module M = Wrap (StateProofHash) (C) in
+    M.call
 end

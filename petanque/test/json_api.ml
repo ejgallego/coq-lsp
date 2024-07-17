@@ -59,9 +59,12 @@ let run (ic, oc) =
      Format.(eprintf "@[%a@]@\n%!" (pp_print_list pp_premise) premises));
   let* st = S.run { opts = None; st; tac = "induction l." } in
   let* h1 = S.state_hash { st = st.st } in
+  let* h1_p = S.state_proof_hash { st = st.st } in
   let* st = r ~st ~tac:"idtac." in
   let* h2 = S.state_hash { st = st.st } in
+  let* h2_p = S.state_proof_hash { st = st.st } in
   assert (Int.equal h1 h2);
+  assert (Option.equal Int.equal h1_p h2_p);
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"reflexivity." in
   let* h3 = S.state_hash { st = st.st } in
