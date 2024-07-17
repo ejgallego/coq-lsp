@@ -45,6 +45,8 @@
  - [ci] [deps] Remove support for OCaml 4.12 and 4.13, following
    upstream's coq/coq#20576 Note that these compiler versions have
    been unsupported for a long time, please upgrade (@ejgallego, #951)
+ - [hover] New option `show_state_hash_on_hover` that displays state
+    hash on hover for debug (@ejgallego, #954)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
