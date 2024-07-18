@@ -34,6 +34,20 @@ let pp_premise fmt { Petanque.Agent.Premise.full_name; file; info } =
 
 let print_premises = false
 
+let pp_toc fmt (name, ast_info) =
+  let pp_ast_info fmt ast_info =
+    let ast_info =
+      Option.map (List.map JAgent.Lang.Ast.Info.to_yojson) ast_info
+    in
+    Format.fprintf fmt "@[%a@]"
+      Format.(pp_print_option (pp_print_list Yojson.Safe.pp))
+      ast_info
+  in
+  Format.(
+    fprintf fmt "@[{ name = %s; ast_info = @[%a@] @]" name pp_ast_info ast_info)
+
+let print_toc = false
+
 let run (ic, oc) =
   let open Coq.Compat.Result.O in
   let debug = false in
@@ -57,6 +71,8 @@ let run (ic, oc) =
   let* premises = S.premises { st } in
   (if print_premises then
      Format.(eprintf "@[%a@]@\n%!" (pp_print_list pp_premise) premises));
+  let* toc = S.toc { uri } in
+  (if print_toc then Format.(eprintf "@[%a@]@\n%!" (pp_print_list pp_toc) toc));
   let* st = S.run { opts = None; st; tac = "induction l." } in
   let* h1 = S.state_hash { st = st.st } in
   let* h1_p = S.state_proof_hash { st = st.st } in

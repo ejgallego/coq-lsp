@@ -71,10 +71,16 @@ module S (C : Chans) = struct
   open Protocol
   open Protocol_shell
 
+  (* Shell calls (they do have an equivalent version in LSP) *)
   let set_workspace =
     let module M = Wrap (SetWorkspace) (C) in
     M.call
 
+  let toc =
+    let module M = Wrap (TableOfContents) (C) in
+    M.call
+
+  (* Standard calls *)
   let start =
     let module M = Wrap (Start) (C) in
     M.call

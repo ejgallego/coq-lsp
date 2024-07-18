@@ -67,15 +67,7 @@ module Start = struct
   end
 
   module Handler = struct
-    module Params = struct
-      type t =
-        { uri : Lsp.JLang.LUri.File.t
-        ; opts : Run_opts.t option [@default None]
-        ; pre_commands : string option [@default None]
-        ; thm : string
-        }
-      [@@deriving yojson]
-    end
+    module Params = Params
 
     module Response = struct
       type t = State.t Run_result.t [@@deriving yojson]
