@@ -66,6 +66,8 @@
    configurable with different methods; moreover, `petanque/run` can
    compute some extra data like state hashing without a round-trip
    (@ejgallego @gbdrt, #779)
+ - [petanque] New methods to hash proof states; use proof state hash
+   by default in petanque agent (@ejgallego, @gbdrt, #808)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------

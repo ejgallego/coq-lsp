@@ -23,4 +23,10 @@ module S (C : Chans) : sig
     StateEqual.Params.t -> (StateEqual.Response.t, string) result
 
   val state_hash : StateHash.Params.t -> (StateHash.Response.t, string) result
+
+  val state_proof_equal :
+    StateProofEqual.Params.t -> (StateProofEqual.Response.t, string) result
+
+  val state_proof_hash :
+    StateProofHash.Params.t -> (StateProofHash.Response.t, string) result
 end
