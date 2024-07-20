@@ -20,6 +20,9 @@ open Sexplib
 
 module Store : SerType.SJHC with type t = Genintern.Store.t
 
+type notation_variable_status = Genintern.notation_variable_status
+  [@@deriving sexp, yojson, hash, compare]
+
 type intern_variable_status = Genintern.intern_variable_status
   [@@deriving sexp, yojson, hash, compare]
 
