@@ -46,6 +46,10 @@ type ntnvar_status = Genintern.ntnvar_status = {
 }
 [@@deriving sexp,yojson,hash,compare]
 
+type notation_variable_status =
+  [%import: Genintern.notation_variable_status]
+  [@@deriving sexp, yojson, hash, compare]
+
 type intern_variable_status =
   [%import: Genintern.intern_variable_status]
   [@@deriving sexp,yojson,hash,compare]
