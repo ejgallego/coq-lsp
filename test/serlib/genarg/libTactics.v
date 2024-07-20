@@ -44,7 +44,7 @@
 
 Set Implicit Arguments.
 
-Require Import Coq.Lists.List.
+Require Import Stdlib.Lists.List.
 
 
 (* ********************************************************************** *)
@@ -370,7 +370,7 @@ Ltac fast_rm_inside E :=
     Note: the tactic [number_to_nat] is extended in [LibInt] to
     take into account the [int] type, alias for [Z]. *)
 
-Require Coq.Numbers.BinNums Coq.ZArith.BinInt.
+Require Stdlib.Numbers.BinNums Stdlib.ZArith.BinInt.
 
 Definition ltac_int_to_nat (x:BinInt.Z) : nat :=
   match x with
@@ -2519,7 +2519,7 @@ Tactic Notation "subst_eq" constr(E) :=
 (* ---------------------------------------------------------------------- *)
 (** ** Tactics to work with proof irrelevance *)
 
-Require Import Coq.Logic.ProofIrrelevance.
+Require Import Stdlib.Logic.ProofIrrelevance.
 
 (** [pi_rewrite E] replaces [E] of type [Prop] with a fresh
     unification variable, and is thus a practical way to
@@ -3098,7 +3098,7 @@ Tactic Notation "cases_if'" :=
     [inductions E gen X1 .. XN] is a shorthand for
     [dependent induction E generalizing X1 .. XN]. *)
 
-Require Import Coq.Program.Equality.
+Require Import Stdlib.Program.Equality.
 
 Ltac inductions_post :=
   unfold eq' in *.
@@ -3189,7 +3189,7 @@ Tactic Notation "induction_wf" ":" constr(E) ident(X) :=
     judgment that includes a counter for the maximal height
     (see LibTacticsDemos for an example) *)
 
-Require Import Coq.Arith.Compare_dec.
+Require Import Stdlib.Arith.Compare_dec.
 Require Import Lia.
 
 Lemma induct_height_max2 : forall n1 n2 : nat,
@@ -4166,7 +4166,7 @@ Tactic Notation "exists" "~" constr(T1) "," constr(T2) "," constr(T3) ","
     same as for light automation.
 
     Exception: use [subs*] instead of [subst*] if you
-    import the library [Coq.Classes.Equivalence]. *)
+    import the library [Stdlib.Classes.Equivalence]. *)
 
 Tactic Notation "equates" "*" constr(E) :=
    equates E; auto_star.
@@ -5007,7 +5007,7 @@ Open Scope nat_scope.
 
 (** [exists T1 ... TN, P] is a shorthand for
     [exists T1, ..., exists TN, P]. Note that
-    [Coq.Program.Syntax] already defines exists
+    [Stdlib.Program.Syntax] already defines exists
     for arity up to 4. *)
 
 Notation "'exists' x1 ',' P" :=
