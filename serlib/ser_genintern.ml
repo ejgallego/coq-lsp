@@ -36,6 +36,10 @@ module Store = struct
 
 end
 
+type notation_variable_status =
+  [%import: Genintern.notation_variable_status]
+  [@@deriving sexp, yojson, hash, compare]
+
 type intern_variable_status =
   [%import: Genintern.intern_variable_status]
   [@@deriving sexp,yojson,hash,compare]
