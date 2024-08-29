@@ -383,22 +383,26 @@ README there for more details.
 
 The checklist for the release as of today is the following:
 
+### Pre-release
+
+- update the version number at `editor/code/package.json`, do `npm i`
+- update the version number at `fleche/version.ml`
+
 ### Client:
 
 - update the client changelog at `editor/code/CHANGELOG.md`, commit
-- update the version number at `editor/code/package.json`
 - for the `main` branch: `dune release tag $coq_lsp_version`
+- build the extension with `npm run vscode:prepublish`
 - check with `vsce ls` that the client contents are OK
 - `vsce publish`
+- upload vsix to OpenVSX marketplace
 
 ### Server:
 
-- update the version number at `fleche/version.ml`
 - sync branches for previous Coq versions, using `git merge`, test and push to CI.
 - `dune release tag` for each `$coq_lsp_version+$coq_version`
 - `dune release` for each version that should to the main opam repos
-- [optional] update pre-release packages to coq-opam-archive
-- [important] after the release, bump `version.ml` and `package.json` version string
+- [deprecated] update pre-release packages to coq-opam-archive
 
 The above can be done with:
 ```
@@ -409,6 +413,11 @@ git checkout v8.19 && git merge v8.20  && make && dune-release tag ${COQLSPV}+8.
 git checkout v8.18 && git merge v8.19  && make && dune-release tag ${COQLSPV}+8.18 && dune-release
 git checkout v8.17 && git merge v8.18 && make && dune-release tag ${COQLSPV}+8.17 && dune-release
 ```
+
+### After release
+
+- [important] bump `version.ml` and `editor/code/package.json` version
+  string to a `-dev` suffix
 
 ## Emacs
 
