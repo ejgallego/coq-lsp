@@ -1,6 +1,0 @@
-(library
- (name serlib_tauto)
- (public_name coq-lsp.serlib.tauto)
- (synopsis "Serialization Library for Coq Tauto Plugin")
- (preprocess (staged_pps ppx_import ppx_sexp_conv ppx_deriving_yojson ppx_hash ppx_compare))
- (libraries coq-core.plugins.tauto serlib sexplib))

@@ -1,6 +1,0 @@
-(library
- (name serlib_micromega)
- (public_name coq-lsp.serlib.micromega)
- (synopsis "Serialization Library for Coq Congruence Plugin")
- (preprocess (staged_pps ppx_import ppx_sexp_conv ppx_deriving_yojson ppx_hash ppx_compare))
- (libraries coq-core.plugins.micromega serlib sexplib))
