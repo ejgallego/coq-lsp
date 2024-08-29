@@ -71,10 +71,16 @@ module S (C : Chans) = struct
   open Protocol
   open Protocol_shell
 
+  (* Shell calls (they do have an equivalent version in LSP) *)
   let set_workspace =
     let module M = Wrap (SetWorkspace) (C) in
     M.call
 
+  let toc =
+    let module M = Wrap (TableOfContents) (C) in
+    M.call
+
+  (* Standard calls *)
   let start =
     let module M = Wrap (Start) (C) in
     M.call
@@ -97,5 +103,13 @@ module S (C : Chans) = struct
 
   let state_hash =
     let module M = Wrap (StateHash) (C) in
+    M.call
+
+  let state_proof_equal =
+    let module M = Wrap (StateProofEqual) (C) in
+    M.call
+
+  let state_proof_hash =
+    let module M = Wrap (StateProofHash) (C) in
     M.call
 end

@@ -14,6 +14,9 @@ module S (C : Chans) : sig
   val set_workspace :
     SetWorkspace.Params.t -> (SetWorkspace.Response.t, string) result
 
+  val toc :
+    TableOfContents.Params.t -> (TableOfContents.Response.t, string) result
+
   val start : Start.Params.t -> (Start.Response.t, string) result
   val run : RunTac.Params.t -> (RunTac.Response.t, string) result
   val goals : Goals.Params.t -> (Goals.Response.t, string) result
@@ -23,4 +26,10 @@ module S (C : Chans) : sig
     StateEqual.Params.t -> (StateEqual.Response.t, string) result
 
   val state_hash : StateHash.Params.t -> (StateHash.Response.t, string) result
+
+  val state_proof_equal :
+    StateProofEqual.Params.t -> (StateProofEqual.Response.t, string) result
+
+  val state_proof_hash :
+    StateProofHash.Params.t -> (StateProofHash.Response.t, string) result
 end

@@ -23,6 +23,7 @@ module Loc = Ser_loc
 module Xml_datatype = Ser_xml_datatype
 module Pp           = Ser_pp
 module Stateid      = Ser_stateid
+module Quickfix     = Ser_quickfix
 
 type level =
   [%import: Feedback.level]

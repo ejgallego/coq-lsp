@@ -11,7 +11,7 @@ module Id : sig
   val of_coq : Names.Id.t -> t
   val to_coq : t -> Names.Id.t
 
-  module Set : CSet.ExtS with type elt = t
+  module Set : CSet.S with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
 end
 

@@ -25,3 +25,10 @@ val build_doc :
      token:Coq.Limits.Token.t
   -> uri:Lang.LUri.File.t
   -> (Fleche.Doc.t, Agent.Error.t) Result.t
+
+val get_toc :
+     token:Coq.Limits.Token.t
+  -> doc:Fleche.Doc.t
+  -> ( (string * Lang.Ast.Info.t list option) list
+     , Petanque.Agent.Error.t )
+     Result.t
