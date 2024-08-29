@@ -16,21 +16,17 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-open Ppx_hash_lib.Std.Hash.Builtin
-open Ppx_compare_lib.Builtin
-open Sexplib.Std
+module Loc = Ser_loc
+module Pp  = Ser_pp
 
-module CAst = Ser_cAst
-module Libnames = Ser_libnames
+module QFB = struct
 
-type vernac_flag_type =
-  [%import: Attributes.vernac_flag_type]
+  type t = Quickfix.t
+  type _t = Loc.t * Pp.t
   [@@deriving sexp,yojson,hash,compare]
 
-type vernac_flag =
-  [%import: Attributes.vernac_flag]
-and vernac_flag_value =
-  [%import: Attributes.vernac_flag_value]
-and vernac_flags =
-  [%import: Attributes.vernac_flags]
-  [@@deriving sexp,yojson,hash,compare]
+  let of_t qf = Quickfix.(loc qf, pp qf)
+  let to_t (loc, pp) = Quickfix.make ~loc pp
+end
+
+include SerType.Biject(QFB)

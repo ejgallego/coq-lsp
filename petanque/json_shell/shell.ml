@@ -102,3 +102,16 @@ let init_agent ~token ~debug ~roots =
   init_st := Some (init_coq ~debug);
   Fleche.Io.CallBack.set io;
   set_roots ~token ~debug ~roots
+
+let toc_to_info (name, node) =
+  let open Coq.Compat.Option.O in
+  let+ ast = Fleche.Doc.Node.ast node in
+  (name, ast.Fleche.Doc.Node.Ast.ast_info)
+
+let get_toc ~token:_ ~(doc : Fleche.Doc.t) :
+    ( (string * Lang.Ast.Info.t list option) list
+    , Petanque.Agent.Error.t )
+    Result.t =
+  let { Fleche.Doc.toc; _ } = doc in
+  let toc = CString.Map.bindings toc |> List.filter_map toc_to_info in
+  Ok toc

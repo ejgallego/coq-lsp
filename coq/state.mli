@@ -10,6 +10,8 @@ val parsing : st:t -> Vernacstate.Parser.t
 module Proof : sig
   type t
 
+  val equal : t -> t -> bool
+  val hash : t -> int
   val to_coq : t -> Vernacstate.LemmaStack.t
 end
 

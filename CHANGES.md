@@ -1,5 +1,5 @@
-# unreleased
-------------
+# coq-lsp 0.2.0: From Green to Blue
+-----------------------------------
 
  - [deps] merge serlib into coq-lsp. This allow us to drop the SerAPI
    dependency, and will greatly easy the development of tools that
@@ -66,6 +66,10 @@
    configurable with different methods; moreover, `petanque/run` can
    compute some extra data like state hashing without a round-trip
    (@ejgallego @gbdrt, #779)
+ - [petanque] New methods to hash proof states; use proof state hash
+   by default in petanque agent (@ejgallego, @gbdrt, #808)
+ - [petanque] New shell method `petanque/toc` that returns a document
+   outline in LSP-style (@ejgallego, #794)
 
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------

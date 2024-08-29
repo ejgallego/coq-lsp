@@ -16,11 +16,5 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-open Sexplib
-
 type private_constants = Safe_typing.private_constants
   [@@deriving sexp,yojson,hash,compare]
-
-type global_declaration = Safe_typing.global_declaration
-val global_declaration_of_sexp : Sexp.t -> global_declaration
-val sexp_of_global_declaration : global_declaration -> Sexp.t
