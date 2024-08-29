@@ -13,7 +13,7 @@
    ; We insert the digest of the binaries to force a rebuild of the
    ; test cases if the binary has been modified.
    (bash
-    "for i in ../../../compiler/fcc.exe ../../../serlib/plugins/*/*.cmxs; do echo \"# $(md5sum $i)\"; done >> test_roundtrip"))))
+    "for i in ../../../compiler/fcc.exe ../../../serlib_8_20/plugins/*/*.cmxs; do echo \"# $(md5sum $i)\"; done >> test_roundtrip"))))
 
 (rule
  (alias runtest)

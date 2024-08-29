@@ -1,3 +1,35 @@
+# coq-lsp 0.2.0: From Green to Blue
+-----------------------------------
+
+ - [fleche] Preserve view hint across document changes. With this
+   change, we get local continuous checking mode when the view-port
+   heuristic is enabled (@ejgallego, #748)
+ - [vscode] Fix focus race when a Coq file is in column 2 (@ejgallego,
+   #755, cc: #722, #725)
+ - [hover] Show input howto for unicode characters on hover
+   (@ejgallego, Léo Stefanesco, #756)
+ - [lsp] [definition] Support for jump to definition across workspace
+   files. The location information is obtained from `.glob` files, so
+   it is often not perfect. (@ejgallego, #762, fixes #317)
+ - [lsp] [hover] Show full name and provenance of identifiers
+   (@ejgallego, #762)
+ - [lsp] [definition] Try also to resolve and locate module imports
+   (@ejgallego, #764)
+ - [code] Don't start server on extension activation, unless an editor
+   we own is active. We also auto-start the server if a document that
+   we own is opened later (@ejgallego, #758, fixes #750)
+ - [hover] New option `show_universes_on_hover` that will display
+   universe data on hover (@ejgallego, @SkySkimmer, #666)
+ - [hover] New plugin `unidiff` that will elaborate a summary of
+   universe data a file, in particular regarding universes added at
+   `Qed` time (@ejgallego, #773)
+ - [fleche] Support meta-command `Abort All` (@ejgallego, #774, fixes
+   #550)
+ - [lsp] [petanque] Allow acces to `petanque` protocol from the lsp
+   server (@ejgallego, #778)
+
+  See server changelog for full server-side changes.
+
 # coq-lsp 0.1.10: Hasta el 40 de Mayo _en effect_...
 ----------------------------------------------------
 

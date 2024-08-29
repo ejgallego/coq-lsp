@@ -67,15 +67,7 @@ module Start = struct
   end
 
   module Handler = struct
-    module Params = struct
-      type t =
-        { uri : Lsp.JLang.LUri.File.t
-        ; opts : Run_opts.t option [@default None]
-        ; pre_commands : string option [@default None]
-        ; thm : string
-        }
-      [@@deriving yojson]
-    end
+    module Params = Params
 
     module Response = struct
       type t = State.t Run_result.t [@@deriving yojson]
@@ -234,5 +226,44 @@ module StateHash = struct
 
     let handler =
       HType.Immediate (fun ~token:_ { Params.st } -> Ok (Agent.State.hash st))
+  end
+end
+
+module StateProofEqual = struct
+  let method_ = "petanque/state/proof/equal"
+
+  module Params = StateEqual.Params
+  module Response = StateEqual.Response
+
+  module Handler = struct
+    module Params = StateEqual.Handler.Params
+    module Response = Response
+
+    let handler =
+      HType.Immediate
+        (fun ~token:_ { Params.kind; st1; st2 } ->
+          let pst1, pst2 = Agent.State.(lemmas st1, lemmas st2) in
+          Ok (Option.equal (Agent.State.Proof.equal ?kind) pst1 pst2))
+  end
+end
+
+module StateProofHash = struct
+  let method_ = "petanque/state/proof/hash"
+
+  module Params = StateHash.Params
+
+  module Response = struct
+    type t = int option [@@deriving yojson]
+  end
+
+  module Handler = struct
+    module Params = StateHash.Handler.Params
+    module Response = Response
+
+    let handler =
+      HType.Immediate
+        (fun ~token:_ { Params.st } ->
+          let pst = Agent.State.lemmas st in
+          Ok (Option.map Agent.State.Proof.hash pst))
   end
 end

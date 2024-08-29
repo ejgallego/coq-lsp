@@ -88,6 +88,13 @@ module Proof = struct
   type t = Vernacstate.LemmaStack.t
 
   let to_coq x = x
+  let equal x y = x == y
+
+  (* OCaml's defaults are 10, 100, we use this as to give best precision for
+     petanque-like users *)
+  let hash x =
+    let meaningful, total = (128, 256) in
+    Hashtbl.hash_param meaningful total x
 end
 
 let lemmas ~st = st.Vernacstate.lemmas

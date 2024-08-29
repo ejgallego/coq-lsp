@@ -6,14 +6,13 @@
 (************************************************************************)
 
 (** Petanque.Agent *)
-
 module State : sig
+  (** Full state of Coq *)
   type t
 
   val name : string
 
-  (** Fleche-based Coq state hash; it has been designed for interactive use, so
-      please report back *)
+  (** OCaml poly Coq state hash; tuned for interactive edition. *)
   val hash : t -> int
 
   module Inspect : sig
@@ -28,6 +27,18 @@ module State : sig
 
   (** [equal ?kind st1 st2] [kind] defaults to [Inspect.Physical] *)
   val equal : ?kind:Inspect.t -> t -> t -> bool
+
+  module Proof : sig
+    (** OCaml poly hash for Coq proof state. *)
+    type t
+
+    (** [equal ?kind st1 st2] [kind] defaults to [Inspect.Physical] *)
+    val equal : ?kind:Inspect.t -> t -> t -> bool
+
+    val hash : t -> int
+  end
+
+  val lemmas : t -> Proof.t option
 end
 
 (** Petanque errors *)
@@ -62,6 +73,7 @@ module Run_result : sig
   type 'a t =
     { st : 'a
     ; hash : int option [@default None]
+          (** [State.Proof.hash st] if enabled / proof is open. *)
     ; proof_finished : bool
     }
 end

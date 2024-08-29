@@ -42,6 +42,9 @@ depends: [
   "ocamlfind" {>= "1.8.1"}
   "zarith" {>= "1.11"}
 
+  # result dep, fixed in main, but kept for older releases
+  "result"              { >= "1.5" }
+
   # serlib deps: see what we need to keep for release
   "ppx_deriving"        { >= "4.2.1"    }
   "ppx_deriving_yojson" { >= "3.4"      }
