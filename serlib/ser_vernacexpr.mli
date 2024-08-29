@@ -112,16 +112,28 @@ type notation_declaration =
   [%import: Vernacexpr.notation_declaration]
   [@@deriving sexp,yojson,hash,compare]
 
-type 'a fix_expr_gen =
-  [%import: 'a Vernacexpr.fix_expr_gen]
+type recursion_order_expr =
+  [%import: Vernacexpr.recursion_order_expr]
+  [@@deriving sexp,yojson,hash,compare]
+
+type recursive_expr_gen =
+  [%import: Vernacexpr.recursive_expr_gen]
   [@@deriving sexp,yojson,hash,compare]
 
 type fixpoint_expr =
   [%import: Vernacexpr.fixpoint_expr]
   [@@deriving sexp,yojson,hash,compare]
 
-type cofixpoint_expr =
-  [%import: Vernacexpr.cofixpoint_expr]
+type fixpoints_expr =
+  [%import: Vernacexpr.fixpoints_expr]
+  [@@deriving sexp,yojson,hash,compare]
+
+type cofixpoints_expr =
+  [%import: Vernacexpr.cofixpoints_expr]
+  [@@deriving sexp,yojson,hash,compare]
+
+type recursives_expr =
+  [%import: Vernacexpr.recursives_expr]
   [@@deriving sexp,yojson,hash,compare]
 
 type local_decl_expr =

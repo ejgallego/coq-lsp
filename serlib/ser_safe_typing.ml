@@ -78,7 +78,3 @@ let _effect_entry_of_sexp (_f : Sexp.t -> 'a) (x : Sexp.t) : 'a effect_entry =
   | _ ->
     Sexplib.Conv_error.no_variant_match ()
 *)
-
-type global_declaration =
-  [%import: Safe_typing.global_declaration]
-  [@@deriving sexp]

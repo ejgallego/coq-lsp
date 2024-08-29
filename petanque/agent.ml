@@ -30,6 +30,19 @@ module State = struct
       fun st1 st2 ->
         let st1, st2 = (Coq.State.lemmas ~st:st1, Coq.State.lemmas ~st:st2) in
         Option.equal Coq.Goals.Equality.equal_goals st1 st2
+
+  module Proof = struct
+    type t = Coq.State.Proof.t
+
+    let equal ?(kind = Inspect.Physical) =
+      match kind with
+      | Physical -> Coq.State.Proof.equal
+      | Goals -> Coq.Goals.Equality.equal_goals
+
+    let hash = Coq.State.Proof.hash
+  end
+
+  let lemmas st = Coq.State.lemmas ~st
 end
 
 (** Petanque errors *)
@@ -132,6 +145,21 @@ let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
 let proof_finished { Coq.Goals.goals; stack; shelf; given_up; _ } =
   List.for_all CList.is_empty [ goals; shelf; given_up ] && CList.is_empty stack
 
+(* At some point we want to return both hashes *)
+module Hash_kind = struct
+  type t =
+    | Full
+    | Proof
+  [@@warning "-37"]
+
+  let hash ~kind st =
+    match kind with
+    | Full -> Some (State.hash st)
+    | Proof -> Option.map State.Proof.hash (State.lemmas st)
+end
+
+let hash_mode = Hash_kind.Proof
+
 let analyze_after_run ~hash st =
   let proof_finished =
     let goals = Fleche.Info.Goals.get_goals_unit ~st in
@@ -140,7 +168,7 @@ let analyze_after_run ~hash st =
     | Some goals when proof_finished goals -> true
     | _ -> false
   in
-  let hash = if hash then Some (State.hash st) else None in
+  let hash = if hash then Hash_kind.hash ~kind:hash_mode st else None in
   Run_result.{ st; hash; proof_finished }
 
 (* Would be nice to keep this in sync with the type annotations. *)
