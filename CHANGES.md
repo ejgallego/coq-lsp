@@ -1,3 +1,11 @@
+# unreleased
+------------
+
+ - [deps] Bump toolchain so minimal `ppxlib` is 0.26, in order to fix
+   some `ppx_import` oddities. This means our lower bound for the Jane
+   Street packages is now `v0.15`, which should be fine for the
+   foreseeable future (@ejgallego, #813)
+
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------
 

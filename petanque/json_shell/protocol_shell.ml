@@ -6,7 +6,6 @@
 (************************************************************************)
 
 open Petanque_json
-open JAgent
 
 (** [set_workspace { debug; root }] sets the current workspace to the directory
     specified in [root] *)
@@ -47,7 +46,8 @@ module TableOfContents = struct
   end
 
   module Response = struct
-    type t = (string * Lang.Ast.Info.t list option) list [@@deriving yojson]
+    type t = (string * Lsp.JLang.Ast.Info.t list option) list
+    [@@deriving yojson]
   end
 
   module Handler = struct
