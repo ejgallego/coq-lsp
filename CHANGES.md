@@ -1,5 +1,5 @@
-# unreleased
-------------
+# coq-lsp 0.2.0: From Green to Blue
+-----------------------------------
 
  - [deps] merge serlib into coq-lsp. This allow us to drop the SerAPI
    dependency, and will greatly easy the development of tools that

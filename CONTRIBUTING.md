@@ -386,12 +386,14 @@ The checklist for the release as of today is the following:
 ### Client:
 
 - update the client changelog at `editor/code/CHANGELOG.md`, commit
+- update the version number at `editor/code/package.json`
 - for the `main` branch: `dune release tag $coq_lsp_version`
 - check with `vsce ls` that the client contents are OK
 - `vsce publish`
 
 ### Server:
 
+- update the version number at `fleche/version.ml`
 - sync branches for previous Coq versions, using `git merge`, test and push to CI.
 - `dune release tag` for each `$coq_lsp_version+$coq_version`
 - `dune release` for each version that should to the main opam repos
