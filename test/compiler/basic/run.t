@@ -7,7 +7,7 @@ Describe the project
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
@@ -18,7 +18,7 @@ Compile a single file, don't generate a `.vo` file:
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
@@ -34,7 +34,7 @@ Compile a single file, generate a .vo file
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
@@ -54,7 +54,7 @@ Compile a dependent file
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
@@ -74,7 +74,7 @@ Compile both files
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
@@ -95,7 +95,7 @@ Compile a dependent file without the dep being built
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
@@ -132,7 +132,7 @@ Compile a file with all messages:
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
@@ -143,7 +143,7 @@ Compile a file with all messages:
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
@@ -173,7 +173,7 @@ Use two workspaces
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
@@ -181,7 +181,7 @@ Use two workspaces
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
@@ -198,7 +198,7 @@ Load the example plugin
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
@@ -211,7 +211,7 @@ Load the astdump plugin
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
@@ -236,7 +236,7 @@ We do the same for the goaldump plugin:
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 2 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath wasn't overriden
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
