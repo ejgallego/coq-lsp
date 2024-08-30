@@ -133,10 +133,10 @@ jobs:
           submodules: recursive
 
       - name: ❄️ Setup Nix
-        uses: cachix/install-nix-action@v22
+        uses: cachix/install-nix-action@v27
 
       - name: 🧱 Build coq-lsp
-        run: nix build .?submodules=1
+        run: nix build '.?submodules=1#'
 
   client-compile:
     runs-on: ubuntu-latest
