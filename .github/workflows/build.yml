@@ -45,12 +45,8 @@ jobs:
           - os: macos-latest
             ocaml: 4.14.x
           - name: Windows Latest
-            ocaml: 4.14
+            ocaml: 4.14.x
             os: windows-latest
-            opam-repositories: |
-              windows-5.0: https://github.com/dra27/opam-repository.git#windows-5.0
-              opam-repository-mingw: https://github.com/ocaml-opam/opam-repository-mingw.git#sunset
-              default: https://github.com/ocaml/opam-repository.git
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -63,11 +59,10 @@ jobs:
           submodules: recursive
 
       - name: 🐫 Setup OCaml
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml }}
           dune-cache: true
-          opam-repositories: ${{ matrix.opam-repositories }}
 
       - name: 🐫🐪🐫 Get dependencies
         run: opam exec -- make opam-deps
@@ -160,7 +155,7 @@ jobs:
           submodules: recursive
 
       - name: 🐫 Setup OCaml
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: 4.14.x
           dune-cache: true
