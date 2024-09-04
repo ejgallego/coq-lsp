@@ -53,7 +53,10 @@ jobs:
           dune-cache: true
 
       - name: 🐫🐪🐫 Get dependencies
-        run: opam exec -- make opam-deps
+        run: |
+          opam pin add --dev dune
+          opam pin add --dev ocamlfind
+          opam exec -- make opam-deps
 
       - name: 🐛 Special Windows Config [only on Win CI]
         if: matrix.os == 'windows-latest'
