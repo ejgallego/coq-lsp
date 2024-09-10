@@ -156,7 +156,7 @@ let make ~cmdline ~implicit ~kind ~debug =
   in
   let require_libs =
     let rq_list =
-      if init then ((None, "Coq.Init.Prelude") :: require_libraries) @ libs
+      if init then ((None, "Stdlib.Init.Prelude") :: require_libraries) @ libs
       else require_libraries @ libs
     in
     List.map mk_require_from rq_list
