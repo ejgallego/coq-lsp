@@ -19,15 +19,24 @@ module Flags_ = Flags
 
 module Flags = struct
   type t =
-    { indices_matter : bool
-    ; impredicative_set : bool
+    { impredicative_set : bool
+    ; indices_matter : bool
+    ; type_in_type : bool
+    ; rewrite_rules : bool
     }
 
-  let default = { indices_matter = false; impredicative_set = false }
+  let default =
+    { impredicative_set = false
+    ; indices_matter = false
+    ; type_in_type = false
+    ; rewrite_rules = false
+    }
 
-  let apply { indices_matter; impredicative_set } =
+  let apply { impredicative_set; indices_matter; type_in_type; rewrite_rules } =
+    Global.set_impredicative_set impredicative_set;
     Global.set_indices_matter indices_matter;
-    Global.set_impredicative_set impredicative_set
+    Global.set_check_universes (not type_in_type);
+    Global.set_rewrite_rules_allowed rewrite_rules
 end
 
 module Warning : sig
@@ -95,10 +104,14 @@ let rec parse_args args init boot libs f w =
   | [] -> (init, boot, List.rev libs, f, List.rev w)
   | "-rifrom" :: from :: lib :: rest ->
     parse_args rest init boot ((Some from, lib) :: libs) f w
-  | "-indices-matter" :: rest ->
-    parse_args rest init boot libs { f with Flags.indices_matter = true } w
   | "-impredicative-set" :: rest ->
     parse_args rest init boot libs { f with Flags.impredicative_set = true } w
+  | "-indices-matter" :: rest ->
+    parse_args rest init boot libs { f with Flags.indices_matter = true } w
+  | "-type-in-type" :: rest ->
+    parse_args rest init boot libs { f with Flags.type_in_type = true } w
+  | "-allow-rewrite-rules" :: rest ->
+    parse_args rest init boot libs { f with Flags.rewrite_rules = true } w
   | "-noinit" :: rest -> parse_args rest false boot libs f w
   | "-boot" :: rest -> parse_args rest init true libs f w
   | "-w" :: warn :: rest ->

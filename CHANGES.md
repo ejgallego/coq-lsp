@@ -5,6 +5,8 @@
    some `ppx_import` oddities. This means our lower bound for the Jane
    Street packages is now `v0.15`, which should be fine for the
    foreseeable future (@ejgallego, #813)
+ - [workspace] [coq] Support _CoqProject arguments `-type-in-type` and
+   `-allow-rewrite-rules` (for 8.20) (@ejgallego, #)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------
