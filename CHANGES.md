@@ -8,6 +8,8 @@
  - [workspace] [coq] Support _CoqProject arguments `-type-in-type` and
    `-allow-rewrite-rules` (for 8.20) (@ejgallego, #819)
  - [serlib] Support for ltac2_ltac1 plugin (@ejgallego, #820)
+ - [serlib] Fix Ltac2 AST piercing bug, add test case that should help
+   in the future (@ejgallego, jim-portegies, #821)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------

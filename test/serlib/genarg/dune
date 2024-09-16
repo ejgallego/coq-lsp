@@ -147,6 +147,14 @@
  (alias runtest)
  (deps
   (:script test_roundtrip)
+  (:input ItHolds.v))
+ (action
+  (bash "./%{script} %{input}")))
+
+(rule
+ (alias runtest)
+ (deps
+  (:script test_roundtrip)
   (:input intropattern.v))
  (action
   (bash "./%{script} %{input}")))
