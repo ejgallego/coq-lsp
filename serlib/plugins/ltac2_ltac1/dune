@@ -1,5 +1,5 @@
 (library
- (name serlib_btauto)
+ (name serlib_ltac2_ltac1)
  (public_name coq-lsp.serlib.ltac2_ltac1)
  (synopsis "Serialization Library for Coq Ltac2_ltac1 Plugin")
  (preprocess
