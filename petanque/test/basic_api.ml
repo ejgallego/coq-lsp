@@ -56,7 +56,7 @@ let snoc_test ~token ~doc =
   let* st = r ~st ~tac:"Qed." in
   Agent.goals ~token ~st:(extract_st st)
 
-let finished_stack ~token ~doc =
+let finished_stack_test ~token ~doc =
   let open Coq.Compat.Result.O in
   let r ~st ~tac =
     let st = extract_st st in
@@ -77,22 +77,41 @@ let finished_stack ~token ~doc =
   let* st = Agent.run ~token ~st ~tac:"Qed." () in
   Agent.goals ~token ~st:(extract_st st)
 
+let multi_shot_test ~token ~doc =
+  let open Coq.Compat.Result.O in
+  let* { st; _ } = Agent.start ~token ~doc ~thm:"rev_snoc_cons" () in
+  let* st =
+    Agent.run ~token ~st
+      ~tac:"induction l. idtac. - reflexivity. - now simpl; rewrite IHl. Qed."
+      ()
+  in
+  Agent.goals ~token ~st:(extract_st st)
+
 let main () =
   let open Coq.Compat.Result.O in
   let token = Coq.Limits.create_atomic () in
   let* doc = init ~token in
-  let* _goals = snoc_test ~token ~doc in
-  finished_stack ~token ~doc
+  let* g1 = snoc_test ~token ~doc in
+  let* g2 = finished_stack_test ~token ~doc in
+  let* g3 = multi_shot_test ~token ~doc in
+  Ok [ g1; g2; g3 ]
+
+let max = List.fold_left max min_int
 
 let check_no_goals = function
   | Error err ->
     Format.eprintf "error: in execution: %s@\n%!" (Agent.Error.to_string err);
     dump_msgs ();
     129
-  | Ok None -> 0
-  | Ok (Some _goals) ->
-    dump_msgs ();
-    Format.eprintf "error: goals remaining@\n%!";
-    1
+  | Ok glist ->
+    List.map
+      (function
+        | None -> 0
+        | Some _goals ->
+          dump_msgs ();
+          Format.eprintf "error: goals remaining@\n%!";
+          1)
+      glist
+    |> max
 
 let () = main () |> check_no_goals |> exit

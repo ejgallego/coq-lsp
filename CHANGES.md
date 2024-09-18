@@ -40,6 +40,12 @@
    support Coq's 8.21 `quickFix` data (@ejgallego, #840, #843, #845)
  - [petanque] Fix bug for detection of proof finished in deep stacks
    (@ejgallego, @gbdrt, #847)
+ - [goals request] allow multiple Coq sentences in `command`. This is
+   backwards compatible in the case that commands do not error, and
+   users were sending just one command. (@ejgallego, #823, thanks to
+   CoqPilot devs and G. Baudart for feedback)
+ - [goals request] (! breaking) fail the request if the commands in
+   `command` fail (@ejgallego, #823)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------

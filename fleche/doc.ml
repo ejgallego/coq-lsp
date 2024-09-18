@@ -1094,3 +1094,34 @@ let save ~token ~doc =
   | _ ->
     let error = Pp.(str "Can't save document that failed to check") in
     Coq.Protect.E.error error
+
+(* run api, experimental *)
+
+(* Adaptor, should be supported in memo directly *)
+let eval_no_memo ~token (st, cmd) =
+  Coq.Interp.interp ~token ~intern:Vernacinterp.fs_intern ~st cmd
+
+(* TODO, what to do with feedback, what to do with errors *)
+let rec parse_execute_loop ~token ~memo pa st =
+  let open Coq.Protect.E.O in
+  let eval = if memo then Memo.Interp.eval else eval_no_memo in
+  let* ast = Coq.Parsing.parse ~token ~st pa in
+  match ast with
+  | Some ast -> (
+    match eval ~token (st, ast) with
+    | Coq.Protect.E.{ r = Coq.Protect.R.Completed (Ok st); feedback = _ } ->
+      parse_execute_loop ~token ~memo pa st
+    | res -> res)
+  (* On EOF we return the previous state, the command was the empty string or a
+     comment *)
+  | None -> Coq.Protect.E.ok st
+
+let parse_and_execute_in ~token ~loc tac st =
+  let str = Gramlib.Stream.of_string tac in
+  let pa = Coq.Parsing.Parsable.make ?loc str in
+  parse_execute_loop ~token pa st
+
+let run ~token ?loc ?(memo = true) ~st cmds =
+  Coq.State.in_stateM ~token ~st
+    ~f:(parse_and_execute_in ~token ~loc ~memo cmds)
+    st

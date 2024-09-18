@@ -31,25 +31,10 @@ let pp ~pp_format pp =
   | Pp -> Lsp.JCoq.Pp.to_yojson pp
   | Str -> `String (Pp.string_of_ppcmds pp)
 
-let parse ~token ~loc tac st =
-  let str = Gramlib.Stream.of_string tac in
-  let str = Coq.Parsing.Parsable.make ?loc str in
-  Coq.Parsing.parse ~token ~st str
-
-let parse_and_execute_in ~token ~loc tac st =
-  let open Coq.Protect.E.O in
-  let* ast = parse ~token ~loc tac st in
-  match ast with
-  | Some ast -> Fleche.Memo.Interp.eval ~token (st, ast)
-  (* On EOF we return the previous state, the command was the empty string or a
-     comment *)
-  | None -> Coq.Protect.E.ok st
-
 let run_pretac ~token ~loc ~st pretac =
   match pretac with
   | None -> Coq.Protect.E.ok st
-  | Some tac ->
-    Coq.State.in_stateM ~token ~st ~f:(parse_and_execute_in ~token ~loc tac) st
+  | Some tac -> Fleche.Doc.run ~token ?loc ~st tac
 
 let get_goal_info ~token ~doc ~point ~mode ~pretac () =
   let open Fleche in

@@ -187,11 +187,18 @@ interface GoalRequest {
     textDocument: VersionedTextDocumentIdentifier;
     position: Position;
     pp_format?: 'Pp' | 'Str';
-    pretac?: string;
     command?: string;
     mode?: 'Prev' | 'After';
 }
 ```
+
+The first parameters are standard, `pp_format` controls the pretty
+printing format used in the results.
+
+The `command` parameter (experimental), is a list of Coq commands that
+will be run just _after_ `position` in `textDocument`, but _before_
+goals are sent to the user. This is often useful for ephemeral
+post-processing.
 
 Answer to the request is a `Goal[]` object, where
 
