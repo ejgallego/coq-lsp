@@ -3,9 +3,10 @@
 set -e
 
 FCC=../../../compiler/fcc.exe
+COQLIB=$(coqc -config | grep COQLIB | sed -e 's/COQLIB=//')
 FILE_IN="$1"
 FILE_OUT="${FILE_IN%.v}.sexp"
 
-$FCC --display=quiet "$FILE_IN"
+$FCC --coqlib="${COQLIB}" --display=quiet "$FILE_IN"
 # $SERCOMP --input=vernac --mode=sexp --exn_on_opaque "$FILE_IN" > "$FILE_OUT"
 # $SERCOMP --input=sexp --mode=check "$FILE_OUT"
