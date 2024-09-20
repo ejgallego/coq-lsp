@@ -2,7 +2,7 @@ COQ_BUILD_CONTEXT=../_build/default/coq
 
 PKG_SET= \
 vendor/coq/coq-core.install \
-vendor/coq/coq-stdlib.install \
+# vendor/coq/coq-stdlib.install \
 coq-lsp.install
 
 # Get the ocamlformat version from the .ocamlformat file
