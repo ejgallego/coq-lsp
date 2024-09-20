@@ -2,7 +2,7 @@ COQ_BUILD_CONTEXT=../_build/default/coq
 
 PKG_SET= \
 vendor/coq/coq-core.install \
-# vendor/coq/coq-stdlib.install \
+vendor/coq/rocq-init.install \
 coq-lsp.install
 
 # Get the ocamlformat version from the .ocamlformat file
@@ -132,5 +132,5 @@ make-fmt: build fmt
 .PHONY: opam-update-and-reinstall
 opam-update-and-reinstall:
 	git pull --recurse-submodules
-	for pkg in coq-core coq-stdlib coqide-server coq; do opam install -y vendor/coq/$$pkg.opam; done
+	for pkg in coq-core roqc-init coqide-server coq; do opam install -y vendor/coq/$$pkg.opam; done
 	opam install .
