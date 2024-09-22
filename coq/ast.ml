@@ -128,7 +128,7 @@ module Kinds = struct
   let _interface = 11
   let function_ = 12
   let variable = 13
-  let _constant = 14
+  let constant = 14
   let _string = 15
   let _number = 16
   let _boolean = 17
@@ -278,6 +278,16 @@ let fixpoint_info ~lines ~range { fname; _ } =
   let detail = "Fixpoint" in
   Lang.Ast.Info.make ~range ~name ~detail ~kind:Kinds.function_ ()
 
+let symbol_info ~lines ~range
+    ((_, (idents, _typs)) :
+      (Constrexpr.ident_decl list * Constrexpr.constr_expr) with_coercion) =
+  let detail = "Rewrite Symbol" in
+  let mk_info (id, _) =
+    let name = mk_id ~lines id in
+    Lang.Ast.Info.make ~range ~name ~detail ~kind:Kinds.constant ()
+  in
+  List.map mk_info idents
+
 let make_info ~st:_ ~lines CAst.{ loc; v } : Lang.Ast.Info.t list option =
   let open Vernacexpr in
   match loc with
@@ -309,5 +319,12 @@ let make_info ~st:_ ~lines CAst.{ loc; v } : Lang.Ast.Info.t list option =
       let name = mk_name ~lines name in
       let kind = Kinds.method_ in
       let detail = "Instance" in
+      Some [ Lang.Ast.Info.make ~range ~name ~kind ~detail () ]
+    | VernacSynPure (VernacSymbol slist) ->
+      Some (List.concat_map (symbol_info ~lines ~range) slist)
+    | VernacSynPure (VernacAddRewRule (name, _)) ->
+      let name = mk_id ~lines name in
+      let kind = Kinds.method_ in
+      let detail = "Rewrite Rule" in
       Some [ Lang.Ast.Info.make ~range ~name ~kind ~detail () ]
     | _ -> None)
