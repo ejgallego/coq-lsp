@@ -10,6 +10,8 @@
  - [serlib] Support for ltac2_ltac1 plugin (@ejgallego, #820)
  - [serlib] Fix Ltac2 AST piercing bug, add test case that should help
    in the future (@ejgallego, jim-portegies, #821)
+ - [fleche] [8.20] understand rewrite rules and symbols on document
+   outline (@ejgallego, @Alizter, #82x, fixes: #824)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------
