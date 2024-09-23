@@ -12,6 +12,7 @@ module Loc = Ser_loc
 module CAst = Ser_cAst
 module Names = Ser_names
 module Libnames = Ser_libnames
+module Attributes = Ser_attributes
 
 open Sexplib.Std
 open Ppx_hash_lib.Std.Hash.Builtin
