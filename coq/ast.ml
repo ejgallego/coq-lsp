@@ -74,12 +74,13 @@ module Meta = struct
 
   module Command = struct
     type t =
-      | Back of int
-      | ResetName of Names.lident
-      | ResetInitial
       | AbortAll
-    (* Not supported, but actually easy if we want | VernacRestart | VernacUndo
-       _ | VernacUndoTo _ *)
+      | Back of int
+      | ResetInitial
+      | ResetName of Names.lident
+      | Restart
+    (* Not supported, but actually easy if we want | VernacUndo _ | VernacUndoTo
+       _ *)
     [@@deriving hash, compare]
   end
 
@@ -103,6 +104,9 @@ module Meta = struct
         Some { command; loc; attrs; control }
       | { expr = VernacSynPure VernacResetInitial; control; attrs } ->
         let command = Command.ResetInitial in
+        Some { command; loc; attrs; control }
+      | { expr = VernacSynPure VernacRestart; control; attrs } ->
+        let command = Command.Restart in
         Some { command; loc; attrs; control }
       | { expr = VernacSynPure (VernacBack num); control; attrs } ->
         let command = Command.Back num in

@@ -552,6 +552,13 @@ end
 (* This is not in its own module because we don't want to move the definition of
    [Node.t] out (yet) *)
 module Recovery : sig
+  (** [find_proof_start nodes] returns [Some (node, pnode)] where [node] is the
+      node that contains the start of the proof, and [pnode] is the previous
+      node, if exists. [nodes] is the list of document nodes, in _reverse
+      order_. *)
+  val find_proof_start : Node.t list -> (Node.t * Node.t option) option
+  (* This is useful in meta-commands, and other plugins actually! *)
+
   val handle :
        token:Coq.Limits.Token.t
     -> context:Recovery_context.t
@@ -672,6 +679,11 @@ let search_node ~command ~doc ~st =
       in
       (Coq.Protect.E.error message, nstats None)
     | Some node -> (Coq.Protect.E.ok node.state, nstats (Some node)))
+  | Restart -> (
+    match Recovery.find_proof_start doc.nodes with
+    | None ->
+      (Coq.Protect.E.error Pp.(str "no proof to restart"), Memo.Stats.zero)
+    | Some (node, _) -> (Coq.Protect.E.ok node.state, nstats None))
   | ResetName id -> (
     let toc = doc.toc in
     let id = Names.Id.to_string id.v in

@@ -11,7 +11,9 @@
  - [serlib] Fix Ltac2 AST piercing bug, add test case that should help
    in the future (@ejgallego, jim-portegies, #821)
  - [fleche] [8.20] understand rewrite rules and symbols on document
-   outline (@ejgallego, @Alizter, #82x, fixes: #824)
+   outline (@ejgallego, @Alizter, #825, fixes: #824)
+ - [fleche] [coq] support `Restart` meta command (@ejgallego,
+   @Alizter, #829, fixes #828)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------
