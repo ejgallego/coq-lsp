@@ -9,11 +9,14 @@
    `-allow-rewrite-rules` (for 8.20) (@ejgallego, #819)
  - [serlib] Support for ltac2_ltac1 plugin (@ejgallego, #820)
  - [serlib] Fix Ltac2 AST piercing bug, add test case that should help
-   in the future (@ejgallego, jim-portegies, #821)
+   in the future (@ejgallego, @jim-portegies, #821)
  - [fleche] [8.20] understand rewrite rules and symbols on document
    outline (@ejgallego, @Alizter, #825, fixes: #824)
  - [fleche] [coq] support `Restart` meta command (@ejgallego,
-   @Alizter, #829, fixes #828)
+   @Alizter, #828, fixes #827)
+ - [fleche] [plugins] New plugin example `explain_errors`, that will
+   print all errors on a file, with their goal context (@ejgallego,
+   #829, thanks to @gmalecha for the idea, c.f. Coq issue 19601)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------
