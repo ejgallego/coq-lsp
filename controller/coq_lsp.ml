@@ -60,38 +60,6 @@ let concise_cb ofn =
     }
 
 (* Main loop *)
-module CB (O : sig
-  val ofn : Lsp.Base.Notification.t -> unit
-end) =
-struct
-  let ofn = O.ofn
-  let trace _hdr ?extra message = Lsp.Io.logTrace ~message ~extra
-  let message ~lvl ~message = Lsp.Io.logMessage ~lvl ~message
-
-  let diagnostics ~uri ~version diags =
-    Lsp.Core.mk_diagnostics ~uri ~version diags |> ofn
-
-  let fileProgress ~uri ~version progress =
-    Lsp.JFleche.mk_progress ~uri ~version progress |> ofn
-
-  let perfData ~uri ~version perf =
-    Lsp.JFleche.mk_perf ~uri ~version perf |> ofn
-
-  let serverVersion vi = Lsp.JFleche.mk_serverVersion vi |> ofn
-  let serverStatus st = Lsp.JFleche.mk_serverStatus st |> ofn
-
-  let cb =
-    Fleche.Io.CallBack.
-      { trace
-      ; message
-      ; diagnostics
-      ; fileProgress
-      ; perfData
-      ; serverVersion
-      ; serverStatus
-      }
-end
-
 let coq_init ~debug =
   let load_module = Dynlink.loadfile in
   let load_plugin = Coq.Loader.plugin_handler None in
@@ -130,7 +98,7 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
 
   Lsp.Io.set_log_fn ofn_ntn;
 
-  let module CB = CB (struct
+  let module CB = Lsp_core.CB (struct
     let ofn = ofn_ntn
   end) in
   let io = CB.cb in

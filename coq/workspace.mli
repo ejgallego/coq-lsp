@@ -42,6 +42,7 @@ module Require : sig
     }
 end
 
+(* Generated from a _CoqProject, dune (in the future) or command line args *)
 type t = private
   { coqlib : string
   ; coqcorelib : string
