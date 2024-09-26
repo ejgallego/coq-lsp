@@ -63,3 +63,10 @@ val dispatch_or_resume_check :
 
 (** Add a message to the queue *)
 val enqueue_message : Lsp.Base.Message.t -> unit
+
+(** Generic output handler *)
+module CB (O : sig
+  val ofn : Lsp.Base.Notification.t -> unit
+end) : sig
+  val cb : Fleche.Io.CallBack.t
+end

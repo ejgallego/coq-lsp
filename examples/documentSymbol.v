@@ -8,7 +8,7 @@ Inductive foo := A | B : a -> foo.
 Inductive eh1 := Ah1 : eh2 -> eh1
 with eh2 := Bh1 : eh1 -> eh2. 
 
-Variable (j : nat).
+Axiom (j : nat).
 
 Axiom test : False.
 
@@ -34,7 +34,7 @@ End Moo.
 
 Module Bar.
 
-  Variable (u : nat).
+  Parameter (u : nat).
 
   Parameter (v : nat).
 
