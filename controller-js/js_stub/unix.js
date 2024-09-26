@@ -383,6 +383,9 @@ function unix_open()                  { unix_ll("unix_open", arguments); }
 // Provides: unix_putenv
 // Requires: unix_ll
 function unix_putenv()                { unix_ll("unix_putenv", arguments); }
+// Provides: unix_realpath
+// Requires: unix_ll
+function unix_realpath()              { unix_ll("unix_realpath", arguments); }
 // Provides: unix_recv
 // Requires: unix_ll
 function unix_recv()                  { unix_ll("unix_recv", arguments); }

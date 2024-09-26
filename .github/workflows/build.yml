@@ -116,21 +116,38 @@ jobs:
       - name: 🐫🐪🐫 Get dependencies
         run: |
           opam exec -- make opam-deps
-          opam pin add js_of_ocaml --dev -y
-          opam pin add js_of_ocaml-compiler --dev -y
+          opam pin add js_of_ocaml-compiler https://github.com/ejgallego/js_of_ocaml.git#fix_build_fs_target -y
+          opam pin add js_of_ocaml https://github.com/ejgallego/js_of_ocaml.git#fix_build_fs_target -y
           opam install zarith_stubs_js js_of_ocaml-ppx -y
 
       - name: 💉💉💉 Patch Coq
         run: make patch-for-js
 
       - name: 🦏🧱🦏 Build coq-lsp JS version 🦏🦏🦏
-        run: opam exec -- make js
+        run: |
+          opam exec -- make controller-js/coq-fs-core.js
+          opam exec -- make js
+
+      - name: 🚀 Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 🦏🧱🦏 Build coq-lsp VSCode extension 🦏🦏🦏
+        run: opam exec -- make extension
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: coq-lsp_worker and front-end
-          path: editor/code/out/
+          path: |
+            editor/code/package.json
+            editor/code/README.md
+            editor/code/CHANGELOG.md
+            editor/code/syntaxes
+            editor/code/out/
+            editor/code/coq.configuration.json
+          compression-level: 9
   build-opam:
     name: Opam dev install
     strategy:
@@ -195,7 +212,7 @@ jobs:
       - name: 🚀 Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
       - run: npm ci
       - run: npx --yes @vscode/vsce ls
 

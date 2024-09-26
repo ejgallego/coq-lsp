@@ -1,3 +1,5 @@
+SHELL := /usr/bin/env bash
+
 COQ_BUILD_CONTEXT=../_build/default/coq
 
 PKG_SET= \
@@ -79,7 +81,7 @@ winconfig:
 .PHONY: js
 js: COQVM = no
 js: coq_boot
-	dune build --profile=release controller-js/coq_lsp_worker.bc.cjs
+	dune build --profile=release --display=quiet $(PKG_SET) controller-js/coq_lsp_worker.bc.cjs
 	mkdir -p editor/code/out/ && cp -a controller-js/coq_lsp_worker.bc.cjs editor/code/out/coq_lsp_worker.bc.js
 
 .PHONY: coq_boot
@@ -149,3 +151,49 @@ opam-update-and-reinstall:
 patch-for-js:
 	cd vendor/coq && patch -p1 < ../../etc/0001-coq-lsp-patch.patch
 	cd vendor/coq && patch -p1 < ../../etc/0001-jscoq-lib-system.ml-de-unix-stat.patch
+
+_LIBROOT=$(shell opam var lib)
+
+# Super-hack
+controller-js/coq-fs-core.js: COQVM = no
+controller-js/coq-fs-core.js: coq_boot
+	dune build --profile=release --display=quiet $(PKG_SET) etc/META.threads
+	for i in $$(find _build/install/default/lib/coq-core/plugins -name *.cma); do js_of_ocaml --dynlink $$i; done
+	for i in $$(find _build/install/default/lib/coq-lsp/serlib -wholename */*.cma); do js_of_ocaml --dynlink $$i; done
+	cd _build/install/default/lib && \
+	  js_of_ocaml build-fs -o coq-fs-core.js \
+	    $$(find coq-core/ \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/%p ") \
+	    $$(find coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/%p ") \
+	    ../../../../etc/META.threads:/static/lib/threads/META \
+	    $$(find $(_LIBROOT) -wholename '*/str/META'                 -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/seq/META'                 -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/uri/META'                 -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/base/META'                -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/unix/META'                -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/zarith/META'              -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/yojson/META'              -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/findlib/META'             -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/dynlink/META'             -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/parsexp/META'             -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/sexplib/META'             -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/sexplib0/META'            -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/bigarray/META'            -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/cmdliner/META'            -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/ppx_hash/META'            -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/angstrom/META'            -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/stringext/META'           -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/ppx_compare/META'         -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/ppx_deriving/META'        -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/ppx_sexp_conv/META'       -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/memprof-limits/META'      -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/ppx_deriving_yojson/META' -printf "%p:/static/lib/%P ")
+	    # These libs are actually linked, so no cma is needed.
+	    # $$(find $(_LIBROOT) -wholename '*/zarith/*.cma'         -printf "%p:/static/lib/%P " -or -wholename '*/zarith/META'         -printf "%p:/static/lib/%P ")
+	cp _build/install/default/lib/coq-fs-core.js controller-js
+
+# Serlib plugins require:
+#   ppx_compare.runtime-lib
+#   ppx_deriving.runtime
+#   ppx_deriving_yojson.runtime
+#   ppx_hash.runtime-lib
+#   ppx_sexp_conv.runtime-lib

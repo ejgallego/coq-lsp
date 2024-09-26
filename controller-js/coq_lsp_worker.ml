@@ -127,9 +127,31 @@ let on_init ~io ~root_state ~cmdline ~debug msg =
       in
       ignore (setTimeout (process_queue ~state) 0.1))
 
+let time f x =
+  let time = Sys.time () in
+  let res = f x in
+  let time_new = Sys.time () in
+  Format.eprintf "loadfile [dynlink] took: %f seconds%!" (time_new -. time);
+  res
+
+let loadfile file =
+  let file_js = Filename.remove_extension file ^ ".js" in
+  if Sys.file_exists file_js then (
+    Format.eprintf "loadfile [eval_js]: %s%!" file;
+    let js_code = Sys_js.read_file ~name:file_js in
+    let js_code =
+      Format.asprintf "(function (globalThis) { @[%s@] })" js_code
+    in
+    Js.Unsafe.((eval_string js_code : < .. > Js.t -> unit) global))
+  else (
+    (* Not precompiled *)
+    Format.eprintf "loadfile [dynlink]: %s%!" file;
+    time Dynlink.loadfile file)
+
 let coq_init ~debug =
-  let load_module = Dynlink.loadfile in
-  let load_plugin = Coq.Loader.plugin_handler None in
+  let loader = My_dynload.load_packages ~debug:false ~loadfile in
+  let load_module = loadfile in
+  let load_plugin = Coq.Loader.plugin_handler (Some loader) in
   (* XXX: Fixme at some point? *)
   let vm, warnings = (false, Some "-vm-compute-disabled") in
   Coq.Init.(coq_init { debug; load_module; load_plugin; vm; warnings })
@@ -154,25 +176,42 @@ let main () =
   let io = CB.cb in
   Fleche.Io.CallBack.set io;
 
-  let stdlib =
-    let unix_path = "/static/coq/theories/" in
-    let coq_path = Names.(DirPath.make [ Id.of_string "Coq" ]) in
+  let stdlib coqlib =
+    let unix_path = Filename.concat coqlib "theories" in
+    let coq_path = Names.(DirPath.make [ Id.of_string "Stdlib" ]) in
     Loadpath.
       { unix_path; coq_path; implicit = true; has_ml = false; recursive = true }
   in
 
-  let cmdline =
-    Coq.Workspace.CmdLine.
-      { coqlib = "/static/coqlib"
-      ; coqcorelib = "/static/lib/coq-core"
-      ; findlib_config = Some findlib_path
-      ; ocamlpath = []
-      ; vo_load_path = [ stdlib ]
-      ; ml_include_path = []
-      ; require_libraries = []
-      ; args = [ "-noinit" ]
+  let user_contrib coqlib =
+    let unix_path = Filename.concat coqlib "user-contrib" in
+    let coq_path = Names.DirPath.empty in
+    Loadpath.
+      { unix_path
+      ; coq_path
+      ; implicit = false
+      ; has_ml = false
+      ; recursive = true
       }
   in
+
+  let cmdline =
+    let coqlib = "/static/coqlib" in
+    let findlib_config = Some findlib_path in
+    let ocamlpath = [] in
+    let vo_load_path = List.map (fun f -> f coqlib) [ stdlib; user_contrib ] in
+    Coq.Workspace.CmdLine.
+      { coqlib
+      ; coqcorelib = "/static/lib/coq-core" (* deprecated upstream *)
+      ; findlib_config
+      ; ocamlpath
+      ; vo_load_path
+      ; ml_include_path = []
+      ; require_libraries = [ (None, "Stdlib.Init.Prelude") ]
+      ; args = [ "-noinit"; "-boot" ]
+      }
+  in
+
   let debug = true in
   let root_state = coq_init ~debug in
   Worker.set_onmessage (on_init ~io ~root_state ~cmdline ~debug);
