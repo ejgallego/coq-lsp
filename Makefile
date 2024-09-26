@@ -144,3 +144,8 @@ opam-update-and-reinstall:
 	git pull --recurse-submodules
 	for pkg in coq-core coq-stdlib coqide-server coq; do opam install -y vendor/coq/$$pkg.opam; done
 	opam install .
+
+.PHONY: patch-for-js
+patch-for-js:
+	cd vendor/coq && patch -p1 < ../../etc/0001-coq-lsp-patch.patch
+	cd vendor/coq && patch -p1 < ../../etc/0001-jscoq-lib-system.ml-de-unix-stat.patch
