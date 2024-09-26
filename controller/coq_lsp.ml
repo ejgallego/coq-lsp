@@ -63,7 +63,8 @@ let concise_cb ofn =
 let coq_init ~debug =
   let load_module = Dynlink.loadfile in
   let load_plugin = Coq.Loader.plugin_handler None in
-  Coq.Init.(coq_init { debug; load_module; load_plugin })
+  let vm, warnings = (true, None) in
+  Coq.Init.(coq_init { debug; load_module; load_plugin; vm; warnings })
 
 let exit_notification =
   Lsp.Base.Message.(Notification { method_ = "exit"; params = [] })
