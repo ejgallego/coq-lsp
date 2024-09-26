@@ -58,7 +58,7 @@ jobs:
 
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -128,7 +128,7 @@ jobs:
 
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -145,9 +145,9 @@ jobs:
         working-directory: ./editor/code
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: 🚀 Setup node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
       - run: npm ci
@@ -158,7 +158,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: ❄️ Setup Nix
