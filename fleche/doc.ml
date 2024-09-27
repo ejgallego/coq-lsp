@@ -318,15 +318,17 @@ let init_fname ~uri =
 let init_loc ~uri = Loc.initial (init_fname ~uri)
 
 (* default range for the node that contains the init feedback errors *)
-let drange =
+let drange ~lines =
   let open Lang in
+  let llen = if Array.length lines > 0 then String.length lines.(0) else 1 in
   let start = Point.{ line = 0; character = 0; offset = 0 } in
-  let end_ = Point.{ line = 0; character = 1; offset = 1 } in
+  let end_ = Point.{ line = 0; character = llen; offset = llen } in
   Range.{ start; end_ }
 
 let process_init_feedback ~lines ~stats ~global_stats state feedback =
   let messages = List.map (Node.Message.feedback_to_message ~lines) feedback in
   if not (CList.is_empty messages) then
+    let drange = drange ~lines in
     let diags, messages = Diags.of_messages ~drange messages in
     let parsing_time = 0.0 in
     let info = Node.Info.make ~parsing_time ?stats ~global_stats () in

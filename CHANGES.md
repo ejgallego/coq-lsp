@@ -17,6 +17,8 @@
  - [fleche] [plugins] New plugin example `explain_errors`, that will
    print all errors on a file, with their goal context (@ejgallego,
    #829, thanks to @gmalecha for the idea, c.f. Coq issue 19601)
+ - [fleche] Highlight the full first line of the document on
+   initialization error (@ejgallego, #832)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------
