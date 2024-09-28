@@ -11,7 +11,7 @@
  - [serlib] Fix Ltac2 AST piercing bug, add test case that should help
    in the future (@ejgallego, @jim-portegies, #821)
  - [fleche] [8.20] understand rewrite rules and symbols on document
-   outline (@ejgallego, @Alizter, #825, fixes: #824)
+   outline (@ejgallego, @Alizter, #825, fixes #824)
  - [fleche] [coq] support `Restart` meta command (@ejgallego,
    @Alizter, #828, fixes #827)
  - [fleche] [plugins] New plugin example `explain_errors`, that will
@@ -23,6 +23,8 @@
    provides a full working Coq enviroment in `vscode.dev`. The web
    worker version is build as an artifact on CI (@ejgallego
    @corwin-of-amber, #433)
+ - [hover] Fix universe and level printing in hover (#839, fixes #835
+   , @ejgallego , @Alizter)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------
