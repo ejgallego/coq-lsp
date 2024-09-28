@@ -18,16 +18,23 @@ information.
 The worker needs two parts to work:
 
 - the worker binary
-- the worker filesystem
+- the worker OCaml filesystem (`controller-js/coq-fs-core.js`)
+- the worker Coq filesystem (`controller-js/coq-fs.js`)
 
 which are then bundled in a single `.js` file.
 
-Type
+The worker OCaml filesystem includes:
+- `META` files for anything used by Coq
+- transpiled `.cma` to `.js` files for plugins that will be loaded by Coq
+
+Type:
 
 ```
-make controller-js/coq-fs-core.js && make js
+make patch-for-js                 # (only once, patch Coq for JS build)
+make controller-js/coq-fs-core.js # build the OCaml filesystem, needed when plugins change
+make js                           # build the worker and link with the FS.
 ```
-to build the worker filesystem and the worker, which will be placed under `editor/code/out`.
+to get a working build in `editor/code/out`.
 
 As of now the build is very artisanal and not flexible at all, we hope to improve it soon.
 
@@ -75,4 +82,3 @@ We need to have most `META` files in findlib, plus the Coq and
 - `/static/coqlib`: Coq root, with regular paths
   + `/static/coqlib/theories`
   + `/static/coqlib/user-contrib`
-
