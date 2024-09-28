@@ -9,7 +9,8 @@ open Cmdliner
 
 val coqlib : String.t Term.t
 val coqcorelib : String.t Term.t
-val ocamlpath : String.t option Term.t
+val findlib_config : String.t option Term.t
+val ocamlpath : String.t list Term.t
 val rload_paths : Loadpath.vo_path List.t Term.t
 val qload_paths : Loadpath.vo_path List.t Term.t
 val debug : Bool.t Term.t

@@ -80,8 +80,8 @@ let rec lsp_init_loop ~io ~ifn ~ofn ~cmdline ~debug =
     L.trace "read_request" "error: %s" err;
     lsp_init_loop ~io ~ifn ~ofn ~cmdline ~debug
 
-let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
-    require_libraries delay int_backend =
+let lsp_main bt coqcorelib coqlib findlib_config ocamlpath vo_load_path
+    ml_include_path require_libraries delay int_backend =
   Coq.Limits.select_best int_backend;
   Coq.Limits.start ();
 
@@ -113,6 +113,7 @@ let lsp_main bt coqcorelib coqlib ocamlpath vo_load_path ml_include_path
   let cmdline =
     { Coq.Workspace.CmdLine.coqcorelib
     ; coqlib
+    ; findlib_config
     ; ocamlpath
     ; vo_load_path
     ; ml_include_path
@@ -199,8 +200,8 @@ let lsp_cmd : unit Cmd.t =
     v
       (Cmd.info "coq-lsp" ~version:Fleche.Version.server ~doc ~man)
       Term.(
-        const lsp_main $ bt $ coqcorelib $ coqlib $ ocamlpath $ vo_load_path
-        $ ml_include_path $ ri_from $ delay $ int_backend))
+        const lsp_main $ bt $ coqcorelib $ coqlib $ findlib_config $ ocamlpath
+        $ vo_load_path $ ml_include_path $ ri_from $ delay $ int_backend))
 
 let main () =
   let ecode = Cmd.eval lsp_cmd in
