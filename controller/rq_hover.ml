@@ -18,7 +18,7 @@ type id_info =
       ; full_path : Pp.t option
             (** full path of the constant, if any, for example
                 [Stdlib.Lists.map] *)
-      ; file : string option  (** filename where the constant is located *)
+      ; source : string option  (** filename where the constant is located *)
       }
 
 let print_params env sigma params =
@@ -63,10 +63,12 @@ let info_of_ind env ((sp, i) : Names.Ind.t) =
   let params = EConstr.Unsafe.to_rel_context params in
   let typ = Printer.pr_ltype_env ~impargs env_params sigma arity in
   let params = Pp.(inst ++ print_params env sigma params) in
-  let dp = Names.MutInd.modpath sp |> Names.ModPath.dp in
-  let source = Coq.Module.(make dp |> Result.to_option |> Option.map source) in
   let full_path = Some (Names.MutInd.print sp) in
-  Def { typ; params; full_path; file = source }
+  let source =
+    let dp = Names.MutInd.modpath sp |> Names.ModPath.dp in
+    Coq.Module.(make dp |> Result.to_option |> Option.map source)
+  in
+  Def { typ; params; full_path; source }
 
 let type_of_constant cb = cb.Declarations.const_type
 
@@ -92,15 +94,17 @@ let info_of_const env cr =
   in
   let impargs = List.map Impargs.binding_kind_of_status impargs in
   let typ = Printer.pr_ltype_env env sigma ~impargs typ in
-  let dp = Names.Constant.modpath cr |> Names.ModPath.dp in
-  let full_path = Some (Names.Constant.print cr) in
-  let source = Coq.Module.(make dp |> Result.to_option |> Option.map source) in
   let inst =
     if Environ.polymorphic_constant cr env then
       Printer.pr_universe_instance sigma inst
     else Pp.mt ()
   in
-  Def { typ; params = inst; full_path; file = source }
+  let full_path = Some (Names.Constant.print cr) in
+  let source =
+    let dp = Names.Constant.modpath cr |> Names.ModPath.dp in
+    Coq.Module.(make dp |> Result.to_option |> Option.map source)
+  in
+  Def { typ; params = inst; full_path; source }
 
 let info_of_var env vr =
   let vdef = Environ.lookup_named vr env in
@@ -122,7 +126,7 @@ let print_type env sigma x =
     { typ = Printer.pr_ltype_env env sigma x
     ; params = Pp.mt ()
     ; full_path = None
-    ; file = None
+    ; source = None
     }
 
 let info_of_id env sigma id =
@@ -176,12 +180,12 @@ let pp_file fmt = function
   | Some file -> Format.fprintf fmt " - **in file**: `%s`" file
 
 let pp_typ id = function
-  | Def { typ; params; full_path; file } ->
+  | Def { typ; params; full_path; source } ->
     let typ = Pp.string_of_ppcmds typ in
     let param = Pp.string_of_ppcmds params in
     Format.(
       asprintf "@[```coq\n%s%s: %s@\n```@\n@[%a@]@[%a@]@]" id param typ pp_cr
-        full_path pp_file file)
+        full_path pp_file source)
   | Notation nt ->
     let nt = Pp.string_of_ppcmds nt in
     Format.(asprintf "```coq\n%s\n```" nt)
