@@ -19,6 +19,10 @@
    #829, thanks to @gmalecha for the idea, c.f. Coq issue 19601)
  - [fleche] Highlight the full first line of the document on
    initialization error (@ejgallego, #832)
+ - [fleche] [jscoq] [js] Build worker version of `coq-lsp`. This
+   provides a full working Coq enviroment in `vscode.dev`. The web
+   worker version is build as an artifact on CI (@ejgallego
+   @corwin-of-amber, #433)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------
