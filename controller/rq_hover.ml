@@ -12,10 +12,28 @@ let build_ind_type mip = Inductive.type_of_inductive mip
 
 type id_info =
   | Notation of Pp.t
-  | Def of (Pp.t * Names.Constant.t option * string option)
+  | Def of
+      { typ : Pp.t  (** type of the ide *)
+      ; params : Pp.t  (** params that need display next to the name *)
+      ; full_path : Names.Constant.t option
+            (** full path of the constant, if any, for example
+                [Stdlib.Lists.map] *)
+      ; file : string option  (** filename where the constant is located *)
+      }
 
-let info_of_ind env sigma ((sp, i) : Names.Ind.t) =
+let print_params env sigma params =
+  if CList.is_empty params then Pp.mt ()
+  else Pp.(spc () ++ Printer.pr_rel_context env sigma params ++ brk (1, 2))
+
+let info_of_ind env ((sp, i) : Names.Ind.t) =
+  let udecl = None in
   let mib = Environ.lookup_mind sp env in
+  let bl =
+    Printer.universe_binders_with_opt_names
+      (Declareops.inductive_polymorphic_context mib)
+      udecl
+  in
+  let sigma = Evd.from_ctx (UState.of_names bl) in
   let u =
     UVars.make_abstract_instance (Declareops.inductive_polymorphic_context mib)
   in
@@ -37,17 +55,34 @@ let info_of_ind env sigma ((sp, i) : Names.Ind.t) =
       (Impargs.implicits_of_global (Names.GlobRef.IndRef (sp, i)))
   in
   let impargs = List.map Impargs.binding_kind_of_status impargs in
-  Def (Printer.pr_ltype_env ~impargs env_params sigma arity, None, None)
+  let inst =
+    if Declareops.inductive_is_polymorphic mib then
+      Printer.pr_universe_instance sigma u
+    else Pp.mt ()
+  in
+  let params = EConstr.Unsafe.to_rel_context params in
+  let typ = Printer.pr_ltype_env ~impargs env_params sigma arity in
+  let params = Pp.(inst ++ print_params env sigma params) in
+  Def { typ; params; full_path = None; file = None }
 
 let type_of_constant cb = cb.Declarations.const_type
 
-let info_of_const env sigma cr =
+let info_of_const env cr =
+  let udecl = None in
   let cdef = Environ.lookup_constant cr env in
+  let bl =
+    Printer.universe_binders_with_opt_names
+      (Environ.constant_context env cr)
+      udecl
+  in
+  let sigma = Evd.from_ctx (UState.of_names bl) in
   (* This prints the definition *)
   (* let cb = Environ.lookup_constant cr env in *)
   (* Option.cata (fun (cb,_univs,_uctx) -> Some cb ) None *)
   (*   (Global.body_of_constant_body Library.indirect_accessor cb), *)
   let typ = type_of_constant cdef in
+  let univs = Declareops.constant_polymorphic_context cdef in
+  let inst = UVars.make_abstract_instance univs in
   let impargs =
     Impargs.select_stronger_impargs
       (Impargs.implicits_of_global (Names.GlobRef.ConstRef cr))
@@ -56,7 +91,12 @@ let info_of_const env sigma cr =
   let typ = Printer.pr_ltype_env env sigma ~impargs typ in
   let dp = Names.Constant.modpath cr |> Names.ModPath.dp in
   let source = Coq.Module.(make dp |> Result.to_option |> Option.map source) in
-  Def (typ, Some cr, source)
+  let inst =
+    if Environ.polymorphic_constant cr env then
+      Printer.pr_universe_instance sigma inst
+    else Pp.mt ()
+  in
+  Def { typ; params = inst; full_path = Some cr; file = source }
 
 let info_of_var env vr =
   let vdef = Environ.lookup_named vr env in
@@ -73,7 +113,13 @@ let info_of_constructor env cr =
   in
   ctype
 
-let print_type env sigma x = Def (Printer.pr_ltype_env env sigma x, None, None)
+let print_type env sigma x =
+  Def
+    { typ = Printer.pr_ltype_env env sigma x
+    ; params = Pp.mt ()
+    ; full_path = None
+    ; file = None
+    }
 
 let info_of_id env sigma id =
   let qid = Libnames.qualid_of_string id in
@@ -89,8 +135,8 @@ let info_of_id env sigma id =
         let open Names.GlobRef in
         (match lid with
         | VarRef vr -> info_of_var env vr |> print_type env sigma
-        | ConstRef cr -> info_of_const env sigma cr
-        | IndRef ir -> info_of_ind env sigma ir
+        | ConstRef cr -> info_of_const env cr
+        | IndRef ir -> info_of_ind env ir
         | ConstructRef cr -> info_of_constructor env cr |> print_type env sigma)
         |> fun x -> Some x
       | Abbrev kn ->
@@ -128,11 +174,12 @@ let pp_file fmt = function
   | Some file -> Format.fprintf fmt " - **in file**: `%s`" file
 
 let pp_typ id = function
-  | Def (typ, cr, file) ->
+  | Def { typ; params; full_path; file } ->
     let typ = Pp.string_of_ppcmds typ in
+    let param = Pp.string_of_ppcmds params in
     Format.(
-      asprintf "@[```coq\n%s : %s@\n```@\n@[%a@]@[%a@]@]" id typ pp_cr cr
-        pp_file file)
+      asprintf "@[```coq\n%s%s: %s@\n```@\n@[%a@]@[%a@]@]" id param typ pp_cr
+        full_path pp_file file)
   | Notation nt ->
     let nt = Pp.string_of_ppcmds nt in
     Format.(asprintf "```coq\n%s\n```" nt)
