@@ -15,7 +15,7 @@ type id_info =
   | Def of
       { typ : Pp.t  (** type of the ide *)
       ; params : Pp.t  (** params that need display next to the name *)
-      ; full_path : Names.Constant.t option
+      ; full_path : Pp.t option
             (** full path of the constant, if any, for example
                 [Stdlib.Lists.map] *)
       ; file : string option  (** filename where the constant is located *)
@@ -63,7 +63,10 @@ let info_of_ind env ((sp, i) : Names.Ind.t) =
   let params = EConstr.Unsafe.to_rel_context params in
   let typ = Printer.pr_ltype_env ~impargs env_params sigma arity in
   let params = Pp.(inst ++ print_params env sigma params) in
-  Def { typ; params; full_path = None; file = None }
+  let dp = Names.MutInd.modpath sp |> Names.ModPath.dp in
+  let source = Coq.Module.(make dp |> Result.to_option |> Option.map source) in
+  let full_path = Some (Names.MutInd.print sp) in
+  Def { typ; params; full_path; file = source }
 
 let type_of_constant cb = cb.Declarations.const_type
 
@@ -90,13 +93,14 @@ let info_of_const env cr =
   let impargs = List.map Impargs.binding_kind_of_status impargs in
   let typ = Printer.pr_ltype_env env sigma ~impargs typ in
   let dp = Names.Constant.modpath cr |> Names.ModPath.dp in
+  let full_path = Some (Names.Constant.print cr) in
   let source = Coq.Module.(make dp |> Result.to_option |> Option.map source) in
   let inst =
     if Environ.polymorphic_constant cr env then
       Printer.pr_universe_instance sigma inst
     else Pp.mt ()
   in
-  Def { typ; params = inst; full_path = Some cr; file = source }
+  Def { typ; params = inst; full_path; file = source }
 
 let info_of_var env vr =
   let vdef = Environ.lookup_named vr env in
@@ -165,9 +169,7 @@ let info_of_id_at_point ~token ~node id =
 
 let pp_cr fmt = function
   | None -> ()
-  | Some cr ->
-    Format.fprintf fmt " - **full path**: `%a`@\n" Pp.pp_with
-      (Names.Constant.print cr)
+  | Some cr -> Format.fprintf fmt " - **full path**: `%a`@\n" Pp.pp_with cr
 
 let pp_file fmt = function
   | None -> ()
