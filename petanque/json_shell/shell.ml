@@ -1,12 +1,14 @@
 let init_coq ~debug =
   let load_module = Dynlink.loadfile in
   let load_plugin = Coq.Loader.plugin_handler None in
-  Coq.Init.(coq_init { debug; load_module; load_plugin })
+  let vm, warnings = (true, None) in
+  Coq.Init.(coq_init { debug; load_module; load_plugin; vm; warnings })
 
 let cmdline : Coq.Workspace.CmdLine.t =
   { coqlib = Coq_config.coqlib
   ; coqcorelib = Filename.concat Coq_config.coqlib "../coq-core"
-  ; ocamlpath = None
+  ; findlib_config = None
+  ; ocamlpath = []
   ; vo_load_path = []
   ; ml_include_path = []
   ; args = []

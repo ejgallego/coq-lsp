@@ -73,12 +73,13 @@ module Meta = struct
 
   module Command = struct
     type t =
-      | Back of int
-      | ResetName of Names.lident
-      | ResetInitial
       | AbortAll
-    (* Not supported, but actually easy if we want | VernacRestart | VernacUndo
-       _ | VernacUndoTo _ *)
+      | Back of int
+      | ResetInitial
+      | ResetName of Names.lident
+      | Restart
+    (* Not supported, but actually easy if we want | VernacUndo _ | VernacUndoTo
+       _ *)
     [@@deriving hash, compare]
   end
 
@@ -99,6 +100,9 @@ module Meta = struct
         Some { command; loc; attrs; control }
       | { expr = VernacResetInitial; control; attrs } ->
         let command = Command.ResetInitial in
+        Some { command; loc; attrs; control }
+      | { expr = VernacRestart; control; attrs } ->
+        let command = Command.Restart in
         Some { command; loc; attrs; control }
       | { expr = VernacBack num; control; attrs } ->
         let command = Command.Back num in
@@ -304,4 +308,11 @@ let make_info ~st:_ ~lines CAst.{ loc; v } : Lang.Ast.Info.t list option =
       let kind = Kinds.method_ in
       let detail = "Instance" in
       Some [ Lang.Ast.Info.make ~range ~name ~kind ~detail () ]
+    (* | VernacSynPure (VernacSymbol slist) -> *)
+    (*   Some (List.concat_map (symbol_info ~lines ~range) slist) *)
+    (* | VernacSynPure (VernacAddRewRule (name, _)) -> *)
+    (*   let name = mk_id ~lines name in *)
+    (*   let kind = Kinds.method_ in *)
+    (*   let detail = "Rewrite Rule" in *)
+    (*   Some [ Lang.Ast.Info.make ~range ~name ~kind ~detail () ] *)
     | _ -> None)

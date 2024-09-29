@@ -60,7 +60,7 @@ jobs:
 
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -83,6 +83,70 @@ jobs:
       - name: 🐛 Test fcc
         run: opam exec -- make test-compiler
 
+  build-js:
+    name: Web Worker Build
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+
+    steps:
+      # OPAM figures out everything but the libgmp-dev:i386
+      # dependency, maybe worth fixing this upstream in the opam
+      # repository
+      - name: Install apt dependencies
+        run: |
+          sudo apt-get install aptitude
+          sudo dpkg --add-architecture i386
+          sudo aptitude -o Acquire::Retries=30 update -q
+          sudo aptitude -o Acquire::Retries=30 install gcc-multilib g++-multilib pkg-config libgmp-dev libgmp-dev:i386 -y
+
+      - name: 🔭 Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: 🐫 Setup OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: "ocaml-variants.4.14.2+options,ocaml-option-32bit"
+          dune-cache: true
+
+      - name: 🐫🐪🐫 Get dependencies
+        run: |
+          opam exec -- make opam-deps
+          opam pin add js_of_ocaml-compiler https://github.com/ejgallego/js_of_ocaml.git#fix_build_fs_target -y
+          opam pin add js_of_ocaml https://github.com/ejgallego/js_of_ocaml.git#fix_build_fs_target -y
+          opam install zarith_stubs_js js_of_ocaml-ppx -y
+
+      - name: 💉💉💉 Patch Coq
+        if: false # FIXME, Coq is in opam but needs to be patched for the worker to be functional
+        run: make patch-for-js
+
+      - name: 🦏🧱🦏 Build coq-lsp JS version 🦏🦏🦏
+        run: |
+          opam exec -- make controller-js/coq-fs-core.js
+          opam exec -- make js
+
+      - name: 🚀 Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 🦏🧱🦏 Build coq-lsp VSCode extension 🦏🦏🦏
+        run: opam exec -- make extension
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coq-lsp_worker and front-end
+          path: |
+            editor/code/package.json
+            editor/code/README.md
+            editor/code/CHANGELOG.md
+            editor/code/syntaxes
+            editor/code/out/
+            editor/code/coq.configuration.json
+          compression-level: 9
   build-opam:
     name: Opam Install
     strategy:
@@ -90,7 +154,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -121,11 +185,11 @@ jobs:
         working-directory: ./editor/code
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: 🚀 Setup node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
       - run: npm ci
       - run: npx --yes @vscode/vsce ls
 
@@ -134,7 +198,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: ❄️ Setup Nix

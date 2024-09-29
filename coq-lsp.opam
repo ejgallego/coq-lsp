@@ -33,26 +33,26 @@ depends: [
   "menhir"       { >= "20220210" }
 
   # unit testing
-  "ppx_inline_test"     { >= "0.14.1" }
+  "ppx_inline_test"     { >= "v0.15.0" }
 
   # Uncomment this for releases
   "coq"          { >= "8.17" < "8.18"  }
 
   # coq deps: remove this for releases
-  "ocamlfind" {>= "1.8.1"}
-  "zarith" {>= "1.11"}
+  "ocamlfind" {>= "1.9.1"}
+  "zarith" {>= "1.13"}
 
   # result dep, fixed in main, but kept for older releases
   "result"              { >= "1.5" }
 
   # serlib deps: see what we need to keep for release
-  "ppx_deriving"        { >= "4.2.1"    }
-  "ppx_deriving_yojson" { >= "3.4"      }
-  "ppx_import"          { >= "1.5-3"    }
-  "sexplib"             { >= "v0.13.0" & < "v0.18" }
-  "ppx_sexp_conv"       { >= "v0.13.0" & < "v0.18" }
-  "ppx_compare"         { >= "v0.13.0" & < "v0.18" }
-  "ppx_hash"            { >= "v0.13.0" & < "v0.18" }
+  "ppx_deriving"        { >= "5.2"                 }
+  "ppx_deriving_yojson" { >= "3.7.0"               }
+  "ppx_import"          { >= "1.11.0"              }
+  "sexplib"             { >= "v0.15.0" & < "v0.18" }
+  "ppx_sexp_conv"       { >= "v0.15.0" & < "v0.18" }
+  "ppx_compare"         { >= "v0.15.0" & < "v0.18" }
+  "ppx_hash"            { >= "v0.15.0" & < "v0.18" }
 ]
 
 depopts: ["lwt" "logs"]

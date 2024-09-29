@@ -23,6 +23,8 @@ type coq_opts =
   ; load_plugin : Mltop.PluginSpec.t -> unit
         (** callback to load findlib packages *)
   ; debug : bool  (** Enable Coq Debug mode *)
+  ; vm : bool  (** Enable Coq's VM *)
+  ; warnings : string option  (** Coq's Warnings *)
   }
 
 let coq_lvl_to_severity (lvl : Feedback.level) =
@@ -46,7 +48,7 @@ let mk_fb_handler q Feedback.{ contents; _ } =
 let coq_init opts =
   (* Core Coq initialization *)
   Lib.init ();
-  Global.set_impredicative_set false;
+  Global.set_VM opts.vm;
   Global.set_native_compiler false;
   Flags.set_native_compiler false;
 
@@ -70,6 +72,9 @@ let coq_init opts =
     }
   in
   Mltop.set_top ser_mltop;
+
+  (* Maybe set warnings *)
+  Option.iter CWarnings.set_flags opts.warnings;
 
   (* This should go away in Coq itself *)
   Safe_typing.allow_delayed_constants := true;

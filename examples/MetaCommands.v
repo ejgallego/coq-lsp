@@ -42,5 +42,12 @@ Lemma foo : True. now auto. Qed.
 
 Print foo.
 
+(* testing restart *)
+Goal nat -> nat.
+intro x.
+Restart.
+intros x. exact x.
+Qed.
+
 
 

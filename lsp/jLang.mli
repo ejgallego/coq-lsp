@@ -38,3 +38,9 @@ module Diagnostic : sig
     [@@deriving yojson]
   end
 end
+
+module Ast : sig
+  module Info : sig
+    type t = Lang.Ast.Info.t [@@deriving yojson]
+  end
+end

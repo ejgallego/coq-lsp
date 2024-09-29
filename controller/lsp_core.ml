@@ -23,7 +23,11 @@ module F = Format
 module J = Yojson.Safe
 module U = Yojson.Safe.Util
 
-let field name dict = List.(assoc name dict)
+let field name dict =
+  try List.(assoc name dict)
+  with Not_found ->
+    raise (U.Type_error ("field " ^ name ^ " not found", `Assoc dict))
+
 let int_field name dict = U.to_int (field name dict)
 let list_field name dict = U.to_list (field name dict)
 let string_field name dict = U.to_string (field name dict)
@@ -398,7 +402,16 @@ let do_document_request_maybe ~params ~handler =
   let postpone = not !Fleche.Config.v.check_only_on_request in
   do_document_request ~postpone ~params ~handler
 
-let do_symbols = do_document_request_maybe ~handler:Rq_symbols.symbols
+let do_immediate ~params ~handler =
+  let uri = Helpers.get_uri params in
+  Rq.Action.Data (Request.Data.Immediate { uri; handler })
+
+(* new immediate mode, cc: #816 *)
+let do_symbols ~params =
+  let handler = Rq_symbols.symbols in
+  if !Fleche.Config.v.check_only_on_request then do_immediate ~params ~handler
+  else do_document_request ~postpone:true ~params ~handler
+
 let do_document = do_document_request_maybe ~handler:Rq_document.request
 let do_save_vo = do_document_request_maybe ~handler:Rq_save.request
 let do_lens = do_document_request_maybe ~handler:Rq_lens.request
@@ -710,3 +723,35 @@ let enqueue_message (com : LSP.Message.t) =
      general, to perform queue optimizations *)
   LspQueue.push_and_optimize com;
   set_current_token ()
+
+module CB (O : sig
+  val ofn : Lsp.Base.Notification.t -> unit
+end) =
+struct
+  let ofn = O.ofn
+  let trace _hdr ?extra message = Lsp.Io.logTrace ~message ~extra
+  let message ~lvl ~message = Lsp.Io.logMessage ~lvl ~message
+
+  let diagnostics ~uri ~version diags =
+    Lsp.Core.mk_diagnostics ~uri ~version diags |> ofn
+
+  let fileProgress ~uri ~version progress =
+    Lsp.JFleche.mk_progress ~uri ~version progress |> ofn
+
+  let perfData ~uri ~version perf =
+    Lsp.JFleche.mk_perf ~uri ~version perf |> ofn
+
+  let serverVersion vi = Lsp.JFleche.mk_serverVersion vi |> ofn
+  let serverStatus st = Lsp.JFleche.mk_serverStatus st |> ofn
+
+  let cb =
+    Fleche.Io.CallBack.
+      { trace
+      ; message
+      ; diagnostics
+      ; fileProgress
+      ; perfData
+      ; serverVersion
+      ; serverStatus
+      }
+end

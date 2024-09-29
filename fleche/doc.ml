@@ -318,15 +318,17 @@ let init_fname ~uri =
 let init_loc ~uri = Loc.initial (init_fname ~uri)
 
 (* default range for the node that contains the init feedback errors *)
-let drange =
+let drange ~lines =
   let open Lang in
+  let llen = if Array.length lines > 0 then String.length lines.(0) else 1 in
   let start = Point.{ line = 0; character = 0; offset = 0 } in
-  let end_ = Point.{ line = 0; character = 1; offset = 1 } in
+  let end_ = Point.{ line = 0; character = llen; offset = llen } in
   Range.{ start; end_ }
 
 let process_init_feedback ~lines ~stats ~global_stats state feedback =
   let messages = List.map (Node.Message.feedback_to_message ~lines) feedback in
   if not (CList.is_empty messages) then
+    let drange = drange ~lines in
     let diags, messages = Diags.of_messages ~drange messages in
     let parsing_time = 0.0 in
     let info = Node.Info.make ~parsing_time ?stats ~global_stats () in
@@ -552,6 +554,13 @@ end
 (* This is not in its own module because we don't want to move the definition of
    [Node.t] out (yet) *)
 module Recovery : sig
+  (** [find_proof_start nodes] returns [Some (node, pnode)] where [node] is the
+      node that contains the start of the proof, and [pnode] is the previous
+      node, if exists. [nodes] is the list of document nodes, in _reverse
+      order_. *)
+  val find_proof_start : Node.t list -> (Node.t * Node.t option) option
+  (* This is useful in meta-commands, and other plugins actually! *)
+
   val handle :
        token:Coq.Limits.Token.t
     -> context:Recovery_context.t
@@ -670,6 +679,11 @@ let search_node ~command ~doc ~st =
       in
       (Coq.Protect.E.error message, nstats None)
     | Some node -> (Coq.Protect.E.ok node.state, nstats (Some node)))
+  | Restart -> (
+    match Recovery.find_proof_start doc.nodes with
+    | None ->
+      (Coq.Protect.E.error Pp.(str "no proof to restart"), Memo.Stats.zero)
+    | Some (node, _) -> (Coq.Protect.E.ok node.state, nstats None))
   | ResetName id -> (
     let toc = doc.toc in
     let id = Names.Id.to_string id.v in

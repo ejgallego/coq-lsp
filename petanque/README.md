@@ -14,6 +14,7 @@ an OCaml API (`agent.mli`) which is then exposed via some form of RPC.
 
 - Guilaume Baudart (Inria)
 - Emilio J. Gallego Arias (Inria)
+- Marc Lelarge (Inria)
 - Laetitia Teodorescu (Inria)
 
 ## Acknowledgments
