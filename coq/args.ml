@@ -24,10 +24,17 @@ let coqcorelib =
     & opt string (Filename.concat Coq_config.coqlib "../coq-core/")
     & info [ "coqcorelib" ] ~docv:"COQCORELIB" ~doc)
 
-let ocamlpath =
-  let doc = "Path to OCaml's lib" in
+let findlib_config =
+  let doc = "Override findlib's config file" in
   Arg.(
-    value & opt (some string) None & info [ "ocamlpath" ] ~docv:"OCAMLPATH" ~doc)
+    value
+    & opt (some string) None
+    & info [ "findlib_config" ] ~docv:"OCAMLFIND_CONF" ~doc)
+
+let ocamlpath =
+  let doc = "Extra Paths to OCaml's libraries" in
+  Arg.(
+    value & opt (list string) [] & info [ "ocamlpath" ] ~docv:"OCAMLPATH" ~doc)
 
 let coq_lp_conv ~implicit (unix_path, lp) =
   { Loadpath.coq_path = Libnames.dirpath_of_string lp

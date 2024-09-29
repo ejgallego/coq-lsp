@@ -17,8 +17,10 @@
 
 module Flags : sig
   type t = private
-    { indices_matter : bool
-    ; impredicative_set : bool
+    { impredicative_set : bool
+    ; indices_matter : bool
+    ; type_in_type : bool
+    ; rewrite_rules : bool
     }
 end
 
@@ -40,10 +42,14 @@ module Require : sig
     }
 end
 
+(* Generated from a _CoqProject, dune (in the future) or command line args *)
 type t = private
   { coqlib : string
   ; coqcorelib : string
-  ; ocamlpath : string option
+  ; findlib_config :
+      string option (* Path to findlib config file, if [None], default *)
+  ; ocamlpath :
+      string list (* extra ocamlpath paths, for example for local plugins *)
   ; vo_load_path : Loadpath.vo_path list
         (** List of -R / -Q flags passed to Coq, usually theories we depend on *)
   ; ml_include_path : string list
@@ -75,7 +81,8 @@ module CmdLine : sig
   type t =
     { coqlib : string
     ; coqcorelib : string
-    ; ocamlpath : string option
+    ; findlib_config : string option
+    ; ocamlpath : string list
     ; vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
     ; args : string list

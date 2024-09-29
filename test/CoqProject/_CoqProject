@@ -3,6 +3,6 @@
 
 -arg -w -arg -local-declaration
 -arg -w -arg +non-primitive-record
--arg -rifrom -arg Coq.Lists -arg List
+-arg -rifrom -arg Stdlib.Lists -arg List
 
 test.v

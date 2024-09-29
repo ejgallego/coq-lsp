@@ -169,7 +169,7 @@ module T2ESpec = struct
     | CTacFun of raw_patexpr list * raw_tacexpr
     | CTacApp of raw_tacexpr * raw_tacexpr list
     | CTacSyn of (Names.lname * raw_tacexpr) list * Names.KerName.t
-    | CTacLet of rec_flag * (raw_patexpr * raw_tacexpr) list * Names.KerName.t
+    | CTacLet of rec_flag * (raw_patexpr * raw_tacexpr) list * raw_tacexpr
     | CTacCnv of raw_tacexpr * raw_typexpr
     | CTacSeq of raw_tacexpr * raw_tacexpr
     | CTacIft of raw_tacexpr * raw_tacexpr * raw_tacexpr

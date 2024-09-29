@@ -19,15 +19,24 @@ module Flags_ = Flags
 
 module Flags = struct
   type t =
-    { indices_matter : bool
-    ; impredicative_set : bool
+    { impredicative_set : bool
+    ; indices_matter : bool
+    ; type_in_type : bool
+    ; rewrite_rules : bool
     }
 
-  let default = { indices_matter = false; impredicative_set = false }
+  let default =
+    { impredicative_set = false
+    ; indices_matter = false
+    ; type_in_type = false
+    ; rewrite_rules = false
+    }
 
-  let apply { indices_matter; impredicative_set } =
+  let apply { impredicative_set; indices_matter; type_in_type; rewrite_rules } =
+    Global.set_impredicative_set impredicative_set;
     Global.set_indices_matter indices_matter;
-    Global.set_impredicative_set impredicative_set
+    Global.set_check_universes (not type_in_type);
+    Global.set_rewrite_rules_allowed rewrite_rules
 end
 
 module Warning : sig
@@ -59,7 +68,8 @@ end
 type t =
   { coqlib : string
   ; coqcorelib : string
-  ; ocamlpath : string option
+  ; findlib_config : string option
+  ; ocamlpath : string list
   ; vo_load_path : Loadpath.vo_path list
   ; ml_include_path : string list
   ; require_libs : Require.t list
@@ -95,10 +105,14 @@ let rec parse_args args init boot libs f w =
   | [] -> (init, boot, List.rev libs, f, List.rev w)
   | "-rifrom" :: from :: lib :: rest ->
     parse_args rest init boot ((Some from, lib) :: libs) f w
-  | "-indices-matter" :: rest ->
-    parse_args rest init boot libs { f with Flags.indices_matter = true } w
   | "-impredicative-set" :: rest ->
     parse_args rest init boot libs { f with Flags.impredicative_set = true } w
+  | "-indices-matter" :: rest ->
+    parse_args rest init boot libs { f with Flags.indices_matter = true } w
+  | "-type-in-type" :: rest ->
+    parse_args rest init boot libs { f with Flags.type_in_type = true } w
+  | "-allow-rewrite-rules" :: rest ->
+    parse_args rest init boot libs { f with Flags.rewrite_rules = true } w
   | "-noinit" :: rest -> parse_args rest false boot libs f w
   | "-boot" :: rest -> parse_args rest init true libs f w
   | "-w" :: warn :: rest ->
@@ -112,7 +126,8 @@ module CmdLine = struct
   type t =
     { coqlib : string
     ; coqcorelib : string
-    ; ocamlpath : string option
+    ; findlib_config : string option
+    ; ocamlpath : string list
     ; vo_load_path : Loadpath.vo_path list
     ; ml_include_path : string list
     ; args : string list
@@ -127,6 +142,7 @@ let mk_require_from (from, library) =
 let make ~cmdline ~implicit ~kind ~debug =
   let { CmdLine.coqcorelib
       ; coqlib
+      ; findlib_config
       ; ocamlpath
       ; args
       ; ml_include_path
@@ -165,6 +181,7 @@ let make ~cmdline ~implicit ~kind ~debug =
   let ml_include_path = dft_ml_include_path @ ml_include_path in
   { coqlib
   ; coqcorelib
+  ; findlib_config
   ; ocamlpath
   ; vo_load_path
   ; ml_include_path
@@ -183,12 +200,8 @@ let pp_load_path fmt
 
 (* This is a bit messy upstream, as -I both extends Coq loadpath and OCAMLPATH
    loadpath *)
-let findlib_init ~ml_include_path ~ocamlpath =
-  let config, ocamlpath =
-    match ocamlpath with
-    | None -> (None, [])
-    | Some dir -> (Some (Filename.concat dir "findlib.conf"), [ dir ])
-  in
+let findlib_init ~ml_include_path ?findlib_config ~ocamlpath () =
+  let config = findlib_config in
   let env_ocamlpath = try [ Sys.getenv "OCAMLPATH" ] with Not_found -> [] in
   let env_ocamlpath = ml_include_path @ env_ocamlpath @ ocamlpath in
   let ocamlpathsep = if Sys.unix then ":" else ";" in
@@ -198,6 +211,7 @@ let findlib_init ~ml_include_path ~ocamlpath =
 let describe
     { coqlib
     ; coqcorelib
+    ; findlib_config
     ; ocamlpath
     ; kind
     ; vo_load_path
@@ -213,14 +227,10 @@ let describe
   in
   let n_vo = List.length vo_load_path in
   let n_ml = List.length ml_include_path in
-  let ocamlpath_msg =
-    Option.cata
-      (fun op -> "was overrident to " ^ op)
-      "wasn't overriden" ocamlpath
-  in
+  let ocamlpath_msg = "added paths: [" ^ String.concat "|" ocamlpath ^ "]" in
   (* We need to do this in order for the calls to Findlib to make sense, but
      really need to modify this *)
-  findlib_init ~ml_include_path ~ocamlpath;
+  findlib_init ~ml_include_path ?findlib_config ~ocamlpath ();
   let fl_packages = Findlib.list_packages' () in
   let fl_config = Findlib.config_file () in
   let fl_location = Findlib.default_location () in
@@ -298,6 +308,7 @@ let dirpath_of_uri ~uri =
 let apply ~intern ~uri
     { coqlib = _
     ; coqcorelib = _
+    ; findlib_config
     ; ocamlpath
     ; vo_load_path
     ; ml_include_path
@@ -311,7 +322,7 @@ let apply ~intern ~uri
   Flags.apply flags;
   Warning.apply warnings;
   List.iter Mltop.add_ml_dir ml_include_path;
-  findlib_init ~ml_include_path ~ocamlpath;
+  findlib_init ~ml_include_path ?findlib_config ~ocamlpath ();
   List.iter Loadpath.add_vo_path vo_load_path;
   Declaremods.start_library (dirpath_of_uri ~uri);
   load_objs ~intern require_libs

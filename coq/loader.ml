@@ -48,6 +48,7 @@ let map_serlib fl_pkg =
     | "coq-core.plugins.funind"           (* funind      *)
     | "coq-core.plugins.ltac"             (* ltac        *)
     | "coq-core.plugins.ltac2"            (* ltac2       *)
+    | "coq-core.plugins.ltac2_ltac1"      (* ltac2_ltac1 *)
     | "coq-core.plugins.micromega"        (* micromega   *)
     | "coq-core.plugins.micromega_core"   (* micromega_core *)
     | "coq-core.plugins.ring"             (* ring        *)

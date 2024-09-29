@@ -1,0 +1,31 @@
+From 389853f5b1cfd0d9af413f52a8a766dc15107806 Mon Sep 17 00:00:00 2001
+From: Emilio Jesus Gallego Arias <e+git@x80.org>
+Date: Fri, 27 Sep 2024 16:39:19 +0200
+Subject: [PATCH] [jscoq] [lib/system.ml] de-unix-stat
+
+---
+ lib/system.ml | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/lib/system.ml b/lib/system.ml
+index 8f1315c159..a2473c11c9 100644
+--- a/lib/system.ml
++++ b/lib/system.ml
+@@ -69,10 +69,10 @@ let apply_subdir f path name =
+   let base = try Filename.chop_extension name with Invalid_argument _ -> name in
+   if ok_dirname base then
+     let path = if path = "." then name else path//name in
+-    match try (Unix.stat path).Unix.st_kind with Unix.Unix_error _ -> Unix.S_BLK with
+-    | Unix.S_DIR when name = base -> f (FileDir (path,name))
+-    | Unix.S_REG -> f (FileRegular name)
+-    | _ -> ()
++    if Sys.is_directory path && name = base then
++      f (FileDir (path,name))
++    else
++      f (FileRegular name)
+ 
+ let readdir dir = try Sys.readdir dir with Sys_error _ -> [||]
+ 
+-- 
+2.43.0
+

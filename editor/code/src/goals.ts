@@ -1,12 +1,4 @@
-import {
-  Uri,
-  WebviewPanel,
-  window,
-  ViewColumn,
-  extensions,
-  commands,
-  TextDocument,
-} from "vscode";
+import { Uri, WebviewPanel, window, ViewColumn } from "vscode";
 import {
   BaseLanguageClient,
   RequestType,

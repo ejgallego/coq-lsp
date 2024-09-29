@@ -37,10 +37,11 @@ module Meta : sig
 
   module Command : sig
     type t =
-      | Back of int
-      | ResetName of Names.lident
-      | ResetInitial
       | AbortAll
+      | Back of int
+      | ResetInitial
+      | ResetName of Names.lident
+      | Restart
   end
 
   type t =

@@ -48,6 +48,10 @@ type position =
 (** Requests that require data access *)
 module Data = struct
   type t =
+    | Immediate of
+        { uri : Lang.LUri.File.t
+        ; handler : document
+        }
     | DocRequest of
         { uri : Lang.LUri.File.t
         ; postpone : bool
@@ -63,6 +67,7 @@ module Data = struct
 
   (* Debug printing *)
   let data fmt = function
+    | Immediate { uri = _; handler = _ } -> Format.fprintf fmt "{k:imm }"
     | DocRequest { uri = _; postpone; handler = _ } ->
       Format.fprintf fmt "{k:doc | p: %B}" postpone
     | PosRequest { uri = _; point; version; postpone; handler = _ } ->
@@ -73,6 +78,8 @@ module Data = struct
 
   let dm_request pr =
     match pr with
+    | Immediate { uri; handler = _ } ->
+      (uri, false, Fleche.Theory.Request.Immediate)
     | DocRequest { uri; postpone; handler = _ } ->
       (uri, postpone, Fleche.Theory.Request.FullDoc)
     | PosRequest { uri; point; version; postpone; handler = _ } ->
@@ -80,6 +87,7 @@ module Data = struct
 
   let serve ~token ~doc pr =
     match pr with
+    | Immediate { uri = _; handler } -> handler ~token ~doc
     | DocRequest { uri = _; postpone = _; handler } -> handler ~token ~doc
     | PosRequest { uri = _; point; version = _; postpone = _; handler } ->
       handler ~token ~point ~doc
