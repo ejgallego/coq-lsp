@@ -387,8 +387,8 @@ let guess ~token ~debug ~cmdline ~dir =
   ignore feedback;
   match r with
   | Protect.R.Interrupted -> Error "Workspace Scanning Interrupted"
-  | Protect.R.Completed (Error (User (_, msg)))
-  | Protect.R.Completed (Error (Anomaly (_, msg))) ->
+  | Protect.R.Completed (Error (User (_, _, msg)))
+  | Protect.R.Completed (Error (Anomaly (_, _, msg))) ->
     Error (Format.asprintf "Workspace Scanning Errored: %a" Pp.pp_with msg)
   | Protect.R.Completed (Ok workspace) -> Ok workspace
 

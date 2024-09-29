@@ -6,7 +6,9 @@
 (************************************************************************)
 
 (* Replace by ppx when we can print goals properly in the client *)
-let mk_message (range, level, text) = Lsp.JFleche.Message.{ range; level; text }
+let mk_message (range, level, _qf, text) =
+  (* Note quickfixes are not computed in the goals *)
+  Lsp.JFleche.Message.{ range; level; text }
 
 let mk_messages node =
   Option.map Fleche.Doc.Node.messages node

@@ -137,9 +137,9 @@ let execute_precommands ~token ~memo ~pre_commands ~(node : Fleche.Doc.Node.t) =
 let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
   match r with
   | { r = Interrupted; feedback = _ } -> Error Error.Interrupted
-  | { r = Completed (Error (User (_loc, msg))); feedback = _ } ->
+  | { r = Completed (Error (User (_loc, _, msg))); feedback = _ } ->
     Error (Error.Coq (Pp.string_of_ppcmds msg))
-  | { r = Completed (Error (Anomaly (_loc, msg))); feedback = _ } ->
+  | { r = Completed (Error (Anomaly (_loc, _, msg))); feedback = _ } ->
     Error (Error.Anomaly (Pp.string_of_ppcmds msg))
   | { r = Completed (Ok r); feedback = _ } -> Ok r
 

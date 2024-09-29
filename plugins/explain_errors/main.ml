@@ -11,7 +11,8 @@ let pp_goals ~token ~st =
     match Coq.Print.pr_goals ~token ~proof with
     | { Coq.Protect.E.r = Completed (Ok goals); _ } -> goals
     | { Coq.Protect.E.r = Completed (Error (User msg | Anomaly msg)); _ } ->
-      Pp.(str "error when printing goals: " ++ snd msg)
+      let _, _, msg = msg in
+      Pp.(str "error when printing goals: " ++ msg)
     | { Coq.Protect.E.r = Interrupted; _ } ->
       Pp.str "goal printing was interrupted")
 

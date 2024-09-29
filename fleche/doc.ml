@@ -116,8 +116,9 @@ module Node = struct
   module Message = struct
     type t = Lang.Range.t Coq.Message.t
 
-    let feedback_to_message ~lines (loc, lvl, msg) =
-      (Coq.Utils.to_orange ~lines loc, lvl, msg)
+    let feedback_to_message ~lines msg =
+      let f = Coq.Utils.to_range ~lines in
+      Coq.Message.map ~f msg
   end
 
   type t =
@@ -154,6 +155,7 @@ module Diags : sig
   (** Build advanced diagnostic with AST analysis *)
   val error :
        err_range:Lang.Range.t
+    -> qf:Lang.Range.t Lang.Qf.t list option
     -> msg:Pp.t
     -> stm_range:Lang.Range.t (* range for the sentence *)
     -> ?ast:Node.Ast.t
@@ -174,7 +176,7 @@ end = struct
     Lang.Diagnostic.{ range; severity; message; data }
 
   (* ast-dependent error diagnostic generation *)
-  let extra_diagnostics_of_ast stm_range ast =
+  let extra_diagnostics_of_ast quickFix stm_range ast =
     let sentenceRange = Some stm_range in
     let failedRequire =
       match
@@ -186,20 +188,24 @@ end = struct
         Some [ { Lang.Diagnostic.FailedRequire.prefix = from; refs } ]
       | _ -> None
     in
-    Some { Lang.Diagnostic.Data.sentenceRange; failedRequire }
+    Some { Lang.Diagnostic.Data.sentenceRange; failedRequire; quickFix }
 
-  let extra_diagnostics_of_ast stm_range ast =
+  let extra_diagnostics_of_ast qf stm_range ast =
     if !Config.v.send_diags_extra_data then
-      extra_diagnostics_of_ast stm_range ast
+      extra_diagnostics_of_ast qf stm_range ast
     else None
 
-  let error ~err_range ~msg ~stm_range ?ast () =
-    let data = extra_diagnostics_of_ast stm_range ast in
+  let error ~err_range ~qf ~msg ~stm_range ?ast () =
+    let data = extra_diagnostics_of_ast qf stm_range ast in
     make ?data err_range Lang.Diagnostic.Severity.error msg
 
-  let of_feed ~drange (range, severity, message) =
+  let of_feed ~drange (range, severity, quickFix, message) =
     let range = Option.default drange range in
-    make range severity message
+    let data =
+      let sentenceRange, failedRequire = (None, None) in
+      Some Lang.Diagnostic.Data.{ sentenceRange; failedRequire; quickFix }
+    in
+    make ?data range severity message
 
   type partition_kind =
     | Left
@@ -224,7 +230,7 @@ end = struct
       else if !Config.v.show_notices_as_diagnostics then 4
       else 3
     in
-    let f (_, lvl, _) =
+    let f (_, lvl, _, _) =
       (* warning = 2 *)
       if lvl = Lang.Diagnostic.Severity.warning then Both
       else if lvl < cutoff then Left
@@ -355,7 +361,7 @@ let empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed =
   { uri; contents; toc; version; env; root; nodes; diags_dirty; completed }
 
 let error_doc ~loc ~message ~uri ~contents ~version ~env =
-  let feedback = [ (loc, Diags.err, Pp.str message) ] in
+  let feedback = [ (loc, Diags.err, None, Pp.str message) ] in
   let root = env.Env.init in
   let nodes = [] in
   let completed range = Completion.Failed range in
@@ -365,7 +371,7 @@ let conv_error_doc ~raw ~uri ~version ~env ~root err =
   let contents = Contents.make_raw ~raw in
   let lines = contents.lines in
   let err =
-    (None, Diags.err, Pp.(str "Error in document conversion: " ++ str err))
+    (None, Diags.err, None, Pp.(str "Error in document conversion: " ++ str err))
   in
   (* No execution to add *)
   let stats = None in
@@ -396,8 +402,8 @@ let handle_doc_creation_exec ~token ~env ~uri ~version ~contents =
       let message = "Document Creation Interrupted!" in
       let loc = None in
       error_doc ~loc ~message ~uri ~version ~contents ~env
-    | Completed (Error (User (loc, err_msg)))
-    | Completed (Error (Anomaly (loc, err_msg))) ->
+    | Completed (Error (User (loc, _, err_msg)))
+    | Completed (Error (Anomaly (loc, _, err_msg))) ->
       let message =
         Format.asprintf "Doc.create, internal error: @[%a@]" Pp.pp_with err_msg
       in
@@ -749,22 +755,22 @@ let parse_action ~token ~lines ~st last_tok doc_handle =
     | Ok (Some ast) ->
       let () = if Debug.parsing then DDebug.parsed_sentence ~ast in
       (Process ast, [], feedback, time)
-    | Error (Anomaly (_, msg)) | Error (User (None, msg)) ->
+    | Error (Anomaly (_, qf, msg)) | Error (User (None, qf, msg)) ->
       (* We don't have a better alternative :(, usually missing error loc here
          means an anomaly, so we stop *)
       let err_range = last_tok in
       let parse_diags =
-        [ Diags.error ~err_range ~msg ~stm_range:err_range () ]
+        [ Diags.error ~err_range ~qf ~msg ~stm_range:err_range () ]
       in
       (EOF (Failed last_tok), parse_diags, feedback, time)
-    | Error (User (Some err_range, msg)) ->
+    | Error (User (Some err_range, qf, msg)) ->
       Coq.Parsing.discard_to_dot doc_handle;
       let last_tok = Coq.Parsing.Parsable.loc doc_handle in
       let last_tok_range = Coq.Utils.to_range ~lines last_tok in
       let span_loc = Util.build_span start_loc last_tok in
       let span_range = Coq.Utils.to_range ~lines span_loc in
       let parse_diags =
-        [ Diags.error ~err_range ~msg ~stm_range:span_range () ]
+        [ Diags.error ~err_range ~qf ~msg ~stm_range:span_range () ]
       in
       (Skip (span_range, last_tok_range), parse_diags, feedback, time))
 
@@ -816,10 +822,12 @@ let node_of_coq_result ~token ~doc ~range ~prev ~ast ~st ~parsing_diags
         ~diags:[] ~feedback ~info
     in
     Continue { state; last_tok; node }
-  | Error (Coq.Protect.Error.Anomaly (err_range, msg) as coq_err)
-  | Error (User (err_range, msg) as coq_err) ->
+  | Error (Coq.Protect.Error.Anomaly (err_range, qf, msg) as coq_err)
+  | Error (User (err_range, qf, msg) as coq_err) ->
     let err_range = Option.default range err_range in
-    let err_diags = [ Diags.error ~err_range ~msg ~stm_range:range ~ast () ] in
+    let err_diags =
+      [ Diags.error ~err_range ~qf ~msg ~stm_range:range ~ast () ]
+    in
     let contents, nodes = (doc.contents, doc.nodes) in
     let context =
       Recovery_context.make ~contents ~last_tok ~nodes ~ast:ast.v ()

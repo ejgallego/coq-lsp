@@ -6,11 +6,10 @@ let of_execution ~io ~what (v : (_, _) Coq.Protect.E.t) =
   | { r; feedback = _ } -> (
     match r with
     | Coq.Protect.R.Completed (Ok goals) -> goals
-    | Coq.Protect.R.Completed (Error (Anomaly err))
-    | Coq.Protect.R.Completed (Error (User err)) ->
+    | Coq.Protect.R.Completed (Error (Anomaly (_, _, err)))
+    | Coq.Protect.R.Completed (Error (User (_, _, err))) ->
       let lvl = Io.Level.Error in
-      Io.Report.msg ~io ~lvl "error when retrieving %s: %a" what Pp.pp_with
-        (snd err);
+      Io.Report.msg ~io ~lvl "error when retrieving %s: %a" what Pp.pp_with err;
       None
     | Coq.Protect.R.Interrupted -> None)
 

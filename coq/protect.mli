@@ -4,7 +4,8 @@
 
     As of today this includes feedback and exceptions. *)
 module Error : sig
-  type 'l payload = 'l option * Pp.t
+  (* Note, keep in sync with Message.t *)
+  type 'l payload = 'l option * 'l Lang.Qf.t list option * Pp.t
 
   type 'l t = private
     | User of 'l payload
