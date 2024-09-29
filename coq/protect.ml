@@ -68,8 +68,11 @@ let eval_exn ~token ~f x =
       | Error _ -> None
     in
     Vernacstate.Interp.invalidate_cache ();
-    if CErrors.is_anomaly e then R.Completed (Error (Anomaly (loc, qf, msg)))
-    else R.Completed (Error (User (loc, qf, msg)))
+    let payload = (loc, qf, msg) in
+    let error payload =
+      if CErrors.is_anomaly e then Error.Anomaly payload else User payload
+    in
+    R.Completed (Error (error payload))
 
 let _bind_exn ~f x =
   match x with
