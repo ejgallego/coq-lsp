@@ -119,6 +119,7 @@ jobs:
           opam install zarith_stubs_js js_of_ocaml-ppx -y
 
       - name: 💉💉💉 Patch Coq
+        if: false # FIXME, Coq is in opam but needs to be patched for the worker to be functional
         run: make patch-for-js
 
       - name: 🦏🧱🦏 Build coq-lsp JS version 🦏🦏🦏
