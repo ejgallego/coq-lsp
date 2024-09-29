@@ -30,18 +30,17 @@
         ...
       }: let
         l = lib // builtins;
-        coqpkg = pkgs.coqPackages_8_18;
+        coqpkg = pkgs.coqPackages_8_20;
         coqPackages = coqpkg.coqPackages;
         ocamlPackages = coqpkg.coq.ocamlPackages;
       in {
         packages.default = config.packages.coq-lsp;
 
-        # NOTE(2023-06-02): Nix does not support top-level self submodules (yet)
         packages.coq-lsp = ocamlPackages.buildDunePackage {
           duneVersion = "3";
 
           pname = "coq-lsp";
-          version = "${self.lastModifiedDate}+8.18-rc1";
+          version = "${self.lastModifiedDate}+8.20-rc1";
 
           src = self.outPath;
 
@@ -76,7 +75,7 @@
 
           flakeFormatter = true;
 
-          settings.global.excludes = ["./vendor/**"];
+          settings.global.excludes = ["./vendor/**" "controller-js/js_stub/**"];
 
           programs.alejandra.enable = true;
           programs.ocamlformat = {

@@ -255,6 +255,11 @@ ideal would be for LSP clients to catch up and allow UTF-8 encodings
 (so no conversion is needed, at least for Coq), but it seems that we
 will take a while to get to this point.
 
+## Worker version (and debugging tips)
+
+See https://github.com/ocsigen/js_of_ocaml/issues/410 for debugging
+tips with `js_of_ocaml`.
+
 ## Client guide (VS Code Extension)
 
 The VS Code extension is setup as a standard `npm` Typescript + React package

@@ -23,6 +23,8 @@ type coq_opts =
   ; load_plugin : Mltop.PluginSpec.t -> unit
         (** callback to load findlib packages *)
   ; debug : bool  (** Enable Coq Debug mode *)
+  ; vm : bool  (** Enable Coq's VM *)
+  ; warnings : string option  (** Coq's Warnings *)
   }
 
 val coq_init : coq_opts -> State.t

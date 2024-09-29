@@ -2,5 +2,11 @@
  (name serlib_cc)
  (public_name coq-lsp.serlib.cc)
  (synopsis "Serialization Library for Coq Congruence Plugin")
- (preprocess (staged_pps ppx_import ppx_sexp_conv ppx_deriving_yojson ppx_hash ppx_compare))
+ (preprocess
+  (staged_pps
+   ppx_import
+   ppx_sexp_conv
+   ppx_deriving_yojson
+   ppx_hash
+   ppx_compare))
  (libraries coq-core.plugins.cc serlib sexplib))

@@ -2,5 +2,6 @@
  (name serlib_extraction)
  (public_name coq-lsp.serlib.extraction)
  (synopsis "Serialization Library for Coq Fundind Plugin")
- (preprocess (staged_pps ppx_import ppx_sexp_conv))
+ (preprocess
+  (staged_pps ppx_import ppx_sexp_conv))
  (libraries coq-core.plugins.extraction serlib))
