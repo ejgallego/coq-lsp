@@ -402,7 +402,16 @@ let do_document_request_maybe ~params ~handler =
   let postpone = not !Fleche.Config.v.check_only_on_request in
   do_document_request ~postpone ~params ~handler
 
-let do_symbols = do_document_request_maybe ~handler:Rq_symbols.symbols
+let do_immediate ~params ~handler =
+  let uri = Helpers.get_uri params in
+  Rq.Action.Data (Request.Data.Immediate { uri; handler })
+
+(* new immediate mode, cc: #816 *)
+let do_symbols ~params =
+  let handler = Rq_symbols.symbols in
+  if !Fleche.Config.v.check_only_on_request then do_immediate ~params ~handler
+  else do_document_request ~postpone:true ~params ~handler
+
 let do_document = do_document_request_maybe ~handler:Rq_document.request
 let do_save_vo = do_document_request_maybe ~handler:Rq_save.request
 let do_lens = do_document_request_maybe ~handler:Rq_lens.request

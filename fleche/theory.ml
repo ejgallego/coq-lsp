@@ -341,6 +341,7 @@ let close ~uri =
 
 module Request = struct
   type request =
+    | Immediate
     | FullDoc
     | PosInDoc of
         { point : int * int
@@ -379,6 +380,7 @@ module Request = struct
     let default () = Cancel in
     (* should be Cancelled? *)
     match request with
+    | Immediate -> Handle.with_doc ~kind ~default ~uri ~f:(fun _ doc -> Now doc)
     | FullDoc ->
       Handle.with_doc ~kind ~default ~uri ~f:(fun _ doc ->
           match (Doc.Completion.is_completed doc.completed, postpone) with
@@ -402,6 +404,7 @@ module Request = struct
   (** Removes the request from the list of things to wake up *)
   let remove { id; uri; postpone = _; request } =
     match request with
+    | Immediate -> ()
     | FullDoc -> Handle.remove_cp_request ~uri ~id
     | PosInDoc { point; _ } -> Handle.remove_pt_request ~uri ~id ~point
 end
