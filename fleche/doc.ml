@@ -669,6 +669,7 @@ end = struct
     | Completed (Ok st) -> st
     | Completed (Error _) -> st
 end
+(* end [module Recovery = struct...] *)
 
 let interp_and_info ~token ~st ~files ast =
   match Coq.Ast.Require.extract ast with
