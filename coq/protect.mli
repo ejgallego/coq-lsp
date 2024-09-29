@@ -28,7 +28,7 @@ module R : sig
 end
 
 module E : sig
-  type ('a, 'l) t =
+  type ('a, 'l) t = private
     { r : ('a, 'l) R.t
     ; feedback : 'l Message.t list
     }
