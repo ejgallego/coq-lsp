@@ -178,7 +178,7 @@ let main () =
 
   let stdlib coqlib =
     let unix_path = Filename.concat coqlib "theories" in
-    let coq_path = Names.(DirPath.make [ Id.of_string "Stdlib" ]) in
+    let coq_path = Names.(DirPath.make [ Id.of_string "Coq" ]) in
     Loadpath.
       { unix_path; coq_path; implicit = true; has_ml = false; recursive = true }
   in

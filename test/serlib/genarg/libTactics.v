@@ -44,7 +44,7 @@
 
 Set Implicit Arguments.
 
-Require Import Stdlib.Lists.List.
+Require Import Coq.Lists.List.
 
 
 (* ********************************************************************** *)
