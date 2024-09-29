@@ -32,13 +32,14 @@ module Flags = struct
     ; rewrite_rules = false
     }
 
-  let apply { impredicative_set; indices_matter; type_in_type; rewrite_rules = _ } =
+  let apply
+      { impredicative_set; indices_matter; type_in_type; rewrite_rules = _ } =
     Global.set_impredicative_set impredicative_set;
     Global.set_indices_matter indices_matter;
     Global.set_check_universes (not type_in_type);
     ()
-    (* V8.20-only *)
-    (* Global.set_rewrite_rules_allowed rewrite_rules *)
+  (* V8.20-only *)
+  (* Global.set_rewrite_rules_allowed rewrite_rules *)
 end
 
 module Warning : sig
