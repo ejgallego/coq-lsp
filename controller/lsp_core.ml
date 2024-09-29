@@ -278,7 +278,7 @@ let do_open ~io ~token ~(state : State.t) params =
   let init, workspace = State.workspace_of_uri ~io ~uri ~state in
   let files = Coq.Files.make () in
   let env = Fleche.Doc.Env.make ~init ~workspace ~files in
-  Fleche.Theory.create ~io ~token ~env ~uri ~raw:text ~version
+  Fleche.Theory.open_ ~io ~token ~env ~uri ~raw:text ~version
 
 let do_change ~ofn_rq ~io ~token params =
   let uri, version = Helpers.get_uri_version params in

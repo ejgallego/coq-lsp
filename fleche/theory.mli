@@ -25,8 +25,8 @@ module Check : sig
   val set_scheduler_hint : uri:Lang.LUri.File.t -> point:int * int -> unit
 end
 
-(** Create a document inside a theory *)
-val create :
+(** Open a document inside a theory *)
+val open_ :
      io:Io.CallBack.t
   -> token:Coq.Limits.Token.t
   -> env:Doc.Env.t
