@@ -154,7 +154,8 @@ patch-for-js:
 _LIBROOT=$(shell opam var lib)
 
 # At some point this may be the better idea
-VENDORED_SETUP:=true
+# Not true in this branch
+# VENDORED_SETUP:=true
 
 ifdef VENDORED_SETUP
 _CCROOT=_build/install/default/lib/coq-core
