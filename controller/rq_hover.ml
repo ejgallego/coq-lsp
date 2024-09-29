@@ -227,8 +227,10 @@ let info_notation ~point (ast : Fleche.Doc.Node.Ast.t) =
     Some (ntn_key_info key)
   | _ -> None
 
+(* Disabled until it is more useful and doesn't pre-empt other stuff. *)
 let info_notation ~token:_ ~contents:_ ~point ~node : string option =
-  Option.bind node.Fleche.Doc.Node.ast (info_notation ~point)
+  if false then Option.bind node.Fleche.Doc.Node.ast (info_notation ~point)
+  else None
 
 open Fleche
 
