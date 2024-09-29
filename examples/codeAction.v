@@ -1,3 +1,12 @@
+(* Test for Coq's QF for Coq to Stdlib PRs *)
+
+Require Import Coq.ssr.ssrbool.
+From Coq Require Import ssreflect ssrbool.
+
+(* Note: this tests the two different lookup modes *)
+About Coq.Init.Nat.add.
+Check Coq.Init.Nat.add.
+
 (* Example codeAction, from Coq's test suite *)
 
 Module M. Definition y := 4. End M.
@@ -42,3 +51,4 @@ Require Import Extraction.
 Module nat. End nat.
 
 Extraction nat.
+
