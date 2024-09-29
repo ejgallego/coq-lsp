@@ -119,6 +119,7 @@ jobs:
           opam install zarith_stubs_js js_of_ocaml-ppx -y
 
       - name: 💉💉💉 Patch Coq
+        if: false # FIXME, Coq is in opam but needs to be patched for the worker to be functional
         run: make patch-for-js
 
       - name: 🦏🧱🦏 Build coq-lsp JS version 🦏🦏🦏
@@ -167,7 +168,6 @@ jobs:
         run: |
           opam install lwt logs # Also build pet-server
           opam install memprof-limits # We need to do this to avoid coq-lsp rebuilding Coq below due to deptops
-          opam install vendor/coq/{coq-core,coq-stdlib,coqide-server,coq}.opam
 
       - name: Install `coq-lsp` into OPAM switch
         run: opam install .
