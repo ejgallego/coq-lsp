@@ -34,6 +34,9 @@
    info that is needed is at hand. It could also be tried to set the
    build target for immediate requests to the view hint, but we should
    see some motivation for that (@ejgallego, #841)
+ - [coq] incorporate experimental `coq-layout-engine` printer, both in
+   client and server parts (@ejgallego, #668, see also #72 and
+   https://github.com/jscoq/jscoq/pull/282 )
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------

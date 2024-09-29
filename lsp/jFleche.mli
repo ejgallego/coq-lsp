@@ -48,10 +48,11 @@ module Message : sig
 end
 
 module GoalsAnswer : sig
-  type 'pp t =
+  type ('goals, 'pp) t =
     { textDocument : Doc.VersionedTextDocumentIdentifier.t
     ; position : Lang.Point.t
-    ; goals : 'pp Coq.Goals.reified_pp option [@default None]
+    ; goals : ('goals JCoq.Goals.Reified_goal.t, 'pp) JCoq.Goals.t option
+          [@default None]
     ; program : JCoq.Declare.OblState.View.t Names.Id.Map.t option
           [@default None]
     ; messages : 'pp Message.t list

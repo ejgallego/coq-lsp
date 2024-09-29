@@ -34,7 +34,10 @@ module AstGoals = struct
     let raw = Fleche.Contents.extract_raw ~contents ~range in
     let ast = Option.map (fun n -> n.Doc.Node.Ast.v) node.ast in
     let st = node.state in
-    let goals = of_execution ~io ~what:"goals" (Info.Goals.goals ~token ~st) in
+    let pr = Info.Goals.to_pp in
+    let goals =
+      of_execution ~io ~what:"goals" (Info.Goals.goals ~token ~pr ~st)
+    in
     { raw; range; ast; goals }
 end
 
