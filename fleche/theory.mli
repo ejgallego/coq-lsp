@@ -49,6 +49,7 @@ val close : uri:Lang.LUri.File.t -> unit
 
 module Request : sig
   type request =
+    | Immediate
     | FullDoc
     | PosInDoc of
         { point : int * int

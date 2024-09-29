@@ -35,6 +35,10 @@ type position =
 (** Requests that require data access *)
 module Data : sig
   type t =
+    | Immediate of
+        { uri : Lang.LUri.File.t
+        ; handler : document
+        }
     | DocRequest of
         { uri : Lang.LUri.File.t
         ; postpone : bool

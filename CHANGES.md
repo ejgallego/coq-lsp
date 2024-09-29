@@ -25,6 +25,15 @@
    @corwin-of-amber, #433)
  - [hover] Fix universe and level printing in hover (#839, fixes #835
    , @ejgallego , @Alizter)
+ - [fleche] New immediate request serving mode. In this mode, requests
+   are served with whatever document state we have. This is very
+   useful when we are not in continuous mode, and we don't have a good
+   reference as to what to build, for example in
+   `documentSymbols`. The mode actually works pretty well in practice
+   as often language requests will come after goals requests, so the
+   info that is needed is at hand. It could also be tried to set the
+   build target for immediate requests to the view hint, but we should
+   see some motivation for that (@ejgallego, #841)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------
