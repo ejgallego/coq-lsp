@@ -154,17 +154,25 @@ patch-for-js:
 
 _LIBROOT=$(shell opam var lib)
 
+# At some point this may be the better idea
+VENDORED_SETUP:=true
+
+ifdef VENDORED_SETUP
+_CCROOT=_build/install/default/lib/coq-core
+else
+_CCROOT=$(shell coqc -where)/../coq-core
+endif
+
 # Super-hack
 controller-js/coq-fs-core.js: COQVM = no
 controller-js/coq-fs-core.js: coq_boot
 	dune build --profile=release --display=quiet $(PKG_SET) etc/META.threads
-	for i in $$(find _build/install/default/lib/coq-core/plugins -name *.cma); do js_of_ocaml --dynlink $$i; done
+	for i in $$(find $(_CCROOT)/plugins -name *.cma); do js_of_ocaml --dynlink $$i; done
 	for i in $$(find _build/install/default/lib/coq-lsp/serlib -wholename */*.cma); do js_of_ocaml --dynlink $$i; done
-	cd _build/install/default/lib && \
-	  js_of_ocaml build-fs -o coq-fs-core.js \
-	    $$(find coq-core/ \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/%p ") \
-	    $$(find coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/%p ") \
-	    ../../../../etc/META.threads:/static/lib/threads/META \
+	js_of_ocaml build-fs -o controller-js/coq-fs-core.js \
+	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/%p ") \
+	    $$(find _build/install/default/lib/coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/%p ") \
+	    ./etc/META.threads:/static/lib/threads/META \
 	    $$(find $(_LIBROOT) -wholename '*/str/META'                 -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/seq/META'                 -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/uri/META'                 -printf "%p:/static/lib/%P ") \
@@ -189,7 +197,6 @@ controller-js/coq-fs-core.js: coq_boot
 	    $$(find $(_LIBROOT) -wholename '*/ppx_deriving_yojson/META' -printf "%p:/static/lib/%P ")
 	    # These libs are actually linked, so no cma is needed.
 	    # $$(find $(_LIBROOT) -wholename '*/zarith/*.cma'         -printf "%p:/static/lib/%P " -or -wholename '*/zarith/META'         -printf "%p:/static/lib/%P ")
-	cp _build/install/default/lib/coq-fs-core.js controller-js
 
 # Serlib plugins require:
 #   ppx_compare.runtime-lib
