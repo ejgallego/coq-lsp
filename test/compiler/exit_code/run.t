@@ -9,7 +9,7 @@ Describe the environment:
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
    - 3 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
-   - ocamlpath wasn't overriden
+   - ocamlpath added paths: []
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
 

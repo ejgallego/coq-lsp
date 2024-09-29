@@ -3,14 +3,15 @@ open Cmdliner
 open Fcc_lib
 
 let fcc_main int_backend roots display debug plugins files coqlib coqcorelib
-    ocamlpath rload_path load_path require_libraries no_vo max_errors
-    coq_diags_level =
+    findlib_config ocamlpath rload_path load_path require_libraries no_vo
+    max_errors coq_diags_level =
   let vo_load_path = rload_path @ load_path in
   let ml_include_path = [] in
   let args = [] in
   let cmdline =
     { Coq.Workspace.CmdLine.coqlib
     ; coqcorelib
+    ; findlib_config
     ; ocamlpath
     ; vo_load_path
     ; ml_include_path
@@ -100,8 +101,8 @@ let fcc_cmd : int Cmd.t =
     let open Coq.Args in
     Term.(
       const fcc_main $ int_backend $ roots $ display $ debug $ plugins $ file
-      $ coqlib $ coqcorelib $ ocamlpath $ rload_paths $ qload_paths $ ri_from
-      $ no_vo $ max_errors $ coq_diags_level)
+      $ coqlib $ coqcorelib $ findlib_config $ ocamlpath $ rload_paths
+      $ qload_paths $ ri_from $ no_vo $ max_errors $ coq_diags_level)
   in
   let exits = Exit_codes.[ fatal; stopped; scheduled; uri_failed ] in
   Cmd.(v (Cmd.info "fcc" ~exits ~version ~doc ~man) fcc_term)
