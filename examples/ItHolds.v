@@ -19,7 +19,7 @@
 Require Import Ltac2.Ltac2.
 Require Import Ltac2.Message.
 Local Ltac2 concat_list (ls : message list) : message :=
-  List.fold_right concat ls (of_string "").
+  List.fold_right concat (of_string "") ls.
 
 (** Tries to make the assertion [True] with label [label].
   Throws an error if this fails, i.e. if the label is already used
