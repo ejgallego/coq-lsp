@@ -416,6 +416,20 @@ let do_document = do_document_request_maybe ~handler:Rq_document.request
 let do_save_vo = do_document_request_maybe ~handler:Rq_save.request
 let do_lens = do_document_request_maybe ~handler:Rq_lens.request
 
+(* could be smarter *)
+let do_action ~params =
+  let range = field "range" params in
+  match Lsp.JLang.Diagnostic.Range.of_yojson range with
+  | Ok range ->
+    let range = Lsp.JLang.Diagnostic.Range.vnoc range in
+    do_immediate ~params ~handler:(Rq_action.request ~range)
+  | Error err ->
+    (* XXX: We really need to fix the parsing error handling in lsp_core, we got
+       it right in petanque haha *)
+    (* JSON-RPC Parse error (EJGA: is this the right code) *)
+    let code = -32700 in
+    Rq.Action.error (code, err)
+
 let do_cancel ~ofn_rq ~params =
   let id = int_field "id" params in
   let code = -32800 in
@@ -584,6 +598,7 @@ let dispatch_request ~token ~method_ ~params : Rq.Action.t =
   | "textDocument/hover" -> do_hover ~params
   | "textDocument/codeLens" -> do_lens ~params
   | "textDocument/selectionRange" -> do_selectionRange ~params
+  | "textDocument/codeAction" -> do_action ~params
   (* Proof-specific stuff *)
   | "proof/goals" -> do_goals ~params
   (* Proof-specific stuff *)

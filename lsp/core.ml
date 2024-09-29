@@ -177,3 +177,33 @@ module DocumentDiagnosticReportPartialResult = struct
     }
   [@@deriving to_yojson]
 end
+
+(* CodeAction *)
+module CodeActionContext = struct
+  type t =
+    { diagnostics : Lang.Diagnostic.t list
+    ; only : string option [@default None]
+    ; triggerKind : int option [@default None]
+    }
+  [@@deriving to_yojson]
+end
+
+module CodeActionParams = struct
+  type t =
+    { textDocument : Doc.TextDocumentIdentifier.t
+    ; range : Lang.Range.t
+    ; context : CodeActionContext.t
+    }
+  [@@deriving to_yojson]
+end
+
+module CodeAction = struct
+  type t =
+    { title : string
+    ; kind : string option [@default None]
+    ; diagnostics : Lang.Diagnostic.t list [@default []]
+    ; isPreferred : bool option [@default None]
+    ; edit : Workspace.WorkspaceEdit.t option [@default None]
+    }
+  [@@deriving to_yojson]
+end
