@@ -89,7 +89,6 @@ module Diagnostic = struct
 
   let to_yojson { Lang.Diagnostic.range; severity; message; data } =
     let range = Range.conv range in
-    let severity = Lang.Diagnostic.Severity.to_int severity in
     let message = Pp.to_string message in
     _t_to_yojson { range; severity; message; data }
 end

@@ -225,8 +225,10 @@ end = struct
       else 3
     in
     let f (_, lvl, _) =
-      let lvl = Lang.Diagnostic.Severity.to_int lvl in
-      if lvl = 2 then Both else if lvl < cutoff then Left else Right
+      (* warning = 2 *)
+      if lvl = Lang.Diagnostic.Severity.warning then Both
+      else if lvl < cutoff then Left
+      else Right
     in
     let diags, messages = partition ~f fbs in
     (List.map (of_feed ~drange) diags, messages)
@@ -670,16 +672,17 @@ let search_node ~command ~doc ~st =
       (fun (node : Node.t) -> Option.default Memo.Stats.zero node.info.stats)
       Memo.Stats.zero node
   in
+  let back_overflow num =
+    let ll = List.length doc.nodes in
+    Pp.(
+      str "not enough nodes: [" ++ int num ++ str " > " ++ int ll
+      ++ str "] available document nodes")
+  in
   match command with
   | Coq.Ast.Meta.Command.Back num -> (
     match Base.List.nth doc.nodes num with
     | None ->
-      let ll = List.length doc.nodes in
-      let message =
-        Pp.(
-          str "not enough nodes: [" ++ int num ++ str " > " ++ int ll
-          ++ str "] available document nodes")
-      in
+      let message = back_overflow num in
       (Coq.Protect.E.error message, nstats None)
     | Some node -> (Coq.Protect.E.ok node.state, nstats (Some node)))
   | Restart -> (

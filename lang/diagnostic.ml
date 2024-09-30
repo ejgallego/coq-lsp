@@ -25,7 +25,6 @@ module Severity = struct
   let warning = 2
   let information = 3
   let hint = 4
-  let to_int x = x
 end
 
 type t =
