@@ -19,15 +19,12 @@ module Data : sig
 end
 
 module Severity : sig
-  type t
+  type t = int
 
-  val error : t
-  val warning : t
-  val information : t
-  val hint : t
-
-  (** Convert to LSP-like levels *)
-  val to_int : t -> int
+  val error : t (* 1 *)
+  val warning : t (* 2 *)
+  val information : t (* 3 *)
+  val hint : t (* 4 *)
 end
 
 type t =

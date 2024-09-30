@@ -225,8 +225,10 @@ end = struct
       else 3
     in
     let f (_, lvl, _) =
-      let lvl = Lang.Diagnostic.Severity.to_int lvl in
-      if lvl = 2 then Both else if lvl < cutoff then Left else Right
+      (* warning = 2 *)
+      if lvl = Lang.Diagnostic.Severity.warning then Both
+      else if lvl < cutoff then Left
+      else Right
     in
     let diags, messages = partition ~f fbs in
     (List.map (of_feed ~drange) diags, messages)
