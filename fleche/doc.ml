@@ -201,9 +201,13 @@ end = struct
 
   let of_feed ~drange (range, severity, quickFix, message) =
     let range = Option.default drange range in
+    (* Be careful to avoid defining data if quickFix = None *)
     let data =
-      let sentenceRange, failedRequire = (None, None) in
-      Some Lang.Diagnostic.Data.{ sentenceRange; failedRequire; quickFix }
+      Option.map
+        (fun qf ->
+          let sentenceRange, failedRequire, quickFix = (None, None, Some qf) in
+          Lang.Diagnostic.Data.{ sentenceRange; failedRequire; quickFix })
+        quickFix
     in
     make ?data range severity message
 
