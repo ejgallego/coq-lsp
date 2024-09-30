@@ -145,7 +145,7 @@ module Diags : sig
 
   (** Build simple diagnostic *)
   val make :
-       ?data:Lang.Diagnostic.Data.t list
+       ?data:Lang.Diagnostic.Data.t
     -> Lang.Range.t
     -> Lang.Diagnostic.Severity.t
     -> Pp.t
@@ -175,17 +175,18 @@ end = struct
 
   (* ast-dependent error diagnostic generation *)
   let extra_diagnostics_of_ast stm_range ast =
-    let stm_range = Lang.Diagnostic.Data.SentenceRange stm_range in
-    match
-      Option.bind ast (fun (ast : Node.Ast.t) -> Coq.Ast.Require.extract ast.v)
-    with
-    | Some { Coq.Ast.Require.from; mods; _ } ->
-      let refs = List.map fst mods in
-      Some
-        [ stm_range
-        ; Lang.Diagnostic.Data.FailedRequire { prefix = from; refs }
-        ]
-    | _ -> Some [ stm_range ]
+    let sentenceRange = Some stm_range in
+    let failedRequire =
+      match
+        Option.bind ast (fun (ast : Node.Ast.t) ->
+            Coq.Ast.Require.extract ast.v)
+      with
+      | Some { Coq.Ast.Require.from; mods; _ } ->
+        let refs = List.map fst mods in
+        Some [ { Lang.Diagnostic.FailedRequire.prefix = from; refs } ]
+      | _ -> None
+    in
+    Some { Lang.Diagnostic.Data.sentenceRange; failedRequire }
 
   let extra_diagnostics_of_ast stm_range ast =
     if !Config.v.send_diags_extra_data then

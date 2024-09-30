@@ -164,6 +164,20 @@ today we offer two kinds of extra information on errors:
 - range of the full sentence that displayed the error,
 - if the error was on a Require, information about the library that failed.
 
+As of today, this extra data is passed via member parameters
+```typescript
+// From `prefix` Require `refs`
+type failedRequire = {
+    prefix ?: qualid
+    refs : qualid list
+}
+
+type DiagnosticsData = {
+    sentenceRange ?: Range;
+    failedRequire ?: FailedRequire
+}
+```
+
 ### Goal Display
 
 In order to display proof goals and information at point, `coq-lsp` supports the `proof/goals` request, parameters are:
