@@ -4,13 +4,18 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module FailedRequire : sig
+  type t =
+    { prefix : Libnames.qualid option
+    ; refs : Libnames.qualid list
+    }
+end
+
 module Data : sig
   type t =
-    | SentenceRange of Range.t
-    | FailedRequire of
-        { prefix : Libnames.qualid option
-        ; refs : Libnames.qualid list
-        }
+    { sentenceRange : Range.t option [@default None]
+    ; failedRequire : FailedRequire.t list option [@default None]
+    }
 end
 
 module Severity : sig
@@ -29,7 +34,7 @@ type t =
   { range : Range.t
   ; severity : Severity.t
   ; message : Pp.t
-  ; data : Data.t list option [@default None]
+  ; data : Data.t option [@default None]
   }
 
 val is_error : t -> bool

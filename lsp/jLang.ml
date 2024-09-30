@@ -37,9 +37,14 @@ end
 module Diagnostic = struct
   module Libnames = Serlib.Ser_libnames
 
+  module FailedRequire = struct
+    type t = [%import: Lang.Diagnostic.FailedRequire.t] [@@deriving yojson]
+  end
+
   module Data = struct
     module Lang = struct
       module Range = Range
+      module FailedRequire = FailedRequire
       module Diagnostic = Lang.Diagnostic
     end
 
@@ -78,7 +83,7 @@ module Diagnostic = struct
     { range : Range.t
     ; severity : int
     ; message : string
-    ; data : Data.t list option [@default None]
+    ; data : Data.t option [@default None]
     }
   [@@deriving yojson]
 

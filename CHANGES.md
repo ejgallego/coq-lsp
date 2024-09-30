@@ -34,6 +34,8 @@
    info that is needed is at hand. It could also be tried to set the
    build target for immediate requests to the view hint, but we should
    see some motivation for that (@ejgallego, #841)
+ - [lsp] [diagnostics] (! breaking change) change type of diagnostics
+   extra data from list to named record (@ejgallego, #843)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------
