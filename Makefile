@@ -160,6 +160,9 @@ VENDORED_SETUP:=true
 ifdef VENDORED_SETUP
 _CCROOT=_build/install/default/lib/coq-core
 else
+# We could use `opam var lib` as well here, as the idea to rely on
+# coqc was to avoid having a VENDORED_SETUP variable, which we now
+# have anyways.
 _CCROOT=$(shell coqc -where)/../coq-core
 endif
 
@@ -170,8 +173,8 @@ controller-js/coq-fs-core.js: coq_boot
 	for i in $$(find $(_CCROOT)/plugins -name *.cma); do js_of_ocaml --dynlink $$i; done
 	for i in $$(find _build/install/default/lib/coq-lsp/serlib -wholename */*.cma); do js_of_ocaml --dynlink $$i; done
 	js_of_ocaml build-fs -o controller-js/coq-fs-core.js \
-	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/%p ") \
-	    $$(find _build/install/default/lib/coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/%p ") \
+	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/coq-core/%P ") \
+	    $$(find _build/install/default/lib/coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-lsp/%P ") \
 	    ./etc/META.threads:/static/lib/threads/META \
 	    $$(find $(_LIBROOT) -wholename '*/str/META'                 -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/seq/META'                 -printf "%p:/static/lib/%P ") \
@@ -197,6 +200,11 @@ controller-js/coq-fs-core.js: coq_boot
 	    $$(find $(_LIBROOT) -wholename '*/ppx_deriving_yojson/META' -printf "%p:/static/lib/%P ")
 	    # These libs are actually linked, so no cma is needed.
 	    # $$(find $(_LIBROOT) -wholename '*/zarith/*.cma'         -printf "%p:/static/lib/%P " -or -wholename '*/zarith/META'         -printf "%p:/static/lib/%P ")
+
+.PHONY: check-js-fs-sanity
+check-js-fs-sanity: controller-js/coq-fs-core.js js
+	cat _build/default/controller-js/coq-fs.js | grep '/static/'
+	cat controller-js/coq-fs-core.js | grep '/static/'
 
 # Serlib plugins require:
 #   ppx_compare.runtime-lib
