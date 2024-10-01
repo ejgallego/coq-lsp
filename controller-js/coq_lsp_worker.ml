@@ -29,9 +29,26 @@ let rec obj_to_json (cobj : < .. > Js.t) : Yojson.Safe.t =
       `String (Typed_array.String.of_arrayBuffer @@ coerce cobj)
     else if instanceof cobj Typed_array.uint8Array then
       `String (Typed_array.String.of_uint8Array @@ coerce cobj)
-    else
-      let json_string = Js.to_string (Json.output cobj) in
-      Yojson.Safe.from_string json_string
+      (* Careful in case we miss cases here *)
+    else if instanceof cobj Unsafe.global##._Object then
+      Js.array_map
+        (fun key -> (Js.to_string key, obj_to_json (Js.Unsafe.get cobj key)))
+        (Js.object_keys cobj)
+      |> Js.to_array |> Array.to_list
+      |> fun al -> `Assoc al
+    else if Js.Opt.(strict_equals (some cobj) null) then `Null
+    else if Js.Optdef.(strict_equals (def cobj) undefined) then (
+      Firebug.console##info "undefined branch!!!!";
+      `Null)
+    else (
+      Firebug.console##error "failure in coq_lsp_worker:obj_to_json";
+      Firebug.console##error cobj;
+      Firebug.console##error (Json.output cobj);
+      raise (Failure "coq_lsp_worker:obj_to_json"))
+
+(* Old code, which is only useful for debug *)
+(* let json_string = Js.to_string (Json.output cobj) in *)
+(* Yojson.Safe.from_string json_string *)
 
 let rec json_to_obj (cobj : < .. > Js.t) (json : Yojson.Safe.t) : < .. > Js.t =
   let open Js.Unsafe in
@@ -83,6 +100,15 @@ let parse_msg msg =
     Error "processed interrupt_setup")
   else obj_to_json msg |> Lsp.Base.Message.of_yojson
 
+let log_interrupt () =
+  let lvl, message =
+    if not !interrupt_is_setup then
+      (* Maybe set one step mode, but usually that's done in the client. *)
+      (Lsp.Io.Lvl.Error, "Interrupt is not setup: Functionality will suffer")
+    else (Lsp.Io.Lvl.Info, "Interrupt setup: [Control.interrupt] backend")
+  in
+  Lsp.Io.logMessage ~lvl ~message
+
 let on_msg msg =
   match parse_msg msg with
   | Error _ ->
@@ -112,7 +138,9 @@ let rec process_queue ~state () =
 
 let on_init ~io ~root_state ~cmdline ~debug msg =
   match parse_msg msg with
-  | Error _ -> ()
+  | Error _ ->
+    (* This is called one for interrupt setup *)
+    ()
   | Ok msg -> (
     match
       Lsp_core.lsp_init_process ~ofn:post_message ~io ~cmdline ~debug msg
@@ -120,6 +148,7 @@ let on_init ~io ~root_state ~cmdline ~debug msg =
     | Lsp_core.Init_effect.Exit -> (* XXX: bind to worker.close () *) ()
     | Lsp_core.Init_effect.Loop -> ()
     | Lsp_core.Init_effect.Success workspaces ->
+      log_interrupt ();
       Worker.set_onmessage on_msg;
       let default_workspace = Coq.Workspace.default ~debug ~cmdline in
       let state =

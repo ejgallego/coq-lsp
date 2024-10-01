@@ -209,6 +209,11 @@
             "type": "boolean",
             "default": false,
             "description": "Send extra diagnostics data, usually on error"
+          },
+          "coq-lsp.send_perf_data" : {
+            "type": "boolean",
+            "default": true,
+            "description": "Update Perf Data Coq Panel"
           }
         }
       },
