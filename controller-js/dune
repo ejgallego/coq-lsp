@@ -15,7 +15,6 @@
    marshal-arch.js)
   (flags
    :standard
-   --linkall
    --dynlink
    ; --toplevel
    (:include .extraflags)

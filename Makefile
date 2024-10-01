@@ -169,22 +169,23 @@ endif
 # Super-hack
 controller-js/coq-fs-core.js: COQVM = no
 controller-js/coq-fs-core.js: coq_boot
-	dune build --profile=release --display=quiet $(PKG_SET) etc/META.threads
+	dune build --profile=release --display=quiet $(PKG_SET)
 	for i in $$(find $(_CCROOT)/plugins -name *.cma); do js_of_ocaml --dynlink $$i; done
 	for i in $$(find _build/install/default/lib/coq-lsp/serlib -wholename */*.cma); do js_of_ocaml --dynlink $$i; done
 	js_of_ocaml build-fs -o controller-js/coq-fs-core.js \
 	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/coq-core/%P ") \
 	    $$(find _build/install/default/lib/coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-lsp/%P ") \
-	    ./etc/META.threads:/static/lib/threads/META \
-	    $$(find $(_LIBROOT) -wholename '*/str/META'                 -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/ocaml/str/META'           -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/ocaml/unix/META'          -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/ocaml/threads/META'       -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/ocaml/dynlink/META'       -printf "%p:/static/lib/%P ") \
+	    $$(find $(_LIBROOT) -wholename '*/ocaml_intrinsics_kernel/META' -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/seq/META'                 -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/uri/META'                 -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/base/META'                -printf "%p:/static/lib/%P ") \
-	    $$(find $(_LIBROOT) -wholename '*/unix/META'                -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/zarith/META'              -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/yojson/META'              -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/findlib/META'             -printf "%p:/static/lib/%P ") \
-	    $$(find $(_LIBROOT) -wholename '*/dynlink/META'             -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/parsexp/META'             -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/sexplib/META'             -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/sexplib0/META'            -printf "%p:/static/lib/%P ") \

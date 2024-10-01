@@ -14,7 +14,7 @@ module LSP = Lsp.Base
 open Js_of_ocaml
 open Controller
 
-let findlib_conf = "\ndestdir=\"/static/lib\"path=\"/static/lib\""
+let findlib_conf = "\ndestdir=\"/static/lib\"path=\"/static/lib:/static/lib/ocaml\""
 let findlib_path = "/static/lib/findlib.conf"
 
 let setup_pseudo_fs () =

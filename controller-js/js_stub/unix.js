@@ -120,6 +120,13 @@ function unix_getpid() {
   return 0;
 }
 
+//Provides: caml_unix_getpid
+//Requires: unix_ll
+function caml_unix_getpid() {
+  unix_ll("caml_unix_getpid", arguments);
+  return 0;
+}
+
 //Provides: unix_getpwnam
 //Requires: unix_ll
 function unix_getpwnam() {
