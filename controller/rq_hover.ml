@@ -279,7 +279,10 @@ end
 
 module Stats : HoverProvider = struct
   let h ~token:_ ~contents:_ ~point:_ ~node =
-    if !Config.v.show_stats_on_hover then Some Doc.Node.(Info.print (info node))
+    if !Config.v.show_stats_on_hover then
+      let msg_hash = Doc.Node.(Coq.State.hash node.state) in
+      let msg_info = Doc.Node.(Info.print (info node)) in
+      Some (Format.asprintf "%X@\n%s" msg_hash msg_info)
     else None
 
   let h = Handler.WithNode h

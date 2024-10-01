@@ -35,6 +35,7 @@ let rec process_queue ~delay ~io ~ofn ~state : unit =
     (* As of now, we exit the whole program here, we could try an experiment to
        invert the threads, so the I/O routine is a thread and process_queue is
        the main driver *)
+    Cache.save_to_disk ();
     lsp_cleanup ~io;
     (* We can't use [Thread.exit] here as the main thread will be blocked on
        I/O *)
@@ -156,7 +157,7 @@ let lsp_main bt coqcorelib coqlib findlib_config ocamlpath vo_load_path
     let default_workspace = Coq.Workspace.default ~debug ~cmdline in
     let state = { State.root_state; cmdline; workspaces; default_workspace } in
 
-    (* Read workspace state (noop for now) *)
+    (* Read workspace state (experimental) *)
     Cache.read_from_disk ();
 
     let pfn () : unit = process_queue ~delay ~io ~ofn ~state in

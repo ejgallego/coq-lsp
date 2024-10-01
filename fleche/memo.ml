@@ -236,6 +236,11 @@ module type S = sig
 
   (** clears the cache *)
   val clear : unit -> unit
+
+  (** Save / restore to disk; experimental, be cautious *)
+  val save : oc:Out_channel.t -> unit
+
+  val load : ic:In_channel.t -> unit
 end
 
 module SEval (E : EvalType) :
@@ -245,16 +250,16 @@ module SEval (E : EvalType) :
 
   module HC = MemoTable.Make (E)
 
-  let cache = HC.create 1000
+  let cache = ref (HC.create 1000)
   let size () = Obj.reachable_words (Obj.magic cache)
   let input_info i = E.input_info i
   let all_freqs = HC.all_freqs
-  let stats () = HC.stats cache
-  let clear () = HC.clear cache
+  let stats () = HC.stats !cache
+  let clear () = HC.clear !cache
 
   let in_cache i =
     let kind = CS.Kind.Hashing in
-    CS.record ~kind ~f:(HC.find_opt cache) i
+    CS.record ~kind ~f:(HC.find_opt !cache) i
 
   let evalS ~token i =
     match in_cache i with
@@ -264,10 +269,15 @@ module SEval (E : EvalType) :
       let kind = CS.Kind.Exec in
       let f i = E.eval ~token i in
       let res, stats = CS.record ~kind ~f i in
-      let () = HC.add_execution cache i (res, stats) in
+      let () = HC.add_execution !cache i (res, stats) in
       (res, Stats.make ~stats ~cache_hit:false ~time_hash ())
 
   let eval ~token i = evalS ~token i |> fst
+  let save ~oc = Marshal.to_channel oc !cache []
+
+  let load ~ic =
+    HC.clear !cache;
+    cache := Marshal.from_channel ic
 end
 
 module type LocEvalType = sig
@@ -289,18 +299,18 @@ module CEval (E : LocEvalType) = struct
 
   type cache = Result.t HC.t
 
-  let cache : cache = HC.create 1000
+  let cache : cache ref = ref (HC.create 1000)
 
   (* This is very expensive *)
   let size () = Obj.reachable_words (Obj.magic cache)
   let all_freqs = HC.all_freqs
   let input_info = E.input_info
-  let stats () = HC.stats cache
-  let clear () = HC.clear cache
+  let stats () = HC.stats !cache
+  let clear () = HC.clear !cache
 
   let in_cache i =
     let kind = CS.Kind.Hashing in
-    CS.record ~kind ~f:(HC.find_opt cache) i
+    CS.record ~kind ~f:(HC.find_opt !cache) i
 
   let evalS ~token i =
     let stm_loc = E.loc_of_input i in
@@ -315,10 +325,15 @@ module CEval (E : LocEvalType) = struct
       GlobalCacheStats.miss ();
       let kind = CS.Kind.Exec in
       let res, stats = CS.record ~kind ~f:(E.eval ~token) i in
-      let () = HC.add_execution_loc cache i (stm_loc, res, stats) in
+      let () = HC.add_execution_loc !cache i (stm_loc, res, stats) in
       (res, Stats.make ~stats ~cache_hit:false ~time_hash ())
 
   let eval ~token i = evalS ~token i |> fst
+  let save ~oc = Marshal.to_channel oc !cache []
+
+  let load ~ic =
+    HC.clear !cache;
+    cache := Marshal.from_channel ic
 end
 
 module VernacEval = struct
@@ -407,6 +422,25 @@ module InitEval = struct
 end
 
 module Init = SEval (InitEval)
+
+(* List of all modules *)
+(* Init Interp Require Admit + [Intern (for .vo files, so not worth re-doing
+   it)] *)
+let save_to_disk ~file =
+  Out_channel.with_open_bin file (fun oc ->
+      Init.save ~oc;
+      Interp.save ~oc;
+      Require.save ~oc;
+      Admit.save ~oc;
+      ())
+
+let load_from_disk ~file =
+  In_channel.with_open_bin file (fun ic ->
+      Init.load ~ic;
+      Interp.load ~ic;
+      Require.load ~ic;
+      Admit.load ~ic;
+      ())
 
 let all_size () =
   Init.size () + Interp.size () + Require.size () + Admit.size ()

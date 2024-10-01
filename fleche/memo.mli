@@ -44,6 +44,11 @@ module type S = sig
 
   (** clears the cache *)
   val clear : unit -> unit
+
+  (** Save / restore to disk; experimental, be cautious *)
+  val save : oc:Out_channel.t -> unit
+
+  val load : ic:In_channel.t -> unit
 end
 
 (** Document creation cache *)
@@ -76,3 +81,6 @@ end
 
 (** Size of all caches, very expensive *)
 val all_size : unit -> int
+
+val save_to_disk : file:string -> unit
+val load_from_disk : file:string -> unit

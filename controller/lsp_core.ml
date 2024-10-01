@@ -562,7 +562,7 @@ let dispatch_notification ~io ~ofn ~token ~state ~method_ ~params : unit =
   | "textDocument/didOpen" -> do_open ~io ~token ~state params
   | "textDocument/didChange" -> do_change ~io ~ofn_rq ~token params
   | "textDocument/didClose" -> do_close params
-  | "textDocument/didSave" -> Cache.save_to_disk ()
+  | "textDocument/didSave" -> (* Cache.save_to_disk () // bad idea *) ()
   (* Specific to coq-lsp *)
   | "coq/viewRange" -> do_viewRange params
   | "coq/trimCaches" -> do_cache_trim ~io
@@ -607,6 +607,7 @@ let dispatch_request ~token ~method_ ~params : Rq.Action.t =
   | "coq/getDocument" -> do_document ~params
   (* Petanque embedding *)
   | msg when Coq.Compat.Ocaml_413.String.starts_with ~prefix:"petanque/" msg ->
+    Cache.save_to_disk ();
     do_petanque msg ~token params
   (* Generic handler *)
   | msg ->

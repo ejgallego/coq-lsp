@@ -22,7 +22,7 @@ let memo_cache_file = ".coq-lsp.cache"
 
 let memo_save_to_disk () =
   try
-    (* Fleche.Memo.save_to_disk ~file:memo_cache_file; *)
+    Fleche.Memo.save_to_disk ~file:memo_cache_file;
     L.trace "memo" "cache saved to disk"
   with exn ->
     L.trace "memo" "%s" (Printexc.to_string exn);
@@ -30,13 +30,13 @@ let memo_save_to_disk () =
     ()
 
 (* We disable it for now, see todo.org for more information *)
-let save_to_disk () = if false then memo_save_to_disk ()
+let save_to_disk () = if true then memo_save_to_disk ()
 
 let memo_read_from_disk () =
   try
     if Sys.file_exists memo_cache_file then (
       L.trace "memo" "trying to load cache file";
-      (* Fleche.Memo.load_from_disk ~file:memo_cache_file; *)
+      Fleche.Memo.load_from_disk ~file:memo_cache_file;
       L.trace "memo" "cache file loaded")
     else L.trace "memo" "cache file not present"
   with exn ->
@@ -44,4 +44,4 @@ let memo_read_from_disk () =
     Sys.remove memo_cache_file;
     ()
 
-let read_from_disk () = if false then memo_read_from_disk ()
+let read_from_disk () = if true then memo_read_from_disk ()
