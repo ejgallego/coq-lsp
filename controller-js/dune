@@ -16,6 +16,7 @@
   (flags
    :standard
    --dynlink
+   --enable=effects
    ; --toplevel
    (:include .extraflags)
    ; +toplevel.js
