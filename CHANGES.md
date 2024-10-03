@@ -36,6 +36,8 @@
    see some motivation for that (@ejgallego, #841)
  - [lsp] [diagnostics] (! breaking change) change type of diagnostics
    extra data from list to named record (@ejgallego, #843)
+ - [lsp] Implement support for `textDocument/codeAction`. For now, we
+   support Coq's 8.21 `quickFix` data (@ejgallego, #840, #843, #845)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------

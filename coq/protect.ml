@@ -27,10 +27,23 @@ module R = struct
     | Completed (Ok r) -> Completed (Ok r)
     | Interrupted -> Interrupted
 
+  (* Similar to Message.map, but missing the priority field, this is due to Coq
+     having to sources of feedback, an async one, and the exn sync one.
+     Ultimately both carry the same [payload].
+
+     See coq/coq#5479 for some information about this, among some other relevant
+     issues. AFAICT, the STM tried to use a full async error reporting however
+     due to problems the more "legacy" exn is the actuall error mechanism in
+     use *)
   let map_loc ~f =
     let f = Message.Payload.map ~f in
     map_error ~f
 end
+
+let qf_of_coq qf =
+  let range = Quickfix.loc qf in
+  let newText = Quickfix.pp qf |> Pp.string_of_ppcmds in
+  { Lang.Qf.range; newText }
 
 (* Eval and reify exceptions *)
 let eval_exn ~token ~f x =
@@ -43,7 +56,12 @@ let eval_exn ~token ~f x =
     let e, info = Exninfo.capture exn in
     let range = Loc.(get_loc info) in
     let msg = CErrors.iprint (e, info) in
-    let payload = Message.Payload.make ?range msg in
+    let quickFix =
+      match Quickfix.from_exception exn with
+      | Ok [] | Error _ -> None
+      | Ok qf -> Some (List.map qf_of_coq qf)
+    in
+    let payload = Message.Payload.make ?range ?quickFix msg in
     Vernacstate.Interp.invalidate_cache ();
     if CErrors.is_anomaly e then R.Completed (Error (Anomaly payload))
     else R.Completed (Error (User payload))

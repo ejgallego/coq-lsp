@@ -15,6 +15,7 @@ module Data : sig
   type t =
     { sentenceRange : Range.t option [@default None]
     ; failedRequire : FailedRequire.t list option [@default None]
+    ; quickFix : Range.t Qf.t list option [@default None]
     }
 end
 
