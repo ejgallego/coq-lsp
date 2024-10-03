@@ -4,11 +4,9 @@
 
     As of today this includes feedback and exceptions. *)
 module Error : sig
-  type 'l payload = 'l option * Pp.t
-
   type 'l t = private
-    | User of 'l payload
-    | Anomaly of 'l payload
+    | User of 'l Message.Payload.t
+    | Anomaly of 'l Message.Payload.t
 end
 
 (** This "monad" could be related to "Runners in action" (Ahman, Bauer), thanks
@@ -22,7 +20,7 @@ module R : sig
   val map : f:('a -> 'b) -> ('a, 'l) t -> ('b, 'l) t
 
   val map_error :
-    f:('l Error.payload -> 'm Error.payload) -> ('a, 'l) t -> ('a, 'm) t
+    f:('l Message.Payload.t -> 'm Message.Payload.t) -> ('a, 'l) t -> ('a, 'm) t
 
   (** Update the loc stored in the result, this is used by our cache-aware
       location *)

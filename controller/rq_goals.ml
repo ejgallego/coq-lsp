@@ -6,7 +6,8 @@
 (************************************************************************)
 
 (* Replace by ppx when we can print goals properly in the client *)
-let mk_message (range, level, text) = Lsp.JFleche.Message.{ range; level; text }
+let mk_message (level, { Coq.Message.Payload.range; msg }) =
+  Lsp.JFleche.Message.{ range; level; text = msg }
 
 let mk_messages node =
   Option.map Fleche.Doc.Node.messages node
