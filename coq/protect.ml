@@ -1,9 +1,7 @@
 module Error = struct
-  type 'l payload = 'l option * Pp.t
-
   type 'l t =
-    | User of 'l payload
-    | Anomaly of 'l payload
+    | User of 'l Message.Payload.t
+    | Anomaly of 'l Message.Payload.t
 
   let map ~f = function
     | User e -> User (f e)
@@ -15,7 +13,9 @@ module R = struct
     | Completed of ('a, 'l Error.t) result
     | Interrupted (* signal sent, eval didn't complete *)
 
-  let error e = Completed (Error (Error.User (None, e)))
+  let error msg =
+    let payload = Message.Payload.make msg in
+    Completed (Error (Error.User payload))
 
   let map ~f = function
     | Completed (Result.Ok r) -> Completed (Result.Ok (f r))
@@ -28,7 +28,7 @@ module R = struct
     | Interrupted -> Interrupted
 
   let map_loc ~f =
-    let f (loc, msg) = (Option.map f loc, msg) in
+    let f = Message.Payload.map ~f in
     map_error ~f
 end
 
@@ -41,11 +41,12 @@ let eval_exn ~token ~f x =
     R.Interrupted
   | exception exn ->
     let e, info = Exninfo.capture exn in
-    let loc = Loc.(get_loc info) in
+    let range = Loc.(get_loc info) in
     let msg = CErrors.iprint (e, info) in
+    let payload = Message.Payload.make ?range msg in
     Vernacstate.Interp.invalidate_cache ();
-    if CErrors.is_anomaly e then R.Completed (Error (Anomaly (loc, msg)))
-    else R.Completed (Error (User (loc, msg)))
+    if CErrors.is_anomaly e then R.Completed (Error (Anomaly payload))
+    else R.Completed (Error (User payload))
 
 let _bind_exn ~f x =
   match x with
@@ -68,10 +69,9 @@ module E = struct
     { r; feedback }
 
   let map ~f { r; feedback } = { r = R.map ~f r; feedback }
-  let map_message ~f (loc, lvl, msg) = (Option.map f loc, lvl, msg)
 
   let map_loc ~f { r; feedback } =
-    { r = R.map_loc ~f r; feedback = List.map (map_message ~f) feedback }
+    { r = R.map_loc ~f r; feedback = List.map (Message.map ~f) feedback }
 
   let bind ~f { r; feedback } =
     match r with

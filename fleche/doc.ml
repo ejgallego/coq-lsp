@@ -116,8 +116,9 @@ module Node = struct
   module Message = struct
     type t = Lang.Range.t Coq.Message.t
 
-    let feedback_to_message ~lines (loc, lvl, msg) =
-      (Coq.Utils.to_orange ~lines loc, lvl, msg)
+    let feedback_to_message ~lines message =
+      let f = Coq.Utils.to_range ~lines in
+      Coq.Message.map ~f message
   end
 
   type t =
@@ -197,9 +198,10 @@ end = struct
     let data = extra_diagnostics_of_ast stm_range ast in
     make ?data err_range Lang.Diagnostic.Severity.error msg
 
-  let of_feed ~drange (range, severity, message) =
+  let of_feed ~drange (severity, payload) =
+    let { Coq.Message.Payload.range; msg } = payload in
     let range = Option.default drange range in
-    make range severity message
+    make range severity msg
 
   type partition_kind =
     | Left
@@ -224,7 +226,7 @@ end = struct
       else if !Config.v.show_notices_as_diagnostics then 4
       else 3
     in
-    let f (_, lvl, _) =
+    let f (lvl, _) =
       (* warning = 2 *)
       if lvl = Lang.Diagnostic.Severity.warning then Both
       else if lvl < cutoff then Left
@@ -354,8 +356,9 @@ let empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed =
   let completed = completed init_range in
   { uri; contents; toc; version; env; root; nodes; diags_dirty; completed }
 
-let error_doc ~loc ~message ~uri ~contents ~version ~env =
-  let feedback = [ (loc, Diags.err, Pp.str message) ] in
+let error_doc ~range ~message ~uri ~contents ~version ~env =
+  let payload = Coq.Message.Payload.make ?range (Pp.str message) in
+  let feedback = [ (Diags.err, payload) ] in
   let root = env.Env.init in
   let nodes = [] in
   let completed range = Completion.Failed range in
@@ -365,7 +368,8 @@ let conv_error_doc ~raw ~uri ~version ~env ~root err =
   let contents = Contents.make_raw ~raw in
   let lines = contents.lines in
   let err =
-    (None, Diags.err, Pp.(str "Error in document conversion: " ++ str err))
+    let msg = Pp.(str "Error in document conversion: " ++ str err) in
+    (Diags.err, Coq.Message.Payload.make msg)
   in
   (* No execution to add *)
   let stats = None in
@@ -394,14 +398,14 @@ let handle_doc_creation_exec ~token ~env ~uri ~version ~contents =
     match r with
     | Interrupted ->
       let message = "Document Creation Interrupted!" in
-      let loc = None in
-      error_doc ~loc ~message ~uri ~version ~contents ~env
-    | Completed (Error (User (loc, err_msg)))
-    | Completed (Error (Anomaly (loc, err_msg))) ->
+      let range = None in
+      error_doc ~range ~message ~uri ~version ~contents ~env
+    | Completed (Error (User { range; msg = err_msg }))
+    | Completed (Error (Anomaly { range; msg = err_msg })) ->
       let message =
         Format.asprintf "Doc.create, internal error: @[%a@]" Pp.pp_with err_msg
       in
-      error_doc ~loc ~message ~uri ~version ~contents ~env
+      error_doc ~range ~message ~uri ~version ~contents ~env
     | Completed (Ok doc) -> (doc, [])
   in
   let state = doc.root in
@@ -749,7 +753,7 @@ let parse_action ~token ~lines ~st last_tok doc_handle =
     | Ok (Some ast) ->
       let () = if Debug.parsing then DDebug.parsed_sentence ~ast in
       (Process ast, [], feedback, time)
-    | Error (Anomaly (_, msg)) | Error (User (None, msg)) ->
+    | Error (Anomaly { msg; _ }) | Error (User { range = None; msg }) ->
       (* We don't have a better alternative :(, usually missing error loc here
          means an anomaly, so we stop *)
       let err_range = last_tok in
@@ -757,7 +761,7 @@ let parse_action ~token ~lines ~st last_tok doc_handle =
         [ Diags.error ~err_range ~msg ~stm_range:err_range () ]
       in
       (EOF (Failed last_tok), parse_diags, feedback, time)
-    | Error (User (Some err_range, msg)) ->
+    | Error (User { range = Some err_range; msg }) ->
       Coq.Parsing.discard_to_dot doc_handle;
       let last_tok = Coq.Parsing.Parsable.loc doc_handle in
       let last_tok_range = Coq.Utils.to_range ~lines last_tok in
@@ -816,8 +820,8 @@ let node_of_coq_result ~token ~doc ~range ~prev ~ast ~st ~parsing_diags
         ~diags:[] ~feedback ~info
     in
     Continue { state; last_tok; node }
-  | Error (Coq.Protect.Error.Anomaly (err_range, msg) as coq_err)
-  | Error (User (err_range, msg) as coq_err) ->
+  | Error (Coq.Protect.Error.Anomaly { range = err_range; msg } as coq_err)
+  | Error (User { range = err_range; msg } as coq_err) ->
     let err_range = Option.default range err_range in
     let err_diags = [ Diags.error ~err_range ~msg ~stm_range:range ~ast () ] in
     let contents, nodes = (doc.contents, doc.nodes) in

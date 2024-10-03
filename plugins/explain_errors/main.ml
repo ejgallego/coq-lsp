@@ -10,8 +10,10 @@ let pp_goals ~token ~st =
   | Some proof -> (
     match Coq.Print.pr_goals ~token ~proof with
     | { Coq.Protect.E.r = Completed (Ok goals); _ } -> goals
-    | { Coq.Protect.E.r = Completed (Error (User msg | Anomaly msg)); _ } ->
-      Pp.(str "error when printing goals: " ++ snd msg)
+    | { Coq.Protect.E.r =
+          Completed (Error (User { msg; _ } | Anomaly { msg; _ }))
+      ; _
+      } -> Pp.(str "error when printing goals: " ++ msg)
     | { Coq.Protect.E.r = Interrupted; _ } ->
       Pp.str "goal printing was interrupted")
 

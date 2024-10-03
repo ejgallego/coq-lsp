@@ -36,9 +36,10 @@ let coq_lvl_to_severity (lvl : Feedback.level) =
   | Feedback.Warning -> warning
   | Feedback.Error -> error
 
-let add_message lvl loc msg q =
+let add_message lvl range msg q =
   let lvl = coq_lvl_to_severity lvl in
-  q := (loc, lvl, msg) :: !q
+  let payload = Message.Payload.make ?range msg in
+  q := (lvl, payload) :: !q
 
 let mk_fb_handler q Feedback.{ contents; _ } =
   match contents with
