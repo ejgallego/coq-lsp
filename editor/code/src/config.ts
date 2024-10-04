@@ -96,4 +96,12 @@ export namespace CoqSelector {
   export const vsls: TextDocumentFilter[] = all.map((selector) => {
     return { ...selector, scheme: "vsls" };
   });
+
+  // Virtual workspaces such as github.dev
+  export const virtual: TextDocumentFilter[] = all.map((selector) => {
+    return { ...selector, scheme: "vscode-vfs" };
+  });
+
+  // Files that are owned by our server, local + virtual
+  export const owned: TextDocumentFilter[] = local.concat(virtual);
 }

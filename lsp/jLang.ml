@@ -34,12 +34,22 @@ module LUri = struct
   end
 end
 
+module Qf = struct
+  type 'l t = [%import: 'l Lang.Qf.t] [@@deriving yojson]
+end
+
 module Diagnostic = struct
   module Libnames = Serlib.Ser_libnames
+
+  module FailedRequire = struct
+    type t = [%import: Lang.Diagnostic.FailedRequire.t] [@@deriving yojson]
+  end
 
   module Data = struct
     module Lang = struct
       module Range = Range
+      module Qf = Qf
+      module FailedRequire = FailedRequire
       module Diagnostic = Lang.Diagnostic
     end
 
@@ -56,6 +66,7 @@ module Diagnostic = struct
     [@@deriving yojson]
 
     let conv { Lang.Point.line; character; offset = _ } = { line; character }
+    let vnoc { line; character } = { Lang.Point.line; character; offset = -1 }
   end
 
   module Range = struct
@@ -69,6 +80,11 @@ module Diagnostic = struct
       let start = Point.conv start in
       let end_ = Point.conv end_ in
       { start; end_ }
+
+    let vnoc { start; end_ } =
+      let start = Point.vnoc start in
+      let end_ = Point.vnoc end_ in
+      { Lang.Range.start; end_ }
   end
 
   (* Current Flèche diagnostic is not LSP-standard compliant, this one is *)
@@ -78,15 +94,22 @@ module Diagnostic = struct
     { range : Range.t
     ; severity : int
     ; message : string
-    ; data : Data.t list option [@default None]
+    ; data : Data.t option [@default None]
     }
   [@@deriving yojson]
 
   let to_yojson { Lang.Diagnostic.range; severity; message; data } =
     let range = Range.conv range in
-    let severity = Lang.Diagnostic.Severity.to_int severity in
     let message = Pp.to_string message in
     _t_to_yojson { range; severity; message; data }
+
+  let of_yojson json =
+    match _t_of_yojson json with
+    | Ok { range; severity; message; data } ->
+      let range = Range.vnoc range in
+      let message = Pp.str message in
+      Ok { Lang.Diagnostic.range; severity; message; data }
+    | Error err -> Error err
 end
 
 module Stdlib = JStdlib

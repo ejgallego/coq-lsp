@@ -23,3 +23,16 @@ end
 module DidChangeWorkspaceFoldersParams : sig
   type t = { event : WorkspaceFoldersChangeEvent.t } [@@deriving yojson]
 end
+
+module TextEdit : sig
+  type t =
+    { range : Lang.Range.t
+    ; newText : string
+    }
+  [@@deriving yojson]
+end
+
+module WorkspaceEdit : sig
+  type t = { changes : (Lang.LUri.File.t * TextEdit.t list) list }
+  [@@deriving yojson]
+end

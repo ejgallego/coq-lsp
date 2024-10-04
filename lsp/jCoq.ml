@@ -26,6 +26,7 @@ let rec pp_opt d =
 module Pp = struct
   include Serlib.Ser_pp
 
+  let str = Pp.str
   let string_of_ppcmds = Pp.string_of_ppcmds
   let to_string = Pp.string_of_ppcmds
   let to_yojson x = to_yojson (pp_opt x)
