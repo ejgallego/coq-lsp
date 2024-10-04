@@ -51,6 +51,7 @@ let print_toc = false
 let run (ic, oc) =
   let open Coq.Compat.Result.O in
   let debug = false in
+  let contents = None in
   let module S = Client.S (struct
     let ic = ic
     let oc = oc
@@ -66,7 +67,8 @@ let run (ic, oc) =
   let root, uri = prepare_paths () in
   let* () = S.set_workspace { debug; root } in
   let* { st; _ } =
-    S.start { uri; opts = None; pre_commands = None; thm = "rev_snoc_cons" }
+    S.start
+      { uri; opts = None; contents; pre_commands = None; thm = "rev_snoc_cons" }
   in
   let* premises = S.premises { st } in
   (if print_premises then

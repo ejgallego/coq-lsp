@@ -72,8 +72,13 @@ let read_raw ~uri =
   try Ok Coq.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
   with Sys_error err -> Error (Petanque.Agent.Error.system err)
 
-let setup_doc ~token env uri =
-  match read_raw ~uri with
+let setup_doc ~token env uri contents =
+  let contents =
+    match contents with
+    | Some contents -> Ok contents
+    | None -> read_raw ~uri
+  in
+  match contents with
   | Ok raw ->
     let doc = Fleche.Doc.create ~token ~env ~uri ~version:0 ~raw in
     print_diags doc;
@@ -81,7 +86,8 @@ let setup_doc ~token env uri =
     Ok (Fleche.Doc.check ~io ~token ~target ~doc ())
   | Error err -> Error err
 
-let build_doc ~token ~uri = setup_doc ~token (Option.get !env) uri
+let build_doc ~token ~uri ~contents =
+  setup_doc ~token (Option.get !env) uri contents
 
 (* Flèche LSP backend handles the conversion at the protocol level *)
 let to_uri uri =

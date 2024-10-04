@@ -465,7 +465,7 @@ let petanque_handle ~token =
   let open Petanque_json in
   function
   | Interp.Action.Now handler -> Rq.Action.now (handler ~token)
-  | Interp.Action.Doc { uri; handler } ->
+  | Interp.Action.Doc { uri; contents = _; handler } ->
     (* Request document execution if not ready *)
     let postpone = true in
     Rq.Action.(Data (DocRequest { uri; postpone; handler }))

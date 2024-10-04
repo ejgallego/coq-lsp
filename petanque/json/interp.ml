@@ -16,6 +16,7 @@ module Action = struct
     | Now of (token:Coq.Limits.Token.t -> Yojson.Safe.t r)
     | Doc of
         { uri : Lang.LUri.File.t
+        ; contents : string option
         ; handler :
             token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> Yojson.Safe.t r
         }
@@ -38,9 +39,9 @@ let do_request (module R : Protocol.Request.S) ~params =
     | Immediate handler ->
       Action.Now (fun ~token -> handler ~token params |> of_pet)
     | FullDoc { uri_fn; handler } ->
-      let uri = uri_fn params in
+      let uri, contents = uri_fn params in
       let handler ~token ~doc = handler ~token ~doc params |> of_pet in
-      Action.Doc { uri; handler }
+      Action.Doc { uri; contents; handler }
   in
   match R.Handler.Params.of_yojson (`Assoc params) with
   | Ok params -> handler params

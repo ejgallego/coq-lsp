@@ -8,6 +8,7 @@
 type doc_handler =
      token:Coq.Limits.Token.t
   -> uri:Lang.LUri.File.t
+  -> contents:string option
   -> (Fleche.Doc.t, Petanque.Agent.Error.t) Result.t
 
 val interp :

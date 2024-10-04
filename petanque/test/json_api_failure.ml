@@ -18,6 +18,7 @@ let extract_st { JAgent.Run_result.st; _ } = st
 let run (ic, oc) =
   let open Coq.Compat.Result.O in
   let debug = false in
+  let contents = None in
   let module S = Client.S (struct
     let ic = ic
     let oc = oc
@@ -34,7 +35,7 @@ let run (ic, oc) =
   let opts = None in
   let* _env = S.set_workspace { debug; root } in
   let* { st; _ } =
-    S.start { uri; opts; pre_commands = None; thm = "rev_snoc_cons" }
+    S.start { uri; opts; contents; pre_commands = None; thm = "rev_snoc_cons" }
   in
   let* _premises = S.premises { st } in
   let* st = S.run { opts; st; tac = "induction l." } in
