@@ -1,5 +1,5 @@
-# unreleased
-------------
+# coq-lsp 0.2.1: Click !
+------------------------
 
  - [deps] Bump toolchain so minimal `ppxlib` is 0.26, in order to fix
    some `ppx_import` oddities. This means our lower bound for the Jane

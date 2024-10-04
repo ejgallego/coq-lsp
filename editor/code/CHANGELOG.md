@@ -1,3 +1,58 @@
+# coq-lsp 0.2.1: Click !
+------------------------
+
+ This release brings full Web Extension support for coq-lsp!
+
+ You can now run Coq from your browser using https://vscode.dev or
+ https://github.dev .
+
+ Some other highlights is `codeAction` support (for Coq quick fixes),
+ `Restart.` support, better API for our extension users, and many
+ bugfixes and improvements, in particular for `hover`.
+
+ The detailed list of server and client changes is below:
+
+ - [workspace] [coq] Support _CoqProject arguments `-type-in-type` and
+   `-allow-rewrite-rules` (for 8.20) (@ejgallego, #819)
+ - [serlib] Fix Ltac2 AST piercing bug, add test case that should help
+   in the future (@ejgallego, @jim-portegies, #821)
+ - [fleche] [8.20] understand rewrite rules and symbols on document
+   outline (@ejgallego, @Alizter, #825, fixes #824)
+ - [fleche] [coq] support `Restart` meta command (@ejgallego,
+   @Alizter, #828, fixes #827)
+ - [fleche] [plugins] New plugin example `explain_errors`, that will
+   print all errors on a file, with their goal context (@ejgallego,
+   #829, thanks to @gmalecha for the idea, c.f. Coq issue 19601)
+ - [fleche] Highlight the full first line of the document on
+   initialization error (@ejgallego, #832)
+ - [fleche] [jscoq] [js] Build worker version of `coq-lsp`. This
+   provides a full working Coq enviroment in `vscode.dev`. The web
+   worker version is build as an artifact on CI (@ejgallego
+   @corwin-of-amber, #433)
+ - [hover] Fix universe and level printing in hover (#839, fixes #835
+   , @ejgallego , @Alizter)
+ - [fleche] New immediate request serving mode. In this mode, requests
+   are served with whatever document state we have. This is very
+   useful when we are not in continuous mode, and we don't have a good
+   reference as to what to build, for example in
+   `documentSymbols`. The mode actually works pretty well in practice
+   as often language requests will come after goals requests, so the
+   info that is needed is at hand. It could also be tried to set the
+   build target for immediate requests to the view hint, but we should
+   see some motivation for that (@ejgallego, #841)
+ - [lsp] [diagnostics] (! breaking change) change type of diagnostics
+   extra data from list to named record (@ejgallego, #843)
+ - [lsp] Implement support for `textDocument/codeAction`. For now, we
+   support Coq's 8.21 `quickFix` data (@ejgallego, #840, #843, #845)
+ - [petanque] Fix bug for detection of proof finished in deep stacks
+   (@ejgallego, @gbdrt, #847)
+ - [goals request] allow multiple Coq sentences in `command`. This is
+   backwards compatible in the case that commands do not error, and
+   users were sending just one command. (@ejgallego, #823, thanks to
+   CoqPilot devs and G. Baudart for feedback)
+ - [goals request] (! breaking) fail the request if the commands in
+   `command` fail (@ejgallego, #823)
+
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------
 
