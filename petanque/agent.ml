@@ -106,30 +106,12 @@ let find_thm ~(doc : Fleche.Doc.t) ~thm =
     (* let point = (range.start.line, range.start.character) in *)
     Ok node
 
-let parse ~loc tac st =
-  let str = Gramlib.Stream.of_string tac in
-  let str = Coq.Parsing.Parsable.make ?loc str in
-  Coq.Parsing.parse ~st str
-
-(* Adaptor, should be supported in memo directly *)
-let eval_no_memo ~token (st, cmd) =
-  Coq.Interp.interp ~token ~intern:Vernacinterp.fs_intern ~st cmd
-
-let parse_and_execute_in ~token ~loc ~memo tac st =
-  (* To improve in memo *)
-  let eval = if memo then Fleche.Memo.Interp.eval else eval_no_memo in
-  let open Coq.Protect.E.O in
-  let* ast = parse ~token ~loc tac st in
-  match ast with
-  | Some ast -> eval ~token (st, ast)
-  | None -> Coq.Protect.E.ok st
-
 let execute_precommands ~token ~memo ~pre_commands ~(node : Fleche.Doc.Node.t) =
   match (pre_commands, node.prev, node.ast) with
   | Some pre_commands, Some prev, Some ast ->
     let st = prev.state in
     let open Coq.Protect.E.O in
-    let* st = parse_and_execute_in ~token ~memo ~loc:None pre_commands st in
+    let* st = Fleche.Doc.run ~token ~memo ?loc:None ~st pre_commands in
     (* We re-interpret the lemma statement *)
     Fleche.Memo.Interp.eval ~token (st, ast.v)
   | _, _, _ -> Coq.Protect.E.ok node.state
@@ -137,14 +119,17 @@ let execute_precommands ~token ~memo ~pre_commands ~(node : Fleche.Doc.Node.t) =
 let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
   match r with
   | { r = Interrupted; feedback = _ } -> Error Error.Interrupted
-  | { r = Completed (Error (User (_loc, msg))); feedback = _ } ->
+  | { r = Completed (Error (User { msg; _ })); feedback = _ } ->
     Error (Error.Coq (Pp.string_of_ppcmds msg))
-  | { r = Completed (Error (Anomaly (_loc, msg))); feedback = _ } ->
+  | { r = Completed (Error (Anomaly { msg; _ })); feedback = _ } ->
     Error (Error.Anomaly (Pp.string_of_ppcmds msg))
   | { r = Completed (Ok r); feedback = _ } -> Ok r
 
 let proof_finished { Coq.Goals.goals; stack; shelf; given_up; _ } =
-  List.for_all CList.is_empty [ goals; shelf; given_up ] && CList.is_empty stack
+  let check_stack stack =
+    CList.(for_all (fun (l, r) -> is_empty l && is_empty r)) stack
+  in
+  List.for_all CList.is_empty [ goals; shelf; given_up ] && check_stack stack
 
 (* At some point we want to return both hashes *)
 module Hash_kind = struct
@@ -177,32 +162,31 @@ let default_opts = function
   | None -> { Run_opts.memo = true; hash = true }
   | Some opts -> opts
 
-(* XXX: EJGA, we should not need the [Coq.State.in_stateM] here and in run *)
 let start ~token ~doc ?opts ?pre_commands ~thm () =
   let open Coq.Compat.Result.O in
   let* node = find_thm ~doc ~thm in
   (* Usually single shot, so we don't memoize *)
-  let f () =
-    let opts = default_opts opts in
-    let memo, hash = (opts.memo, opts.hash) in
+  let opts = default_opts opts in
+  let memo, hash = (opts.memo, opts.hash) in
+  let execution =
     let open Coq.Protect.E.O in
     let+ st = execute_precommands ~token ~memo ~pre_commands ~node in
+    (* Note this runs on the resulting state, anyways it is purely functional *)
     analyze_after_run ~hash st
   in
-  let st = node.state in
-  Coq.State.in_stateM ~token ~st ~f () |> protect_to_result
+  protect_to_result execution
 
 let run ~token ?opts ~st ~tac () : (_ Run_result.t, Error.t) Result.t =
   let opts = default_opts opts in
   (* Improve with thm? *)
-  let loc = None in
   let memo, hash = (opts.memo, opts.hash) in
-  let f st =
+  let execution =
     let open Coq.Protect.E.O in
-    let+ st = parse_and_execute_in ~token ~memo ~loc tac st in
+    let+ st = Fleche.Doc.run ~token ~memo ?loc:None ~st tac in
+    (* Note this runs on the resulting state, anyways it is purely functional *)
     analyze_after_run ~hash st
   in
-  Coq.State.in_stateM ~token ~st ~f st |> protect_to_result
+  protect_to_result execution
 
 let goals ~token ~st =
   let f goals =

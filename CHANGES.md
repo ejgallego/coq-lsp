@@ -1,5 +1,12 @@
-# unreleased
-------------
+# coq-lsp 0.2.2: To Virtual or not To Virtual
+---------------------------------------------
+
+ - [vscode] Expand selectors to include `vscode-vfs://` URIs used in
+   `github.dev`, document limited virtual workspace support in
+   `package.json` (@ejgallego, #849)
+
+# coq-lsp 0.2.1: Click !
+------------------------
 
  - [deps] Bump toolchain so minimal `ppxlib` is 0.26, in order to fix
    some `ppx_import` oddities. This means our lower bound for the Jane
@@ -34,6 +41,18 @@
    info that is needed is at hand. It could also be tried to set the
    build target for immediate requests to the view hint, but we should
    see some motivation for that (@ejgallego, #841)
+ - [lsp] [diagnostics] (! breaking change) change type of diagnostics
+   extra data from list to named record (@ejgallego, #843)
+ - [lsp] Implement support for `textDocument/codeAction`. For now, we
+   support Coq's 8.21 `quickFix` data (@ejgallego, #840, #843, #845)
+ - [petanque] Fix bug for detection of proof finished in deep stacks
+   (@ejgallego, @gbdrt, #847)
+ - [goals request] allow multiple Coq sentences in `command`. This is
+   backwards compatible in the case that commands do not error, and
+   users were sending just one command. (@ejgallego, #823, thanks to
+   CoqPilot devs and G. Baudart for feedback)
+ - [goals request] (! breaking) fail the request if the commands in
+   `command` fail (@ejgallego, #823)
 
 # coq-lsp 0.2.0: From Green to Blue
 -----------------------------------

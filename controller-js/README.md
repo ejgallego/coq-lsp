@@ -62,7 +62,7 @@ extension + Coq build.
 As of Feb 2023, due to security restrictions, you may need to either:
 
  - pass `--enable-coi` to `code`
- - use ``?enable-coi=` in the vscode dev setup
+ - append `?vscode-coi` in the vscode dev setup URL
 
 in order to have interruptions (`SharedBufferArray`) working.
 

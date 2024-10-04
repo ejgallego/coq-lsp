@@ -17,7 +17,7 @@ let trace hdr ?extra:_ msg =
 let message ~lvl:_ ~message = msgs := message :: !msgs
 let dump_msgs () = List.iter (Format.eprintf "%s@\n") (List.rev !msgs)
 
-let start ~token =
+let init ~token =
   let debug = false in
   Shell.trace_ref := trace;
   Shell.message_ref := message;
@@ -30,19 +30,17 @@ let start ~token =
   let* () = Shell.set_workspace ~token ~debug ~root in
   (* Careful to call [build_doc] before we have set an environment! [pet] and
      [pet-server] are careful to always set a default one *)
-  let* doc = Shell.build_doc ~token ~uri in
-  Agent.start ~token ~doc ~thm:"rev_snoc_cons" ()
+  Shell.build_doc ~token ~uri
 
 let extract_st { Agent.Run_result.st; _ } = st
 
-let main () =
+let snoc_test ~token ~doc =
   let open Coq.Compat.Result.O in
-  let token = Coq.Limits.create_atomic () in
   let r ~st ~tac =
     let st = extract_st st in
     Agent.run ~token ~st ~tac ()
   in
-  let* { st; _ } = start ~token in
+  let* { st; _ } = Agent.start ~token ~doc ~thm:"rev_snoc_cons" () in
   let* _premises = Agent.premises ~token ~st in
   let* st = Agent.run ~token ~st ~tac:"induction l." () in
   let h1 = Agent.State.hash st.st in
@@ -58,15 +56,62 @@ let main () =
   let* st = r ~st ~tac:"Qed." in
   Agent.goals ~token ~st:(extract_st st)
 
+let finished_stack_test ~token ~doc =
+  let open Coq.Compat.Result.O in
+  let r ~st ~tac =
+    let st = extract_st st in
+    Agent.run ~token ~st ~tac ()
+  in
+  let* { st; _ } = Agent.start ~token ~doc ~thm:"deepBullet" () in
+  let* st = Agent.run ~token ~st ~tac:"split." () in
+  let* st = r ~st ~tac:"-" in
+  let* st = r ~st ~tac:"now reflexivity." in
+  let* st = r ~st ~tac:"-" in
+  let* st = r ~st ~tac:"split." in
+  let* st = r ~st ~tac:"+" in
+  let* st = r ~st ~tac:"now reflexivity." in
+  let* st = r ~st ~tac:"+" in
+  let* { st; proof_finished; _ } = r ~st ~tac:"now reflexivity." in
+  (* Check that we properly detect no goals with deep stacks. *)
+  assert proof_finished;
+  let* st = Agent.run ~token ~st ~tac:"Qed." () in
+  Agent.goals ~token ~st:(extract_st st)
+
+let multi_shot_test ~token ~doc =
+  let open Coq.Compat.Result.O in
+  let* { st; _ } = Agent.start ~token ~doc ~thm:"rev_snoc_cons" () in
+  let* st =
+    Agent.run ~token ~st
+      ~tac:"induction l. idtac. - reflexivity. - now simpl; rewrite IHl. Qed."
+      ()
+  in
+  Agent.goals ~token ~st:(extract_st st)
+
+let main () =
+  let open Coq.Compat.Result.O in
+  let token = Coq.Limits.create_atomic () in
+  let* doc = init ~token in
+  let* g1 = snoc_test ~token ~doc in
+  let* g2 = finished_stack_test ~token ~doc in
+  let* g3 = multi_shot_test ~token ~doc in
+  Ok [ g1; g2; g3 ]
+
+let max = List.fold_left max min_int
+
 let check_no_goals = function
   | Error err ->
     Format.eprintf "error: in execution: %s@\n%!" (Agent.Error.to_string err);
     dump_msgs ();
     129
-  | Ok None -> 0
-  | Ok (Some _goals) ->
-    dump_msgs ();
-    Format.eprintf "error: goals remaining@\n%!";
-    1
+  | Ok glist ->
+    List.map
+      (function
+        | None -> 0
+        | Some _goals ->
+          dump_msgs ();
+          Format.eprintf "error: goals remaining@\n%!";
+          1)
+      glist
+    |> max
 
 let () = main () |> check_no_goals |> exit
