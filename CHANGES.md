@@ -1,3 +1,10 @@
+# coq-lsp 0.2.2: To Virtual or not To Virtual
+---------------------------------------------
+
+ - [vscode] Expand selectors to include `vscode-vfs://` URIs used in
+   `github.dev`, document limited virtual workspace support in
+   `package.json` (@ejgallego, #849)
+
 # coq-lsp 0.2.1: Click !
 ------------------------
 
