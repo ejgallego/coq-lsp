@@ -20,7 +20,7 @@ module LUri : sig
 end
 
 module Diagnostic : sig
-  type t = Lang.Diagnostic.t [@@deriving to_yojson]
+  type t = Lang.Diagnostic.t [@@deriving yojson]
 
   module Point : sig
     type t =
@@ -36,6 +36,8 @@ module Diagnostic : sig
       ; end_ : Point.t [@key "end"]
       }
     [@@deriving yojson]
+
+    val vnoc : t -> Lang.Range.t
   end
 end
 

@@ -4,32 +4,35 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module FailedRequire : sig
+  type t =
+    { prefix : Libnames.qualid option
+    ; refs : Libnames.qualid list
+    }
+end
+
 module Data : sig
   type t =
-    | SentenceRange of Range.t
-    | FailedRequire of
-        { prefix : Libnames.qualid option
-        ; refs : Libnames.qualid list
-        }
+    { sentenceRange : Range.t option [@default None]
+    ; failedRequire : FailedRequire.t list option [@default None]
+    ; quickFix : Range.t Qf.t list option [@default None]
+    }
 end
 
 module Severity : sig
-  type t
+  type t = int
 
-  val error : t
-  val warning : t
-  val information : t
-  val hint : t
-
-  (** Convert to LSP-like levels *)
-  val to_int : t -> int
+  val error : t (* 1 *)
+  val warning : t (* 2 *)
+  val information : t (* 3 *)
+  val hint : t (* 4 *)
 end
 
 type t =
   { range : Range.t
   ; severity : Severity.t
   ; message : Pp.t
-  ; data : Data.t list option [@default None]
+  ; data : Data.t option [@default None]
   }
 
 val is_error : t -> bool

@@ -164,6 +164,20 @@ today we offer two kinds of extra information on errors:
 - range of the full sentence that displayed the error,
 - if the error was on a Require, information about the library that failed.
 
+As of today, this extra data is passed via member parameters
+```typescript
+// From `prefix` Require `refs`
+type failedRequire = {
+    prefix ?: qualid
+    refs : qualid list
+}
+
+type DiagnosticsData = {
+    sentenceRange ?: Range;
+    failedRequire ?: FailedRequire
+}
+```
+
 ### Goal Display
 
 In order to display proof goals and information at point, `coq-lsp` supports the `proof/goals` request, parameters are:
@@ -173,11 +187,18 @@ interface GoalRequest {
     textDocument: VersionedTextDocumentIdentifier;
     position: Position;
     pp_format?: 'Pp' | 'Str';
-    pretac?: string;
     command?: string;
     mode?: 'Prev' | 'After';
 }
 ```
+
+The first parameters are standard, `pp_format` controls the pretty
+printing format used in the results.
+
+The `command` parameter (experimental), is a list of Coq commands that
+will be run just _after_ `position` in `textDocument`, but _before_
+goals are sent to the user. This is often useful for ephemeral
+post-processing.
 
 Answer to the request is a `Goal[]` object, where
 

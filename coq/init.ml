@@ -36,13 +36,19 @@ let coq_lvl_to_severity (lvl : Feedback.level) =
   | Feedback.Warning -> warning
   | Feedback.Error -> error
 
-let add_message lvl loc msg q =
+(* let qf_of_coq qf = let range = Quickfix.loc qf in let newText = Quickfix.pp
+   qf |> Pp.string_of_ppcmds in { Lang.Qf.range; newText } *)
+
+let add_message lvl range _qf msg q =
   let lvl = coq_lvl_to_severity lvl in
-  q := (loc, lvl, msg) :: !q
+  (* let quickFix = if qf = [] then None else Some (List.map qf_of_coq qf) in *)
+  let quickFix = None in
+  let payload = Message.Payload.make ?range ?quickFix msg in
+  q := (lvl, payload) :: !q
 
 let mk_fb_handler q Feedback.{ contents; _ } =
   match contents with
-  | Message (lvl, loc, msg) -> add_message lvl loc msg q
+  | Message (lvl, loc, msg) -> add_message lvl loc None msg q
   | _ -> ()
 
 let coq_init opts =

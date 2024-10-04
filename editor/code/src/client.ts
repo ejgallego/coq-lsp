@@ -210,7 +210,7 @@ export function activateCoqLSP(
     const initializationOptions: CoqLspServerConfig = configDidChange(wsConfig);
 
     const clientOptions: LanguageClientOptions = {
-      documentSelector: CoqSelector.local,
+      documentSelector: CoqSelector.owned,
       outputChannelName: "Coq LSP Server Events",
       revealOutputChannelOn: RevealOutputChannelOn.Info,
       initializationOptions,
@@ -335,7 +335,7 @@ export function activateCoqLSP(
       let textDocument = { uri, version };
       infoPanel.notifyLackOfVSLS(textDocument, position);
       return;
-    } else if (languages.match(CoqSelector.local, textEditor.document) < 1)
+    } else if (languages.match(CoqSelector.owned, textEditor.document) < 1)
       return;
 
     const kind =
@@ -373,7 +373,7 @@ export function activateCoqLSP(
       if (
         config.check_on_scroll &&
         serverConfig.check_only_on_request &&
-        languages.match(CoqSelector.local, evt.textEditor.document) > 0 &&
+        languages.match(CoqSelector.owned, evt.textEditor.document) > 0 &&
         evt.visibleRanges[0]
       ) {
         let uri = evt.textEditor.document.uri.toString();
