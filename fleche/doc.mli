@@ -24,7 +24,7 @@ module Node : sig
   end
 
   module Message : sig
-    type t = Lang.Range.t option * Lang.Diagnostic.Severity.t * Pp.t
+    type t = Lang.Range.t Coq.Message.t
   end
 
   type t = private
@@ -137,3 +137,21 @@ val check :
 (** [save ~doc] will save [doc] .vo file. It will fail if proofs are open, or if
     the document completion status is not [Yes] *)
 val save : token:Coq.Limits.Token.t -> doc:t -> (unit, Loc.t) Coq.Protect.E.t
+
+(** [run ~token ?loc ?memo ~st cmds] run commands [cmds] starting on state [st],
+    without commiting changes to the document. [loc] can be used to seed an
+    initial location if desired, if not the locations will be considered
+    relative to the initial location. [memo] controls if the execution is
+    memoized, by default [true].
+
+    This API is experimental, used for speculative execution
+    [petanque
+    and goals], the API is expected to change as to better adapt
+    to users. *)
+val run :
+     token:Coq.Limits.Token.t
+  -> ?loc:Loc.t
+  -> ?memo:bool
+  -> st:Coq.State.t
+  -> string
+  -> (Coq.State.t, Loc.t) Coq.Protect.E.t

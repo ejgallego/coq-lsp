@@ -117,7 +117,7 @@ let do_initialize ~io ~params =
     [ ("textDocumentSync", `Int 1)
     ; ("documentSymbolProvider", `Bool true)
     ; ("hoverProvider", `Bool true)
-    ; ("codeActionProvider", `Bool false)
+    ; ("codeActionProvider", `Bool true)
     ; ( "completionProvider"
       , `Assoc
           [ ("triggerCharacters", `List [ `String "\\" ])

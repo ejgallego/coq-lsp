@@ -48,6 +48,11 @@ let accept_connection ~token conn =
 let create_socket ~address ~port ~backlog =
   let open Lwt_unix in
   let sock = socket PF_INET SOCK_STREAM 0 in
+  (* It is sometimes more convenient to allow pet-server to shadow a kind of
+     crashed one, so we allow to rebind the socket. It could be convenient at
+     some point to guard this over a command-line flag *)
+  let () = setsockopt sock SO_REUSEADDR true in
+  let () = setsockopt sock SO_REUSEPORT true in
   ( bind sock @@ ADDR_INET (Unix.inet_addr_of_string address, port) |> fun x ->
     ignore x );
   listen sock backlog;

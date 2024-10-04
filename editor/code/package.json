@@ -2,7 +2,7 @@
   "name": "coq-lsp",
   "displayName": "Coq LSP",
   "description": "Coq LSP provides native vsCode support for checking Coq proof documents",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "contributors": [
     "Emilio Jesús Gallego Arias <e@x80.org>",
     "Ali Caglayan <alizter@gmail.com>",
@@ -32,6 +32,12 @@
     "onLanguage:markdown",
     "onLanguage:latex"
   ],
+  "capabilities": {
+    "virtualWorkspaces": {
+      "supported": "limited",
+      "description": "File operations such as jump to definition are not supported in virtual workspaces. While almost fully functional, coq-lsp remains experiemental as a Web Extension."
+    }
+  },
   "contributes": {
     "languages": [
       {
@@ -209,6 +215,11 @@
             "type": "boolean",
             "default": false,
             "description": "Send extra diagnostics data, usually on error"
+          },
+          "coq-lsp.send_perf_data": {
+            "type": "boolean",
+            "default": true,
+            "description": "Update Perf Data Coq Panel"
           }
         }
       },

@@ -14,7 +14,7 @@ Require Import Psatz.
 Set Warnings "-deprecated".
 
 (* Compatibility workaround, remove once requiring Coq >= 8.16 *)
-Module Import Compat.
+Module Import Compat816.
 
 Lemma Even_0 : Nat.Even 0.
 Proof. exists 0; reflexivity. Qed.
@@ -67,7 +67,21 @@ Proof proj1 (proj1 (Even_Odd_double n)).
 Definition Odd_double n : Nat.Odd n -> n = S (Nat.double (Nat.div2 n)).
 Proof proj1 (proj2 (Even_Odd_double n)).
 
-End Compat.
+Definition Rinv_mult_distr := Rinv_mult_distr.
+Definition Rabs_Rinv := Rabs_Rinv.
+Definition Rinv_pow := Rinv_pow.
+Definition Rinv_involutive := Rinv_involutive.
+Definition Rlt_Rminus := Rlt_Rminus.
+Definition powerRZ_inv := powerRZ_inv.
+Definition powerRZ_neg := powerRZ_neg.
+
+End Compat816.
+
+Module Import Compat819.
+
+Definition IZR_neq := IZR_neq.
+
+End Compat819.
 
 (*** was file sTactic.v  ***)
 
@@ -17553,7 +17567,7 @@ apply Z.le_trans with  (Nat.double (Nat.div2 t)).
 unfold Nat.double; rewrite inj_plus; auto with zarith.
 rewrite <- Even_double; auto with zarith.
 apply Z.le_trans with (-1+(S ( Nat.double (Nat.div2 t))))%Z.
-rewrite inj_S; unfold Z.succ; auto with zarith.
+rewrite inj_S; unfold Z.succ; auto with zarith;
 unfold Nat.double; rewrite inj_plus; auto with zarith.
 rewrite <- Odd_double by easy. lia.
 Qed.
@@ -17568,9 +17582,9 @@ case (Nat.Even_or_Odd t); intros I.
 apply Z.le_trans with  ((Nat.double (Nat.div2 t)+1))%Z.
 2:unfold Nat.double; rewrite inj_plus; auto with zarith.
 rewrite <- Even_double; auto with zarith.
-apply Z.le_trans with ((S ( Nat.double (Nat.div2 t))))%Z; auto with zarith.
-2: rewrite inj_S; unfold Z.succ; auto with zarith.
-2: unfold Nat.double; rewrite inj_plus; auto with zarith.
+apply Z.le_trans with ((S ( Nat.double (Nat.div2 t))))%Z; auto with zarith;
+try solve [rewrite inj_S; unfold Z.succ; auto with zarith;
+  unfold Nat.double; rewrite inj_plus; auto with zarith].
 rewrite <- Odd_double; auto with zarith.
 Qed.
 

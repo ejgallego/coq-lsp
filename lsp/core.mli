@@ -180,3 +180,33 @@ module DocumentDiagnosticReportPartialResult : sig
     }
   [@@deriving to_yojson]
 end
+
+(* CodeAction *)
+module CodeActionContext : sig
+  type t =
+    { diagnostics : Lang.Diagnostic.t list
+    ; only : string option [@default None]
+    ; triggerKind : int option [@default None]
+    }
+  [@@deriving to_yojson]
+end
+
+module CodeActionParams : sig
+  type t =
+    { textDocument : Doc.TextDocumentIdentifier.t
+    ; range : Lang.Range.t
+    ; context : CodeActionContext.t
+    }
+  [@@deriving to_yojson]
+end
+
+module CodeAction : sig
+  type t =
+    { title : string
+    ; kind : string option [@default None]
+    ; diagnostics : Lang.Diagnostic.t list [@default []]
+    ; isPreferred : bool option [@default None]
+    ; edit : Workspace.WorkspaceEdit.t option [@default None]
+    }
+  [@@deriving to_yojson]
+end
