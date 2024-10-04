@@ -144,7 +144,10 @@ let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
   | { r = Completed (Ok r); feedback = _ } -> Ok r
 
 let proof_finished { Coq.Goals.goals; stack; shelf; given_up; _ } =
-  List.for_all CList.is_empty [ goals; shelf; given_up ] && CList.is_empty stack
+  let check_stack stack =
+    CList.(for_all (fun (l, r) -> is_empty l && is_empty r)) stack
+  in
+  List.for_all CList.is_empty [ goals; shelf; given_up ] && check_stack stack
 
 (* At some point we want to return both hashes *)
 module Hash_kind = struct

@@ -8,3 +8,13 @@ Proof.
   - reflexivity.
   - simpl. rewrite IHl. simpl. reflexivity.
 Qed.
+
+(* This is for testing proof finished *)
+Lemma deepBullet : (1 = 1) /\ (21 = 21 /\ 22 = 22).
+Proof.
+split.
+- now reflexivity.
+- split.
+  + now reflexivity.
+  + now reflexivity.
+Qed.
