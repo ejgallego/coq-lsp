@@ -53,6 +53,10 @@ depends: [
   "ppx_hash"            { >= "v0.15.0" & < "v0.18" }
 ]
 
+# older results get in mess with ppx_deriving, we cannot control how
+# it gets pulled, often in min-bound rev-dep, so we conflict with it
+conflicts: [ "result" { < "1.5" } ]
+
 depopts: ["lwt" "logs"]
 
 build: [
