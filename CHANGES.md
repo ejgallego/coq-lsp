@@ -1,3 +1,9 @@
+# unreleased
+------------
+
+ - [fleche] fix quick fixes for errors being lost due to incorrect
+   handling of `send_diags_extra_data` (@ejgallego, #850)
+
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
 
