@@ -190,10 +190,14 @@ end = struct
     in
     Some { Lang.Diagnostic.Data.sentenceRange; failedRequire; quickFix }
 
+  (* XXX: This needs rework, as of today we gotta be careful. *)
   let extra_diagnostics_of_ast qf stm_range ast =
     if !Config.v.send_diags_extra_data then
       extra_diagnostics_of_ast qf stm_range ast
-    else None
+    else
+      Option.bind qf (fun qf ->
+          let sentenceRange, failedRequire, quickFix = (None, None, Some qf) in
+          Some { Lang.Diagnostic.Data.sentenceRange; failedRequire; quickFix })
 
   let error ~err_range ~quickFix ~msg ~stm_range ?ast () =
     let data = extra_diagnostics_of_ast quickFix stm_range ast in
