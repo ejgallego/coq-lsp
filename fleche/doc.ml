@@ -195,9 +195,11 @@ end = struct
     if !Config.v.send_diags_extra_data then
       extra_diagnostics_of_ast qf stm_range ast
     else
-      Option.bind qf (fun qf ->
+      Option.map
+        (fun qf ->
           let sentenceRange, failedRequire, quickFix = (None, None, Some qf) in
-          Some { Lang.Diagnostic.Data.sentenceRange; failedRequire; quickFix })
+          { Lang.Diagnostic.Data.sentenceRange; failedRequire; quickFix })
+        qf
 
   let error ~err_range ~quickFix ~msg ~stm_range ?ast () =
     let data = extra_diagnostics_of_ast quickFix stm_range ast in
