@@ -21,8 +21,7 @@ depends: [
 
   ("ocaml" {>= "5.0"} | ("ocaml" {<= "5.0"} & "memprof-limits" { >= "0.2.1" } ))
 
-  "dune"         { >= "3.13.0" } # Version interval [3.8-3.12] was
-                                 # broken for composed builds with Coq
+  "dune"         { >= "3.2.0" }
 
   # lsp dependencies
   "cmdliner"     { >= "1.1.0" }
