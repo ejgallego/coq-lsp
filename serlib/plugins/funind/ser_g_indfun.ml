@@ -79,7 +79,7 @@ module WFFD = struct
 end
 
 let ser_wit_function_fix_definition =
-  let module M = Ser_genarg.GS0(WFFD) in M.genser
+  let module M = Ser_genarg.GSV(WFFD) in M.genser
 
 module WAU = struct
   type raw = Constrexpr.constr_expr list
