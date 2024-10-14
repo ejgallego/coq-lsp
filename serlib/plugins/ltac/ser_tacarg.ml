@@ -216,7 +216,7 @@ module GT0 = struct
   [@@deriving sexp,hash,compare]
 end
 
-let ser_wit_binders = let module M = Ser_genarg.GS0(GT0) in M.genser
+let ser_wit_binders = let module M = Ser_genarg.GSV(GT0) in M.genser
 
 let wit_glob_constr_with_bindings = Ltac_plugin.G_rewrite.wit_glob_constr_with_bindings
 
@@ -265,7 +265,7 @@ module SWWT = struct
   type t = Ser_tacexpr.raw_tactic_expr option
   [@@deriving sexp,hash,compare]
 end
-let ser_wit_withtac = let module M = Ser_genarg.GS0(SWWT) in M.genser
+let ser_wit_withtac = let module M = Ser_genarg.GSV(SWWT) in M.genser
 
 (* extraargs *)
 
