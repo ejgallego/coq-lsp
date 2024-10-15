@@ -4,7 +4,8 @@ COQ_BUILD_CONTEXT=../_build/default/coq
 
 PKG_SET= \
 vendor/coq/coq-core.install \
-vendor/coq/coq-stdlib.install \
+vendor/coq/rocq-core.install \
+vendor/coq/stdlib/coq-stdlib.install \
 coq-lsp.install
 
 # Get the ocamlformat version from the .ocamlformat file
@@ -61,6 +62,7 @@ vendor/coq/config/coq_config.ml: vendor/coq
 	        -libdir "$$EPATH/_build/install/default/lib/coq" \
 	        -bytecode-compiler $(COQVM) \
 		-native-compiler no \
+	&& sed -i.bak 's/\((dirs .*\)/; \1/g' dune \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
 
@@ -74,9 +76,9 @@ winconfig:
 	&& ./configure -no-ask -prefix "$$EPATH\\_build\\install\\default\\" \
 	        -libdir "$$EPATH\\_build\\install\\default\\lib\\coq\\" \
 		-native-compiler no \
+	&& sed -i.bak 's/\((dirs .*\)/; \1/g' dune \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
-
 
 .PHONY: js
 js: COQVM = no
@@ -144,7 +146,7 @@ make-fmt: build fmt
 .PHONY: opam-update-and-reinstall
 opam-update-and-reinstall:
 	git pull --recurse-submodules
-	for pkg in coq-core coq-stdlib coqide-server coq; do opam install -y vendor/coq/$$pkg.opam; done
+	for pkg in coq-core rocq-core stdlib/coq-stdlib coqide-server coq; do opam install -y vendor/coq/$$pkg.opam; done
 	opam install .
 
 .PHONY: patch-for-js

@@ -169,7 +169,7 @@ jobs:
         run: |
           opam install lwt logs # Also build pet-server
           opam install memprof-limits # We need to do this to avoid coq-lsp rebuilding Coq below due to deptops
-          opam install vendor/coq/{coq-core,coq-stdlib,coqide-server,coq}.opam
+          opam install vendor/coq/{coq-core,rocq-core,coq-stdlib,coqide-server,coq}.opam
 
       - name: Install `coq-lsp` into OPAM switch
         run: opam install .
