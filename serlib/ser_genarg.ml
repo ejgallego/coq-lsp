@@ -39,9 +39,11 @@ type tlevel =
   [%import: Genarg.tlevel]
   [@@deriving sexp,yojson,hash,compare]
 
+let sexp_of_genarg_tag tag : Sexp.t = Atom (ArgT.repr tag)
+
 let rec sexp_of_genarg_type : type a b c. (a, b, c) genarg_type -> Sexp.t = fun gt ->
   match gt with
-  | ExtraArg tag   -> List [Atom "ExtraArg"; Atom (ArgT.repr tag)]
+  | ExtraArg tag   -> List [Atom "ExtraArg"; sexp_of_genarg_tag tag]
   | ListArg rt     -> List [Atom "ListArg"; sexp_of_genarg_type rt]
   | OptArg  rt     -> List [Atom "OptArg";  sexp_of_genarg_type rt]
   | PairArg(t1,t2) -> List [Atom "PairArg"; sexp_of_genarg_type t1; sexp_of_genarg_type t2]
@@ -171,7 +173,7 @@ module SerObj = struct
   type ('raw, 'glb, 'top) obj = ('raw, 'glb, 'top) gen_ser
 
   let sexp_of_gen typ ga =
-    let typ = typ ^ ": " ^ Sexp.to_string (sexp_of_genarg_type ga) in
+    let typ = typ ^ ": " ^ Sexp.to_string (sexp_of_genarg_tag ga) in
     Serlib_base.sexp_of_opaque ~typ
 
   let name = "ser_arg"
