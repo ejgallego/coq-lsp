@@ -4,7 +4,7 @@ val compare : t -> t -> int
 val equal : t -> t -> bool
 val hash : t -> int
 val mode : st:t -> Pvernac.proof_mode option
-val parsing : st:t -> Pcoq.frozen_t
+val parsing : st:t -> Procq.frozen_t
 
 (** Proof states *)
 module Proof : sig

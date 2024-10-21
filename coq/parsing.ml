@@ -1,3 +1,4 @@
+module Pcoq = Procq
 module Parsable = Pcoq.Parsable
 
 let parse ~st ps =
