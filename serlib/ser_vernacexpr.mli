@@ -52,6 +52,10 @@ type debug_univ_name =
   [%import: Vernacexpr.debug_univ_name]
   [@@deriving sexp,yojson,hash,compare]
 
+type print_universes =
+  [%import: Vernacexpr.print_universes]
+  [@@deriving sexp,yojson,hash,compare]
+
 type printable =
   [%import: Vernacexpr.printable]
   [@@deriving sexp,yojson,hash,compare]
