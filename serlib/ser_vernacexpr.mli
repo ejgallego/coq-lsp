@@ -112,8 +112,8 @@ type definition_expr =
   [%import: Vernacexpr.definition_expr]
   [@@deriving sexp,yojson,hash,compare]
 
-type notation_declaration =
-  [%import: Vernacexpr.notation_declaration]
+type decl_notation =
+  [%import: Vernacexpr.decl_notation]
   [@@deriving sexp,yojson,hash,compare]
 
 type recursion_order_expr =
