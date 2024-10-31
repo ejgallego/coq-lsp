@@ -180,7 +180,7 @@ export class InfoPanel {
     // Example to test the `command` parameter
     // let command = "idtac.";
     // let cursor: GoalRequest = { textDocument, position, command };
-    let cursor: GoalRequest = { textDocument, position, pp_format };
+    let cursor: GoalRequest = { textDocument, position, pp_format, command: "Set Printing All." };
     this.updateInfoPanelForCursor(client, cursor);
     this.updateAPIClientForCursor(client, cursor);
   }

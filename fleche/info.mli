@@ -52,28 +52,33 @@ module O : S with module P := Offset
 
 (** We move towards a more modular design here, for preprocessing *)
 module Goals : sig
+
+  val get_goals : st:Pure.State.t -> Pure.Goals.t option
+
+(*
   val get_goals_unit :
-    st:Coq.State.t -> (unit Coq.Goals.Reified_goal.t, Pp.t) Coq.Goals.t option
+    st:Pure.State.t -> (unit Pure.Goals.Reified_goal.t, Pp.t) Pure.Goals.t option
 
   val get_goals :
-       st:Coq.State.t
-    -> ( (Environ.env * Evd.evar_map * EConstr.t) Coq.Goals.Reified_goal.t
+       st:Pure.State.t
+    -> ( (Environ.env * Evd.evar_map * EConstr.t) Pure.Goals.Reified_goal.t
        , Pp.t )
-       Coq.Goals.t
+       Pure.Goals.t
        option
 
   val goals :
-       token:Coq.Limits.Token.t
-    -> st:Coq.State.t
-    -> (Pp.t Coq.Goals.reified_pp option, Loc.t) Coq.Protect.E.t
+       token:Pure.Limits.Token.t
+    -> st:Pure.State.t
+    -> (Lang.Pp.t, Pure.Loc.t) Pure.Protect.E.t
 
-  val program : st:Coq.State.t -> Declare.OblState.View.t Names.Id.Map.t
+  (* val program : st:Pure.State.t -> Declare.OblState.View.t Names.Id.Map.t *)
+*)
 end
 
 module Completion : sig
   val candidates :
-       token:Coq.Limits.Token.t
-    -> st:Coq.State.t
+       token:Pure.Limits.Token.t
+    -> st:Pure.State.t
     -> string
-    -> (string list option, Loc.t) Coq.Protect.E.t
+    -> (string list option, Pure.Loc.t) Pure.Protect.E.t
 end

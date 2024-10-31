@@ -6,8 +6,8 @@
 
 module FailedRequire = struct
   type t =
-    { prefix : Libnames.qualid option
-    ; refs : Libnames.qualid list
+    { prefix : string option
+    ; refs : string list
     }
 end
 

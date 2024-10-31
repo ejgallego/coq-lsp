@@ -156,7 +156,7 @@ type t =
 
 let get_last_text text =
   let offset = String.length text in
-  let lines = CString.split_on_char '\n' text |> Array.of_list in
+  let lines = String.split_on_char '\n' text |> Array.of_list in
   let n_lines = Array.length lines in
   let last_line = if n_lines < 1 then "" else Array.get lines (n_lines - 1) in
   let character = Lang.Utf.length_utf16 last_line in

@@ -21,7 +21,7 @@ type t =
 
 let stats : (Kind.t, t) Hashtbl.t = Hashtbl.create 1000
 let z = { time = 0.0; memory = 0.0 }
-let find kind = Hashtbl.find_opt stats kind |> Option.default z
+let find kind = Hashtbl.find_opt stats kind |> Option.value ~default:z
 
 module Global = struct
   type nonrec 'a stats = t

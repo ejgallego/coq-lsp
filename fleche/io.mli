@@ -38,7 +38,7 @@ module Log : sig
   val trace_object : string -> Yojson.Safe.t -> unit
 
   (** For unexpected feedback, remove eventually or just assert false? *)
-  val feedback : Loc.t Coq.Message.t list -> unit
+  val feedback : Pure.Loc.t Pure.Message.t list -> unit
 end
 
 module Report : sig

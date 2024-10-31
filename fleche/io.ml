@@ -42,8 +42,10 @@ module Log = struct
     (* Fixme, use the extra parameter *)
     trace hdr "[%s]: @[%a@]" hdr Yojson.Safe.(pretty_print ~std:false) obj
 
+  let is_empty = function [] -> true | _ -> false
+
   let feedback feedback =
-    if not (CList.is_empty feedback) then
+    if not (is_empty feedback) then
       (* Put feedbacks content here? *)
       let extra = None in
       !CallBack.cb.trace "feedback" ?extra

@@ -6,10 +6,10 @@ let rec list_take n = function
 
 let mk_info (n : Doc.Node.t) =
   let time, memory, cache_hit, time_hash =
-    Option.cata
-      (fun (stats : Memo.Stats.t) ->
+    Option.fold
+      ~some:(fun (stats : Memo.Stats.t) ->
         (stats.stats.time, stats.stats.memory, stats.cache_hit, stats.time_hash))
-      (0.0, 0.0, false, 0.0) n.info.stats
+      ~none:(0.0, 0.0, false, 0.0) n.info.stats
   in
   Info.{ time; memory; cache_hit; time_hash }
 

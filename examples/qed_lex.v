@@ -1,5 +1,6 @@
 Lemma foo : False.
 
+
 Qed.
 
 Lemma bar : False.

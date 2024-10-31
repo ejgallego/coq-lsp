@@ -1,1 +1,2 @@
 (vendored_dirs vendor)
+(dirs :standard \ serlib coq)

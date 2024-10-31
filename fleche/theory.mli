@@ -15,12 +15,16 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module Int : sig
+  module Set : Set.S with type t = int
+end
+
 module Check : sig
   (** Check pending documents, return [None] if there is none pending, or
       [Some rqs] the list of requests ready to execute after the check. Sends
       progress and diagnostics notifications using output function [ofn]. *)
   val maybe_check :
-    io:Io.CallBack.t -> token:Coq.Limits.Token.t -> (Int.Set.t * Doc.t) option
+    io:Io.CallBack.t -> token:Pure.Limits.Token.t -> (Int.Set.t * Doc.t) option
 
   val set_scheduler_hint : uri:Lang.LUri.File.t -> point:int * int -> unit
 end
@@ -28,7 +32,7 @@ end
 (** Create a document inside a theory *)
 val create :
      io:Io.CallBack.t
-  -> token:Coq.Limits.Token.t
+  -> token:Pure.Limits.Token.t
   -> env:Doc.Env.t
   -> uri:Lang.LUri.File.t
   -> raw:string
@@ -38,7 +42,7 @@ val create :
 (** Update a document inside a theory, returns the list of not valid requests *)
 val change :
      io:Io.CallBack.t
-  -> token:Coq.Limits.Token.t
+  -> token:Pure.Limits.Token.t
   -> uri:Lang.LUri.File.t
   -> version:int
   -> raw:string
@@ -80,16 +84,16 @@ end
 (* Experimental plugin API, not stable yet *)
 module Register : sig
   (** List of additional includes to inject into a document *)
-  module InjectRequire : sig
-    type t = io:Io.CallBack.t -> Coq.Workspace.Require.t list
+  (* module InjectRequire : sig *)
+  (*   type t = io:Io.CallBack.t -> Pure.Workspace.Require.t list *)
 
-    val add : t -> unit
-  end
+  (*   val add : t -> unit *)
+  (* end *)
 
   (** Run an action when a document has completed checking, attention, with or
       without errors. *)
   module Completed : sig
-    type t = io:Io.CallBack.t -> token:Coq.Limits.Token.t -> doc:Doc.t -> unit
+    type t = io:Io.CallBack.t -> token:Pure.Limits.Token.t -> doc:Doc.t -> unit
 
     val add : t -> unit
   end

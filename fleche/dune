@@ -1,4 +1,4 @@
 (library
  (name fleche)
  (public_name coq-lsp.fleche)
- (libraries coq lang fleche_waterproof))
+ (libraries lambdapi.pure lang fleche_waterproof))

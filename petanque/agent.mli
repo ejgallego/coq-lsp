@@ -104,7 +104,7 @@ end
     Returns the proof state or error otherwise. [pre_commands] is a string of
     dot-separated Coq commands that will be executed before the proof starts. *)
 val start :
-     token:Coq.Limits.Token.t
+     token:Pure.Limits.Token.t
   -> doc:Fleche.Doc.t
   -> ?opts:Run_opts.t
   -> ?pre_commands:string
@@ -116,7 +116,7 @@ val start :
     default true) controls whether the command execution will be memoized in
     Flèche incremental engine. *)
 val run :
-     token:Coq.Limits.Token.t
+     token:Pure.Limits.Token.t
   -> ?opts:Run_opts.t
   -> st:State.t
   -> tac:string
@@ -125,9 +125,9 @@ val run :
 
 (** [goals ~token ~st] return the list of goals for a given [st] *)
 val goals :
-     token:Coq.Limits.Token.t
+     token:Pure.Limits.Token.t
   -> st:State.t
-  -> string Coq.Goals.reified_pp option R.t
+  -> Pure.Goals.t R.t
 
 module Premise : sig
   module Info : sig
@@ -151,4 +151,4 @@ end
 (** Return the list of defined constants and inductives for a given state. For
     now we just return their fully qualified name, but more options are of
     course possible. *)
-val premises : token:Coq.Limits.Token.t -> st:State.t -> Premise.t list R.t
+val premises : token:Pure.Limits.Token.t -> st:State.t -> Premise.t list R.t

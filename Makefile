@@ -3,9 +3,9 @@ SHELL := /usr/bin/env bash
 COQ_BUILD_CONTEXT=../_build/default/coq
 
 PKG_SET= \
-vendor/coq/coq-core.install \
-vendor/coq/coq-stdlib.install \
+vendor/lambdapi/lambdapi.install \
 coq-lsp.install
+# vendor/lambdapi/coq-stdlib.install \
 
 # Get the ocamlformat version from the .ocamlformat file
 OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
@@ -16,11 +16,11 @@ $(OCAMLFORMAT) \
 ocaml-lsp-server
 
 .PHONY: build
-build: coq_boot
+build: lp_boot
 	dune build $(DUNEOPT) $(PKG_SET)
 
 .PHONY: check
-check: coq_boot
+check: lp_boot
 	dune build $(DUNEOPT) @check
 
 test/server/node_modules: test/server/package.json
@@ -46,7 +46,7 @@ watch: coq_boot
 build-all: coq_boot
 	dune build $(DUNEOPT) @all
 
-vendor/coq:
+vendor/lambdapi:
 	$(error Submodules not initialized, please do "make submodules-init")
 
 COQVM=yes
@@ -54,15 +54,15 @@ COQVM=yes
 # We set -libdir due to a Coq bug on win32, see
 # https://github.com/coq/coq/pull/17289 , this can be removed once we
 # drop support for Coq 8.16
-vendor/coq/config/coq_config.ml: vendor/coq
-	EPATH=$(shell pwd) \
-	&& cd vendor/coq \
-	&& ./configure -no-ask -prefix "$$EPATH/_build/install/default/" \
-	        -libdir "$$EPATH/_build/install/default/lib/coq" \
-	        -bytecode-compiler $(COQVM) \
-		-native-compiler no \
-	&& cp theories/dune.disabled theories/dune \
-	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
+# vendor/lambdapi/config/coq_config.ml: vendor/lambdapi
+	# EPATH=$(shell pwd) \
+	# && cd vendor/lambdapi \
+	# && ./configure -no-ask -prefix "$$EPATH/_build/install/default/" \
+	#         -libdir "$$EPATH/_build/install/default/lib/coq" \
+	#         -bytecode-compiler $(COQVM) \
+	# 	-native-compiler no \
+	# && cp theories/dune.disabled theories/dune \
+	# && cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
 
 # We set windows parameters a bit better, note the need to use forward
 # slashed (cygpath -m) due to escaping :( , a conversion to `-w` is
@@ -70,7 +70,7 @@ vendor/coq/config/coq_config.ml: vendor/coq
 .PHONY: winconfig
 winconfig:
 	EPATH=$(shell cygpath -am .) \
-	&& cd vendor/coq \
+	&& cd vendor/lambdapi \
 	&& ./configure -no-ask -prefix "$$EPATH\\_build\\install\\default\\" \
 	        -libdir "$$EPATH\\_build\\install\\default\\lib\\coq\\" \
 		-native-compiler no \
@@ -84,8 +84,9 @@ js: coq_boot
 	dune build --profile=release --display=quiet $(PKG_SET) controller-js/coq_lsp_worker.bc.cjs
 	mkdir -p editor/code/out/ && cp -a controller-js/coq_lsp_worker.bc.cjs editor/code/out/coq_lsp_worker.bc.js
 
-.PHONY: coq_boot
-coq_boot: vendor/coq/config/coq_config.ml
+.PHONY: lp_boot
+lp_boot:
+# lp_boot: vendor/lambdapi/config/coq_config.ml
 
 .PHONY: clean
 clean:
@@ -125,7 +126,7 @@ submodules-deinit:
 # Update submodules from upstream
 .PHONY: submodules-update
 submodules-update:
-	(cd vendor/coq && git checkout master && git pull upstream master)
+	(cd vendor/lambdapi && git checkout master && git pull upstream master)
 
 # Build the vscode extension
 .PHONY: extension
@@ -144,13 +145,13 @@ make-fmt: build fmt
 .PHONY: opam-update-and-reinstall
 opam-update-and-reinstall:
 	git pull --recurse-submodules
-	for pkg in coq-core coq-stdlib coqide-server coq; do opam install -y vendor/coq/$$pkg.opam; done
+	for pkg in coq-core coq-stdlib coqide-server coq; do opam install -y vendor/lambdapi/$$pkg.opam; done
 	opam install .
 
 .PHONY: patch-for-js
 patch-for-js:
-	cd vendor/coq && patch -p1 < ../../etc/0001-coq-lsp-patch.patch
-	cd vendor/coq && patch -p1 < ../../etc/0001-jscoq-lib-system.ml-de-unix-stat.patch
+	cd vendor/lambdapi && patch -p1 < ../../etc/0001-coq-lsp-patch.patch
+	cd vendor/lambdapi && patch -p1 < ../../etc/0001-jscoq-lib-system.ml-de-unix-stat.patch
 
 _LIBROOT=$(shell opam var lib)
 
