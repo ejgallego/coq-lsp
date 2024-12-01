@@ -255,19 +255,26 @@ module Completion = struct
   type t =
     | Yes of Lang.Range.t  (** Location of the last token in the document *)
     | Stopped of Lang.Range.t  (** Location of the last valid token *)
+    | Waiting of Lang.Range.t * string list
     | Failed of Lang.Range.t  (** Critical failure, like an anomaly *)
+  [@@ocaml.warning "-37"]
 
   let range = function
-    | Yes range | Stopped range | Failed range -> range
+    | Yes range | Stopped range | Failed range | Waiting (range, _) -> range
 
   let to_string = function
     | Yes _ -> "fully checked"
     | Stopped _ -> "stopped"
     | Failed _ -> "failed"
+    | Waiting (_, _doc) -> "waiting for doc"
 
   let is_completed = function
     | Yes _ | Failed _ -> true
     | _ -> false
+
+  let is_waiting_for = function
+    | Waiting (_, doc) -> doc
+    | _ -> []
 end
 
 (** Enviroment external to the document, this includes for now the [init] Coq
@@ -505,10 +512,11 @@ let bump_version ~token ~version ~(contents : Contents.t) doc =
   match doc.completed with
   (* We can do better, but we need to handle the case where the anomaly is when
      restoring / executing the first sentence *)
-  | Failed _ ->
+  | Failed _ | Waiting _ ->
     (* re-create the document on failed, as the env may have changed *)
     recreate ~token ~doc ~version ~contents
   | Stopped _ | Yes _ -> bump_version ~init_range ~version ~contents doc
+(* | Waiting _ -> restart_doc () *)
 
 let bump_version ~token ~version ~raw doc =
   let uri = doc.uri in
@@ -680,10 +688,18 @@ end = struct
 end
 (* end [module Recovery = struct...] *)
 
+(* Returns [Left st] if requires are ready, [Right files] if they are not *)
 let interp_and_info ~token ~st ~files ast =
   match Coq.Ast.Require.extract ast with
-  | None -> Memo.Interp.evalS ~token (st, ast)
-  | Some ast -> Memo.Require.evalS ~token (st, files, ast)
+  | None -> Either.Left (Memo.Interp.evalS ~token (st, ast))
+  | Some ast -> (
+    let res = Coq.Files.requires_are_ready ~files ast in
+    match res with
+    | Coq.Files.Require_result.Ready _ ->
+      Left (Memo.Require.evalS ~token (st, files, ast))
+    | Coq.Files.Require_result.Wait files ->
+      let stats = Memo.Stats.zero in
+      Right (files, stats))
 
 (* Support for meta-commands, a bit messy, but cool in itself *)
 let search_node ~command ~doc ~st =
@@ -733,13 +749,19 @@ let interp_and_info ~token ~st ~files ~doc ast =
        spending on error recovery and meta stuff, we should record that time
        actually at some point too. In this case, maybe we could recover the
        cache hit from the original node? *)
-    search_node ~command ~doc ~st
+    (* search_node ~command ~doc ~st *)
+    Left (search_node ~command ~doc ~st)
 
 let interp_and_info ~token ~parsing_time ~st ~files ~doc ast =
-  let res, stats = interp_and_info ~token ~st ~files ~doc ast in
+  let res = interp_and_info ~token ~st ~files ~doc ast in
   let global_stats = Stats.Global.dump () in
-  let info = Node.Info.make ~parsing_time ~stats ~global_stats () in
-  (res, info)
+  match res with
+  | Either.Left (st, stats) ->
+    let info = Node.Info.make ~parsing_time ~stats ~global_stats () in
+    Either.Left (st, info)
+  | Right (files, stats) ->
+    let info = Node.Info.make ~parsing_time ~stats ~global_stats () in
+    Right (files, info)
 
 type parse_action =
   | EOF of Completion.t (* completed *)
@@ -798,6 +820,8 @@ type document_action =
       ; node : Node.t
       }
   | Interrupted of Lang.Range.t
+
+(* ..... Require a. *)
 
 let unparseable_node ~range ~prev ~parsing_diags ~parsing_feedback ~state
     ~parsing_time =
@@ -881,27 +905,43 @@ let document_action ~token ~st ~parsing_diags ~parsing_feedback ~parsing_time
   (* We can interpret the command now *)
   | Process ast -> (
     let lines, files = (doc.contents.lines, doc.env.files) in
-    let process_res, info =
-      interp_and_info ~token ~parsing_time ~st ~files ~doc ast
-    in
-    let f = Coq.Utils.to_range ~lines in
-    let { Coq.Protect.E.r; feedback } = Coq.Protect.E.map_loc ~f process_res in
-    match r with
-    | Coq.Protect.R.Interrupted ->
-      (* Exit *)
-      Interrupted last_tok
-    | Coq.Protect.R.Completed res ->
+    match interp_and_info ~token ~parsing_time ~st ~files ~doc ast with
+    | Right (files, info) ->
       let ast_loc = Coq.Ast.loc ast |> Option.get in
       let ast_range = Coq.Utils.to_range ~lines ast_loc in
       let ast =
-        Node.Ast.{ v = ast; ast_info = Coq.Ast.make_info ~lines ~st ast }
+        Some Node.Ast.{ v = ast; ast_info = Coq.Ast.make_info ~lines ~st ast }
       in
-      (* The evaluation by Coq fully completed, then we can resume checking from
-         this point then, hence the new last valid token last_tok_new *)
-      let last_tok_new = Coq.Parsing.Parsable.loc doc_handle in
-      let last_tok_new = Coq.Utils.to_range ~lines last_tok_new in
-      node_of_coq_result ~token ~doc ~range:ast_range ~prev ~ast ~st
-        ~parsing_diags ~parsing_feedback ~feedback ~info last_tok_new res)
+      (* XXX add waiting for *)
+      let diags, messages =
+        assemble_diags ~range:ast_range ~parsing_diags ~parsing_feedback
+          ~diags:[] ~feedback:[]
+      in
+      let node =
+        { Node.range = ast_range; prev; ast; state = st; diags; messages; info }
+      in
+      Stop (Completion.Waiting (last_tok, files), node)
+    | Left (process_res, info) -> (
+      let f = Coq.Utils.to_range ~lines in
+      let { Coq.Protect.E.r; feedback } =
+        Coq.Protect.E.map_loc ~f process_res
+      in
+      match r with
+      | Coq.Protect.R.Interrupted ->
+        (* Exit *)
+        Interrupted last_tok
+      | Coq.Protect.R.Completed res ->
+        let ast_loc = Coq.Ast.loc ast |> Option.get in
+        let ast_range = Coq.Utils.to_range ~lines ast_loc in
+        let ast =
+          Node.Ast.{ v = ast; ast_info = Coq.Ast.make_info ~lines ~st ast }
+        in
+        (* The evaluation by Coq fully completed, then we can resume checking
+           from this point then, hence the new last valid token last_tok_new *)
+        let last_tok_new = Coq.Parsing.Parsable.loc doc_handle in
+        let last_tok_new = Coq.Utils.to_range ~lines last_tok_new in
+        node_of_coq_result ~token ~doc ~range:ast_range ~prev ~ast ~st
+          ~parsing_diags ~parsing_feedback ~feedback ~info last_tok_new res))
 
 module Target = struct
   type t =
@@ -1080,7 +1120,12 @@ let check ~io ~token ~target ~doc () =
   | Failed _ ->
     Io.Log.trace "check" "can't resume, failed=yes, nothing to do";
     doc
-  | Stopped last_tok ->
+    (* Invariant: we only check a document if the dependencies are ready. *)
+    (* | Waiting (last_tok, dep) when not (io.file_ready dep) -> Io.Log.trace
+       "check" "the file was resumed, however the dependencies are not ready" ;
+       { doc with completed = FailedPermanent last_tok } *)
+    (* Set the document to FailedPermanet *)
+  | Waiting (last_tok, _) | Stopped last_tok ->
     DDebug.resume last_tok doc.version;
     let doc = resume_check ~io ~token ~last_tok ~doc ~target in
     log_doc_completion doc.completed;
