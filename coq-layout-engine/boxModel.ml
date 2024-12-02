@@ -70,6 +70,15 @@ type t =
 (** Renderer *)
 module H = Tyxml.Html
 
+module LaTeX = struct
+  type t =
+    | Token of string
+    | Macro of string * t list
+    | List of t list
+
+  let macro s = Macro (s, [])
+end
+
 module Render = struct
   let xxx kind = H.txt ("uninplemented: " ^ kind)
   let _class c = [ H.a_class [ c ] ]
@@ -123,4 +132,45 @@ module Render = struct
         ; span "raw" [ to_html raw ]
         ]
     | Fixpoint (_, _) -> xxx "fixpoint"
+
+  module LaTeX = struct
+    let binder_to_latex : _ Binder.t -> LaTeX.t = function
+      | { Binder.namel; _ } ->
+        LaTeX.List
+          [ Token "("
+          ; LaTeX.List (List.map (fun x -> LaTeX.Token x) namel)
+          ; Token ")"
+          ]
+
+    let rec to_latex : t -> LaTeX.t =
+      let open LaTeX in
+      function
+      | Variable { name; _ } -> Token name
+      | Constant c -> Token c
+      | Identifier { relative; absolute = _; _ } -> Token relative
+      | Sort e -> List (List.map (fun e -> Token e) e)
+      | App { fn; impl = _; argl } ->
+        List (to_latex fn :: List.map to_latex argl)
+      | Cast (_c, t) -> to_latex t
+      | Abs { kind; binderl; v } -> (
+        (* let head, delim = *)
+        let binderl = List.map (Binder.map ~f:to_latex) binderl in
+        let binderl = List.map binder_to_latex binderl in
+        match kind with
+        | Prod -> List (macro "prod" :: to_latex v :: binderl)
+        | Lam -> List (macro "lambda" :: to_latex v :: binderl))
+      | Let { lhs; rhs; typ = _; v } ->
+        List
+          [ Token "let"
+          ; to_latex lhs
+          ; Token ":="
+          ; to_latex rhs
+          ; Token "in"
+          ; to_latex v
+          ]
+      | Notation _ -> Token ""
+      | Fixpoint (f1, f2) -> List [ Token "fix"; to_latex f1; to_latex f2 ]
+  end
+
+  let to_latex = LaTeX.to_latex
 end
