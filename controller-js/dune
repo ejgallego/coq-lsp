@@ -30,7 +30,7 @@
    ; --file=%{dep:coq-fs}
    --setenv
    PATH=/bin))
- (link_flags -linkall -no-check-prims)
+ (link_flags -no-check-prims)
  ; The old makefile set: -noautolink -no-check-prims
  (libraries
   zarith_stubs_js

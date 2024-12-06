@@ -4,6 +4,9 @@
  - [fleche] fix quick fixes for errors being lost due to incorrect
    handling of `send_diags_extra_data` (@ejgallego, #850)
  - [vscode] Syntax highlighting for Coq 8.17-8.20 (@4ever2, #872)
+ - [js worker] Update js_of_ocaml to 5.9.1 , thanks a lot to Hugo
+   Heuzard for longstanding continued support of the jsCoq and coq-lsp
+   projects (@ejgallego, @hhugo, #881)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
