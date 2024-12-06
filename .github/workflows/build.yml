@@ -115,9 +115,10 @@ jobs:
 
       - name: 🐫🐪🐫 Get dependencies
         run: |
+          opam update
           opam exec -- make opam-deps
-          opam pin add js_of_ocaml-compiler --dev -y
-          opam pin add js_of_ocaml --dev -y
+          opam pin add js_of_ocaml-compiler -k version 5.9.1 -y
+          opam pin add js_of_ocaml -k version 5.9.1 -y
           opam install zarith_stubs_js js_of_ocaml-ppx -y
 
       - name: 💉💉💉 Patch Coq
