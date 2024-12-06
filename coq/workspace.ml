@@ -86,7 +86,7 @@ let hash = Hashtbl.hash
 let compare = Stdlib.compare
 
 (* Lib setup, XXX unify with sysinit *)
-let coq_root = Names.DirPath.make [ Libnames.coq_root ]
+let coq_root = Names.DirPath.make [ Libnames.rocq_init_root ]
 let default_root = Libnames.default_root_prefix
 
 let mk_lp ~coq_path ~unix_path ~implicit =
