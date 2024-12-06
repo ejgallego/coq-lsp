@@ -9,6 +9,8 @@
    Heuzard for longstanding continued support of the jsCoq and coq-lsp
    projects (@ejgallego, @hhugo, #881)
  - [js worker] Update stubs (@ejgallego, @hhugo, #881)
+ - [js worker] Fix build for Coq -> Rocq renaming and stdlib split
+   (@ejgallego, #881)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------

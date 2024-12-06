@@ -154,7 +154,7 @@ let main () =
 
   let stdlib coqlib =
     let unix_path = Filename.concat coqlib "theories" in
-    let coq_path = Names.(DirPath.make [ Id.of_string "Stdlib" ]) in
+    let coq_path = Names.(DirPath.make [ Id.of_string "Corelib" ]) in
     Loadpath.{ unix_path; coq_path; implicit = true; recursive = true }
   in
 
@@ -176,7 +176,7 @@ let main () =
       ; ocamlpath
       ; vo_load_path
       ; ml_include_path = []
-      ; require_libraries = [ (None, "Stdlib.Init.Prelude") ]
+      ; require_libraries = [ (None, "Corelib.Init.Prelude") ]
       ; args = [ "-noinit"; "-boot" ]
       }
   in
