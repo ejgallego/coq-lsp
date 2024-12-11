@@ -4,4 +4,4 @@
  (synopsis "Serialization Library for Coq Fundind Plugin")
  (preprocess
   (staged_pps ppx_import ppx_sexp_conv ppx_hash ppx_compare))
- (libraries coq-core.plugins.funind serlib serlib_ltac sexplib))
+ (libraries rocq-runtime.plugins.funind serlib serlib_ltac sexplib))
