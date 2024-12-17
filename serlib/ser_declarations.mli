@@ -94,6 +94,12 @@ type mutual_inductive_body = Declarations.mutual_inductive_body
 type rewrite_rule = Declarations.rewrite_rule
   [@@deriving sexp,yojson,hash,compare]
 
+type mod_body = Declarations.mod_body
+type mod_type = Declarations.mod_type
+
+type ('a, 'v) when_mod_body = ('a, 'v) Declarations.when_mod_body
+  [@@deriving sexp,yojson,hash,compare]
+
 type 'a module_alg_expr = 'a Declarations.module_alg_expr
   [@@deriving sexp,yojson,hash,compare]
 
