@@ -2,7 +2,7 @@
  (name lang)
  (public_name coq-lsp.lang)
  (modules :standard \ utf_tests)
- (libraries uri coq-core.library))
+ (libraries uri rocq-runtime.library))
 
 ; We had to do this due to ppx_inline_test enabling backtraces
 

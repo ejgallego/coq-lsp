@@ -11,6 +11,8 @@
  - [js worker] Update stubs (@ejgallego, @hhugo, #881)
  - [js worker] Fix build for Coq -> Rocq renaming and stdlib split
    (@ejgallego, #881)
+ - [general] Adapt to Coq -> Rocq renaming (@ejgallego, @SkySkimmer,
+   #883)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------

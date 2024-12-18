@@ -9,4 +9,4 @@
    ppx_deriving_yojson
    ppx_hash
    ppx_compare))
- (libraries coq-core.plugins.ssrmatching serlib serlib_ltac sexplib))
+ (libraries rocq-runtime.plugins.ssrmatching serlib serlib_ltac sexplib))

@@ -10,7 +10,7 @@
    ppx_hash
    ppx_compare))
  (libraries
-  coq-core.plugins.ssreflect
+  rocq-runtime.plugins.ssreflect
   serlib
   serlib_ltac
   serlib_ssrmatching
