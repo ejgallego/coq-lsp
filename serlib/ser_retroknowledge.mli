@@ -24,6 +24,4 @@ val sexp_of_retroknowledge : retroknowledge -> Sexp.t
 val retroknowledge_of_sexp : Sexp.t -> retroknowledge
 
 type action = Retroknowledge.action
-
-val sexp_of_action : action -> Sexp.t
-val action_of_sexp : Sexp.t -> action
+  [@@deriving sexp,yojson,hash,compare]

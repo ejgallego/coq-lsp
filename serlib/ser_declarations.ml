@@ -125,14 +125,19 @@ let sexp_of_constant_body e =
   (* We cannot handle VM values *)
   sexp_of_constant_body { e with const_body_code = None }
 
+(*
+module Retroknowledge =
+struct
 module MRK = struct
-  type 'a t = 'a Declarations.module_retroknowledge
-  let name = "Declarations.module_retroknowledge"
+  type t = Retroknowledge.action
+  let name = "Retroknowledge.action"
 end
 
-module B_ = SerType.Opaque1(MRK)
-type 'a module_retroknowledge = 'a B_.t
- [@@deriving sexp,yojson,hash,compare]
+module B_ = SerType.Opaque(MRK)
+type action = B_.t
+  [@@deriving sexp,yojson,hash,compare]
+end
+*)
 
 type recursivity_kind =
   [%import: Declarations.recursivity_kind]
@@ -186,6 +191,36 @@ type ('ty,'a) functorize =
 
 type 'a with_declaration =
   [%import: 'a Declarations.with_declaration]
+  [@@deriving sexp,yojson,hash,compare]
+
+type mod_body =
+  [%import: Declarations.mod_body]
+  [@@deriving sexp,yojson,hash,compare]
+
+type mod_type =
+  [%import: Declarations.mod_type]
+  [@@deriving sexp,yojson,hash,compare]
+
+module WMBBiject = struct
+  type ('a, 'b) t = ('a, 'b) Declarations.when_mod_body
+
+  [@@@ocaml.warning "-27"]
+  type ('a, 'b) _t = 'b option
+    [@@deriving sexp,yojson,hash,compare]
+  [@@@ocaml.warning "+27"]
+
+  let to_t (type a b) (x : b option) : (a, b) Declarations.when_mod_body = match x with
+  | Some x -> Obj.magic @@ Declarations.ModBodyVal x
+  | None -> Obj.magic @@ Declarations.ModTypeNul
+
+  let of_t (type a) (type b) (x : (a, b) Declarations.when_mod_body) : b option = match x with
+  | Declarations.ModBodyVal x -> Some x
+  | Declarations.ModTypeNul -> None
+end
+
+module WMB = SerType.Biject2(WMBBiject)
+
+ type ('a, 'b) when_mod_body = ('a, 'b) WMB.t
   [@@deriving sexp,yojson,hash,compare]
 
 type 'a module_alg_expr =
