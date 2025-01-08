@@ -231,34 +231,14 @@ type 'a functor_alg_expr =
   [%import: 'a Declarations.functor_alg_expr]
   [@@deriving sexp,yojson,hash,compare]
 
-type structure_field_body =
-  [%import: Declarations.structure_field_body]
+type ('a, 'b) structure_field_body =
+  [%import: ('a, 'b) Declarations.structure_field_body]
   [@@deriving sexp,yojson,hash,compare]
 
-and structure_body =
-  [%import: Declarations.structure_body]
-  [@@deriving sexp,yojson,hash,compare]
-
-and module_signature =
-  [%import: Declarations.module_signature]
+and ('a, 'b) structure_body =
+  [%import: ('a, 'b) Declarations.structure_body]
   [@@deriving sexp,yojson,hash,compare]
 
 and module_expression =
   [%import: Declarations.module_expression]
-  [@@deriving sexp,yojson,hash,compare]
-
-and module_implementation =
-  [%import: Declarations.module_implementation]
-  [@@deriving sexp,yojson,hash,compare]
-
-and 'a generic_module_body =
-  [%import: 'a Declarations.generic_module_body]
-  [@@deriving sexp,yojson,hash,compare]
-
-and module_body =
-  [%import: Declarations.module_body]
-  [@@deriving sexp,yojson,hash,compare]
-
-and module_type_body =
-  [%import: Declarations.module_type_body]
   [@@deriving sexp,yojson,hash,compare]
