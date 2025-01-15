@@ -201,28 +201,6 @@ type mod_type =
   [%import: Declarations.mod_type]
   [@@deriving sexp,yojson,hash,compare]
 
-module WMBBiject = struct
-  type ('a, 'b) t = ('a, 'b) Declarations.when_mod_body
-
-  [@@@ocaml.warning "-27"]
-  type ('a, 'b) _t = 'b option
-    [@@deriving sexp,yojson,hash,compare]
-  [@@@ocaml.warning "+27"]
-
-  let to_t (type a b) (x : b option) : (a, b) Declarations.when_mod_body = match x with
-  | Some x -> Obj.magic @@ Declarations.ModBodyVal x
-  | None -> Obj.magic @@ Declarations.ModTypeNul
-
-  let of_t (type a) (type b) (x : (a, b) Declarations.when_mod_body) : b option = match x with
-  | Declarations.ModBodyVal x -> Some x
-  | Declarations.ModTypeNul -> None
-end
-
-module WMB = SerType.Biject2(WMBBiject)
-
- type ('a, 'b) when_mod_body = ('a, 'b) WMB.t
-  [@@deriving sexp,yojson,hash,compare]
-
 type 'a module_alg_expr =
   [%import: 'a Declarations.module_alg_expr]
   [@@deriving sexp,yojson,hash,compare]

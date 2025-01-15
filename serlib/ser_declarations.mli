@@ -100,9 +100,6 @@ type mod_type = Declarations.mod_type
 type ('ty, 'a) functorize = ('ty, 'a) Declarations.functorize
   [@@deriving sexp,yojson,hash,compare]
 
-type ('a, 'v) when_mod_body = ('a, 'v) Declarations.when_mod_body
-  [@@deriving sexp,yojson,hash,compare]
-
 type 'a module_alg_expr = 'a Declarations.module_alg_expr
   [@@deriving sexp,yojson,hash,compare]
 
