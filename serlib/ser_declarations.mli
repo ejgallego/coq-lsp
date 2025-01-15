@@ -97,17 +97,20 @@ type rewrite_rule = Declarations.rewrite_rule
 type mod_body = Declarations.mod_body
 type mod_type = Declarations.mod_type
 
+type ('ty, 'a) functorize = ('ty, 'a) Declarations.functorize
+  [@@deriving sexp,yojson,hash,compare]
+
 type ('a, 'v) when_mod_body = ('a, 'v) Declarations.when_mod_body
   [@@deriving sexp,yojson,hash,compare]
 
 type 'a module_alg_expr = 'a Declarations.module_alg_expr
   [@@deriving sexp,yojson,hash,compare]
 
-type structure_body = Declarations.structure_body
+type module_expression = Declarations.module_expression
   [@@deriving sexp,yojson,hash,compare]
 
-type module_body = Declarations.module_body
+type ('a, 'b) structure_field_body = ('a, 'b) Declarations.structure_field_body
   [@@deriving sexp,yojson,hash,compare]
 
-type module_type_body = Declarations.module_type_body
+type ('a, 'b) structure_body = ('a, 'b) Declarations.structure_body
   [@@deriving sexp,yojson,hash,compare]

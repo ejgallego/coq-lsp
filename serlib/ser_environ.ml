@@ -32,6 +32,7 @@ module Opaqueproof    = Ser_opaqueproof
 module Retroknowledge = Ser_retroknowledge
 module UGraph         = Ser_uGraph
 module Declarations   = Ser_declarations
+module Mod_declarations = Ser_mod_declarations
 module Vmlibrary      = Ser_vmlibrary
 
 (* type stratification =
