@@ -69,7 +69,11 @@ jobs:
 
       - name: 🐛 Special Windows Config [only on Win CI]
         if: matrix.os == 'windows-latest'
-        run: opam exec -- make winconfig
+        run: |
+          # Waiting on ocamlfind 1.9.8
+          # c.f. https://github.com/ocaml/opam-repository/pull/27253
+          opam pin add --dev ocamlfind
+          opam exec -- make winconfig
 
       - name: 🧱 Build coq-lsp
         run: opam exec -- make build
