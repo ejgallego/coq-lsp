@@ -47,10 +47,6 @@ jobs:
           - name: Windows Latest
             ocaml: 4.14
             os: windows-latest
-            opam-repositories: |
-              windows-5.0: https://github.com/dra27/opam-repository.git#windows-5.0
-              opam-repository-mingw: https://github.com/ocaml-opam/opam-repository-mingw.git#sunset
-              default: https://github.com/ocaml/opam-repository.git
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -63,11 +59,10 @@ jobs:
           submodules: recursive
 
       - name: 🐫 Setup OCaml
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml }}
           dune-cache: true
-          opam-repositories: ${{ matrix.opam-repositories }}
 
       - name: 🐫🐪🐫 Get dependencies
         run: opam exec -- make opam-deps
@@ -108,7 +103,7 @@ jobs:
           submodules: recursive
 
       - name: 🐫 Setup OCaml
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: "ocaml-variants.4.14.2+options,ocaml-option-32bit"
           dune-cache: true
@@ -161,7 +156,7 @@ jobs:
           submodules: recursive
 
       - name: 🐫 Setup OCaml
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: 4.14.x
           dune-cache: true
@@ -170,7 +165,7 @@ jobs:
         run: |
           opam install lwt logs # Also build pet-server
           opam install memprof-limits # We need to do this to avoid coq-lsp rebuilding Coq below due to deptops
-          opam install vendor/coq/{rocq-runtime,coq-core,rocq-core,stdlib/coq-stdlib,coqide-server,coq}.opam
+          opam install vendor/coq/{rocq-runtime,coq-core,rocq-core,coqide-server,rocq,coq}.opam vendor/coq-stdlib/{rocq,coq}-stdlib.opam
 
       - name: Install `coq-lsp` into OPAM switch
         run: opam install .

@@ -1,3 +1,6 @@
 [submodule "coq"]
 	path = vendor/coq
-	url = https://github.com/skyskimmer/coq.git
+	url = https://github.com/coq/coq.git
+[submodule "vendor/coq-stdlib"]
+	path = vendor/coq-stdlib
+	url = https://github.com/coq/stdlib.git

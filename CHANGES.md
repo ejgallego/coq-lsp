@@ -13,6 +13,9 @@
    (@ejgallego, #881)
  - [general] Adapt to Coq -> Rocq renaming (@ejgallego, @SkySkimmer,
    #883)
+ - [general] [js] Adapt to Rocq stdlib split (@ejgallego, #890)
+ - [ci] Bump setup-ocaml to v3 (@ejgallego, #890)
+ - [ci] [windows] Use Opam 2.2 to build on windows (@ejgallego, #815 #890)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------

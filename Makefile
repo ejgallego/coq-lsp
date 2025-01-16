@@ -5,7 +5,9 @@ COQ_BUILD_CONTEXT=../_build/default/coq
 PKG_SET= \
 vendor/coq/rocq-runtime.install \
 vendor/coq/rocq-core.install \
-vendor/coq/stdlib/coq-stdlib.install \
+vendor/coq/coq-core.install \
+vendor/coq-stdlib/rocq-stdlib.install \
+vendor/coq-stdlib/coq-stdlib.install \
 coq-lsp.install
 
 # Get the ocamlformat version from the .ocamlformat file
@@ -62,7 +64,6 @@ vendor/coq/config/coq_config.ml: vendor/coq
 	        -libdir "$$EPATH/_build/install/default/lib/coq" \
 	        -bytecode-compiler $(COQVM) \
 		-native-compiler no \
-	&& sed -i.bak 's/\((dirs .*\)/; \1/g' dune \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
 
@@ -76,7 +77,6 @@ winconfig:
 	&& ./configure -no-ask -prefix "$$EPATH\\_build\\install\\default\\" \
 	        -libdir "$$EPATH\\_build\\install\\default\\lib\\coq\\" \
 		-native-compiler no \
-	&& sed -i.bak 's/\((dirs .*\)/; \1/g' dune \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
 
@@ -128,6 +128,7 @@ submodules-deinit:
 .PHONY: submodules-update
 submodules-update:
 	(cd vendor/coq && git checkout master && git pull upstream master)
+	(cd vendor/coq-stdlib && git checkout master && git pull upstream master)
 
 # Build the vscode extension
 .PHONY: extension
