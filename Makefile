@@ -147,7 +147,8 @@ make-fmt: build fmt
 .PHONY: opam-update-and-reinstall
 opam-update-and-reinstall:
 	git pull --recurse-submodules
-	for pkg in rocq-runtime coq-core rocq-core stdlib/coq-stdlib coqide-server coq; do opam install -y vendor/coq/$$pkg.opam; done
+	for pkg in rocq-runtime coq-core rocq-core coqide-server rocq coq; do opam install -y vendor/coq/$$pkg.opam; done
+	for pkg in rocq-stdlib coq-stdlib; do opam install -y vendor/coq-stdlib/$$pkg.opam; done
 	opam install .
 
 .PHONY: patch-for-js

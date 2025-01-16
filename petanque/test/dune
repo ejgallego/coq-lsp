@@ -1,13 +1,20 @@
 (test
  (name basic_api)
  (modules basic_api)
- (deps test.v)
+ (deps
+  (package rocq-stdlib)
+  (package coq-lsp)
+  test.v)
  (libraries petanque_shell))
 
 (test
  (name json_api)
  (modules json_api)
- (deps test.v %{bin:pet})
+ (deps
+  (package rocq-stdlib)
+  (package coq-lsp)
+  test.v
+  %{bin:pet})
  (enabled_if
   (<> %{os_type} "Win32"))
  (libraries petanque petanque_shell lsp))
@@ -15,7 +22,11 @@
 (test
  (name json_api_failure)
  (modules json_api_failure)
- (deps test.v %{bin:pet})
+ (deps
+  (package rocq-stdlib)
+  (package coq-lsp)
+  test.v
+  %{bin:pet})
  (enabled_if
   (<> %{os_type} "Win32"))
  (libraries petanque petanque_shell lsp))
