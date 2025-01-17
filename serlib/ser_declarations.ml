@@ -147,6 +147,10 @@ type record_info =
   [%import: Declarations.record_info]
   [@@deriving sexp,yojson,hash,compare]
 
+type template_pseudo_sort_poly =
+  [%import: Declarations.template_pseudo_sort_poly]
+  [@@deriving sexp,yojson,hash,compare]
+
 type template_universes =
   [%import: Declarations.template_universes]
   [@@deriving sexp,yojson,hash,compare]
