@@ -23,11 +23,6 @@ module Sorts = Ser_sorts
 module Univ = Ser_univ
 module Pp = Ser_pp
 
-module Bound = struct
-  type t = [%import: UGraph.Bound.t]
-  [@@deriving sexp]
-end
-
 type t = [%import: UGraph.t]
 
 let sexp_of_t = Serlib_base.sexp_of_opaque ~typ:"UGraph.t"
