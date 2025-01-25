@@ -74,13 +74,10 @@ val prim_token_of_sexp : Sexp.t -> prim_token
 val sexp_of_prim_token : prim_token -> Sexp.t
 
 type cases_pattern_expr = Constrexpr.cases_pattern_expr
-and cases_pattern_notation_substitution = Constrexpr.cases_pattern_notation_substitution
 
 val cases_pattern_expr_of_sexp : Sexp.t -> cases_pattern_expr
-val cases_pattern_notation_substitution_of_sexp : Sexp.t -> cases_pattern_notation_substitution
 
 val sexp_of_cases_pattern_expr : cases_pattern_expr -> Sexp.t
-val sexp_of_cases_pattern_notation_substitution : cases_pattern_notation_substitution -> Sexp.t
 
 type instance_expr = Constrexpr.instance_expr
 
@@ -94,7 +91,7 @@ and fix_expr             = Constrexpr.fix_expr
 and cofix_expr           = Constrexpr.cofix_expr
 and fixpoint_order_expr = Constrexpr.fixpoint_order_expr
 and local_binder_expr    = Constrexpr.local_binder_expr
-and constr_notation_substitution = Constrexpr.constr_notation_substitution
+and notation_substitution = Constrexpr.notation_substitution
 [@@deriving sexp, yojson, hash,compare]
 
 type constr_pattern_expr = Constrexpr.constr_pattern_expr [@@deriving sexp,yojson,hash,compare]
