@@ -1,2 +1,6 @@
+From Coq Require Reals.
+
 Require a.
-Definition bb := a.aa.
+Definition bb := a.aa. 
+
+Optimize Heap.
