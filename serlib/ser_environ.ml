@@ -73,9 +73,28 @@ module Globals = struct
   include SerType.Pierce(PierceSpec)
 end
 
-type env =
-  [%import: Environ.env]
-  [@@deriving sexp_of]
+module InternalEnv =
+struct
+  type _t = {
+    env_globals       : Globals.t;
+    env_named_context : Constr.named_context;
+    env_rel_context   : Constr.rel_context;
+    env_universes : UGraph.t;
+    env_qualities : Sorts.QVar.Set.t;
+    env_typing_flags  : Declarations.typing_flags;
+  } [@@deriving sexp_of]
+
+  let of_t env = {
+    env_globals = env.Environ.env_globals; (* TODO: use an accessor *)
+    env_named_context = Environ.named_context env;
+    env_rel_context = Environ.rel_context env;
+    env_universes = Environ.universes env;
+    env_qualities = env.Environ.env_qualities; (* TODO: use an accessor *)
+    env_typing_flags = Environ.typing_flags env;
+  }
+end
+
+type env = Environ.env
 
 let env_of_sexp = Serlib_base.opaque_of_sexp ~typ:"Environ.env"
 
@@ -83,7 +102,7 @@ let abstract_env = ref false
 let sexp_of_env env =
   if !abstract_env
   then Serlib_base.sexp_of_opaque ~typ:"Environ.env" env
-  else sexp_of_env env
+  else InternalEnv.sexp_of__t (InternalEnv.of_t env)
 
 type ('constr, 'term) punsafe_judgment =
   [%import: ('constr, 'term) Environ.punsafe_judgment]
