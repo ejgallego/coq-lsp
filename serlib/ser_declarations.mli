@@ -22,18 +22,6 @@ type template_arity = Declarations.template_arity
 val template_arity_of_sexp : Sexp.t -> template_arity
 val sexp_of_template_arity : template_arity -> Sexp.t
 
-type ('a, 'b) declaration_arity = ('a, 'b) Declarations.declaration_arity
-
-val declaration_arity_of_sexp :
-  (Sexp.t -> 'a) ->
-  (Sexp.t -> 'b) ->
-  Sexp.t -> ('a, 'b) declaration_arity
-
-val sexp_of_declaration_arity :
-  ('a -> Sexp.t) ->
-  ('b -> Sexp.t) ->
-  ('a, 'b) declaration_arity -> Sexp.t
-
 type recarg = Declarations.recarg
   [@@deriving sexp,yojson,hash,compare]
 
