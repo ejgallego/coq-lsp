@@ -63,19 +63,16 @@ type mind_key =
   [%import: Environ.mind_key]
   [@@deriving sexp,yojson,hash,compare]
 
-module Globals = struct
+module InternalEnv =
+struct
+  type _t =
+    [%import: Environ.Internal.View.t]
+    [@@deriving sexp_of]
 
-  module PierceSpec = struct
-    type t = Environ.Globals.t
-    type _t = [%import: Environ.Globals.view]
-    [@@deriving sexp,yojson,hash,compare]
-  end
-  include SerType.Pierce(PierceSpec)
+  let of_t = Environ.Internal.View.view
 end
 
-type env =
-  [%import: Environ.env]
-  [@@deriving sexp_of]
+type env = Environ.env
 
 let env_of_sexp = Serlib_base.opaque_of_sexp ~typ:"Environ.env"
 
@@ -83,7 +80,7 @@ let abstract_env = ref false
 let sexp_of_env env =
   if !abstract_env
   then Serlib_base.sexp_of_opaque ~typ:"Environ.env" env
-  else sexp_of_env env
+  else InternalEnv.sexp_of__t (InternalEnv.of_t env)
 
 type ('constr, 'term) punsafe_judgment =
   [%import: ('constr, 'term) Environ.punsafe_judgment]
