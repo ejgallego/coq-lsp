@@ -5,8 +5,6 @@
 (* Written by: Emilio J. Gallego Arias & coq-lsp contributors           *)
 (************************************************************************)
 
-let pet_debug = false
-
 module State = struct
   type t = Coq.State.t
 
@@ -101,10 +99,17 @@ let find_thm ~(doc : Fleche.Doc.t) ~thm =
   | None ->
     let msg = Format.asprintf "@[[find_thm] Theorem not found!@]" in
     Error (Error.Theorem_not_found msg)
-  | Some node ->
-    if pet_debug then Format.eprintf "@[[find_thm] Theorem found!@\n@]%!";
-    (* let point = (range.start.line, range.start.character) in *)
-    Ok node
+  | Some node -> (
+    (* If the node has an error we cannot assume the state is valid *)
+    match List.filter Lang.Diagnostic.is_error node.diags with
+    | [] -> Ok node
+    | err :: _ ->
+      let msg =
+        Format.asprintf
+          "@[[find_thm] Theorem found but failed with Coq error:@\n @[%a@]!@]"
+          Pp.pp_with err.message
+      in
+      Error (Error.Theorem_not_found msg))
 
 let execute_precommands ~token ~memo ~pre_commands ~(node : Fleche.Doc.Node.t) =
   match (pre_commands, node.prev, node.ast) with
