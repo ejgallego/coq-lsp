@@ -40,10 +40,6 @@ module Float64 = Ser_float64
 module Pstring = Ser_pstring
 module Vmlibrary = Ser_vmlibrary
 
-type template_arity =
-  [%import: Declarations.template_arity]
-  [@@deriving sexp,yojson,hash,compare]
-
 type recarg_type =
   [%import: Declarations.recarg_type]
   [@@deriving sexp,yojson,hash,compare]
@@ -54,15 +50,6 @@ type recarg =
 
 type wf_paths =
   [%import: Declarations.wf_paths]
-  [@@deriving sexp,yojson,hash,compare]
-
-type regular_inductive_arity =
-  [%import: Declarations.regular_inductive_arity
-  [@with Term.sorts := Sorts.t;]]
-  [@@deriving sexp,yojson,hash,compare]
-
-type inductive_arity =
-  [%import: Declarations.inductive_arity]
   [@@deriving sexp,yojson,hash,compare]
 
 type squash_info =
@@ -141,10 +128,6 @@ type recursivity_kind =
 
 type record_info =
   [%import: Declarations.record_info]
-  [@@deriving sexp,yojson,hash,compare]
-
-type template_pseudo_sort_poly =
-  [%import: Declarations.template_pseudo_sort_poly]
   [@@deriving sexp,yojson,hash,compare]
 
 type template_universes =
