@@ -19,6 +19,7 @@
  - [petanque] `petanque/start` now fails when the theorem was parsed
    but not successfully executed (@ejgallego, reported by @gbdrt,
    #901, fixes #886)
+ - [ci] Test Ocaml 5.3 (@ejgallego, #904)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
