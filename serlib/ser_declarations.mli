@@ -16,22 +16,10 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-open Sexplib
-
-type template_arity = Declarations.template_arity
-val template_arity_of_sexp : Sexp.t -> template_arity
-val sexp_of_template_arity : template_arity -> Sexp.t
-
 type recarg = Declarations.recarg
   [@@deriving sexp,yojson,hash,compare]
 
 type wf_paths = recarg Rtree.t
-  [@@deriving sexp,yojson,hash,compare]
-
-type regular_inductive_arity = Declarations.regular_inductive_arity
-  [@@deriving sexp,yojson,hash,compare]
-
-type inductive_arity = Declarations.inductive_arity
   [@@deriving sexp,yojson,hash,compare]
 
 type one_inductive_body = Declarations.one_inductive_body
