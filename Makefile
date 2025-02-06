@@ -10,6 +10,8 @@ vendor/coq-stdlib/rocq-stdlib.install \
 vendor/coq-stdlib/coq-stdlib.install \
 coq-lsp.install
 
+PKG_SET_WEB=$(PKG_SET) vendor/coq-waterproof/coq-waterproof.install
+
 # Get the ocamlformat version from the .ocamlformat file
 OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
 
@@ -80,10 +82,14 @@ winconfig:
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
 
+.PHONY: wp
+wp:
+	dune build vendor/coq-waterproof/coq-waterproof.install
+
 .PHONY: js
 js: COQVM = no
 js: coq_boot
-	dune build --profile=release --display=quiet $(PKG_SET) controller-js/coq_lsp_worker.bc.cjs
+	dune build --profile=release --display=quiet $(PKG_SET_WEB) controller-js/coq_lsp_worker.bc.cjs
 	mkdir -p editor/code/out/ && cp -a controller-js/coq_lsp_worker.bc.cjs editor/code/out/coq_lsp_worker.bc.js
 
 .PHONY: coq_boot
@@ -173,12 +179,14 @@ endif
 # Super-hack
 controller-js/coq-fs-core.js: COQVM = no
 controller-js/coq-fs-core.js: coq_boot
-	dune build --profile=release --display=quiet $(PKG_SET) etc/META.threads
+	dune build --profile=release --display=quiet $(PKG_SET_WEB) etc/META.threads
 	for i in $$(find $(_CCROOT)/plugins -name *.cma); do js_of_ocaml --dynlink $$i; done
 	for i in $$(find _build/install/default/lib/coq-lsp/serlib -wholename */*.cma); do js_of_ocaml --dynlink $$i; done
+	for i in $$(find _build/install/default/lib/coq-waterproof/plugin -name *.cma); do js_of_ocaml --dynlink $$i; done
 	js_of_ocaml build-fs -o controller-js/coq-fs-core.js \
 	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/rocq-runtime/%P ") \
 	    $$(find _build/install/default/lib/coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-lsp/%P ") \
+	    $$(find _build/install/default/lib/coq-waterproof/  \( -wholename '*/plugin/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-waterproof/%P ") \
 	    ./etc/META.threads:/static/lib/threads/META \
 	    $$(find $(_LIBROOT) -wholename '*/str/META'                 -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/seq/META'                 -printf "%p:/static/lib/%P ") \

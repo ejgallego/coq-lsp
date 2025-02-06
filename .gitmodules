@@ -4,3 +4,7 @@
 [submodule "vendor/coq-stdlib"]
 	path = vendor/coq-stdlib
 	url = https://github.com/coq/stdlib.git
+[submodule "vendor/coq-waterproof"]
+	path = vendor/coq-waterproof
+	url = https://github.com/ejgallego/coq-waterproof.git
+	branch = dune-rocq
