@@ -91,16 +91,18 @@ udocker = udocker_init()
 ```
 
 Then do:
-- `udocker("pull coqorg/coq:8.20.1")`
-- `udocker("run coqorg/coq:8.20.1 opam install logs lwt coq-lsp")`
-- `udocker("run coqorg/coq:8.20.1 pet-server --help")`
+- `udocker("pull coqorg/coq:8.18.0")`
+- `udocker("run coqorg/coq:8.18.0 opam install -y logs lwt coq-lsp")`
+- `udocker("run coqorg/coq:8.18.0 pet-server --help")`
 
-Once we have our own `coq-lsp/8.20` image, we can just do:
+Note that images containing Coq 8.19.2 and upwards will unfortunately
+rebuild Coq, this is being addressed
+[here](https://github.com/coq-community/docker-coq/issues/78) This
+makes us resort to 8.18 as there are no 8.19 images for 8.19.1 and
+8.19.2 .
 
-- `udocker("pull coqorg/coq-lsp:0.2.2+8.20.1")`
-- `udocker("run coqorg/coq:8.20.1 pet-server --help")`
-
-which saves a bit of time.
+See issue #910 for our plans to generate a complete Docker image for
+`petanque`.
 
 ## Running `petanque` JSON shell
 
