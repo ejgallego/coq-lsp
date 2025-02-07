@@ -26,6 +26,9 @@
    @corwin-of-amber, #905)
  - [js worker] [build] Include Coq WaterProof in the default Web
    Worker build (@ejgallego, waterproof team, #905, closes #888)
+ - [vscode] [web] Fix web extension not exporting the coq-lsp
+   extension API (@ejgallego, reported by @amblafont, #911, fixes
+   #877)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
