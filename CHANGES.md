@@ -15,11 +15,17 @@
    #883)
  - [general] [js] Adapt to Rocq stdlib split (@ejgallego, #890)
  - [ci] Bump setup-ocaml to v3 (@ejgallego, #890)
- - [ci] [windows] Use Opam 2.2 to build on windows (@ejgallego, #815 #890)
+ - [ci] [windows] Use Opam 2.2 to build on windows (@ejgallego, #815,
+   #890)
  - [petanque] `petanque/start` now fails when the theorem was parsed
    but not successfully executed (@ejgallego, reported by @gbdrt,
    #901, fixes #886)
  - [ci] Test Ocaml 5.3 (@ejgallego, #904)
+ - [js worker] Add Shachar Itzhaky's trampoline patch; this greatly
+   reduces the Stack Overflow in the proof engine (@ejgallego,
+   @corwin-of-amber, #905)
+ - [js worker] [build] Include Coq WaterProof in the default Web
+   Worker build (@ejgallego, waterproof team, #905, closes #888)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
