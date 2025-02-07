@@ -48,6 +48,60 @@ $ opam install coq-mathcomp-ssreflect # etc...
 
 See the contributing guide for instructions on how to do the last.
 
+## Installing in Google Collab
+
+As of Feb 2025, the following will get you a working `petanque` for Coq 8.20 in Google Colab:
+
+```python
+# Copyright 2024 Drengskapur
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# @title {display-mode:"form"}
+# @markdown <br/><br/><center><img src="https://cdn.jsdelivr.net/gh/drengskapur/docker-in-colab/assets/docker.svg" height="150"><img src="https://cdn.jsdelivr.net/gh/drengskapur/docker-in-colab/assets/colab.svg" height="150"></center><br/>
+# @markdown <center><h1>Docker in Colab</h1></center><center>github.com/drengskapur/docker-in-colab<br/><br/><br/><b>udocker("run hello-world")</b></center><br/>
+def udocker_init():
+    import os
+    if not os.path.exists("/home/user"):
+        !pip install udocker > /dev/null
+        !udocker --allow-root install > /dev/null
+        !useradd -m user > /dev/null
+    print(f'Docker-in-Colab 1.1.0\n')
+    print(f'Usage:     udocker("--help")')
+    print(f'Examples:  https://github.com/indigo-dc/udocker?tab=readme-ov-file#examples')
+
+    def execute(command: str):
+        user_prompt = "\033[1;32muser@pc\033[0m"
+        print(f"{user_prompt}$ udocker {command}")
+        !su - user -c "udocker $command"
+
+    return execute
+
+udocker = udocker_init()
+```
+
+Then do:
+- `udocker("pull coqorg/coq:8.20.1")`
+- `udocker("run coqorg/coq:8.20.1 opam install logs lwt coq-lsp")`
+- `udocker("run coqorg/coq:8.20.1 pet-server --help")`
+
+Once we have our own `coq-lsp/8.20` image, we can just do:
+
+- `udocker("pull coqorg/coq-lsp:0.2.2+8.20.1")`
+- `udocker("run coqorg/coq:8.20.1 pet-server --help")`
+
+which saves a bit of time.
+
 ## Running `petanque` JSON shell
 
 You can use `petanque` in 3 different ways:
