@@ -1,6 +1,6 @@
 // Provides: vm_ll
 function vm_ll(s, args) { 
-  if (vm_ll.log) joo_global_object.console.warn(s, args); 
+  if (vm_ll.log) globalThis.console.warn(s, args); 
   if (vm_ll.trap) throw new Error("vm trap: '"+ s + "' not implemented");
 }
 

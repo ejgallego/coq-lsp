@@ -3,7 +3,7 @@
   "name": "Coq",
   "patterns": [
     {
-      "match": "\\b(From|Require|Import|Export|Local|Global|Include)\\b",
+      "match": "\\b(From|Require|Import|Export|Local|Global|Include|Load|Dependency)\\b",
       "comment": "Vernacular import keywords",
       "name": "keyword.control.import.coq"
     },
@@ -13,8 +13,20 @@
       "name": "keyword.control.import.coq"
     },
     {
-      "match": "(Theorem|Lemma|Remark|Fact|Corollary|Property|Proposition|Goal)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
+      "match": "\\b(Theorem|Lemma|Remark|Fact|Corollary|Property|Proposition)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
       "comment": "Theorem declarations",
+      "captures": {
+        "1": {
+          "name": "keyword.source.coq"
+        },
+        "2": {
+          "name": "entity.name.function.theorem.coq"
+        }
+      }
+    },
+    {
+      "match": "\\b(Goal)\\s+",
+      "comment": "Goal declaration",
       "captures": {
         "1": {
           "name": "keyword.source.coq"
@@ -40,7 +52,7 @@
       }
     },
     {
-      "match": "\\b(Context)\\b\\s*`?\\s*(\\(|\\{)?\\s*((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
+      "match": "\\b(Context)\\b\\s*`?\\s*(\\(|\\{|\\[)?\\s*!?\\s*((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
       "comment": "Context",
       "captures": {
         "1": {
@@ -52,7 +64,7 @@
       }
     },
     {
-      "match": "(\\b(?:Program|Local)\\s+)?\\b(Definition|Fixpoint|CoFixpoint|Function|Example|Let(?:\\s+Fixpoint|\\s+CoFixpoint)?|Instance)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
+      "match": "(\\b(?:Program)\\s+)?\\b(Definition|Fixpoint|CoFixpoint|Function|Example|Let(?:\\s+Fixpoint|\\s+CoFixpoint)?|Instance|Primitive|SubClass)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
       "comment": "Definitions",
       "captures": {
         "1": {
@@ -67,7 +79,7 @@
       }
     },
     {
-      "match": "\\b((Show\\s+)?Obligation\\s+Tactic|Obligations\\s+of|Obligation|Next\\s+Obligation(\\s+of)?|Solve\\s+Obligations(\\s+of)?|Solve\\s+All\\s+Obligations|Admit\\s+Obligations(\\s+of)?|Instance)\\b",
+      "match": "\\b(Obligation\\s+Tactic|Obligations\\s+of|Obligations?|Next\\s+Obligation(\\s+of)?|Final\\s+Obligation(\\s+of)?|Solve\\s+Obligations(\\s+of)?|Solve\\s+All\\s+Obligations|Admit\\s+Obligations(\\s+of)?|Instance)\\b",
       "comment": "Obligations",
       "captures": {
         "1": {
@@ -76,7 +88,7 @@
       }
     },
     {
-      "match": "(CoInductive|Inductive|Variant|Record|Structure|Class)\\s+(>\\s*)?((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
+      "match": "\\b(CoInductive|Inductive|Variant|Record|Structure|Class)\\s+(>\\s*)?((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
       "comment": "Type declarations",
       "captures": {
         "1": {
@@ -88,7 +100,7 @@
       }
     },
     {
-      "match": "(Ltac)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
+      "match": "\\b(Ltac)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)",
       "comment": "Ltac declarations",
       "captures": {
         "1": {
@@ -100,19 +112,118 @@
       }
     },
     {
-      "match": "\\b(Hint|Constructors|Resolve|Rewrite|Ltac|Implicit(\\s+Types)?|Set|Unset|Remove\\s+Printing|Arguments|Tactic\\s+Notation|Notation|Infix|Reserved\\s+Notation|Section|Module\\s+Type|Module|End|Check|Print|Eval|Search|Universe|Coercions?|Generalizable\\s+All|Generalizable\\s+Variable?|Existing\\s+Instance|Existing\\s+Class|Canonical|About|Locate|Collection|Typeclasses\\s+(Opaque|Transparent)|Reset(\\s+Initial)?|Back)\\b",
+      "match": "\\b(Constructors|Resolve|Rewrite|Ltac|Implicit(\\s+Types?)?|Set|Unset|Remove\\s+Printing|Arguments|Tactic\\s+Notation|(String\\s+|Number\\s+)?Notation|Infix|Reserved\\s+Infix|Reserved\\s+Notation|(Enable|Disable)\\s+Notation|Section|Module\\s+Type|Module|End|Check|Eval|Search|Universes?|(Identity\\s+)?Coercions?|Generalizable\\s+All\\s+Variables|Generalizable\\s+No\\s+Variables|Generalizable\\s+Variables?|Existing\\s+Instances?|Existing\\s+Class|Canonical|About|Collection|Typeclasses|Opaque|Transparent|Test|Pwd|Cd|Back|BackTo|Strategy|SearchAbout|SearchHead|SearchPattern|SearchRewrite|Create\\s+HintDb|Comments|Compute|Combined\\s+Scheme|Constraint|Preterm|Prenex\\s+Implicits|Optimize\\s+Heap|Optimize\\s+Proof|Inspect|Guarded|Validate\\s+Proof|Attributes|Register(\\s+Inline|Scheme)?)\\b",
       "comment": "Vernacular keywords",
       "name": "keyword.source.coq"
     },
     {
-      "match": "\\b(Proof|Qed|Defined|Save|Abort(\\s+All)?|Undo(\\s+To)?|Restart|Focus|Unfocus|Unfocused|Show\\s+Proof|Show\\s+Existentials|Show|Unshelve)\\b",
+      "match": "\\b(Hint(\\s+(Constants|Constructors|Cut|Extern|Immediate|Mode|Opaque|Projections|Resolve|Rewrite|Transparent|Unfold|Variables|(View\\s+for\\s+(apply|move))))?)\\b",
+      "comment": "Vernacular Hint commands",
+      "name": "keyword.source.coq"
+    },
+    {
+      "match": "\\b(Print(\\s+(All(\\s+Dependencies)?|Assumptions|Canonical\\s+Projections|Classes|Coercion\\s+Paths|Coercions|Custom\\s+Grammar|Debug\\s+GC|Equivalent\\s+Keys|Extraction\\s+Blacklist|Extraction\\s+Inline|Fields|Firstorder\\s+Solver|Grammar|Graph|Hint|HintDb|Implicit|Instances|Keywords|Libraries|LoadPath|Ltac(\\s+Signatures)?|Ltac2(\\s+(Signatures|Type))?|ML\\s+Modules|ML\\s+Path|Module(\\s+Type)?|Namespace|Notation|Opaque\\s+Dependencies|Options|Registered|Rewrite\\s+HintDb|Rings|Scope|Scopes|Strategy|Section|Strategies|Tables?|Term|Transparent\\s+Dependencies|Typing\\s+Flags|Universes|Universes\\s+Subgraph|Visibility))?)\\b",
+      "comment": "Vernacular Print commands",
+      "name": "keyword.source.coq"
+    },
+    {
+      "match": "\\b(Add(\\s+(Field|LoadPath|ML\\s+Path|Morphism|Parametric\\s+Morphism|Parametric\\s+Relation|Parametric\\s+Setoid|Rec\\s+LoadPath|Relation|Ring|Setoid|Zify))?)\\b",
+      "comment": "Vernacular Add commands",
+      "name": "keyword.source.coq"
+    },
+    {
+      "match": "\\b(Ltac2(\\s+(Eval|External|Globalize|Notation|Set|Type))?)\\b",
+      "comment": "Vernacular Ltac2 commands",
+      "name": "keyword.source.coq"
+    },
+    {
+      "match": "\\b(Remove(\\s+(Hints|LoadPath))?)\\b",
+      "comment": "Vernacular Remove commands",
+      "name": "keyword.source.coq"
+    },
+    {
+      "match": "\\b(Reset(\\s+(Extraction\\s+Blacklist|Extraction\\s+Inline|Initial|Ltac\\s+Profile))?)\\b",
+      "comment": "Vernacular Reset commands",
+      "name": "keyword.source.coq"
+    },
+    {
+      "match": "\\b(Locate(\\s+(File|Library|Ltac|Ltac2|Module|Term))?)\\b",
+      "comment": "Vernacular Locate commands",
+      "name": "keyword.source.coq"
+    },
+    {
+      "match": "\\b(Declare\\s+(Custom\\s+Entry|Equivalent\\s+Keys|Instance|Left\\s+Step|Module|ML\\s+Module|Morphism|Reduction|Right\\s+Step|Scope))\\b",
+      "comment": "Vernacular Declare commands",
+      "name": "keyword.control.import.coq"
+    },
+    {
+      "match": "\\b(Show(\\s+(Conjectures|Existentials|Extraction|Goal|Intros?|Lia\\s+Profile|Ltac\\s+Profile|Match|Obligation\\s+Tactic|Proof|Script|Universes|Zify))?)\\b",
+      "comment": "Vernacular Show commands",
+      "name": "keyword.source.coq"
+    },
+    {
+      "match": "\\b(Proof(\\s+(Mode|using|with))?|Qed|Defined|Save|Abort(\\s+All)?|Undo(\\s+To)?|Restart|Focus|Unfocus|Unfocused|Unshelve)\\b",
       "comment": "Proof keywords",
       "name": "keyword.source.coq"
     },
     {
-      "match": "\\b(Quit|Drop|Time|Redirect|Timeout|Fail)\\b",
+      "match": "\\b(Extract\\s+(Constant|Inductive|Inlined\\s+Constant)|Separate\\s+Extraction|Recursive\\s+Extraction(\\s+Library)?|Extraction(\\s+(Blacklist|Implicit|Inline|Language(\\s+(OCaml|Haskell|Scheme|JSON))?|Library|NoInline|TestCompile))?)\\b",
+      "comment": "Extraction commands",
+      "name": "keyword.source.coq"
+    },
+    {
+      "match": "\\b(Quit|Drop|Time|Redirect|Timeout|Fail|Succeed|Info|Instructions)\\b",
       "comment": "Vernacular Debug keywords",
       "name": "keyword.debug.coq"
+    },
+    {
+      "match": "\\b(Debug\\s+(On|Off))\\b",
+      "comment": "Vernacular Debug keywords",
+      "name": "keyword.debug.coq"
+    },
+    {
+      "match": "\\b(Derive)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)\\s+(SuchThat)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)\\s+(As)\\s+((\\p{L}|[_\\u00A0])(\\p{L}|[0-9_\\u00A0'])*)\\b",
+      "comment": "Vernacular Derive command",
+      "captures": {
+        "1": {
+          "name": "keyword.source.coq"
+        },
+        "2": {
+          "name": "entity.name.function.theorem.coq"
+        },
+        "5": {
+          "name": "keyword.source.coq"
+        },
+        "6": {
+          "name": "entity.name.function.theorem.coq"
+        },
+        "9": {
+          "name": "keyword.source.coq"
+        },
+        "10": {
+          "name": "entity.name.function.theorem.coq"
+        }
+      }
+    },
+    {
+      "match": "\\b(Derive\\s+((Dependent)\\s+)?(Inversion|Inversion_clear))\\b",
+      "comment": "Vernacular Derive Inversion commands",
+      "name": "keyword.source.coq"
+    },
+    {
+      "match": "\\b(Functional\\s+Scheme|Functional\\s+Case|Generate\\s+graph\\s+for)\\b",
+      "comment": "Vernacular Functional Induction commands",
+      "name": "keyword.source.coq"
+    },
+    {
+      "match": "\\b(Scheme(\\s+(Boolean\\s+)?Equality\\s+for)?)\\b",
+      "comment": "Vernacular Scheme commands",
+      "name": "keyword.source.coq"
+    },
+    {
+      "match": "\\b(Polymorphic|Monomorphic|Cumulative|NonCumulative|Private)\\b",
+      "comment": "Legacy attributes",
+      "name": "keyword.source.coq"
     },
     {
       "match": "\\b(admit|Admitted)\\b",
@@ -125,7 +236,7 @@
       "name": "keyword.operator.coq"
     },
     {
-      "match": "\\b(forall|exists|Type|Set|Prop|nat|bool|option|list|unit|sum|prod|comparison|Empty_set)\\b|∀|∃",
+      "match": "\\b(forall|exists|Type|Set|Prop|SProp|nat|bool|option|list|unit|sum|prod|comparison|Empty_set)\\b|∀|∃",
       "comment": "Type keywords",
       "name": "support.type.coq"
     },
@@ -145,7 +256,7 @@
       "name": "keyword.control.gallina"
     },
     {
-      "match": "\\b(intro|intros|revert|induction|destruct|auto|eauto|tauto|eassumption|apply|eapply|assumption|constructor|econstructor|reflexivity|inversion|injection|assert|split|esplit|omega|fold|unfold|specialize|rewrite|erewrite|change|symmetry|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|set|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember|case|easy|unshelve|pattern|transitivity|etransitivity|f_equal|exfalso|replace|abstract|cycle|swap|revgoals|shelve|unshelve)\\b",
+      "match": "\\b(intro|intros|revert|induction|destruct|auto|eauto|tauto|eassumption|apply|eapply|assumption|constructor|econstructor|reflexivity|inversion|injection|assert|split|esplit|omega|fold|unfold|specialize|rewrite|erewrite|change|symmetry|refine|simpl|intuition|firstorder|generalize|idtac|exist|exists|eexists|elim|eelim|rename|subst|congruence|trivial|left|right|set|pose|discriminate|clear|clearbody|contradict|contradiction|exact|dependent|remember|case|easy|unshelve|pattern|transitivity|etransitivity|f_equal|exfalso|replace|abstract|cycle|swap|revgoals|shelve|unshelve|typeclasses\\s+eauto)\\b",
       "comment": "Ltac builtins",
       "name": "support.function.builtin.ltac"
     },

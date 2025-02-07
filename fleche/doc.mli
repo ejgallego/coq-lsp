@@ -121,6 +121,8 @@ module Target : sig
   (** [reached ~range (line,col)] checks if [(line,col)] are before [range]'s
       end. *)
   val reached : range:Lang.Range.t -> int * int -> bool
+
+  val pp : Format.formatter -> t -> unit
 end
 
 (** [check ~io ~target ~doc ()], check document [doc], [target] will have Flèche

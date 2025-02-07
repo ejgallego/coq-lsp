@@ -74,7 +74,6 @@ winconfig:
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
 
-
 .PHONY: js
 js: COQVM = no
 js: coq_boot
@@ -125,6 +124,7 @@ submodules-deinit:
 .PHONY: submodules-update
 submodules-update:
 	(cd vendor/coq && git checkout master && git pull upstream master)
+	(cd vendor/coq-stdlib && git checkout master && git pull upstream master)
 
 # Build the vscode extension
 .PHONY: extension
@@ -156,13 +156,16 @@ _LIBROOT=$(shell opam var lib)
 # Not true in this branch
 # VENDORED_SETUP:=true
 
+# This is rocq-runtime after 8.20
+COQ_CORE_NAME=coq-core
+
 ifdef VENDORED_SETUP
-_CCROOT=_build/install/default/lib/coq-core
+_CCROOT=_build/install/default/lib/$(COQ_CORE_NAME)
 else
 # We could use `opam var lib` as well here, as the idea to rely on
 # coqc was to avoid having a VENDORED_SETUP variable, which we now
 # have anyways.
-_CCROOT=$(shell coqc -where)/../coq-core
+_CCROOT=$(shell coqc -where)/../$(COQ_CORE_NAME)
 endif
 
 # Super-hack
@@ -172,7 +175,7 @@ controller-js/coq-fs-core.js: coq_boot
 	for i in $$(find $(_CCROOT)/plugins -name *.cma); do js_of_ocaml --dynlink $$i; done
 	for i in $$(find _build/install/default/lib/coq-lsp/serlib -wholename */*.cma); do js_of_ocaml --dynlink $$i; done
 	js_of_ocaml build-fs -o controller-js/coq-fs-core.js \
-	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/coq-core/%P ") \
+	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/$(COQ_CORE_NAME)/%P ") \
 	    $$(find _build/install/default/lib/coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-lsp/%P ") \
 	    ./etc/META.threads:/static/lib/threads/META \
 	    $$(find $(_LIBROOT) -wholename '*/str/META'                 -printf "%p:/static/lib/%P ") \

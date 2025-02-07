@@ -25,6 +25,7 @@ module CEphemeron = Ser_cEphemeron
 module Names = Ser_names
 module Constr  = Ser_constr
 module Declarations = Ser_declarations
+module Mod_declarations = Ser_mod_declarations
 module Entries = Ser_entries
 module Cooking = Ser_cooking
 module Univ = Ser_univ
@@ -32,7 +33,7 @@ module Vmemitcodes = Ser_vmemitcodes
 
 (* Side_effects *)
 type certificate = {
-  certif_struc : Declarations.structure_body;
+  certif_struc : Mod_declarations.structure_body;
   certif_univs : Univ.ContextSet.t;
 } [@@deriving sexp,yojson,hash,compare]
 

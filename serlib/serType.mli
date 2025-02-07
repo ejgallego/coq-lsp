@@ -28,6 +28,12 @@ module type SJHC1 = sig
 
 end
 
+module type SJHC2 = sig
+
+  type ('a, 'b) t [@@deriving sexp,yojson,hash,compare]
+
+end
+
 (** Bijection with serializable types *)
 module type Bijectable = sig
 
@@ -61,6 +67,22 @@ module type Bijectable1 = sig
 end
 
 module Biject1(M : Bijectable1) : SJHC1 with type 'a t = 'a M.t
+
+module type Bijectable2 = sig
+
+  (* Base Type *)
+  type ('a, 'b) t
+
+  (* Representation type *)
+  type ('a, 'b) _t [@@deriving sexp,yojson,hash,compare]
+
+  (* Need to be bijetive *)
+  val to_t : ('a, 'b) _t -> ('a, 'b) t
+  val of_t : ('a, 'b) t -> ('a, 'b) _t
+end
+
+module Biject2(M : Bijectable2) : SJHC2 with type ('a, 'b) t = ('a, 'b) M.t
+
 
 module type Pierceable = sig
 

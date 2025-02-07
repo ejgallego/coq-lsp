@@ -93,7 +93,7 @@ let plugin_handler user_loader =
   let loader = Option.default default_loader user_loader in
   let safe_loader = safe_loader loader in
   fun fl_pkg ->
-    let _, fl_pkg = Mltop.PluginSpec.repr fl_pkg in
+    let fl_pkg = Mltop.PluginSpec.repr fl_pkg |> snd in
     match map_serlib fl_pkg with
     | Some serlib_pkg ->
       safe_loader serlib_pkg

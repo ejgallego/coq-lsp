@@ -744,7 +744,11 @@ module CB (O : sig
 end) =
 struct
   let ofn = O.ofn
-  let trace _hdr ?extra message = Lsp.Io.logTrace ~message ~extra
+
+  let trace hdr ?extra message =
+    let message = "[" ^ hdr ^ "] " ^ message in
+    Lsp.Io.logTrace ~message ~extra
+
   let message ~lvl ~message = Lsp.Io.logMessage ~lvl ~message
 
   let diagnostics ~uri ~version diags =

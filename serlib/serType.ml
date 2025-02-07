@@ -24,6 +24,10 @@ module type SJHC1 = sig
   type 'a t [@@deriving sexp,yojson,hash,compare]
 end
 
+module type SJHC2 = sig
+  type ('a, 'b) t [@@deriving sexp,yojson,hash,compare]
+end
+
 (* Bijection with serializable types *)
 module type Bijectable = sig
 
@@ -83,6 +87,34 @@ module Biject1(M : Bijectable1) : SJHC1 with type 'a t = 'a M.t = struct
   let hash_fold_t f st x = M.hash_fold__t f st (M.of_t x)
 
   let compare f x1 x2 = M.compare__t f (M.of_t x1) (M.of_t x2)
+end
+
+module type Bijectable2 = sig
+
+  (* Base Type *)
+  type ('a, 'b) t
+
+  (* Representation type *)
+  type ('a, 'b) _t [@@deriving sexp,yojson,hash,compare]
+
+  (* Need to be bijetive *)
+  val to_t : ('a, 'b) _t -> ('a, 'b) t
+  val of_t : ('a, 'b) t -> ('a, 'b) _t
+end
+
+module Biject2(M : Bijectable2) : SJHC2 with type ('a, 'b) t = ('a, 'b) M.t = struct
+
+  type ('a, 'b) t = ('a, 'b) M.t
+
+  let sexp_of_t f g x = M.sexp_of__t f g (M.of_t x)
+  let t_of_sexp f g s = M.to_t (M._t_of_sexp f g s)
+
+  let to_yojson f g p = M._t_to_yojson f g (M.of_t p)
+  let of_yojson f g p = M._t_of_yojson f g p |> Result.map M.to_t
+
+  let hash_fold_t f g st x = M.hash_fold__t f g st (M.of_t x)
+
+  let compare f g x1 x2 = M.compare__t f g (M.of_t x1) (M.of_t x2)
 end
 
 (* We do our own alias as to have better control *)

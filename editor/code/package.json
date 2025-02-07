@@ -2,7 +2,7 @@
   "name": "coq-lsp",
   "displayName": "Coq LSP",
   "description": "Coq LSP provides native vsCode support for checking Coq proof documents",
-  "version": "0.2.2",
+  "version": "0.2.3-dev",
   "contributors": [
     "Emilio Jesús Gallego Arias <e@x80.org>",
     "Ali Caglayan <alizter@gmail.com>",
