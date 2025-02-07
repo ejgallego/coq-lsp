@@ -3,6 +3,8 @@
   (source_tree proj1)
   (source_tree proj2)
   (source_tree tests)
-  ; For the plugins to be built
+  ; For the Coq prelude to be built
+  (package rocq-core)
+  ; For the serlib plugins to be built
   (package coq-lsp)
   %{bin:fcc}))

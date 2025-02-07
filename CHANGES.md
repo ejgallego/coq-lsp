@@ -3,6 +3,23 @@
 
  - [fleche] fix quick fixes for errors being lost due to incorrect
    handling of `send_diags_extra_data` (@ejgallego, #850)
+ - [vscode] Syntax highlighting for Coq 8.17-8.20 (@4ever2, #872)
+ - [build] Adapt to Coq -> Rocq renaming (@ejgallego, @proux, #879)
+ - [js worker] Update js_of_ocaml to 5.9.1 , thanks a lot to Hugo
+   Heuzard for longstanding continued support of the jsCoq and coq-lsp
+   projects (@ejgallego, @hhugo, #881)
+ - [js worker] Update stubs (@ejgallego, @hhugo, #881)
+ - [js worker] Fix build for Coq -> Rocq renaming and stdlib split
+   (@ejgallego, #881)
+ - [general] Adapt to Coq -> Rocq renaming (@ejgallego, @SkySkimmer,
+   #883)
+ - [general] [js] Adapt to Rocq stdlib split (@ejgallego, #890)
+ - [ci] Bump setup-ocaml to v3 (@ejgallego, #890)
+ - [ci] [windows] Use Opam 2.2 to build on windows (@ejgallego, #815 #890)
+ - [petanque] `petanque/start` now fails when the theorem was parsed
+   but not successfully executed (@ejgallego, reported by @gbdrt,
+   #901, fixes #886)
+ - [ci] Test Ocaml 5.3 (@ejgallego, #904)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------

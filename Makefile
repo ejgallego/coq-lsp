@@ -74,7 +74,6 @@ winconfig:
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
 
-
 .PHONY: js
 js: COQVM = no
 js: coq_boot
@@ -125,6 +124,7 @@ submodules-deinit:
 .PHONY: submodules-update
 submodules-update:
 	(cd vendor/coq && git checkout master && git pull upstream master)
+	(cd vendor/coq-stdlib && git checkout master && git pull upstream master)
 
 # Build the vscode extension
 .PHONY: extension
@@ -143,7 +143,8 @@ make-fmt: build fmt
 .PHONY: opam-update-and-reinstall
 opam-update-and-reinstall:
 	git pull --recurse-submodules
-	for pkg in coq-core coq-stdlib coqide-server coq; do opam install -y vendor/coq/$$pkg.opam; done
+	for pkg in rocq-runtime coq-core rocq-core coqide-server rocq-prover coq; do opam install -y vendor/coq/$$pkg.opam; done
+	for pkg in rocq-stdlib coq-stdlib; do opam install -y vendor/coq-stdlib/$$pkg.opam; done
 	opam install .
 
 .PHONY: patch-for-js
@@ -158,12 +159,12 @@ _LIBROOT=$(shell opam var lib)
 # VENDORED_SETUP:=true
 
 ifdef VENDORED_SETUP
-_CCROOT=_build/install/default/lib/coq-core
+_CCROOT=_build/install/default/lib/rocq-runtime
 else
 # We could use `opam var lib` as well here, as the idea to rely on
 # coqc was to avoid having a VENDORED_SETUP variable, which we now
 # have anyways.
-_CCROOT=$(shell coqc -where)/../coq-core
+_CCROOT=$(shell coqc -where)/../rocq-runtime
 endif
 
 # Super-hack
@@ -173,7 +174,7 @@ controller-js/coq-fs-core.js: coq_boot
 	for i in $$(find $(_CCROOT)/plugins -name *.cma); do js_of_ocaml --dynlink $$i; done
 	for i in $$(find _build/install/default/lib/coq-lsp/serlib -wholename */*.cma); do js_of_ocaml --dynlink $$i; done
 	js_of_ocaml build-fs -o controller-js/coq-fs-core.js \
-	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/coq-core/%P ") \
+	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/rocq-runtime/%P ") \
 	    $$(find _build/install/default/lib/coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-lsp/%P ") \
 	    ./etc/META.threads:/static/lib/threads/META \
 	    $$(find $(_LIBROOT) -wholename '*/str/META'                 -printf "%p:/static/lib/%P ") \

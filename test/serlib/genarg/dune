@@ -4,6 +4,9 @@
  (targets test_roundtrip)
  (deps
   (:input test_roundtrip.in)
+  ; For the Coq prelude to be built
+  (package rocq-core)
+  ; For the serlib plugins to be built
   (package coq-lsp))
  (action
   (progn

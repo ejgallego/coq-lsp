@@ -31,18 +31,19 @@ test("Open file with wrong URI", async () => {
     "Definition a := 3.",
   );
 
-  await languageServer.sendNotification(
-    Protocol.DidOpenTextDocumentNotification.type,
-    {
-      textDocument,
-    },
-  );
   let p = new Promise<Protocol.PublishDiagnosticsParams>((resolve) => {
     languageServer.onNotification(
       Protocol.PublishDiagnosticsNotification.type,
       resolve,
     );
   });
+
+  await languageServer.sendNotification(
+    Protocol.DidOpenTextDocumentNotification.type,
+    {
+      textDocument,
+    },
+  );
 
   const checkDiags = async (params: Protocol.PublishDiagnosticsParams) => {
     if (params.diagnostics.length == 0) return "ok";

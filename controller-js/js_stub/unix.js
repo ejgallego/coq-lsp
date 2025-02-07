@@ -1,6 +1,6 @@
 //Provides: unix_ll
-function unix_ll(s, args) { 
-  if (unix_ll.log) joo_global_object.console.warn(s, args); 
+function unix_ll(s, args) {
+  if (unix_ll.log) globalThis.console.warn(s, args);
   if (unix_ll.trap) throw new Error("unix trap: '"+ s + "' not implemented");
 }
 unix_ll.log = true;       // whether to log calls

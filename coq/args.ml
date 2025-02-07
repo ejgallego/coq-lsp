@@ -21,8 +21,8 @@ let coqcorelib =
   let doc = "Path to Coq plugin directories." in
   Arg.(
     value
-    & opt string (Filename.concat Coq_config.coqlib "../coq-core/")
-    & info [ "coqcorelib" ] ~docv:"COQCORELIB" ~doc)
+    & opt string (Filename.concat Coq_config.coqlib "../rocq-runtime/")
+    & info [ "rocqcorelib" ] ~docv:"COQCORELIB" ~doc)
 
 let findlib_config =
   let doc = "Override findlib's config file" in
@@ -39,8 +39,8 @@ let ocamlpath =
 let coq_lp_conv ~implicit (unix_path, lp) =
   { Loadpath.coq_path = Libnames.dirpath_of_string lp
   ; unix_path
-  ; has_ml = true
   ; implicit
+  ; has_ml = false
   ; recursive = true
   }
 

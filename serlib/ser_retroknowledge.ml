@@ -25,8 +25,11 @@ let retroknowledge_of_sexp = Serlib_base.opaque_of_sexp ~typ:"Retroknowledge.ret
 (* type entry = 
  *   [%import: Retroknowledge.entry] *)
 
-type action = 
-  [%import: Retroknowledge.action]
+module MRK = struct
+  type t = Retroknowledge.action
+  let name = "Retroknowledge.action"
+end
 
-let sexp_of_action = Serlib_base.sexp_of_opaque ~typ:"Retroknowledge.action"
-let action_of_sexp = Serlib_base.opaque_of_sexp ~typ:"Retroknowledge.action"
+module B_ = SerType.Opaque(MRK)
+type action = B_.t
+  [@@deriving sexp,yojson,hash,compare]

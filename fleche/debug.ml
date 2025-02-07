@@ -32,3 +32,6 @@ let request_delay = true || all
 
 (* Competion *)
 let completion = false || all
+
+(* Schedule *)
+let schedule = true || all
