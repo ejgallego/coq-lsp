@@ -1,4 +1,5 @@
 (* json rpc server *)
+module Lsp = Fleche_lsp
 open Petanque_shell
 
 let use_http_headers = ref true

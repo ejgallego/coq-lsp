@@ -2,7 +2,7 @@
  (name fcc_lib)
  (modules :standard \ fcc)
  ; LSP is used to print diagnostics, etc...
- (libraries fleche lsp))
+ (libraries fleche fleche_lsp))
 
 (executable
  (public_name fcc)

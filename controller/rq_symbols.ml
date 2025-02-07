@@ -5,6 +5,8 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module Lsp = Fleche_lsp
+
 let rec mk_syminfo info =
   let Lang.Ast.Info.{ range; name; kind; detail; children } = info in
   let { Lang.With_range.range = selectionRange; v = name } = name in

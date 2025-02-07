@@ -5,6 +5,8 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module Lsp = Fleche_lsp
+
 let command ~point =
   let arguments = Some [ Lsp.JLang.Point.to_yojson point ] in
   Lsp.Core.Command.
