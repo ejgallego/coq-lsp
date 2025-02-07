@@ -135,6 +135,8 @@ submodules-deinit:
 submodules-update:
 	(cd vendor/coq && git checkout master && git pull upstream master)
 	(cd vendor/coq-stdlib && git checkout master && git pull upstream master)
+# For now we update manually
+# (cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 
 # Build the vscode extension
 .PHONY: extension
