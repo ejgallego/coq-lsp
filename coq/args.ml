@@ -21,8 +21,8 @@ let coqcorelib =
   let doc = "Path to Coq plugin directories." in
   Arg.(
     value
-    & opt string (Filename.concat Coq_config.coqlib "../rocq-runtime/")
-    & info [ "rocqcorelib" ] ~docv:"COQCORELIB" ~doc)
+    & opt string (Filename.concat Coq_config.coqlib "../coq-core/")
+    & info [ "coqcorelib" ] ~docv:"COQCORELIB" ~doc)
 
 let findlib_config =
   let doc = "Override findlib's config file" in

@@ -3,7 +3,7 @@
   _CoqProject
   Demo.v
   ; For the Coq prelude to be built
-  (package rocq-core)
+  (package coq-stdlib)
   ; For the serlib plugins to be built
   (package coq-lsp)
   %{bin:fcc}))

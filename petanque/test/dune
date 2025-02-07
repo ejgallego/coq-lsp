@@ -2,7 +2,7 @@
  (name basic_api)
  (modules basic_api)
  (deps
-  (package rocq-stdlib)
+  (package coq-stdlib)
   (package coq-lsp)
   test.v)
  (libraries petanque_shell))
@@ -11,7 +11,7 @@
  (name json_api)
  (modules json_api)
  (deps
-  (package rocq-stdlib)
+  (package coq-stdlib)
   (package coq-lsp)
   test.v
   %{bin:pet})
@@ -23,7 +23,7 @@
  (name json_api_failure)
  (modules json_api_failure)
  (deps
-  (package rocq-stdlib)
+  (package coq-stdlib)
   (package coq-lsp)
   test.v
   %{bin:pet})
