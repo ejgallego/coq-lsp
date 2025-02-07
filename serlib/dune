@@ -9,4 +9,4 @@
    ppx_hash
    ppx_compare
    ppx_deriving_yojson))
- (libraries coq-core.vernac sexplib))
+ (libraries rocq-runtime.vernac sexplib))

@@ -39,8 +39,8 @@ let ocamlpath =
 let coq_lp_conv ~implicit (unix_path, lp) =
   { Loadpath.coq_path = Libnames.dirpath_of_string lp
   ; unix_path
-  ; has_ml = true
   ; implicit
+  ; has_ml = false
   ; recursive = true
   }
 

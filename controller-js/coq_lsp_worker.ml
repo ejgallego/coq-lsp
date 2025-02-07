@@ -132,7 +132,7 @@ let coq_init ~debug =
   let vm, warnings = (false, Some "-vm-compute-disabled") in
   Coq.Init.(coq_init { debug; load_module; load_plugin; vm; warnings })
 
-external coq_vm_trap : unit -> unit = "coq_vm_trap"
+external rocq_vm_trap : unit -> unit = "coq_vm_trap"
 
 (* This code is executed on Worker initialization *)
 let main () =
@@ -146,7 +146,7 @@ let main () =
   setup_std_printers ();
 
   (* setup_interp (); *)
-  coq_vm_trap ();
+  rocq_vm_trap ();
 
   Lsp.Io.set_log_fn (fun n -> Lsp.Base.Message.notification n |> post_message);
   let io = CB.cb in

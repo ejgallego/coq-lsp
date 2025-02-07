@@ -1,7 +1,7 @@
 // Provides: interrupt_setup
 function interrupt_setup(shmem) {
-    var Int32Array = joo_global_object.Int32Array,
-        SharedArrayBuffer = joo_global_object.SharedArrayBuffer;
+    var Int32Array = globalThis.Int32Array,
+        SharedArrayBuffer = globalThis.SharedArrayBuffer;
 
     if (Int32Array && SharedArrayBuffer) {
         shmem = shmem || new Int32Array(new SharedArrayBuffer(4));
@@ -14,7 +14,7 @@ function interrupt_setup(shmem) {
 // Provides: interrupt_pending
 // Requires: interrupt_setup
 function interrupt_pending() {
-    var Atomics = joo_global_object.Atomics;
+    var Atomics = globalThis.Atomics;
 
     if (Atomics && interrupt_setup.vec) {
         var ld = Atomics.load(interrupt_setup.vec, 0);

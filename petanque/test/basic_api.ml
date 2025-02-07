@@ -87,6 +87,11 @@ let multi_shot_test ~token ~doc =
   in
   Agent.goals ~token ~st:(extract_st st)
 
+let fake_start_test ~token ~doc =
+  match Agent.start ~token ~doc ~thm:"foo" () with
+  | Ok _ -> Error (Agent.Error.System "start on foo should have failed")
+  | Error _ -> Ok None
+
 let main () =
   let open Coq.Compat.Result.O in
   let token = Coq.Limits.create_atomic () in
@@ -94,7 +99,8 @@ let main () =
   let* g1 = snoc_test ~token ~doc in
   let* g2 = finished_stack_test ~token ~doc in
   let* g3 = multi_shot_test ~token ~doc in
-  Ok [ g1; g2; g3 ]
+  let* g4 = fake_start_test ~token ~doc in
+  Ok [ g1; g2; g3; g4 ]
 
 let max = List.fold_left max min_int
 

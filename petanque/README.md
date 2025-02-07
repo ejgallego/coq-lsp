@@ -40,8 +40,7 @@ $ opam install coq-lsp
 
 ```
 $ git clone ... coq-lsp && cd coq-lsp
-$ opam install vendor/coq/coq{-core,-stdlib,ide-server,}.opam
-$ opam install .
+$ make opam-update-and-reinstall
 $ opam install coq-mathcomp-ssreflect # etc...
 ```
 

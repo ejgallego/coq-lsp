@@ -44,15 +44,13 @@ jobs:
             ocaml: 5.1.x
           - os: ubuntu-latest
             ocaml: 5.2.x
+          - os: ubuntu-latest
+            ocaml: 5.3.x
           - os: macos-latest
             ocaml: 4.14.x
           - name: Windows Latest
             ocaml: 4.14
             os: windows-latest
-            opam-repositories: |
-              windows-5.0: https://github.com/dra27/opam-repository.git#windows-5.0
-              opam-repository-mingw: https://github.com/ocaml-opam/opam-repository-mingw.git#sunset
-              default: https://github.com/ocaml/opam-repository.git
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -65,11 +63,10 @@ jobs:
           submodules: recursive
 
       - name: 🐫 Setup OCaml
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml }}
           dune-cache: true
-          opam-repositories: ${{ matrix.opam-repositories }}
 
       - name: 🐫🐪🐫 Get dependencies
         run: opam exec -- make opam-deps
@@ -106,16 +103,17 @@ jobs:
           submodules: recursive
 
       - name: 🐫 Setup OCaml
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: "ocaml-variants.4.14.2+options,ocaml-option-32bit"
           dune-cache: true
 
       - name: 🐫🐪🐫 Get dependencies
         run: |
+          opam update
           opam exec -- make opam-deps
-          opam pin add js_of_ocaml-compiler --dev -y
-          opam pin add js_of_ocaml --dev -y
+          opam pin add js_of_ocaml-compiler -k version 5.9.1 -y
+          opam pin add js_of_ocaml -k version 5.9.1 -y
           opam install zarith_stubs_js js_of_ocaml-ppx -y
 
       - name: 💉💉💉 Patch Coq
@@ -159,7 +157,7 @@ jobs:
           submodules: recursive
 
       - name: 🐫 Setup OCaml
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: 4.14.x
           dune-cache: true

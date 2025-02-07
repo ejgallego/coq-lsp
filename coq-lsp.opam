@@ -29,7 +29,7 @@ depends: [
   "uri"          { >= "4.2.0" }
   "dune-build-info" { >= "3.2.0" }
 
-  # waterproof parser
+  # waterproof json parser
   "menhir"       { >= "20220210" }
 
   # unit testing
@@ -37,10 +37,6 @@ depends: [
 
   # Uncomment this for releases
   "coq"          { >= "8.19" < "8.20"  }
-
-  # coq deps: remove this for releases
-  "ocamlfind" {>= "1.9.1"}
-  "zarith" {>= "1.13"}
 
   # result dep, fixed in main, but kept for older releases
   "result"              { >= "1.5" }
@@ -54,6 +50,10 @@ depends: [
   "ppx_compare"         { >= "v0.15.0" & < "v0.18" }
   "ppx_hash"            { >= "v0.15.0" & < "v0.18" }
 ]
+
+# older results get in mess with ppx_deriving, we cannot control how
+# it gets pulled, often in min-bound rev-dep, so we conflict with it
+conflicts: [ "result" { < "1.5" } ]
 
 depopts: ["lwt" "logs"]
 
