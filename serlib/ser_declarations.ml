@@ -40,14 +40,6 @@ module Float64 = Ser_float64
 module Pstring = Ser_pstring
 module Vmlibrary = Ser_vmlibrary
 
-type template_arity =
-  [%import: Declarations.template_arity]
-  [@@deriving sexp,yojson,hash,compare]
-
-type ('a, 'b) declaration_arity =
-  [%import: ('a, 'b) Declarations.declaration_arity]
-  [@@deriving sexp,yojson,hash,compare]
-
 type recarg_type =
   [%import: Declarations.recarg_type]
   [@@deriving sexp,yojson,hash,compare]
@@ -58,15 +50,6 @@ type recarg =
 
 type wf_paths =
   [%import: Declarations.wf_paths]
-  [@@deriving sexp,yojson,hash,compare]
-
-type regular_inductive_arity =
-  [%import: Declarations.regular_inductive_arity
-  [@with Term.sorts := Sorts.t;]]
-  [@@deriving sexp,yojson,hash,compare]
-
-type inductive_arity =
-  [%import: Declarations.inductive_arity]
   [@@deriving sexp,yojson,hash,compare]
 
 type squash_info =
@@ -125,14 +108,19 @@ let sexp_of_constant_body e =
   (* We cannot handle VM values *)
   sexp_of_constant_body { e with const_body_code = None }
 
+(*
+module Retroknowledge =
+struct
 module MRK = struct
-  type 'a t = 'a Declarations.module_retroknowledge
-  let name = "Declarations.module_retroknowledge"
+  type t = Retroknowledge.action
+  let name = "Retroknowledge.action"
 end
 
-module B_ = SerType.Opaque1(MRK)
-type 'a module_retroknowledge = 'a B_.t
- [@@deriving sexp,yojson,hash,compare]
+module B_ = SerType.Opaque(MRK)
+type action = B_.t
+  [@@deriving sexp,yojson,hash,compare]
+end
+*)
 
 type recursivity_kind =
   [%import: Declarations.recursivity_kind]
@@ -188,6 +176,14 @@ type 'a with_declaration =
   [%import: 'a Declarations.with_declaration]
   [@@deriving sexp,yojson,hash,compare]
 
+type mod_body =
+  [%import: Declarations.mod_body]
+  [@@deriving sexp,yojson,hash,compare]
+
+type mod_type =
+  [%import: Declarations.mod_type]
+  [@@deriving sexp,yojson,hash,compare]
+
 type 'a module_alg_expr =
   [%import: 'a Declarations.module_alg_expr]
   [@@deriving sexp,yojson,hash,compare]
@@ -196,34 +192,14 @@ type 'a functor_alg_expr =
   [%import: 'a Declarations.functor_alg_expr]
   [@@deriving sexp,yojson,hash,compare]
 
-type structure_field_body =
-  [%import: Declarations.structure_field_body]
+type ('a, 'b) structure_field_body =
+  [%import: ('a, 'b) Declarations.structure_field_body]
   [@@deriving sexp,yojson,hash,compare]
 
-and structure_body =
-  [%import: Declarations.structure_body]
-  [@@deriving sexp,yojson,hash,compare]
-
-and module_signature =
-  [%import: Declarations.module_signature]
+and ('a, 'b) structure_body =
+  [%import: ('a, 'b) Declarations.structure_body]
   [@@deriving sexp,yojson,hash,compare]
 
 and module_expression =
   [%import: Declarations.module_expression]
-  [@@deriving sexp,yojson,hash,compare]
-
-and module_implementation =
-  [%import: Declarations.module_implementation]
-  [@@deriving sexp,yojson,hash,compare]
-
-and 'a generic_module_body =
-  [%import: 'a Declarations.generic_module_body]
-  [@@deriving sexp,yojson,hash,compare]
-
-and module_body =
-  [%import: Declarations.module_body]
-  [@@deriving sexp,yojson,hash,compare]
-
-and module_type_body =
-  [%import: Declarations.module_type_body]
   [@@deriving sexp,yojson,hash,compare]

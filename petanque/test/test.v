@@ -1,3 +1,7 @@
+(* Test for #886. *)
+Lemma foo n m : n ++ m = n.
+Qed.
+
 From Coq Require Import List.
 Import ListNotations.
 

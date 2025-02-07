@@ -16,34 +16,10 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-open Sexplib
-
-type template_arity = Declarations.template_arity
-val template_arity_of_sexp : Sexp.t -> template_arity
-val sexp_of_template_arity : template_arity -> Sexp.t
-
-type ('a, 'b) declaration_arity = ('a, 'b) Declarations.declaration_arity
-
-val declaration_arity_of_sexp :
-  (Sexp.t -> 'a) ->
-  (Sexp.t -> 'b) ->
-  Sexp.t -> ('a, 'b) declaration_arity
-
-val sexp_of_declaration_arity :
-  ('a -> Sexp.t) ->
-  ('b -> Sexp.t) ->
-  ('a, 'b) declaration_arity -> Sexp.t
-
 type recarg = Declarations.recarg
   [@@deriving sexp,yojson,hash,compare]
 
 type wf_paths = recarg Rtree.t
-  [@@deriving sexp,yojson,hash,compare]
-
-type regular_inductive_arity = Declarations.regular_inductive_arity
-  [@@deriving sexp,yojson,hash,compare]
-
-type inductive_arity = Declarations.inductive_arity
   [@@deriving sexp,yojson,hash,compare]
 
 type one_inductive_body = Declarations.one_inductive_body
@@ -94,14 +70,20 @@ type mutual_inductive_body = Declarations.mutual_inductive_body
 type rewrite_rule = Declarations.rewrite_rule
   [@@deriving sexp,yojson,hash,compare]
 
+type mod_body = Declarations.mod_body
+type mod_type = Declarations.mod_type
+
+type ('ty, 'a) functorize = ('ty, 'a) Declarations.functorize
+  [@@deriving sexp,yojson,hash,compare]
+
 type 'a module_alg_expr = 'a Declarations.module_alg_expr
   [@@deriving sexp,yojson,hash,compare]
 
-type structure_body = Declarations.structure_body
+type module_expression = Declarations.module_expression
   [@@deriving sexp,yojson,hash,compare]
 
-type module_body = Declarations.module_body
+type ('a, 'b) structure_field_body = ('a, 'b) Declarations.structure_field_body
   [@@deriving sexp,yojson,hash,compare]
 
-type module_type_body = Declarations.module_type_body
+type ('a, 'b) structure_body = ('a, 'b) Declarations.structure_body
   [@@deriving sexp,yojson,hash,compare]

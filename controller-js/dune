@@ -30,7 +30,7 @@
    ; --file=%{dep:coq-fs}
    --setenv
    PATH=/bin))
- (link_flags -linkall -no-check-prims)
+ (link_flags -no-check-prims)
  ; The old makefile set: -noautolink -no-check-prims
  (libraries
   zarith_stubs_js
@@ -61,12 +61,12 @@
    "export COQW=$(coqc -where) && js_of_ocaml build-fs -o coq-fs.js $(cd $COQW && find theories user-contrib \\( -wholename 'theories/*.vo' -or -wholename 'theories/*.glob' -or -wholename 'theories/*.v' -or -wholename 'user-contrib/*.vo' -or -wholename 'user-contrib/*.v' -or -wholename 'user-contrib/*.glob' \\) -printf \"$COQW/%p:/static/coqlib/%p \")")))
 
 ; for coq-fs-core.js
-; js_of_ocaml build-fs -o coq-fs-core.js $(find coq-core/ -wholename '*/plugins/*/*.cma' -or -wholename '*/META' -printf "%p:/lib/%p")
+; js_of_ocaml build-fs -o coq-fs-core.js $(find rocq-runtime/ -wholename '*/plugins/*/*.cma' -or -wholename '*/META' -printf "%p:/lib/%p")
 
 ; (rule
 ;  (targets coq-fs-core.js)
 ;  (deps
-;   (package coq-core))
+;   (package rocq-runtime))
 ;  (action
 ;   (bash
 ;    "cd ../vendor/coq && js_of_ocaml build-fs -o ../../controller-js/coq-fs.js $(find theories -wholename 'theories/Init/*.vo' -printf '%p:/static/%p '")))

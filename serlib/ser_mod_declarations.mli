@@ -16,14 +16,13 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-open Sexplib
+(* open Sexplib *)
 
-type t = UGraph.t
+type module_body = Mod_declarations.module_body
+  [@@deriving sexp,yojson,hash,compare]
 
-val sexp_of_t : t -> Sexp.t
-val t_of_sexp : Sexp.t -> t
+type module_type_body = Mod_declarations.module_type_body
+  [@@deriving sexp,yojson,hash,compare]
 
-type univ_inconsistency = UGraph.univ_inconsistency
-
-val univ_inconsistency_of_sexp : Sexp.t -> univ_inconsistency
-val sexp_of_univ_inconsistency : univ_inconsistency -> Sexp.t
+type structure_body = Mod_declarations.structure_body
+  [@@deriving sexp,yojson,hash,compare]
