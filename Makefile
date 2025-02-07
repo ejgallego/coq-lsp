@@ -161,6 +161,7 @@ opam-update-and-reinstall:
 patch-for-js:
 	cd vendor/coq && patch -p1 < ../../etc/0001-coq-lsp-patch.patch
 	cd vendor/coq && patch -p1 < ../../etc/0001-jscoq-lib-system.ml-de-unix-stat.patch
+	cd vendor/coq && patch -p1 < ../../etc/0001-engine-trampoline.patch
 
 _LIBROOT=$(shell opam var lib)
 
