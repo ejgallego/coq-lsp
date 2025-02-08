@@ -4,6 +4,7 @@
 (* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (************************************************************************)
 
+module Lsp = Fleche_lsp
 open Petanque_json.Interp
 open Protocol_shell
 

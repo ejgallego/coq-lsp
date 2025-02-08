@@ -4,7 +4,7 @@
  (modules :standard \ pet server)
  (preprocess
   (staged_pps ppx_import ppx_deriving_yojson))
- (libraries lsp petanque petanque_json))
+ (libraries petanque petanque_json))
 
 (executable
  (name pet)

@@ -1,4 +1,5 @@
 (* Serialization for agent types *)
+module Lsp = Fleche_lsp
 
 (* Implement State.t and Env.t serialization methods *)
 module State = Obj_map.Make (Petanque.Agent.State)

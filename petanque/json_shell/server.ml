@@ -1,6 +1,7 @@
 open Lwt
 open Lwt.Syntax
 open Petanque_shell
+module Lsp = Fleche_lsp
 
 let rq_info (r : Lsp.Base.Message.t) =
   match r with

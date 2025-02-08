@@ -1,5 +1,5 @@
 (library
- (name lsp)
+ (name fleche_lsp)
  (public_name coq-lsp.lsp)
  (preprocess
   (staged_pps ppx_import ppx_deriving_yojson))

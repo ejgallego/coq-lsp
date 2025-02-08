@@ -1,7 +1,7 @@
 (library
  (name controller)
  (modules :standard \ coq_lsp)
- (libraries coq fleche petanque petanque_json lsp dune-build-info))
+ (libraries coq fleche petanque petanque_json fleche_lsp dune-build-info))
 
 (executable
  (name coq_lsp)

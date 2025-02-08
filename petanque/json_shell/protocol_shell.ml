@@ -5,6 +5,7 @@
 (* Written by: Emilio J. Gallego Arias & coq-lsp contributors           *)
 (************************************************************************)
 
+module Lsp = Fleche_lsp
 open Petanque_json
 
 (** [set_workspace { debug; root }] sets the current workspace to the directory

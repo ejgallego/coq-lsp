@@ -1,3 +1,4 @@
+module Lsp = Fleche_lsp
 open Petanque_json
 
 (* Client wrap *)

@@ -15,6 +15,8 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module Lsp = Fleche_lsp
+
 (** This is the platform-independent code for the implementation of the Flèche
     LSP interface, BEWARE of deps, this must be able to run in a Web Worker
     context *)

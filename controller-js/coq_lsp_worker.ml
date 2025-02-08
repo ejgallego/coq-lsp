@@ -10,7 +10,7 @@
  *)
 
 module U = Yojson.Safe.Util
-module LSP = Lsp.Base
+module Lsp = Fleche_lsp
 open Js_of_ocaml
 open Controller
 
