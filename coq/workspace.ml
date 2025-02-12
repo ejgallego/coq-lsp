@@ -167,7 +167,7 @@ let make ~cmdline ~implicit ~kind ~debug =
     if boot then []
     else
       (* vo_include path = user-contrib + stdlib *)
-      let userpaths = mk_path_coqlib "user-contrib" :: Envars.coqpath in
+      let userpaths = mk_path_coqlib "user-contrib" :: Envars.coqpath() in
       let user_vo_path = List.map mk_userlib userpaths in
       let stdlib_vo_path = mk_path_coqlib "theories" |> mk_stdlib ~implicit in
       stdlib_vo_path :: user_vo_path
