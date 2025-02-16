@@ -6,9 +6,8 @@ Describe the environment:
   $ fcc --root $FCC_ROOT
   [message] Configuration loaded from ./_CoqProject
    - coqlib is at: [TEST_PATH]
-     + coqcorelib is at: [TEST_PATH]
    - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 3 Coq path directory bindings in scope; 27 Coq plugin directory bindings in scope
+   - 3 Coq path directory bindings in scope
    - ocamlpath added paths: []
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]

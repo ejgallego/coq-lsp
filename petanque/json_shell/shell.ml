@@ -6,11 +6,9 @@ let init_coq ~debug =
 
 let cmdline : Coq.Workspace.CmdLine.t =
   { coqlib = Coq_config.coqlib
-  ; coqcorelib = Filename.concat Coq_config.coqlib "../rocq-runtime"
   ; findlib_config = None
   ; ocamlpath = []
   ; vo_load_path = []
-  ; ml_include_path = []
   ; args = []
   ; require_libraries = []
   }

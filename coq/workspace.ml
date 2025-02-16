@@ -67,11 +67,9 @@ end
 
 type t =
   { coqlib : string
-  ; coqcorelib : string
   ; findlib_config : string option
   ; ocamlpath : string list
   ; vo_load_path : Loadpath.vo_path list
-  ; ml_include_path : string list
   ; require_libs : Require.t list
   ; flags : Flags.t
   ; warnings : Warning.t list
@@ -125,11 +123,9 @@ let rec parse_args args init boot libs f w =
 module CmdLine = struct
   type t =
     { coqlib : string
-    ; coqcorelib : string
     ; findlib_config : string option
     ; ocamlpath : string list
     ; vo_load_path : Loadpath.vo_path list
-    ; ml_include_path : string list
     ; args : string list
     ; require_libraries : (string option * string) list
     }
@@ -140,35 +136,29 @@ let mk_require_from (from, library) =
   { Require.library; from; flags }
 
 let make ~cmdline ~implicit ~kind ~debug =
-  let { CmdLine.coqcorelib
-      ; coqlib
+  let { CmdLine.coqlib
       ; findlib_config
       ; ocamlpath
       ; args
-      ; ml_include_path
       ; vo_load_path
       ; require_libraries
       } =
     cmdline
   in
-  let coqcorelib = getenv "COQCORELIB" coqcorelib in
-  let coqlib = getenv "COQLIB" coqlib in
+  let coqlib = getenv "ROCQLIB" (getenv "COQLIB" coqlib) in
   let mk_path_coqlib prefix = coqlib ^ "/" ^ prefix in
   let init, boot, libs, flags, warnings =
     parse_args args true false [] Flags.default []
   in
   (* Setup ml_include for the core plugins *)
-  let dft_ml_include_path, dft_vo_load_path =
-    if boot then ([], [])
+  let dft_vo_load_path =
+    if boot then []
     else
-      let unix_path = Filename.concat coqcorelib "plugins" in
-      ( System.all_subdirs ~unix_path |> List.map fst
-      , (* Setup vo_include path, note that has_ml=true does the job for
-           user_contrib and plugins *)
-        let userpaths = mk_path_coqlib "user-contrib" :: Envars.coqpath in
-        let user_vo_path = List.map mk_userlib userpaths in
-        let stdlib_vo_path = mk_path_coqlib "theories" |> mk_stdlib ~implicit in
-        stdlib_vo_path :: user_vo_path )
+      (* vo_include path = user-contrib + stdlib *)
+      let userpaths = mk_path_coqlib "user-contrib" :: Envars.coqpath in
+      let user_vo_path = List.map mk_userlib userpaths in
+      let stdlib_vo_path = mk_path_coqlib "theories" |> mk_stdlib ~implicit in
+      stdlib_vo_path :: user_vo_path
   in
   let require_libs =
     let rq_list =
@@ -178,13 +168,10 @@ let make ~cmdline ~implicit ~kind ~debug =
     List.map mk_require_from rq_list
   in
   let vo_load_path = dft_vo_load_path @ vo_load_path in
-  let ml_include_path = dft_ml_include_path @ ml_include_path in
   { coqlib
-  ; coqcorelib
   ; findlib_config
   ; ocamlpath
   ; vo_load_path
-  ; ml_include_path
   ; require_libs
   ; flags
   ; warnings
@@ -200,22 +187,20 @@ let pp_load_path fmt
 
 (* This is a bit messy upstream, as -I both extends Coq loadpath and OCAMLPATH
    loadpath *)
-let findlib_init ~ml_include_path ?findlib_config ~ocamlpath () =
+let findlib_init ?findlib_config ~ocamlpath () =
   let config = findlib_config in
   let env_ocamlpath = try [ Sys.getenv "OCAMLPATH" ] with Not_found -> [] in
-  let env_ocamlpath = ml_include_path @ env_ocamlpath @ ocamlpath in
+  let env_ocamlpath = env_ocamlpath @ ocamlpath in
   let ocamlpathsep = if Sys.unix then ":" else ";" in
   let env_ocamlpath = String.concat ocamlpathsep env_ocamlpath in
   Findlib.init ~env_ocamlpath ?config ()
 
 let describe
     { coqlib
-    ; coqcorelib
     ; findlib_config
     ; ocamlpath
     ; kind
     ; vo_load_path
-    ; ml_include_path
     ; require_libs
     ; flags = _
     ; warnings = _
@@ -226,11 +211,10 @@ let describe
       (List.map (fun { Require.library; _ } -> library) require_libs)
   in
   let n_vo = List.length vo_load_path in
-  let n_ml = List.length ml_include_path in
   let ocamlpath_msg = "added paths: [" ^ String.concat "|" ocamlpath ^ "]" in
   (* We need to do this in order for the calls to Findlib to make sense, but
      really need to modify this *)
-  findlib_init ~ml_include_path ?findlib_config ~ocamlpath ();
+  findlib_init ?findlib_config ~ocamlpath ();
   let fl_packages = Findlib.list_packages' () in
   let fl_config = Findlib.config_file () in
   let fl_location = Findlib.default_location () in
@@ -239,16 +223,12 @@ let describe
     Format.asprintf
       "@[vo_paths:@\n\
       \ @[<v>%a@]@\n\
-       ml_paths:@\n\
-      \ @[<v>%a@]@\n\
        findlib_paths:@\n\
       \ @[<v>%a@]@\n\
        findlib_packages:@\n\
       \ @[<v>%a@]@]"
       (Format.pp_print_list pp_load_path)
       vo_load_path
-      Format.(pp_print_list pp_print_string)
-      ml_include_path
       Format.(pp_print_list pp_print_string)
       fl_paths
       Format.(pp_print_list pp_print_string)
@@ -257,14 +237,12 @@ let describe
   ( Format.asprintf
       "@[Configuration loaded from %s@\n\
       \ - coqlib is at: %s@\n\
-      \   + coqcorelib is at: %s@\n\
       \ - Modules [%s] will be loaded by default@\n\
-      \ - %d Coq path directory bindings in scope; %d Coq plugin directory \
-       bindings in scope@\n\
+      \ - %d Coq path directory bindings in scope@\n\
       \ - ocamlpath %s@\n\
       \   + findlib config: %s@\n\
-      \   + findlib default location: %s@]" kind coqlib coqcorelib require_msg
-      n_vo n_ml ocamlpath_msg fl_config fl_location
+      \   + findlib default location: %s@]" kind coqlib require_msg n_vo
+      ocamlpath_msg fl_config fl_location
   , extra )
 
 let describe_guess = function
@@ -307,11 +285,9 @@ let dirpath_of_uri ~uri =
 (* NOTE: Use exhaustive match below to avoid bugs by skipping fields *)
 let apply ~intern ~uri
     { coqlib = _
-    ; coqcorelib = _
     ; findlib_config
     ; ocamlpath
     ; vo_load_path
-    ; ml_include_path
     ; require_libs
     ; flags
     ; warnings
@@ -321,8 +297,7 @@ let apply ~intern ~uri
   if debug then CDebug.set_flags "backtrace";
   Flags.apply flags;
   Warning.apply warnings;
-  List.iter Mltop.add_ml_dir ml_include_path;
-  findlib_init ~ml_include_path ?findlib_config ~ocamlpath ();
+  findlib_init ?findlib_config ~ocamlpath ();
   List.iter Loadpath.add_vo_path vo_load_path;
   Declaremods.start_library (dirpath_of_uri ~uri);
   load_objs ~intern require_libs
@@ -361,7 +336,7 @@ let workspace_from_coqproject ~cmdline ~debug cp_file : t =
       { cmdline with
         args = cmdline.args @ args
       ; vo_load_path = cmdline.vo_load_path @ vo_load_path
-      ; ml_include_path = cmdline.ml_include_path @ ml_include_path
+      ; ocamlpath = cmdline.ocamlpath @ ml_include_path
       }
   in
   let implicit = true in
