@@ -157,7 +157,8 @@ opam-update-and-reinstall:
 	opam install .
 
 # These variables are exclusive of the JS build
-VENDORED_SETUP:=
+# Not true in this branch
+# VENDORED_SETUP:=true
 
 # Used in git clone
 COQ_BRANCH=v8.20
