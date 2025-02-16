@@ -156,20 +156,37 @@ opam-update-and-reinstall:
 	for pkg in coq-core coq-stdlib coqide-server coq; do opam install -y vendor/coq/$$pkg.opam; done
 	opam install .
 
+# These variables are exclusive of the JS build
+VENDORED_SETUP:=
+
+# Used in git clone
+COQ_BRANCH=v8.20
+# Used in opam pin
+COQ_CORE_VERSION=8.20.1
+# Name of COQ_CORE_NAME is rocq-runtime after 8.20
+COQ_CORE_NAME=coq-core
+
+ifdef VENDORED_SETUP
+COQ_SRC_DIR=vendor/coq
+PATCH_DIR=../../etc/
+else
+COQ_SRC_DIR=../coq
+PATCH_DIR=$(shell pwd)/etc
+endif
+
 .PHONY: patch-for-js
 patch-for-js:
-	cd vendor/coq && patch -p1 < ../../etc/0001-coq-lsp-patch.patch
-	cd vendor/coq && patch -p1 < ../../etc/0001-jscoq-lib-system.ml-de-unix-stat.patch
-	cd vendor/coq && patch -p1 < ../../etc/0001-engine-trampoline.patch
+ifndef VENDORED_SETUP
+	git clone --depth=1 https://github.com/coq/coq.git -b $(COQ_BRANCH) $(COQ_SRC_DIR)
+endif
+	cd $(COQ_SRC_DIR) && patch -p1 < $(PATCH_DIR)/0001-coq-lsp-patch.patch
+	cd $(COQ_SRC_DIR) && patch -p1 < $(PATCH_DIR)/0001-jscoq-lib-system.ml-de-unix-stat.patch
+	cd $(COQ_SRC_DIR) && patch -p1 < $(PATCH_DIR)/0001-engine-trampoline.patch
+ifndef VENDORED_SETUP
+	opam pin add $(COQ_CORE_NAME).$(COQ_CORE_VERSION) -k path $(COQ_SRC_DIR)
+endif
 
 _LIBROOT=$(shell opam var lib)
-
-# At some point this may be the better idea
-# Not true in this branch
-# VENDORED_SETUP:=true
-
-# This is rocq-runtime after 8.20
-COQ_CORE_NAME=coq-core
 
 ifdef VENDORED_SETUP
 _CCROOT=_build/install/default/lib/$(COQ_CORE_NAME)
