@@ -159,24 +159,45 @@ opam-update-and-reinstall:
 	for pkg in rocq-stdlib coq-stdlib; do opam install -y vendor/coq-stdlib/$$pkg.opam; done
 	opam install .
 
+# These variables are exclusive of the JS build
+VENDORED_SETUP:=true
+
+# Used in git clone
+COQ_BRANCH=v8.20
+# Used in opam pin
+COQ_CORE_VERSION=8.20.1
+# Name of COQ_CORE_NAME is rocq-runtime after 8.20
+COQ_CORE_NAME=rocq-runtime
+
+ifdef VENDORED_SETUP
+COQ_SRC_DIR=vendor/coq
+PATCH_DIR=../../etc/
+else
+COQ_SRC_DIR=../coq
+PATCH_DIR=$(shell pwd)/etc
+endif
+
 .PHONY: patch-for-js
 patch-for-js:
-	cd vendor/coq && patch -p1 < ../../etc/0001-coq-lsp-patch.patch
-	cd vendor/coq && patch -p1 < ../../etc/0001-jscoq-lib-system.ml-de-unix-stat.patch
-	cd vendor/coq && patch -p1 < ../../etc/0001-engine-trampoline.patch
+ifndef VENDORED_SETUP
+	git clone --depth=1 https://github.com/coq/coq.git -b $(COQ_BRANCH) $(COQ_SRC_DIR)
+endif
+	cd $(COQ_SRC_DIR) && patch -p1 < $(PATCH_DIR)/0001-coq-lsp-patch.patch
+	cd $(COQ_SRC_DIR) && patch -p1 < $(PATCH_DIR)/0001-jscoq-lib-system.ml-de-unix-stat.patch
+	cd $(COQ_SRC_DIR) && patch -p1 < $(PATCH_DIR)/0001-engine-trampoline.patch
+ifndef VENDORED_SETUP
+	opam pin add $(COQ_CORE_NAME).$(COQ_CORE_VERSION) -k path $(COQ_SRC_DIR)
+endif
 
 _LIBROOT=$(shell opam var lib)
 
-# At some point this may be the better idea
-VENDORED_SETUP:=true
-
 ifdef VENDORED_SETUP
-_CCROOT=_build/install/default/lib/rocq-runtime
+_CCROOT=_build/install/default/lib/$(COQ_CORE_NAME)
 else
 # We could use `opam var lib` as well here, as the idea to rely on
 # coqc was to avoid having a VENDORED_SETUP variable, which we now
 # have anyways.
-_CCROOT=$(shell coqc -where)/../rocq-runtime
+_CCROOT=$(shell coqc -where)/../$(COQ_CORE_NAME)
 endif
 
 # Super-hack
@@ -187,7 +208,7 @@ controller-js/coq-fs-core.js: coq_boot
 	for i in $$(find _build/install/default/lib/coq-lsp/serlib -wholename */*.cma); do js_of_ocaml --dynlink $$i; done
 	for i in $$(find _build/install/default/lib/coq-waterproof/plugin -name *.cma); do js_of_ocaml --dynlink $$i; done
 	js_of_ocaml build-fs -o controller-js/coq-fs-core.js \
-	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/rocq-runtime/%P ") \
+	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/$(COQ_CORE_NAME)/%P ") \
 	    $$(find _build/install/default/lib/coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-lsp/%P ") \
 	    $$(find _build/install/default/lib/coq-waterproof/  \( -wholename '*/plugin/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-waterproof/%P ") \
 	    ./etc/META.threads:/static/lib/threads/META \
