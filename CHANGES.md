@@ -33,6 +33,11 @@
    `Fleche_lsp`; this should help avoiding conflicts with the OCaml
    `lsp` library (@ejgallego, reported by @blackbird1128, #912, fixes
    #861)
+ - [workspace] Remove support legacy ML-search path semantics. These
+   were basically unused since Coq 8.16. As a consequence, `coq-lsp` /
+   `fcc` don't accept the `-I` flag anymore, use `OCAMLPATH` or the
+   `--ocamlpath=` option to pass extra `findlib` paths. We still
+   respect the -I flag in `_CoqMakefile` (@ejgallego, #916)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------

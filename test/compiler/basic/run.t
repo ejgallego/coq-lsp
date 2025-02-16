@@ -4,22 +4,22 @@ Describe the project
   $ export FCC_TEST=true
   $ fcc --root proj1
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-   - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
 
 Compile a single file, don't generate a `.vo` file:
   $ fcc --no_vo --root proj1 proj1/a.v
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-   - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
   [message] compiling file proj1/a.v
   $ ls proj1
   a.diags
@@ -29,12 +29,12 @@ Compile a single file, don't generate a `.vo` file:
 Compile a single file, generate a .vo file
   $ fcc --root proj1 proj1/a.v
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-   - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
   [message] compiling file proj1/a.v
   $ ls proj1
   a.diags
@@ -48,12 +48,12 @@ Compile a single file, silent
 Compile a dependent file
   $ fcc --root proj1 proj1/b.v
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-   - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
   [message] compiling file proj1/b.v
   $ ls proj1
   a.diags
@@ -67,12 +67,12 @@ Compile both files
   $ rm proj1/*.vo
   $ fcc --root proj1 proj1/a.v proj1/b.v
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-   - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
   [message] compiling file proj1/a.v
   [message] compiling file proj1/b.v
   $ ls proj1
@@ -87,12 +87,12 @@ Compile a dependent file without the dep being built
   $ rm proj1/*.vo
   $ fcc --root proj1 proj1/b.v
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-   - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
   [message] compiling file proj1/b.v
   $ ls proj1
   a.diags
@@ -123,22 +123,22 @@ Compile a file with all messages:
   $ rm -f proj1/a.{diags,vo}
   $ fcc --root proj1 --diags_level=1 proj1/a.v
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-   - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
   [message] compiling file proj1/a.v
   $ cat proj1/a.diags
   $ fcc --root proj1 --diags_level=2 proj1/a.v
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-   - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
   [message] compiling file proj1/a.v
   $ cat proj1/a.diags
   {
@@ -162,19 +162,19 @@ Use two workspaces
   $ rm proj1/*.vo
   $ fcc --root proj1 --root proj2 proj1/a.v proj2/b.v
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-   - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-   - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
   [message] compiling file proj1/a.v
   [message] compiling file proj2/b.v
   fcc: internal error, uncaught exception:
@@ -185,24 +185,24 @@ Use two workspaces
 Load the example plugin
   $ fcc --plugin=coq-lsp.plugin.example --root proj1 proj1/a.v
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-   - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
   [message] compiling file proj1/a.v
   [message] [example plugin] file checking for proj1/a.v was completed
 
 Load the astdump plugin
   $ fcc --plugin=coq-lsp.plugin.astdump --root proj1 proj1/a.v
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-   - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
   [message] compiling file proj1/a.v
   [message] [ast plugin] dumping ast for proj1/a.v ...
   [message] [ast plugin] dumping ast for proj1/a.v was completed!
@@ -221,12 +221,12 @@ de-serialize the document back and check.
 We do the same for the goaldump plugin:
   $ fcc --plugin=coq-lsp.plugin.goaldump --root proj1 proj1/a.v
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-   - Modules [Corelib.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
   [message] compiling file proj1/a.v
   [message] [goaldump plugin] dumping goals for proj1/a.v ...
   [message] [goaldump plugin] dumping ast for proj1/a.v was completed!

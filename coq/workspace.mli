@@ -44,11 +44,11 @@ end
 
 (* Generated from a _CoqProject, dune (in the future) or command line args *)
 type t = private
-  { coqlib : string
-  ; findlib_config :
-      string option (* Path to findlib config file, if [None], default *)
-  ; ocamlpath :
-      string list (* extra ocamlpath paths, for example for local plugins *)
+  { coqlib : string  (** Path to coqlib *)
+  ; findlib_config : string option
+        (** Path to findlib config file, if [None], default *)
+  ; ocamlpath : string list
+        (** extra ocamlpath paths, for example for local plugins *)
   ; vo_load_path : Loadpath.vo_path list
         (** List of -R / -Q flags passed to Coq, usually theories we depend on *)
   ; require_libs : Require.t list
@@ -68,7 +68,9 @@ val compare : t -> t -> int
 (** hash *)
 val hash : t -> int
 
-(** user message, debug extra data *)
+(** [describe w] return [user, extra], where [user] is the relevant user
+    message, and [extra] contains lower-level debug data such as all findlib
+    packages in scope, etc... data *)
 val describe : t -> string * string
 
 val describe_guess : (t, string) Result.t -> string * string

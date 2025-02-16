@@ -37,6 +37,13 @@ module Flags = struct
     Global.set_indices_matter indices_matter;
     Global.set_check_universes (not type_in_type);
     Global.set_rewrite_rules_allowed rewrite_rules
+
+  let pp fmt { impredicative_set; indices_matter; type_in_type; rewrite_rules }
+      =
+    Format.fprintf fmt
+      "impredicative_set: %b; indices_matter: %b; type_in_type: %b; \
+       rewrite_rules: %b"
+      impredicative_set indices_matter type_in_type rewrite_rules
 end
 
 module Warning : sig
@@ -46,6 +53,9 @@ module Warning : sig
 
   (** Adds new warnings to the list of current warnings *)
   val apply : t list -> unit
+
+  (** *)
+  val pp : Format.formatter -> t -> unit
 end = struct
   type t = string
 
@@ -55,6 +65,8 @@ end = struct
     let old_warn = CWarnings.get_flags () in
     let new_warn = String.concat "," w in
     CWarnings.set_flags (old_warn ^ "," ^ new_warn)
+
+  let pp = Format.pp_print_string
 end
 
 module Require = struct
@@ -202,16 +214,15 @@ let describe
     ; kind
     ; vo_load_path
     ; require_libs
-    ; flags = _
-    ; warnings = _
-    ; debug = _
+    ; flags
+    ; warnings
+    ; debug
     } =
   let require_msg =
     String.concat " "
       (List.map (fun { Require.library; _ } -> library) require_libs)
   in
   let n_vo = List.length vo_load_path in
-  let ocamlpath_msg = "added paths: [" ^ String.concat "|" ocamlpath ^ "]" in
   (* We need to do this in order for the calls to Findlib to make sense, but
      really need to modify this *)
   findlib_init ?findlib_config ~ocamlpath ();
@@ -221,12 +232,17 @@ let describe
   let fl_paths = Findlib.search_path () in
   let extra =
     Format.asprintf
-      "@[vo_paths:@\n\
+      "@[ debug: %b@\n\
+      \ flags: @[%a@]@\n\
+      \ warnings: @[<h>%a@]@\n\
+      \ vo_paths:@\n\
       \ @[<v>%a@]@\n\
-       findlib_paths:@\n\
+      \ findlib_paths:@\n\
       \ @[<v>%a@]@\n\
-       findlib_packages:@\n\
-      \ @[<v>%a@]@]"
+      \ findlib_packages:@\n\
+      \ @[<v>%a@]@]" debug Flags.pp flags
+      (Format.pp_print_list Warning.pp)
+      warnings
       (Format.pp_print_list pp_load_path)
       vo_load_path
       Format.(pp_print_list pp_print_string)
@@ -236,13 +252,13 @@ let describe
   in
   ( Format.asprintf
       "@[Configuration loaded from %s@\n\
-      \ - coqlib is at: %s@\n\
-      \ - Modules [%s] will be loaded by default@\n\
-      \ - %d Coq path directory bindings in scope@\n\
-      \ - ocamlpath %s@\n\
+      \ - findlib: %d search paths active@\n\
       \   + findlib config: %s@\n\
-      \   + findlib default location: %s@]" kind coqlib require_msg n_vo
-      ocamlpath_msg fl_config fl_location
+      \   + findlib default location: %s@\n\
+      \ - coqlib is at: %s@\n\
+      \   + %d Coq path directory bindings in scope@\n\
+      \   + Modules [%s] will be loaded by default@]" kind
+      (List.length fl_paths) fl_config fl_location coqlib n_vo require_msg
   , extra )
 
 let describe_guess = function
