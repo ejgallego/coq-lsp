@@ -29,6 +29,10 @@
  - [vscode] [web] Fix web extension not exporting the coq-lsp
    extension API (@ejgallego, reported by @amblafont, #911, fixes
    #877)
+ - [build] [general] Rename our internal `Lsp` library to
+   `Fleche_lsp`; this should help avoiding conflicts with the OCaml
+   `lsp` library (@ejgallego, reported by @blackbird1128, #912, fixes
+   #861)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
