@@ -201,3 +201,40 @@ end
 module WorkDoneProgressEnd = struct
   type t = { kind : string } [@@deriving to_yojson]
 end
+
+(* Messages *)
+module MessageParams = struct
+  let method_ = "window/logMessage"
+
+  type t =
+    { type_ : int [@key "type"]
+    ; message : string
+    }
+  [@@deriving yojson]
+end
+
+let mk_logMessage ~type_ ~message =
+  let module M = MessageParams in
+  let method_ = M.method_ in
+  let params =
+    M.({ type_; message } |> to_yojson |> Yojson.Safe.Util.to_assoc)
+  in
+  Notification.make ~method_ ~params ()
+
+module TraceParams = struct
+  let method_ = "$/logTrace"
+
+  type t =
+    { message : string
+    ; verbose : string option [@default None]
+    }
+  [@@deriving yojson]
+end
+
+let mk_logTrace ~message ~verbose =
+  let module M = TraceParams in
+  let method_ = M.method_ in
+  let params =
+    M.({ message; verbose } |> to_yojson |> Yojson.Safe.Util.to_assoc)
+  in
+  Notification.make ~method_ ~params ()
