@@ -34,7 +34,7 @@ let string_field name dict = U.to_string (field name dict)
 let ofield name dict = List.(assoc_opt name dict)
 let ostring_field name dict = Option.map U.to_string (ofield name dict)
 
-module LSP = Lsp.Base
+module Lsp = Fleche_lsp
 module L = Fleche.Io.Log
 
 module Helpers = struct
@@ -171,17 +171,21 @@ module Rq : sig
   end
 
   val serve :
-       ofn_rq:(LSP.Response.t -> unit)
+       ofn_rq:(Lsp.Base.Response.t -> unit)
     -> token:Coq.Limits.Token.t
     -> id:int
     -> Action.t
     -> unit
 
   val cancel :
-    ofn_rq:(LSP.Response.t -> unit) -> code:int -> message:string -> int -> unit
+       ofn_rq:(Lsp.Base.Response.t -> unit)
+    -> code:int
+    -> message:string
+    -> int
+    -> unit
 
   val serve_postponed :
-       ofn_rq:(LSP.Response.t -> unit)
+       ofn_rq:(Lsp.Base.Response.t -> unit)
     -> token:Coq.Limits.Token.t
     -> doc:Fleche.Doc.t
     -> Int.Set.t
@@ -190,8 +194,8 @@ end = struct
   (* Answer a request, private *)
   let answer ~ofn_rq ~id result =
     (match result with
-    | Result.Ok result -> LSP.Response.mk_ok ~id ~result
-    | Error (code, message) -> LSP.Response.mk_error ~id ~code ~message)
+    | Result.Ok result -> Lsp.Base.Response.mk_ok ~id ~result
+    | Error (code, message) -> Lsp.Base.Response.mk_error ~id ~code ~message)
     |> ofn_rq
 
   (* private to the Rq module, just used not to retrigger canceled requests *)
@@ -517,7 +521,7 @@ let lsp_init_process ~ofn ~io ~cmdline ~debug msg : Init_effect.t =
   let ofn_rq r = Lsp.Base.Message.response r |> ofn in
   let ofn_nt r = Lsp.Base.Message.notification r |> ofn in
   match msg with
-  | LSP.Message.Request { method_ = "initialize"; id; params } ->
+  | Lsp.Base.Message.Request { method_ = "initialize"; id; params } ->
     (* At this point logging is allowed per LSP spec *)
     Fleche.Io.Report.msg ~io ~lvl:Info "Initializing coq-lsp server %s"
       (version ());
@@ -536,16 +540,17 @@ let lsp_init_process ~ofn ~io ~cmdline ~debug msg : Init_effect.t =
     in
     List.iter (log_workspace ~io) workspaces;
     Success workspaces
-  | LSP.Message.Request { id; _ } ->
+  | Lsp.Base.Message.Request { id; _ } ->
     (* per spec *)
-    LSP.Response.mk_error ~id ~code:(-32002) ~message:"server not initialized"
+    Lsp.Base.Response.mk_error ~id ~code:(-32002)
+      ~message:"server not initialized"
     |> ofn_rq;
     Loop
-  | LSP.Message.Notification { method_ = "exit"; params = _ } -> Exit
-  | LSP.Message.Notification _ ->
+  | Lsp.Base.Message.Notification { method_ = "exit"; params = _ } -> Exit
+  | Lsp.Base.Message.Notification _ ->
     (* We can't log before getting the initialize message *)
     Loop
-  | LSP.Message.Response _ ->
+  | Lsp.Base.Message.Response _ ->
     (* O_O *)
     Loop
 
@@ -616,7 +621,8 @@ let dispatch_request ~token ~method_ ~params : Rq.Action.t =
 let dispatch_request ~ofn_rq ~token ~id ~method_ ~params =
   dispatch_request ~token ~method_ ~params |> Rq.serve ~ofn_rq ~token ~id
 
-let dispatch_message ~io ~ofn ~token ~state (com : LSP.Message.t) : State.t =
+let dispatch_message ~io ~ofn ~token ~state (com : Lsp.Base.Message.t) : State.t
+    =
   let ofn_rq r = Lsp.Base.Message.response r |> ofn in
   match com with
   | Notification { method_; params } ->
@@ -666,8 +672,8 @@ let check_or_yield ~io ~ofn ~token ~state =
     Cont state
 
 module LspQueue : sig
-  val pop_opt : unit -> LSP.Message.t option
-  val push_and_optimize : LSP.Message.t -> unit
+  val pop_opt : unit -> Lsp.Base.Message.t option
+  val push_and_optimize : Lsp.Base.Message.t -> unit
 end = struct
   let request_queue = Queue.create ()
 
@@ -679,7 +685,8 @@ end = struct
       Some v
 
   let analyze = function
-    | LSP.Message.Notification { method_ = "textDocument/didChange"; params } ->
+    | Lsp.Base.Message.Notification
+        { method_ = "textDocument/didChange"; params } ->
       let uri, version = Helpers.get_uri_version params in
       Some (uri, version)
     | _ -> None
@@ -724,14 +731,14 @@ let dispatch_or_resume_check ~io ~ofn ~state =
     let iexn = Exninfo.capture exn in
     L.trace "process_queue" "%s"
       (if Printexc.backtrace_status () then "bt=true" else "bt=false");
-    (* let method_name = LSP.Message.method_ com in *)
+    (* let method_name = Lsp.Base.Message.method_ com in *)
     (* L.trace "process_queue" "exn in method: %s" method_name; *)
     L.trace "print_exn [OCaml]" "%s" (Printexc.to_string exn);
     L.trace "print_exn [Coq  ]" "%a" Pp.pp_with CErrors.(iprint iexn);
     L.trace "print_bt  [OCaml]" "%s" bt;
     Some (Yield state)
 
-let enqueue_message (com : LSP.Message.t) =
+let enqueue_message (com : Lsp.Base.Message.t) =
   if Fleche.Debug.sched_wakeup then
     L.trace "-> enqueue" "%.2f" (Unix.gettimeofday ());
   (* TODO: this is the place to cancel pending requests that are invalid, and in

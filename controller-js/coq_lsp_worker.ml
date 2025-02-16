@@ -10,7 +10,7 @@
  *)
 
 module U = Yojson.Safe.Util
-module LSP = Lsp.Base
+module Lsp = Fleche_lsp
 open Js_of_ocaml
 open Controller
 
@@ -178,11 +178,9 @@ let main () =
     let vo_load_path = List.map (fun f -> f coqlib) [ stdlib; user_contrib ] in
     Coq.Workspace.CmdLine.
       { coqlib
-      ; coqcorelib = "/static/lib/coq-core" (* deprecated upstream *)
       ; findlib_config
       ; ocamlpath
       ; vo_load_path
-      ; ml_include_path = []
       ; require_libraries = [ (None, "Coq.Init.Prelude") ]
       ; args = [ "-noinit"; "-boot" ]
       }

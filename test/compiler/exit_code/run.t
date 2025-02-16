@@ -5,13 +5,20 @@ Describe the environment:
   $ export FCC_ROOT=./
   $ fcc --root $FCC_ROOT
   [message] Configuration loaded from ./_CoqProject
+<<<<<<< HEAD
    - coqlib is at: [TEST_PATH]
      + coqcorelib is at: [TEST_PATH]
    - Modules [Coq.Init.Prelude] will be loaded by default
    - 3 Coq path directory bindings in scope; 24 Coq plugin directory bindings in scope
    - ocamlpath added paths: []
+=======
+   - findlib: [TEST_PATH]
+>>>>>>> main
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 3 Coq path directory bindings in scope
+     + Modules [Corelib.Init.Prelude] will be loaded by default
 
 Compile normally, even with errors, we exit 0:
   $ fcc --display=quiet --no_vo --root $FCC_ROOT Demo.v
