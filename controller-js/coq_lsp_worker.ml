@@ -171,11 +171,9 @@ let main () =
     let vo_load_path = List.map (fun f -> f coqlib) [ stdlib; user_contrib ] in
     Coq.Workspace.CmdLine.
       { coqlib
-      ; coqcorelib = "/static/lib/rocq-runtime" (* deprecated upstream *)
       ; findlib_config
       ; ocamlpath
       ; vo_load_path
-      ; ml_include_path = []
       ; require_libraries = [ (None, "Corelib.Init.Prelude") ]
       ; args = [ "-noinit"; "-boot" ]
       }
