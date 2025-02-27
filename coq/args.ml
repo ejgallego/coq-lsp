@@ -7,6 +7,21 @@
 
 open Cmdliner
 
+(* can't use Boot.Util.relocate because we're not together with rocq.exe *)
+let conf_coqlib =
+  match Coq_config.coqlib with
+  | NotRelocatable p -> p
+  | Relocatable p ->
+    let paths = match Sys.getenv_opt "PATH" with
+      | None -> []
+      | Some paths ->
+        let sep = if Coq_config.arch_is_win32 then ';' else ':' in
+        String.split_on_char sep paths
+    in
+    let name = if Sys.(os_type = "Win32" || os_type = "Cygwin") then "rocq.exe" else "rocq" in
+    let bindir = fst (System.find_file_in_path ~warn:false paths name) in
+    Filename.concat (Filename.concat bindir "..") p
+
 (****************************************************************************)
 (* Common Coq command-line arguments *)
 let coqlib =
@@ -15,7 +30,7 @@ let coqlib =
      there."
   in
   Arg.(
-    value & opt string Coq_config.coqlib & info [ "coqlib" ] ~docv:"COQLIB" ~doc)
+    value & opt string conf_coqlib & info [ "coqlib" ] ~docv:"COQLIB" ~doc)
 
 let findlib_config =
   let doc = "Override findlib's config file" in
