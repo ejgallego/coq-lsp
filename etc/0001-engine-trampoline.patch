@@ -1,5 +1,5 @@
 diff --git a/engine/logic_monad.ml b/engine/logic_monad.ml
-index 1b7f2799e2..11f3621a88 100644
+index 2cee4e5..15d07f1 100644
 --- a/engine/logic_monad.ml
 +++ b/engine/logic_monad.ml
 @@ -147,6 +147,16 @@ type ('a, 'b, 'e) list_view_ =
@@ -115,10 +115,10 @@ index 1b7f2799e2..11f3621a88 100644
  
   end
 diff --git a/pretyping/constr_matching.ml b/pretyping/constr_matching.ml
-index e511c92120..e2f809db79 100644
+index 14461ad..d526215 100644
 --- a/pretyping/constr_matching.ml
 +++ b/pretyping/constr_matching.ml
-@@ -529,14 +529,24 @@ let matches_head env sigma pat c =
+@@ -526,14 +526,24 @@ let matches_head env sigma pat c =
      | _ -> c in
    matches env sigma pat head
  
@@ -146,7 +146,7 @@ index e511c92120..e2f809db79 100644
  
  let subargs env v = Array.map_to_list (fun c -> (env, c)) v
  
-@@ -551,35 +561,35 @@ let sub_match ?(closed=true) env sigma pat c =
+@@ -548,35 +558,35 @@ let sub_match ?(closed=true) env sigma pat c =
        | [c1] -> mk_ctx (mkCast (c1, k, c2))
        | _ -> assert false
        in
@@ -187,7 +187,7 @@ index e511c92120..e2f809db79 100644
    | Case (ci,u,pms,hd0,iv,c1,lc0) ->
        let (mib, mip) = Inductive.lookup_mind_specif env ci.ci_ind in
        let (_, (hd,hdr), _, _, br) = expand_case env sigma (ci, u, pms, hd0, iv, c1, lc0) in
-@@ -604,7 +614,7 @@ let sub_match ?(closed=true) env sigma pat c =
+@@ -601,7 +611,7 @@ let sub_match ?(closed=true) env sigma pat c =
        | _ -> assert false
        in
        let sub = (env, c1) :: Array.fold_right (fun c accu -> (env, c) :: accu) pms (hd :: lc) in
@@ -196,7 +196,7 @@ index e511c92120..e2f809db79 100644
    | Fix (indx,(names,types,bodies as recdefs)) ->
      let nb_fix = Array.length types in
      let next_mk_ctx le =
-@@ -612,7 +622,7 @@ let sub_match ?(closed=true) env sigma pat c =
+@@ -609,7 +619,7 @@ let sub_match ?(closed=true) env sigma pat c =
        mk_ctx (mkFix (indx,(names, Array.of_list ntypes, Array.of_list nbodies))) in
      let env' = push_rec_types recdefs env in
      let sub = subargs env types @ subargs env' bodies in
@@ -205,7 +205,7 @@ index e511c92120..e2f809db79 100644
    | CoFix (i,(names,types,bodies as recdefs)) ->
      let nb_fix = Array.length types in
      let next_mk_ctx le =
-@@ -620,11 +630,11 @@ let sub_match ?(closed=true) env sigma pat c =
+@@ -617,11 +627,11 @@ let sub_match ?(closed=true) env sigma pat c =
        mk_ctx (mkCoFix (i,(names, Array.of_list ntypes, Array.of_list nbodies))) in
      let env' = push_rec_types recdefs env in
      let sub = subargs env types @ subargs env' bodies in
@@ -220,19 +220,19 @@ index e511c92120..e2f809db79 100644
      end
    | Array(u, t, def, ty) ->
      let next_mk_ctx = function
-@@ -632,9 +642,9 @@ let sub_match ?(closed=true) env sigma pat c =
+@@ -629,9 +639,9 @@ let sub_match ?(closed=true) env sigma pat c =
      | _ -> assert false
      in
      let sub = (env,def) :: (env,ty) :: subargs env t in
 -    try_aux sub next_mk_ctx next
 +    TailCall (fun () -> try_aux sub next_mk_ctx next)
-   | Construct _|Ind _|Evar _|Const _|Rel _|Meta _|Var _|Sort _|Int _|Float _|String _ ->
+   | Construct _|Ind _|Evar _|Const _|Rel _|Meta _|Var _|Sort _|Int _|Float _ ->
 -    next ()
 +    TailCall next
    in
    here next
  
-@@ -642,16 +652,16 @@ let sub_match ?(closed=true) env sigma pat c =
+@@ -639,16 +649,16 @@ let sub_match ?(closed=true) env sigma pat c =
    and try_aux lc mk_ctx next =
      let rec try_sub_match_rec lacc lc =
        match lc with
