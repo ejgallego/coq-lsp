@@ -33,7 +33,7 @@ diff --git a/lib/dune b/lib/dune
 index e7b1418c9b..f23338c03c 100644
 --- a/lib/dune
 +++ b/lib/dune
-@@ -4,6 +4,10 @@
+@@ -4,4 +4,8 @@
   (public_name coq-core.lib)
   (wrapped false)
   (modules_without_implementation xml_datatype)
@@ -41,9 +41,7 @@ index e7b1418c9b..f23338c03c 100644
 +  (language c)
 +  (names jscoq_extern)
 +  (flags :standard (:include %{project_root}/config/dune.c_flags)))
-  (libraries
-   coq-core.boot coq-core.clib coq-core.config
-   (select instr.ml from
+  (libraries coq-core.boot coq-core.clib coq-core.config))
 diff --git a/lib/jscoq_extern.c b/lib/jscoq_extern.c
 new file mode 100644
 index 0000000000..7d0bb8c8bc
