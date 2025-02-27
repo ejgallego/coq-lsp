@@ -17,13 +17,6 @@ let coqlib =
   Arg.(
     value & opt string Coq_config.coqlib & info [ "coqlib" ] ~docv:"COQLIB" ~doc)
 
-let coqcorelib =
-  let doc = "Path to Coq plugin directories." in
-  Arg.(
-    value
-    & opt string (Filename.concat Coq_config.coqlib "../coq-core/")
-    & info [ "coqcorelib" ] ~docv:"COQCORELIB" ~doc)
-
 let findlib_config =
   let doc = "Override findlib's config file" in
   Arg.(
@@ -72,11 +65,6 @@ let debug : bool Term.t =
 let bt =
   let doc = "Enable backtraces" in
   Cmdliner.Arg.(value & flag & info [ "bt" ] ~doc)
-
-let ml_include_path : string list Term.t =
-  let doc = "Include DIR in default loadpath, for locating ML files" in
-  Arg.(
-    value & opt_all dir [] & info [ "I"; "ml-include-path" ] ~docv:"DIR" ~doc)
 
 let ri_from : (string option * string) list Term.t =
   let doc =

@@ -7,6 +7,7 @@
 
 module U = Yojson.Safe.Util
 module L = Fleche.Io.Log
+module Lsp = Fleche_lsp
 
 (* Conditionals *)
 let option_default x d =

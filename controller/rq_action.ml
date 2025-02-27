@@ -1,3 +1,13 @@
+(************************************************************************)
+(* Coq Language Server Protocol -- Requests                             *)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2024-2025 Emilio J. Gallego Arias -- LGPL 2.1 / GPL3+      *)
+(* Written by: Emilio J. Gallego Arias                                  *)
+(************************************************************************)
+
+module Lsp = Fleche_lsp
+
 let point_lt { Lang.Point.line = l1; Lang.Point.character = c1; offset = _ }
     { Lang.Point.line = l2; Lang.Point.character = c2; offset = _ } =
   l1 < l2 || (l1 = l2 && c1 < c2)

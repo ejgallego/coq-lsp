@@ -8,11 +8,10 @@ Generate the test file (example by G. Gilbert)
 We now compile the challenging file:
   $ fcc --root . ./test.v
   [message] Configuration loaded from Command-line arguments
-   - coqlib is at: [TEST_PATH]
-     + coqcorelib is at: [TEST_PATH]
-   - Modules [Coq.Init.Prelude] will be loaded by default
-   - 2 Coq path directory bindings in scope; 22 Coq plugin directory bindings in scope
-   - ocamlpath added paths: []
+   - findlib: [TEST_PATH]
      + findlib config: [TEST_PATH]
      + findlib default location: [TEST_PATH]
+   - coqlib is at: [TEST_PATH]
+     + 2 Coq path directory bindings in scope
+     + Modules [Coq.Init.Prelude] will be loaded by default
   [message] compiling file ./test.v
