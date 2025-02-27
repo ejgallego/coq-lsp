@@ -64,7 +64,7 @@ end
 let ser_wit_fun_ind_using = let module M = Ser_genarg.GS(WitFI) in M.genser
 
 module WitFS = struct
-  type t = Names.variable * Libnames.qualid * Sorts.family
+  type t = Names.lident * Libnames.qualid * Sorts.family
   [@@deriving sexp,hash,compare]
 end
 
