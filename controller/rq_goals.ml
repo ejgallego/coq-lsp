@@ -5,6 +5,8 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module Lsp = Fleche_lsp
+
 (* Replace by ppx when we can print goals properly in the client *)
 let mk_message (level, { Coq.Message.Payload.range; msg; quickFix = _ }) =
   Lsp.JFleche.Message.{ range; level; text = msg }

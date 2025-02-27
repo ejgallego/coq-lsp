@@ -5,6 +5,8 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+open Fleche_lsp.Core
+
 let get_from_toc ~doc id_at_point =
   let { Fleche.Doc.toc; _ } = doc in
   Fleche.Io.Log.trace "rq_definition" "get_from_toc";
@@ -12,7 +14,7 @@ let get_from_toc ~doc id_at_point =
   | Some node ->
     let uri = doc.uri in
     let range = node.range in
-    Some Lsp.Core.Location.{ uri; range }
+    Some Location.{ uri; range }
   | None -> None
 
 let lp_to_string exn = CErrors.iprint exn |> Pp.string_of_ppcmds
@@ -28,8 +30,7 @@ let find_name_in dp name =
     let uri = Coq.Module.uri mod_ in
     match Coq.Module.find mod_ name with
     | Error err -> Error (err_code, err)
-    | Ok range ->
-      Ok (Option.map (fun range -> Lsp.Core.Location.{ uri; range }) range))
+    | Ok range -> Ok (Option.map (fun range -> Location.{ uri; range }) range))
 
 let get_from_file id_at_point =
   Fleche.Io.Log.trace "rq_definition" "get_from_file";
@@ -60,7 +61,7 @@ let get_from_import require_at_point =
       let uri = Coq.Module.uri mod_ in
       let start = Lang.Point.{ line = 0; character = 0; offset = 0 } in
       let range = Lang.Range.{ start; end_ = start } in
-      Some Lsp.Core.Location.{ uri; range })
+      Some Location.{ uri; range })
   | Error _ -> None
 
 let get_from_file_or_import ~token ~st id_at_point =
@@ -91,8 +92,7 @@ let request ~token ~(doc : Fleche.Doc.t) ~point =
                get_from_file_or_import ~token ~st idp)
              (ok None))
     (ok None) idp
-  |> Coq.Protect.E.map
-       ~f:(Result.map (Option.cata Lsp.Core.Location.to_yojson `Null))
+  |> Coq.Protect.E.map ~f:(Result.map (Option.cata Location.to_yojson `Null))
 
 let request ~token ~doc ~point =
   let name = "textDocument/definition" in

@@ -16,6 +16,7 @@ let sanitize_paths message =
   | None -> message
   | Some _ ->
     message
+    |> replace_test_path "findlib: "
     |> replace_test_path "coqlib is at: "
     |> replace_test_path "coqcorelib is at: "
     |> replace_test_path "findlib config: "
