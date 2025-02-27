@@ -15,11 +15,29 @@
    #883)
  - [general] [js] Adapt to Rocq stdlib split (@ejgallego, #890)
  - [ci] Bump setup-ocaml to v3 (@ejgallego, #890)
- - [ci] [windows] Use Opam 2.2 to build on windows (@ejgallego, #815 #890)
+ - [ci] [windows] Use Opam 2.2 to build on windows (@ejgallego, #815,
+   #890)
  - [petanque] `petanque/start` now fails when the theorem was parsed
    but not successfully executed (@ejgallego, reported by @gbdrt,
    #901, fixes #886)
  - [ci] Test Ocaml 5.3 (@ejgallego, #904)
+ - [js worker] Add Shachar Itzhaky's trampoline patch; this greatly
+   reduces the Stack Overflow in the proof engine (@ejgallego,
+   @corwin-of-amber, #905)
+ - [js worker] [build] Include Coq WaterProof in the default Web
+   Worker build (@ejgallego, waterproof team, #905, closes #888)
+ - [vscode] [web] Fix web extension not exporting the coq-lsp
+   extension API (@ejgallego, reported by @amblafont, #911, fixes
+   #877)
+ - [build] [general] Rename our internal `Lsp` library to
+   `Fleche_lsp`; this should help avoiding conflicts with the OCaml
+   `lsp` library (@ejgallego, reported by @blackbird1128, #912, fixes
+   #861)
+ - [workspace] Remove support legacy ML-search path semantics. These
+   were basically unused since Coq 8.16. As a consequence, `coq-lsp` /
+   `fcc` don't accept the `-I` flag anymore, use `OCAMLPATH` or the
+   `--ocamlpath=` option to pass extra `findlib` paths. We still
+   respect the -I flag in `_CoqMakefile` (@ejgallego, #916)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------

@@ -3,7 +3,12 @@ import {
   LanguageClient,
   LanguageClientOptions,
 } from "vscode-languageclient/browser";
-import { activateCoqLSP, ClientFactoryType, deactivateCoqLSP } from "./client";
+import {
+  activateCoqLSP,
+  ClientFactoryType,
+  CoqLspAPI,
+  deactivateCoqLSP,
+} from "./client";
 import { workspace } from "vscode";
 
 class InterruptibleLC extends LanguageClient {
@@ -49,7 +54,7 @@ class InterruptibleLC extends LanguageClient {
   }
 }
 
-export function activate(context: ExtensionContext): void {
+export function activate(context: ExtensionContext): CoqLspAPI {
   const cf: ClientFactoryType = (context, clientOptions, wsConfig) => {
     // Pending on having the API to fetch the worker file.
     // throw "Worker not found";
@@ -76,7 +81,7 @@ export function activate(context: ExtensionContext): void {
   //   console.log(`files: `, JSON.parse(s));
   // });
 
-  activateCoqLSP(context, cf);
+  return activateCoqLSP(context, cf);
 }
 
 export function deactivate() {

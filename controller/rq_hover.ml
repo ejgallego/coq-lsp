@@ -1,11 +1,11 @@
 (************************************************************************)
 (* Coq Language Server Protocol -- Requests                             *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-open Lsp.Core
+open Fleche_lsp.Core
 
 (* Taken from printmod.ml, funny stuff! *)
 let build_ind_type mip = Inductive.type_of_inductive mip

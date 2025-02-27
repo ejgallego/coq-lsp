@@ -2,6 +2,7 @@ open Lang
 open Petanque
 
 (* Serialization for agent types *)
+module Lsp = Fleche_lsp
 open JAgent
 
 (* RPC-side server mappings, internal; we could split this in a different module
