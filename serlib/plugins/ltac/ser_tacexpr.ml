@@ -131,6 +131,9 @@ type ml_tactic_entry =
   [%import: Ltac_plugin.Tacexpr.ml_tactic_entry]
   [@@deriving sexp,yojson,hash,compare]
 
+type ('a, 'b, 'c, 'd) may_eval = [%import: ('a,'b,'c,'d) Ltac_plugin.Tacexpr.may_eval]
+  [@@deriving sexp,yojson,hash,compare]
+
 (* type dyn = Ser_Dyn [@@deriving sexp] *)
 (* let to_dyn _   = Ser_Dyn *)
 (* let from_dyn _ = fst (Dyn.create "dyn_tac") 0 *)
@@ -167,7 +170,7 @@ type ('trm, 'dtrm, 'pat, 'redpat, 'cst, 'ref, 'nam, 'occvar, 'tacexpr, 'lev) gen
 
 and ('trm, 'dtrm, 'pat, 'redpat, 'cst, 'ref, 'nam, 'occvar, 'tacexpr, 'lev) gen_tactic_arg =
   | TacGeneric     of string option * 'lev Genarg.generic_argument
-  | ConstrMayEval  of ('trm,'cst,'redpat,'occvar) Genredexpr.may_eval
+  | ConstrMayEval  of ('trm,'cst,'redpat,'occvar) may_eval
   | Reference      of 'ref
   | TacCall        of ('ref *
       ('trm, 'dtrm, 'pat, 'redpat, 'cst, 'ref, 'nam, 'occvar, 'tacexpr, 'lev) gen_tactic_arg list) CAst.t
