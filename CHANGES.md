@@ -50,6 +50,9 @@
  - [doc] [faq] Updated FAQ to account for VSCoq 2 release in 2023,
    thanks to Patrick Nicodemus for pointing out the outdated
    documentation (@ejgallego, #846, fixes #817)
+ - [vscode] [macos] Resolve keybinding conflict with Cmd+N and
+   Cmd+Enter, we now use Alt+N and Alt+Shift+Enter, (Andrei
+   Listochkin, #926)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
