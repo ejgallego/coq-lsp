@@ -52,6 +52,7 @@ module Impargs       = Ser_impargs
 module Typeclasses   = Ser_typeclasses
 module Notationextern = Ser_notationextern
 module Util          = Ser_util
+module Gentactic = Ser_gentactic
 
 type coercion_class = [%import: Vernacexpr.coercion_class]
   [@@deriving sexp,yojson,hash,compare]
