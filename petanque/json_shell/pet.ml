@@ -46,14 +46,14 @@ let rec loop ~token : unit =
     Format.eprintf "@[error: %s@\n@]%!" err;
     loop ~token
 
-let trace_notification hdr ?extra msg =
+let trace_notification hdr ?verbose msg =
   let message = Format.asprintf "[%s] %s" hdr msg in
-  let notification = Lsp.Io.mk_logTrace ~message ~extra in
+  let notification = Lsp.Base.mk_logTrace ~message ~verbose in
   send_message (Lsp.Base.Message.Notification notification)
 
 let message_notification ~lvl ~message =
   let type_ = Lsp.Io.Lvl.to_int lvl in
-  let notification = Lsp.Io.mk_logMessage ~type_ ~message in
+  let notification = Lsp.Base.mk_logMessage ~type_ ~message in
   send_message (Lsp.Base.Message.Notification notification)
 
 let trace_enabled = true

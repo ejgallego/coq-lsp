@@ -15,10 +15,7 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-(** JSON-RPC input/output *)
-
-(** Set the log output function *)
-val set_log_fn : (Base.Notification.t -> unit) -> unit
+(** {1} JSON-RPC input/output *)
 
 (** Read a JSON-RPC message from channel; [None] signals [EOF] *)
 val read_message : in_channel -> (Base.Message.t, string) Result.t option
@@ -26,24 +23,15 @@ val read_message : in_channel -> (Base.Message.t, string) Result.t option
 (** Send a JSON-RPC message to channel *)
 val send_message : Format.formatter -> Base.Message.t -> unit
 
-(** Logging *)
+(** {1} Imperative Logging and Tracing using [log_fn] *)
 
-(** Trace values *)
-module TraceValue : sig
-  type t =
-    | Off
-    | Messages
-    | Verbose
+(** Set the log output function *)
+val set_log_fn : (Base.Notification.t -> unit) -> unit
 
-  val of_string : string -> (t, string) result
-  val to_string : t -> string
-end
-
-(** Set the trace value *)
-val set_trace_value : TraceValue.t -> unit
+(** Send a [window/logMessage] notification to the client using [log_fn] *)
+val logMessageInt : lvl:int -> message:string -> unit
 
 module Lvl : sig
-  (* 1-5 *)
   type t = Fleche.Io.Level.t =
     | Error
     | Warning
@@ -54,37 +42,22 @@ module Lvl : sig
   val to_int : t -> int
 end
 
-module MessageParams : sig
-  val method_ : string
-
-  type t =
-    { type_ : int [@key "type"]
-    ; message : string
-    }
-  [@@deriving yojson]
-end
-
-(** Create a logMessage notification *)
-val mk_logMessage : type_:int -> message:string -> Base.Notification.t
-
-(** Send a [window/logMessage] notification to the client *)
+(** Send a [window/logMessage] notification to the client using [log_fn] *)
 val logMessage : lvl:Lvl.t -> message:string -> unit
 
-(** Send a [window/logMessage] notification to the client *)
-val logMessageInt : lvl:int -> message:string -> unit
-
-module TraceParams : sig
-  val method_ : string
-
+(** Trace values *)
+module TraceValue : sig
   type t =
-    { message : string
-    ; verbose : string option [@default None]
-    }
-  [@@deriving yojson]
+    | Off
+    | Messages
+    | Verbose
+
+  val of_string : string -> (t, string) Result.t
+  val to_string : t -> string
 end
 
-(** Create a logTrace notification *)
-val mk_logTrace : message:string -> extra:string option -> Base.Notification.t
+(** Set the trace value *)
+val set_trace_value : TraceValue.t -> unit
 
 (** Send a [$/logTrace] notification to the client *)
 val logTrace : message:string -> extra:string option -> unit
