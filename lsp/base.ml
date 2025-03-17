@@ -213,13 +213,25 @@ module MessageParams = struct
   [@@deriving yojson]
 end
 
-let mk_logMessage ~type_ ~message =
+let mk_logMessage_ ~type_ ~message =
   let module M = MessageParams in
   let method_ = M.method_ in
   let params =
     M.({ type_; message } |> to_yojson |> Yojson.Safe.Util.to_assoc)
   in
   Notification.make ~method_ ~params ()
+
+let lvl_to_int (lvl : Fleche.Io.Level.t) =
+  match lvl with
+  | Error -> 1
+  | Warning -> 2
+  | Info -> 3
+  | Log -> 4
+  | Debug -> 5
+
+let mk_logMessage ~lvl ~message =
+  let type_ = lvl_to_int lvl in
+  mk_logMessage_ ~type_ ~message
 
 module TraceParams = struct
   let method_ = "$/logTrace"

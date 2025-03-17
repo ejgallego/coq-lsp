@@ -135,8 +135,10 @@ module MessageParams : sig
   [@@deriving yojson]
 end
 
-(** Create a logMessage notification *)
-val mk_logMessage : type_:int -> message:string -> Notification.t
+(** Create a [logMessage] LSP notification *)
+val mk_logMessage_ : type_:int -> message:string -> Notification.t
+
+val mk_logMessage : lvl:Fleche.Io.Level.t -> message:string -> Notification.t
 
 module TraceParams : sig
   val method_ : string

@@ -32,7 +32,7 @@ let message_stderr ~lvl:_ ~message =
 let message_ref = ref message_stderr
 
 let io =
-  let trace hdr ?extra msg = !trace_ref hdr ?verbose:extra msg in
+  let trace hdr ?verbose msg = !trace_ref hdr ?verbose msg in
   let message ~lvl ~message = !message_ref ~lvl ~message in
   let diagnostics ~uri:_ ~version:_ _diags = () in
   let fileProgress ~uri:_ ~version:_ _pinfo = () in

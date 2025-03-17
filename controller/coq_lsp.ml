@@ -1,17 +1,8 @@
 (************************************************************************)
-(*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
-(* <O___,, *       (see CREDITS file for the list of authors)           *)
-(*   \VV/  **************************************************************)
-(*    //   *    This file is distributed under the terms of the         *)
-(*         *     GNU Lesser General Public License Version 2.1          *)
-(*         *     (see LICENSE file for the text of the license)         *)
-(************************************************************************)
-
-(************************************************************************)
-(* Coq Language Server Protocol                                         *)
+(* Rocq Language Server Protocol                                        *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2024-2025 EJGA       -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
@@ -50,7 +41,7 @@ let concise_cb ofn =
       Lsp.Core.mk_diagnostics ~uri ~version diags |> ofn
   in
   Fleche.Io.CallBack.
-    { trace = (fun _hdr ?extra:_ _msg -> ())
+    { trace = (fun _hdr ?verbose:_ _msg -> ())
     ; message = (fun ~lvl:_ ~message:_ -> ())
     ; diagnostics
     ; fileProgress = (fun ~uri:_ ~version:_ _progress -> ())
@@ -97,8 +88,6 @@ let lsp_main bt coqlib findlib_config ocamlpath vo_load_path require_libraries
   let ofn message = Lsp.Io.send_message Format.std_formatter message in
   let ofn_ntn not = Lsp.Base.Message.notification not |> ofn in
 
-  Lsp.Io.set_log_fn ofn_ntn;
-
   let module CB = Lsp_core.CB (struct
     let ofn = ofn_ntn
   end) in
@@ -143,7 +132,6 @@ let lsp_main bt coqlib findlib_config ocamlpath vo_load_path require_libraries
       if !Fleche.Config.v.verbosity < 2 then (
         Fleche.Config.(
           v := { !v with send_diags = false; send_perf_data = false });
-        Lsp.Io.set_log_fn (fun _obj -> ());
         let io = concise_cb ofn_ntn in
         Fleche.Io.CallBack.set io;
         io)

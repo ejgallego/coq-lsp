@@ -1,3 +1,11 @@
+(************************************************************************)
+(* Rocq Language Server Protocol                                        *)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2024-2025 EJGA       -- Dual License LGPL 2.1 / GPL3+      *)
+(* Written by: Emilio J. Gallego Arias                                  *)
+(************************************************************************)
+
 module Level = struct
   type t =
     | Error
@@ -9,7 +17,7 @@ end
 
 module CallBack = struct
   type t =
-    { trace : string -> ?extra:string -> string -> unit
+    { trace : string -> ?verbose:string -> string -> unit
     ; message : lvl:Level.t -> message:string -> unit
     ; diagnostics :
         uri:Lang.LUri.File.t -> version:int -> Lang.Diagnostic.t list -> unit
@@ -21,7 +29,7 @@ module CallBack = struct
     }
 
   let default =
-    { trace = (fun _ ?extra:_ _ -> ())
+    { trace = (fun _ ?verbose:_ _ -> ())
     ; message = (fun ~lvl:_ ~message:_ -> ())
     ; diagnostics = (fun ~uri:_ ~version:_ _ -> ())
     ; fileProgress = (fun ~uri:_ ~version:_ _ -> ())
@@ -34,9 +42,36 @@ module CallBack = struct
   let set t = cb := t
 end
 
+(** Trace *)
+module TraceValue = struct
+  type t =
+    | Off
+    | Messages
+    | Verbose
+
+  let of_string = function
+    | "messages" -> Ok Messages
+    | "verbose" -> Ok Verbose
+    | "off" -> Ok Off
+    | v -> Error ("TraceValue.parse: " ^ v)
+
+  let to_string = function
+    | Off -> "off"
+    | Messages -> "messages"
+    | Verbose -> "verbose"
+end
+
 module Log = struct
-  let trace_ d ?extra m = !CallBack.cb.trace d ?extra m
-  let trace d ?extra = Format.kasprintf (fun m -> trace_ d ?extra m)
+  let trace_value = ref TraceValue.Off
+  let set_trace_value value = trace_value := value
+
+  let trace_ d ?verbose m =
+    match !trace_value with
+    | Off -> ()
+    | Messages -> !CallBack.cb.trace d ?verbose:None m
+    | Verbose -> !CallBack.cb.trace d ?verbose m
+
+  let trace d ?verbose = Format.kasprintf (fun m -> trace_ d ?verbose m)
 
   let trace_object hdr obj =
     (* Fixme, use the extra parameter *)
@@ -45,8 +80,8 @@ module Log = struct
   let feedback feedback =
     if not (CList.is_empty feedback) then
       (* Put feedbacks content here? *)
-      let extra = None in
-      !CallBack.cb.trace "feedback" ?extra
+      let verbose = None in
+      !CallBack.cb.trace "feedback" ?verbose
         "feedback received in non-user facing place"
 end
 
