@@ -71,8 +71,14 @@ module ExportObj = struct
   [@@unboxed] [@@deriving sexp]
 end
 
-type algebraic_objects =
+type ('subs, 'alg, 'keep, 'escape) object_view =
+  [%import: ('subs, 'alg, 'keep, 'escape) Libobject.object_view ]
+[@@deriving sexp]
+
+type t = [%import: Libobject.t]
+and algebraic_objects =
   [%import: Libobject.algebraic_objects]
-and t = [%import: Libobject.t]
 and substitutive_objects = [%import: Libobject.substitutive_objects]
+and keep_objects = [%import: Libobject.keep_objects]
+and escape_objects = [%import: Libobject.escape_objects]
 [@@deriving sexp]
