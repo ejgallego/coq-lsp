@@ -38,14 +38,15 @@ external interrupt_setup : opaque (* Uint32Array *) -> unit = "interrupt_setup"
 
 let interrupt_is_setup = ref false
 
-let log_interrupt () =
+let log_interrupt ~io =
   let lvl, message =
     if not !interrupt_is_setup then
       (* Maybe set one step mode, but usually that's done in the client. *)
-      (Lsp.Io.Lvl.Error, "Interrupt is not setup: Functionality will suffer")
-    else (Lsp.Io.Lvl.Info, "Interrupt setup: [Control.interrupt] backend")
+      ( Fleche.Io.Level.Error
+      , "Interrupt is not setup: Functionality will suffer" )
+    else (Fleche.Io.Level.Info, "Interrupt setup: [Control.interrupt] backend")
   in
-  Lsp.Io.logMessage ~lvl ~message
+  Fleche.Io.Report.message_ ~io ~lvl ~message
 
 let parse_msg msg =
   if Js.instanceof msg Js.array_empty then (
@@ -56,11 +57,11 @@ let parse_msg msg =
     Error "processed interrupt_setup")
   else Jsso.obj_to_json msg |> Lsp.Base.Message.of_yojson
 
-let on_msg msg =
+let on_msg ~io msg =
   match parse_msg msg with
   | Error _ ->
     let message = "Error in JSON RPC Message Parsing" in
-    Lsp.Io.logMessage ~lvl:Lsp.Io.Lvl.Error ~message
+    Fleche.Io.(Report.message_ ~io ~lvl:Level.Error ~message)
   | Ok msg ->
     (* Lsp.Io.trace "interrupt_setup" (string_of_bool !interrupt_is_setup); *)
     Lsp_core.enqueue_message msg
@@ -95,8 +96,8 @@ let on_init ~io ~root_state ~cmdline ~debug msg =
     | Lsp_core.Init_effect.Exit -> (* XXX: bind to worker.close () *) ()
     | Lsp_core.Init_effect.Loop -> ()
     | Lsp_core.Init_effect.Success workspaces ->
-      log_interrupt ();
-      Worker.set_onmessage on_msg;
+      log_interrupt ~io;
+      Worker.set_onmessage (on_msg ~io);
       let default_workspace = Coq.Workspace.default ~debug ~cmdline in
       let state =
         { Lsp_core.State.root_state; cmdline; workspaces; default_workspace }
@@ -148,7 +149,7 @@ let main () =
   (* setup_interp (); *)
   rocq_vm_trap ();
 
-  Lsp.Io.set_log_fn (fun n -> Lsp.Base.Message.notification n |> post_message);
+  (* Review *)
   let io = CB.cb in
   Fleche.Io.CallBack.set io;
 

@@ -21,7 +21,7 @@ let setup_workspace ~token ~init ~debug ~root =
    Fleche.Doc.Env.make ~init ~workspace ~files)
   |> Result.map_error Petanque.Agent.Error.coq
 
-let trace_stderr hdr ?extra:_ msg =
+let trace_stderr hdr ?verbose:_ msg =
   Format.eprintf "@[[trace] %s | %s @]@\n%!" hdr msg
 
 let trace_ref = ref trace_stderr
@@ -32,7 +32,7 @@ let message_stderr ~lvl:_ ~message =
 let message_ref = ref message_stderr
 
 let io =
-  let trace hdr ?extra msg = !trace_ref hdr ?extra msg in
+  let trace hdr ?verbose msg = !trace_ref hdr ?verbose msg in
   let message ~lvl ~message = !message_ref ~lvl ~message in
   let diagnostics ~uri:_ ~version:_ _diags = () in
   let fileProgress ~uri:_ ~version:_ _pinfo = () in

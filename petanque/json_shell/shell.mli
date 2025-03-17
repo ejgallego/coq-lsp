@@ -3,7 +3,7 @@ open Petanque
 (** I/O handling, by default, print to stderr *)
 
 (** [trace header extra message] *)
-val trace_ref : (string -> ?extra:string -> string -> unit) ref
+val trace_ref : (string -> ?verbose:string -> string -> unit) ref
 
 (** [message level message] *)
 val message_ref : (lvl:Fleche.Io.Level.t -> message:string -> unit) ref

@@ -23,8 +23,8 @@ let sanitize_paths message =
     |> replace_test_path "findlib default location: "
 
 let log_workspace ~io (dir, w) =
-  let message, extra = Coq.Workspace.describe_guess w in
-  Fleche.Io.Log.trace "workspace" ~extra "initialized %s" dir;
+  let message, verbose = Coq.Workspace.describe_guess w in
+  Fleche.Io.Log.trace "workspace" ~verbose "initialized %s" dir;
   Fleche.Io.Report.msg ~io ~lvl:Info "%s" (sanitize_paths message)
 
 let load_plugin plugin_name = Fl_dynload.load_packages [ plugin_name ]
