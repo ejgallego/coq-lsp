@@ -13,6 +13,7 @@ module J = Yojson.Safe
 
 (* This needs a fix as to log protocol stuff not using the protocol *)
 let log_protocol = ref (fun _ _ -> ())
+let set_log_fn fn = log_protocol := fn
 
 let read_raw_message ic =
   let cl = input_line ic in
@@ -50,7 +51,7 @@ let read_message ic =
   match read_raw_message ic with
   | None -> None (* EOF *)
   | Some (Ok com) ->
-    if Fleche.Debug.read then !log_protocol "read" com;
+    !log_protocol "read" com;
     Some (Base.Message.of_yojson com)
   | Some (Error err) -> Some (Error err)
 
@@ -58,7 +59,7 @@ let mut = Mutex.create ()
 
 let send_json fmt obj =
   Mutex.lock mut;
-  if Fleche.Debug.send then !log_protocol "send" obj;
+  !log_protocol "send" obj;
   let msg =
     if !Fleche.Config.v.pp_json then
       F.asprintf "%a" J.(pretty_print ~std:true) obj

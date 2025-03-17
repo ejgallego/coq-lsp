@@ -13,3 +13,7 @@ val read_message : in_channel -> (Base.Message.t, string) Result.t option
 
 (** Send a JSON-RPC message to channel *)
 val send_message : Format.formatter -> Base.Message.t -> unit
+
+(** Set a debug function [log action object] which is called for read and send,
+    useful to do low-level protocol debug *)
+val set_log_fn : (string -> Yojson.Safe.t -> unit) -> unit

@@ -38,6 +38,9 @@
    `fcc` don't accept the `-I` flag anymore, use `OCAMLPATH` or the
    `--ocamlpath=` option to pass extra `findlib` paths. We still
    respect the -I flag in `_CoqMakefile` (@ejgallego, #916)
+ - [lsp] [debug] Respect `$/setTrace` call , refactor logging system,
+   and allow file logging of protocol traces again (@ejgallego, #919,
+   fixes #868)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
