@@ -1,24 +1,30 @@
 (************************************************************************)
-(* Flèche => document manager: Document                                 *)
+(* Flèche => Coq API: Arguments                                         *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
 (* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2024-2025 EJGA       -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias & coq-lsp contributors           *)
 (************************************************************************)
 
 open Cmdliner
 
-(* can't use Boot.Util.relocate because we're not together with rocq.exe *)
-let conf_coqlib =
+(* [Boot.Util.relocate] is too specific to rocq.exe for it to work, EJGA: this
+   needs likely more attention in our case, but OMMV *)
+let coqlib_dyn =
   match Coq_config.coqlib with
   | NotRelocatable p -> p
   | Relocatable p ->
-    let paths = match Sys.getenv_opt "PATH" with
+    let paths =
+      match Sys.getenv_opt "PATH" with
       | None -> []
       | Some paths ->
         let sep = if Coq_config.arch_is_win32 then ';' else ':' in
         String.split_on_char sep paths
     in
-    let name = if Sys.(os_type = "Win32" || os_type = "Cygwin") then "rocq.exe" else "rocq" in
+    let name =
+      if Sys.(os_type = "Win32" || os_type = "Cygwin") then "rocq.exe"
+      else "rocq"
+    in
     let bindir = fst (System.find_file_in_path ~warn:false paths name) in
     Filename.concat (Filename.concat bindir "..") p
 
@@ -29,8 +35,7 @@ let coqlib =
     "Load Coq.Init.Prelude from $(docv); theories and user-contrib should live \
      there."
   in
-  Arg.(
-    value & opt string conf_coqlib & info [ "coqlib" ] ~docv:"COQLIB" ~doc)
+  Arg.(value & opt string coqlib_dyn & info [ "coqlib" ] ~docv:"COQLIB" ~doc)
 
 let findlib_config =
   let doc = "Override findlib's config file" in
