@@ -4,8 +4,23 @@ let init_coq ~debug =
   let vm, warnings = (true, None) in
   Coq.Init.(coq_init { debug; load_module; load_plugin; vm; warnings })
 
+(* can't use Boot.Util.relocate because we're not together with rocq.exe *)
+let conf_coqlib =
+  match Coq_config.coqlib with
+  | NotRelocatable p -> p
+  | Relocatable p ->
+    let paths = match Sys.getenv_opt "PATH" with
+      | None -> []
+      | Some paths ->
+        let sep = if Coq_config.arch_is_win32 then ';' else ':' in
+        String.split_on_char sep paths
+    in
+    let name = if Sys.(os_type = "Win32" || os_type = "Cygwin") then "rocq.exe" else "rocq" in
+    let bindir = fst (System.find_file_in_path ~warn:false paths name) in
+    Filename.concat (Filename.concat bindir "..") p
+
 let cmdline : Coq.Workspace.CmdLine.t =
-  { coqlib = Coq_config.coqlib
+  { coqlib = conf_coqlib
   ; findlib_config = None
   ; ocamlpath = []
   ; vo_load_path = []
