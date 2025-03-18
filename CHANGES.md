@@ -41,6 +41,7 @@
  - [lsp] [debug] Respect `$/setTrace` call , refactor logging system,
    and allow file logging of protocol traces again (@ejgallego, #919,
    fixes #868)
+ - [coq] Support Coq relocatable mode (@SkySkimmer, #891)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
