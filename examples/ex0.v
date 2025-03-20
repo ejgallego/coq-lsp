@@ -2,12 +2,30 @@
 From Coq Require Import ssreflect ssrbool.
 From Coq Require Import Lia.
 
+From mathcomp Require Import all_ssreflect.
+
+Lemma foo (a b: nat): (1 = 1) /\ (21 = 21 /\ 22 = 22) /\ (3 = 3).
+Proof.
+pose (n := 3).
+split;[|split].
+- now reflexivity.
+- split.
+  + shelve.
+  + now admit.
+- now reflexivity.
+Qed.
+
+Print Grammar.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
 Lemma addn0 n : n + O = n.
-Proof. by elim: n. Qed.
+Proof.
+set m := _ + 0.
+
+ by elim: n. Qed.
 
 Definition m := addn0.
 

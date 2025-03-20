@@ -8,6 +8,8 @@ Require Import Waterproof.Automation.
 Require Import Waterproof.Tactics.
 Require Import Waterproof.Util.Assertions.
 
+Print Grammar.
+
 (** Test 0: works with existence statement*)
 Goal (exists n : nat, n + 1 = n)%nat -> False.
 Proof.

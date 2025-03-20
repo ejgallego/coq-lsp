@@ -1,10 +1,11 @@
-Lemma foo (a b: nat): (1 = 1) /\ (21 = 21 /\ 22 = 22) /\ (3 = 3).
+Lemma foo (a b: nat): (1 = 1) /\ ((21 = 21 /\ 3 = 3) /\ 22 = 22) /\ (3 = 3).
 Proof.
 pose (n := 3).
 split;[|split].
 - now reflexivity.
 - split.
-  + shelve.
+  + split.
+    -
   + now admit.
 - now reflexivity.
 Qed.
