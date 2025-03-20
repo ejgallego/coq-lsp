@@ -33,7 +33,6 @@ module Names     = Ser_names
 module Locus     = Ser_locus
 module Constr    = Ser_constr
 module EConstr   = Ser_eConstr
-module Nametab   = Ser_nametab
 module Constr_matching = Ser_constr_matching
 module Libnames   = Ser_libnames
 module Namegen    = Ser_namegen
