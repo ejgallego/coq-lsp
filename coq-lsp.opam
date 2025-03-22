@@ -37,7 +37,7 @@ depends: [
   "ppx_inline_test"     { >= "v0.15.0" }
 
   # [release branch] Uncomment
-  # "coq"          { >= "8.20" < "8.21"  }
+  # "rocq-prover"          { >= "9.1" < "9.2"  }
 
   # [release branch] Remove
   "ocamlfind" {>= "1.9.1" & (>= "1.9.8" | os != "windows") }
