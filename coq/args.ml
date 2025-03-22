@@ -10,23 +10,7 @@ open Cmdliner
 
 (* [Boot.Util.relocate] is too specific to rocq.exe for it to work, EJGA: this
    needs likely more attention in our case, but OMMV *)
-let coqlib_dyn =
-  match Coq_config.coqlib with
-  | NotRelocatable p -> p
-  | Relocatable p ->
-    let paths =
-      match Sys.getenv_opt "PATH" with
-      | None -> []
-      | Some paths ->
-        let sep = if Coq_config.arch_is_win32 then ';' else ':' in
-        String.split_on_char sep paths
-    in
-    let name =
-      if Sys.(os_type = "Win32" || os_type = "Cygwin") then "rocq.exe"
-      else "rocq"
-    in
-    let bindir = fst (System.find_file_in_path ~warn:false paths name) in
-    Filename.concat (Filename.concat bindir "..") p
+let coqlib_dyn = Coq_config.coqlib
 
 (****************************************************************************)
 (* Common Coq command-line arguments *)
