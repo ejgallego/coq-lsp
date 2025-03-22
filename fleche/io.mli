@@ -1,3 +1,11 @@
+(************************************************************************)
+(* Rocq Language Server Protocol                                        *)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2024-2025 EJGA       -- Dual License LGPL 2.1 / GPL3+      *)
+(* Written by: Emilio J. Gallego Arias                                  *)
+(************************************************************************)
+
 module Level : sig
   type t =
     | Error
@@ -9,9 +17,9 @@ end
 
 module CallBack : sig
   type t =
-    { trace : string -> ?extra:string -> string -> unit
-          (** Send a log message, [extra] may contain information to be shown in
-              verbose mode *)
+    { trace : string -> ?verbose:string -> string -> unit
+          (** Send a log message, [verbose] may contain information to be shown
+              in verbose mode *)
     ; message : lvl:Level.t -> message:string -> unit
           (** Send a user-visible message *)
     ; diagnostics :
@@ -26,13 +34,29 @@ module CallBack : sig
   val set : t -> unit
 end
 
-module Log : sig
-  (** Debug trace *)
-  val trace :
-    string -> ?extra:string -> ('a, Format.formatter, unit) format -> 'a
+(** {1 Imperative Tracing using a global [trace_fn]} *)
 
-  (** Raw LSP method *)
-  val trace_ : string -> ?extra:string -> string -> unit
+(** Trace values *)
+module TraceValue : sig
+  type t =
+    | Off
+    | Messages
+    | Verbose
+
+  val of_string : string -> (t, string) Result.t
+  val to_string : t -> string
+end
+
+module Log : sig
+  (** Set the trace value *)
+  val set_trace_value : TraceValue.t -> unit
+
+  (** [trace component ?verbose params] Debug trace, using printf *)
+  val trace :
+    string -> ?verbose:string -> ('a, Format.formatter, unit) format -> 'a
+
+  (** Direct string-based method *)
+  val trace_ : string -> ?verbose:string -> string -> unit
 
   (** Log JSON object to server info log *)
   val trace_object : string -> Yojson.Safe.t -> unit

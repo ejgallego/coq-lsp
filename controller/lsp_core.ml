@@ -48,14 +48,13 @@ module Helpers = struct
       with
       | Ok uri -> uri
       | Error err ->
+        (* XXX Fixme *)
         (* ppx_deriving_yojson error messages leave a lot to be desired *)
         (* We use lsp.io here as we will push parsing to the outer loop, so no
            need to reflect this on the type just to undo it later; as this
            message morally doesn't belong here *)
         let message = Format.asprintf "json parsing failed: %s" err in
-        Lsp.Io.logMessage ~lvl:Error ~message;
-        (* XXX Fixme *)
-        CErrors.user_err (Pp.str "failed to parse uri")
+        CErrors.user_err (Pp.str message)
     in
     let Lsp.Doc.TextDocumentIdentifier.{ uri } = document in
     uri
@@ -305,8 +304,8 @@ let do_close params =
 
 let do_trace params =
   let trace = string_field "value" params in
-  match Lsp.Io.TraceValue.of_string trace with
-  | Ok t -> Lsp.Io.set_trace_value t
+  match Fleche.Io.TraceValue.of_string trace with
+  | Ok t -> Fleche.Io.Log.set_trace_value t
   | Error e -> L.trace "$/setTrace" "invalid value: %s" e
 
 (***********************************************************************)
@@ -491,8 +490,8 @@ let do_petanque ~token method_ params =
 exception Lsp_exit
 
 let log_workspace ~io (dir, w) =
-  let message, extra = Coq.Workspace.describe_guess w in
-  L.trace "workspace" ~extra "initialized %s" dir;
+  let message, verbose = Coq.Workspace.describe_guess w in
+  L.trace "workspace" ~verbose "initialized %s" dir;
   Fleche.Io.Report.msg ~io ~lvl:Info "%s" message
 
 let version () =
@@ -752,11 +751,11 @@ end) =
 struct
   let ofn = O.ofn
 
-  let trace hdr ?extra message =
-    let message = "[" ^ hdr ^ "] " ^ message in
-    Lsp.Io.logTrace ~message ~extra
+  let trace hdr ?verbose message =
+    let message = Format.asprintf "[%s] %s" hdr message in
+    Lsp.Base.mk_logTrace ~message ~verbose |> ofn
 
-  let message ~lvl ~message = Lsp.Io.logMessage ~lvl ~message
+  let message ~lvl ~message = Lsp.Base.mk_logMessage ~lvl ~message |> ofn
 
   let diagnostics ~uri ~version diags =
     Lsp.Core.mk_diagnostics ~uri ~version diags |> ofn

@@ -95,18 +95,18 @@ let determine_workspace_root ~io ~params =
 
 let get_trace ~params =
   match ostring_field "trace" params with
-  | None -> Lsp.Io.TraceValue.Off
+  | None -> Fleche.Io.TraceValue.Off
   | Some v -> (
-    match Lsp.Io.TraceValue.of_string v with
+    match Fleche.Io.TraceValue.of_string v with
     | Ok t -> t
     | Error e ->
       L.trace "trace" "invalid value: %s" e;
-      Lsp.Io.TraceValue.Off)
+      Fleche.Io.TraceValue.Off)
 
 let do_initialize ~io ~params =
   let dir = determine_workspace_root ~io ~params in
   let trace = get_trace ~params in
-  Lsp.Io.set_trace_value trace;
+  Fleche.Io.Log.set_trace_value trace;
   let coq_lsp_settings = odict_field "initializationOptions" params in
   do_settings coq_lsp_settings;
   check_client_version ~io !Fleche.Config.v.client_version;
