@@ -36,8 +36,7 @@ depends: [
   # unit testing
   "ppx_inline_test"     { >= "v0.15.0" }
 
-  # [release branch] Uncomment
-  # "coq"          { >= "8.20" < "8.21"  }
+  "coq"                 { >= "9.0" < "9.1" }
 
   # [release branch] Remove
   "ocamlfind" {>= "1.9.1" & (>= "1.9.8" | os != "windows") }
