@@ -1,0 +1,17 @@
+(library
+ (name serlib_ssr)
+ (public_name coq-lsp.serlib.ssreflect)
+ (synopsis "Serialization Library for Coq [SSR plugin]")
+ (preprocess
+  (staged_pps
+   ppx_import
+   ppx_sexp_conv
+   ppx_deriving_yojson
+   ppx_hash
+   ppx_compare))
+ (libraries
+  rocq-runtime.plugins.ssreflect
+  serlib
+  serlib_ltac
+  serlib_ssrmatching
+  sexplib))
