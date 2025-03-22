@@ -30,17 +30,17 @@ depends: [
   "uri"          { >= "4.2.0" }
   "dune-build-info" { >= "3.2.0" }
 
-  # waterproof parser
+  # waterproof json parser
   "menhir"       { >= "20220210" }
 
   # unit testing
   "ppx_inline_test"     { >= "v0.15.0" }
 
-  # Uncomment this for releases
-  # "coq"          { >= "8.17" < "8.18"  }
+  # [release branch] Uncomment
+  # "coq"          { >= "8.20" < "8.21"  }
 
-  # coq deps: remove this for releases
-  "ocamlfind" {>= "1.9.1"}
+  # [release branch] Remove
+  "ocamlfind" {>= "1.9.1" & (>= "1.9.8" | os != "windows") }
   "zarith" {>= "1.13"}
 
   # serlib deps: see what we need to keep for release

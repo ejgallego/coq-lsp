@@ -2,6 +2,7 @@
 (* Flèche => document manager: Document                                 *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
 (* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2024-2025 Emilio J. Gallego Arias -- LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias & coq-lsp contributors           *)
 (************************************************************************)
 
@@ -908,6 +909,10 @@ module Target = struct
     | End
     | Position of int * int
 
+  let pp fmt = function
+    | End -> Format.fprintf fmt "{target: end}"
+    | Position (l, c) -> Format.fprintf fmt "{target: l: %02d | c: %02d}" l c
+
   let reached ~(range : Lang.Range.t) (line, col) =
     let reached_line = range.end_.line in
     let reached_col = range.end_.character in
@@ -919,14 +924,9 @@ let beyond_target (range : Lang.Range.t) target =
   | Target.End -> false
   | Position (cut_line, cut_col) -> Target.reached ~range (cut_line, cut_col)
 
-let pp_target fmt = function
-  | Target.End -> Format.fprintf fmt "end"
-  | Target.Position (l, c) ->
-    Format.fprintf fmt "{cutpoint l: %02d | c: %02d" l c
-
 let log_beyond_target last_tok target =
   Io.Log.trace "beyond_target" "target reached %a" Lang.Range.pp last_tok;
-  Io.Log.trace "beyond_target" "target is %a" pp_target target
+  Io.Log.trace "beyond_target" "target is %a" Target.pp target
 
 let max_errors_node ~state ~range ~prev =
   let msg = Pp.str "Maximum number of errors reached" in
@@ -952,7 +952,6 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
     (* Reporting of progress and diagnostics (if dirty) *)
     let doc = send_eager_diagnostics ~io ~uri ~version ~doc in
     report_progress ~io ~doc last_tok;
-    if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
     match Stop_cond.should_stop acc_errors last_tok target with
     | Max_errors ->
       let completed = Completion.Failed last_tok in
@@ -970,6 +969,7 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
       set_completion ~completed doc
     | Continue -> (
       (* Parsing *)
+      if Debug.parsing then Io.Log.trace "coq" "parsing sentence";
       let lines = doc.contents.lines in
       let action, parsing_diags, parsing_feedback, parsing_time =
         parse_action ~token ~lines ~st last_tok doc_handle
@@ -991,28 +991,17 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
         let doc = add_node ~node doc in
         stm doc state last_tok (Some node) (acc_errors + n_errors))
   in
-  (* Reporting of progress and diagnostics (if stopped or failed, if completed
-     the doc manager will take care of it) *)
-  let doc =
-    if not (Completion.is_completed doc.completed) then
-      let () = report_progress ~io ~doc last_tok in
-      send_eager_diagnostics ~io ~uri ~version ~doc
-    else doc
-  in
   (* Set the document to "internal" mode, stm expects the node list to be in
      reversed order *)
   let doc = { doc with nodes = List.rev doc.nodes } in
   (* Note that nodes and diags are in reversed order here *)
-  (match doc.nodes with
-  | [] -> ()
-  | n :: _ -> Io.Log.trace "resume" "last node: %a" Lang.Range.pp n.range);
-  let last_node = Util.hd_opt doc.nodes in
-  let st, stats =
-    Option.cata
-      (fun { Node.state; info = { global_stats; _ }; _ } ->
-        (state, global_stats))
-      (doc.root, Stats.Global.zero ())
-      last_node
+  let last_node, st, stats =
+    match Util.hd_opt doc.nodes with
+    | None -> (None, doc.root, Stats.Global.zero ())
+    | Some { Node.state; range; info = { global_stats; _ }; _ } as last_node ->
+      Io.Log.trace "resume / process_and_parse" "last node: %a" Lang.Range.pp
+        range;
+      (last_node, state, global_stats)
   in
   Stats.Global.restore stats;
   let doc = stm doc st last_tok last_node 0 in

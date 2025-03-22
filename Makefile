@@ -9,11 +9,15 @@ ifdef VENDORED_SETUP
 PKG_SET= \
 vendor/coq/rocq-runtime.install \
 vendor/coq/rocq-core.install \
-vendor/coq/stdlib/coq-stdlib.install \
+vendor/coq/coq-core.install \
+vendor/coq-stdlib/rocq-stdlib.install \
+vendor/coq-stdlib/coq-stdlib.install \
 coq-lsp.install
 else
 PKG_SET= coq-lsp.install
 endif
+
+PKG_SET_WEB=$(PKG_SET) vendor/coq-waterproof/coq-waterproof.install
 
 # Get the ocamlformat version from the .ocamlformat file
 OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
@@ -69,7 +73,6 @@ vendor/coq/config/coq_config.ml: vendor/coq
 	        -libdir "$$EPATH/_build/install/default/lib/coq" \
 	        -bytecode-compiler $(COQVM) \
 		-native-compiler no \
-	&& sed -i.bak 's/\((dirs .*\)/; \1/g' dune \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
 
@@ -83,14 +86,17 @@ winconfig:
 	&& ./configure -no-ask -prefix "$$EPATH\\_build\\install\\default\\" \
 	        -libdir "$$EPATH\\_build\\install\\default\\lib\\coq\\" \
 		-native-compiler no \
-	&& sed -i.bak 's/\((dirs .*\)/; \1/g' dune \
 	&& cp theories/dune.disabled theories/dune \
 	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
+
+.PHONY: wp
+wp:
+	dune build vendor/coq-waterproof/coq-waterproof.install
 
 .PHONY: js
 js: COQVM = no
 js: coq_boot
-	dune build --profile=release --display=quiet $(PKG_SET) controller-js/coq_lsp_worker.bc.cjs
+	dune build --profile=release --display=quiet $(PKG_SET_WEB) controller-js/coq_lsp_worker.bc.cjs
 	mkdir -p editor/code/out/ && cp -a controller-js/coq_lsp_worker.bc.cjs editor/code/out/coq_lsp_worker.bc.js
 
 .PHONY: coq_boot
@@ -140,6 +146,9 @@ submodules-deinit:
 .PHONY: submodules-update
 submodules-update:
 	(cd vendor/coq && git checkout master && git pull upstream master)
+	(cd vendor/coq-stdlib && git checkout master && git pull upstream master)
+# For now we update manually
+# (cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 
 # Build the vscode extension
 .PHONY: extension
@@ -158,37 +167,62 @@ make-fmt: build fmt
 .PHONY: opam-update-and-reinstall
 opam-update-and-reinstall:
 	git pull --recurse-submodules
-	for pkg in rocq-runtime coq-core rocq-core stdlib/coq-stdlib coqide-server coq; do opam install -y vendor/coq/$$pkg.opam; done
+	for pkg in rocq-runtime coq-core rocq-core coqide-server rocq-prover coq; do opam install -y vendor/coq/$$pkg.opam; done
+	for pkg in rocq-stdlib coq-stdlib; do opam install -y vendor/coq-stdlib/$$pkg.opam; done
 	opam install .
+
+# These variables are exclusive of the JS build
+VENDORED_SETUP:=true
+
+# Used in git clone
+COQ_BRANCH=v8.20
+# Used in opam pin
+COQ_CORE_VERSION=8.20.1
+# Name of COQ_CORE_NAME is rocq-runtime after 8.20
+COQ_CORE_NAME=rocq-runtime
+
+ifdef VENDORED_SETUP
+COQ_SRC_DIR=vendor/coq
+PATCH_DIR=../../etc/
+else
+COQ_SRC_DIR=../coq
+PATCH_DIR=$(shell pwd)/etc
+endif
 
 .PHONY: patch-for-js
 patch-for-js:
-	cd vendor/coq && patch -p1 < ../../etc/0001-coq-lsp-patch.patch
-	cd vendor/coq && patch -p1 < ../../etc/0001-jscoq-lib-system.ml-de-unix-stat.patch
+ifndef VENDORED_SETUP
+	git clone --depth=1 https://github.com/coq/coq.git -b $(COQ_BRANCH) $(COQ_SRC_DIR)
+endif
+	cd $(COQ_SRC_DIR) && patch -p1 < $(PATCH_DIR)/0001-coq-lsp-patch.patch
+	cd $(COQ_SRC_DIR) && patch -p1 < $(PATCH_DIR)/0001-jscoq-lib-system.ml-de-unix-stat.patch
+	cd $(COQ_SRC_DIR) && patch -p1 < $(PATCH_DIR)/0001-engine-trampoline.patch
+ifndef VENDORED_SETUP
+	opam pin add $(COQ_CORE_NAME).$(COQ_CORE_VERSION) -k path $(COQ_SRC_DIR)
+endif
 
 _LIBROOT=$(shell opam var lib)
 
-# At some point this may be the better idea
-VENDORED_SETUP:=true
-
 ifdef VENDORED_SETUP
-_CCROOT=_build/install/default/lib/rocq-runtime
+_CCROOT=_build/install/default/lib/$(COQ_CORE_NAME)
 else
 # We could use `opam var lib` as well here, as the idea to rely on
 # coqc was to avoid having a VENDORED_SETUP variable, which we now
 # have anyways.
-_CCROOT=$(shell coqc -where)/../rocq-runtime
+_CCROOT=$(shell coqc -where)/../$(COQ_CORE_NAME)
 endif
 
 # Super-hack
 controller-js/coq-fs-core.js: COQVM = no
 controller-js/coq-fs-core.js: coq_boot
-	dune build --profile=release --display=quiet $(PKG_SET) etc/META.threads
+	dune build --profile=release --display=quiet $(PKG_SET_WEB) etc/META.threads
 	for i in $$(find $(_CCROOT)/plugins -name *.cma); do js_of_ocaml --dynlink $$i; done
 	for i in $$(find _build/install/default/lib/coq-lsp/serlib -wholename */*.cma); do js_of_ocaml --dynlink $$i; done
+	for i in $$(find _build/install/default/lib/coq-waterproof/plugin -name *.cma); do js_of_ocaml --dynlink $$i; done
 	js_of_ocaml build-fs -o controller-js/coq-fs-core.js \
-	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/rocq-runtime/%P ") \
+	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/$(COQ_CORE_NAME)/%P ") \
 	    $$(find _build/install/default/lib/coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-lsp/%P ") \
+	    $$(find _build/install/default/lib/coq-waterproof/  \( -wholename '*/plugin/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-waterproof/%P ") \
 	    ./etc/META.threads:/static/lib/threads/META \
 	    $$(find $(_LIBROOT) -wholename '*/str/META'                 -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/seq/META'                 -printf "%p:/static/lib/%P ") \

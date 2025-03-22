@@ -40,14 +40,6 @@ module Float64 = Ser_float64
 module Pstring = Ser_pstring
 module Vmlibrary = Ser_vmlibrary
 
-type template_arity =
-  [%import: Declarations.template_arity]
-  [@@deriving sexp,yojson,hash,compare]
-
-type ('a, 'b) declaration_arity =
-  [%import: ('a, 'b) Declarations.declaration_arity]
-  [@@deriving sexp,yojson,hash,compare]
-
 type recarg_type =
   [%import: Declarations.recarg_type]
   [@@deriving sexp,yojson,hash,compare]
@@ -58,15 +50,6 @@ type recarg =
 
 type wf_paths =
   [%import: Declarations.wf_paths]
-  [@@deriving sexp,yojson,hash,compare]
-
-type regular_inductive_arity =
-  [%import: Declarations.regular_inductive_arity
-  [@with Term.sorts := Sorts.t;]]
-  [@@deriving sexp,yojson,hash,compare]
-
-type inductive_arity =
-  [%import: Declarations.inductive_arity]
   [@@deriving sexp,yojson,hash,compare]
 
 type squash_info =
@@ -201,28 +184,6 @@ type mod_type =
   [%import: Declarations.mod_type]
   [@@deriving sexp,yojson,hash,compare]
 
-module WMBBiject = struct
-  type ('a, 'b) t = ('a, 'b) Declarations.when_mod_body
-
-  [@@@ocaml.warning "-27"]
-  type ('a, 'b) _t = 'b option
-    [@@deriving sexp,yojson,hash,compare]
-  [@@@ocaml.warning "+27"]
-
-  let to_t (type a b) (x : b option) : (a, b) Declarations.when_mod_body = match x with
-  | Some x -> Obj.magic @@ Declarations.ModBodyVal x
-  | None -> Obj.magic @@ Declarations.ModTypeNul
-
-  let of_t (type a) (type b) (x : (a, b) Declarations.when_mod_body) : b option = match x with
-  | Declarations.ModBodyVal x -> Some x
-  | Declarations.ModTypeNul -> None
-end
-
-module WMB = SerType.Biject2(WMBBiject)
-
- type ('a, 'b) when_mod_body = ('a, 'b) WMB.t
-  [@@deriving sexp,yojson,hash,compare]
-
 type 'a module_alg_expr =
   [%import: 'a Declarations.module_alg_expr]
   [@@deriving sexp,yojson,hash,compare]
@@ -231,34 +192,14 @@ type 'a functor_alg_expr =
   [%import: 'a Declarations.functor_alg_expr]
   [@@deriving sexp,yojson,hash,compare]
 
-type structure_field_body =
-  [%import: Declarations.structure_field_body]
+type ('a, 'b) structure_field_body =
+  [%import: ('a, 'b) Declarations.structure_field_body]
   [@@deriving sexp,yojson,hash,compare]
 
-and structure_body =
-  [%import: Declarations.structure_body]
-  [@@deriving sexp,yojson,hash,compare]
-
-and module_signature =
-  [%import: Declarations.module_signature]
+and ('a, 'b) structure_body =
+  [%import: ('a, 'b) Declarations.structure_body]
   [@@deriving sexp,yojson,hash,compare]
 
 and module_expression =
   [%import: Declarations.module_expression]
-  [@@deriving sexp,yojson,hash,compare]
-
-and module_implementation =
-  [%import: Declarations.module_implementation]
-  [@@deriving sexp,yojson,hash,compare]
-
-and 'a generic_module_body =
-  [%import: 'a Declarations.generic_module_body]
-  [@@deriving sexp,yojson,hash,compare]
-
-and module_body =
-  [%import: Declarations.module_body]
-  [@@deriving sexp,yojson,hash,compare]
-
-and module_type_body =
-  [%import: Declarations.module_type_body]
   [@@deriving sexp,yojson,hash,compare]

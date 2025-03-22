@@ -196,8 +196,25 @@ let send_perf_data ~io ~token:_ ~(doc : Doc.t) =
 let () = Register.Completed.add send_perf_data
 let () = Register.Completed.add send_diags
 
+module Reason = struct
+  type t =
+    | OpenDocument
+    | ChangeDocument
+    | ViewHint
+    | RequestDoc of int
+    | RequestPos of int * (int * int)
+
+  let pp fmt = function
+    | OpenDocument -> Format.fprintf fmt "%s" "didOpen"
+    | ChangeDocument -> Format.fprintf fmt "%s" "didChange"
+    | ViewHint -> Format.fprintf fmt "%s" "viewHint"
+    | RequestDoc id -> Format.fprintf fmt "%s {id: %d}" "Request Doc" id
+    | RequestPos (id, (l, c)) ->
+      Format.fprintf fmt "%s {id: %d | l: %d c: %d}" "Request Pos" id l c
+end
+
 module Check : sig
-  val schedule : uri:Lang.LUri.File.t -> unit
+  val schedule : uri:Lang.LUri.File.t -> reason:Reason.t -> unit
   val deschedule : uri:Lang.LUri.File.t -> unit
 
   val maybe_check :
@@ -214,7 +231,10 @@ end = struct
   (** Push to front; beware of complexity here? Usually we don't have more than
       10-20 files open in this use case; other use cases may require a more
       efficient data-structure. *)
-  let pend_push uri pend = uri :: CList.remove Lang.LUri.File.equal uri pend
+  let clean_uri uri pend =
+    CList.filter (fun u -> not (Lang.LUri.File.equal uri u)) pend
+
+  let pend_push uri pend = uri :: clean_uri uri pend
 
   (** Try until [Some] *)
   let rec pend_try f = function
@@ -251,6 +271,13 @@ end = struct
     in
     Io.Report.serverStatus ~io (ServerInfo.Status.Idle mem)
 
+  (* IMPORTANT: We only remove documents from the queue when they either:
+
+     a) reach completed status, done in [do_check] b) there are no more work
+     present and we are in lazy mode (done below in [check])
+
+     This strategy has some downfalls, as we don't really separate idle work
+     from non-idle work here, for example. *)
   let do_check ~io ~token ~handle ~doc target =
     let () = report_start ~io doc in
     let doc = Doc.check ~io ~token ~target ~doc () in
@@ -263,24 +290,27 @@ end = struct
 
   (* Notification handling; reply is optional / asynchronous *)
   let check ~io ~token ~uri =
-    Io.Log.trace "process_queue" "resuming document checking";
+    Io.Log.trace "maybe_check" "considering document %a" Lang.LUri.File.pp uri;
     let kind = "Check.check" in
     let default () =
       pending := pend_pop !pending;
       None
     in
     let f (handle : Handle.t) doc =
+      (* See if we have a fine-grain target to go *)
       let target = get_check_target ~doc handle.pt_requests in
       match target with
+      | None
       (* If we are in lazy mode and we don't have any full document requests
          pending, we just deschedule *)
-      | None
         when !Config.v.check_only_on_request
              && Int.Set.is_empty handle.cp_requests ->
+        Io.Log.trace "maybe_check" "nothing to do, descheduling";
         pending := pend_pop !pending;
         None
       | (None | Some _) as tgt ->
         let target = Option.default Doc.Target.End tgt in
+        Io.Log.trace "maybe_check" "building target %a" Doc.Target.pp target;
         Some (do_check ~io ~token ~handle ~doc target)
     in
     Handle.with_doc ~kind ~uri ~default ~f
@@ -288,15 +318,17 @@ end = struct
   let maybe_check ~io ~token =
     pend_try (fun uri -> check ~io ~token ~uri) !pending
 
-  let schedule ~uri = pending := pend_push uri !pending
+  let schedule ~uri ~reason =
+    if Debug.schedule then Io.Log.trace "schedule" "reason: %a" Reason.pp reason;
+    pending := pend_push uri !pending
 
-  let deschedule ~uri =
-    pending := CList.remove Lang.LUri.File.equal uri !pending
+  let deschedule ~uri = pending := clean_uri uri !pending
 
   let set_scheduler_hint ~uri ~point =
     if CList.is_empty !pending then
       let () = hint := Some (uri, point) in
-      schedule ~uri (* if the hint is set we wanna override it *)
+      let reason = Reason.ViewHint in
+      schedule ~uri ~reason (* if the hint is set we wanna override it *)
     else if not (Option.is_empty !hint) then hint := Some (uri, point)
 end
 
@@ -305,7 +337,8 @@ let create ~io ~token ~env ~uri ~raw ~version =
   let env = Doc.Env.inject_requires ~extra_requires env in
   let doc = Doc.create ~token ~env ~uri ~raw ~version in
   Handle.create ~uri ~doc;
-  Check.schedule ~uri
+  let reason = Reason.OpenDocument in
+  Check.schedule ~uri ~reason
 
 let change ~io:_ ~token ~(doc : Doc.t) ~version ~raw =
   let uri = doc.uri in
@@ -317,7 +350,8 @@ let change ~io:_ ~token ~(doc : Doc.t) ~version ~raw =
   (* Just in case for the future, we update the document before requesting it to
      be checked *)
   let invalid = Handle.update_doc_version ~doc in
-  Check.schedule ~uri;
+  let reason = Reason.ChangeDocument in
+  Check.schedule ~uri ~reason;
   invalid
 
 let change ~io ~token ~(doc : Doc.t) ~version ~raw =
@@ -388,7 +422,8 @@ module Request = struct
           | false, false -> Cancel
           | false, true ->
             Handle.attach_cp_request ~uri ~id;
-            Check.schedule ~uri;
+            let reason = Reason.RequestDoc id in
+            Check.schedule ~uri ~reason;
             Postpone)
     | PosInDoc { point; version } ->
       Handle.with_doc ~kind ~default ~uri ~f:(fun _ doc ->
@@ -397,7 +432,8 @@ module Request = struct
           | true, _ -> Now doc
           | false, true ->
             Handle.attach_pt_request ~uri ~id ~point;
-            Check.schedule ~uri;
+            let reason = Reason.RequestPos (id, point) in
+            Check.schedule ~uri ~reason;
             Postpone
           | false, false -> Cancel)
 

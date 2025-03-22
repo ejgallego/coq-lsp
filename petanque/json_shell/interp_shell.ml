@@ -4,6 +4,7 @@
 (* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (************************************************************************)
 
+module Lsp = Fleche_lsp
 open Petanque_json.Interp
 open Protocol_shell
 
@@ -45,9 +46,9 @@ let interp ~fn ~token (r : Lsp.Base.Message.t) : Lsp.Base.Message.t option =
     Some (Lsp.Base.Message.response response)
   | Notification { method_; params = _ } ->
     let message = "unhandled notification: " ^ method_ in
-    let log = Lsp.Io.mk_logTrace ~message ~extra:None in
+    let log = Lsp.Base.mk_logTrace ~message ~verbose:None in
     Some (Lsp.Base.Message.Notification log)
   | Response (Ok { id; _ }) | Response (Error { id; _ }) ->
     let message = "unhandled response: " ^ string_of_int id in
-    let log = Lsp.Io.mk_logTrace ~message ~extra:None in
+    let log = Lsp.Base.mk_logTrace ~message ~verbose:None in
     Some (Lsp.Base.Message.Notification log)

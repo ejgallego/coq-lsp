@@ -1,3 +1,4 @@
+module Lsp = Fleche_lsp
 open Fleche
 
 (* Put these in an utility function for plugins *)

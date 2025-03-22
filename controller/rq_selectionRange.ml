@@ -15,6 +15,8 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
+module Lsp = Fleche_lsp
+
 let point_to_result ~doc ((line, character) as point) =
   let approx = Fleche.Info.Exact in
   let range =

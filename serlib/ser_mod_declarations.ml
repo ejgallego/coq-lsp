@@ -16,14 +16,36 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-open Sexplib
+module Names = Ser_names
+module Declarations = Ser_declarations
+module Mod_subst = Ser_mod_subst
+module Retroknowledge = Ser_retroknowledge
 
-type t = UGraph.t
+module MBO =
+struct
+type t = Mod_declarations.module_body
+let name = "module_body"
+end
 
-val sexp_of_t : t -> Sexp.t
-val t_of_sexp : Sexp.t -> t
+module MTO =
+struct
+type t = Mod_declarations.module_type_body
+let name = "module_type_body"
+end
 
-type univ_inconsistency = UGraph.univ_inconsistency
+module MB = SerType.Opaque(MBO)
+module MT = SerType.Opaque(MTO)
 
-val univ_inconsistency_of_sexp : Sexp.t -> univ_inconsistency
-val sexp_of_univ_inconsistency : univ_inconsistency -> Sexp.t
+type module_body = MB.t
+  [@@deriving sexp,yojson,hash,compare]
+
+type module_type_body = MT.t
+  [@@deriving sexp,yojson,hash,compare]
+
+type structure_body =
+  [%import: Mod_declarations.structure_body]
+  [@@deriving sexp,yojson,hash,compare]
+
+type module_signature =
+  [%import: Mod_declarations.module_signature]
+  [@@deriving sexp,yojson,hash,compare]

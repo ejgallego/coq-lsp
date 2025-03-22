@@ -1,3 +1,5 @@
+module Lsp = Fleche_lsp
+
 let pp_diag fmt (d : Lang.Diagnostic.t) =
   Format.fprintf fmt "@[%a@]"
     (Yojson.Safe.pretty_print ~std:true)
@@ -12,11 +14,11 @@ let fileProgress ~uri:_ ~version:_ _progress = ()
 
 (* We print trace and messages, and perfData summary *)
 module Fcc_verbose = struct
-  let trace hdr ?extra message =
+  let trace hdr ?verbose message =
     Format.(
       eprintf "[trace] {%s} %s %a@\n%!" hdr message
         (pp_print_option pp_print_string)
-        extra)
+        verbose)
 
   let message ~lvl:_ ~message = Format.(eprintf "[message] %s@\n%!" message)
 
@@ -38,9 +40,9 @@ module Fcc_verbose = struct
       }
 end
 
-(* We print trace, messages *)
+(* We don't print trace messages, we could also use set_trace_value *)
 module Fcc_normal = struct
-  let trace _ ?extra:_ _ = ()
+  let trace _ ?verbose:_ _ = ()
   let cb = { Fcc_verbose.cb with trace }
 end
 
