@@ -2,11 +2,18 @@ SHELL := /usr/bin/env bash
 
 COQ_BUILD_CONTEXT=../_build/default/coq
 
+# Set to true for main, false for released version
+# VENDORED_SETUP:=true
+
+ifdef VENDORED_SETUP
 PKG_SET= \
 vendor/coq/rocq-runtime.install \
 vendor/coq/rocq-core.install \
 vendor/coq/stdlib/coq-stdlib.install \
 coq-lsp.install
+else
+PKG_SET= coq-lsp.install
+endif
 
 # Get the ocamlformat version from the .ocamlformat file
 OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
@@ -87,7 +94,12 @@ js: coq_boot
 	mkdir -p editor/code/out/ && cp -a controller-js/coq_lsp_worker.bc.cjs editor/code/out/coq_lsp_worker.bc.js
 
 .PHONY: coq_boot
+
+ifdef VENDORED_SETUP
 coq_boot: vendor/coq/config/coq_config.ml
+else
+coq_boot:
+endif
 
 .PHONY: clean
 clean:
