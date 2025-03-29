@@ -15,7 +15,8 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-(* XXX: EJGA This should be an structured value (object or array) *)
+(* XXX: EJGA In the LSP spec Params are either an structured value (object or
+   array) *)
 module Params : sig
   type t = (string * Yojson.Safe.t) list
 end
@@ -122,3 +123,32 @@ end
 module WorkDoneProgressEnd : sig
   type t = { kind : string } [@@deriving to_yojson]
 end
+
+(* Messages and Traces *)
+module MessageParams : sig
+  val method_ : string
+
+  type t =
+    { type_ : int [@key "type"]
+    ; message : string
+    }
+  [@@deriving yojson]
+end
+
+(** Create a [logMessage] LSP notification *)
+val mk_logMessage_ : type_:int -> message:string -> Notification.t
+
+val mk_logMessage : lvl:Fleche.Io.Level.t -> message:string -> Notification.t
+
+module TraceParams : sig
+  val method_ : string
+
+  type t =
+    { message : string
+    ; verbose : string option [@default None]
+    }
+  [@@deriving yojson]
+end
+
+(** Create a logTrace notification *)
+val mk_logTrace : message:string -> verbose:string option -> Notification.t

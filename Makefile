@@ -2,7 +2,20 @@ SHELL := /usr/bin/env bash
 
 COQ_BUILD_CONTEXT=../_build/default/coq
 
+# Set to true for main, comment out for released versions
+# VENDORED_SETUP:=true
+
+ifdef VENDORED_SETUP
+PKG_SET= \
+vendor/coq/rocq-runtime.install \
+vendor/coq/rocq-core.install \
+vendor/coq/coq-core.install \
+vendor/coq-stdlib/rocq-stdlib.install \
+vendor/coq-stdlib/coq-stdlib.install \
+coq-lsp.install
+else
 PKG_SET= coq-lsp.install
+endif
 
 PKG_SET_WEB=
 # This is disabled in stable versions
@@ -89,9 +102,11 @@ js: coq_boot
 	mkdir -p editor/code/out/ && cp -a controller-js/coq_lsp_worker.bc.cjs editor/code/out/coq_lsp_worker.bc.js
 
 .PHONY: coq_boot
+ifdef VENDORED_SETUP
+coq_boot: vendor/coq/config/coq_config.ml
+else
 coq_boot:
-# We do nothing for released versions
-# coq_boot: vendor/coq/config/coq_config.ml
+endif
 
 .PHONY: clean
 clean:
@@ -156,8 +171,6 @@ opam-update-and-reinstall:
 	opam install .
 
 # These variables are exclusive of the JS build
-# Not true in this branch
-# VENDORED_SETUP:=true
 
 # Used in git clone
 COQ_BRANCH=v8.19

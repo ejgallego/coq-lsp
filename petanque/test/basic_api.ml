@@ -11,7 +11,7 @@ let prepare_paths () =
 
 let msgs = ref []
 
-let trace hdr ?extra:_ msg =
+let trace hdr ?verbose:_ msg =
   msgs := Format.asprintf "[trace] %s | %s" hdr msg :: !msgs
 
 let message ~lvl:_ ~message = msgs := message :: !msgs

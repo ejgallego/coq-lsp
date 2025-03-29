@@ -53,10 +53,6 @@ type ('a,'b,'c,'d) red_expr_gen =
   [%import: ('a,'b,'c,'d) Genredexpr.red_expr_gen]
   [@@deriving sexp,yojson,hash,compare]
 
-type ('a,'b,'c,'d) may_eval =
-  [%import: ('a,'b,'c,'d) Genredexpr.may_eval]
-  [@@deriving sexp,yojson,hash,compare]
-
 (* Helpers for raw_red_expr *)
 type r_trm =
   [%import: Genredexpr.r_trm]
