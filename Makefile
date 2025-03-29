@@ -2,7 +2,7 @@ SHELL := /usr/bin/env bash
 
 COQ_BUILD_CONTEXT=../_build/default/coq
 
-# Set to true for main, false for released version
+# Set to true for main, comment out for released versions
 # VENDORED_SETUP:=true
 
 ifdef VENDORED_SETUP
@@ -170,9 +170,6 @@ opam-update-and-reinstall:
 	for pkg in rocq-runtime coq-core rocq-core coqide-server rocq-prover coq; do opam install -y vendor/coq/$$pkg.opam; done
 	for pkg in rocq-stdlib coq-stdlib; do opam install -y vendor/coq-stdlib/$$pkg.opam; done
 	opam install .
-
-# These variables are exclusive of the JS build
-VENDORED_SETUP:=true
 
 # Used in git clone
 COQ_BRANCH=v8.20
