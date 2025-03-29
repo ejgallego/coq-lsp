@@ -172,9 +172,9 @@ opam-update-and-reinstall:
 	opam install .
 
 # Used in git clone
-COQ_BRANCH=v8.20
+COQ_BRANCH=v9.0
 # Used in opam pin
-COQ_CORE_VERSION=8.20.1
+COQ_CORE_VERSION=9.0.0
 # Name of COQ_CORE_NAME is rocq-runtime after 8.20
 COQ_CORE_NAME=rocq-runtime
 
