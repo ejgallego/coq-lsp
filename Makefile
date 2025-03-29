@@ -2,7 +2,7 @@ SHELL := /usr/bin/env bash
 
 COQ_BUILD_CONTEXT=../_build/default/coq
 
-# Set to true for main, false for released version
+# Set to true for main, comment out for released versions
 # VENDORED_SETUP:=true
 
 ifdef VENDORED_SETUP
@@ -172,8 +172,6 @@ opam-update-and-reinstall:
 	opam install .
 
 # These variables are exclusive of the JS build
-# Not true in this branch
-# VENDORED_SETUP:=true
 
 # Used in git clone
 COQ_BRANCH=v8.20
