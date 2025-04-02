@@ -118,6 +118,10 @@ jobs:
           opam pin add js_of_ocaml -k version 5.9.1 -y
           opam install zarith_stubs_js js_of_ocaml-ppx -y
 
+      - name: 💧💧💧 Install additional deps (waterproof)
+        run: |
+          opam install coq-waterproof.2.2.0+8.20 -y
+
       - name: 💉💉💉 Patch Coq
         run: make patch-for-js
 
