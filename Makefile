@@ -206,7 +206,7 @@ else
 # We could use `opam var lib` as well here, as the idea to rely on
 # coqc was to avoid having a VENDORED_SETUP variable, which we now
 # have anyways.
-_CCROOT=$(shell coqc -where)/../$(COQ_CORE_NAME)
+_CCROOT=$(shell rocq c -where)/../$(COQ_CORE_NAME)
 endif
 
 # Super-hack
