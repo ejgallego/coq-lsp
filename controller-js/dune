@@ -54,9 +54,11 @@
 
 (rule
  (targets coq-fs.js)
- (deps
-  (package rocq-stdlib)
-  (package coq-waterproof))
+ ; Not needed on stable versions, however it would be nice if
+ ; rocq-stdlib hand't regressed on this install point
+ ; (deps
+ ;  (package rocq-stdlib)
+ ;  (package coq-waterproof))
  (action
   (bash
    "export COQW=$(coqc -where) && js_of_ocaml build-fs -o coq-fs.js $(cd $COQW && find theories user-contrib \\( -wholename 'theories/*.vo' -or -wholename 'theories/*.glob' -or -wholename 'theories/*.v' -or -wholename 'user-contrib/*.vo' -or -wholename 'user-contrib/*.v' -or -wholename 'user-contrib/*.glob' \\) -printf \"$COQW/%p:/static/coqlib/%p \")")))
