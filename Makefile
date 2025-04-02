@@ -17,9 +17,7 @@ else
 PKG_SET= coq-lsp.install
 endif
 
-PKG_SET_WEB=
-# This is disabled in stable versions
-# PKG_SET_WEB=$(PKG_SET) vendor/coq-waterproof/coq-waterproof.install
+PKG_SET_WEB=$(PKG_SET)
 
 # Get the ocamlformat version from the .ocamlformat file
 OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
