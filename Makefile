@@ -174,9 +174,9 @@ opam-update-and-reinstall:
 # These variables are exclusive of the JS build
 
 # Used in git clone
-COQ_BRANCH=v8.20
+COQ_BRANCH=v9.0
 # Used in opam pin
-COQ_CORE_VERSION=8.20.1
+COQ_CORE_VERSION=9.0.0
 # Name of COQ_CORE_NAME is rocq-runtime after 8.20
 COQ_CORE_NAME=coq-core
 
@@ -217,11 +217,11 @@ controller-js/coq-fs-core.js: coq_boot
 	dune build --profile=release --display=quiet $(PKG_SET_WEB) etc/META.threads
 	for i in $$(find $(_CCROOT)/plugins -name *.cma); do js_of_ocaml --dynlink $$i; done
 	for i in $$(find _build/install/default/lib/coq-lsp/serlib -wholename */*.cma); do js_of_ocaml --dynlink $$i; done
-	for i in $$(find _build/install/default/lib/coq-waterproof/plugin -name *.cma); do js_of_ocaml --dynlink $$i; done
+	for i in $$(find $(_CCROOT)/../coq-waterproof -name *.cma); do js_of_ocaml --dynlink $$i; done
 	js_of_ocaml build-fs -o controller-js/coq-fs-core.js \
 	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/$(COQ_CORE_NAME)/%P ") \
 	    $$(find _build/install/default/lib/coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-lsp/%P ") \
-	    $$(find _build/install/default/lib/coq-waterproof/  \( -wholename '*/plugin/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-waterproof/%P ") \
+	    $$(find $(_CCROOT)/../coq-waterproof/  \( -wholename '*/plugin/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-waterproof/%P ") \
 	    ./etc/META.threads:/static/lib/threads/META \
 	    $$(find $(_LIBROOT) -wholename '*/str/META'                 -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/seq/META'                 -printf "%p:/static/lib/%P ") \
