@@ -16,23 +16,6 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-include SerType.SJHC with type t = Sorts.t
-
-type relevance = Sorts.relevance [@@deriving sexp,yojson,hash,compare]
-type pattern = Sorts.pattern [@@deriving sexp,yojson,hash,compare]
-
-module QVar : sig
-  include SerType.SJHC with type t = Sorts.QVar.t
-  module Set : SerType.SJHC with type t = Sorts.QVar.Set.t
+module QualityOrSet : sig
+  type t = UnivGen.QualityOrSet.t [@@deriving sexp,yojson,hash,compare]
 end
-
-module Quality : sig
-  type constant = Sorts.Quality.constant [@@deriving sexp,yojson,hash,compare]
-
-  include SerType.SJHC with type t = Sorts.Quality.t
-  module Set : SerType.SJHC with type t = Sorts.Quality.Set.t
-
-  type pattern = Sorts.Quality.pattern [@@deriving sexp,yojson,hash,compare]
-end
-
-module QConstraints : SerType.SJHC with type t = Sorts.QConstraints.t

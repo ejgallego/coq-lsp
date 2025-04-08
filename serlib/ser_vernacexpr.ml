@@ -29,6 +29,7 @@ module Sorts       = Ser_sorts
 module CPrimitives = Ser_cPrimitives
 module Univ        = Ser_univ
 module UnivNames   = Ser_univNames
+module UnivGen   = Ser_univGen
 module Conv_oracle = Ser_conv_oracle
 module Declarations= Ser_declarations
 module Decls       = Ser_decls
