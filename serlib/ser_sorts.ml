@@ -22,10 +22,6 @@ open Ppx_compare_lib.Builtin
 
 module Univ = Ser_univ
 
-type family =
-  [%import: Sorts.family]
-  [@@deriving sexp,yojson,hash,compare]
-
 module BijectQVar = struct
   open Sexplib.Std
   open Ppx_hash_lib.Std.Hash.Builtin
