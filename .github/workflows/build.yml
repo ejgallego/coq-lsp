@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+      - v9.2
+      - v9.1
+      - v9.0
       - v8.20
       - v8.19
       - v8.18
@@ -13,6 +16,9 @@ on:
   pull_request:
     branches:
       - main
+      - v9.2
+      - v9.1
+      - v9.0
       - v8.20
       - v8.19
       - v8.18
@@ -47,7 +53,7 @@ jobs:
           - os: macos-latest
             ocaml: 4.14.x
           - name: Windows Latest
-            ocaml: 4.14
+            ocaml: 4.14.x
             os: windows-latest
       fail-fast: false
 
