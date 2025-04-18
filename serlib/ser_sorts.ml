@@ -74,14 +74,14 @@ type pattern =
   [%import: Sorts.pattern]
   [@@deriving sexp,yojson,hash,compare]
 
-module QConstraint = struct
+module ElimConstraint = struct
   type kind =
-    [%import: Sorts.QConstraint.kind]
+    [%import: Sorts.ElimConstraint.kind]
     [@@deriving sexp,yojson,hash,compare]
 
   type t =
-    [%import: Sorts.QConstraint.t]
+    [%import: Sorts.ElimConstraint.t]
     [@@deriving sexp,yojson,hash,compare]
 end
 
-module QConstraints = Ser_cSet.Make(Sorts.QConstraints)(QConstraint)
+module ElimConstraints = Ser_cSet.Make(Sorts.ElimConstraints)(ElimConstraint)
