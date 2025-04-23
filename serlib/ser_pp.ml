@@ -33,6 +33,7 @@ module P = struct
   type _t =
   | Pp_empty
   | Pp_string of string
+  | Pp_sized_string of int * string
   | Pp_glue of _t list
   | Pp_box  of block_type * _t
   | Pp_tag  of pp_tag * _t
@@ -47,6 +48,7 @@ module P = struct
   let rec of_t (d : t) : _t = match repr d with
   | Ppcmd_empty -> Pp_empty
   | Ppcmd_string s -> Pp_string s
+  | Ppcmd_sized_string (n,s) -> Pp_sized_string (n,s)
   | Ppcmd_glue l -> Pp_glue (List.map of_t l)
   | Ppcmd_box (bt,d) -> Pp_box(bt, of_t d)
   | Ppcmd_tag (t,d) -> Pp_tag(t, of_t d)
@@ -57,6 +59,7 @@ module P = struct
   let rec to_t (d : _t) : t = unrepr (match d with
   | Pp_empty -> Ppcmd_empty
   | Pp_string s -> Ppcmd_string s
+  | Pp_sized_string (n,s) -> Ppcmd_sized_string (n,s)
   | Pp_glue l -> Ppcmd_glue (List.map to_t l)
   | Pp_box (bt,d) -> Ppcmd_box(bt, to_t d)
   | Pp_tag (t,d) -> Ppcmd_tag(t, to_t d)
