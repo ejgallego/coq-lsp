@@ -20,8 +20,8 @@ open Ppx_hash_lib.Std.Hash.Builtin
 open Ppx_compare_lib.Builtin
 open Sexplib.Conv
 
-module Proofview = Ser_proofview
+module Names       = Ser_names
 
-type t =
-  [%import: Goal_select.t]
+type goal_range_selector =
+  [%import: Proofview.goal_range_selector]
   [@@deriving sexp,yojson,hash,compare]
