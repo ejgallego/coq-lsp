@@ -21,6 +21,16 @@ open Ppx_hash_lib.Std.Hash.Builtin
 open Ppx_compare_lib.Builtin
 
 module Univ = Ser_univ
+module Names = Ser_names
+
+module BijectQGlobal = struct
+  type t = Sorts.QGlobal.t
+  type _t = Names.DirPath.t * Names.Id.t [@@deriving sexp,yojson,hash,compare]
+  let of_t = Sorts.QGlobal.repr
+  let to_t (dp,id) = Sorts.QGlobal.make dp id
+end
+
+module QGlobal = SerType.Biject(BijectQGlobal)
 
 module BijectQVar = struct
   open Sexplib.Std
