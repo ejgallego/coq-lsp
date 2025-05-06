@@ -231,10 +231,6 @@ type constructor_expr =
   [%import: Vernacexpr.constructor_expr]
   [@@deriving sexp,yojson,hash,compare]
 
-type record_field_attr =
-  [%import: Vernacexpr.record_field_attr]
-  [@@deriving sexp,yojson,hash,compare]
-
 type record_field_attr_unparsed =
   [%import: Vernacexpr.record_field_attr_unparsed]
   [@@deriving sexp,yojson,hash,compare]
