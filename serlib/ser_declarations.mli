@@ -67,7 +67,7 @@ type recursivity_kind = Declarations.recursivity_kind
 type mutual_inductive_body = Declarations.mutual_inductive_body
   [@@deriving sexp,yojson,hash,compare]
 
-type rewrite_rule = Declarations.rewrite_rule
+type machine_rewrite_rule = Declarations.machine_rewrite_rule
   [@@deriving sexp,yojson,hash,compare]
 
 type mod_body = Declarations.mod_body
