@@ -39,10 +39,6 @@ jobs:
           - os: ubuntu-latest
             ocaml: 4.14.x
           - os: ubuntu-latest
-            ocaml: 4.13.x
-          - os: ubuntu-latest
-            ocaml: 4.12.x
-          - os: ubuntu-latest
             ocaml: 5.0.x
           - os: ubuntu-latest
             ocaml: 5.1.x
