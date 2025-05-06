@@ -42,6 +42,9 @@
    and allow file logging of protocol traces again (@ejgallego, #919,
    fixes #868)
  - [coq] Support Coq relocatable mode (@SkySkimmer, #891)
+ - [ci] [deps] Remove support for OCaml 4.12 and 4.13, following
+   upstream's coq/coq#20576 Note that these compiler versions have
+   been unsupported for a long time, please upgrade (@ejgallego, #951)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
