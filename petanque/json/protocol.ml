@@ -206,6 +206,45 @@ module RunTac = struct
   end
 end
 
+(* run_with_feedback RPC *)
+module RunWithFeedback = struct
+  let method_ = "petanque/run_with_feedback"
+
+  module Params = struct
+    type t =
+      { opts : Run_opts.t option [@default None]
+      ; st : int
+      ; cmd : string
+      }
+    [@@deriving yojson]
+  end
+
+  module Response = struct
+    type t = int Run_with_feedback_result.t [@@deriving yojson]
+  end
+
+  module Handler = struct
+    module Params = struct
+      type t =
+        { opts : Run_opts.t option
+              [@default None] (* Whether to memoize the execution *)
+        ; st : State.t
+        ; cmd : string
+        }
+      [@@deriving yojson]
+    end
+
+    module Response = struct
+      type t = State.t Run_with_feedback_result.t [@@deriving yojson]
+    end
+
+    let handler =
+      HType.Immediate
+        (fun ~token { Params.opts; st; cmd } ->
+          Agent.run_with_feedback ~token ?opts ~st ~cmd ())
+  end
+end
+
 (* goals RPC *)
 module Goals = struct
   let method_ = "petanque/goals"

@@ -21,6 +21,11 @@ module Run_result = struct
   type 'a t = [%import: 'a Petanque.Agent.Run_result.t] [@@deriving yojson]
 end
 
+module Run_with_feedback_result = struct
+  type 'a t = [%import: 'a Petanque.Agent.Run_with_feedback_result.t]
+  [@@deriving yojson]
+end
+
 (* Both are needed as of today *)
 module Stdlib = Lsp.JStdlib
 module Result = Stdlib.Result

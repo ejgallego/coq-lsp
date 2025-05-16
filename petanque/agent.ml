@@ -96,6 +96,13 @@ module Run_result = struct
     }
 end
 
+module Run_with_feedback_result = struct
+  type 'a t =
+    { state : 'a Run_result.t
+    ; feedbacks : Coq.Message.LocMessage.t list
+    }
+end
+
 let find_thm ~(doc : Fleche.Doc.t) ~thm =
   let { Fleche.Doc.toc; _ } = doc in
   let feedback = [] in
@@ -238,6 +245,21 @@ let run ~token ?opts ~st ~tac () : (_ Run_result.t, Error.t) Request.R.t =
     let+ st = Fleche.Doc.run ~token ~memo ?loc:None ~st tac in
     (* Note this runs on the resulting state, anyways it is purely functional *)
     analyze_after_run ~hash st
+  in
+  protect_to_result execution
+
+let run_with_feedback ~token ?opts ~st ~cmd ()
+: (_ Run_with_feedback_result.t, Error.t) Result.t =
+  let opts = default_opts opts in
+  let memo, hash = (opts.memo, opts.hash) in
+  let execution =
+    let open Coq.Protect.E.O in
+    let+ (st, fbl) =
+      Fleche.Doc.run_with_feedback ~token ~memo ?loc:None ~st cmd
+    in
+    let st = analyze_after_run ~hash st in
+    (* (st, fbl) *)
+    Run_with_feedback_result.{ state = st; feedbacks = fbl }
   in
   protect_to_result execution
 

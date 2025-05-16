@@ -26,6 +26,9 @@ module Severity : sig
   val warning : t (* 2 *)
   val information : t (* 3 *)
   val hint : t (* 4 *)
+
+  val of_string : string -> (t, string) result
+  val to_string : t -> string
 end
 
 type t =

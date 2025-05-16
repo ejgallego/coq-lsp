@@ -21,3 +21,10 @@ end
 type 'l t = Lang.Diagnostic.Severity.t * 'l Payload.t
 
 val map : f:('l -> 'm) -> 'l t -> 'm t
+
+module LocMessage : sig
+  type nonrec t = Loc.t t
+
+  val of_yojson : Yojson.Safe.t -> (t, string) result
+  val to_yojson : t -> Yojson.Safe.t
+end

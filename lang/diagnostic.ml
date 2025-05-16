@@ -26,6 +26,20 @@ module Severity = struct
   let warning = 2
   let information = 3
   let hint = 4
+
+  let of_string s = match s with
+    | "error" -> Ok 1
+    | "warning" -> Ok 2
+    | "information" -> Ok 3
+    | "hint" -> Ok 4
+    | other -> Error ("The string " ^ other ^ " does not correspond to any existing severity.")
+
+  let to_string s = match s with
+    | 1 -> "error"
+    | 2 -> "warning"
+    | 3 -> "information"
+    | 4 -> "hint"
+    | _ -> "unknown"
 end
 
 type t =

@@ -1120,3 +1120,27 @@ let run ~token ?loc ?(memo = true) ~st cmds =
   Coq.State.in_stateM ~token ~st
     ~f:(parse_and_execute_in ~token ~loc ~memo cmds)
     st
+
+let rec parse_execute_loop_with_feedback ~token ~memo pa (st, fb) =
+  let open Coq.Protect.E.O in
+  let eval = if memo then Memo.Interp.eval else eval_no_memo in
+  let* ast = Coq.Parsing.parse ~token ~st pa in
+  match ast with
+  | Some ast -> (
+    match eval ~token (st, ast) with
+    | Coq.Protect.E.{ r = Coq.Protect.R.Completed (Ok st); feedback = nfb } ->
+      parse_execute_loop_with_feedback ~token ~memo pa (st, fb @ nfb)
+    | res -> let+ st = res in (st, fb))
+  (* On EOF we return the previous state, the command was the empty string or a
+     comment *)
+  | None -> Coq.Protect.E.ok (st, fb)
+
+let parse_and_execute_in_with_feedback ~token ~loc tac st =
+  let str = Gramlib.Stream.of_string tac in
+  let pa = Coq.Parsing.Parsable.make ?loc str in
+  parse_execute_loop_with_feedback ~token pa (st, [])
+
+let run_with_feedback ~token ?loc ?(memo = true) ~st cmds =
+  Coq.State.in_stateM ~token ~st
+    ~f:(parse_and_execute_in_with_feedback ~token ~loc ~memo cmds)
+    st

@@ -162,3 +162,20 @@ val run :
   -> st:Coq.State.t
   -> string
   -> (Coq.State.t, Loc.t) Coq.Protect.E.t
+
+(** [run_with_feedback ~token ?loc ?memo ~st cmds] run commands [cmds] starting
+    on state [st] and giving some feedback, without commiting changes to the
+    document. [loc] can be used to seed an initial location if desired, if not
+    the locations will be considered relative to the initial location. [memo]
+    controls if the execution is memoized, by default [true].
+
+    This API is experimental, used for speculative execution
+    [petanque and goals], the API is expected to change as to better adapt to
+    users. *)
+val run_with_feedback :
+     token:Coq.Limits.Token.t
+  -> ?loc:Loc.t
+  -> ?memo:bool
+  -> st:Coq.State.t
+  -> string
+  -> (Coq.State.t * Loc.t Coq.Message.t list, Loc.t) Coq.Protect.E.t
