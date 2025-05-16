@@ -31,7 +31,7 @@ opam install lwt logs
 Install coq-lsp:
 
 ```bash
-opam pin coq-lsp https://github.com/LLM4Rocq/coq-lsp.git#MorePetanqueCommands
+opam pin add coq-lsp https://github.com/LLM4Rocq/coq-lsp.git#MorePetanqueCommands
 ```
 
 ## New petanque operation
