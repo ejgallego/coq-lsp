@@ -316,7 +316,7 @@ module InputHelp : HoverProvider = struct
   let h = Handler.MaybeNode input_help
 end
 
-module UniDiff = struct
+module UniDiff : HoverProvider = struct
   let show_unidiff ~token ?diff ~st () =
     let nuniv_prev, nconst_prev =
       match diff with
@@ -343,6 +343,20 @@ module UniDiff = struct
   let h = Handler.WithNode h
 end
 
+module State_hash : HoverProvider = struct
+  let h ~token:_ ~contents:_ ~point:_ ~(node : Fleche.Doc.Node.t) =
+    if !Fleche.Config.v.show_state_hash_on_hover then
+      let st_hash = Coq.State.hash node.state in
+      let pf_hash =
+        Option.cata Coq.State.Proof.hash 0 (Coq.State.lemmas ~st:node.state)
+      in
+      Some
+        (Format.asprintf "state hash: %d | proof hash: %d@\n" st_hash pf_hash)
+    else None
+
+  let h = Handler.WithNode h
+end
+
 module Register = struct
   let handlers : Handler.t list ref = ref []
   let add fn = handlers := fn :: !handlers
@@ -362,7 +376,14 @@ end
 (* Register in-file hover plugins *)
 let () =
   List.iter Register.add
-    [ Loc_info.h; Stats.h; Type.h; Notation.h; InputHelp.h; UniDiff.h ]
+    [ Loc_info.h
+    ; Stats.h
+    ; Type.h
+    ; Notation.h
+    ; InputHelp.h
+    ; UniDiff.h
+    ; State_hash.h
+    ]
 
 let hover ~token ~(doc : Fleche.Doc.t) ~point =
   let node = Info.LC.node ~doc ~point Exact in
