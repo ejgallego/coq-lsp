@@ -53,6 +53,11 @@
  - [vscode] [macos] Resolve keybinding conflict with Cmd+N and
    Cmd+Enter, we now use Alt+N and Alt+Shift+Enter, (Andrei
    Listochkin, #926)
+ - [rocq] [fleche] Disable memprof-limits interruption backend by
+   default, as released Rocq versions are not safe yet. If you want to
+   enable it, you can still do it with the `--int_backend=Mp` command
+   line option (@ejgallego, #957, fixes #857, reported by @dariusf,
+   cc: rocq-prover/rocq#19177)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
