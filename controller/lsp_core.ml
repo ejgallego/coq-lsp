@@ -528,6 +528,8 @@ let lsp_init_process ~ofn ~io ~cmdline ~debug msg : Init_effect.t =
     let result, dirs = Rq_init.do_initialize ~io ~params in
     Rq.Action.now (Ok result) |> Rq.serve ~ofn_rq ~token ~id;
     Lsp.JFleche.mk_serverVersion serverInfo |> ofn_nt;
+    Fleche.Io.Report.msg ~io ~lvl:Info "Rocq features: %s"
+      Coq.Version.quirks_message;
     Fleche.Io.Report.msg ~io ~lvl:Info "Server initializing (int_backend: %s)"
       (Coq.Limits.name ());
     (* Workspace initialization *)
