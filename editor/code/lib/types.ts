@@ -15,12 +15,12 @@ export interface Goal<Pp> {
   hyps: Hyp<Pp>[];
 }
 
-export interface GoalConfig<Pp> {
-  goals: Goal<Pp>[];
-  stack: [Goal<Pp>[], Goal<Pp>[]][];
+export interface GoalConfig<G, Pp> {
+  goals: Goal<G>[];
+  stack: [Goal<G>[], Goal<G>[]][];
   bullet?: Pp;
-  shelf: Goal<Pp>[];
-  given_up: Goal<Pp>[];
+  shelf: Goal<G>[];
+  given_up: Goal<G>[];
 }
 
 export interface Message<Pp> {
@@ -57,10 +57,10 @@ export interface OblsView {
 
 export type ProgramInfo = [Id, OblsView][];
 
-export interface GoalAnswer<Pp> {
+export interface GoalAnswer<Goals, Pp> {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
-  goals?: GoalConfig<Pp>;
+  goals?: GoalConfig<Goals, Pp>;
   program?: ProgramInfo;
   messages: Pp[] | Message<Pp>[];
   error?: Pp;
@@ -69,7 +69,7 @@ export interface GoalAnswer<Pp> {
 export interface GoalRequest {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
-  pp_format?: "Pp" | "Str";
+  pp_format?: "Box" | "Pp" | "Str";
   pretac?: string;
   command?: string;
   mode?: "Prev" | "After";
@@ -86,6 +86,10 @@ export type Pp =
   | ["Pp_comment", string[]];
 
 export type PpString = Pp | string;
+
+export type Box = ["box", string];
+
+export type BoxString = Box | Pp | string;
 
 export interface FlecheDocumentParams {
   textDocument: VersionedTextDocumentIdentifier;
@@ -139,7 +143,7 @@ export interface DocumentPerfParams<R> {
 // View messaging interfaces; should go on their own file
 export interface RenderGoals {
   method: "renderGoals";
-  params: GoalAnswer<PpString>;
+  params: GoalAnswer<BoxString, PpString>;
 }
 
 export interface WaitingForInfo {
