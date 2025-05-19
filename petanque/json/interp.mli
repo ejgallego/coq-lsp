@@ -17,6 +17,15 @@ module Action : sig
         ; handler :
             token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> json_rpc_result
         }
+    | Pos of
+        { uri : Lang.LUri.File.t
+        ; point : int * int
+        ; handler :
+               token:Coq.Limits.Token.t
+            -> doc:Fleche.Doc.t
+            -> point:int * int
+            -> json_rpc_result
+        }
 end
 
 type 'a handle = token:Coq.Limits.Token.t -> Action.t -> 'a

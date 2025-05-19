@@ -82,6 +82,14 @@ module S (C : Chans) = struct
     M.call
 
   (* Standard calls *)
+  let get_root_state =
+    let module M = Wrap (GetRootState) (C) in
+    M.call
+
+  let get_state_at_pos =
+    let module M = Wrap (GetStateAtPos) (C) in
+    M.call
+
   let start =
     let module M = Wrap (Start) (C) in
     M.call

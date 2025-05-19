@@ -101,6 +101,19 @@ end
     We could imagine a future where [State.t] need to be managed asynchronously,
     then the same approach that we use for [Doc.t] could happen. *)
 
+(** [get_root_state ?opts ~doc] return the root state of the document [doc]. *)
+val get_root_state :
+  ?opts:Run_opts.t -> doc:Fleche.Doc.t -> unit -> State.t Run_result.t R.t
+
+(** [get_state_at_pos ?opts ~doc ~point] return the state at position [point] in
+    [doc]. *)
+val get_state_at_pos :
+     ?opts:Run_opts.t
+  -> doc:Fleche.Doc.t
+  -> point:int * int
+  -> unit
+  -> State.t Run_result.t R.t
+
 (** [start ~token ~doc ~pre_commands ~thm] start a new proof for theorem [thm]
     in file [uri] under [fn]. [token] can be used to interrupt the computation.
     Returns the proof state or error otherwise. [pre_commands] is a string of

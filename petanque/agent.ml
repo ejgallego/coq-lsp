@@ -189,6 +189,32 @@ let default_opts = function
   | None -> { Run_opts.memo = true; hash = true }
   | Some opts -> opts
 
+let get_root_state ?opts ~doc () =
+  let opts = default_opts opts in
+  let hash = opts.hash in
+  let state = doc.Fleche.Doc.root in
+  Ok (analyze_after_run ~hash state [])
+
+let get_state_at_pos ?opts ~doc ~point () =
+  let pos_of_point pt = (pt.Lang.Point.line, pt.character) in
+  let pos_of_range r = (pos_of_point r.Lang.Range.start, pos_of_point r.end_) in
+  let state_of_node node =
+    (node.Fleche.Doc.Node.state, pos_of_range node.range)
+  in
+  (* XXX Fixme, use right API on Fleche.Info *)
+  let states = List.map state_of_node doc.Fleche.Doc.nodes in
+  let keep pos (_, (start, end_)) = end_ <= pos || start <= pos in
+  let sorting (_, (_, end1)) (_, (_, end2)) = compare end2 end1 in
+  let states =
+    (doc.root, ((0, 0), (0, 0))) :: states
+    |> List.filter (keep point)
+    |> List.sort sorting
+  in
+  let state = List.hd states |> fst in
+  let opts = default_opts opts in
+  let hash = opts.hash in
+  Ok (analyze_after_run ~hash state [])
+
 let start ~token ~doc ?opts ?pre_commands ~thm () =
   let open Coq.Compat.Result.O in
   let* node = find_thm ~doc ~thm in

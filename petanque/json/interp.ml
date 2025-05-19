@@ -21,6 +21,15 @@ module Action = struct
         ; handler :
             token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> json_rpc_result
         }
+    | Pos of
+        { uri : Lang.LUri.File.t
+        ; point : int * int
+        ; handler :
+               token:Coq.Limits.Token.t
+            -> doc:Fleche.Doc.t
+            -> point:int * int
+            -> json_rpc_result
+        }
 end
 (* End of controller/request.ml *)
 
@@ -37,6 +46,13 @@ let do_request (module R : Protocol.Request.S) ~params =
       let uri = uri_fn params in
       let handler ~token ~doc = handler ~token ~doc params |> of_pet in
       Action.Doc { uri; handler }
+    | PosInDoc { uri_fn; pos_fn; handler } ->
+      let uri = uri_fn params in
+      let point = pos_fn params in
+      let handler ~token ~doc ~point =
+        handler ~token ~doc ~point params |> of_pet
+      in
+      Action.Pos { uri; point; handler }
   in
   match R.Handler.Params.of_yojson (`Assoc params) with
   | Ok params -> handler params
@@ -49,6 +65,10 @@ type 'a handle = token:Coq.Limits.Token.t -> Action.t -> 'a
 
 let handle_request ~(do_handle : 'a handle) ~unhandled ~token ~method_ ~params =
   match method_ with
+  | s when String.equal GetStateAtPos.method_ s ->
+    do_handle ~token (do_request (module GetStateAtPos) ~params)
+  | s when String.equal GetRootState.method_ s ->
+    do_handle ~token (do_request (module GetRootState) ~params)
   | s when String.equal Start.method_ s ->
     do_handle ~token (do_request (module Start) ~params)
   | s when String.equal RunTac.method_ s ->

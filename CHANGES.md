@@ -66,6 +66,9 @@
  - [petanque] Add feedback field to `Run_result.t`, this is important
    for many use cases. We also return feedback on petanque errors.
    (@ejgallego, @JulesViennotFranca, #960)
+ - [petanque] new `get_state_at_pos` and `get_root_state` calls, that
+   allow to retrieve a petanque proof state from position
+   (@JulesViennotFranca, @ejgallego, #962)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
