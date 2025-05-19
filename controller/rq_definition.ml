@@ -99,5 +99,6 @@ let request ~token ~(doc : Fleche.Doc.t) ~point =
 
 let request ~token ~doc ~point =
   let name = "textDocument/definition" in
+  let lines = Fleche.Doc.lines doc in
   let f () = request ~token ~doc ~point in
-  Request.R.of_execution ~name ~f ()
+  Request.R.of_execution ~lines ~name ~f ()

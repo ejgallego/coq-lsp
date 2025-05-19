@@ -19,7 +19,7 @@ module Error = struct
   type 'a t =
     { code : int
     ; payload : 'a
-    ; feedback : Pp.t list
+    ; feedback : Lang.Range.t Coq.Message.t list
     }
 
   let make ?(feedback = []) code payload = { code; payload; feedback }
@@ -30,31 +30,24 @@ module R = struct
 
   let code = -32803
 
-  (* We log feedback generated during requests, improve so clients can use this,
-     but it needs conversion of positions. *)
-  let do_feedback feedback = Fleche.Io.Log.feedback feedback
-
   let print_err ~name e =
     match e with
     | Coq.Protect.Error.Anomaly { msg; _ } | User { msg; _ } ->
       Format.asprintf "Error in %s request: %a" name Pp.pp_with msg
 
-  (* XXX: Include locations and level, by refining the type above in Error.t *)
-  let fb_print (_lvl, { Coq.Message.Payload.msg; _ }) = msg
-
-  let of_execution ~name ~f x : ('r, string) t =
+  let of_execution ~lines ~name ~f x : ('r, string) t =
     let Coq.Protect.E.{ r; feedback } = f x in
+    let f = Coq.Utils.to_range ~lines in
+    let feedback = List.map (Coq.Message.map ~f) feedback in
     match r with
     | Interrupted ->
       let payload = name ^ " request interrupted" in
-      let feedback = List.map fb_print feedback in
       Error { code; payload; feedback }
     | Completed (Error e) ->
       let payload = print_err ~name e in
-      let feedback = List.map fb_print feedback in
       Error { code; payload; feedback }
     | Completed (Ok r) ->
-      do_feedback feedback;
+      (* Fleche.Io.Log.feedback feedback; *)
       r
 end
 

@@ -62,7 +62,7 @@
    the optional `data` field. This is useful to still be able to
    obtain feedback messages such as debug messages even when a request
    fails. This also opens the door to better protocol handling and
-   petanque integration (@ejgallego, #959)
+   petanque integration (@ejgallego, #959, #961)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------

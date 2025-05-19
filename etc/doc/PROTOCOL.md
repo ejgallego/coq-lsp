@@ -152,7 +152,7 @@ Feedback related to specific command requests is handled via:
   request response to an object of type `RocqErrorData`:
 ```
 interface RocqErrorData = {
-  feedback : string[]
+  feedback : Message<string>[];
   }
 ```
 

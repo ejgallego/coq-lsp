@@ -16,6 +16,17 @@ let do_handle ~fn ~token action =
     let* doc = fn ~token ~uri |> of_pet_err in
     handler ~token ~doc
 
+(* Duplicate with lsp_core *)
+let feedback_to_message fb =
+  Lsp.JFleche.Message.(
+    of_coq_message fb |> map ~f:Pp.string_of_ppcmds
+    |> to_yojson (fun s -> `String s))
+
+let feedback_to_data fbs =
+  match fbs with
+  | [] -> None
+  | fbs -> Some (`List (List.map feedback_to_message fbs))
+
 let request ~fn ~token ~id ~method_ ~params =
   let unhandled ~token ~method_ =
     match method_ with
@@ -35,7 +46,8 @@ let request ~fn ~token ~id ~method_ ~params =
   | Error Request.Error.{ code; payload; feedback } ->
     (* for now *)
     let message = payload in
-    Lsp.Base.Response.mk_error ~id ~code ~message ~feedback
+    let data = feedback_to_data feedback in
+    Lsp.Base.Response.mk_error ~id ~code ~message ~data
 
 type doc_handler =
      token:Coq.Limits.Token.t

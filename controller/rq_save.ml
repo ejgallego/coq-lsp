@@ -19,9 +19,10 @@
 
 let request ~token ~doc =
   let open Coq.Protect.E.O in
+  let lines = Fleche.Doc.lines doc in
   let f () =
     (* XXX: What do do with feedback, return to user? *)
     let+ () = Fleche.Doc.save ~token ~doc in
     Ok `Null
   in
-  Request.R.of_execution ~name:"save" ~f ()
+  Request.R.of_execution ~lines ~name:"save" ~f ()

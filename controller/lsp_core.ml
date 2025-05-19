@@ -190,6 +190,16 @@ module Rq : sig
     -> Int.Set.t
     -> unit
 end = struct
+  let feedback_to_message fb =
+    Lsp.JFleche.Message.(
+      of_coq_message fb |> map ~f:Pp.string_of_ppcmds
+      |> to_yojson (fun s -> `String s))
+
+  let feedback_to_data fbs =
+    match fbs with
+    | [] -> None
+    | fbs -> Some (`List (List.map feedback_to_message fbs))
+
   (* Answer a request, private *)
   let answer ~ofn_rq ~id result =
     (match result with
@@ -197,7 +207,8 @@ end = struct
     | Error Request.Error.{ code; payload; feedback } ->
       (* for now *)
       let message = payload in
-      Lsp.Base.Response.mk_error ~id ~code ~message ~feedback)
+      let data = feedback_to_data feedback in
+      Lsp.Base.Response.mk_error ~id ~code ~message ~data)
     |> ofn_rq
 
   (* private to the Rq module, just used not to retrigger canceled requests *)
@@ -550,7 +561,7 @@ let lsp_init_process ~ofn ~io ~cmdline ~debug msg : Init_effect.t =
     Success workspaces
   | Lsp.Base.Message.Request { id; _ } ->
     (* per spec *)
-    Lsp.Base.Response.mk_error ~id ~code:(-32002) ~feedback:[]
+    Lsp.Base.Response.mk_error ~id ~code:(-32002) ~data:None
       ~message:"server not initialized"
     |> ofn_rq;
     Loop

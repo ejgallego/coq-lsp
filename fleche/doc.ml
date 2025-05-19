@@ -310,6 +310,7 @@ type t =
 (* Flatten the list of document asts *)
 let asts doc = List.filter_map Node.ast doc.nodes
 let diags doc = List.concat_map Node.diags doc.nodes
+let lines doc = doc.contents.lines
 
 (* TOC handling *)
 let rec add_toc_info node toc { Lang.Ast.Info.name; children; _ } =
@@ -669,11 +670,12 @@ end = struct
   (* XXX: This should be refined. *)
   let handle ~token ~context ~st =
     let { Recovery_context.contents; last_tok; nodes; ast } = context in
-    let { Coq.Protect.E.r; feedback = _ } =
+    let { Coq.Protect.E.r; feedback } =
       match ast with
       | None -> lex_recovery_heuristic ~token last_tok contents nodes st
       | Some ast -> ast_recovery_heuristic ~token last_tok contents nodes st ast
     in
+    Io.Log.feedback "Recovery_context.handle" feedback;
     match r with
     | Interrupted -> st
     | Completed (Ok st) -> st
@@ -1102,11 +1104,9 @@ let rec parse_execute_loop ~token ~memo pa st =
   let eval = if memo then Memo.Interp.eval else eval_no_memo in
   let* ast = Coq.Parsing.parse ~token ~st pa in
   match ast with
-  | Some ast -> (
-    match eval ~token (st, ast) with
-    | Coq.Protect.E.{ r = Coq.Protect.R.Completed (Ok st); feedback = _ } ->
-      parse_execute_loop ~token ~memo pa st
-    | res -> res)
+  | Some ast ->
+    let* st = eval ~token (st, ast) in
+    parse_execute_loop ~token ~memo pa st
   (* On EOF we return the previous state, the command was the empty string or a
      comment *)
   | None -> Coq.Protect.E.ok st
