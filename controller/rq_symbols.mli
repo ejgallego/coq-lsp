@@ -5,4 +5,4 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val symbols : Request.document
+val symbols : (Yojson.Safe.t, string) Request.document

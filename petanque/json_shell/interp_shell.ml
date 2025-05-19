@@ -27,12 +27,15 @@ let request ~fn ~token ~id ~method_ ~params =
       (* JSON-RPC method not found *)
       let code = -32601 in
       let message = Format.asprintf "method %s not found" method_ in
-      Error (code, message)
+      Error (Request.Error.make code message)
   in
   let do_handle = do_handle ~fn in
   match handle_request ~do_handle ~unhandled ~token ~method_ ~params with
   | Ok result -> Lsp.Base.Response.mk_ok ~id ~result
-  | Error (code, message) -> Lsp.Base.Response.mk_error ~id ~code ~message
+  | Error Request.Error.{ code; payload; feedback } ->
+    (* for now *)
+    let message = payload in
+    Lsp.Base.Response.mk_error ~id ~code ~message ~feedback
 
 type doc_handler =
      token:Coq.Limits.Token.t

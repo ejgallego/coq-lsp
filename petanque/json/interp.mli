@@ -6,15 +6,15 @@
 
 (* API for embedding petanque into a different protocol, needs to be moved to a
    core request library *)
-type 'a r = ('a, int * string) Result.t
-
 module Action : sig
   type t =
-    | Now of (token:Coq.Limits.Token.t -> Yojson.Safe.t r)
+    | Now of (token:Coq.Limits.Token.t -> (Yojson.Safe.t, string) Request.R.t)
     | Doc of
         { uri : Lang.LUri.File.t
         ; handler :
-            token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> Yojson.Safe.t r
+               token:Coq.Limits.Token.t
+            -> doc:Fleche.Doc.t
+            -> (Yojson.Safe.t, string) Request.R.t
         }
 end
 
@@ -28,9 +28,8 @@ val handle_request :
   -> params:(string * Yojson.Safe.t) list
   -> 'a
 
-(* aux function *)
-val of_pet_err :
-  ('a, Petanque.Agent.Error.t) result -> ('a, int * string) Result.t
+(* aux function, XXX: fixme to include feedback *)
+val of_pet_err : ('a, Petanque.Agent.Error.t) result -> ('a, string) Request.R.t
 
 (* Mostly Internal for pet-shell extensions; not for public consumption *)
 val do_request :

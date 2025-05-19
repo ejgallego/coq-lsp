@@ -4,20 +4,21 @@
 (* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (************************************************************************)
 
+module Req = Request
 open Protocol
 module A = Petanque.Agent
 
 (* These types ares basically duplicated with controller/request.ml; move to a
    common lib (lsp?) *)
-type 'a r = ('a, int * string) Result.t
-
 module Action = struct
   type t =
-    | Now of (token:Coq.Limits.Token.t -> Yojson.Safe.t r)
+    | Now of (token:Coq.Limits.Token.t -> (Yojson.Safe.t, string) Req.R.t)
     | Doc of
         { uri : Lang.LUri.File.t
         ; handler :
-            token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> Yojson.Safe.t r
+               token:Coq.Limits.Token.t
+            -> doc:Fleche.Doc.t
+            -> (Yojson.Safe.t, string) Req.R.t
         }
 end
 (* End of controller/request.ml *)
@@ -27,7 +28,7 @@ let of_pet_err res =
     (fun err ->
       let message = Petanque.Agent.Error.to_string err in
       let code = Petanque.Agent.Error.to_code err in
-      (code, message))
+      Req.Error.make code message)
     res
 
 (* Basically a functor from R.Handler.t to Action.t, but closing over params *)
@@ -47,7 +48,7 @@ let do_request (module R : Protocol.Request.S) ~params =
   | Error message ->
     (* JSON-RPC Parse error *)
     let code = -32700 in
-    Action.Now (fun ~token:_ -> Error (code, message))
+    Action.Now (fun ~token:_ -> Error (Req.Error.make code message))
 
 type 'a handle = token:Coq.Limits.Token.t -> Action.t -> 'a
 

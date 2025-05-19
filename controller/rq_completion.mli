@@ -15,4 +15,4 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val completion : Request.position
+val completion : (Yojson.Safe.t, string) Request.position

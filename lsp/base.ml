@@ -77,7 +77,16 @@ module Response = struct
         }
 
   let mk_ok ~id ~result = Ok { id; result }
-  let mk_error ~id ~code ~message = Error { id; code; message; data = None }
+
+  let mk_error ~id ~code ~message ~feedback =
+    let data =
+      match feedback with
+      | [] -> None
+      | fbs ->
+        let fbs = List.map (fun fb -> `String (Pp.string_of_ppcmds fb)) fbs in
+        Some (`Assoc [ ("feedback", `List fbs) ])
+    in
+    Error { id; code; message; data }
 
   let id = function
     | Ok { id; _ } | Error { id; _ } -> id

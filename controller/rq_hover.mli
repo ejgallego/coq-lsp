@@ -5,7 +5,7 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val hover : Request.position
+val hover : (Yojson.Safe.t, string) Request.position
 
 open Fleche
 
