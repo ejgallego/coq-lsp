@@ -23,11 +23,16 @@ module Error = struct
     }
 
   let make ?(feedback = []) code payload = { code; payload; feedback }
+
+  let map ~f { code; payload; feedback } =
+    let payload = f payload in
+    { code; payload; feedback }
 end
 
 module R = struct
   type ('r, 'e) t = ('r, 'e Error.t) Result.t
 
+  let map_error ~f = Result.map_error (Error.map ~f)
   let code = -32803
 
   let print_err ~name e =

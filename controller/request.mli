@@ -22,6 +22,8 @@ end
 module R : sig
   type ('r, 'e) t = ('r, 'e Error.t) Result.t
 
+  val map_error : f:('e -> 'f) -> ('r, 'e) t -> ('r, 'f) t
+
   (* We don't allow to pass the feedback to the [f] handler yet, that's not
      hard, but I'd suggest waiting until the conversion of character points is
      working better. *)
