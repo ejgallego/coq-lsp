@@ -490,6 +490,10 @@ let petanque_handle ~token =
     (* Request document execution if not ready *)
     let postpone = true in
     Rq.Action.(Data (DocRequest { uri; postpone; handler }))
+  | Interp.Action.Pos { uri; point; handler } ->
+    let version = None in
+    let postpone = true in
+    Rq.Action.(Data (PosRequest { uri; point; version; postpone; handler }))
 
 let do_petanque ~token method_ params =
   let open Petanque_json in
