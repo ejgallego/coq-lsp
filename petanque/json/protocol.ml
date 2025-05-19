@@ -9,10 +9,14 @@ open JAgent
    eventually as to make this clearer. *)
 module HType = struct
   type ('p, 'r) t =
-    | Immediate of (token:Coq.Limits.Token.t -> 'p -> 'r R.t)
+    | Immediate of (token:Coq.Limits.Token.t -> 'p -> ('r, Error.t) Request.R.t)
     | FullDoc of
         { uri_fn : 'p -> LUri.File.t
-        ; handler : token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> 'p -> 'r R.t
+        ; handler :
+               token:Coq.Limits.Token.t
+            -> doc:Fleche.Doc.t
+            -> 'p
+            -> ('r, Error.t) Request.R.t
         }
 end
 

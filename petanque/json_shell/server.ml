@@ -67,7 +67,7 @@ let create_server ~token sock =
   in
   serve
 
-let log_error err =
+let log_error Request.Error.{ payload = err; _ } =
   let message = Petanque.Agent.Error.to_string err in
   Format.eprintf "Error in --root option: %s@\n%!" message
 (* Logs_lwt.info (fun m -> m "%s" message) *)

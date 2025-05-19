@@ -63,6 +63,9 @@
    obtain feedback messages such as debug messages even when a request
    fails. This also opens the door to better protocol handling and
    petanque integration (@ejgallego, #959, #961)
+ - [petanque] Add feedback field to `Run_result.t`, this is important
+   for many use cases. We also return feedback on petanque errors.
+   (@ejgallego, @JulesViennotFranca, #960)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------

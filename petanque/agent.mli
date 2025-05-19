@@ -55,11 +55,12 @@ module Error : sig
   val to_code : t -> int
   val coq : string -> t
   val system : string -> t
+  val make_request : t -> t Request.Error.t
 end
 
 (** Petanque results *)
 module R : sig
-  type 'a t = ('a, Error.t) Result.t
+  type 'a t = ('a, Error.t) Request.R.t
 end
 
 module Run_opts : sig
@@ -75,6 +76,7 @@ module Run_result : sig
     ; hash : int option [@default None]
           (** [State.Proof.hash st] if enabled / proof is open. *)
     ; proof_finished : bool
+    ; feedback : (int * string) list  (** level and message *)
     }
 end
 

@@ -8,28 +8,23 @@ module Req = Request
 open Protocol
 module A = Petanque.Agent
 
+(* Payload specialized to json / string *)
+type json_rpc_result = (Yojson.Safe.t, string) Req.R.t
+
 (* These types ares basically duplicated with controller/request.ml; move to a
    common lib (lsp?) *)
 module Action = struct
   type t =
-    | Now of (token:Coq.Limits.Token.t -> (Yojson.Safe.t, string) Req.R.t)
+    | Now of (token:Coq.Limits.Token.t -> json_rpc_result)
     | Doc of
         { uri : Lang.LUri.File.t
         ; handler :
-               token:Coq.Limits.Token.t
-            -> doc:Fleche.Doc.t
-            -> (Yojson.Safe.t, string) Req.R.t
+            token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> json_rpc_result
         }
 end
 (* End of controller/request.ml *)
 
-let of_pet_err res =
-  Result.map_error
-    (fun err ->
-      let message = Petanque.Agent.Error.to_string err in
-      let code = Petanque.Agent.Error.to_code err in
-      Req.Error.make code message)
-    res
+let of_pet_err e = Req.R.map_error ~f:Petanque.Agent.Error.to_string e
 
 (* Basically a functor from R.Handler.t to Action.t, but closing over params *)
 let do_request (module R : Protocol.Request.S) ~params =

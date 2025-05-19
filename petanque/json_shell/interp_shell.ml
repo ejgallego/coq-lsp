@@ -52,7 +52,7 @@ let request ~fn ~token ~id ~method_ ~params =
 type doc_handler =
      token:Coq.Limits.Token.t
   -> uri:Lang.LUri.File.t
-  -> (Fleche.Doc.t, Petanque.Agent.Error.t) Result.t
+  -> Fleche.Doc.t Petanque.Agent.R.t
 
 let interp ~fn ~token (r : Lsp.Base.Message.t) : Lsp.Base.Message.t option =
   match r with
