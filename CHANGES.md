@@ -58,6 +58,11 @@
    enable it, you can still do it with the `--int_backend=Mp` command
    line option (@ejgallego, #957, fixes #857, reported by @dariusf,
    cc: rocq-prover/rocq#19177)
+ - [lsp] [controller] Include Rocq feedback on request errors, using
+   the optional `data` field. This is useful to still be able to
+   obtain feedback messages such as debug messages even when a request
+   fails. This also opens the door to better protocol handling and
+   petanque integration (@ejgallego, #959)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------

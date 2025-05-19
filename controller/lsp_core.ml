@@ -162,10 +162,10 @@ let do_changeWorkspaceFolders ~ofn:_ ~token ~state params =
 module Rq : sig
   module Action : sig
     type t =
-      | Immediate of Request.R.t
-      | Data of Request.Data.t
+      | Immediate of (Yojson.Safe.t, string) Request.R.t
+      | Data of (Yojson.Safe.t, string) Request.Data.t
 
-    val now : Request.R.t -> t
+    val now : (Yojson.Safe.t, string) Request.R.t -> t
     val error : int * string -> t
   end
 
@@ -194,13 +194,17 @@ end = struct
   let answer ~ofn_rq ~id result =
     (match result with
     | Result.Ok result -> Lsp.Base.Response.mk_ok ~id ~result
-    | Error (code, message) -> Lsp.Base.Response.mk_error ~id ~code ~message)
+    | Error Request.Error.{ code; payload; feedback } ->
+      (* for now *)
+      let message = payload in
+      Lsp.Base.Response.mk_error ~id ~code ~message ~feedback)
     |> ofn_rq
 
   (* private to the Rq module, just used not to retrigger canceled requests *)
-  let _rtable : (int, Request.Data.t) Hashtbl.t = Hashtbl.create 673
+  let _rtable : (int, (Yojson.Safe.t, string) Request.Data.t) Hashtbl.t =
+    Hashtbl.create 673
 
-  let postpone_ ~id (pr : Request.Data.t) =
+  let postpone_ ~id (pr : (Yojson.Safe.t, string) Request.Data.t) =
     if Fleche.Debug.request_delay then L.trace "request" "postponing rq: %d" id;
     Hashtbl.add _rtable id pr
 
@@ -221,7 +225,7 @@ end = struct
         let uri, postpone, request = Request.Data.dm_request pr in
         Fleche.Theory.Request.remove { id; uri; postpone; request }
       in
-      Error (code, message)
+      Error (Request.Error.make code message)
     in
     consume_ ~ofn_rq ~f id
 
@@ -236,13 +240,13 @@ end = struct
     in
     consume_ ~ofn_rq ~f id
 
-  let query ~ofn_rq ~token ~id (pr : Request.Data.t) =
+  let query ~ofn_rq ~token ~id (pr : (Yojson.Safe.t, string) Request.Data.t) =
     let uri, postpone, request = Request.Data.dm_request pr in
     match Fleche.Theory.Request.add { id; uri; postpone; request } with
     | Cancel ->
       let code = -32802 in
       let message = "Document is not ready" in
-      Error (code, message) |> answer ~ofn_rq ~id
+      Error (Request.Error.make code message) |> answer ~ofn_rq ~id
     | Now doc ->
       debug_serve id pr;
       Request.Data.serve ~token ~doc pr |> answer ~ofn_rq ~id
@@ -250,11 +254,11 @@ end = struct
 
   module Action = struct
     type t =
-      | Immediate of Request.R.t
-      | Data of Request.Data.t
+      | Immediate of (Yojson.Safe.t, string) Request.R.t
+      | Data of (Yojson.Safe.t, string) Request.Data.t
 
     let now r = Immediate r
-    let error (code, msg) = now (Error (code, msg))
+    let error (code, msg) = now (Error (Request.Error.make code msg))
   end
 
   let serve ~ofn_rq ~token ~id action =
@@ -327,6 +331,9 @@ let compare p1 p2 =
   let xres = Int.compare x1 x2 in
   if xres = 0 then -Int.compare y1 y2 else -xres
 
+(* Helper for below, should likely be gone. *)
+let empty ~token:_ ~doc:_ ~point:_ = Ok (`List [])
+
 (* A little bit hacky, but selectionRange is the only request that needs this...
    so we will survive *)
 let do_position_list_request ~postpone ~params ~handler =
@@ -334,7 +341,7 @@ let do_position_list_request ~postpone ~params ~handler =
   let points = Helpers.get_position_array params in
   match points with
   | [] ->
-    let point, handler = ((0, 0), Request.empty) in
+    let point, handler = ((0, 0), empty) in
     Rq.Action.Data
       (Request.Data.PosRequest { uri; handler; point; version; postpone })
   | points ->
@@ -543,7 +550,7 @@ let lsp_init_process ~ofn ~io ~cmdline ~debug msg : Init_effect.t =
     Success workspaces
   | Lsp.Base.Message.Request { id; _ } ->
     (* per spec *)
-    Lsp.Base.Response.mk_error ~id ~code:(-32002)
+    Lsp.Base.Response.mk_error ~id ~code:(-32002) ~feedback:[]
       ~message:"server not initialized"
     |> ofn_rq;
     Loop

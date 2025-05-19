@@ -15,10 +15,20 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-module R = struct
-  type t = (Yojson.Safe.t, int * string) Result.t
+module Error = struct
+  type 'a t =
+    { code : int
+    ; payload : 'a
+    ; feedback : Pp.t list
+    }
 
-  let err_code = -32803
+  let make ?(feedback = []) code payload = { code; payload; feedback }
+end
+
+module R = struct
+  type ('r, 'e) t = ('r, 'e Error.t) Result.t
+
+  let code = -32803
 
   (* We log feedback generated during requests, improve so clients can use this,
      but it needs conversion of positions. *)
@@ -29,40 +39,52 @@ module R = struct
     | Coq.Protect.Error.Anomaly { msg; _ } | User { msg; _ } ->
       Format.asprintf "Error in %s request: %a" name Pp.pp_with msg
 
-  let of_execution ~name ~f x : t =
+  (* XXX: Include locations and level, by refining the type above in Error.t *)
+  let fb_print (_lvl, { Coq.Message.Payload.msg; _ }) = msg
+
+  let of_execution ~name ~f x : ('r, string) t =
     let Coq.Protect.E.{ r; feedback } = f x in
-    do_feedback feedback;
     match r with
-    | Interrupted -> Error (err_code, name ^ " request interrupted")
+    | Interrupted ->
+      let payload = name ^ " request interrupted" in
+      let feedback = List.map fb_print feedback in
+      Error { code; payload; feedback }
     | Completed (Error e) ->
-      let error_msg = print_err ~name e in
-      Error (err_code, error_msg)
-    | Completed (Ok r) -> r
+      let payload = print_err ~name e in
+      let feedback = List.map fb_print feedback in
+      Error { code; payload; feedback }
+    | Completed (Ok r) ->
+      do_feedback feedback;
+      r
 end
 
-type document = token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> R.t
+type ('r, 'e) document =
+  token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> ('r, 'e) R.t
 
-type position =
-  token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> point:int * int -> R.t
+type ('r, 'e) position =
+     token:Coq.Limits.Token.t
+  -> doc:Fleche.Doc.t
+  -> point:int * int
+  -> ('r, 'e) R.t
 
 (** Requests that require data access *)
 module Data = struct
-  type t =
+  type ('r, 'e) t =
     | Immediate of
         { uri : Lang.LUri.File.t
-        ; handler : document
+        ; handler : ('r, 'e) document
         }
     | DocRequest of
         { uri : Lang.LUri.File.t
         ; postpone : bool
-        ; handler : document
+        ; handler : ('r, 'e) document
         }
     | PosRequest of
         { uri : Lang.LUri.File.t
         ; point : int * int
         ; version : int option
         ; postpone : bool
-        ; handler : position
+        ; handler : ('r, 'e) position
         }
 
   (* Debug printing *)
@@ -92,5 +114,3 @@ module Data = struct
     | PosRequest { uri = _; point; version = _; postpone = _; handler } ->
       handler ~token ~point ~doc
 end
-
-let empty ~token:_ ~doc:_ ~point:_ = Ok (`List [])
