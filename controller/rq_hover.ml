@@ -195,7 +195,8 @@ let to_list x = Option.cata (fun x -> [ x ]) [] x
 let info_type ~token ~contents ~point ~node : string option =
   Option.bind (Rq_common.get_id_at_point ~contents ~point) (fun id ->
       match info_of_id_at_point ~token ~node id with
-      | Coq.Protect.{ E.r = R.Completed (Ok (Some info)); feedback = _ } ->
+      | Coq.Protect.{ E.r = R.Completed (Ok (Some info)); feedback } ->
+        Fleche.Io.Log.feedback "hover:info_type" feedback;
         Some (pp_typ id info)
       | _ -> None)
 
@@ -322,13 +323,15 @@ module UniDiff : HoverProvider = struct
       match diff with
       | Some st -> (
         match Coq.State.info_universes ~token ~st with
-        | Coq.Protect.{ E.r = R.Completed (Ok (nuniv, nconst)); feedback = _ }
-          -> (nuniv, nconst)
+        | Coq.Protect.{ E.r = R.Completed (Ok (nuniv, nconst)); feedback } ->
+          Fleche.Io.Log.feedback "hover:show_unidiff" feedback;
+          (nuniv, nconst)
         | _ -> (0, 0))
       | None -> (0, 0)
     in
     match Coq.State.info_universes ~token ~st with
-    | Coq.Protect.{ E.r = R.Completed (Ok (nuniv, nconst)); feedback = _ } ->
+    | Coq.Protect.{ E.r = R.Completed (Ok (nuniv, nconst)); feedback } ->
+      Fleche.Io.Log.feedback "hover:info_universes" feedback;
       Some
         (Format.asprintf "@[univ data (%4d,%4d) {+%d, +%d}@\n@]" nuniv nconst
            (nuniv - nuniv_prev) (nconst - nconst_prev))

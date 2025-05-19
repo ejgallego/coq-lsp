@@ -45,6 +45,10 @@ module Message : sig
     ; level : int
     ; text : 'a
     }
+  [@@deriving yojson]
+
+  val of_coq_message : Lang.Range.t Coq.Message.t -> Pp.t t
+  val map : f:('a -> 'b) -> 'a t -> 'b t
 end
 
 module GoalsAnswer : sig

@@ -13,10 +13,10 @@ module Error : sig
   type 'a t =
     { code : int
     ; payload : 'a
-    ; feedback : Pp.t list
+    ; feedback : Lang.Range.t Coq.Message.t list
     }
 
-  val make : ?feedback:Pp.t list -> int -> 'a -> 'a t
+  val make : ?feedback:Lang.Range.t Coq.Message.t list -> int -> 'a -> 'a t
 end
 
 module R : sig
@@ -26,7 +26,8 @@ module R : sig
      hard, but I'd suggest waiting until the conversion of character points is
      working better. *)
   val of_execution :
-       name:string
+       lines:string Array.t
+    -> name:string
     -> f:('a -> (('r, string) t, Loc.t) Coq.Protect.E.t)
     -> 'a
     -> ('r, string) t
