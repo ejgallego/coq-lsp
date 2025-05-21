@@ -50,6 +50,7 @@ module Error : sig
     | Anomaly of string
     | System of string
     | Theorem_not_found of string
+    | No_state_at_point
 
   val to_string : t -> string
   val to_code : t -> int
@@ -105,8 +106,8 @@ end
 val get_root_state :
   ?opts:Run_opts.t -> doc:Fleche.Doc.t -> unit -> State.t Run_result.t R.t
 
-(** [get_state_at_pos ?opts ~doc ~point] return the state at position [point] in
-    [doc]. *)
+(** [get_state_at_pos ?opts ~doc ~position] return the state at position
+    [position] in [doc]. Note that LSP positions are zero-based! *)
 val get_state_at_pos :
      ?opts:Run_opts.t
   -> doc:Fleche.Doc.t

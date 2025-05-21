@@ -76,6 +76,11 @@ let run (ic, oc) =
   let* { st; _ } =
     S.start { uri; opts = None; pre_commands = None; thm = "rev_snoc_cons" }
   in
+  (* Check get_at_pos works, note that LSP positions start at 0 ! *)
+  let position = Lang.Point.{ line = 13; character = 0; offset = -1 } in
+  let* st' = S.get_state_at_pos { uri; opts = None; position } in
+  let* eq = S.state_equal { kind = None; st1 = st; st2 = st'.st } in
+  assert eq;
   let* premises = S.premises { st } in
   (if print_premises then
      Format.(eprintf "@[%a@]@\n%!" (pp_print_list pp_premise) premises));
