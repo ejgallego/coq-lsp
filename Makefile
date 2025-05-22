@@ -147,6 +147,7 @@ submodules-deinit:
 submodules-update:
 	(cd vendor/coq && git checkout master && git pull upstream master)
 	(cd vendor/coq-stdlib && git checkout master && git pull upstream master)
+	(cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 # For now we update manually
 # (cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 
@@ -167,7 +168,7 @@ make-fmt: build fmt
 .PHONY: opam-update-and-reinstall
 opam-update-and-reinstall:
 	git pull --recurse-submodules
-	for pkg in rocq-runtime coq-core rocq-core coqide-server rocq-prover coq; do opam install -y vendor/coq/$$pkg.opam; done
+	for pkg in rocq-runtime coq-core rocq-core coqide-server; do opam install -y vendor/coq/$$pkg.opam; done
 	for pkg in rocq-stdlib coq-stdlib; do opam install -y vendor/coq-stdlib/$$pkg.opam; done
 	opam install .
 

@@ -135,6 +135,27 @@ to determine the content type. Supported extensions are:
   snippets between `\begin{coq}/\end{coq}` LaTeX environments will be
   interpreted as Coq code.
 
+## Implementation-specific data fields
+
+Rocq will often generate "feedback" messages when trying to execute
+commands, for example debug messages, or to return solutions to
+commands such as `Search` or `Print`.
+
+Rocq "feedback" is very context dependent, feedback related to
+document sentences is recorded in the document, and can be obtained
+with the `coq/goals` request below.
+
+Feedback related to specific command requests is handled via:
+
+- if the request succeeds, feedback should be reflected in the return type results
+- if the request fails, we will set the optional `data` field in the
+  request response to an object of type `RocqErrorData`:
+```
+interface RocqErrorData = {
+  feedback : Message<string>[];
+  }
+```
+
 ## Extensions to the LSP specification
 
 As of today, `coq-lsp` implements several extensions to the LSP

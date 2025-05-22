@@ -77,12 +77,11 @@ module Log = struct
     (* Fixme, use the extra parameter *)
     trace hdr "[%s]: @[%a@]" hdr Yojson.Safe.(pretty_print ~std:false) obj
 
-  let feedback feedback =
+  let feedback part feedback =
     if not (CList.is_empty feedback) then
       (* Put feedbacks content here? *)
       let verbose = None in
-      !CallBack.cb.trace "feedback" ?verbose
-        "feedback received in non-user facing place"
+      !CallBack.cb.trace "feedback" ?verbose ("!!! feedback received in " ^ part)
 end
 
 module Report = struct

@@ -15,4 +15,5 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val request : points:(int * int) list -> Request.position
+val request :
+  points:(int * int) list -> (Yojson.Safe.t, string) Request.position

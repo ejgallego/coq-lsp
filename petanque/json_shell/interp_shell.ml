@@ -15,6 +15,21 @@ let do_handle ~fn ~token action =
     let open Coq.Compat.Result.O in
     let* doc = fn ~token ~uri |> of_pet_err in
     handler ~token ~doc
+  | Action.Pos { uri; point; handler } ->
+    let open Coq.Compat.Result.O in
+    let* doc = fn ~token ~uri |> of_pet_err in
+    handler ~token ~doc ~point
+
+(* Duplicate with lsp_core *)
+let feedback_to_message fb =
+  Lsp.JFleche.Message.(
+    of_coq_message fb |> map ~f:Pp.string_of_ppcmds
+    |> to_yojson (fun s -> `String s))
+
+let feedback_to_data fbs =
+  match fbs with
+  | [] -> None
+  | fbs -> Some (`List (List.map feedback_to_message fbs))
 
 let request ~fn ~token ~id ~method_ ~params =
   let unhandled ~token ~method_ =
@@ -27,17 +42,21 @@ let request ~fn ~token ~id ~method_ ~params =
       (* JSON-RPC method not found *)
       let code = -32601 in
       let message = Format.asprintf "method %s not found" method_ in
-      Error (code, message)
+      Error (Request.Error.make code message)
   in
   let do_handle = do_handle ~fn in
   match handle_request ~do_handle ~unhandled ~token ~method_ ~params with
   | Ok result -> Lsp.Base.Response.mk_ok ~id ~result
-  | Error (code, message) -> Lsp.Base.Response.mk_error ~id ~code ~message
+  | Error Request.Error.{ code; payload; feedback } ->
+    (* for now *)
+    let message = payload in
+    let data = feedback_to_data feedback in
+    Lsp.Base.Response.mk_error ~id ~code ~message ~data
 
 type doc_handler =
      token:Coq.Limits.Token.t
   -> uri:Lang.LUri.File.t
-  -> (Fleche.Doc.t, Petanque.Agent.Error.t) Result.t
+  -> Fleche.Doc.t Petanque.Agent.R.t
 
 let interp ~fn ~token (r : Lsp.Base.Message.t) : Lsp.Base.Message.t option =
   match r with

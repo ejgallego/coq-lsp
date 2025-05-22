@@ -16,23 +16,19 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-include SerType.SJHC with type t = Sorts.t
+module Genarg = Ser_genarg
 
-type relevance = Sorts.relevance [@@deriving sexp,yojson,hash,compare]
-type pattern = Sorts.pattern [@@deriving sexp,yojson,hash,compare]
+module RawTac = struct
+  type t = Gentactic.raw_generic_tactic
 
-module QVar : sig
-  include SerType.SJHC with type t = Sorts.QVar.t
-  module Set : SerType.SJHC with type t = Sorts.QVar.Set.t
+  type _t = Genarg.raw_generic_argument
+  [@@deriving sexp,hash,compare,yojson]
+
+  let to_t = Gentactic.of_raw_genarg
+  let of_t = Gentactic.to_raw_genarg
 end
 
-module Quality : sig
-  type constant = Sorts.Quality.constant [@@deriving sexp,yojson,hash,compare]
+module BijectRawtac = SerType.Biject(RawTac)
 
-  include SerType.SJHC with type t = Sorts.Quality.t
-  module Set : SerType.SJHC with type t = Sorts.Quality.Set.t
-
-  type pattern = Sorts.Quality.pattern [@@deriving sexp,yojson,hash,compare]
-end
-
-module QConstraints : SerType.SJHC with type t = Sorts.QConstraints.t
+type raw_generic_tactic = BijectRawtac.t
+[@@deriving sexp,hash,compare,yojson]

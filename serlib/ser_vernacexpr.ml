@@ -29,6 +29,7 @@ module Sorts       = Ser_sorts
 module CPrimitives = Ser_cPrimitives
 module Univ        = Ser_univ
 module UnivNames   = Ser_univNames
+module UnivGen   = Ser_univGen
 module Conv_oracle = Ser_conv_oracle
 module Declarations= Ser_declarations
 module Decls       = Ser_decls
@@ -52,6 +53,7 @@ module Impargs       = Ser_impargs
 module Typeclasses   = Ser_typeclasses
 module Notationextern = Ser_notationextern
 module Util          = Ser_util
+module Gentactic = Ser_gentactic
 
 type coercion_class = [%import: Vernacexpr.coercion_class]
   [@@deriving sexp,yojson,hash,compare]
@@ -227,10 +229,6 @@ type 'a with_coercion_instance =
 
 type constructor_expr =
   [%import: Vernacexpr.constructor_expr]
-  [@@deriving sexp,yojson,hash,compare]
-
-type record_field_attr =
-  [%import: Vernacexpr.record_field_attr]
   [@@deriving sexp,yojson,hash,compare]
 
 type record_field_attr_unparsed =

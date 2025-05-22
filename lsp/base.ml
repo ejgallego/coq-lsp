@@ -24,6 +24,12 @@ module U = Yojson.Safe.Util
 
 let int_field name dict = U.to_int List.(assoc name dict)
 let string_field name dict = U.to_string List.(assoc name dict)
+let of_field_opt name dict = List.assoc_opt name dict
+
+let to_field_opt name contents =
+  match contents with
+  | None -> []
+  | Some contents -> [ (name, contents) ]
 
 module Params = struct
   type t = (string * Yojson.Safe.t) list
@@ -73,11 +79,11 @@ module Response = struct
         { id : int
         ; code : int
         ; message : string
-        ; data : Yojson.Safe.t option
+        ; data : Yojson.Safe.t option [@default None]
         }
 
   let mk_ok ~id ~result = Ok { id; result }
-  let mk_error ~id ~code ~message = Error { id; code; message; data = None }
+  let mk_error ~id ~code ~message ~data = Error { id; code; message; data }
 
   let id = function
     | Ok { id; _ } | Error { id; _ } -> id
@@ -85,11 +91,14 @@ module Response = struct
   let to_yojson = function
     | Ok { id; result } ->
       `Assoc [ ("jsonrpc", `String "2.0"); ("id", `Int id); ("result", result) ]
-    | Error { id; code; message; data = _ } ->
+    | Error { id; code; message; data } ->
       `Assoc
         [ ("jsonrpc", `String "2.0")
         ; ("id", `Int id)
-        ; ("error", `Assoc [ ("code", `Int code); ("message", `String message) ])
+        ; ( "error"
+          , `Assoc
+              ([ ("code", `Int code); ("message", `String message) ]
+              @ to_field_opt "data" data) )
         ]
 end
 
@@ -109,7 +118,7 @@ module Message = struct
       let error = U.to_assoc error in
       let code = int_field "code" error in
       let message = string_field "message" error in
-      let data = None in
+      let data = of_field_opt "data" error in
       Error { id; code; message; data }
 
   let request_of_yojson method_ dict =

@@ -34,6 +34,7 @@ module EConstr      = Ser_eConstr
 module Hints        = Ser_hints
 module Ltac_pretype = Ser_ltac_pretype
 module Genredexpr   = Ser_genredexpr
+module Gentactic    = Ser_gentactic
 
 module Ltac_plugin = struct
   module G_rewrite    = G_rewrite
@@ -262,7 +263,7 @@ end
 let ser_wit_eauto_search_strategy = let module M = Ser_genarg.GS0(SWESS) in M.genser
 
 module SWWT = struct
-  type t = Ser_tacexpr.raw_tactic_expr option
+  type t = Gentactic.raw_generic_tactic option
   [@@deriving sexp,hash,compare]
 end
 let ser_wit_withtac = let module M = Ser_genarg.GSV(SWWT) in M.genser

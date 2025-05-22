@@ -8,12 +8,9 @@
 module Lsp = Fleche_lsp
 
 (* Replace by ppx when we can print goals properly in the client *)
-let mk_message (level, { Coq.Message.Payload.range; msg; quickFix = _ }) =
-  Lsp.JFleche.Message.{ range; level; text = msg }
-
 let mk_messages node =
   Option.map Fleche.Doc.Node.messages node
-  |> Option.cata (List.map mk_message) []
+  |> Option.cata (List.map Lsp.JFleche.Message.of_coq_message) []
 
 let mk_error node =
   let open Fleche in
@@ -71,5 +68,6 @@ let goals ~pp_format ~mode ~pretac () ~token ~doc ~point =
   |> Result.ok
 
 let goals ~pp_format ~mode ~pretac () ~token ~doc ~point =
+  let lines = Fleche.Doc.lines doc in
   let f () = goals ~pp_format ~mode ~pretac () ~token ~doc ~point in
-  Request.R.of_execution ~name:"goals" ~f ()
+  Request.R.of_execution ~lines ~name:"goals" ~f ()

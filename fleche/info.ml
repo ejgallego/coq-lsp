@@ -162,7 +162,7 @@ module Goals = struct
       in
       (* XXX: We ideally want to thread this in the monad too, but it'd be
          better if the printer was more functional *)
-      Io.Log.feedback feedback;
+      Io.Log.feedback "pr_goal:ppx" feedback;
       match r with
       | Coq.Protect.R.Completed (Ok pr) -> pr
       | Coq.Protect.R.Completed (Error _pr) -> Pp.str "printer failed!"

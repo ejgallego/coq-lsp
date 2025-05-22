@@ -25,10 +25,6 @@ end
 module Stdlib = Lsp.JStdlib
 module Result = Stdlib.Result
 
-module R = struct
-  type 'a t = [%import: 'a Petanque.Agent.R.t] [@@deriving yojson]
-end
-
 module Goals = struct
   type t = string Lsp.JCoq.Goals.reified_pp option [@@deriving yojson]
 end
