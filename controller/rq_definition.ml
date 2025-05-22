@@ -28,11 +28,11 @@ let locate_extended qid =
 
 let find_name_in dp name =
   match Coq.Module.make dp with
-  | Error err -> Error (err_code, lp_to_string err)
+  | Error err -> Error (Request.Error.make err_code (lp_to_string err))
   | Ok mod_ -> (
     let uri = Coq.Module.uri mod_ in
     match Coq.Module.find mod_ name with
-    | Error err -> Error (err_code, err)
+    | Error err -> Error (Request.Error.make err_code err)
     | Ok range -> Ok (Option.map (fun range -> Location.{ uri; range }) range))
 
 let get_from_file id_at_point =
@@ -99,5 +99,6 @@ let request ~token ~(doc : Fleche.Doc.t) ~point =
 
 let request ~token ~doc ~point =
   let name = "textDocument/definition" in
+  let lines = Fleche.Doc.lines doc in
   let f () = request ~token ~doc ~point in
-  Request.R.of_execution ~name ~f ()
+  Request.R.of_execution ~lines ~name ~f ()

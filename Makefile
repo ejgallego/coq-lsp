@@ -146,6 +146,7 @@ submodules-deinit:
 submodules-update:
 	(cd vendor/coq && git checkout master && git pull upstream master)
 	(cd vendor/coq-stdlib && git checkout master && git pull upstream master)
+	(cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 # For now we update manually
 # (cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 
@@ -165,8 +166,6 @@ make-fmt: build fmt
 # Helper for users that want a global opam install
 .PHONY: opam-update-and-reinstall
 opam-update-and-reinstall:
-	git pull --recurse-submodules
-	for pkg in coq-core coq-stdlib coqide-server coq; do opam install -y vendor/coq/$$pkg.opam; done
 	opam install .
 
 # These variables are exclusive of the JS build

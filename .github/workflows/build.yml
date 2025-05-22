@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - v9.2
       - v9.1
       - v9.0
       - v8.20
@@ -15,6 +16,7 @@ on:
   pull_request:
     branches:
       - main
+      - v9.2
       - v9.1
       - v9.0
       - v8.20
@@ -37,10 +39,6 @@ jobs:
           - os: ubuntu-latest
             ocaml: 4.14.x
           - os: ubuntu-latest
-            ocaml: 4.13.x
-          - os: ubuntu-latest
-            ocaml: 4.12.x
-          - os: ubuntu-latest
             ocaml: 5.0.x
           - os: ubuntu-latest
             ocaml: 5.1.x
@@ -51,7 +49,7 @@ jobs:
           - os: macos-latest
             ocaml: 4.14.x
           - name: Windows Latest
-            ocaml: 4.14
+            ocaml: 4.14.x
             os: windows-latest
       fail-fast: false
 
@@ -167,7 +165,7 @@ jobs:
           ocaml-compiler: 4.14.x
           dune-cache: true
 
-      - name: Install Coq and SerAPI into OPAM switch
+      - name: Install Rocq into OPAM switch
         run: |
           opam install lwt logs # Also build pet-server
           opam install memprof-limits # We need to do this to avoid coq-lsp rebuilding Coq below due to deptops

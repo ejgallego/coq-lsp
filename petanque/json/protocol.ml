@@ -9,10 +9,24 @@ open JAgent
    eventually as to make this clearer. *)
 module HType = struct
   type ('p, 'r) t =
-    | Immediate of (token:Coq.Limits.Token.t -> 'p -> 'r R.t)
+    | Immediate of (token:Coq.Limits.Token.t -> 'p -> ('r, Error.t) Request.R.t)
     | FullDoc of
         { uri_fn : 'p -> LUri.File.t
-        ; handler : token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> 'p -> 'r R.t
+        ; handler :
+               token:Coq.Limits.Token.t
+            -> doc:Fleche.Doc.t
+            -> 'p
+            -> ('r, Error.t) Request.R.t
+        }
+    | PosInDoc of
+        { uri_fn : 'p -> LUri.File.t
+        ; pos_fn : 'p -> int * int
+        ; handler :
+               token:Coq.Limits.Token.t
+            -> doc:Fleche.Doc.t
+            -> point:int * int
+            -> 'p
+            -> ('r, Error.t) Request.R.t
         }
 end
 
@@ -46,6 +60,75 @@ module Request = struct
     end
 
     module Handler : Handler
+  end
+end
+
+(* get_root_state RPC *)
+module GetRootState = struct
+  let method_ = "petanque/get_root_state"
+
+  module Params = struct
+    type t =
+      { opts : Run_opts.t option [@default None]
+      ; uri : Lsp.JLang.LUri.File.t
+      }
+    [@@deriving yojson]
+  end
+
+  module Response = struct
+    type t = int Run_result.t [@@deriving yojson]
+  end
+
+  module Handler = struct
+    module Params = Params
+
+    module Response = struct
+      type t = State.t Run_result.t [@@deriving yojson]
+    end
+
+    let handler =
+      HType.FullDoc
+        { uri_fn = (fun { Params.uri; _ } -> uri)
+        ; handler =
+            (fun ~token:_ ~doc { opts; uri = _ } ->
+              Agent.get_root_state ?opts ~doc ())
+        }
+  end
+end
+
+(* get_state_at_pos RPC *)
+module GetStateAtPos = struct
+  let method_ = "petanque/get_state_at_pos"
+
+  module Params = struct
+    type t =
+      { uri : Lsp.JLang.LUri.File.t
+      ; opts : Run_opts.t option [@default None]
+      ; line : int
+      ; character : int
+      }
+    [@@deriving yojson]
+  end
+
+  module Response = struct
+    type t = int Run_result.t [@@deriving yojson]
+  end
+
+  module Handler = struct
+    module Params = Params
+
+    module Response = struct
+      type t = State.t Run_result.t [@@deriving yojson]
+    end
+
+    let handler =
+      HType.PosInDoc
+        { uri_fn = (fun { Params.uri; _ } -> uri)
+        ; pos_fn = (fun { line; character; _ } -> (line, character))
+        ; handler =
+            (fun ~token:_ ~doc ~point { uri = _; opts; line = _; character = _ } ->
+              Agent.get_state_at_pos ?opts ~doc ~point ())
+        }
   end
 end
 

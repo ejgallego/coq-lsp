@@ -72,10 +72,12 @@ module Error = struct
 
   let coq e = Coq e
   let system e = System e
+  let make e ~feedback = Request.Error.make (to_code e) e ~feedback
+  let make_request e = make e ~feedback:[]
 end
 
 module R = struct
-  type 'a t = ('a, Error.t) Result.t
+  type 'a t = ('a, Error.t) Request.R.t
 end
 
 module Run_opts = struct
@@ -90,15 +92,17 @@ module Run_result = struct
     { st : 'a
     ; hash : int option [@default None]
     ; proof_finished : bool
+    ; feedback : (int * string) list
     }
 end
 
 let find_thm ~(doc : Fleche.Doc.t) ~thm =
   let { Fleche.Doc.toc; _ } = doc in
+  let feedback = [] in
   match CString.Map.find_opt thm toc with
   | None ->
     let msg = Format.asprintf "@[[find_thm] Theorem not found!@]" in
-    Error (Error.Theorem_not_found msg)
+    Error Error.(make (Theorem_not_found msg) ~feedback)
   | Some node -> (
     (* If the node has an error we cannot assume the state is valid *)
     match List.filter Lang.Diagnostic.is_error node.diags with
@@ -109,7 +113,7 @@ let find_thm ~(doc : Fleche.Doc.t) ~thm =
           "@[[find_thm] Theorem found but failed with Coq error:@\n @[%a@]!@]"
           Pp.pp_with err.message
       in
-      Error (Error.Theorem_not_found msg))
+      Error Error.(make (Theorem_not_found msg) ~feedback))
 
 let execute_precommands ~token ~memo ~pre_commands ~(node : Fleche.Doc.Node.t) =
   match (pre_commands, node.prev, node.ast) with
@@ -121,14 +125,26 @@ let execute_precommands ~token ~memo ~pre_commands ~(node : Fleche.Doc.Node.t) =
     Fleche.Memo.Interp.eval ~token (st, ast.v)
   | _, _, _ -> Coq.Protect.E.ok node.state
 
+(* XXX Fix better by making protect errors and request errors share the loc
+   type, so we can execute with Coq locations *)
+let clean_fb fbs =
+  List.map
+    (fun (lvl, { Coq.Message.Payload.msg; _ }) ->
+      (lvl, { Coq.Message.Payload.range = None; quickFix = None; msg }))
+    fbs
+
 let protect_to_result (r : _ Coq.Protect.E.t) : (_, _) Result.t =
   match r with
-  | { r = Interrupted; feedback = _ } -> Error Error.Interrupted
-  | { r = Completed (Error (User { msg; _ })); feedback = _ } ->
-    Error (Error.Coq (Pp.string_of_ppcmds msg))
-  | { r = Completed (Error (Anomaly { msg; _ })); feedback = _ } ->
-    Error (Error.Anomaly (Pp.string_of_ppcmds msg))
-  | { r = Completed (Ok r); feedback = _ } -> Ok r
+  | { r = Interrupted; feedback } ->
+    let feedback = clean_fb feedback in
+    Error Error.(make Interrupted ~feedback)
+  | { r = Completed (Error (User { msg; _ })); feedback } ->
+    let feedback = clean_fb feedback in
+    Error Error.(make (Coq (Pp.string_of_ppcmds msg)) ~feedback)
+  | { r = Completed (Error (Anomaly { msg; _ })); feedback } ->
+    let feedback = clean_fb feedback in
+    Error Error.(make (Anomaly (Pp.string_of_ppcmds msg)) ~feedback)
+  | { r = Completed (Ok r); feedback } -> Ok (r feedback)
 
 let proof_finished { Coq.Goals.goals; stack; shelf; given_up; _ } =
   let check_stack stack =
@@ -151,7 +167,12 @@ end
 
 let hash_mode = Hash_kind.Proof
 
-let analyze_after_run ~hash st =
+(* XXX: duplicated with Request.R.of_execution, refactoring planned (not
+   trivial) *)
+let fb_print_string (lvl, { Coq.Message.Payload.msg; _ }) =
+  (lvl, Pp.string_of_ppcmds msg)
+
+let analyze_after_run ~hash st feedback =
   let proof_finished =
     let goals = Fleche.Info.Goals.get_goals_unit ~st in
     match goals with
@@ -160,12 +181,39 @@ let analyze_after_run ~hash st =
     | _ -> false
   in
   let hash = if hash then Hash_kind.hash ~kind:hash_mode st else None in
-  Run_result.{ st; hash; proof_finished }
+  let feedback = List.map fb_print_string feedback in
+  Run_result.{ st; hash; proof_finished; feedback }
 
 (* Would be nice to keep this in sync with the type annotations. *)
 let default_opts = function
   | None -> { Run_opts.memo = true; hash = true }
   | Some opts -> opts
+
+let get_root_state ?opts ~doc () =
+  let opts = default_opts opts in
+  let hash = opts.hash in
+  let state = doc.Fleche.Doc.root in
+  Ok (analyze_after_run ~hash state [])
+
+let get_state_at_pos ?opts ~doc ~point () =
+  let pos_of_point pt = (pt.Lang.Point.line, pt.character) in
+  let pos_of_range r = (pos_of_point r.Lang.Range.start, pos_of_point r.end_) in
+  let state_of_node node =
+    (node.Fleche.Doc.Node.state, pos_of_range node.range)
+  in
+  (* XXX Fixme, use right API on Fleche.Info *)
+  let states = List.map state_of_node doc.Fleche.Doc.nodes in
+  let keep pos (_, (start, end_)) = end_ <= pos || start <= pos in
+  let sorting (_, (_, end1)) (_, (_, end2)) = compare end2 end1 in
+  let states =
+    (doc.root, ((0, 0), (0, 0))) :: states
+    |> List.filter (keep point)
+    |> List.sort sorting
+  in
+  let state = List.hd states |> fst in
+  let opts = default_opts opts in
+  let hash = opts.hash in
+  Ok (analyze_after_run ~hash state [])
 
 let start ~token ~doc ?opts ?pre_commands ~thm () =
   let open Coq.Compat.Result.O in
@@ -181,7 +229,7 @@ let start ~token ~doc ?opts ?pre_commands ~thm () =
   in
   protect_to_result execution
 
-let run ~token ?opts ~st ~tac () : (_ Run_result.t, Error.t) Result.t =
+let run ~token ?opts ~st ~tac () : (_ Run_result.t, Error.t) Request.R.t =
   let opts = default_opts opts in
   (* Improve with thm? *)
   let memo, hash = (opts.memo, opts.hash) in
@@ -197,7 +245,8 @@ let goals ~token ~st =
   let f goals =
     let f = Coq.Goals.Reified_goal.map ~f:Pp.string_of_ppcmds in
     let g = Pp.string_of_ppcmds in
-    Option.map (Coq.Goals.map ~f ~g) goals
+    (* XXX: Fixme, take feedback into account *)
+    fun _feedback -> Option.map (Coq.Goals.map ~f ~g) goals
   in
   Coq.Protect.E.map ~f (Fleche.Info.Goals.goals ~token ~st) |> protect_to_result
 
@@ -288,5 +337,6 @@ let premises ~token ~st =
   (let open Coq.Protect.E.O in
    let* all_libs = Coq.Library_file.loaded ~token ~st in
    let+ all_premises = Coq.Library_file.toc ~token ~st all_libs in
-   List.map to_premise all_premises)
+   (* XXX: Fixme, take feedback into account *)
+   fun _feedback -> List.map to_premise all_premises)
   |> protect_to_result

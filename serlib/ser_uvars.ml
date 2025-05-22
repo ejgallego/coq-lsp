@@ -62,11 +62,14 @@ let compare i1 i2 = compare__t (Instance (UVars.Instance.to_array i1)) (Instance
 
 end
 
+type bound_names = [%import: UVars.bound_names]
+  [@@deriving sexp,yojson,hash,compare]
+
 module UContext = struct
 
   module I = struct
     type t = UVars.UContext.t
-    type _t = (Names.Name.t array * Names.Name.t array) * (Instance.t * Constraints.t)
+    type _t = bound_names * (Instance.t * Constraints.t)
     [@@deriving sexp,yojson,hash,compare]
 
     let to_t (un, cs) = UVars.UContext.make un cs
@@ -79,11 +82,10 @@ end
 
 module AbstractContext = struct
 
-  let hash_fold_array = hash_fold_array_frozen
   module ACPierceDef = struct
 
     type t = UVars.AbstractContext.t
-    type _t = (Names.Name.t array * Names.Name.t array) * Constraints.t
+    type _t = bound_names * Constraints.t
     [@@deriving sexp,yojson,hash,compare]
   end
 

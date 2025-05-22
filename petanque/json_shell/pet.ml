@@ -57,7 +57,7 @@ let message_notification ~lvl ~message =
 
 let trace_enabled = true
 
-let log_error err =
+let log_error Request.Error.{ payload = err; _ } =
   let message = Petanque.Agent.Error.to_string err in
   message_notification ~lvl:Fleche.Io.Level.Error ~message
 

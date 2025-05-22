@@ -42,6 +42,33 @@
    and allow file logging of protocol traces again (@ejgallego, #919,
    fixes #868)
  - [coq] Support Coq relocatable mode (@SkySkimmer, #891)
+ - [ci] [deps] Remove support for OCaml 4.12 and 4.13, following
+   upstream's coq/coq#20576 Note that these compiler versions have
+   been unsupported for a long time, please upgrade (@ejgallego, #951)
+ - [hover] New option `show_state_hash_on_hover` that displays state
+    hash on hover for debug (@ejgallego, #954)
+ - [doc] [faq] Updated FAQ to account for VSCoq 2 release in 2023,
+   thanks to Patrick Nicodemus for pointing out the outdated
+   documentation (@ejgallego, #846, fixes #817)
+ - [vscode] [macos] Resolve keybinding conflict with Cmd+N and
+   Cmd+Enter, we now use Alt+N and Alt+Shift+Enter, (Andrei
+   Listochkin, #926)
+ - [rocq] [fleche] Disable memprof-limits interruption backend by
+   default, as released Rocq versions are not safe yet. If you want to
+   enable it, you can still do it with the `--int_backend=Mp` command
+   line option (@ejgallego, #957, fixes #857, reported by @dariusf,
+   cc: rocq-prover/rocq#19177)
+ - [lsp] [controller] Include Rocq feedback on request errors, using
+   the optional `data` field. This is useful to still be able to
+   obtain feedback messages such as debug messages even when a request
+   fails. This also opens the door to better protocol handling and
+   petanque integration (@ejgallego, #959, #961)
+ - [petanque] Add feedback field to `Run_result.t`, this is important
+   for many use cases. We also return feedback on petanque errors.
+   (@ejgallego, @JulesViennotFranca, #960)
+ - [petanque] new `get_state_at_pos` and `get_root_state` calls, that
+   allow to retrieve a petanque proof state from position
+   (@JulesViennotFranca, @ejgallego, #962)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------

@@ -332,7 +332,7 @@ end = struct
     else if not (Option.is_empty !hint) then hint := Some (uri, point)
 end
 
-let create ~io ~token ~env ~uri ~raw ~version =
+let open_ ~io ~token ~env ~uri ~raw ~version =
   let extra_requires = Register.InjectRequire.fire ~io in
   let env = Doc.Env.inject_requires ~extra_requires env in
   let doc = Doc.create ~token ~env ~uri ~raw ~version in
