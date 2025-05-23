@@ -42,7 +42,7 @@ let compile_file ~cc file : int =
     let files = Coq.Files.make () in
     let env = Doc.Env.make ~init:root_state ~workspace ~files in
     let raw = Coq.Compat.Ocaml_414.In_channel.(with_open_bin file input_all) in
-    let () = Theory.create ~io ~token ~env ~uri ~raw ~version:1 in
+    let () = Theory.open_ ~io ~token ~env ~uri ~raw ~version:1 in
     match Theory.Check.maybe_check ~io ~token with
     | None -> 102
     | Some (_, doc) ->

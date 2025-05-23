@@ -18,7 +18,6 @@
 
 open Sexplib.Std
 
-module Nametab = Ser_nametab
 module Libobject = Ser_libobject
 module Summary = Ser_summary
 

@@ -151,20 +151,20 @@
     "keybindings": [
       {
         "command": "coq-lsp.goals",
-        "key": "alt+enter",
-        "mac": "meta+enter",
+        "key": "Alt+enter",
+        "mac": "Alt+Shift+enter",
         "when": "editorTextFocus && (editorLangId == coq || editorTextFocus && editorLangId == markdown)"
       },
       {
         "command": "coq-lsp.sentenceNext",
         "key": "Alt+N",
-        "mac": "cmd+N",
+        "mac": "Alt+N",
         "when": "editorTextFocus && (editorLangId == coq || editorTextFocus && editorLangId == markdown)"
       },
       {
         "command": "coq-lsp.sentencePrevious",
         "key": "Alt+P",
-        "mac": "cmd+P",
+        "mac": "Alt+P",
         "when": "editorTextFocus && (editorLangId == coq || editorTextFocus && editorLangId == markdown)"
       }
     ],
@@ -241,6 +241,11 @@
             "type": "boolean",
             "default": false,
             "description": "Show universe information and diff for a sentence on hover."
+          },
+          "coq-lsp.show_state_hash_on_hover": {
+            "type": "boolean",
+            "default": false,
+            "description": "Show state hash on hover."
           }
         }
       },

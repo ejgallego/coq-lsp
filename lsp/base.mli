@@ -15,7 +15,8 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-(* XXX: EJGA This should be an structured value (object or array) *)
+(* XXX: EJGA In the LSP spec Params are either an structured value (object or
+   array) *)
 module Params : sig
   type t = (string * Yojson.Safe.t) list
 end
@@ -52,7 +53,7 @@ module Response : sig
         { id : int
         ; code : int
         ; message : string
-        ; data : Yojson.Safe.t option
+        ; data : Yojson.Safe.t option [@default None]
         }
   [@@deriving to_yojson]
 
@@ -60,7 +61,8 @@ module Response : sig
   val mk_ok : id:int -> result:Yojson.Safe.t -> t
 
   (** Fail a request *)
-  val mk_error : id:int -> code:int -> message:string -> t
+  val mk_error :
+    id:int -> code:int -> message:string -> data:Yojson.Safe.t option -> t
 
   val id : t -> int
 end
@@ -102,9 +104,9 @@ module WorkDoneProgressBegin : sig
   type t =
     { kind : string
     ; title : string
-    ; cancellable : bool option [@None]
-    ; message : string option [@None]
-    ; percentage : int option [@None]
+    ; cancellable : bool option [@default None]
+    ; message : string option [@default None]
+    ; percentage : int option [@default None]
     }
   [@@deriving to_yojson]
 end
@@ -112,9 +114,9 @@ end
 module WorkDoneProgressReport : sig
   type t =
     { kind : string
-    ; cancellable : bool option [@None]
-    ; message : string option [@None]
-    ; percentage : int option [@None]
+    ; cancellable : bool option [@default None]
+    ; message : string option [@default None]
+    ; percentage : int option [@default None]
     }
   [@@deriving to_yojson]
 end
@@ -122,3 +124,32 @@ end
 module WorkDoneProgressEnd : sig
   type t = { kind : string } [@@deriving to_yojson]
 end
+
+(* Messages and Traces *)
+module MessageParams : sig
+  val method_ : string
+
+  type t =
+    { type_ : int [@key "type"]
+    ; message : string
+    }
+  [@@deriving yojson]
+end
+
+(** Create a [logMessage] LSP notification *)
+val mk_logMessage_ : type_:int -> message:string -> Notification.t
+
+val mk_logMessage : lvl:Fleche.Io.Level.t -> message:string -> Notification.t
+
+module TraceParams : sig
+  val method_ : string
+
+  type t =
+    { message : string
+    ; verbose : string option [@default None]
+    }
+  [@@deriving yojson]
+end
+
+(** Create a logTrace notification *)
+val mk_logTrace : message:string -> verbose:string option -> Notification.t

@@ -1,7 +1,23 @@
+; Should we move this to Fleche?
+
+(library
+ (name request)
+ (public_name coq-lsp.request)
+ (modules request)
+ (wrapped false)
+ (libraries coq fleche))
+
 (library
  (name controller)
- (modules :standard \ coq_lsp)
- (libraries coq fleche petanque petanque_json fleche_lsp dune-build-info))
+ (modules :standard \ request coq_lsp)
+ (libraries
+  coq
+  fleche
+  request
+  petanque
+  petanque_json
+  fleche_lsp
+  dune-build-info))
 
 (executable
  (name coq_lsp)

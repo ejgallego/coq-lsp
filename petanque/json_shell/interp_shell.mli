@@ -10,7 +10,7 @@ module Lsp = Fleche_lsp
 type doc_handler =
      token:Coq.Limits.Token.t
   -> uri:Lang.LUri.File.t
-  -> (Fleche.Doc.t, Petanque.Agent.Error.t) Result.t
+  -> Fleche.Doc.t Petanque.Agent.R.t
 
 val interp :
      fn:doc_handler

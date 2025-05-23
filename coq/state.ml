@@ -72,7 +72,7 @@ let equal x y = compare x y = 0
 let hash x =
   (* OCaml's defaults are 10, 100, but not so good for us, much improved
      settings are below (best try so far) *)
-  let meaningful, total = (64, 256) in
+  let meaningful, total = (256, 256) in
   Hashtbl.hash_param meaningful total x
 
 let mode ~st =
@@ -90,8 +90,9 @@ module Proof = struct
   let to_coq x = x
   let equal x y = x == y
 
-  (* OCaml's defaults are 10, 100, we use this as to give best precision for
-     petanque-like users *)
+  (* OCaml's defaults are 10, 100, we use these values as to give better
+     precision for petanque-like users, it should not impact interactive use but
+     we gotta measure it *)
   let hash x =
     let meaningful, total = (128, 256) in
     Hashtbl.hash_param meaningful total x

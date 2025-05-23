@@ -3,7 +3,7 @@ open Petanque
 (** I/O handling, by default, print to stderr *)
 
 (** [trace header extra message] *)
-val trace_ref : (string -> ?extra:string -> string -> unit) ref
+val trace_ref : (string -> ?verbose:string -> string -> unit) ref
 
 (** [message level message] *)
 val message_ref : (lvl:Fleche.Io.Level.t -> message:string -> unit) ref
@@ -22,13 +22,9 @@ val set_workspace :
   -> unit Agent.R.t
 
 val build_doc :
-     token:Coq.Limits.Token.t
-  -> uri:Lang.LUri.File.t
-  -> (Fleche.Doc.t, Agent.Error.t) Result.t
+  token:Coq.Limits.Token.t -> uri:Lang.LUri.File.t -> Fleche.Doc.t Agent.R.t
 
 val get_toc :
      token:Coq.Limits.Token.t
   -> doc:Fleche.Doc.t
-  -> ( (string * Lang.Ast.Info.t list option) list
-     , Petanque.Agent.Error.t )
-     Result.t
+  -> (string * Lang.Ast.Info.t list option) list Agent.R.t

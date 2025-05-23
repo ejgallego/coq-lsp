@@ -18,3 +18,6 @@ val ri_from : (string option * string) list Term.t
 val int_backend : Limits.backend option Term.t
 val roots : string list Term.t
 val coq_diags_level : int Term.t
+
+(* Internal, used by pet-server, should go away *)
+val coqlib_dyn : string

@@ -10,12 +10,15 @@ one.
 Petanque follows the methodology developed in SerAPI, thus we specify
 an OCaml API (`agent.mli`) which is then exposed via some form of RPC.
 
+See `coq-lsp` [protocol documentation](../etc/doc/PROTOCOL.md) for protocol docs.
+
 ## Authors
 
 - Guilaume Baudart (Inria)
-- Emilio J. Gallego Arias (Inria)
+- Emilio J. Gallego Arias (CNRS)
 - Marc Lelarge (Inria)
 - Laetitia Teodorescu (Inria)
+- Jules Viennot Franca (Inria)
 
 ## Acknowledgments
 
@@ -34,6 +37,12 @@ order of easiness:
 
 ```
 $ opam install coq-lsp
+```
+
+if you plan to use the specific `pet-server`, install the optional packages first:
+
+```
+$ opam install logs lwt coq-lsp
 ```
 
 - install a development version using Opam:

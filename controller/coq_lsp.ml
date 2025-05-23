@@ -1,17 +1,8 @@
 (************************************************************************)
-(*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
-(* <O___,, *       (see CREDITS file for the list of authors)           *)
-(*   \VV/  **************************************************************)
-(*    //   *    This file is distributed under the terms of the         *)
-(*         *     GNU Lesser General Public License Version 2.1          *)
-(*         *     (see LICENSE file for the text of the license)         *)
-(************************************************************************)
-
-(************************************************************************)
-(* Coq Language Server Protocol                                         *)
+(* Rocq Language Server Protocol                                        *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2024-2025 EJGA       -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
@@ -50,7 +41,7 @@ let concise_cb ofn =
       Lsp.Core.mk_diagnostics ~uri ~version diags |> ofn
   in
   Fleche.Io.CallBack.
-    { trace = (fun _hdr ?extra:_ _msg -> ())
+    { trace = (fun _hdr ?verbose:_ _msg -> ())
     ; message = (fun ~lvl:_ ~message:_ -> ())
     ; diagnostics
     ; fileProgress = (fun ~uri:_ ~version:_ _progress -> ())
@@ -81,8 +72,43 @@ let rec lsp_init_loop ~io ~ifn ~ofn ~cmdline ~debug =
     L.trace "read_request" "error: %s" err;
     lsp_init_loop ~io ~ifn ~ofn ~cmdline ~debug
 
+(* File *)
+module Trace : sig
+  val setup : string -> unit
+  val cleanup : unit -> unit
+end = struct
+  let trace_oc = ref None
+
+  (* This is already called under a Mutex, so no need to care about sync here,
+     but beware *)
+  let log_fn oc hdr obj =
+    Format.fprintf oc "[%s] @[%a@]@\n%!" hdr
+      (Yojson.Safe.pretty_print ~std:false)
+      obj
+
+  let setup file =
+    try
+      let oc = open_out file in
+      let oc_fmt = Format.formatter_of_out_channel oc in
+      trace_oc := Some (oc, oc_fmt);
+      Lsp.Io.set_log_fn (log_fn oc_fmt)
+    with err ->
+      let msg = Printexc.to_string err in
+      Fleche.Io.Log.trace "Trace.setup"
+        "creation of server log file %s failed: @[%s@]" file msg
+
+  (* At exit cleanup *)
+  let cleanup () =
+    match !trace_oc with
+    | None -> ()
+    | Some (oc, oc_fmt) ->
+      Format.pp_print_flush oc_fmt ();
+      Stdlib.flush oc;
+      close_out oc
+end
+
 let lsp_main bt coqlib findlib_config ocamlpath vo_load_path require_libraries
-    delay int_backend =
+    delay int_backend lsp_trace lsp_trace_file =
   Coq.Limits.select_best int_backend;
   Coq.Limits.start ();
 
@@ -97,16 +123,17 @@ let lsp_main bt coqlib findlib_config ocamlpath vo_load_path require_libraries
   let ofn message = Lsp.Io.send_message Format.std_formatter message in
   let ofn_ntn not = Lsp.Base.Message.notification not |> ofn in
 
-  Lsp.Io.set_log_fn ofn_ntn;
-
   let module CB = Lsp_core.CB (struct
     let ofn = ofn_ntn
   end) in
   let io = CB.cb in
   Fleche.Io.CallBack.set io;
 
+  if lsp_trace then Trace.setup lsp_trace_file;
+
   (* IMPORTANT: LSP spec forbids any message from server to client before
-     initialize is received *)
+     initialize is received, [Trace.setup] violates that if there is an error
+     when creating the log file. *)
 
   (* Core Coq initialization *)
   let debug = bt || Fleche.Debug.backtraces in
@@ -143,7 +170,6 @@ let lsp_main bt coqlib findlib_config ocamlpath vo_load_path require_libraries
       if !Fleche.Config.v.verbosity < 2 then (
         Fleche.Config.(
           v := { !v with send_diags = false; send_perf_data = false });
-        Lsp.Io.set_log_fn (fun _obj -> ());
         let io = concise_cb ofn_ntn in
         Fleche.Io.CallBack.set io;
         io)
@@ -162,7 +188,9 @@ let lsp_main bt coqlib findlib_config ocamlpath vo_load_path require_libraries
 
     read_loop ()
   with
-  | Lsp_exit -> Fleche.Io.Report.msg ~io ~lvl:Error "[LSP shutdown] EOF\n"
+  | Lsp_exit ->
+    Trace.cleanup ();
+    Fleche.Io.Report.msg ~io ~lvl:Error "[LSP shutdown] EOF\n"
   | exn ->
     let bt = Printexc.get_backtrace () in
     let exn, info = Exninfo.capture exn in
@@ -180,6 +208,17 @@ open Cmdliner
 let delay : float Term.t =
   let doc = "Delay value in seconds when server is idle" in
   Arg.(value & opt float 0.1 & info [ "D"; "idle-delay" ] ~docv:"DELAY" ~doc)
+
+let lsp_trace : bool Term.t =
+  let doc = "Trace LSP input / output" in
+  Arg.(value & flag & info [ "lsp_trace" ] ~docv:"ENABLED" ~doc)
+
+let lsp_trace_file : string Term.t =
+  let doc = "Name of the LSP log file $(docv)" in
+  let default_file = Format.asprintf "coq_lsp_log_%d.txt" (Unix.getpid ()) in
+  Arg.(
+    value & opt string default_file
+    & info [ "lsp_trace_file" ] ~docv:"TRACE_FILE" ~doc)
 
 let term_append l =
   Term.(List.(fold_right (fun t l -> const append $ t $ l) l (const [])))
@@ -200,7 +239,7 @@ let lsp_cmd : unit Cmd.t =
       (Cmd.info "coq-lsp" ~version:Fleche.Version.server ~doc ~man)
       Term.(
         const lsp_main $ bt $ coqlib $ findlib_config $ ocamlpath $ vo_load_path
-        $ ri_from $ delay $ int_backend))
+        $ ri_from $ delay $ int_backend $ lsp_trace $ lsp_trace_file))
 
 let main () =
   let ecode = Cmd.eval lsp_cmd in

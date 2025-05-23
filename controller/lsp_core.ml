@@ -48,14 +48,13 @@ module Helpers = struct
       with
       | Ok uri -> uri
       | Error err ->
+        (* XXX Fixme *)
         (* ppx_deriving_yojson error messages leave a lot to be desired *)
         (* We use lsp.io here as we will push parsing to the outer loop, so no
            need to reflect this on the type just to undo it later; as this
            message morally doesn't belong here *)
         let message = Format.asprintf "json parsing failed: %s" err in
-        Lsp.Io.logMessage ~lvl:Error ~message;
-        (* XXX Fixme *)
-        CErrors.user_err (Pp.str "failed to parse uri")
+        CErrors.user_err (Pp.str message)
     in
     let Lsp.Doc.TextDocumentIdentifier.{ uri } = document in
     uri
@@ -163,10 +162,10 @@ let do_changeWorkspaceFolders ~ofn:_ ~token ~state params =
 module Rq : sig
   module Action : sig
     type t =
-      | Immediate of Request.R.t
-      | Data of Request.Data.t
+      | Immediate of (Yojson.Safe.t, string) Request.R.t
+      | Data of (Yojson.Safe.t, string) Request.Data.t
 
-    val now : Request.R.t -> t
+    val now : (Yojson.Safe.t, string) Request.R.t -> t
     val error : int * string -> t
   end
 
@@ -191,17 +190,32 @@ module Rq : sig
     -> Int.Set.t
     -> unit
 end = struct
+  let feedback_to_message fb =
+    Lsp.JFleche.Message.(
+      of_coq_message fb |> map ~f:Pp.string_of_ppcmds
+      |> to_yojson (fun s -> `String s))
+
+  let feedback_to_data fbs =
+    match fbs with
+    | [] -> None
+    | fbs -> Some (`List (List.map feedback_to_message fbs))
+
   (* Answer a request, private *)
   let answer ~ofn_rq ~id result =
     (match result with
     | Result.Ok result -> Lsp.Base.Response.mk_ok ~id ~result
-    | Error (code, message) -> Lsp.Base.Response.mk_error ~id ~code ~message)
+    | Error Request.Error.{ code; payload; feedback } ->
+      (* for now *)
+      let message = payload in
+      let data = feedback_to_data feedback in
+      Lsp.Base.Response.mk_error ~id ~code ~message ~data)
     |> ofn_rq
 
   (* private to the Rq module, just used not to retrigger canceled requests *)
-  let _rtable : (int, Request.Data.t) Hashtbl.t = Hashtbl.create 673
+  let _rtable : (int, (Yojson.Safe.t, string) Request.Data.t) Hashtbl.t =
+    Hashtbl.create 673
 
-  let postpone_ ~id (pr : Request.Data.t) =
+  let postpone_ ~id (pr : (Yojson.Safe.t, string) Request.Data.t) =
     if Fleche.Debug.request_delay then L.trace "request" "postponing rq: %d" id;
     Hashtbl.add _rtable id pr
 
@@ -222,7 +236,7 @@ end = struct
         let uri, postpone, request = Request.Data.dm_request pr in
         Fleche.Theory.Request.remove { id; uri; postpone; request }
       in
-      Error (code, message)
+      Error (Request.Error.make code message)
     in
     consume_ ~ofn_rq ~f id
 
@@ -237,13 +251,13 @@ end = struct
     in
     consume_ ~ofn_rq ~f id
 
-  let query ~ofn_rq ~token ~id (pr : Request.Data.t) =
+  let query ~ofn_rq ~token ~id (pr : (Yojson.Safe.t, string) Request.Data.t) =
     let uri, postpone, request = Request.Data.dm_request pr in
     match Fleche.Theory.Request.add { id; uri; postpone; request } with
     | Cancel ->
       let code = -32802 in
       let message = "Document is not ready" in
-      Error (code, message) |> answer ~ofn_rq ~id
+      Error (Request.Error.make code message) |> answer ~ofn_rq ~id
     | Now doc ->
       debug_serve id pr;
       Request.Data.serve ~token ~doc pr |> answer ~ofn_rq ~id
@@ -251,11 +265,11 @@ end = struct
 
   module Action = struct
     type t =
-      | Immediate of Request.R.t
-      | Data of Request.Data.t
+      | Immediate of (Yojson.Safe.t, string) Request.R.t
+      | Data of (Yojson.Safe.t, string) Request.Data.t
 
     let now r = Immediate r
-    let error (code, msg) = now (Error (code, msg))
+    let error (code, msg) = now (Error (Request.Error.make code msg))
   end
 
   let serve ~ofn_rq ~token ~id action =
@@ -279,7 +293,7 @@ let do_open ~io ~token ~(state : State.t) params =
   let init, workspace = State.workspace_of_uri ~io ~uri ~state in
   let files = Coq.Files.make () in
   let env = Fleche.Doc.Env.make ~init ~workspace ~files in
-  Fleche.Theory.create ~io ~token ~env ~uri ~raw:text ~version
+  Fleche.Theory.open_ ~io ~token ~env ~uri ~raw:text ~version
 
 let do_change ~ofn_rq ~io ~token params =
   let uri, version = Helpers.get_uri_version params in
@@ -305,8 +319,8 @@ let do_close params =
 
 let do_trace params =
   let trace = string_field "value" params in
-  match Lsp.Io.TraceValue.of_string trace with
-  | Ok t -> Lsp.Io.set_trace_value t
+  match Fleche.Io.TraceValue.of_string trace with
+  | Ok t -> Fleche.Io.Log.set_trace_value t
   | Error e -> L.trace "$/setTrace" "invalid value: %s" e
 
 (***********************************************************************)
@@ -328,6 +342,9 @@ let compare p1 p2 =
   let xres = Int.compare x1 x2 in
   if xres = 0 then -Int.compare y1 y2 else -xres
 
+(* Helper for below, should likely be gone. *)
+let empty ~token:_ ~doc:_ ~point:_ = Ok (`List [])
+
 (* A little bit hacky, but selectionRange is the only request that needs this...
    so we will survive *)
 let do_position_list_request ~postpone ~params ~handler =
@@ -335,7 +352,7 @@ let do_position_list_request ~postpone ~params ~handler =
   let points = Helpers.get_position_array params in
   match points with
   | [] ->
-    let point, handler = ((0, 0), Request.empty) in
+    let point, handler = ((0, 0), empty) in
     Rq.Action.Data
       (Request.Data.PosRequest { uri; handler; point; version; postpone })
   | points ->
@@ -473,6 +490,10 @@ let petanque_handle ~token =
     (* Request document execution if not ready *)
     let postpone = true in
     Rq.Action.(Data (DocRequest { uri; postpone; handler }))
+  | Interp.Action.Pos { uri; point; handler } ->
+    let version = None in
+    let postpone = true in
+    Rq.Action.(Data (PosRequest { uri; point; version; postpone; handler }))
 
 let do_petanque ~token method_ params =
   let open Petanque_json in
@@ -491,8 +512,8 @@ let do_petanque ~token method_ params =
 exception Lsp_exit
 
 let log_workspace ~io (dir, w) =
-  let message, extra = Coq.Workspace.describe_guess w in
-  L.trace "workspace" ~extra "initialized %s" dir;
+  let message, verbose = Coq.Workspace.describe_guess w in
+  L.trace "workspace" ~verbose "initialized %s" dir;
   Fleche.Io.Report.msg ~io ~lvl:Info "%s" message
 
 let version () =
@@ -529,6 +550,8 @@ let lsp_init_process ~ofn ~io ~cmdline ~debug msg : Init_effect.t =
     let result, dirs = Rq_init.do_initialize ~io ~params in
     Rq.Action.now (Ok result) |> Rq.serve ~ofn_rq ~token ~id;
     Lsp.JFleche.mk_serverVersion serverInfo |> ofn_nt;
+    Fleche.Io.Report.msg ~io ~lvl:Info "Rocq features: %s"
+      Coq.Version.quirks_message;
     Fleche.Io.Report.msg ~io ~lvl:Info "Server initializing (int_backend: %s)"
       (Coq.Limits.name ());
     (* Workspace initialization *)
@@ -542,7 +565,7 @@ let lsp_init_process ~ofn ~io ~cmdline ~debug msg : Init_effect.t =
     Success workspaces
   | Lsp.Base.Message.Request { id; _ } ->
     (* per spec *)
-    Lsp.Base.Response.mk_error ~id ~code:(-32002)
+    Lsp.Base.Response.mk_error ~id ~code:(-32002) ~data:None
       ~message:"server not initialized"
     |> ofn_rq;
     Loop
@@ -752,11 +775,11 @@ end) =
 struct
   let ofn = O.ofn
 
-  let trace hdr ?extra message =
-    let message = "[" ^ hdr ^ "] " ^ message in
-    Lsp.Io.logTrace ~message ~extra
+  let trace hdr ?verbose message =
+    let message = Format.asprintf "[%s] %s" hdr message in
+    Lsp.Base.mk_logTrace ~message ~verbose |> ofn
 
-  let message ~lvl ~message = Lsp.Io.logMessage ~lvl ~message
+  let message ~lvl ~message = Lsp.Base.mk_logMessage ~lvl ~message |> ofn
 
   let diagnostics ~uri ~version diags =
     Lsp.Core.mk_diagnostics ~uri ~version diags |> ofn

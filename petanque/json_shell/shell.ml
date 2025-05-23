@@ -5,7 +5,7 @@ let init_coq ~debug =
   Coq.Init.(coq_init { debug; load_module; load_plugin; vm; warnings })
 
 let cmdline : Coq.Workspace.CmdLine.t =
-  { coqlib = Coq_config.coqlib
+  { coqlib = Coq.Args.coqlib_dyn
   ; findlib_config = None
   ; ocamlpath = []
   ; vo_load_path = []
@@ -19,9 +19,9 @@ let setup_workspace ~token ~init ~debug ~root =
    let+ workspace = Coq.Workspace.guess ~token ~debug ~cmdline ~dir in
    let files = Coq.Files.make () in
    Fleche.Doc.Env.make ~init ~workspace ~files)
-  |> Result.map_error Petanque.Agent.Error.coq
+  |> Result.map_error (fun msg -> Petanque.Agent.Error.(make_request (coq msg)))
 
-let trace_stderr hdr ?extra:_ msg =
+let trace_stderr hdr ?verbose:_ msg =
   Format.eprintf "@[[trace] %s | %s @]@\n%!" hdr msg
 
 let trace_ref = ref trace_stderr
@@ -32,7 +32,7 @@ let message_stderr ~lvl:_ ~message =
 let message_ref = ref message_stderr
 
 let io =
-  let trace hdr ?extra msg = !trace_ref hdr ?extra msg in
+  let trace hdr ?verbose msg = !trace_ref hdr ?verbose msg in
   let message ~lvl ~message = !message_ref ~lvl ~message in
   let diagnostics ~uri:_ ~version:_ _diags = () in
   let fileProgress ~uri:_ ~version:_ _pinfo = () in
@@ -68,7 +68,7 @@ let print_diags (doc : Fleche.Doc.t) =
 let read_raw ~uri =
   let file = Lang.LUri.File.to_string_file uri in
   try Ok Coq.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
-  with Sys_error err -> Error (Petanque.Agent.Error.system err)
+  with Sys_error err -> Error Petanque.Agent.Error.(make_request (system err))
 
 let setup_doc ~token env uri =
   match read_raw ~uri with
@@ -82,9 +82,10 @@ let setup_doc ~token env uri =
 let build_doc ~token ~uri = setup_doc ~token (Option.get !env) uri
 
 (* Flèche LSP backend handles the conversion at the protocol level *)
-let to_uri uri =
+let to_uri uri : _ Request.R.t =
   Lang.LUri.of_string uri |> Lang.LUri.File.of_uri
-  |> Result.map_error Petanque.Agent.Error.system
+  |> Result.map_error (fun msg ->
+         Petanque.Agent.Error.(make_request (system msg)))
 
 let uri_of_path path = Format.asprintf "file:///%s" path |> to_uri
 
@@ -109,9 +110,7 @@ let toc_to_info (name, node) =
   (name, ast.Fleche.Doc.Node.Ast.ast_info)
 
 let get_toc ~token:_ ~(doc : Fleche.Doc.t) :
-    ( (string * Lang.Ast.Info.t list option) list
-    , Petanque.Agent.Error.t )
-    Result.t =
+    (string * Lang.Ast.Info.t list option) list Petanque.Agent.R.t =
   let { Fleche.Doc.toc; _ } = doc in
   let toc = CString.Map.bindings toc |> List.filter_map toc_to_info in
   Ok toc

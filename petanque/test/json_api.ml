@@ -14,6 +14,14 @@ let trace ?verbose:_ msg = msgs := Format.asprintf "[trace] %s" msg :: !msgs
 let message ~lvl:_ ~message = msgs := message :: !msgs
 let dump_msgs () = List.iter (Format.eprintf "%s@\n") (List.rev !msgs)
 let extract_st { JAgent.Run_result.st; _ } = st
+
+let check_search { JAgent.Run_result.feedback; _ } n =
+  let nfb = List.length feedback in
+  if Int.equal nfb n then ()
+  else (
+    Format.eprintf "error in search, got %d , expected %d@\n%!" nfb n;
+    assert false)
+
 let pp_offset fmt (bp, ep) = Format.fprintf fmt "(%d,%d)" bp ep
 
 let pp_res_str =
@@ -68,6 +76,11 @@ let run (ic, oc) =
   let* { st; _ } =
     S.start { uri; opts = None; pre_commands = None; thm = "rev_snoc_cons" }
   in
+  (* Check get_at_pos works, note that LSP positions start at 0 ! *)
+  let position = Lang.Point.{ line = 13; character = 0; offset = -1 } in
+  let* st' = S.get_state_at_pos { uri; opts = None; position } in
+  let* eq = S.state_equal { kind = None; st1 = st; st2 = st'.st } in
+  assert eq;
   let* premises = S.premises { st } in
   (if print_premises then
      Format.(eprintf "@[%a@]@\n%!" (pp_print_list pp_premise) premises));
@@ -90,6 +103,10 @@ let run (ic, oc) =
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"now simpl; rewrite IHl." in
   let* st = r ~st ~tac:"Qed." in
+  (* Search test, the inductive generates 6 entries *)
+  let* st = r ~st ~tac:"Search naat." in
+  check_search st 6;
+  (* No goals after qed *)
   S.goals { st = extract_st st }
 
 let main () =

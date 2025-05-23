@@ -16,5 +16,5 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-type object_prefix = Nametab.object_prefix [@@deriving sexp]
-
+type raw_generic_tactic = Gentactic.raw_generic_tactic
+[@@deriving sexp,hash,compare,yojson]

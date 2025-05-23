@@ -20,7 +20,7 @@ open Ppx_hash_lib.Std.Hash.Builtin
 open Ppx_compare_lib.Builtin
 open Sexplib.Conv
 
-module Names       = Ser_names
+module Proofview = Ser_proofview
 
 type t =
   [%import: Goal_select.t]
