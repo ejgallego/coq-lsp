@@ -2,11 +2,22 @@ SHELL := /usr/bin/env bash
 
 COQ_BUILD_CONTEXT=../_build/default/coq
 
-PKG_SET= coq-lsp.install
+# Set to true for main, comment out for released versions
+# VENDORED_SETUP:=true
 
-PKG_SET_WEB=
-# This is disabled in stable versions
-# PKG_SET_WEB=$(PKG_SET) vendor/coq-waterproof/coq-waterproof.install
+ifdef VENDORED_SETUP
+PKG_SET= \
+vendor/coq/rocq-runtime.install \
+vendor/coq/rocq-core.install \
+vendor/coq/coq-core.install \
+vendor/coq-stdlib/rocq-stdlib.install \
+vendor/coq-stdlib/coq-stdlib.install \
+coq-lsp.install
+else
+PKG_SET= coq-lsp.install
+endif
+
+PKG_SET_WEB=$(PKG_SET)
 
 # Get the ocamlformat version from the .ocamlformat file
 OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
@@ -89,9 +100,11 @@ js: coq_boot
 	mkdir -p editor/code/out/ && cp -a controller-js/coq_lsp_worker.bc.cjs editor/code/out/coq_lsp_worker.bc.js
 
 .PHONY: coq_boot
+ifdef VENDORED_SETUP
+coq_boot: vendor/coq/config/coq_config.ml
+else
 coq_boot:
-# We do nothing for released versions
-# coq_boot: vendor/coq/config/coq_config.ml
+endif
 
 .PHONY: clean
 clean:
@@ -133,6 +146,7 @@ submodules-deinit:
 submodules-update:
 	(cd vendor/coq && git checkout master && git pull upstream master)
 	(cd vendor/coq-stdlib && git checkout master && git pull upstream master)
+	(cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 # For now we update manually
 # (cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 
@@ -152,12 +166,9 @@ make-fmt: build fmt
 # Helper for users that want a global opam install
 .PHONY: opam-update-and-reinstall
 opam-update-and-reinstall:
-	git pull
 	opam install .
 
 # These variables are exclusive of the JS build
-# Not true in this branch
-# VENDORED_SETUP:=true
 
 # Used in git clone
 COQ_BRANCH=v8.18
@@ -203,11 +214,11 @@ controller-js/coq-fs-core.js: coq_boot
 	dune build --profile=release --display=quiet $(PKG_SET_WEB) etc/META.threads
 	for i in $$(find $(_CCROOT)/plugins -name *.cma); do js_of_ocaml --dynlink $$i; done
 	for i in $$(find _build/install/default/lib/coq-lsp/serlib -wholename */*.cma); do js_of_ocaml --dynlink $$i; done
-	for i in $$(find _build/install/default/lib/coq-waterproof/plugin -name *.cma); do js_of_ocaml --dynlink $$i; done
+	for i in $$(find $(_CCROOT)/../coq-waterproof -name *.cma); do js_of_ocaml --dynlink $$i; done
 	js_of_ocaml build-fs -o controller-js/coq-fs-core.js \
 	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/$(COQ_CORE_NAME)/%P ") \
 	    $$(find _build/install/default/lib/coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-lsp/%P ") \
-	    $$(find _build/install/default/lib/coq-waterproof/  \( -wholename '*/plugin/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-waterproof/%P ") \
+	    $$(find $(_CCROOT)/../coq-waterproof/  \( -wholename '*/plugin/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-waterproof/%P ") \
 	    ./etc/META.threads:/static/lib/threads/META \
 	    $$(find $(_LIBROOT) -wholename '*/str/META'                 -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/seq/META'                 -printf "%p:/static/lib/%P ") \

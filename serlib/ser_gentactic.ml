@@ -16,8 +16,19 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-module Names = Ser_names
+module Genarg = Ser_genarg
 
-type object_prefix =
-  [%import: Nametab.object_prefix]
-  [@@deriving sexp]
+module RawTac = struct
+  type t = Gentactic.raw_generic_tactic
+
+  type _t = Genarg.raw_generic_argument
+  [@@deriving sexp,hash,compare,yojson]
+
+  let to_t = Gentactic.of_raw_genarg
+  let of_t = Gentactic.to_raw_genarg
+end
+
+module BijectRawtac = SerType.Biject(RawTac)
+
+type raw_generic_tactic = BijectRawtac.t
+[@@deriving sexp,hash,compare,yojson]

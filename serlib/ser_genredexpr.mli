@@ -25,9 +25,6 @@ type 'a glob_red_flag =  'a Genredexpr.glob_red_flag
 type ('a, 'b, 'c, 'd) red_expr_gen =  ('a, 'b, 'c, 'd) Genredexpr.red_expr_gen
   [@@deriving sexp,yojson,hash,compare]
 
-type ('a, 'b, 'c, 'd) may_eval =  ('a, 'b, 'c, 'd) Genredexpr.may_eval
-  [@@deriving sexp,yojson,hash,compare]
-
 type raw_red_expr = Genredexpr.raw_red_expr [@@deriving sexp,yojson,hash,compare]
 
 type 'a and_short_name = 'a Genredexpr.and_short_name

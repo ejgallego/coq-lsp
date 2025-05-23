@@ -11,7 +11,7 @@ in a single repository, also known as a monorepo, in particular:
 - `fcc`: an extensible command line compiler built on top of Flèche
 - `petanque`: direct access to Coq's proof engine
 - `coq-lsp`a LSP server for the Coq project, written in OCaml on top of Flèche
-- a `coq-lsp/VSCode` extension written in TypeScript and React, in
+- the `coq-lsp/VSCode` extension written in TypeScript and React, in
   the `editor/code` directory
 
 Read coq-lsp [FAQ](etc/FAQ.md) to learn more about LSP and

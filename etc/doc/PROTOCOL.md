@@ -1,11 +1,53 @@
 # coq-lsp protocol documentation
 
+## Table of contents
+
+<!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
+ - [Introduction and preliminaries](#introduction-and-preliminaries)
+    * [coq-lsp basic operating model](#coq-lsp-basic-operating-model)
+    * [coq-lsp workspace configuration](#coq-lsp-workspace-configuration)
+    * [A minimal client implementation:](#a-minimal-client-implementation)
+ - [Language server protocol support table](#language-server-protocol-support-table)
+    * [URIs accepted by coq-lsp](#uris-accepted-by-coq-lsp)
+ - [Implementation-specific options](#implementation-specific-options)
+ - [Implementation-specific `data` error field](#implementation-specific-data-error-field)
+ - [Extensions to the LSP specification](#extensions-to-the-lsp-specification)
+    * [Extra diagnostics data](#extra-diagnostics-data)
+    * [Goal Display](#goal-display)
+    * [File checking progress](#file-checking-progress)
+    * [Document Ast Request](#document-ast-request)
+    * [.vo file saving](#vo-file-saving)
+    * [Performance Data Notification](#performance-data-notification)
+    * [Trim cache notification](#trim-cache-notification)
+    * [Viewport notification](#viewport-notification)
+    * [Did Change Configuration and Server Configuration parameters](#did-change-configuration-and-server-configuration-parameters)
+    * [Server Version Notification](#server-version-notification)
+    * [Server Status Notification](#server-status-notification)
+ - [Pétanque](#pétanque)
+    * [Changelog](#changelog-8)
+    * [Common types](#common-types)
+    * [`petanque/get_root_state`:](#petanqueget_root_state)
+    * [`petanque/get_state_at_pos`](#petanqueget_state_at_pos)
+    * [`petanque/start`](#petanquestart)
+    * [`petanque/run`](#petanquerun)
+    * [`petanque/goals`](#petanquegoals)
+    * [`petanque/premises`](#petanquepremises)
+    * [`petanque/state/eq`](#petanquestateeq)
+    * [`petanque/state/hash`](#petanquestatehash)
+    * [`petanque/state/proof/equal`](#petanquestateproofequal)
+    * [`petanque/state/proof/hash`](#petanquestateproofhash)
+
+<!-- TOC end -->
+
+<!-- TOC --><a name="introduction-and-preliminaries"></a>
 ## Introduction and preliminaries
 
-`coq-lsp` should be usable by standard LSP clients, however it
-implements some extensions tailored to improve Coq-specific use.
+`coq-lsp` is a Language Server Protocol implementation for the Rocq
+Prover. It is compatible with standard LSP clients but includes
+extensions for advanced Rocq-specific, machine-learning, and software
+engineering workflows, named `petanque`.
 
-As of today, this document is written for the 3.17 version of the LSP specification:
+This document is written for the 3.17 version of the LSP specification:
 https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification
 
 For documentation on the API of the VSCode/VSCodium `coq-lsp`
@@ -15,6 +57,7 @@ See also the upstream LSP issue on generic support for Proof
 Assistants
 https://github.com/microsoft/language-server-protocol/issues/1414
 
+<!-- TOC --><a name="coq-lsp-basic-operating-model"></a>
 ### coq-lsp basic operating model
 
 `coq-lsp` is a bit different from other servers in that checking the
@@ -35,9 +78,9 @@ parameter):
   very low latency.
 
 - _on-demand mode_: in this mode, `coq-lsp` will do nothing when
-  idle. This mode for example can be used to simulate the traditional
-  "step-based" Coq interaction mode, just have your client request
-  goals as the desired step position, `coq-lsp` will execute the
+  idle. This mode, for example, can simulate the traditional
+  "step-based" Rocq interaction mode, configure your client to request
+  goals at the desired position, and `coq-lsp` will execute the
   document up to that point.
 
 - _on-demand mode, with viewport hints_: in this mode, inspired by
@@ -54,26 +97,31 @@ that would fit well all client editors; for example VSCode doesn't
 implement progress on some requests that would be very useful for us.
 
 However, the underlying checking engine (`Flèche`) is very flexible,
-so don't hesitate to contact with us if your client would want things
+please feel free to contact with us if your client would want things
 in a different way.
 
+<!-- TOC --><a name="coq-lsp-workspace-configuration"></a>
 ### coq-lsp workspace configuration
 
-See the manual for the exact details, but indeed, coq-lsp will try to
-auto-configure Coq projects looking for `_CoqProject` files in the LSP
-workspace folders sent by the client.
+See the manual for the exact details. By default, `coq-lsp` attempts
+to auto-configure projects by locating `_CoqProject` files within the
+LSP workspace folders sent by the client.
 
+<!-- TOC --><a name="a-minimal-client-implementation"></a>
 ### A minimal client implementation:
 
-In order to implement a minimal, but working `coq-lsp` client, you need to:
+To implement a minimal but functional `coq-lsp` client, you need to:
 
-- setup a regular LSP client on your side,
-- setup the right parameters for `initializationOptions` on `initialize`,
-- implement the `coq/goals` request
+- Initialize a standard LSP client.
+- Setup the right parameters for `initializationOptions` on `initialize`.
+- Implement the `coq/goals` request handler.
 
-And that should be it! We recommend next supporting the
-`coq/serverStatus` notification, and maybe `coq/viewport` too.
+Optionally, we recommend supporting:
 
+- The `coq/serverStatus` notification.
+- The `coq/viewport` notification.
+
+<!-- TOC --><a name="language-server-protocol-support-table"></a>
 ## Language server protocol support table
 
 If a feature doesn't appear here it usually means it is not planned in the short term:
@@ -115,6 +163,7 @@ If a feature doesn't appear here it usually means it is not planned in the short
 | `workspace/didChangeConfiguration`    | Yes (*) | We still do a client -> server push, instead of pull                     |
 |---------------------------------------|---------|--------------------------------------------------------------------------|
 
+<!-- TOC --><a name="uris-accepted-by-coq-lsp"></a>
 ### URIs accepted by coq-lsp
 
 The `coq-lsp` server only accepts `file:///` URIs; moreover, the URIs
@@ -135,6 +184,37 @@ to determine the content type. Supported extensions are:
   snippets between `\begin{coq}/\end{coq}` LaTeX environments will be
   interpreted as Coq code.
 
+<!-- TOC --><a name="implementation-specific-options"></a>
+## Implementation-specific options
+
+The `coq-lsp` server accepts several options via the
+`initializationOptions` field of the LSP initialize request. See
+`package.json` and the documentation of the
+`workspace/didChangeConfiguration` call below for the list of options.
+
+<!-- TOC --><a name="implementation-specific-data-error-field"></a>
+## Implementation-specific `data` error field
+
+Rocq will often generate "feedback" messages when trying to execute
+commands, for example debug messages, or to return solutions to
+commands such as `Search` or `Print`.
+
+Rocq "feedback" is very context dependent, feedback related to
+document sentences is recorded in the document, and can be obtained
+with the `coq/goals` request below.
+
+Feedback related to specific command requests is handled via:
+
+- if the request succeeds, feedback should be reflected in the return type of the request
+- if the request fails, we will set the optional `data` field in the
+  request response to an object of type `RocqErrorData`:
+```
+interface RocqErrorData = {
+  feedback : Message<string>[];
+  }
+```
+
+<!-- TOC --><a name="extensions-to-the-lsp-specification"></a>
 ## Extensions to the LSP specification
 
 As of today, `coq-lsp` implements several extensions to the LSP
@@ -152,6 +232,7 @@ spec. Note that none of them are stable yet.
 - [Server version notification](#server-version-notification)
 - [Server status notification](#server-status-notification)
 
+<!-- TOC --><a name="extra-diagnostics-data"></a>
 ### Extra diagnostics data
 
 This is enabled if the server-side option `send_diags_extra_data` is
@@ -178,6 +259,7 @@ type DiagnosticsData = {
 }
 ```
 
+<!-- TOC --><a name="goal-display"></a>
 ### Goal Display
 
 In order to display proof goals and information at point, `coq-lsp` supports the `proof/goals` request, parameters are:
@@ -272,6 +354,7 @@ In this case, the stack will be `[ ["f1"], ["f3"] ; [ "t2"; "t1" ], [ "t4" ; "t5
 `proof/goals` was first used in the lambdapi-lsp server
 implementation, and we adapted it to `coq-lsp`.
 
+<!-- TOC --><a name="selecting-an-output-format"></a>
 #### Selecting an output format
 
 As of today, the output format type parameter `Pp` is controlled by
@@ -279,6 +362,7 @@ the server option `pp_type : number`, see `package.json` for different
 values. `0` is guaranteed to be `Pp = string`. Prior to 0.1.6 `string`
 was the default.
 
+<!-- TOC --><a name="changelog"></a>
 #### Changelog
 
 - v0.1.9: backwards compatible with 0.1.8
@@ -295,6 +379,7 @@ was the default.
 - v0.1.1: include position and document in the request response
 - v0.1.0: initial version, imported from lambdapi-lsp
 
+<!-- TOC --><a name="file-checking-progress"></a>
 ### File checking progress
 
 The `$/coq/fileProgress` notification is sent from server to client to
@@ -328,10 +413,12 @@ interface CoqFileProgressParams {
 }
 ```
 
+<!-- TOC --><a name="changelog-1"></a>
 #### Changelog
 
 - v0.1.1: exact copy from Lean protocol (spec under Apache License)
 
+<!-- TOC --><a name="document-ast-request"></a>
 ### Document Ast Request
 
 The `coq/getDocument` request returns a serialized version of Fleche's
@@ -372,10 +459,12 @@ interface FlecheDocument {
 const docReq : RequestType<FlecheDocumentParams, FlecheDocument, void>
 ```
 
+<!-- TOC --><a name="changelog-2"></a>
 #### Changelog
 
 - v0.1.6: initial version
 
+<!-- TOC --><a name="vo-file-saving"></a>
 ### .vo file saving
 
 Coq-lsp provides a file-save request `coq/saveVo`, which will save the
@@ -393,10 +482,12 @@ interface FlecheSaveParams {
 
 The request will return `null`, or fail if not successful.
 
+<!-- TOC --><a name="changelog-3"></a>
 #### Changelog
 
 - v0.1.6: first version
 
+<!-- TOC --><a name="performance-data-notification"></a>
 ### Performance Data Notification
 
 The `$/coq/filePerfData` notification is sent from server to client
@@ -430,6 +521,7 @@ interface DocumentPerfParams<R> {
 const coqPerfData : NotificationType<DocumentPerfParams<Range>>
 ```
 
+<!-- TOC --><a name="changelog-4"></a>
 #### Changelog
 
 - v0.1.9:
@@ -446,11 +538,13 @@ const coqPerfData : NotificationType<DocumentPerfParams<Range>>
 - v0.1.8: Spec was accidentally broken, types were invalid
 - v0.1.7: Initial version
 
+<!-- TOC --><a name="trim-cache-notification"></a>
 ### Trim cache notification
 
 The `coq/trimCaches` notification from client to server tells the
 server to free memory. It has no parameters.
 
+<!-- TOC --><a name="viewport-notification"></a>
 ### Viewport notification
 
 The `coq/viewRange` notification from client to server tells the
@@ -463,6 +557,7 @@ interface ViewRangeParams {
 }
 ```
 
+<!-- TOC --><a name="did-change-configuration-and-server-configuration-parameters"></a>
 ### Did Change Configuration and Server Configuration parameters
 
 The server will listen to the `workspace/didChangeConfiguration`
@@ -487,17 +582,24 @@ export interface CoqLspServerConfig {
   pp_type: 0 | 1 | 2;
   show_stats_on_hover: boolean;
   show_loc_info_on_hover: boolean;
+  show_universes_on_hover: boolean;
+  show_state_hash_on_hover: boolean;
   check_only_on_request: boolean;
+  send_perf_data: boolean;
 }
 ```
 
 The settings are documented in the `package.json` file for the VSCode
 client.
 
+<!-- TOC --><a name="changelog-5"></a>
 #### Changelog
 
+- v0.2.3: New options, `show_universes_on_hover`,
+  `show_state_hash_on_hover`, `send_perf_data`.
 - v0.1.9: First public documentation.
 
+<!-- TOC --><a name="server-version-notification"></a>
 ### Server Version Notification
 
 The server will send the `$/coq/serverVersion` notification to inform
@@ -512,10 +614,12 @@ export interface CoqServerVersion {
 }
 ```
 
+<!-- TOC --><a name="changelog-6"></a>
 #### Changelog
 
 - v0.1.9: First public documentation.
 
+<!-- TOC --><a name="server-status-notification"></a>
 ### Server Status Notification
 
 The server will send the `$/coq/serverStatus` notification to inform
@@ -536,6 +640,231 @@ export interface CoqIdleStatus {
 export type CoqServerStatus = CoqBusyStatus | CoqIdleStatus;
 ```
 
+<!-- TOC --><a name="changelog-7"></a>
 #### Changelog
 
 - v0.1.9: First public documentation.
+
+<!-- TOC --><a name="pétanque"></a>
+## Pétanque
+
+The `pétanque` API enables lightweight interaction with Rocq without
+requiring modifications to the document. This is very useful in
+various contexts, especially for accessing Rocq's command command
+execution and proof engine. `pétanque` uses the same JSON-RPC 2.0
+protocol as LSP.
+
+`pétanque` is at an experimental stage, and can be used as a standalone
+tool via the `pet-server` binary. We strongly recommend to use `pétanque`
+withing an LSP context.
+
+Several resource-heavy server-side Rocq objects such as proof states
+are represented in the protocol via integer identifiers, as they
+cannot be serialized practically. These will be garbage collected
+automatically in future versions of the API.
+
+Preliminary documentation for `pétanque` is provided below:
+
+<!-- TOC --><a name="changelog-8"></a>
+### Changelog
+
+- v1 (coq-lsp 0.2.3): Initial public release
+
+### Pétanque basics
+
+The basic operating mode of petanque is to first get a **Rocq state**
+from a document, this can be done either by position, or via a lemma
+name. Once you have a state at hand, you can use `petanque/run` to
+execute a Rocq command, `petanque/goals` to obtain goals from it, and
+a variety of other operations.
+
+<!-- TOC --><a name="common-types"></a>
+### Common types
+
+Options for command execution, in particular, whether to memoize the
+execution and whether to hash it:
+
+```typescript
+interface Run_opts {
+    { memo ?: bool [@default true]
+    ; hash ?: bool [@default true]
+    }
+end
+```
+
+Result of a Rocq command execution. Contains a result, a hash of the
+result (if enabled), whether the resulting command finished a proof,
+and Rocq feedback messages generated by the execution of the command.
+
+```typescript
+interface Run_result<res> {
+  { st : res
+  ; hash ?: int
+  ; proof_finished : bool
+  ; feedback : (int * string) list
+  }
+```
+
+<!-- TOC --><a name="petanqueget_root_state"></a>
+### `petanque/get_root_state`:
+
+Returns state at the beginning of a document. Forces execution of the
+full document.
+
+```typescript
+interface Params =
+    { uri : string
+    ; opts ?: Run_opts
+    }
+```
+
+```typescript
+interface Response = Run_result<number>
+```
+
+<!-- TOC --><a name="petanqueget_state_at_pos"></a>
+### `petanque/get_state_at_pos`
+
+Returns state at a given document point. Will force execution of the
+document to that point. Recall that [LSP
+positions](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position)
+are zero-based, (line 1 in editors is line 0 here).
+
+```typescript
+interface Params =
+    { uri : string
+    ; opts ?: Run_opts
+    ; position : Position
+    }
+```
+
+```typescript
+interface Response = Run_result<int>
+}
+```
+
+<!-- TOC --><a name="petanquestart"></a>
+### `petanque/start`
+
+Returns the state corresponding after the start of a lemma (that is to
+say, before any proofs). Forces the execution of the full document.
+
+`thm` is the theorem name to prove, note that we don't handle aliases
+well yet, `pre_commands` can be used to inject commands _before_ the
+lemma declaration.
+
+```typescript
+interface Params =
+    { uri : string
+    ; opts ?: Run_opts
+    ; pre_commands ?: string
+    ; thm : string
+    }
+```
+
+```typescript
+interface Response = Run_result<number>
+```
+
+<!-- TOC --><a name="petanquerun"></a>
+### `petanque/run`
+
+Runs Rocq commands (either tactics or a full commands). It admits
+multiple commands, separated by the usual `.`.
+
+```typescript
+interface Params =
+    { opts ?: Run_opts
+    ; st: number
+    ; tac: string
+    }
+```
+
+```typescript
+interface Response = Run_result<int>
+```
+
+If the execution fails, the JSON-RPC request will fail.
+
+<!-- TOC --><a name="petanquegoals"></a>
+### `petanque/goals`
+
+```typescript
+interface Params = { st: number }
+```
+
+```typescript
+interface Response = GoalConfig<string>
+```
+
+<!-- TOC --><a name="petanquepremises"></a>
+### `petanque/premises`
+
+Returns information about declared Rocq objects at a particular state:
+
+```typescript
+interface Params = { st: number }
+```
+
+```typescript
+interface Info =
+      { kind : string /* type of object */
+      ; range ?: Range /* a range, if known */
+      ; offset : int * int   /* a offset in the file */
+      ; raw_text : Result<string, string> /* raw text of the premise */
+      }
+
+interface Premise =
+    { full_name : string
+          /* should be a Coq DirPath, but let's go step by step */
+    ; file : string /* file (in FS format) where the premise is found */
+    ; info : Result<Info, string> /* Info about the object, if available */
+    }
+
+interface Response = Premise
+```
+
+<!-- TOC --><a name="petanquestateeq"></a>
+### `petanque/state/eq`
+
+Checks equality of states, with `petanque/state/hash` it can be used
+to implement a client-side hash table of visited proof states.
+
+```typescript
+interface Inspect =
+ | Physical  /** Flèche-based "almost physical" state eq */
+ | Goals /** Full goal equality, much faster than calling goals, but still linear on the side of the goal type and context */
+
+interface Params =
+      { kind ?: Inspect
+      ; st1 : int
+      ; st2 : int
+      }
+```
+
+```typescript
+interface Response = bool
+```
+
+<!-- TOC --><a name="petanquestatehash"></a>
+### `petanque/state/hash`
+
+Hash for a Rocq state. Note we use a quick hash, so on collisions, `petanque/state/eq` must be used.
+
+```typescript
+interface Params = { st: number }
+```
+
+```typescript
+interface Response = number
+```
+
+<!-- TOC --><a name="petanquestateproofequal"></a>
+### `petanque/state/proof/equal`
+
+Version of `petanque/state/equal` but only for the proof state.
+
+<!-- TOC --><a name="petanquestateproofhash"></a>
+### `petanque/state/proof/hash`
+
+Version of `petanque/state/hash` but only for the proof state.

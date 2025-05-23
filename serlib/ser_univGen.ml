@@ -16,23 +16,10 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-open Ppx_hash_lib.Std.Hash.Builtin
-open Ppx_compare_lib.Builtin
-open Sexplib.Conv
+module Sorts = Ser_sorts
 
-module Libobject = Ser_libobject
-
-type 'a module_signature =
-  [%import: 'a Declaremods.module_signature]
-  [@@deriving sexp,yojson,hash,compare]
-
-type inline =
-  [%import: Declaremods.inline]
-  [@@deriving sexp,yojson,hash,compare]
-
-type _module_objects =
-  { module_prefix : Libobject.object_prefix;
-    module_substituted_objects : Libobject.t list;
-    module_keep_objects : Libobject.t list;
-  } [@@deriving sexp]
-
+module QualityOrSet = struct
+  type t =
+    [%import: UnivGen.QualityOrSet.t]
+    [@@deriving sexp,yojson,hash,compare]
+end

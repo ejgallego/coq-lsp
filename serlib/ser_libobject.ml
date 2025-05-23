@@ -20,6 +20,7 @@ open Sexplib.Std
 
 module Names = Ser_names
 module Mod_subst = Ser_mod_subst
+module Libnames = Ser_libnames
 
 module CString = struct
   module Pred = struct
@@ -71,8 +72,17 @@ module ExportObj = struct
   [@@unboxed] [@@deriving sexp]
 end
 
-type algebraic_objects =
+type ('subs, 'alg, 'keep, 'escape) object_view =
+  [%import: ('subs, 'alg, 'keep, 'escape) Libobject.object_view ]
+[@@deriving sexp]
+
+type t = [%import: Libobject.t]
+and algebraic_objects =
   [%import: Libobject.algebraic_objects]
-and t = [%import: Libobject.t]
 and substitutive_objects = [%import: Libobject.substitutive_objects]
+and keep_objects = [%import: Libobject.keep_objects]
+and escape_objects = [%import: Libobject.escape_objects]
+[@@deriving sexp]
+
+type object_prefix = [%import: Libobject.object_prefix]
 [@@deriving sexp]

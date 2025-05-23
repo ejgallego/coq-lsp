@@ -21,6 +21,7 @@ module Tactypes   = Ser_tactypes
 module Genintern  = Ser_genintern
 module EConstr    = Ser_eConstr
 module Tacexpr    = Serlib_ltac.Ser_tacexpr
+module UnivGen    = Ser_univGen
 
 module A1 = struct
 
@@ -64,7 +65,7 @@ end
 let ser_wit_fun_ind_using = let module M = Ser_genarg.GS(WitFI) in M.genser
 
 module WitFS = struct
-  type t = Names.lident * Libnames.qualid * Sorts.family
+  type t = Names.lident * Libnames.qualid * UnivGen.QualityOrSet.t
   [@@deriving sexp,hash,compare]
 end
 

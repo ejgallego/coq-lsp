@@ -1,11 +1,16 @@
 (************************************************************************)
-(* Flèche => document manager: Document                                 *)
+(* Flèche => Coq API: Arguments                                         *)
 (* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
 (* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
+(* Copyright 2024-2025 EJGA       -- Dual License LGPL 2.1 / GPL3+      *)
 (* Written by: Emilio J. Gallego Arias & coq-lsp contributors           *)
 (************************************************************************)
 
 open Cmdliner
+
+(* [Boot.Util.relocate] is too specific to rocq.exe for it to work, EJGA: this
+   needs likely more attention in our case, but OMMV *)
+let coqlib_dyn = Coq_config.coqlib
 
 (****************************************************************************)
 (* Common Coq command-line arguments *)
@@ -14,8 +19,7 @@ let coqlib =
     "Load Coq.Init.Prelude from $(docv); theories and user-contrib should live \
      there."
   in
-  Arg.(
-    value & opt string Coq_config.coqlib & info [ "coqlib" ] ~docv:"COQLIB" ~doc)
+  Arg.(value & opt string coqlib_dyn & info [ "coqlib" ] ~docv:"COQLIB" ~doc)
 
 let findlib_config =
   let doc = "Override findlib's config file" in

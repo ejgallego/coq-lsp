@@ -22,6 +22,9 @@ module Variance : SerType.SJHC with type t = UVars.Variance.t
 
 module Instance : SerType.SJHC with type t = UVars.Instance.t
 
+type bound_names = UVars.bound_names
+  [@@deriving sexp,yojson,hash,compare]
+
 module UContext : SerType.SJHC with type t = UVars.UContext.t
 
 module AbstractContext : SerType.SJHC with type t = UVars.AbstractContext.t

@@ -18,7 +18,6 @@
 
 include SerType.SJHC with type t = Sorts.t
 
-type family = Sorts.family [@@deriving sexp,yojson,hash,compare]
 type relevance = Sorts.relevance [@@deriving sexp,yojson,hash,compare]
 type pattern = Sorts.pattern [@@deriving sexp,yojson,hash,compare]
 

@@ -4,17 +4,27 @@
 (* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (************************************************************************)
 
+(* Payload specialized to json / string *)
+type json_rpc_result = (Yojson.Safe.t, string) Request.R.t
+
 (* API for embedding petanque into a different protocol, needs to be moved to a
    core request library *)
-type 'a r = ('a, int * string) Result.t
-
 module Action : sig
   type t =
-    | Now of (token:Coq.Limits.Token.t -> Yojson.Safe.t r)
+    | Now of (token:Coq.Limits.Token.t -> json_rpc_result)
     | Doc of
         { uri : Lang.LUri.File.t
         ; handler :
-            token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> Yojson.Safe.t r
+            token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> json_rpc_result
+        }
+    | Pos of
+        { uri : Lang.LUri.File.t
+        ; point : int * int
+        ; handler :
+               token:Coq.Limits.Token.t
+            -> doc:Fleche.Doc.t
+            -> point:int * int
+            -> json_rpc_result
         }
 end
 
@@ -28,9 +38,9 @@ val handle_request :
   -> params:(string * Yojson.Safe.t) list
   -> 'a
 
-(* aux function *)
+(* aux function, XXX: fixme to include feedback *)
 val of_pet_err :
-  ('a, Petanque.Agent.Error.t) result -> ('a, int * string) Result.t
+  ('a, Petanque.Agent.Error.t) Request.R.t -> ('a, string) Request.R.t
 
 (* Mostly Internal for pet-shell extensions; not for public consumption *)
 val do_request :

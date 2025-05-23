@@ -105,20 +105,20 @@ let ser_wit_ref = Ser_genarg.{
 
   }
 
-let ser_wit_sort_family = Ser_genarg.{
-    raw_ser = Ser_sorts.sexp_of_family
+let ser_wit_sort_quality_or_set = Ser_genarg.{
+    raw_ser = Ser_univGen.QualityOrSet.sexp_of_t
   ; glb_ser = sexp_of_unit
   ; top_ser = sexp_of_unit
 
-  ; raw_des = Ser_sorts.family_of_sexp
+  ; raw_des = Ser_univGen.QualityOrSet.t_of_sexp
   ; glb_des = unit_of_sexp
   ; top_des = unit_of_sexp
 
-  ; raw_hash = Ser_sorts.hash_fold_family
+  ; raw_hash = Ser_univGen.QualityOrSet.hash_fold_t
   ; glb_hash = Ppx_hash_lib.Std.Hash.Builtin.hash_fold_unit
   ; top_hash = Ppx_hash_lib.Std.Hash.Builtin.hash_fold_unit
 
-  ; raw_compare = Ser_sorts.compare_family
+  ; raw_compare = Ser_univGen.QualityOrSet.compare
   ; glb_compare = Ppx_compare_lib.Builtin.compare_unit
   ; top_compare = Ppx_compare_lib.Builtin.compare_unit
   }
@@ -194,7 +194,7 @@ let register () =
   Ser_genarg.register_genser Stdarg.wit_open_constr ser_wit_constr;
   Ser_genarg.register_genser Stdarg.wit_pre_ident ser_wit_pre_ident;
   Ser_genarg.register_genser Stdarg.wit_ref ser_wit_ref;
-  Ser_genarg.register_genser Stdarg.wit_sort_family ser_wit_sort_family;
+  Ser_genarg.register_genser Stdarg.wit_sort_quality_or_set ser_wit_sort_quality_or_set;
   Ser_genarg.register_genser Stdarg.wit_string ser_wit_string;
   Ser_genarg.register_genser Stdarg.wit_uconstr ser_wit_uconstr;
   Ser_genarg.register_genser Stdarg.wit_unit ser_wit_unit;
