@@ -238,10 +238,6 @@ type existential =
   [%import: Constr.existential]
   [@@deriving sexp]
 
-type sorts_family = Sorts.family
-let sorts_family_of_sexp = Sorts.family_of_sexp
-let sexp_of_sorts_family = Sorts.sexp_of_family
-
 type named_declaration =
   [%import: Constr.named_declaration]
   [@@deriving sexp,yojson,hash,compare]

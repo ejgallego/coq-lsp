@@ -22,13 +22,9 @@ val set_workspace :
   -> unit Agent.R.t
 
 val build_doc :
-     token:Coq.Limits.Token.t
-  -> uri:Lang.LUri.File.t
-  -> (Fleche.Doc.t, Agent.Error.t) Result.t
+  token:Coq.Limits.Token.t -> uri:Lang.LUri.File.t -> Fleche.Doc.t Agent.R.t
 
 val get_toc :
      token:Coq.Limits.Token.t
   -> doc:Fleche.Doc.t
-  -> ( (string * Lang.Ast.Info.t list option) list
-     , Petanque.Agent.Error.t )
-     Result.t
+  -> (string * Lang.Ast.Info.t list option) list Agent.R.t

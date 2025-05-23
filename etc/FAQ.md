@@ -1,5 +1,15 @@
 # `coq-lsp` frequently asked questions
 
+ * [Why do you say so often "client" and "server", what does it mean?](#why-do-you-say-so-often-client-and-server-what-does-it-mean)
+ * [How is `coq-lsp` different from VSCoq?](#how-is-coq-lsp-different-from-vscoq)
+    + [VSCoq "Legacy"](#vscoq-legacy)
+    + [VSCoq 2](#vscoq-2)
+ * [Is `coq-lsp` limited to VSCode?](#is-coq-lsp-limited-to-vscode)
+ * [What part of the LSP protocol does `coq-lsp` support?](#what-part-of-the-lsp-protocol-does-coq-lsp-support)
+ * [What is `coq-lsp` roadmap?](#what-is-coq-lsp-roadmap)
+ * [How is `coq-lsp` developed and funded?](#how-is-coq-lsp-developed-and-funded)
+ * [Is there more information about `coq-lsp` design?](#is-there-more-information-about-coq-lsp-design)
+
 ## Why do you say so often "client" and "server", what does it mean?
 
 In the world of user interfaces for programming languages
@@ -24,44 +34,68 @@ editor supporting this protocol.
 
 ## How is `coq-lsp` different from VSCoq?
 
-[VSCoq](https://github.com/coq-community/vscoq) was developed by C.J.
-Bell (and later maintained by a team of volunteers) and at the
-time was an impressive achievement. The key difference between `VSCoq`
-and `coq-lsp` is how the VSCode client communicates with Coq.
+As of May 2025, two versions of VSCoq are available: VSCoq Legacy and
+VSCoq 2. They are independent implementations that share the same name
+and project page.
 
-`VSCoq` communicates with Coq using the `coqidetop` server, which
-implements a XML protocol providing basic operations over documents.
+### VSCoq "Legacy"
 
-In `coq-lsp` case, VS Code and Coq communicate using the LSP protocol,
-plus a set of custom extensions. This is possible thanks to a new
-`coq-lsp` language server, which is an extended Coq binary taking
-advantage of improved Coq APIs.
+[VSCoq Legacy](https://github.com/coq-community/vscoq/tree/vscoq1) or
+"VSCoq 1" was developed by C. J. Bell, and later maintained by a team
+of volunteers at [coq-community](https://github.com/coq-community).
 
-The XML protocol design dates back to 10 years ago, and it makes hard
-to support some nice features. Moreover, development of VSCoq and
-`coqidetop` is not coupled, so it is not easy to add new features.
+The key difference between "VSCoq 1" and `coq-lsp` / VSCoq 2 is how
+the VS Code client communicates with Rocq.
 
-VSCoq went to significant effort to workaround these deficits
-client-side, but that came with its own set of technical and
-maintenance challenges.
+VSCoq 1 communicates with Rocq using the `coqidetop` server, which
+implements an XML protocol providing basic operations on documents.
 
-A key problem when implementing a language server for Coq is the fact
-that Coq APIs were not meant for reactive UIs.
+In the case of `coq-lsp`, VSCode and Rocq communicate using the LSP
+protocol, plus a set of [custom extensions](./doc/PROTOCOL.md). This
+is possible thanks to a new `coq-lsp` language server, which is an
+extended Rocq binary taking advantage of improved Rocq APIs.
 
-For `coq-lsp`, we have done a years-long effort to significantly
-improve Coq's base APIs, which has resulted in a much more lightweight
+The XML protocol design dates back to 2012, and it is not the best fit
+for modern editors. Also, the development of VSCoq 1 and `coqidetop`
+was not done in tandem, which required more coordination effort.
+
+VSCoq 1 made a significant effort to work with a vanilla XML
+protocol, but that came with its own set of technical and maintenance
+challenges.
+
+A key problem in implementing a language server for Rocq is the fact
+that Rocq APIs were not meant for reactive User Interfaces.
+
+For `rocq-lsp`, we have made a years-long effort to significantly
+improve Coq's base APIs, which has resulted in a significantly lighter
 client implementation and a more capable server.
 
-Moreover, `coq-lsp` development is active while VSCoq is mostly in
+Moreover, `rocq-lsp` development is active while VSCoq 1 is mostly in
 maintenance mode due to the limitations outlined above. In a sense,
-you could think of `coq-lsp` as a full rewrite of VSCoq, using the
+you could think of `coq-lsp` as a full rewrite of VSCoq 1, using the
 experience we have accumulated over years of work in related projects
-(such as jsCoq), and the experience in state-of-the art UI design and
-implementation in other systems (Rust, Lean, Isabelle).
+(such as jsCoq, SerAPI, and Lambdapi), and the experience in
+state-of-the-art UI design and implementation in other systems (Rust,
+Lean, Isabelle).
 
-We didn't pick `VSCoq 2` as a project name given than `coq-lsp`
-follows the LSP standard and is not specific to Visual Studio code, in
-fact, it works great on other editors such as vim or Emacs.
+We didn't pick `VSCoq 2` as a project name given that `coq-lsp`
+follows the LSP standard and is not specific to Visual Studio Code, in
+fact, it works great on other editors such as vim or Emacs. The first
+public release of `rocq-lsp` was on November 2022. The original
+Lambdapi LSP server was written in 2017, and first ported to Rocq in
+early 2019.
+
+### VSCoq 2
+
+[VSCoq 2](https://github.com/coq-community/vscoq) follows the spirit
+of `coq-lsp` and uses an OCaml-based language server to provide an
+implementation of the Language Server Protocol for the Rocq Prover.
+
+The implementation approaches of both servers are very different.  We
+are working on a more detailed comparison between the projects. The
+first public release of VSCoq 2 happened in September 2023.
+
+We encourage you to try both and provide feedback!
 
 ## Is `coq-lsp` limited to VSCode?
 
@@ -89,7 +123,10 @@ for more information about proof assistants and LSP.
 The short-term roadmap is to support the full LSP protocol, and to
 focus on core issues related to the needs of Coq users.
 
-## How is `coq-lsp` developed?
+We follow a release model based on Semantic Versioning, see our bug
+tracker and project tracker for more information.
+
+## How is `coq-lsp` developed and funded?
 
 `coq-lsp` is developed collaboratively, by a [team of
 contributors](https://github.com/ejgallego/coq-lsp#team).
@@ -97,13 +134,24 @@ contributors](https://github.com/ejgallego/coq-lsp#team).
 The development is coordinated by Emilio J. Gallego Arias, who is also
 the technical lead for the project.
 
+`coq-lsp` was supported by Inria Paris from November 2019 to October
+2024, with key contributions by Ali Caglayan (volunteer) and Shachar
+Itzhaky (Technion Institute of Technology), and many other
+contributors.
+
+As of November 2024, the project is run on a volunteer basis.
+
 ## Is there more information about `coq-lsp` design?
 
 Yes! There are a couple of presentations related to development
 methodology and internals. We will upload the presentations here
 shortly. We also hope to publish a paper soon.
 
-Is not easy to describe an evolving system, we like this quote [from Twitter](https://twitter.com/notypes/status/1610279076320923650):
+Our [contributing guide](../CONTRIBUTING.md) provides some valuable
+information about the organization of the source code, etc...
+
+Note that it is not easy to describe an evolving system like this, we
+like this quote [from Twitter](https://twitter.com/notypes/status/1610279076320923650):
 
 > Papers sometimes feel like a terrible way to communicate systems
 > research; systems continue evolving but papers are static

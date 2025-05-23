@@ -53,7 +53,7 @@ module Response : sig
         { id : int
         ; code : int
         ; message : string
-        ; data : Yojson.Safe.t option
+        ; data : Yojson.Safe.t option [@default None]
         }
   [@@deriving to_yojson]
 
@@ -61,7 +61,8 @@ module Response : sig
   val mk_ok : id:int -> result:Yojson.Safe.t -> t
 
   (** Fail a request *)
-  val mk_error : id:int -> code:int -> message:string -> t
+  val mk_error :
+    id:int -> code:int -> message:string -> data:Yojson.Safe.t option -> t
 
   val id : t -> int
 end
@@ -103,9 +104,9 @@ module WorkDoneProgressBegin : sig
   type t =
     { kind : string
     ; title : string
-    ; cancellable : bool option [@None]
-    ; message : string option [@None]
-    ; percentage : int option [@None]
+    ; cancellable : bool option [@default None]
+    ; message : string option [@default None]
+    ; percentage : int option [@default None]
     }
   [@@deriving to_yojson]
 end
@@ -113,9 +114,9 @@ end
 module WorkDoneProgressReport : sig
   type t =
     { kind : string
-    ; cancellable : bool option [@None]
-    ; message : string option [@None]
-    ; percentage : int option [@None]
+    ; cancellable : bool option [@default None]
+    ; message : string option [@default None]
+    ; percentage : int option [@default None]
     }
   [@@deriving to_yojson]
 end

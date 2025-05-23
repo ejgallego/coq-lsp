@@ -17,9 +17,7 @@ else
 PKG_SET= coq-lsp.install
 endif
 
-PKG_SET_WEB=
-# This is disabled in stable versions
-# PKG_SET_WEB=$(PKG_SET) vendor/coq-waterproof/coq-waterproof.install
+PKG_SET_WEB=$(PKG_SET)
 
 # Get the ocamlformat version from the .ocamlformat file
 OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
@@ -148,6 +146,7 @@ submodules-deinit:
 submodules-update:
 	(cd vendor/coq && git checkout master && git pull upstream master)
 	(cd vendor/coq-stdlib && git checkout master && git pull upstream master)
+	(cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 # For now we update manually
 # (cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 
@@ -167,7 +166,6 @@ make-fmt: build fmt
 # Helper for users that want a global opam install
 .PHONY: opam-update-and-reinstall
 opam-update-and-reinstall:
-	git pull
 	opam install .
 
 # These variables are exclusive of the JS build
@@ -216,11 +214,11 @@ controller-js/coq-fs-core.js: coq_boot
 	dune build --profile=release --display=quiet $(PKG_SET_WEB) etc/META.threads
 	for i in $$(find $(_CCROOT)/plugins -name *.cma); do js_of_ocaml --dynlink $$i; done
 	for i in $$(find _build/install/default/lib/coq-lsp/serlib -wholename */*.cma); do js_of_ocaml --dynlink $$i; done
-	for i in $$(find _build/install/default/lib/coq-waterproof/plugin -name *.cma); do js_of_ocaml --dynlink $$i; done
+	for i in $$(find $(_CCROOT)/../coq-waterproof -name *.cma); do js_of_ocaml --dynlink $$i; done
 	js_of_ocaml build-fs -o controller-js/coq-fs-core.js \
 	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/$(COQ_CORE_NAME)/%P ") \
 	    $$(find _build/install/default/lib/coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-lsp/%P ") \
-	    $$(find _build/install/default/lib/coq-waterproof/  \( -wholename '*/plugin/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-waterproof/%P ") \
+	    $$(find $(_CCROOT)/../coq-waterproof/  \( -wholename '*/plugin/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-waterproof/%P ") \
 	    ./etc/META.threads:/static/lib/threads/META \
 	    $$(find $(_LIBROOT) -wholename '*/str/META'                 -printf "%p:/static/lib/%P ") \
 	    $$(find $(_LIBROOT) -wholename '*/seq/META'                 -printf "%p:/static/lib/%P ") \

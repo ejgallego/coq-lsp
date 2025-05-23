@@ -89,7 +89,8 @@ let multi_shot_test ~token ~doc =
 
 let fake_start_test ~token ~doc =
   match Agent.start ~token ~doc ~thm:"foo" () with
-  | Ok _ -> Error (Agent.Error.System "start on foo should have failed")
+  | Ok _ ->
+    Error (Agent.Error.make_request (System "start on foo should have failed"))
   | Error _ -> Ok None
 
 let main () =
@@ -105,7 +106,7 @@ let main () =
 let max = List.fold_left max min_int
 
 let check_no_goals = function
-  | Error err ->
+  | Error Request.Error.{ payload = err; _ } ->
     Format.eprintf "error: in execution: %s@\n%!" (Agent.Error.to_string err);
     dump_msgs ();
     129

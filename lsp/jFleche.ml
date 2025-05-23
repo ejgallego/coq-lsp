@@ -74,7 +74,10 @@ module Message = struct
     }
   [@@deriving yojson]
 
-  let _map ~f { range; level; text } =
+  let of_coq_message (level, { Coq.Message.Payload.range; msg; quickFix = _ }) =
+    { range; level; text = msg }
+
+  let map ~f { range; level; text } =
     let text = f text in
     { range; level; text }
 end

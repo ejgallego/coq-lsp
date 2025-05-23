@@ -16,4 +16,4 @@ val goals :
   -> mode:Fleche.Info.approx
   -> pretac:string option
   -> unit
-  -> Request.position
+  -> (Yojson.Safe.t, string) Request.position

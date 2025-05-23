@@ -113,10 +113,6 @@ type existential = Constr.existential
 val existential_of_sexp : Sexp.t -> existential
 val sexp_of_existential : existential -> Sexp.t
 
-type sorts_family = Sorts.family
-val sorts_family_of_sexp : Sexp.t -> sorts_family
-val sexp_of_sorts_family : sorts_family -> Sexp.t
-
 type named_declaration = Constr.named_declaration
 val named_declaration_of_sexp : Sexp.t -> named_declaration
 val sexp_of_named_declaration : named_declaration -> Sexp.t

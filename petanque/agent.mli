@@ -19,7 +19,7 @@ module State : sig
     type t =
       | Physical  (** Flèche-based "almost physical" state eq *)
       | Goals
-          (** Full goal equality; must faster than calling goals as it won't
+          (** Full goal equality; much faster than calling goals as it won't
               unelaborate them. Note that this may not fully capture proof state
               equality (it is possible to have similar goals but different
               evar_maps, but should be enough for all practical users. *)
@@ -50,16 +50,18 @@ module Error : sig
     | Anomaly of string
     | System of string
     | Theorem_not_found of string
+    | No_state_at_point
 
   val to_string : t -> string
   val to_code : t -> int
   val coq : string -> t
   val system : string -> t
+  val make_request : t -> t Request.Error.t
 end
 
 (** Petanque results *)
 module R : sig
-  type 'a t = ('a, Error.t) Result.t
+  type 'a t = ('a, Error.t) Request.R.t
 end
 
 module Run_opts : sig
@@ -75,6 +77,7 @@ module Run_result : sig
     ; hash : int option [@default None]
           (** [State.Proof.hash st] if enabled / proof is open. *)
     ; proof_finished : bool
+    ; feedback : (int * string) list  (** level and message *)
     }
 end
 
@@ -98,6 +101,19 @@ end
 
     We could imagine a future where [State.t] need to be managed asynchronously,
     then the same approach that we use for [Doc.t] could happen. *)
+
+(** [get_root_state ?opts ~doc] return the root state of the document [doc]. *)
+val get_root_state :
+  ?opts:Run_opts.t -> doc:Fleche.Doc.t -> unit -> State.t Run_result.t R.t
+
+(** [get_state_at_pos ?opts ~doc ~position] return the state at position
+    [position] in [doc]. Note that LSP positions are zero-based! *)
+val get_state_at_pos :
+     ?opts:Run_opts.t
+  -> doc:Fleche.Doc.t
+  -> point:int * int
+  -> unit
+  -> State.t Run_result.t R.t
 
 (** [start ~token ~doc ~pre_commands ~thm] start a new proof for theorem [thm]
     in file [uri] under [fn]. [token] can be used to interrupt the computation.
@@ -152,3 +168,6 @@ end
     now we just return their fully qualified name, but more options are of
     course possible. *)
 val premises : token:Coq.Limits.Token.t -> st:State.t -> Premise.t list R.t
+
+(** Petanque version *)
+val version : int

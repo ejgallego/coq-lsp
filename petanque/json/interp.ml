@@ -4,31 +4,36 @@
 (* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
 (************************************************************************)
 
+module Req = Request
 open Protocol
 module A = Petanque.Agent
 
+(* Payload specialized to json / string *)
+type json_rpc_result = (Yojson.Safe.t, string) Req.R.t
+
 (* These types ares basically duplicated with controller/request.ml; move to a
    common lib (lsp?) *)
-type 'a r = ('a, int * string) Result.t
-
 module Action = struct
   type t =
-    | Now of (token:Coq.Limits.Token.t -> Yojson.Safe.t r)
+    | Now of (token:Coq.Limits.Token.t -> json_rpc_result)
     | Doc of
         { uri : Lang.LUri.File.t
         ; handler :
-            token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> Yojson.Safe.t r
+            token:Coq.Limits.Token.t -> doc:Fleche.Doc.t -> json_rpc_result
+        }
+    | Pos of
+        { uri : Lang.LUri.File.t
+        ; point : int * int
+        ; handler :
+               token:Coq.Limits.Token.t
+            -> doc:Fleche.Doc.t
+            -> point:int * int
+            -> json_rpc_result
         }
 end
 (* End of controller/request.ml *)
 
-let of_pet_err res =
-  Result.map_error
-    (fun err ->
-      let message = Petanque.Agent.Error.to_string err in
-      let code = Petanque.Agent.Error.to_code err in
-      (code, message))
-    res
+let of_pet_err e = Req.R.map_error ~f:Petanque.Agent.Error.to_string e
 
 (* Basically a functor from R.Handler.t to Action.t, but closing over params *)
 let do_request (module R : Protocol.Request.S) ~params =
@@ -41,18 +46,29 @@ let do_request (module R : Protocol.Request.S) ~params =
       let uri = uri_fn params in
       let handler ~token ~doc = handler ~token ~doc params |> of_pet in
       Action.Doc { uri; handler }
+    | PosInDoc { uri_fn; pos_fn; handler } ->
+      let uri = uri_fn params in
+      let point = pos_fn params in
+      let handler ~token ~doc ~point =
+        handler ~token ~doc ~point params |> of_pet
+      in
+      Action.Pos { uri; point; handler }
   in
   match R.Handler.Params.of_yojson (`Assoc params) with
   | Ok params -> handler params
   | Error message ->
     (* JSON-RPC Parse error *)
     let code = -32700 in
-    Action.Now (fun ~token:_ -> Error (code, message))
+    Action.Now (fun ~token:_ -> Error (Req.Error.make code message))
 
 type 'a handle = token:Coq.Limits.Token.t -> Action.t -> 'a
 
 let handle_request ~(do_handle : 'a handle) ~unhandled ~token ~method_ ~params =
   match method_ with
+  | s when String.equal GetStateAtPos.method_ s ->
+    do_handle ~token (do_request (module GetStateAtPos) ~params)
+  | s when String.equal GetRootState.method_ s ->
+    do_handle ~token (do_request (module GetRootState) ~params)
   | s when String.equal Start.method_ s ->
     do_handle ~token (do_request (module Start) ~params)
   | s when String.equal RunTac.method_ s ->

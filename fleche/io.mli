@@ -61,8 +61,8 @@ module Log : sig
   (** Log JSON object to server info log *)
   val trace_object : string -> Yojson.Safe.t -> unit
 
-  (** For unexpected feedback, remove eventually or just assert false? *)
-  val feedback : Loc.t Coq.Message.t list -> unit
+  (** For unhandled feedback, for example when running hover, remove eventually? *)
+  val feedback : string -> Loc.t Coq.Message.t list -> unit
 end
 
 module Report : sig
