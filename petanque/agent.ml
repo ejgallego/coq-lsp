@@ -52,6 +52,7 @@ module Error = struct
     | Anomaly of string
     | System of string
     | Theorem_not_found of string
+    | No_state_at_point
 
   let to_string = function
     | Interrupted -> Format.asprintf "Interrupted"
@@ -60,6 +61,7 @@ module Error = struct
     | Anomaly msg -> Format.asprintf "Anomaly: %s" msg
     | System msg -> Format.asprintf "System: %s" msg
     | Theorem_not_found msg -> Format.asprintf "Theorem_not_found: %s" msg
+    | No_state_at_point -> Format.asprintf "No state at point"
 
   (* JSON-RPC server reserved codes *)
   let to_code = function
@@ -69,6 +71,7 @@ module Error = struct
     | Anomaly _ -> -32004
     | System _ -> -32005
     | Theorem_not_found _ -> -32006
+    | No_state_at_point -> -32007
 
   let coq e = Coq e
   let system e = System e
@@ -196,24 +199,12 @@ let get_root_state ?opts ~doc () =
   Ok (analyze_after_run ~hash state [])
 
 let get_state_at_pos ?opts ~doc ~point () =
-  let pos_of_point pt = (pt.Lang.Point.line, pt.character) in
-  let pos_of_range r = (pos_of_point r.Lang.Range.start, pos_of_point r.end_) in
-  let state_of_node node =
-    (node.Fleche.Doc.Node.state, pos_of_range node.range)
-  in
-  (* XXX Fixme, use right API on Fleche.Info *)
-  let states = List.map state_of_node doc.Fleche.Doc.nodes in
-  let keep pos (_, (start, end_)) = end_ <= pos || start <= pos in
-  let sorting (_, (_, end1)) (_, (_, end2)) = compare end2 end1 in
-  let states =
-    (doc.root, ((0, 0), (0, 0))) :: states
-    |> List.filter (keep point)
-    |> List.sort sorting
-  in
-  let state = List.hd states |> fst in
-  let opts = default_opts opts in
-  let hash = opts.hash in
-  Ok (analyze_after_run ~hash state [])
+  match Fleche.Info.(LC.node ~doc ~point Exact) with
+  | Some { Fleche.Doc.Node.state; _ } ->
+    let opts = default_opts opts in
+    let hash = opts.hash in
+    Ok (analyze_after_run ~hash state [])
+  | None -> Error (Error.make_request No_state_at_point)
 
 let start ~token ~doc ?opts ?pre_commands ~thm () =
   let open Coq.Compat.Result.O in
@@ -340,3 +331,6 @@ let premises ~token ~st =
    (* XXX: Fixme, take feedback into account *)
    fun _feedback -> List.map to_premise all_premises)
   |> protect_to_result
+
+(* See PROTOCOL.md for details on versioning *)
+let version = 1

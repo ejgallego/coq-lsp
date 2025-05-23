@@ -69,6 +69,8 @@
  - [petanque] new `get_state_at_pos` and `get_root_state` calls, that
    allow to retrieve a petanque proof state from position
    (@JulesViennotFranca, @ejgallego, #962)
+ - [doc] [petanque] Document petanque v1, improve readme (@ejgallego,
+   #963)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
