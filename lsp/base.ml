@@ -190,9 +190,9 @@ module WorkDoneProgressBegin = struct
   type t =
     { kind : string
     ; title : string
-    ; cancellable : bool option [@None]
-    ; message : string option [@None]
-    ; percentage : int option [@None]
+    ; cancellable : bool option [@default None]
+    ; message : string option [@default None]
+    ; percentage : int option [@default None]
     }
   [@@deriving to_yojson]
 end
@@ -200,9 +200,9 @@ end
 module WorkDoneProgressReport = struct
   type t =
     { kind : string
-    ; cancellable : bool option [@None]
-    ; message : string option [@None]
-    ; percentage : int option [@None]
+    ; cancellable : bool option [@default None]
+    ; message : string option [@default None]
+    ; percentage : int option [@default None]
     }
   [@@deriving to_yojson]
 end

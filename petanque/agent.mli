@@ -19,7 +19,7 @@ module State : sig
     type t =
       | Physical  (** Flèche-based "almost physical" state eq *)
       | Goals
-          (** Full goal equality; must faster than calling goals as it won't
+          (** Full goal equality; much faster than calling goals as it won't
               unelaborate them. Note that this may not fully capture proof state
               equality (it is possible to have similar goals but different
               evar_maps, but should be enough for all practical users. *)
@@ -50,6 +50,7 @@ module Error : sig
     | Anomaly of string
     | System of string
     | Theorem_not_found of string
+    | No_state_at_point
 
   val to_string : t -> string
   val to_code : t -> int
@@ -105,8 +106,8 @@ end
 val get_root_state :
   ?opts:Run_opts.t -> doc:Fleche.Doc.t -> unit -> State.t Run_result.t R.t
 
-(** [get_state_at_pos ?opts ~doc ~point] return the state at position [point] in
-    [doc]. *)
+(** [get_state_at_pos ?opts ~doc ~position] return the state at position
+    [position] in [doc]. Note that LSP positions are zero-based! *)
 val get_state_at_pos :
      ?opts:Run_opts.t
   -> doc:Fleche.Doc.t
@@ -167,3 +168,6 @@ end
     now we just return their fully qualified name, but more options are of
     course possible. *)
 val premises : token:Coq.Limits.Token.t -> st:State.t -> Premise.t list R.t
+
+(** Petanque version *)
+val version : int
