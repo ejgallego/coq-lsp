@@ -104,8 +104,7 @@ module GetStateAtPos = struct
     type t =
       { uri : Lsp.JLang.LUri.File.t
       ; opts : Run_opts.t option [@default None]
-      ; line : int
-      ; character : int
+      ; position : Lsp.JLang.Point.t
       }
     [@@deriving yojson]
   end
@@ -124,9 +123,9 @@ module GetStateAtPos = struct
     let handler =
       HType.PosInDoc
         { uri_fn = (fun { Params.uri; _ } -> uri)
-        ; pos_fn = (fun { line; character; _ } -> (line, character))
+        ; pos_fn = (fun { position; _ } -> (position.line, position.character))
         ; handler =
-            (fun ~token:_ ~doc ~point { uri = _; opts; line = _; character = _ } ->
+            (fun ~token:_ ~doc ~point { uri = _; opts; position = _ } ->
               Agent.get_state_at_pos ?opts ~doc ~point ())
         }
   end
@@ -274,7 +273,7 @@ module StateEqual = struct
   module Handler = struct
     module Params = struct
       type t =
-        { kind : Inspect.t option
+        { kind : Inspect.t option [@default None]
         ; st1 : State.t
         ; st2 : State.t
         }
