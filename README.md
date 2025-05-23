@@ -15,7 +15,8 @@ literate Rocq/Markdown/LaTeX document support, multiple workspaces, positional
 goals, information panel, performance data, extensible command-line compiler,
 a plugin system, and more.
 
-See the [User Manual](./etc/doc/USER_MANUAL.md) for details.
+See the [User Manual](./etc/doc/USER_MANUAL.md) and the [General
+Documentation Index](./etc/doc/) for more details.
 
 This repository also includes the `coq-lsp` [Visual Studio
 Code](https://code.visualstudio.com/) editor extension for the [Rocq Proof

@@ -1,11 +1,8 @@
-<!-- TOC --><a name="coq-lsp-protocol-documentation"></a>
 # coq-lsp protocol documentation
 
-<!-- TOC --><a name="table-of-contents"></a>
 ## Table of contents
 
 <!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
- - [Table of contents](#table-of-contents)
  - [Introduction and preliminaries](#introduction-and-preliminaries)
     * [coq-lsp basic operating model](#coq-lsp-basic-operating-model)
     * [coq-lsp workspace configuration](#coq-lsp-workspace-configuration)
@@ -17,24 +14,15 @@
  - [Extensions to the LSP specification](#extensions-to-the-lsp-specification)
     * [Extra diagnostics data](#extra-diagnostics-data)
     * [Goal Display](#goal-display)
-       - [Selecting an output format](#selecting-an-output-format)
-       - [Changelog](#changelog)
     * [File checking progress](#file-checking-progress)
-       - [Changelog](#changelog-1)
     * [Document Ast Request](#document-ast-request)
-       - [Changelog](#changelog-2)
     * [.vo file saving](#vo-file-saving)
-       - [Changelog](#changelog-3)
     * [Performance Data Notification](#performance-data-notification)
-       - [Changelog](#changelog-4)
     * [Trim cache notification](#trim-cache-notification)
     * [Viewport notification](#viewport-notification)
     * [Did Change Configuration and Server Configuration parameters](#did-change-configuration-and-server-configuration-parameters)
-       - [Changelog](#changelog-5)
     * [Server Version Notification](#server-version-notification)
-       - [Changelog](#changelog-6)
     * [Server Status Notification](#server-status-notification)
-       - [Changelog](#changelog-7)
  - [Pétanque](#pétanque)
     * [Changelog](#changelog-8)
     * [Common types](#common-types)
@@ -738,8 +726,9 @@ interface Response = Run_result<number>
 ### `petanque/get_state_at_pos`
 
 Returns state at a given document point. Will force execution of the
-document to that point. Recall that LSP positions are zero-based,
-(line 1 in editors is line 0 here).
+document to that point. Recall that [LSP
+positions](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#position)
+are zero-based, (line 1 in editors is line 0 here).
 
 ```typescript
 interface Params =
