@@ -331,3 +331,6 @@ let premises ~token ~st =
    (* XXX: Fixme, take feedback into account *)
    fun _feedback -> List.map to_premise all_premises)
   |> protect_to_result
+
+(* See PROTOCOL.md for details on versioning *)
+let version = 1

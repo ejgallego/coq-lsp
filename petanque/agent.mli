@@ -19,7 +19,7 @@ module State : sig
     type t =
       | Physical  (** Flèche-based "almost physical" state eq *)
       | Goals
-          (** Full goal equality; must faster than calling goals as it won't
+          (** Full goal equality; much faster than calling goals as it won't
               unelaborate them. Note that this may not fully capture proof state
               equality (it is possible to have similar goals but different
               evar_maps, but should be enough for all practical users. *)
@@ -168,3 +168,6 @@ end
     now we just return their fully qualified name, but more options are of
     course possible. *)
 val premises : token:Coq.Limits.Token.t -> st:State.t -> Premise.t list R.t
+
+(** Petanque version *)
+val version : int

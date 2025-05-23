@@ -3,35 +3,48 @@
 [![Github CI][ci-badge]][ci-link]
 
 `coq-lsp` is a [Language
-Server](https://microsoft.github.io/language-server-protocol/) and [Visual
-Studio Code](https://code.visualstudio.com/) extension for the [Coq Proof
-Assistant](https://coq.inria.fr). Experimental support for [Vim](#vim) and
-[Neovim](#neovim) is also available in their own projects.
+Server](https://microsoft.github.io/language-server-protocol/) for the [Rocq
+Prover](https://coq.inria.fr). It implements the
+[LSP](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/) protocol, with custom [extensions](./etc/doc/PROTOCOL.md), including the [petanque](./petanque)
+protocol, designed for low-latency interaction with Rocq, particularly suited for AI and
+Software Engineering applications.
+
+**Key [features](#Features)** of `coq-lsp` are: continuous, incremental document
+checking, real-time interruptions and limits, programmable error recovery,
+literate Rocq/Markdown/LaTeX document support, multiple workspaces, positional
+goals, information panel, performance data, extensible command-line compiler,
+a plugin system, and more.
+
+See the [User Manual](./etc/doc/USER_MANUAL.md) for details.
+
+This repository also includes the `coq-lsp` [Visual Studio
+Code](https://code.visualstudio.com/) editor extension for the [Rocq Proof
+Assistant](https://coq.inria.fr), and a few other components, see our
+[contributing guide](#contributing) for more information. Experimental support
+for [Emacs](#emacs), [Vim](#vim) and [Neovim](#neovim) is also available in
+their own projects.
 
 **Quick Install**:
-  - **🐧 Linux / 🍎 macOs:**
+
+  - **🐧 Linux / 🍎 macOs / **🪟 Windows:**:**
 ```
 $ opam install coq-lsp && code --install-extension ejgallego.coq-lsp
 ```
-  - **🪟 Windows:** Download the [Coq Platform installer](#-server)
 
-**Key [features](#Features)** of `coq-lsp` are: continuous and incremental
-document checking, advanced error recovery, hybrid Coq/markdown document
-support, multiple workspace support, positional goals and information panel,
-performance data, extensible command-line compiler, plugin system, and more.
+  - **🪟 Windows:** (alternative method) Download the [Coq Platform installer](#-server)
 
-See the [coq-lsp User Manual](./etc/doc/USER_MANUAL.md) for more information.
+Try it online ☕☕ (experimental) https://github.dev/ejgallego/hello-rocq
 
-`coq-lsp` aims to provide a seamless, modern interactive theorem proving
-experience, as well as to serve as a maintainable platform for research and UI
-integration with other projects.
+`coq-lsp` aims to deliver a modern, seamless experience for interactive theorem
+proving, while serving as a robust platform for research and integration with
+other tools.
 
-`coq-lsp` is built on top of **Flèche**, a new document checking engine for
-formal documents, designed from our experience in
-[previous](https://github.com/ejgallego/coq-serapi/),
-[projects](https://github.com/jscoq/jscoq). Flèche is specifically optimized for
+`coq-lsp` is built on **Flèche**, a new document checking engine for
+formal documents developed from the lessons of
+[SerAPI](https://github.com/ejgallego/coq-serapi/) and
+[jsCoq](https://github.com/jscoq/jscoq). Flèche is optimized for
 interactive use, [SerAPI-like tooling integration](#-a-platform-for-research),
-and web native usage, providing quite a few extra features from vanilla Coq.
+and web-native environments, offering capabilities beyond standard Rocq.
 
 `coq-lsp` supports 🐧 Linux, 🍎 macOS, 🪟 Windows , and ☕ JavaScript (Node/Browser)
 
