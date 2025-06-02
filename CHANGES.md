@@ -71,6 +71,8 @@
    (@JulesViennotFranca, @ejgallego, #962)
  - [doc] [petanque] Document petanque v1, improve readme (@ejgallego,
    #963)
+ - [plugin] [astdump] Make the JSON and SEXP output into a line per
+   object by default (@blackbird1128, @ejgallego, #874)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
