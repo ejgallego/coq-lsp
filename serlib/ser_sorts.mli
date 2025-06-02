@@ -35,4 +35,4 @@ module Quality : sig
   type pattern = Sorts.Quality.pattern [@@deriving sexp,yojson,hash,compare]
 end
 
-module QConstraints : SerType.SJHC with type t = Sorts.QConstraints.t
+module ElimConstraints : SerType.SJHC with type t = Sorts.ElimConstraints.t
