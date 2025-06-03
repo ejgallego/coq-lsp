@@ -73,8 +73,8 @@ vendor/coq/config/coq_config.ml: vendor/coq
 	        -libdir "$$EPATH/_build/install/default/lib/coq" \
 	        -bytecode-compiler $(COQVM) \
 		-native-compiler no \
-	&& cp theories/dune.disabled theories/dune \
-	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
+	&& cp theories/Corelib/dune.disabled theories/Corelib/dune \
+	&& cp theories/Ltac2/dune.disabled theories/Ltac2/dune
 
 # We set windows parameters a bit better, note the need to use forward
 # slashed (cygpath -m) due to escaping :( , a conversion to `-w` is
