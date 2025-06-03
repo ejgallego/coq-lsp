@@ -75,7 +75,9 @@
    object by default (@blackbird1128, @ejgallego, #874)
  - [doc] [emacs] [protocol] Improve documentation for `proof/goals`,
    add link to official emacs mode by Josselin Poiret (@ejgallego,
-   thanks to @jpoiret, cc: #941)
+   #969, thanks to @jpoiret, cc: #941)
+ - [goals] Include `range` in `proof/goals` answer. This is useful for
+   clients willing to do highlighting (@ejgallego, @jpoiret, #970)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------

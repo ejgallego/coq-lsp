@@ -327,6 +327,7 @@ export interface Message<Pp> {
 interface GoalAnswer<Pp> {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
+  range?: Range;
   goals?: GoalConfig<Pp>;
   messages: Pp[] | Message<Pp>[];
   error?: Pp;
@@ -358,7 +359,10 @@ The main objects of interest are:
 
 - `GoalAnswer`: In addition to the goals at point, `GoalAnswer`
   contains messages associated to `position` and the top `error` if
-  pertinent.
+  pertinent. `range` contains the span of the Rocq sentence at
+  `position`, if exists. Note that Rocq will skip some blank spaces
+  when parsing, so there are parts of a document that have no
+  corresponding `range` attached.
 
 An example for `stack` is the following Coq script:
 ```coq
@@ -388,6 +392,8 @@ was the default.
 <!-- TOC --><a name="changelog"></a>
 #### Changelog
 
+- v0.2.3: new field in answer `range`, which contains the range of the
+  sentence at `position`
 - v0.1.9: backwards compatible with 0.1.8
   + new optional `mode : "Prev" | "After"` field to indicate desired goal position
   + `command` field, alias of `pretac`, as this is not limited to tactics
