@@ -86,8 +86,8 @@ winconfig:
 	&& ./configure -no-ask -prefix "$$EPATH\\_build\\install\\default\\" \
 	        -libdir "$$EPATH\\_build\\install\\default\\lib\\coq\\" \
 		-native-compiler no \
-	&& cp theories/dune.disabled theories/dune \
-	&& cp user-contrib/Ltac2/dune.disabled user-contrib/Ltac2/dune
+	&& cp theories/Corelib/dune.disabled theories/Corelib/dune \
+	&& cp theories/Ltac2/dune.disabled theories/Ltac2/dune
 
 .PHONY: wp
 wp:
