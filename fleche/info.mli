@@ -36,7 +36,7 @@ module Offset : Point with type t = int
 type approx =
   | Exact  (** Exact on point *)
   | PrevIfEmpty  (** If no match, return prev *)
-  | Prev  (** If no match, return prev, if match, too *)
+  | Prev  (** Always return previous node *)
 
 (** Located queries *)
 module type S = sig

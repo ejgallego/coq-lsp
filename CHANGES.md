@@ -73,6 +73,9 @@
    #963)
  - [plugin] [astdump] Make the JSON and SEXP output into a line per
    object by default (@blackbird1128, @ejgallego, #874)
+ - [doc] [emacs] [protocol] Improve documentation for `proof/goals`,
+   add link to official emacs mode by Josselin Poiret (@ejgallego,
+   thanks to @jpoiret, cc: #941)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
