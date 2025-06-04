@@ -6,16 +6,18 @@ Thank you very much for willing to contribute to coq-lsp!
 The `coq-lsp` repository contains several tightly coupled components
 in a single repository, also known as a monorepo, in particular:
 
-- Flèche: an incremental document engine for Coq supporting literate
-  programming and programability, written in OCaml
-- `fcc`: an extensible command line compiler built on top of Flèche
-- `petanque`: direct access to Coq's proof engine
-- `coq-lsp`a LSP server for the Coq project, written in OCaml on top of Flèche
-- the `coq-lsp/VSCode` extension written in TypeScript and React, in
-  the `editor/code` directory
+- **base libraries**: `lang/`, `lsp/` which define common language constructs
+- **Rocq API**: in `coq/`, an abstraction layer over Rocq's API
+- **Flèche**: an incremental document engine for Rocq supporting
+  literate programming and programability, in `fleche/`.
+- **`fcc`**: an extensible command line compiler built on top of Flèche, in `compiler/`
+- `petanque`: direct access to Coq's proof engine, in `petanque/`
+- `coq-lsp`a LSP server for the Rocq Prover, in `controller/`
+- **`coq-lsp/VSCode`**: a VSCode extension written in TypeScript and
+  React, under `editor/code`
 
 Read coq-lsp [FAQ](etc/FAQ.md) to learn more about LSP and
-server/client roles.
+server/client roles. See more about code organization below.
 
 It is possible to hack only in the server, on the client, or on both
 at the same time. We have thus structured this guide in 3 sections:
@@ -39,7 +41,7 @@ conduct](./CODE_OF_CONDUCT.md)
 ### License
 
 `coq-lsp` uses the LGPL 2.1 license, which is compatible with Coq's
-license.
+license. We also allow licensing of our code under GPL 3+ and LGPL 2.1+.
 
 ### Submitting a contribution, opening an issue.
 
@@ -60,20 +62,19 @@ The client changelog that is used by the VS Code marketplace is at
 `editor/code/CHANGELOG.md`, but you should not modify it, as of today we will
 generate it from the relevant entries in `CHANGES.md` at release time.
 
-## Server guide
+## Server development guide
 
 ### Compilation
 
 The server project uses a standard OCaml development setup based on
-Opam and Dune. This also works on Windows using the [Coq Platform
-Source
-Install](https://github.com/coq/platform/blob/main/doc/README_Windows.md#installation-by-compiling-from-sources-using-opam-on-cygwin)
+Opam and Dune.
 
 The default development environment for `coq-lsp` is a "composed"
-build that includes a git submodules for `coq` in the
-`vendor/` directory. This allows us to easily work with PRs using
-experimental Coq branches, and some other advantages like a better CI
-build cache and easier bisects.
+build that includes git submodules for `coq` and `coq-stdlib` in the
+`vendor/` directory.
+
+This allows to easily work with experimental Rocq branches, and some
+other advantages like a better CI build cache and easier bisects.
 
 This will however install a local Coq version which may not be
 convenient for all use cases; we thus detail below an alternative
@@ -91,7 +92,9 @@ way to develop `coq-lsp` itself.
     opam install --deps-only .
     ```
 
-2. Initialize submodules (the `main` branch uses some submodules, which we plan to get rid of soon. Branches `v8.x` can already skip this step.)
+2. Initialize submodules (the `main` branch uses some submodules,
+   which we plan to get rid of soon. Branches `v8.x` can already skip
+   this step.)
 
     ```sh
     make submodules-init
@@ -262,10 +265,11 @@ tips with `js_of_ocaml`.
 
 ## Client guide (VS Code Extension)
 
-The VS Code extension is setup as a standard `npm` Typescript + React package
-using `esbuild` as the bundler. 
+The VS Code extension is setup as a standard `npm` Typescript + React
+package using `esbuild` as the bundler.
 
-### Setup 
+### Setup
+
 1. Navigate to the editor folder
     ```sh
     cd editor/code
@@ -279,10 +283,14 @@ Then there are two ways to work with the VS Code extension: you can let VS Code
 itself take care of building it (preferred setup), or you can build it manually.
 
 #### Let VS Code handle building the project
-There is nothing to be done, VS Code will build the project automatically when launching the extension. You can skip to [launching the extension](#launch-the-extension). 
+
+There is nothing to be done, VS Code will build the project
+automatically when launching the extension. You can skip to [launching
+the extension](#launch-the-extension).
 
 #### Manual build
-1. Navigate to the editor folder 
+
+1. Navigate to the editor folder
     ```sh
     cd editor/code
     ```
@@ -290,19 +298,20 @@ There is nothing to be done, VS Code will build the project automatically when l
 You can now run `package.json` scripts the usual way:
 - Typecheck the project
     ```sh
-    npm run typecheck 
+    npm run typecheck
     ```
-- Fast dev-transpile (no typecheck) 
+- Fast dev-transpile (no typecheck)
     ```sh
     npm run compile
     ```
 
 ### Launch the extension
 
-From the toplevel directory launch VS Code using `dune exec -- code -n editor/code`, which will setup the
-right environment variables such as `PATH` and `OCAMLPATH`, so the `coq-lsp`
-binary can be found by VS Code. If you have installed `coq-lsp` globally, you
-don't need `dune exec`, and can just run `code -n editor/code`.
+From the toplevel directory launch VS Code using `dune exec -- code -n
+editor/code`, which will setup the right environment variables such as
+`PATH` and `OCAMLPATH`, so the `coq-lsp` binary can be found by VS
+Code. If you have installed `coq-lsp` globally, you don't need `dune
+exec`, and can just run `code -n editor/code`.
 
 Once in VS Code, you can launch the extension normally using the left "Run and
 Debug" panel in Visual Studio Code, or the F5 keybinding.
@@ -320,13 +329,12 @@ of the original `nix develop`).
 nix develop .#client-vscode
 ```
 
-
 The steps to setup the client are similar to the manual build:
-1. Spawn `develop` shell 
+1. Spawn `develop` shell
     ```sh
     nix develop
     ```
-2. Inside `develop`, spawn the `client-vscode` shell 
+2. Inside `develop`, spawn the `client-vscode` shell
     ```sh
     nix develop .#client-vscode
     ```
@@ -363,12 +371,14 @@ that, you want to use the web extension profile in the launch setup.
 
 ### Debugging
 
-The default build target will allow you to debug the extension by providing the
-right sourcemaps.
+The default build target will allow you to debug the extension by
+providing the right sourcemaps.
 
 ### Nix:
 
-Nix can be configured to use the version of the VS Code extension from our `git` in the following way:
+Nix can be configured to use the version of the VS Code extension from
+our `git` in the following way:
+
 ```nix
 inputs.coq-lsp = { type = "git"; url = "https://github.com/ejgallego/coq-lsp.git"; submodules = true; };
 ...
@@ -385,6 +395,9 @@ programs.vscode = {
 
 `coq-lsp` has a test-suite in the [test directory](./test), see the
 README there for more details.
+
+- `make test` will perform the LSP tests
+- `make test-compiler` will perform the compiler tests
 
 ## Releasing
 
@@ -403,53 +416,36 @@ The checklist for the release as of today is the following:
 ### Tag and test release commit
 
 ```
-export COQLSPV=0.2.3
-git checkout main  &&                    make && make test test-compiler && dune-release tag ${COQLSPV}
-git checkout v9.0  && git merge main  && make && make test test-compiler && dune-release tag ${COQLSPV}+9.0
-git checkout v8.20 && git merge v9.0  && make && make test test-compiler && dune-release tag ${COQLSPV}+8.20
-git checkout v8.19 && git merge v8.20 && make && make test test-compiler && dune-release tag ${COQLSPV}+8.19
-git checkout v8.18 && git merge v8.19 && make && make test test-compiler && dune-release tag ${COQLSPV}+8.18
-git checkout v8.17 && git merge v8.18 && make && make test test-compiler && dune-release tag ${COQLSPV}+8.17
+export COQLSPV=0.2.4
+git checkout main  &&                    opam exec --switch=dev-coq-lsp -- make && opam exec --switch=dev-coq-lsp -- make test test-compiler && dune-release tag ${COQLSPV}
+git checkout v9.0  && git merge main  && opam exec --switch=rocq-v9.0   -- make && opam exec --switch=rocq-v9.0   -- make test test-compiler && dune-release tag ${COQLSPV}+9.0
+git checkout v8.20 && git merge v9.0  && opam exec --switch=coq-v8.20   -- make && opam exec --switch=coq-v8.20   -- make test test-compiler && dune-release tag ${COQLSPV}+8.20
+git checkout v8.19 && git merge v8.20 && opam exec --switch=coq-v8.19   -- make && opam exec --switch=coq-v8.19   -- make test test-compiler && dune-release tag ${COQLSPV}+8.19
+git checkout v8.18 && git merge v8.19 && opam exec --switch=coq-v8.18   -- make && opam exec --switch=coq-v8.18   -- make test test-compiler && dune-release tag ${COQLSPV}+8.18
+git checkout v8.17 && git merge v8.18 && opam exec --switch=coq-v8.17   -- make && opam exec --switch=coq-v8.17   -- make test test-compiler && dune-release tag ${COQLSPV}+8.17
 ```
 
 ### Client release:
 
+- build the JavaScript version `make js`
 - build the extension with `npm run vscode:prepublish`
 - check with `vsce ls` that the client contents are OK
 - upload to official VSCode marketplace: `vsce publish`
-- upload vsix to OpenVSX marketplace:
+- upload vsix to OpenVSX marketplace
 
 ### Server:
 
 `dune release` for each version that should to the main opam repos:
 
 ```
-export COQLSPV=0.2.3
-git checkout v9.0  && dune-release
-git checkout v8.20 && dune-release
-git checkout v8.19 && dune-release
-git checkout v8.18 && dune-release
-git checkout v8.17 && dune-release
+export COQLSPV=0.2.4
+git checkout v9.0  && opam exec --switch=rocq-v9.0 -- dune-release
+git checkout v8.20 && opam exec --switch=coq-v8.20 -- dune-release
+git checkout v8.19 && opam exec --switch=coq-v8.19 -- dune-release
+git checkout v8.18 && opam exec --switch=coq-v8.18 -- dune-release
+git checkout v8.17 && opam exec --switch=coq-v8.17 -- dune-release
 ```
 
 ### [important] After release commit
 
 - bump `version.ml` and `editor/code/package.json` version string to a `$version+1-dev`
-
-## Emacs
-
-You should be able to use `coq-lsp` with
-[eglot](https://joaotavora.github.io/eglot/) or [lsp-mode](https://github.com/emacs-lsp/lsp-mode)
-
-Emacs support is a goal of `coq-lsp`, so if you find any trouble using
-`eglot` or `lsp-mode` with `coq-lsp`, please don't hesitate to open an
-issue. See `coq-lsp` README for more notes on Emacs support.
-
-## VIM
-
-You should be able to use `coq-lsp` with VIM.
-
-VIM support is a goal of `coq-lsp`, so if you find any trouble using
-`coq-lsp` with VIM, please don't hesitate to open an issue.
-
-See `coq-lsp` README for more notes on VIM support.
