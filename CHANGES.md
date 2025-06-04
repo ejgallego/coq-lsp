@@ -1,5 +1,5 @@
-# unreleased
-------------
+# coq-lsp 0.2.3: Barrage
+------------------------
 
  - [fleche] fix quick fixes for errors being lost due to incorrect
    handling of `send_diags_extra_data` (@ejgallego, #850)
@@ -71,6 +71,13 @@
    (@JulesViennotFranca, @ejgallego, #962)
  - [doc] [petanque] Document petanque v1, improve readme (@ejgallego,
    #963)
+ - [plugin] [astdump] Make the JSON and SEXP output into a line per
+   object by default (@blackbird1128, @ejgallego, #874)
+ - [doc] [emacs] [protocol] Improve documentation for `proof/goals`,
+   add link to official emacs mode by Josselin Poiret (@ejgallego,
+   #969, thanks to @jpoiret, cc: #941)
+ - [goals] Include `range` in `proof/goals` answer. This is useful for
+   clients willing to do highlighting (@ejgallego, @jpoiret, #970)
 
 # coq-lsp 0.2.2: To Virtual or not To Virtual
 ---------------------------------------------
