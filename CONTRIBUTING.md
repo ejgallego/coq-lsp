@@ -310,8 +310,12 @@ Debug" panel in Visual Studio Code, or the F5 keybinding.
 You can of course install the extension in your `~/.vscode/` folder if so you
 desire, although this is not recommended.
 
-### Nix 
-In the case of the client we expose a separate shell, `client-vscode`, which can be spawned with the following line (this can be done on top of the original `nix develop`).
+### Nix
+
+In the case of the client we expose a separate shell, `client-vscode`,
+which can be spawned with the following line (this can be done on top
+of the original `nix develop`).
+
 ```
 nix develop .#client-vscode
 ```
@@ -388,41 +392,49 @@ README there for more details.
 
 The checklist for the release as of today is the following:
 
-### Pre-release
+### Prepare a release commit
 
 - update the version number at `editor/code/package.json`, do `npm i`
 - update the version number at `fleche/version.ml`
-
-### Client:
-
 - update the client changelog at `editor/code/CHANGELOG.md`, commit
-- for the `main` branch: `dune release tag $coq_lsp_version`
+- add release notes in `etc/release_notes/` if needed
+- do `make extension` to update the `package-lock.json` file
+
+### Tag and test release commit
+
+```
+export COQLSPV=0.2.3
+git checkout main  &&                    make && make test test-compiler && dune-release tag ${COQLSPV}
+git checkout v9.0  && git merge main  && make && make test test-compiler && dune-release tag ${COQLSPV}+9.0
+git checkout v8.20 && git merge v9.0  && make && make test test-compiler && dune-release tag ${COQLSPV}+8.20
+git checkout v8.19 && git merge v8.20 && make && make test test-compiler && dune-release tag ${COQLSPV}+8.19
+git checkout v8.18 && git merge v8.19 && make && make test test-compiler && dune-release tag ${COQLSPV}+8.18
+git checkout v8.17 && git merge v8.18 && make && make test test-compiler && dune-release tag ${COQLSPV}+8.17
+```
+
+### Client release:
+
 - build the extension with `npm run vscode:prepublish`
 - check with `vsce ls` that the client contents are OK
-- `vsce publish`
-- upload vsix to OpenVSX marketplace
+- upload to official VSCode marketplace: `vsce publish`
+- upload vsix to OpenVSX marketplace:
 
 ### Server:
 
-- sync branches for previous Coq versions, using `git merge`, test and push to CI.
-- `dune release tag` for each `$coq_lsp_version+$coq_version`
-- `dune release` for each version that should to the main opam repos
-- [deprecated] update pre-release packages to coq-opam-archive
+`dune release` for each version that should to the main opam repos:
 
-The above can be done with:
 ```
-export COQLSPV=0.2.1
-git checkout main  && make                    && dune-release tag ${COQLSPV}
-git checkout v8.20 && git merge main  && make && dune-release tag ${COQLSPV}+8.20 && dune-release
-git checkout v8.19 && git merge v8.20  && make && dune-release tag ${COQLSPV}+8.19 && dune-release
-git checkout v8.18 && git merge v8.19  && make && dune-release tag ${COQLSPV}+8.18 && dune-release
-git checkout v8.17 && git merge v8.18 && make && dune-release tag ${COQLSPV}+8.17 && dune-release
+export COQLSPV=0.2.3
+git checkout v9.0  && dune-release
+git checkout v8.20 && dune-release
+git checkout v8.19 && dune-release
+git checkout v8.18 && dune-release
+git checkout v8.17 && dune-release
 ```
 
-### After release
+### [important] After release commit
 
-- [important] bump `version.ml` and `editor/code/package.json` version
-  string to a `-dev` suffix
+- bump `version.ml` and `editor/code/package.json` version string to a `$version+1-dev`
 
 ## Emacs
 

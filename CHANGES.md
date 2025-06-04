@@ -1,5 +1,5 @@
-# unreleased
-------------
+# coq-lsp 0.2.3: Barrage
+------------------------
 
  - [fleche] fix quick fixes for errors being lost due to incorrect
    handling of `send_diags_extra_data` (@ejgallego, #850)
