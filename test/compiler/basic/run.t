@@ -217,9 +217,9 @@ output is also not fully portable, so we settle for this check for now.
 Another way to test this would be to have an `undump` plugin, so we
 de-serialize the document back and check.
 
-  $ ls proj1/a.v.json.astdump proj1/a.v.sexp.astdump
-  proj1/a.v.json.astdump
-  proj1/a.v.sexp.astdump
+  $ ls proj1/a.v.jsonl.astdump proj1/a.v.sexpl.astdump
+  proj1/a.v.jsonl.astdump
+  proj1/a.v.sexpl.astdump
 
 We do the same for the goaldump plugin:
   $ fcc --plugin=coq-lsp.plugin.goaldump --root proj1 proj1/a.v
