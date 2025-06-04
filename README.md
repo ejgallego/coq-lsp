@@ -1,53 +1,66 @@
-# Coq LSP <img align="right" height="42" src="./etc/img/inria-logo.png"/>  <!-- omit in toc -->
+# Rocq LSP <img align="right" height="42" src="./etc/img/inria-logo.png"/>  <!-- omit in toc -->
 
 [![Github CI][ci-badge]][ci-link]
 
-`coq-lsp` is a [Language
-Server](https://microsoft.github.io/language-server-protocol/) for the [Rocq
-Prover](https://coq.inria.fr). It implements the
-[LSP](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/) protocol, with custom [extensions](./etc/doc/PROTOCOL.md), including the [petanque](./petanque)
-protocol, designed for low-latency interaction with Rocq, particularly suited for AI and
-Software Engineering applications.
+`coq-lsp` is a [Language Server](https://microsoft.github.io/language-server-protocol/) for the [Rocq Prover](https://coq.inria.fr). It provides a single server that implements:
+
+- the [LSP](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/)
+  protocol, with custom [extensions](./etc/doc/PROTOCOL.md)
+- the [petanque](./petanque) protocol, designed for low-latency interaction with
+  Rocq, idel for AI and software engineering applications
+- the [MCP](https://modelcontextprotocol.io/) protocol (upcoming), an open
+  protocol that standardizes how applications provide context to LLMs
 
 **Key [features](#Features)** of `coq-lsp` are: continuous, incremental document
 checking, real-time interruptions and limits, programmable error recovery,
-literate Rocq/Markdown/LaTeX document support, multiple workspaces, positional
-goals, information panel, performance data, extensible command-line compiler,
-a plugin system, and more.
+literate Markdown and LaTeX document support, multiple workspaces, positional
+goals, information panel, performance data, completion, jump to definition,
+extensible command-line compiler, a plugin system, and more.
 
-See the [User Manual](./etc/doc/USER_MANUAL.md) and the [General
-Documentation Index](./etc/doc/) for more details.
+`coq-lsp` is built on **Flèche**, a new document checking engine for formal
+documents based on our previous work on
+[SerAPI](https://github.com/ejgallego/coq-serapi/) and
+[jsCoq](https://github.com/jscoq/jscoq).
+
+Designed for interactive use and web-native environments, Flèche is extensible
+and supports [advanced tooling integration](#-a-platform-for-research) and
+capabilities beyond standard Rocq.
+
+See the [User Manual](./etc/doc/USER_MANUAL.md) and the [General Documentation Index](./etc/doc/) for more details.
 
 This repository also includes the `coq-lsp` [Visual Studio
 Code](https://code.visualstudio.com/) editor extension for the [Rocq Proof
-Assistant](https://coq.inria.fr), and a few other components, see our
-[contributing guide](#contributing) for more information. Experimental support
+Assistant](https://coq.inria.fr), and a few other components. See our
+[contributing guide](#contributing) for more information. Support
 for [Emacs](#emacs), [Vim](#vim) and [Neovim](#neovim) is also available in
 their own projects.
 
 **Quick Install**:
 
-  - **🐧 Linux / 🍎 macOs / **🪟 Windows:**:**
+  - **🐧 Linux / 🍎 macOs / 🪟 Windows:**
 ```
 $ opam install coq-lsp && code --install-extension ejgallego.coq-lsp
 ```
 
-  - **🪟 Windows:** (alternative method) Download the [Coq Platform installer](#-server)
+  - **🪟 Windows:** (alternative method)
 
-Try it online ☕☕ (experimental) https://github.dev/ejgallego/hello-rocq
+    Download the [Coq Platform installer](#-server)
 
-`coq-lsp` aims to deliver a modern, seamless experience for interactive theorem
-proving, while serving as a robust platform for research and integration with
-other tools.
+  - **🦄 Emacs**:
 
-`coq-lsp` is built on **Flèche**, a new document checking engine for
-formal documents developed from the lessons of
-[SerAPI](https://github.com/ejgallego/coq-serapi/) and
-[jsCoq](https://github.com/jscoq/jscoq). Flèche is optimized for
-interactive use, [SerAPI-like tooling integration](#-a-platform-for-research),
-and web-native environments, offering capabilities beyond standard Rocq.
+```elisp
+ (use-package rocq-mode
+    :vc (:url "https://codeberg.org/jpoiret/rocq-mode.el.git"
+         :rev :newest)
+    :mode "\\.v\\'"
+    :hook
+    (rocq-mode . rocq-follow-viewport-mode)
+    (rocq-mode . rocq-auto-goals-at-point-mode))
+```
 
-`coq-lsp` supports 🐧 Linux, 🍎 macOS, 🪟 Windows , and ☕ JavaScript (Node/Browser)
+  - **☕ Try it online ☕ (experimental)**:
+
+    https://github.dev/ejgallego/hello-rocq
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -257,10 +270,11 @@ ready.
 
 ### 🏘️ Supported Coq Versions
 
-`coq-lsp` supports Coq 8.20, Coq 8.19, Coq 8.18, Coq 8.17, and Coq's `master`
-branch.  Code for each Coq version can be found in the corresponding branch.
+`coq-lsp` supports Rocq 9.0, Coq 8.20, Coq 8.19, Coq 8.18, Coq 8.17, and Coq's
+`master` branch.  Code for each Coq version can be found in the corresponding
+branch.
 
-We recommended using Coq 8.19 or `master` version. For other Coq versions, we
+We recommended using Rocq 9.0 or `master` version. For other Coq versions, we
 recommend users to install the custom Coq tree as detailed in [Coq Upstream
 Bugs](#coq-upstream-bugs).
 
@@ -308,10 +322,8 @@ guide](./CONTRIBUTING.md)
 
 ### 🦄 Emacs
 
-- An experimental configuration for `lsp-mode` has been provided by Arthur
-  Azevedo de Amorim, supporting goal display, see [the Zulip
-  thread](https://coq.zulipchat.com/#narrow/stream/329642-coq-lsp/topic/coq-lsp.20under.20Emacs.2E)
-  for more information.
+The official Rocq Emacs mode is https://codeberg.org/jpoiret/rocq-mode.el ,
+maintained by Josselin Poiret with contributions by Arthur Azevedo de Amorim.
 
 ### ✅ Vim
 
