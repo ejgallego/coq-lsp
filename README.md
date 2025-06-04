@@ -42,10 +42,6 @@ their own projects.
 $ opam install coq-lsp && code --install-extension ejgallego.coq-lsp
 ```
 
-  - **🪟 Windows:** (alternative method)
-
-    Download the [Coq Platform installer](#-server)
-
   - **🦄 Emacs**:
 
 ```elisp
@@ -61,6 +57,10 @@ $ opam install coq-lsp && code --install-extension ejgallego.coq-lsp
   - **☕ Try it online ☕ (experimental)**:
 
     https://github.dev/ejgallego/hello-rocq
+
+  - **🪟 Windows:** (alternative method)
+
+    Download the [Coq Platform installer](#-server)
 
 ## Table of Contents <!-- omit in toc -->
 
