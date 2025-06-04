@@ -60,11 +60,13 @@ let goals ~pp_format ~mode ~pretac () ~token ~doc ~point =
   let open Coq.Protect.E.O in
   let+ goals, program = get_goal_info ~token ~doc ~point ~mode ~pretac () in
   let node = Info.LC.node ~doc ~point Exact in
+  let range = Option.map Fleche.Doc.Node.range node in
   let messages = mk_messages node in
   let error = Option.bind node mk_error in
   let pp = pp ~pp_format in
   Lsp.JFleche.GoalsAnswer.(
-    to_yojson pp { textDocument; position; goals; program; messages; error })
+    to_yojson pp
+      { textDocument; position; range; goals; program; messages; error })
   |> Result.ok
 
 let goals ~pp_format ~mode ~pretac () ~token ~doc ~point =

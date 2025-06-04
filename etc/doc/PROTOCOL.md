@@ -262,7 +262,8 @@ type DiagnosticsData = {
 <!-- TOC --><a name="goal-display"></a>
 ### Goal Display
 
-In order to display proof goals and information at point, `coq-lsp` supports the `proof/goals` request, parameters are:
+In order to display proof goals and information at point, `coq-lsp`
+supports the `proof/goals` request, parameters are:
 
 ```typescript
 interface GoalRequest {
@@ -274,15 +275,28 @@ interface GoalRequest {
 }
 ```
 
-The first parameters are standard, `pp_format` controls the pretty
-printing format used in the results.
+The `textDocument` and `position` parameters are standard.
 
-The `command` parameter (experimental), is a list of Coq commands that
-will be run just _after_ `position` in `textDocument`, but _before_
-goals are sent to the user. This is often useful for ephemeral
-post-processing.
+Note that `rocq-lsp` will execute the Rocq document up to the
+`position` specified in the request paremeters.
 
-Answer to the request is a `Goal[]` object, where
+- `pp_format` controls the pretty printing format used in the
+  results. `Pp` will return goals using Rocq's pretty-printing type
+  (to be documented, see our rendered under
+  `editor/code/lib/format-pprint`), `String` will return the goals and
+  message bodies in plain text.
+
+- `command`, is a list of Coq commands that will be run just _after_
+  `position` in `textDocument`, but _before_ goals are sent to the
+  user. This is often useful for ephemeral post-processing of goals.
+
+- `mode` (if absent, the `goal_after_tactic` parameter will be used)
+  controls whether the goals returned correspond to `position` or to
+  the previous sentence in the document. `messages` and `error` below
+  are always returned for the specified `position`.
+
+The answer to the `proof/goals` request is a `GoalAnswer` object,
+where:
 
 ```typescript
 interface Hyp<Pp> {
@@ -313,6 +327,7 @@ export interface Message<Pp> {
 interface GoalAnswer<Pp> {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
+  range?: Range;
   goals?: GoalConfig<Pp>;
   messages: Pp[] | Message<Pp>[];
   error?: Pp;
@@ -322,20 +337,32 @@ interface GoalAnswer<Pp> {
 const goalReq : RequestType<GoalRequest, GoalAnswer<PpString>, void>
 ```
 
-which can be then rendered by the client in way that is desired.
+which can be then rendered by the client at wish.
 
 The main objects of interest are:
+
 - `Hyp`: This represents a pair of hypothesis names and type,
   additionally with a body as obtained with `set` or `pose` tactics
+
 - `Goal`: Contains a Coq goal: a pair of hypothesis and the goal's type
+
 - `GoalConfig`: This is the main object for goals information, `goals`
   contains the current list of foreground goals, `stack` contains a
   list of focused goals, where each element of the list represents a
   focus position (like a zipper); see below for an example. `shelf`
   and `given_up` contain goals in the `shelf` (a kind of goal hiding
   from tactics) and admitted ones.
+
+  If `mode` was set to `Prev`, or the `goal_after_tactic` option is
+  set to `false`, goals returned here will correspond to the previous
+  sentence.
+
 - `GoalAnswer`: In addition to the goals at point, `GoalAnswer`
-  contains messages associated to this position and the top error if pertinent.
+  contains messages associated to `position` and the top `error` if
+  pertinent. `range` contains the span of the Rocq sentence at
+  `position`, if exists. Note that Rocq will skip some blank spaces
+  when parsing, so there are parts of a document that have no
+  corresponding `range` attached.
 
 An example for `stack` is the following Coq script:
 ```coq
@@ -365,6 +392,8 @@ was the default.
 <!-- TOC --><a name="changelog"></a>
 #### Changelog
 
+- v0.2.3: new field in answer `range`, which contains the range of the
+  sentence at `position`
 - v0.1.9: backwards compatible with 0.1.8
   + new optional `mode : "Prev" | "After"` field to indicate desired goal position
   + `command` field, alias of `pretac`, as this is not limited to tactics
