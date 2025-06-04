@@ -51,7 +51,5 @@ let rec json_to_obj (cobj : < .. > Js.t) (json : Yojson.Safe.t) : < .. > Js.t =
   | `String s -> coerce @@ Js.string s
   | `Int m -> coerce @@ Js.number_of_float (float_of_int m)
   | `Intlit s -> coerce @@ Js.number_of_float (float_of_string s)
-  | `Tuple t -> coerce @@ Array.(Js.array @@ map ofresh (of_list t))
-  | `Variant (_, _) -> pure_js_expr "undefined"
 
 let json_to_obj json = json_to_obj (Js.Unsafe.obj [||]) json
