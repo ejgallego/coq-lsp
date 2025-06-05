@@ -36,11 +36,13 @@ depends: [
   # unit testing
   "ppx_inline_test"     { >= "v0.15.0" }
 
+  # This is now a hard dep due to API changes in 1.9.7
+  "ocamlfind" { >= "1.9.8" }
+
   # [release branch] Uncomment
   # "rocq-prover"          { >= "9.1" < "9.2"  }
 
   # [release branch] Remove
-  "ocamlfind" {>= "1.9.1" & (>= "1.9.8" | os != "windows") }
   "zarith" {>= "1.13"}
 
   # serlib deps: see what we need to keep for release

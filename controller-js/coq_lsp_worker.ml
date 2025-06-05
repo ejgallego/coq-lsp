@@ -126,7 +126,7 @@ let loadfile file =
     time Dynlink.loadfile file)
 
 let coq_init ~debug =
-  let loader = My_dynload.load_packages ~debug:false ~loadfile in
+  let loader = Fl_dynload.load_packages ~debug:false ~loadfile in
   let load_module = loadfile in
   let load_plugin = Coq.Loader.plugin_handler (Some loader) in
   (* XXX: Fixme at some point? *)
