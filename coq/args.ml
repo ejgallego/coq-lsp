@@ -54,6 +54,7 @@ let coq_lp_conv ~implicit (unix_path, lp) =
   ; unix_path
   ; implicit
   ; recursive = true
+  ; installed = false
   }
 
 let rload_paths : Loadpath.vo_path list Term.t =
