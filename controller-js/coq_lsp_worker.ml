@@ -159,7 +159,6 @@ let main () =
     Loadpath.
       { unix_path
       ; coq_path
-      ; installed = true
       ; implicit = true
       ; recursive = true
       }
@@ -171,7 +170,6 @@ let main () =
     Loadpath.
       { unix_path
       ; coq_path
-      ; installed = true
       ; implicit = false
       ; recursive = true
       }

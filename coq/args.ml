@@ -39,7 +39,6 @@ let coq_lp_conv ~implicit (unix_path, lp) =
   { Loadpath.coq_path = Libnames.dirpath_of_string lp
   ; unix_path
   ; implicit
-  ; installed = false
   ; recursive = true
   }
 
