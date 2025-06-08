@@ -108,7 +108,7 @@ Compile a dependent file without the dep being built
       "end": { "line": 0, "character": 9 }
     },
     "severity": 1,
-    "message": "Cannot find a physical path bound to logical path a."
+    "message": "Unable to locate library a (while searching for a .vos file)."
   }
   {
     "range": {
