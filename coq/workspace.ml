@@ -99,8 +99,8 @@ let compare = Stdlib.compare
 let coq_root = Names.DirPath.make [ Libnames.rocq_init_root ]
 let default_root = Libnames.default_root_prefix
 
-let mk_lp ~coq_path ~unix_path ~implicit ~installed =
-  { Loadpath.unix_path; coq_path; implicit; installed; recursive = true }
+let mk_lp ~coq_path ~unix_path ~implicit ~installed:_ =
+  { Loadpath.unix_path; coq_path; implicit; recursive = true }
 
 let mk_stdlib ~implicit unix_path =
   mk_lp ~coq_path:coq_root ~implicit ~installed:true ~unix_path
@@ -192,8 +192,7 @@ let make ~cmdline ~implicit ~kind ~debug =
   }
 
 let pp_load_path fmt
-    { Loadpath.unix_path; coq_path; installed = _; implicit = _; recursive = _ }
-    =
+    { Loadpath.unix_path; coq_path; implicit = _; recursive = _ } =
   Format.fprintf fmt "Path %s ---> %s"
     (Names.DirPath.to_string coq_path)
     unix_path
@@ -334,7 +333,6 @@ let workspace_from_coqproject ~cmdline ~debug cp_file : t =
     ; recursive = true
     ; unix_path = unix_path.path
     ; coq_path = dirpath_of_string_exn coq_path
-    ; installed = false
     }
   in
   (* XXX: [read_project_file] will do [exit 1] on parsing error! Please someone
