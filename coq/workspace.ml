@@ -334,6 +334,7 @@ let workspace_from_coqproject ~cmdline ~debug cp_file : t =
     ; has_ml = false
     ; unix_path = unix_path.path
     ; coq_path = dirpath_of_string_exn coq_path
+    ; installed = false
     }
   in
   (* XXX: [read_project_file] will do [exit 1] on parsing error! Please someone

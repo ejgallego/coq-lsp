@@ -165,7 +165,7 @@ jobs:
           ocaml-compiler: 4.14.x
           dune-cache: true
 
-      - name: Install Rocq into OPAM switch
+      - name: Install Rocq via OPAM
         run: |
           opam install lwt logs # Also build pet-server
           opam install memprof-limits # We need to do this to avoid coq-lsp rebuilding Coq below due to deptops
