@@ -1,13 +1,13 @@
-(* Coq JavaScript API.
- *
- * Copyright (C) 2016-2019 Emilio J. Gallego Arias, Mines ParisTech, Paris.
- * Copyright (C) 2018-2023 Shachar Itzhaky, Technion
- * Copyright (C) 2019-2023 Emilio J. Gallego Arias, INRIA
- * LICENSE: GPLv3+
- *
- * We provide a message-based asynchronous API for communication with
- * Coq.
- *)
+(*************************************************************************)
+(* Copyright 2015-2019 MINES ParisTech -- Dual License LGPL 2.1+ / GPL3+ *)
+(* Copyright 2018-2025 Shachar Itzhaky Technion -- LGPL 2.1+ / GPL3+     *)
+(* Copyright 2019-2024 Inria           -- Dual License LGPL 2.1+ / GPL3+ *)
+(* Copyright 2024-2025 Emilio J. Gallego Arias  -- LGPL 2.1+ / GPL3+     *)
+(* Copyright 2025      CNRS                     -- LGPL 2.1+ / GPL3+     *)
+(* Written by: Emilio J. Gallego Arias & coq-lsp contributors            *)
+(*************************************************************************)
+(* Rocq Language Server Protocol: LSP Controller (Javascript)            *)
+(*************************************************************************)
 
 module U = Yojson.Safe.Util
 module Lsp = Fleche_lsp

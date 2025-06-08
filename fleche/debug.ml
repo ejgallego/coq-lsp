@@ -1,3 +1,11 @@
+(*************************************************************************)
+(* Copyright 2015-2019 MINES ParisTech -- Dual License LGPL 2.1+ / GPL3+ *)
+(* Copyright 2019-2024 Inria           -- Dual License LGPL 2.1+ / GPL3+ *)
+(* Copyright 2024-2025 Emilio J. Gallego Arias  -- LGPL 2.1+ / GPL3+     *)
+(* Copyright 2025      CNRS                     -- LGPL 2.1+ / GPL3+     *)
+(* Written by: Emilio J. Gallego Arias & coq-lsp contributors            *)
+(*************************************************************************)
+
 (* This file controls what to trace, we need a better system. As of today, we
    trace using LSP logging facilities, however this is not enough in two cases:
 
