@@ -1,10 +1,12 @@
-(************************************************************************)
-(* Flèche => Coq API: Arguments                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2024-2025 EJGA       -- Dual License LGPL 2.1 / GPL3+      *)
-(* Written by: Emilio J. Gallego Arias & coq-lsp contributors           *)
-(************************************************************************)
+(*************************************************************************)
+(* Copyright 2015-2019 MINES ParisTech -- Dual License LGPL 2.1+ / GPL3+ *)
+(* Copyright 2019-2024 Inria           -- Dual License LGPL 2.1+ / GPL3+ *)
+(* Copyright 2024-2025 Emilio J. Gallego Arias  -- LGPL 2.1+ / GPL3+     *)
+(* Copyright 2025      CNRS                     -- LGPL 2.1+ / GPL3+     *)
+(* Written by: Emilio J. Gallego Arias & coq-lsp contributors            *)
+(*************************************************************************)
+(* Rocq Language Server Protocol: Rocq arguments API                     *)
+(*************************************************************************)
 
 open Cmdliner
 
@@ -37,6 +39,7 @@ let coq_lp_conv ~implicit (unix_path, lp) =
   { Loadpath.coq_path = Libnames.dirpath_of_string lp
   ; unix_path
   ; implicit
+  ; installed = false
   ; recursive = true
   }
 

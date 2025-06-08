@@ -38,18 +38,8 @@ depends: [
 
   "rocq-prover"         { >= "9.0" < "9.1" }
 
-  # [release branch] Remove
-  "ocamlfind" {>= "1.9.1" & (>= "1.9.8" | os != "windows") }
-  "zarith" {>= "1.13"}
-
-  # serlib deps: see what we need to keep for release
-  "ppx_deriving"        { >= "5.2"                 }
-  "ppx_deriving_yojson" { >= "3.7.0"               }
-  "ppx_import"          { >= "1.11.0"              }
-  "sexplib"             { >= "v0.15.0" & < "v0.18" }
-  "ppx_sexp_conv"       { >= "v0.15.0" & < "v0.18" }
-  "ppx_compare"         { >= "v0.15.0" & < "v0.18" }
-  "ppx_hash"            { >= "v0.15.0" & < "v0.18" }
+  # This is now a hard dep due to API changes in 1.9.7
+  "ocamlfind" { >= "1.9.8" }
 ]
 
 # older results get in mess with ppx_deriving, we cannot control how

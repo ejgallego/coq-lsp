@@ -60,7 +60,7 @@ export type ProgramInfo = [Id, OblsView][];
 export interface GoalAnswer<Pp> {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
-  range: Range;
+  range?: Range;
   goals?: GoalConfig<Pp>;
   program?: ProgramInfo;
   messages: Pp[] | Message<Pp>[];
