@@ -49,14 +49,16 @@ type 'a cont =
   | Yield of 'a
 
 (** Core scheduler: dispatch an LSP request or notification, check document and
-    wake up pending requests *)
+    wake up pending requests. Note, when using from a threaded controller, a
+    mutex must be used to avoid races with [enqueue_message] *)
 val dispatch_or_resume_check :
      io:Fleche.Io.CallBack.t
   -> ofn:(Lsp.Base.Message.t -> unit)
   -> state:State.t
   -> State.t cont option
 
-(** Add a message to the queue *)
+(** Add a message to the queue. Note, when using from a threaded controller, a
+    mutex must be used to avoid races with [dispatch_or_resume_check] *)
 val enqueue_message : Lsp.Base.Message.t -> unit
 
 (** Generic output handler *)

@@ -435,6 +435,7 @@ git checkout v8.17 && git merge v8.18 && opam exec --switch=coq-v8.17   -- make 
 - check with `vsce ls` that the client contents are OK
 - upload to official VSCode marketplace: `vsce publish`
 - upload vsix to OpenVSX marketplace
+- todo: check the wasm / js stuff is there, needs to improve
 
 ### Server:
 
