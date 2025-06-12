@@ -152,8 +152,13 @@ submodules-update:
 # (cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 
 # Build the vscode extension
+.PHONY: extension-wasm
+extension-wasm:
+	dune build editor/code/controller-wasm/wacoq_worker.bc
+	cd editor/code/controller-wasm/ && npm i && npm run vscode:prepublish
+
 .PHONY: extension
-extension:
+extension: extension-wasm
 	cd editor/code && npm i && npm run vscode:prepublish
 
 # Run prettier

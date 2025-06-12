@@ -58,10 +58,15 @@ export function activate(context: ExtensionContext): CoqLspAPI {
   const cf: ClientFactoryType = (context, clientOptions, wsConfig) => {
     // Pending on having the API to fetch the worker file.
     // throw "Worker not found";
-    const coqWorker = Uri.joinPath(
-      context.extensionUri,
-      "out/coq_lsp_worker.bc.js"
-    );
+
+    let wasm = true;
+
+    let workerURL = wasm
+      ? "controller-wasm/out/wacoq_worker.js"
+      : "out/coq_lsp_worker.bc.js";
+
+    const coqWorker = Uri.joinPath(context.extensionUri, workerURL);
+
     console.log(coqWorker);
 
     let worker = new Worker(coqWorker.toString(true));
