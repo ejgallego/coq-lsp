@@ -85,9 +85,11 @@ jobs:
         run: opam exec -- make test-compiler
 
   build-js:
-    name: Web Worker Build
+    name: Web Worker Build (JSOO and WASM)
     strategy:
       fail-fast: false
+    env:
+      WASI_SDK_URL: https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-12/wasi-sdk-12.0-linux.tar.gz
     runs-on: ubuntu-latest
 
     steps:
@@ -109,7 +111,7 @@ jobs:
       - name: 🐫 Setup OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: "ocaml-variants.4.14.2+options,ocaml-option-32bit"
+          ocaml-compiler: "ocaml-variants.4.12.0+options,ocaml-option-32bit"
           dune-cache: true
 
       - name: 🐫🐪🐫 Get dependencies
@@ -124,6 +126,7 @@ jobs:
         run: make patch-for-js
 
       - name: 🦏🧱🦏 Build coq-lsp JS version 🦏🦏🦏
+        if: false # Disabled due to https://github.com/ocaml/ocaml/issues/11803
         run: |
           opam exec -- make lsp-server/jsoo/coq-fs-core.js
           opam exec -- make js
@@ -135,8 +138,17 @@ jobs:
           cache: "npm"
           cache-dependency-path: editor/code/package-lock.json
 
+      - name: 🟪 WASI Setup
+        run: |
+          wget --quiet -O/tmp/wasi-sdk.tar.gz ${WASI_SDK_URL}
+          ( cd /opt && sudo tar xf /tmp/wasi-sdk.tar.gz && sudo ln -s wasi-sdk-* wasi-sdk )
+
       - name: 🦏🧱🦏 Build coq-lsp VSCode extension 🦏🦏🦏
-        run: opam exec -- make extension
+        run: |
+          opam exec -- make
+          opam exec -- make wp
+          opam exec -- make extension
+          opam exec -- make editor/code/controller-wasm/out/core-fs.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -149,6 +161,13 @@ jobs:
             editor/code/syntaxes
             editor/code/out/
             editor/code/coq.configuration.json
+
+            # editor/code/controller-wasm/out/
+            # editor/code/controller-wasm/node_modules/@ocaml-wasm/4.12--janestreet-base/bin/
+            # editor/code/controller-wasm/node_modules/@ocaml-wasm/4.12--num/bin/
+            # editor/code/controller-wasm/node_modules/@ocaml-wasm/4.12--zarith/bin/
+            # editor/code/controller-wasm/node_modules/ocaml-wasm/bin/
+
           compression-level: 9
   build-opam:
     name: Opam dev install

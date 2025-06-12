@@ -1,0 +1,95 @@
+diff --git a/kernel/vmemitcodes.ml b/kernel/vmemitcodes.ml
+index 79ed7cda3b..5efd615b1f 100644
+--- a/kernel/vmemitcodes.ml
++++ b/kernel/vmemitcodes.ml
+@@ -54,6 +54,24 @@ module RelocTable = Hashtbl.Make(struct
+   let hash = hash_reloc_info
+ end)
+ 
++external get_uint8 : string -> int -> int = "%bytes_safe_get"
++external get_uint16_ne : string -> int -> int = "%caml_bytes_get16"
++external get_int32_ne : string -> int -> int32 = "%caml_bytes_get32"
++external swap16 : int -> int = "%bswap16"
++external swap32 : int32 -> int32 = "%bswap_int32"
++
++let get_uint16_le b i =
++  if Sys.big_endian then swap16 (get_uint16_ne b i)
++  else get_uint16_ne b i
++
++let get_int16_le b i =
++  ((get_uint16_le b i) lsl (Sys.int_size - 16)) asr (Sys.int_size - 16)
++
++let string_get_int32_be b i =
++  let open String in
++  if not Sys.big_endian then swap32 (get_int32_ne b i)
++  else get_int32_ne b i
++
+ module Positions :
+ sig
+   type t
+@@ -78,7 +96,7 @@ let output buf n =
+ let input s pos =
+   let c = Char.code s.[!pos] in
+   if Int.equal c 0x00 then
+-    let c = String.get_int32_be s (!pos+1) in
++    let c = string_get_int32_be s (!pos+1) in
+     let () = pos := !pos + 5 in
+     Int32.to_int c
+   else
+@@ -219,16 +237,16 @@ let decompress_code src =
+           (Char.code c, 0)
+       | '\252' ->
+           i := !i + 2;
+-          (String.get_uint8 src (!i - 1) + 0xff00, 0xffff)
++          (get_uint8 src (!i - 1) + 0xff00, 0xffff)
+       | '\253' ->
+           i := !i + 3;
+-          (String.get_uint16_le src (!i - 2), 0)
++          (get_uint16_le src (!i - 2), 0)
+       | '\254' ->
+           i := !i + 4;
+-          (String.get_uint16_le src (!i - 3), String.get_uint8 src (!i - 1))
++          (get_uint16_le src (!i - 3), get_uint8 src (!i - 1))
+       | '\255' ->
+           i := !i + 5;
+-          (String.get_uint16_le src (!i - 4), String.get_int16_le src (!i - 2))
++          (get_uint16_le src (!i - 4), get_int16_le src (!i - 2))
+     in
+     Buffer.add_uint16_le buf c01;
+     Buffer.add_uint16_le buf c23;
+diff --git a/lib/pp.ml b/lib/pp.ml
+index db3200fc3a..da5da128d5 100644
+--- a/lib/pp.ml
++++ b/lib/pp.ml
+@@ -358,8 +358,17 @@ let db_print_pp fmt pp =
+ let db_string_of_pp pp =
+   Format.asprintf "%a" db_print_pp pp
+ 
++let _exists p s =
++  let open String in
++  let n = length s in
++  let rec loop i =
++    if i = n then false
++    else if p (unsafe_get s i) then true
++    else loop (succ i) in
++  loop 0
++
+ let has_format_special s =
+-  String.exists (function
++  _exists (function
+       | '@' | '%' | '\\' | '"' -> true
+       | _ -> false)
+     s
+diff --git a/tools/configure/configure.ml b/tools/configure/configure.ml
+index c955d81a9a..6461dd769d 100644
+--- a/tools/configure/configure.ml
++++ b/tools/configure/configure.ml
+@@ -106,7 +106,7 @@ let check_caml_version prefs caml_version caml_version_nums =
+   if caml_version_nums >= [5;0;0] && prefs.nativecompiler <> NativeNo then
+     let () = cprintf prefs "Your version of OCaml is %s." caml_version in
+     die "You have enabled Rocq's native compiler, however it is not compatible with OCaml >= 5.0.0"
+-  else if caml_version_nums >= [4;14;0] then
++  else if caml_version_nums >= [4;12;0] then
+     cprintf prefs "You have OCaml %s. Good!" caml_version
+   else
+     let () = cprintf prefs "Your version of OCaml is %s." caml_version in
