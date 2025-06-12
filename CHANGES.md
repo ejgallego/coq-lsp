@@ -36,6 +36,10 @@ unreleased
    shown; if `false`, it will always show errors and messages for the
    specified `position`, if there is a Rocq sentence at hand
    (@jpoiret, @ejgallego, #999, fixes: #941)
+ - [wasm worker] Add WebAssembly based worker based on waCoq. This is
+   now the default for the .vsix binary build. For now, we include
+   Rocq's Stdlib and Waterproof (@corwin-of-amber, @ejgallego,
+   @pimotte, #1008, cc #833, fixes #907, fixes #908, fixes #913)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------

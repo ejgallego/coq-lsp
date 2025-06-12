@@ -152,8 +152,19 @@ submodules-update:
 # (cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 
 # Build the vscode extension
+.PHONY: extension-wasm
+WASTUBS=$(addsuffix .wasm,dllcoqrun_stubs dllcoqperf_stubs dllbigstringaf_stubs dlllib_stubs)
+WAFILES=$(addprefix editor/code/controller-wasm/,wacoq_worker.bc $(WASTUBS))
+WASM_NODE=editor/code/controller-wasm/node_modules/
+OUTDIR=editor/code/controller-wasm/out
+extension-wasm:
+	dune build $(WAFILES)
+	cp -af _build/default/editor/code/controller-wasm/wacoq_worker.bc $(OUTDIR)
+	cp -af _build/default/editor/code/controller-wasm/*.wasm $(OUTDIR)
+	cd editor/code/controller-wasm/ && npm i && npm run vscode:prepublish
+
 .PHONY: extension
-extension:
+extension: extension-wasm
 	cd editor/code && npm i && npm run vscode:prepublish
 
 # Run prettier
@@ -195,6 +206,7 @@ endif
 	cd $(COQ_SRC_DIR) && git apply $(PATCH_DIR)/0001-coq-lsp-patch.patch
 	cd $(COQ_SRC_DIR) && git apply $(PATCH_DIR)/0001-jscoq-lib-system.ml-de-unix-stat.patch
 	cd $(COQ_SRC_DIR) && git apply $(PATCH_DIR)/0001-engine-trampoline.patch
+	cd $(COQ_SRC_DIR) && git apply $(PATCH_DIR)/0001-ocaml-4-12.patch
 ifndef VENDORED_SETUP
 	opam pin add $(COQ_CORE_NAME).$(COQ_CORE_VERSION) -k path $(COQ_SRC_DIR)
 endif
@@ -209,6 +221,9 @@ else
 # have anyways.
 _CCROOT=$(shell rocq c -where)/../$(COQ_CORE_NAME)
 endif
+
+# XXX: Fix the above as rocq c -where suffices
+_ROCQLIB=$(shell dune exec -- rocq c -where)
 
 # Super-hack
 controller-js/coq-fs-core.js: COQVM = no
@@ -246,6 +261,13 @@ controller-js/coq-fs-core.js: coq_boot
 	    $$(find $(_LIBROOT) -wholename '*/ppx_deriving_yojson/META' -printf "%p:/static/lib/%P ")
 	    # These libs are actually linked, so no cma is needed.
 	    # $$(find $(_LIBROOT) -wholename '*/zarith/*.cma'         -printf "%p:/static/lib/%P " -or -wholename '*/zarith/META'         -printf "%p:/static/lib/%P ")
+
+editor/code/controller-wasm/out/core-fs.zip:
+	$(eval TMP := $(shell mktemp -d ./.wasm-build-fs-XXXXXX))
+	dune exec -- ./etc/tools/build-fs/build_fs.exe $(_LIBROOT) $(_CCROOT) $(_ROCQLIB) $(TMP)/fs
+	cd $(TMP)/fs &&	zip -rq core-fs.zip static
+	cp -a $(TMP)/fs/core-fs.zip $@
+	rm -rf $(TMP)
 
 .PHONY: check-js-fs-sanity
 check-js-fs-sanity: controller-js/coq-fs-core.js js
