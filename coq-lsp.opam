@@ -45,6 +45,9 @@ depends: [
   # [release branch] Remove
   "zarith" {>= "1.13"}
 
+  # baseline plugin deps, to think about it
+  "spectrum" { >= "0.6.0" }
+
   # serlib deps: see what we need to keep for release
   "ppx_deriving"        { >= "5.2"                 }
   "ppx_deriving_yojson" { >= "3.7.0"               }
