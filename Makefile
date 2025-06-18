@@ -183,7 +183,7 @@ ifdef VENDORED_SETUP
 COQ_SRC_DIR=vendor/coq
 PATCH_DIR=../../etc/
 else
-COQ_SRC_DIR=../coq
+COQ_SRC_DIR=../coq_for_jscoq
 PATCH_DIR=$(shell pwd)/etc
 endif
 
@@ -192,9 +192,9 @@ patch-for-js:
 ifndef VENDORED_SETUP
 	git clone --depth=1 https://github.com/coq/coq.git -b $(COQ_BRANCH) $(COQ_SRC_DIR)
 endif
-	cd $(COQ_SRC_DIR) && patch -p1 < $(PATCH_DIR)/0001-coq-lsp-patch.patch
-	cd $(COQ_SRC_DIR) && patch -p1 < $(PATCH_DIR)/0001-jscoq-lib-system.ml-de-unix-stat.patch
-	cd $(COQ_SRC_DIR) && patch -p1 < $(PATCH_DIR)/0001-engine-trampoline.patch
+	cd $(COQ_SRC_DIR) && git apply $(PATCH_DIR)/0001-coq-lsp-patch.patch
+	cd $(COQ_SRC_DIR) && git apply $(PATCH_DIR)/0001-jscoq-lib-system.ml-de-unix-stat.patch
+	cd $(COQ_SRC_DIR) && git apply $(PATCH_DIR)/0001-engine-trampoline.patch
 ifndef VENDORED_SETUP
 	opam pin add $(COQ_CORE_NAME).$(COQ_CORE_VERSION) -k path $(COQ_SRC_DIR)
 endif
