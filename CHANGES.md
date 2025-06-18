@@ -5,6 +5,9 @@ unreleased
    remove our own local wrapper (@ejgallego, #975).
  - [petanque] New `petanque/ast` and `petanque/ast_at_pos`
    (@ejgallego, @JulesViennotFranca, #980)
+ - [serlib] Support for generic Ast analyzers. This opens the door to
+   many feature requests such as syntax coloring, dependency
+   extraction, etc... (@ejgallego, @JulesViennotFranca, #981)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------
