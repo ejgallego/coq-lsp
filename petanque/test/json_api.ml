@@ -98,6 +98,11 @@ let run (ic, oc) =
   let* st = r ~st ~tac:"reflexivity." in
   let* h3 = S.state_hash { st = st.st } in
   assert (not (Int.equal h1 h3));
+  (* Note, in json mode de-seralization of plugins only work if we load the
+     serlib plugins before *)
+  let* _ast1 = S.ast { st = st.st; text = "Check (fun x => x)." } in
+  let position = Lang.Point.{ line = 1; character = 3; offset = -1 } in
+  let* _ast2 = S.ast_at_pos { uri; position } in
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"now simpl; rewrite IHl." in
   let* st = r ~st ~tac:"Qed." in

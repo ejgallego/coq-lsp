@@ -121,4 +121,12 @@ module S (C : Chans) = struct
   let state_proof_hash =
     let module M = Wrap (StateProofHash) (C) in
     M.call
+
+  let ast =
+    let module M = Wrap (PetAst) (C) in
+    M.call
+
+  let ast_at_pos =
+    let module M = Wrap (AstAtPos) (C) in
+    M.call
 end
