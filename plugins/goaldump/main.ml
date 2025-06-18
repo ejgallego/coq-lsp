@@ -1,4 +1,3 @@
-module Lsp = Fleche_lsp
 open Fleche
 
 (* Put these in an utility function for plugins *)
@@ -17,9 +16,8 @@ let of_execution ~io ~what (v : (_, _) Coq.Protect.E.t) =
 (* We output a record for each sentence in the document, linear order. Note that
    for unparseable nodes, we don't have an AST. *)
 module AstGoals = struct
-  (* Just to bring the serializers in scope *)
-  module Lang = Lsp.JLang
-  module Coq = Lsp.JCoq
+  open Serializers
+  open Sexplib.Conv
 
   type 'a t =
     { raw : string
@@ -27,7 +25,7 @@ module AstGoals = struct
     ; ast : Coq.Ast.t option
     ; goals : 'a Coq.Goals.reified_pp option
     }
-  [@@deriving to_yojson]
+  [@@deriving to_yojson, sexp_of]
 
   let of_node ~io ~token ~(contents : Contents.t) (node : Doc.Node.t) =
     let range = node.range in
@@ -42,9 +40,8 @@ let pp_json pp fmt (astgoal : _ AstGoals.t) =
   AstGoals.to_yojson pp astgoal |> Yojson.Safe.pretty_print fmt
 
 (* For now we have not added sexp serialization, but we can easily do so *)
-(* let pp_sexp fmt (astgoal : AstGoals.t) = *)
-(*   AstGoals.sexp_of astgoal *)
-(*   |> Sexplib.Sexp.pp_hum fmt *)
+let pp_sexp pp fmt (astgoal : _ AstGoals.t) =
+  AstGoals.sexp_of_t pp astgoal |> Sexplib.Sexp.pp_hum fmt
 
 let pw pp fmt v = Format.fprintf fmt "@[%a@]@\n" pp v
 
@@ -58,10 +55,16 @@ let dump_goals ~io ~token ~out_file ~(doc : Doc.t) pp =
   in
   Coq.Compat.format_to_file ~file:out_file ~f doc.nodes
 
-let pp d =
-  (* Set to true to output Pp-formatted goals *)
-  let output_pp = false in
-  if output_pp then Lsp.JCoq.Pp.to_yojson d else `String (Pp.string_of_ppcmds d)
+(* Set to true to output Pp-formatted goals, should be a plugin option *)
+let output_pp = false
+
+let pp_j d =
+  if output_pp then Fleche_lsp.JCoq.Pp.to_yojson d
+  else `String (Pp.string_of_ppcmds d)
+
+let pp_s d =
+  if output_pp then Serlib.Ser_pp.sexp_of_t d
+  else Sexplib.Sexp.Atom (Pp.string_of_ppcmds d)
 
 let dump_ast ~io ~token ~(doc : Doc.t) =
   let uri = doc.uri in
@@ -69,9 +72,9 @@ let dump_ast ~io ~token ~(doc : Doc.t) =
   let lvl = Io.Level.Info in
   Io.Report.msg ~io ~lvl "[goaldump plugin] dumping goals for %s ..." uri_str;
   let out_file_j = Lang.LUri.File.to_string_file uri ^ ".json.goaldump" in
-  let () = dump_goals ~io ~token ~out_file:out_file_j ~doc (pp_json pp) in
-  (* let out_file_s = Lang.LUri.File.to_string_file uri ^ ".sexp.goaldump" in *)
-  (* let () = dump_goals ~out_file:out_file_s ~doc pp_sexp in *)
+  let () = dump_goals ~io ~token ~out_file:out_file_j ~doc (pp_json pp_j) in
+  let out_file_s = Lang.LUri.File.to_string_file uri ^ ".sexp.goaldump" in
+  let () = dump_goals ~io ~token ~out_file:out_file_s ~doc (pp_sexp pp_s) in
   Io.Report.msg ~io ~lvl "[goaldump plugin] dumping ast for %s was completed!"
     uri_str;
   ()
