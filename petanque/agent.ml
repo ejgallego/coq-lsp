@@ -52,7 +52,7 @@ module Error = struct
     | Anomaly of string
     | System of string
     | Theorem_not_found of string
-    | No_state_at_point
+    | No_node_at_point
 
   let to_string = function
     | Interrupted -> Format.asprintf "Interrupted"
@@ -61,7 +61,7 @@ module Error = struct
     | Anomaly msg -> Format.asprintf "Anomaly: %s" msg
     | System msg -> Format.asprintf "System: %s" msg
     | Theorem_not_found msg -> Format.asprintf "Theorem_not_found: %s" msg
-    | No_state_at_point -> Format.asprintf "No state at point"
+    | No_node_at_point -> Format.asprintf "No node at point"
 
   (* JSON-RPC server reserved codes *)
   let to_code = function
@@ -71,7 +71,7 @@ module Error = struct
     | Anomaly _ -> -32004
     | System _ -> -32005
     | Theorem_not_found _ -> -32006
-    | No_state_at_point -> -32007
+    | No_node_at_point -> -32007
 
   let coq e = Coq e
   let system e = System e
@@ -204,7 +204,7 @@ let get_state_at_pos ?opts ~doc ~point () =
     let opts = default_opts opts in
     let hash = opts.hash in
     Ok (analyze_after_run ~hash state [])
-  | None -> Error (Error.make_request No_state_at_point)
+  | None -> Error (Error.make_request No_node_at_point)
 
 let start ~token ~doc ?opts ?pre_commands ~thm () =
   let open Coq.Compat.Result.O in
@@ -332,5 +332,24 @@ let premises ~token ~st =
    fun _feedback -> List.map to_premise all_premises)
   |> protect_to_result
 
+let simple_run_result res feedback =
+  let proof_finished = false in
+  let hash = None in
+  let feedback = List.map fb_print_string feedback in
+  Run_result.{ st = res; hash; proof_finished; feedback }
+
+let ast ~token ~st ~text () : Coq.Ast.t option Run_result.t R.t =
+  (let open Coq.Protect.E.O in
+   let pa = Coq.Parsing.Parsable.make Gramlib.Stream.(of_string text) in
+   let+ ast = Coq.Parsing.parse ~token ~st pa in
+   simple_run_result ast)
+  |> protect_to_result
+
+let ast_at_pos ~doc ~point () =
+  match Fleche.Info.(LC.node ~doc ~point Exact) with
+  | Some { Fleche.Doc.Node.ast; _ } ->
+    Ok (Option.map (fun ast -> ast.Fleche.Doc.Node.Ast.v) ast)
+  | None -> Error (Error.make_request No_node_at_point)
+
 (* See PROTOCOL.md for details on versioning *)
-let version = 1
+let version = 2

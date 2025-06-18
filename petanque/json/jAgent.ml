@@ -29,6 +29,10 @@ module Goals = struct
   type t = string Lsp.JCoq.Goals.reified_pp option [@@deriving yojson]
 end
 
+module Ast = struct
+  type t = Lsp.JCoq.Ast.t [@@deriving yojson]
+end
+
 module Lang = Lsp.JLang
 
 module Premise = struct
