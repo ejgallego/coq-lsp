@@ -65,7 +65,9 @@ let rec argument_type_of_sexp : Sexp.t -> argument_type = fun sexp ->
   match sexp with
   | List [Atom "ExtraArg"; Atom tag] ->
     begin match ArgT.name tag with
-      | None              -> raise (Failure "SEXP Exception in argument_type")
+      | None              ->
+        let msg = Format.asprintf "argument_type %s not registered, this is usually due to a missing serlib plugin" tag in
+        raise (Failure msg)
       | Some (ArgT.Any t) -> ArgumentType (ExtraArg t)
     end
   | List [Atom "ListArg"; s1] ->

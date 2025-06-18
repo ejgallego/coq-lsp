@@ -38,4 +38,7 @@ module S (C : Chans) : sig
 
   val state_proof_hash :
     StateProofHash.Params.t -> (StateProofHash.Response.t, string) result
+
+  val ast : PetAst.Params.t -> (PetAst.Response.t, string) result
+  val ast_at_pos : AstAtPos.Params.t -> (AstAtPos.Response.t, string) result
 end

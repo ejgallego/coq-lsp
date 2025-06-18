@@ -3,6 +3,8 @@ unreleased
 
  - [js] [deps] Bump to findlib 1.9.8, use vanilla API for loading and
    remove our own local wrapper (@ejgallego, #975).
+ - [petanque] New `petanque/ast` and `petanque/ast_at_pos`
+   (@ejgallego, @JulesViennotFranca, #980)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------

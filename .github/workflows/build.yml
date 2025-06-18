@@ -132,6 +132,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: "npm"
+          cache-dependency-path: editor/code/package-lock.json
 
       - name: 🦏🧱🦏 Build coq-lsp VSCode extension 🦏🦏🦏
         run: opam exec -- make extension
