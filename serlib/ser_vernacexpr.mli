@@ -296,6 +296,10 @@ type 'a vernac_expr_gen =
   [%import: 'a Vernacexpr.vernac_expr_gen]
   [@@deriving sexp,yojson,hash,compare]
 
+type control_flag_r =
+  [%import: Vernacexpr.control_flag_r]
+  [@@deriving sexp,yojson,hash,compare]
+
 type control_flag =
   [%import: Vernacexpr.control_flag]
   [@@deriving sexp,yojson,hash,compare]
