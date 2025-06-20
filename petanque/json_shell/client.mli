@@ -41,4 +41,6 @@ module S (C : Chans) : sig
 
   val ast : PetAst.Params.t -> (PetAst.Response.t, string) result
   val ast_at_pos : AstAtPos.Params.t -> (AstAtPos.Response.t, string) result
+
+  val definition : Definition.Params.t -> (Definition.Response.t, string) result
 end

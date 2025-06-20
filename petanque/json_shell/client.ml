@@ -129,4 +129,8 @@ module S (C : Chans) = struct
   let ast_at_pos =
     let module M = Wrap (AstAtPos) (C) in
     M.call
+
+  let definition =
+    let module M = Wrap (Definition) (C) in
+    M.call
 end
