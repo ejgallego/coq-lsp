@@ -8,6 +8,8 @@ unreleased
  - [serlib] Support for generic Ast analyzers. This opens the door to
    many feature requests such as syntax coloring, dependency
    extraction, etc... (@ejgallego, @JulesViennotFranca, #981)
+ - [petanque] New `petanque/definition` call to get information about
+   a Rocq definition (@ejgallego, #984)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------

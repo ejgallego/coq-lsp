@@ -415,3 +415,26 @@ module AstAtPos = struct
         }
   end
 end
+
+module Definition = struct
+  let method_ = "petanque/definition"
+
+  module Params = struct
+    type t = { st : int; definition: string } [@@deriving yojson]
+  end
+
+  module Response = struct
+    type t = Premise.t [@@deriving yojson]
+  end
+
+  module Handler = struct
+    module Params = struct
+      type t = { st : State.t; definition: string } [@@deriving yojson]
+    end
+
+    module Response = Response
+
+    let handler =
+      HType.Immediate (fun ~token { Params.st; definition } -> Agent.definition ~token ~st ~definition)
+  end
+end

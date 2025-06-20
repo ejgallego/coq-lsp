@@ -169,6 +169,9 @@ end
     course possible. *)
 val premises : token:Coq.Limits.Token.t -> st:State.t -> Premise.t list R.t
 
+(** Return information about a particular premise. *)
+val definition : token:Coq.Limits.Token.t -> st:State.t -> definition:string -> Premise.t R.t
+
 (** Return the ast of a string [text], parsed at state [st] . Returns [None] on
     EOF *)
 val ast :

@@ -332,6 +332,9 @@ let premises ~token ~st =
    fun _feedback -> List.map to_premise all_premises)
   |> protect_to_result
 
+let definition ~token:_ ~st:_ ~definition:_ =
+  Error (Error.make_request (Error.System "Not_implemented yet"))
+
 let simple_run_result res feedback =
   let proof_finished = false in
   let hash = None in

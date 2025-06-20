@@ -38,6 +38,7 @@
     * [`petanque/state/proof/hash`](#petanquestateproofhash)
     * [`petanque/ast`](#petanqueast)
     * [`petanque/ast_at_post`](#petanqueastatpos)
+    * [`petanque/definition`](#petanquedefinition)
 
 <!-- TOC end -->
 
@@ -704,7 +705,9 @@ Preliminary documentation for `pétanque` is provided below:
   + **added**: new methods for Ast access
     [`petanque/ast`](#petanqueast) and
     [`petanque/ast_at_pos`](#petanqueastatpos) (@ejgallego, @JulesViennotFranca, #980)
-  + **changed**: `No_state_at_point` error is now `No_node_at_point` (@JulesViennotFranca, #980)
+  + **changed**: `No_state_at_point` error is now `No_node_at_point` (@JulesViennotFranca, #981)
+  + **added**: new method `petanque/definition` for retrieval of
+    definition information (@ejgallego, #984)
 
 ### Pétanque basics
 
@@ -934,4 +937,17 @@ interface Params = { uri: string; position : Position }
 
 ```typescript
 interface Response = Option<Ast>
+```
+
+<!-- TOC --><a name="petanquedefinition"></a>
+### `petanque/definition`
+
+Return information for a Rocq definition, uses the `Premise` type above.
+
+```typescript
+interface Params = { st: number; definition : string }
+```
+
+```typescript
+interface Response = Premise
 ```
