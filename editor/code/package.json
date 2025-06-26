@@ -43,6 +43,7 @@
       {
         "id": "coq",
         "aliases": [
+          "rocq",
           "Coq",
           "coq",
           "Gallina",
