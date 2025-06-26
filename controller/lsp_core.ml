@@ -25,6 +25,7 @@ let int_field name dict = U.to_int (field name dict)
 let list_field name dict = U.to_list (field name dict)
 let string_field name dict = U.to_string (field name dict)
 let ofield name dict = List.(assoc_opt name dict)
+let obool_field name dict = Option.map U.to_bool (ofield name dict)
 let ostring_field name dict = Option.map U.to_string (ofield name dict)
 
 module Lsp = Fleche_lsp
@@ -426,7 +427,21 @@ let do_symbols ~params =
   if !Fleche.Config.v.check_only_on_request then do_immediate ~params ~handler
   else do_document_request ~postpone:true ~params ~handler
 
-let do_document = do_document_request_maybe ~handler:Rq_document.request
+let get_goals_format params =
+  match ostring_field "goals" params with
+  | Some "Pp" -> Some Rq_goals.Pp
+  | Some "Str" -> Some Rq_goals.Str
+  | Some v ->
+    L.trace "get_pp_format" "error in parameter: %s" v;
+    None
+  | None -> None
+
+let do_document ~params =
+  let ast = obool_field "ast" params |> Option.default false in
+  let goals = get_goals_format params in
+  let handler = Rq_document.request ~ast ~goals () in
+  do_document_request_maybe ~params ~handler
+
 let do_save_vo = do_document_request_maybe ~handler:Rq_save.request
 let do_lens = do_document_request_maybe ~handler:Rq_lens.request
 
