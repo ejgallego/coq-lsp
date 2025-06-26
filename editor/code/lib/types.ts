@@ -89,25 +89,28 @@ export type Pp =
 export type PpString = Pp | string;
 
 export interface FlecheDocumentParams {
-  textDocument: VersionedTextDocumentIdentifier;
+    textDocument: VersionedTextDocumentIdentifier;
+    ast ?: boolean;
+    goals ?: 'Pp' | 'Str';
 }
 
 // Status of the document, Yes if fully checked, range contains the last seen lexical token
-interface CompletionStatus {
+export interface CompletionStatus {
   status: ["Yes" | "Stopped" | "Failed"];
   range: Range;
 }
 
-// Implementation-specific span information, for now the serialized Ast if present.
-type SpanInfo = any;
-
-interface RangedSpan {
-  range: Range;
-  span?: SpanInfo;
-}
+// Implementation-specific span information, `range` is assured, the
+// other parameters will be present when requested in the call For
+// goals, we use the printing mode specified at initalization time
+export interface SpanInfo {
+    range : Range;
+    ast ?: any;
+    goals ?: GoalAnswer<Pp>;
+};
 
 export interface FlecheDocument {
-  spans: RangedSpan[];
+  spans: SpanInfo[];
   completed: CompletionStatus;
 }
 
