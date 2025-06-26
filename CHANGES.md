@@ -8,6 +8,8 @@ unreleased
  - [serlib] Support for generic Ast analyzers. This opens the door to
    many feature requests such as syntax coloring, dependency
    extraction, etc... (@ejgallego, @JulesViennotFranca, #981)
+ - [fleche] Support "rocq" markdown delimiters in .mv files
+   (@ejgallego, #987)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------
