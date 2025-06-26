@@ -93,7 +93,7 @@ module GoalsAnswer = struct
     ; messages : 'pp Message.t list
     ; error : 'pp option [@default None]
     }
-  [@@deriving to_yojson]
+  [@@deriving yojson]
 end
 
 (** Pull Diagnostics *)
@@ -106,16 +106,17 @@ module CompletionStatus = struct
 end
 
 module RangedSpan = struct
-  type t =
+  type 'pp t =
     { range : Lang.Range.t
-    ; span : Ast.t option [@default None]
+    ; ast : Ast.t option [@default None]
+    ; goals : 'pp GoalsAnswer.t option [@default None]
     }
   [@@deriving yojson]
 end
 
 module FlecheDocument = struct
-  type t =
-    { spans : RangedSpan.t list
+  type 'pp t =
+    { spans : 'pp RangedSpan.t list
     ; completed : CompletionStatus.t
     }
   [@@deriving yojson]

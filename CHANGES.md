@@ -10,6 +10,10 @@ unreleased
    extraction, etc... (@ejgallego, @JulesViennotFranca, #981)
  - [fleche] Support "rocq" markdown delimiters in .mv files
    (@ejgallego, #987)
+ - [lsp] [getDocument] Allow to get goals in one shot. We also
+   refactor the response type to accommodate different meta-data. Note:
+   (!) breaking change. (@ejgallego, #985, thanks to the Alectryon
+   team)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------
