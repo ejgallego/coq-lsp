@@ -83,17 +83,18 @@ module Message = struct
 end
 
 module GoalsAnswer = struct
-  type 'pp t =
+  type ('goals, 'pp) t =
     { textDocument : Doc.VersionedTextDocumentIdentifier.t
     ; position : Lang.Point.t
     ; range : Lang.Range.t option [@default None]
-    ; goals : 'pp JCoq.Goals.reified_pp option [@default None]
+    ; goals : ('goals JCoq.Goals.Reified_goal.t, 'pp) JCoq.Goals.t option
+          [@default None]
     ; program : JCoq.Declare.OblState.View.t Names.Id.Map.t option
           [@default None]
     ; messages : 'pp Message.t list
     ; error : 'pp option [@default None]
     }
-  [@@deriving to_yojson]
+  [@@deriving yojson]
 end
 
 (** Pull Diagnostics *)
@@ -106,16 +107,17 @@ module CompletionStatus = struct
 end
 
 module RangedSpan = struct
-  type t =
+  type 'pp t =
     { range : Lang.Range.t
-    ; span : Ast.t option [@default None]
+    ; ast : Ast.t option [@default None]
+    ; goals : 'pp GoalsAnswer.t option [@default None]
     }
   [@@deriving yojson]
 end
 
 module FlecheDocument = struct
-  type t =
-    { spans : RangedSpan.t list
+  type 'pp t =
+    { spans : 'pp RangedSpan.t list
     ; completed : CompletionStatus.t
     }
   [@@deriving yojson]

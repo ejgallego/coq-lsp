@@ -8,8 +8,9 @@
 module JFleche = Fleche_lsp.JFleche
 
 let to_span { Fleche.Doc.Node.range; ast; _ } =
-  let span = Option.map (fun { Fleche.Doc.Node.Ast.v; _ } -> v) ast in
-  JFleche.RangedSpan.{ range; span }
+  let ast = Option.map (fun { Fleche.Doc.Node.Ast.v; _ } -> v) ast in
+  let goals = None in
+  JFleche.RangedSpan.{ range; ast; goals }
 
 let to_completed = function
   | Fleche.Doc.Completion.Yes range ->
@@ -21,4 +22,5 @@ let request ~token:_ ~doc =
   let { Fleche.Doc.nodes; completed; _ } = doc in
   let spans = List.map to_span nodes in
   let completed = to_completed completed in
-  JFleche.FlecheDocument.({ spans; completed } |> to_yojson) |> Result.ok
+  let pp x = x in
+  JFleche.FlecheDocument.({ spans; completed } |> to_yojson pp) |> Result.ok

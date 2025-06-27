@@ -271,7 +271,8 @@ supports the `proof/goals` request, parameters are:
 interface GoalRequest {
     textDocument: VersionedTextDocumentIdentifier;
     position: Position;
-    pp_format?: 'Pp' | 'Str';
+    pp_format?: 'Box' | 'Pp' | 'Str';
+    pretac?: string;
     command?: string;
     mode?: 'Prev' | 'After';
 }
@@ -312,12 +313,12 @@ interface Goal<Pp> {
   ty: Pp;
 }
 
-interface GoalConfig<Pp> {
-  goals : Goal<Pp>[];
-  stack : [Goal<Pp>[], Goal<Pp>[]][];
+interface GoalConfig<G, Pp> {
+  goals : Goal<G>[];
+  stack : [Goal<G>[], Goal<G>[]][];
   bullet ?: Pp;
-  shelf : Goal<Pp>[];
-  given_up : Goal<Pp>[];
+  shelf : Goal<G>[];
+  given_up : Goal<G>[];
 }
 
 export interface Message<Pp> {
@@ -326,11 +327,11 @@ export interface Message<Pp> {
   text : Pp
 }
 
-interface GoalAnswer<Pp> {
+interface GoalAnswer<G, Pp> {
   textDocument: VersionedTextDocumentIdentifier;
   position: Position;
   range?: Range;
-  goals?: GoalConfig<Pp>;
+  goals?: GoalConfig<G, Pp>;
   messages: Pp[] | Message<Pp>[];
   error?: Pp;
   program?: ProgramInfo;
@@ -386,10 +387,12 @@ implementation, and we adapted it to `coq-lsp`.
 <!-- TOC --><a name="selecting-an-output-format"></a>
 #### Selecting an output format
 
-As of today, the output format type parameter `Pp` is controlled by
-the server option `pp_type : number`, see `package.json` for different
-values. `0` is guaranteed to be `Pp = string`. Prior to 0.1.6 `string`
-was the default.
+As of today, the _default_ output format type parameter `Pp` is
+controlled by the server option `pp_type : number`, if the `pp_format`
+field is not present. see `package.json` for different values. `0` is
+guaranteed to be `Pp = string`, the other values are
+Coq-implementation-specific and generally not stable; tho we provide
+utils for those interested in richer printing formats.
 
 <!-- TOC --><a name="changelog"></a>
 #### Changelog
@@ -397,8 +400,9 @@ was the default.
 - v0.2.3: new field in answer `range`, which contains the range of the
   sentence at `position`
 - v0.1.9: backwards compatible with 0.1.8
-  + new optional `mode : "Prev" | "After"` field to indicate desired goal position
   + `command` field, alias of `pretac`, as this is not limited to tactics
+  + new optional `mode : "Prev" | "After"` field to indicate desired goal position
+  + generic type is now more flexible, for the new `Box` output format
 - v0.1.8: new optional `pretac` field for post-processing, backwards compatible with 0.1.7
 - v0.1.7: program information added, rest of fields compatible with 0.1.6
 - v0.1.7: pp_format field added to request, backwards compatible
@@ -453,17 +457,20 @@ interface CoqFileProgressParams {
 ### Document Ast Request
 
 The `coq/getDocument` request returns a serialized version of Fleche's
-document. It is modelled after LSP's standard
-`textDocument/documentSymbol`, but returns instead the full document
-contents as understood by Flèche.
+document, plus some additional information for each sentence / node.
+
+It is modelled after LSP's standard `textDocument/documentSymbol`, but
+returns instead the full document contents as understood by Flèche.
 
 Caveats: Flèche notion of document is evolving, in particular you
-should not assume that the document will remain a list, but it will
-become a tree at some point.
+should not assume that the document will remain a list, more structure
+could be happening..
 
 ```typescript
 interface FlecheDocumentParams {
     textDocument: VersionedTextDocumentIdentifier;
+    ast ?: boolean;
+    goals ?: 'Pp' | 'Str';
 }
 ```
 
@@ -474,12 +481,13 @@ interface CompletionStatus {
     range : Range
 };
 
-// Implementation-specific span information, for now the serialized Ast if present.
-type SpanInfo = any;
-
-interface RangedSpan {
+// Implementation-specific span information, `range` is assured, the
+// other parameters will be present when requested in the call For
+// goals, we use the printing mode specified at initalization time
+interface SpanInfo {
     range : Range;
-    span?: SpanInfo
+    ast ?: any;
+    goals ?: GoalsAnswer<Pp>;
 };
 
 interface FlecheDocument {
@@ -516,6 +524,12 @@ The request will return `null`, or fail if not successful.
 <!-- TOC --><a name="changelog-3"></a>
 #### Changelog
 
+- v0.2.4: non-backwards compatible change! `RangedSpan` type is
+  removed in favor of `SpanInfo`. `SpanInfo` now contains a list of
+  properties, for now `range`, `ast`, `goals`, which are returned
+  depending on the request parameters, except for `range` which is
+  always present. New (optional) fields `ast` and `goals` are added to
+  `FlecheDocumentParams`.
 - v0.1.6: first version
 
 <!-- TOC --><a name="performance-data-notification"></a>
