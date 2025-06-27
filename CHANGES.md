@@ -10,6 +10,7 @@ unreleased
    extraction, etc... (@ejgallego, @JulesViennotFranca, #981)
  - [fleche] Support "rocq" markdown delimiters in .mv files
    (@ejgallego, #987)
+ - [workspace] Support _RocqProject (@ejgallego, #988, fixes #934)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------
