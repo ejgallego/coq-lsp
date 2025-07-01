@@ -453,17 +453,20 @@ interface CoqFileProgressParams {
 ### Document Ast Request
 
 The `coq/getDocument` request returns a serialized version of Fleche's
-document. It is modelled after LSP's standard
-`textDocument/documentSymbol`, but returns instead the full document
-contents as understood by Flèche.
+document, plus some additional information for each sentence / node.
+
+It is modelled after LSP's standard `textDocument/documentSymbol`, but
+returns instead the full document contents as understood by Flèche.
 
 Caveats: Flèche notion of document is evolving, in particular you
-should not assume that the document will remain a list, but it will
-become a tree at some point.
+should not assume that the document will remain a list, more structure
+could be happening..
 
 ```typescript
 interface FlecheDocumentParams {
     textDocument: VersionedTextDocumentIdentifier;
+    ast ?: boolean;
+    goals ?: 'Pp' | 'Str';
 }
 ```
 
@@ -474,12 +477,13 @@ interface CompletionStatus {
     range : Range
 };
 
-// Implementation-specific span information, for now the serialized Ast if present.
-type SpanInfo = any;
-
-interface RangedSpan {
+// Implementation-specific span information, `range` is assured, the
+// other parameters will be present when requested in the call For
+// goals, we use the printing mode specified at initalization time
+interface SpanInfo {
     range : Range;
-    span?: SpanInfo
+    ast ?: any;
+    goals ?: GoalsAnswer<Pp>;
 };
 
 interface FlecheDocument {
@@ -516,6 +520,12 @@ The request will return `null`, or fail if not successful.
 <!-- TOC --><a name="changelog-3"></a>
 #### Changelog
 
+- v0.2.4: non-backwards compatible change! `RangedSpan` type is
+  removed in favor of `SpanInfo`. `SpanInfo` now contains a list of
+  properties, for now `range`, `ast`, `goals`, which are returned
+  depending on the request parameters, except for `range` which is
+  always present. New (optional) fields `ast` and `goals` are added to
+  `FlecheDocumentParams`.
 - v0.1.6: first version
 
 <!-- TOC --><a name="performance-data-notification"></a>

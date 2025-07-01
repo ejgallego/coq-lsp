@@ -75,16 +75,17 @@ module CompletionStatus : sig
 end
 
 module RangedSpan : sig
-  type t =
+  type 'pp t =
     { range : Lang.Range.t
-    ; span : Coq.Ast.t option [@default None]
+    ; ast : Coq.Ast.t option [@default None]
+    ; goals : 'pp GoalsAnswer.t option [@default None]
     }
-  [@@deriving to_yojson]
+  [@@deriving yojson]
 end
 
 module FlecheDocument : sig
-  type t =
-    { spans : RangedSpan.t list
+  type 'pp t =
+    { spans : 'pp RangedSpan.t list
     ; completed : CompletionStatus.t
     }
   [@@deriving to_yojson]
