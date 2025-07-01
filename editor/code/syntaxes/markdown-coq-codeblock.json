@@ -9,7 +9,7 @@
   ],
   "repository": {
     "coq-code-block": {
-      "begin": "coq(\\s+[^`~]*)?$",
+      "begin": "(coq|rocq)(\\s+[^`~]*)?$",
       "end": "(^|\\G)(?=\\s*[`~]{3,}\\s*$)",
       "patterns": [
         {
