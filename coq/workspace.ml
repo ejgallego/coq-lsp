@@ -367,7 +367,10 @@ let workspace_from_cmdline ~debug ~cmdline =
 
 let guess ~debug ~cmdline ~dir () =
   let cp_file = Filename.concat dir "_CoqProject" in
-  if Sys.file_exists cp_file then
+  let rp_file = Filename.concat dir "_RocqProject" in
+  if Sys.file_exists rp_file then
+    workspace_from_coqproject ~cmdline ~debug rp_file
+  else if Sys.file_exists cp_file then
     workspace_from_coqproject ~cmdline ~debug cp_file
   else workspace_from_cmdline ~debug ~cmdline
 

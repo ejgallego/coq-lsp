@@ -5,4 +5,10 @@
 (* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
-val request : (Yojson.Safe.t, string) Request.document
+val request :
+     ast:bool
+  -> goals:Rq_goals.format option
+  -> unit
+  -> (Yojson.Safe.t, string) Request.document
+
+(* Used by coq/getDocument *)

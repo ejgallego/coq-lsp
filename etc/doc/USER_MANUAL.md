@@ -11,8 +11,8 @@ user should point to the _root_ of their project (for example using
 "Open Folder" in VSCode).
 
 Given a project root `dir`, `coq-lsp` will try to read
-`$dir/_CoqProject` and will apply the settings for your project from
-there.
+`$dir/_RocqProject` (or `$dir/_CoqProject` if the first is not
+detected) and will apply the settings for your project from there.
 
 Other tools included in the `coq-lsp` suite usually take a
 `--root=dir` command line parameter to set this information up.
@@ -94,7 +94,7 @@ natural proof structure.
 Coq inside. As of today, to enable this feature you must:
 
 - **markdown**: open a file with `.mv` extension, `coq-lsp` will
-  recognize code blocks starting with ````coq`.
+  recognize code blocks starting with ````coq` and ````rocq`.
 - **TeX**: open a file with `.lv` extension, `coq-lsp` will recognize
   code blocks delimited by `\begin{coq} ... \end{coq}`
 

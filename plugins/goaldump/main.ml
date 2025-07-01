@@ -2,6 +2,7 @@ module Lsp = Fleche_lsp
 open Fleche
 
 (* Put these in an utility function for plugins *)
+(* Duplicated with rq_document *)
 let of_execution ~io ~what (v : (_, _) Coq.Protect.E.t) =
   match v with
   | { r; feedback = _ } -> (
