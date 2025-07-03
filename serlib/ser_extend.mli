@@ -28,11 +28,8 @@ type binder_entry_kind = Extend.binder_entry_kind
 val binder_entry_kind_of_sexp : Sexp.t -> binder_entry_kind
 val sexp_of_binder_entry_kind : binder_entry_kind -> Sexp.t
 
-type 'lev constr_entry_key_gen = 'lev Extend.constr_entry_key_gen
-val constr_entry_key_gen_of_sexp : (Sexp.t -> 'lev) ->
-  Sexp.t -> 'lev constr_entry_key_gen
-val sexp_of_constr_entry_key_gen : ('lev -> Sexp.t) ->
-  'lev constr_entry_key_gen -> Sexp.t
+type ('custom,'lev) constr_entry_key_gen = ('custom,'lev) Extend.constr_entry_key_gen
+[@@deriving sexp,yojson,hash,compare]
 
 type constr_entry_key = Extend.constr_entry_key
 val constr_entry_key_of_sexp : Sexp.t -> constr_entry_key
@@ -42,4 +39,4 @@ type constr_prod_entry_key = Extend.constr_prod_entry_key
 val constr_prod_entry_key_of_sexp : Sexp.t -> constr_prod_entry_key
 val sexp_of_constr_prod_entry_key : constr_prod_entry_key -> Sexp.t
 
-type simple_constr_prod_entry_key = Extend.simple_constr_prod_entry_key [@@deriving sexp,yojson,hash,compare]
+type 'custom simple_constr_prod_entry_key = 'custom Extend.simple_constr_prod_entry_key [@@deriving sexp,yojson,hash,compare]
