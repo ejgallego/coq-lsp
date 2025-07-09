@@ -20,6 +20,7 @@ open Sexplib.Std
 open Ppx_hash_lib.Std.Hash.Builtin
 open Ppx_compare_lib.Builtin
 
+module Util      = Ser_util
 module Names     = Ser_names
 module Uint63    = Ser_uint63
 module Float64   = Ser_float64
@@ -30,7 +31,6 @@ module Evar      = Ser_evar
 module EConstr   = Ser_eConstr
 module Glob_term = Ser_glob_term
 module UnivGen   = Ser_univGen
-module Util      = Ser_util
 module Genarg    = Ser_genarg
 
 type patvar =
