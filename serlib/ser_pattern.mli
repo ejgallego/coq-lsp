@@ -27,3 +27,6 @@ val sexp_of_case_info_pattern : case_info_pattern -> Sexp.t
 
 type constr_pattern = Pattern.constr_pattern
   [@@deriving sexp,yojson,hash,compare]
+
+type uninstantiated_pattern = Pattern.uninstantiated_pattern
+  [@@deriving sexp,yojson,hash,compare]
