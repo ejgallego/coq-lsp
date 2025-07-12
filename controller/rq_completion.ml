@@ -49,14 +49,10 @@ let mk_edit (line, character) newText =
   let replace = insert in
   TextEditReplace.{ insert; replace; newText }
 
-let unicode_commit_chars =
-  [ " "; "("; ")"; ","; "."; "-"; "'" ]
-  @ [ "0"; "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"; "9" ]
-
 let mk_unicode_completion_item point (label, newText) =
   let labelDetails = LabelDetails.{ detail = " ← " ^ newText } in
   let textEdit = mk_edit point newText in
-  let commitCharacters = unicode_commit_chars in
+  let commitCharacters = !Fleche.Config.v.unicode_commit_chars in
   mk_completion ~label ~labelDetails ~textEdit ~commitCharacters ()
 
 let unicode_list point : Yojson.Safe.t list =
