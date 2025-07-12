@@ -17,6 +17,7 @@ export interface CoqLspServerConfig {
   show_state_hash_on_hover: boolean;
   check_only_on_request: boolean;
   send_perf_data: boolean;
+  unicode_commit_chars: string[];
 }
 
 export namespace CoqLspServerConfig {
@@ -41,6 +42,7 @@ export namespace CoqLspServerConfig {
       show_state_hash_on_hover: wsConfig.show_state_hash_on_hover,
       check_only_on_request: wsConfig.check_only_on_request,
       send_perf_data: wsConfig.send_perf_data,
+      unicode_commit_chars: wsConfig.unicode_commit_chars,
     };
   }
 }

@@ -66,6 +66,9 @@ type t =
         (** Send extra diagnostic data on the `data` diagnostic field. *)
   ; send_serverStatus : bool [@default true]
         (** Send server status client notification to the client *)
+  ; unicode_commit_chars : string list [@default [ " "; "("; ")"; ","; "."; "-"; "'"; "0"; "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"; "9" ]]
+        (** Characters to use for accepting/commiting a completion
+            during unicode completion *)
   }
 
 let default =
@@ -92,6 +95,7 @@ let default =
   ; check_only_on_request = false
   ; send_diags_extra_data = false
   ; send_serverStatus = true
+  ; unicode_commit_chars = [ " "; "("; ")"; ","; "."; "-"; "'"; "0"; "1"; "2"; "3"; "4"; "5"; "6"; "7"; "8"; "9" ]
   }
 
 let v = ref default

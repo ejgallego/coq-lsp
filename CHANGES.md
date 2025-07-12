@@ -1,6 +1,7 @@
 unreleased
 ----------
 
+ - [lsp] [vscode] Unicode completion commit characters are now configurable via server settings. (@Durbatuluk1701)
  - [js] [deps] Bump to findlib 1.9.8, use vanilla API for loading and
    remove our own local wrapper (@ejgallego, #975).
  - [petanque] New `petanque/ast` and `petanque/ast_at_pos`
