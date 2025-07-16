@@ -21,7 +21,12 @@ module LUri = struct
     type t = Lang.LUri.File.t
 
     let to_yojson uri = `String (Lang.LUri.File.to_string_uri uri)
-    let invalid_uri msg obj = raise (Yojson.Safe.Util.Type_error (msg, obj))
+
+    let invalid_uri msg obj =
+      let msg =
+        Format.asprintf "@[%s@] for object: @[%a@]" msg Yojson.Safe.pp obj
+      in
+      Error msg
 
     let of_yojson uri =
       match uri with
