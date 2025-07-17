@@ -1,19 +1,12 @@
-(************************************************************************)
-(*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
-(* <O___,, *       (see CREDITS file for the list of authors)           *)
-(*   \VV/  **************************************************************)
-(*    //   *    This file is distributed under the terms of the         *)
-(*         *     GNU Lesser General Public License Version 2.1          *)
-(*         *     (see LICENSE file for the text of the license)         *)
-(************************************************************************)
-
-(************************************************************************)
-(* Coq Language Server Protocol                                         *)
-(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1 / GPL3+      *)
-(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
-(* Written by: Emilio J. Gallego Arias                                  *)
-(************************************************************************)
+(*************************************************************************)
+(* Copyright 2015-2019 MINES ParisTech -- Dual License LGPL 2.1+ / GPL3+ *)
+(* Copyright 2019-2024 Inria           -- Dual License LGPL 2.1+ / GPL3+ *)
+(* Copyright 2024-2025 Emilio J. Gallego Arias  -- LGPL 2.1+ / GPL3+     *)
+(* Copyright 2025      CNRS                     -- LGPL 2.1+ / GPL3+     *)
+(* Written by: Emilio J. Gallego Arias & coq-lsp contributors            *)
+(*************************************************************************)
+(* Rocq Language Server Protocol: LSP Controller Core                    *)
+(*************************************************************************)
 
 (** This is the platform-independent code for the implementation of the Flèche
     LSP interface, BEWARE of deps, this must be able to run in a Web Worker
@@ -32,6 +25,7 @@ let int_field name dict = U.to_int (field name dict)
 let list_field name dict = U.to_list (field name dict)
 let string_field name dict = U.to_string (field name dict)
 let ofield name dict = List.(assoc_opt name dict)
+let obool_field name dict = Option.map U.to_bool (ofield name dict)
 let ostring_field name dict = Option.map U.to_string (ofield name dict)
 
 module Lsp = Fleche_lsp
@@ -433,17 +427,29 @@ let do_symbols ~params =
   if !Fleche.Config.v.check_only_on_request then do_immediate ~params ~handler
   else do_document_request ~postpone:true ~params ~handler
 
-let do_document = do_document_request_maybe ~handler:Rq_document.request
+let get_goals_format params =
+  match ostring_field "goals" params with
+  | Some "Pp" -> Some Rq_goals.Pp
+  | Some "Str" -> Some Rq_goals.Str
+  | Some v ->
+    L.trace "get_pp_format" "error in parameter: %s" v;
+    None
+  | None -> None
+
+let do_document ~params =
+  let ast = obool_field "ast" params |> Option.default false in
+  let goals = get_goals_format params in
+  let handler = Rq_document.request ~ast ~goals () in
+  do_document_request_maybe ~params ~handler
+
 let do_save_vo = do_document_request_maybe ~handler:Rq_save.request
 let do_lens = do_document_request_maybe ~handler:Rq_lens.request
 
 (* could be smarter *)
 let do_action ~params =
   let range = field "range" params in
-  match Lsp.JLang.Diagnostic.Range.of_yojson range with
-  | Ok range ->
-    let range = Lsp.JLang.Diagnostic.Range.vnoc range in
-    do_immediate ~params ~handler:(Rq_action.request ~range)
+  match Lsp.JLang.Range.of_yojson range with
+  | Ok range -> do_immediate ~params ~handler:(Rq_action.request ~range)
   | Error err ->
     (* XXX: We really need to fix the parsing error handling in lsp_core, we got
        it right in petanque haha *)
@@ -460,9 +466,9 @@ let do_cancel ~ofn_rq ~params =
 let do_cache_trim ~io = Nt_cache_trim.notification ~io
 
 let do_viewRange params =
-  match List.assoc "range" params |> Lsp.JLang.Diagnostic.Range.of_yojson with
+  match List.assoc "range" params |> Lsp.JLang.Range.of_yojson with
   | Ok range ->
-    let { Lsp.JLang.Diagnostic.Range.end_ = { line; character }; _ } = range in
+    let { Lang.Range.end_ = { line; character; offset = _ }; _ } = range in
     L.trace "viewRange" "l: %d c:%d" line character;
     let uri = Helpers.get_uri params in
     Fleche.Theory.Check.set_scheduler_hint ~uri ~point:(line, character);

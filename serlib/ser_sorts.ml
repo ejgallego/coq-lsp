@@ -16,10 +16,6 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-open Ppx_sexp_conv_lib.Conv
-open Ppx_hash_lib.Std.Hash.Builtin
-open Ppx_compare_lib.Builtin
-
 module Univ = Ser_univ
 module Names = Ser_names
 
@@ -56,7 +52,7 @@ module Quality = struct
   end
   include Self
   module Set = Ser_cSet.Make(Sorts.Quality.Set)(Self)
-  type pattern = [%import: Sorts.Quality.pattern] [@@deriving sexp,yojson,hash,compare]
+  type 'q pattern = [%import: 'q Sorts.Quality.pattern] [@@deriving sexp,yojson,hash,compare]
 end
 
 module PierceSpec = struct
@@ -76,12 +72,8 @@ type relevance =
   [%import: Sorts.relevance]
   [@@deriving sexp,yojson,hash,compare]
 
-open Sexplib.Std
-open Ppx_hash_lib.Std.Hash.Builtin
-open Ppx_compare_lib.Builtin
-
-type pattern =
-  [%import: Sorts.pattern]
+type ('q, 'u) pattern =
+  [%import: ('q, 'u) Sorts.pattern]
   [@@deriving sexp,yojson,hash,compare]
 
 module QConstraint = struct

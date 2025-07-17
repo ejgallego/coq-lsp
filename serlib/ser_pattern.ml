@@ -20,6 +20,7 @@ open Sexplib.Std
 open Ppx_hash_lib.Std.Hash.Builtin
 open Ppx_compare_lib.Builtin
 
+module Util      = Ser_util
 module Names     = Ser_names
 module Uint63    = Ser_uint63
 module Float64   = Ser_float64
@@ -30,6 +31,7 @@ module Evar      = Ser_evar
 module EConstr   = Ser_eConstr
 module Glob_term = Ser_glob_term
 module UnivGen   = Ser_univGen
+module Genarg    = Ser_genarg
 
 type patvar =
   [%import: Pattern.patvar]
@@ -41,22 +43,14 @@ type case_info_pattern =
 
 let hash_fold_array = hash_fold_array_frozen
 
-(** Can't properly serialize this GADT
-    Currently we only expose the derives for constr_pattern so can't occur anyway.
-*)
-module UninstS = struct
-  type 'a t = 'a Pattern.uninstantiated_pattern
-  let name = "uninstantiated_pattern"
-end
-module Uninst = SerType.Opaque1(UninstS)
-
-type 'a uninstantiated_pattern = 'a Uninst.t
-  [@@deriving sexp,yojson,hash,compare]
-
 type 'a constr_pattern_r =
   [%import: 'a Pattern.constr_pattern_r]
   [@@deriving sexp,yojson,hash,compare]
 
 type constr_pattern =
   [%import: Pattern.constr_pattern]
+  [@@deriving sexp,yojson,hash,compare]
+
+type 'a uninstantiated_pattern =
+  [%import: Pattern.uninstantiated_pattern]
   [@@deriving sexp,yojson,hash,compare]

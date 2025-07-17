@@ -94,3 +94,34 @@ module type GenSer = sig
 end
 
 module GS (M : GenSer) : sig val genser : (M.raw,M.glb,M.top) gen_ser end
+
+(** Rocq Ast Analyzers and Synthetizers *)
+module type RType = sig
+
+  (** Type and name of the analysis result *)
+  type a
+  val name : string
+
+  (** Default value. This is called for generic arguments not
+      registered via a plugin. If [None], Rocq will emit an anomaly
+      when a non-registered generic argument is found. The argument is
+      the name of the non-handled generic argument. *)
+  val default : string -> a option
+
+  (** Combine results of analysis, for standard genarg types *)
+  val fold_list : a list -> a
+  val fold_option : a option -> a
+  val fold_pair : a * a -> a
+end
+
+module Analyzer : sig
+  module Make (A : RType) : sig
+    type ('raw, 'glb, 'top) t =
+      { raw : 'raw -> A.a
+      ; glb : 'glb -> A.a
+      ; top : 'top -> A.a
+      }
+    val register : ('raw, 'glb, 'top) Genarg.genarg_type -> ('raw, 'glb, 'top) t -> unit
+    val analyze : 'a Genarg.generic_argument -> A.a
+  end
+end

@@ -36,6 +36,8 @@
     * [`petanque/state/hash`](#petanquestatehash)
     * [`petanque/state/proof/equal`](#petanquestateproofequal)
     * [`petanque/state/proof/hash`](#petanquestateproofhash)
+    * [`petanque/ast`](#petanqueast)
+    * [`petanque/ast_at_post`](#petanqueastatpos)
 
 <!-- TOC end -->
 
@@ -451,17 +453,20 @@ interface CoqFileProgressParams {
 ### Document Ast Request
 
 The `coq/getDocument` request returns a serialized version of Fleche's
-document. It is modelled after LSP's standard
-`textDocument/documentSymbol`, but returns instead the full document
-contents as understood by Flèche.
+document, plus some additional information for each sentence / node.
+
+It is modelled after LSP's standard `textDocument/documentSymbol`, but
+returns instead the full document contents as understood by Flèche.
 
 Caveats: Flèche notion of document is evolving, in particular you
-should not assume that the document will remain a list, but it will
-become a tree at some point.
+should not assume that the document will remain a list, more structure
+could be happening..
 
 ```typescript
 interface FlecheDocumentParams {
     textDocument: VersionedTextDocumentIdentifier;
+    ast ?: boolean;
+    goals ?: 'Pp' | 'Str';
 }
 ```
 
@@ -472,12 +477,13 @@ interface CompletionStatus {
     range : Range
 };
 
-// Implementation-specific span information, for now the serialized Ast if present.
-type SpanInfo = any;
-
-interface RangedSpan {
+// Implementation-specific span information, `range` is assured, the
+// other parameters will be present when requested in the call For
+// goals, we use the printing mode specified at initalization time
+interface SpanInfo {
     range : Range;
-    span?: SpanInfo
+    ast ?: any;
+    goals ?: GoalsAnswer<Pp>;
 };
 
 interface FlecheDocument {
@@ -514,6 +520,12 @@ The request will return `null`, or fail if not successful.
 <!-- TOC --><a name="changelog-3"></a>
 #### Changelog
 
+- v0.2.4: non-backwards compatible change! `RangedSpan` type is
+  removed in favor of `SpanInfo`. `SpanInfo` now contains a list of
+  properties, for now `range`, `ast`, `goals`, which are returned
+  depending on the request parameters, except for `range` which is
+  always present. New (optional) fields `ast` and `goals` are added to
+  `FlecheDocumentParams`.
 - v0.1.6: first version
 
 <!-- TOC --><a name="performance-data-notification"></a>
@@ -698,6 +710,11 @@ Preliminary documentation for `pétanque` is provided below:
 ### Changelog
 
 - v1 (coq-lsp 0.2.3): Initial public release
+- v2 (coq-lsp 0.2.4):
+  + **added**: new methods for Ast access
+    [`petanque/ast`](#petanqueast) and
+    [`petanque/ast_at_pos`](#petanqueastatpos) (@ejgallego, @JulesViennotFranca, #980)
+  + **changed**: `No_state_at_point` error is now `No_node_at_point` (@JulesViennotFranca, #980)
 
 ### Pétanque basics
 
@@ -897,3 +914,34 @@ Version of `petanque/state/equal` but only for the proof state.
 ### `petanque/state/proof/hash`
 
 Version of `petanque/state/hash` but only for the proof state.
+
+<!-- TOC --><a name="petanqueast"></a>
+### `petanque/ast`
+
+Parse a string. `Ast` is a JSON serialization of Rocq's Ast, as in
+`coq/getDocument`, and often not stable between versions.
+
+```typescript
+interface Params = { st: int; text : string }
+```
+
+```typescript
+interface Response = Run_result<Option<Ast>>
+```
+
+<!-- TOC --><a name="petanqueastatpos"></a>
+### `petanque/ast_at_pos`
+
+Return Rocq's `Ast` at point. Note that:
+
+- if no node is at `position`, then we error
+- if there is a node, but not Ast (due to a parsing error for
+  example), we return `None`
+
+```typescript
+interface Params = { uri: string; position : Position }
+```
+
+```typescript
+interface Response = Option<Ast>
+```

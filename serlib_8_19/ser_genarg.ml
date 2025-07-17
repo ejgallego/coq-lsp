@@ -63,7 +63,9 @@ let rec argument_type_of_sexp : Sexp.t -> argument_type = fun sexp ->
   match sexp with
   | List [Atom "ExtraArg"; Atom tag] ->
     begin match ArgT.name tag with
-      | None              -> raise (Failure "SEXP Exception in argument_type")
+      | None              ->
+        let msg = Format.asprintf "argument_type %s not registered, this is usually due to a missing serlib plugin" tag in
+        raise (Failure msg)
       | Some (ArgT.Any t) -> ArgumentType (ExtraArg t)
     end
   | List [Atom "ListArg"; s1] ->
@@ -170,11 +172,12 @@ module SerObj = struct
 
   type ('raw, 'glb, 'top) obj = ('raw, 'glb, 'top) gen_ser
 
+  let name = "ser_arg"
+
   let sexp_of_gen typ ga =
     let typ = typ ^ ": " ^ Sexp.to_string (sexp_of_genarg_type ga) in
     Serlib_base.sexp_of_opaque ~typ
 
-  let name = "ser_arg"
   let default _ga =
     Some
       {
@@ -369,4 +372,102 @@ module GS (M : GenSer) = struct
     ; top_hash = M.hash_fold_top
     ; top_compare = M.compare_top
     }
+end
+
+(* Type for Rocq Ast Analyzers and Synthetizers *)
+module type RType = sig
+  (** Type and name of the analysis result *)
+  type a
+  val name : string
+
+  (** Default value. This is called for generic arguments not
+      registered via a plugin. If [None], Rocq will emit an anomaly
+      when a non-registered generic argument is found. The argument is
+      the name of the non-handled generic argument. *)
+  val default : string -> a option
+
+  (** Combine results of analysis, for standard genarg types *)
+  val fold_list : a list -> a
+  val fold_option : a option -> a
+  val fold_pair : a * a -> a
+end
+
+(* Ast analizers, Ast -> a *)
+module Analyzer = struct
+
+  module Make (A : RType) : sig
+    type ('raw, 'glb, 'top) t =
+      { raw : 'raw -> A.a
+      ; glb : 'glb -> A.a
+      ; top : 'top -> A.a
+      }
+    val register : ('raw, 'glb, 'top) Genarg.genarg_type -> ('raw, 'glb, 'top) t -> unit
+    val analyze : 'a Genarg.generic_argument -> A.a
+  end = struct
+    type ('raw, 'glb, 'top) t =
+      { raw : 'raw -> A.a
+      ; glb : 'glb -> A.a
+      ; top : 'top -> A.a
+      }
+
+    let list_analyze f =
+      let raw r = List.map f.raw r |> A.fold_list in
+      let glb r = List.map f.glb r |> A.fold_list in
+      let top r = List.map f.top r |> A.fold_list in
+      { raw; glb; top }
+
+    let option_analyze f =
+      let raw r = Option.map f.raw r |> A.fold_option in
+      let glb r = Option.map f.glb r |> A.fold_option in
+      let top r = Option.map f.top r |> A.fold_option in
+      { raw; glb; top }
+
+    let pair_analyze (f1, f2) =
+      let raw (r1, r2) = (f1.raw r1, f2.raw r2) |> A.fold_pair in
+      let glb (r1, r2) = (f1.glb r1, f2.glb r2) |> A.fold_pair in
+      let top (r1, r2) = (f1.top r1, f2.top r2) |> A.fold_pair in
+      { raw; glb; top }
+
+    module Obj = struct
+      type ('raw, 'glb, 'top) obj = ('raw, 'glb, 'top) t
+      let name = A.name
+      let rec default : type raw glb top. (raw, glb, top) genarg_type -> (raw, glb, top) t option = fun ty ->
+        (match ty with
+         | ExtraArg tag ->
+           (match A.default (Genarg.ArgT.repr tag) with
+            | None -> None
+            | Some dft ->
+              let raw _ = dft in
+              let glb _ = dft in
+              let top _ = dft in
+              Some { raw; glb; top })
+         | ListArg ty -> Option.map list_analyze (default ty)
+         | OptArg ty -> Option.map option_analyze (default ty)
+         | PairArg (ty1, ty2) ->
+           match default ty1, default ty2 with
+           | Some f1, Some f2 -> Some (pair_analyze (f1, f2))
+           | _, _ -> None)
+    end
+
+    module GenAnalyzer = Genarg.Register(Obj)
+
+    let register tag analyzer = GenAnalyzer.register0 tag analyzer
+
+    let rec get_analyzer: type raw glb top. (raw, glb, top) genarg_type -> (raw, glb, top) t = fun gt ->
+      match gt with
+      | ExtraArg _tag -> GenAnalyzer.obj gt
+      | ListArg ty -> get_analyzer ty |> list_analyze
+      | OptArg ty -> get_analyzer ty |> option_analyze
+      | PairArg (ty1, ty2) -> (get_analyzer ty1, get_analyzer ty2) |> pair_analyze
+
+    let analyze_generic : type lvl. ('o,lvl) abstract_argument_type -> 'o -> A.a = fun aty ->
+      match aty with
+      | Genarg.Rawwit ty -> (get_analyzer ty).raw
+      | Genarg.Glbwit ty -> (get_analyzer ty).glb
+      | Genarg.Topwit ty -> (get_analyzer ty).top
+
+    let analyze : type a. a generic_argument -> A.a =
+      function GenArg (g_ty, g_val) -> analyze_generic g_ty g_val
+  end
+
 end

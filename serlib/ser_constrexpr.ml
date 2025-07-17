@@ -38,6 +38,7 @@ module NumTok     = Ser_numTok
 module Univ       = Ser_univ
 module UVars      = Ser_uvars
 module Sorts      = Ser_sorts
+module Globnames  = Ser_globnames
 
 type sort_name_expr =
   [%import: Constrexpr.sort_name_expr]
@@ -109,6 +110,10 @@ type notation_with_optional_scope =
 
 type side =
   [%import: Constrexpr.side]
+  [@@deriving sexp,yojson,hash,compare]
+
+type 'name notation_entry_gen =
+  [%import: 'name Constrexpr.notation_entry_gen]
   [@@deriving sexp,yojson,hash,compare]
 
 type notation_entry =

@@ -1,8 +1,18 @@
-(** This modules reifies Coq side effects into an algebraic structure.
+(*************************************************************************)
+(* Copyright 2015-2019 MINES ParisTech -- Dual License LGPL 2.1+ / GPL3+ *)
+(* Copyright 2019-2024 Inria           -- Dual License LGPL 2.1+ / GPL3+ *)
+(* Copyright 2024-2025 Emilio J. Gallego Arias  -- LGPL 2.1+ / GPL3+     *)
+(* Copyright 2025      CNRS                     -- LGPL 2.1+ / GPL3+     *)
+(* Written by: Emilio J. Gallego Arias & coq-lsp contributors            *)
+(*************************************************************************)
+(* Rocq Language Server Protocol: Rocq Effect Handling                   *)
+(*************************************************************************)
 
-    This is obviously very convenient for upper layer programming.
+(** This module reifies Coq side effects into an algebraic structure.
 
-    As of today this includes feedback and exceptions. *)
+    This is very convenient for upper layer programming.
+
+    As of today we handle feedback, exceptions, and interruptions. *)
 module Error : sig
   type 'l t = private
     | User of 'l Message.Payload.t
