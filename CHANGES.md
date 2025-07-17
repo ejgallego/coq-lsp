@@ -15,6 +15,8 @@ unreleased
    refactor the response type to accommodate different
    meta-data. Note: (!) breaking change. (@ejgallego, #985, fixes
    #862, thanks to the Alectryon team)
+ - Better error handling in URI parsing (@ejgallego, #994, thanks to
+   Adrien from Zulip)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------
