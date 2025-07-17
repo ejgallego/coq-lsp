@@ -15,6 +15,14 @@ unreleased
    refactor the response type to accommodate different
    meta-data. Note: (!) breaking change. (@ejgallego, #985, fixes
    #862, thanks to the Alectryon team)
+ - Better error handling in URI parsing (@ejgallego, #994, thanks to
+   Adrien from Zulip)
+ - Better protocol-level handling for our non-standard `Lang.Point`
+   and `Lang.Diagnostic` types, via global flags that allow us to
+   choose the input/output representation for non-standard field such
+   as [Point.offset]. This ensures that leaks of these non-standard
+   fields are rarer. (@ejgallego, #995, cc #279, cc #2, thanks to
+   Adrien from Zulip)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------

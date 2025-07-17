@@ -37,7 +37,8 @@ let sexp_of_opaque ~typ _exp =
     Sexplib.Sexp.Atom ("["^typ^": ABSTRACT]")
 
 let opaque_of_yojson ~typ _obj =
-  raise (Ser_error ("["^typ^": ABSTRACT / cannot deserialize]"))
+  let msg = Format.asprintf "[%s: ABSTRACT / cannot deserialize from json]" typ in
+  Error msg
 
 let opaque_to_yojson ~typ _obj =
   let msg = "["^typ^": ABSTRACT]" in
