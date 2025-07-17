@@ -6,6 +6,22 @@
 (************************************************************************)
 
 module Point : sig
+  module Mode : sig
+    (** Internally, Flèche always works with a point type which includes
+        {i both} line/column and offset information. However, this is beyond the
+        LSP standard, so clients can configure the input / output behavior here *)
+    type t =
+      | LineColumn
+          (** Points are standard LSP objects with [line] [character] field;
+              this is the default *)
+      | Offset  (** Points are objects with only the [offset] *)
+      | Full
+          (** Points include / require [line], [character], and [offset] field *)
+
+    (** Set the mode for serialization. *)
+    val set : t -> unit
+  end
+
   type t = Lang.Point.t [@@deriving yojson]
 end
 
@@ -20,25 +36,18 @@ module LUri : sig
 end
 
 module Diagnostic : sig
+  module Mode : sig
+    (** Flèche diagnostics store the message as a Pp.t box format, but usually
+        LSP standard mandates the [message] field to be a string, thus we allow
+        clients to select the mode. *)
+    type t =
+      | String
+      | Pp
+
+    val set : t -> unit
+  end
+
   type t = Lang.Diagnostic.t [@@deriving yojson]
-
-  module Point : sig
-    type t =
-      { line : int
-      ; character : int
-      }
-    [@@deriving yojson]
-  end
-
-  module Range : sig
-    type t =
-      { start : Point.t
-      ; end_ : Point.t [@key "end"]
-      }
-    [@@deriving yojson]
-
-    val vnoc : t -> Lang.Range.t
-  end
 end
 
 module Ast : sig

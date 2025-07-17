@@ -9,6 +9,52 @@ module Pp = JCoq.Pp
 
 module Point = struct
   type t = [%import: Lang.Point.t] [@@deriving yojson]
+
+  module Mode = struct
+    type t =
+      | LineColumn
+          (** Points are standard LSP objects with [line] [character] field;
+              this is the default *)
+      | Offset  (** Points are objects with only the [offset] *)
+      | Full
+          (** Points include / require [line], [character], and [offset] field *)
+
+    (** Set the mode for serialization. *)
+    let default = ref LineColumn
+
+    let set v = default := v
+  end
+
+  module PointLC = struct
+    type t =
+      { line : int
+      ; character : int
+      }
+    [@@deriving yojson]
+
+    let conv { Lang.Point.line; character; offset = _ } = { line; character }
+    let vnoc { line; character } = { Lang.Point.line; character; offset = -1 }
+  end
+
+  module PointOffset = struct
+    type t = { offset : int } [@@deriving yojson]
+
+    let conv { Lang.Point.line = _; character = _; offset } = { offset }
+    let vnoc { offset } = { Lang.Point.line = -1; character = -1; offset }
+  end
+
+  let of_yojson json =
+    let open Ppx_deriving_yojson_runtime in
+    match !Mode.default with
+    | LineColumn -> PointLC.(of_yojson json >|= vnoc)
+    | Offset -> PointOffset.(of_yojson json >|= vnoc)
+    | Full -> of_yojson json
+
+  let to_yojson p =
+    match !Mode.default with
+    | LineColumn -> PointLC.(to_yojson (conv p))
+    | Offset -> PointOffset.(to_yojson (conv p))
+    | Full -> to_yojson p
 end
 
 module Range = struct
@@ -44,6 +90,15 @@ module Qf = struct
 end
 
 module Diagnostic = struct
+  module Mode = struct
+    type t =
+      | String
+      | Pp
+
+    let default = ref String
+    let set v = default := v
+  end
+
   module Libnames = Serlib.Ser_libnames
 
   module FailedRequire = struct
@@ -51,70 +106,50 @@ module Diagnostic = struct
   end
 
   module Data = struct
-    module Lang = struct
-      module Range = Range
-      module Qf = Qf
-      module FailedRequire = FailedRequire
-      module Diagnostic = Lang.Diagnostic
-    end
-
-    type t = [%import: Lang.Diagnostic.Data.t] [@@deriving yojson]
+    type t =
+      [%import:
+        (Lang.Diagnostic.Data.t
+        [@with
+          Lang.Qf.t := Qf.t;
+          Lang.Range.t := Range.t])]
+    [@@deriving yojson]
   end
 
-  (* LSP Ranges, a bit different from Fleche's ranges as points don't include
-     offsets *)
-  module Point = struct
+  module Severity = struct
+    type t = [%import: Lang.Diagnostic.Severity.t] [@@deriving yojson]
+  end
+
+  module DiagnosticString = struct
     type t =
-      { line : int
-      ; character : int
+      { range : Range.t
+      ; severity : Severity.t
+      ; message : string
+      ; data : Data.t option [@default None]
       }
     [@@deriving yojson]
 
-    let conv { Lang.Point.line; character; offset = _ } = { line; character }
-    let vnoc { line; character } = { Lang.Point.line; character; offset = -1 }
+    let conv { Lang.Diagnostic.range; severity; message; data } =
+      let message = Pp.string_of_ppcmds message in
+      { range; severity; message; data }
+
+    let vnoc { range; severity; message; data } =
+      let message = Pp.str message in
+      { Lang.Diagnostic.range; severity; message; data }
   end
 
-  module Range = struct
-    type t =
-      { start : Point.t
-      ; end_ : Point.t [@key "end"]
-      }
-    [@@deriving yojson]
-
-    let conv { Lang.Range.start; end_ } =
-      let start = Point.conv start in
-      let end_ = Point.conv end_ in
-      { start; end_ }
-
-    let vnoc { start; end_ } =
-      let start = Point.vnoc start in
-      let end_ = Point.vnoc end_ in
-      { Lang.Range.start; end_ }
-  end
-
-  (* Current Flèche diagnostic is not LSP-standard compliant, this one is *)
-  type t = Lang.Diagnostic.t
-
-  type _t =
-    { range : Range.t
-    ; severity : int
-    ; message : string
-    ; data : Data.t option [@default None]
-    }
+  type t = [%import: (Lang.Diagnostic.t[@with Lang.Range.t := Range.t])]
   [@@deriving yojson]
 
-  let to_yojson { Lang.Diagnostic.range; severity; message; data } =
-    let range = Range.conv range in
-    let message = Pp.to_string message in
-    _t_to_yojson { range; severity; message; data }
-
   let of_yojson json =
-    match _t_of_yojson json with
-    | Ok { range; severity; message; data } ->
-      let range = Range.vnoc range in
-      let message = Pp.str message in
-      Ok { Lang.Diagnostic.range; severity; message; data }
-    | Error err -> Error err
+    let open Ppx_deriving_yojson_runtime in
+    match !Mode.default with
+    | String -> DiagnosticString.(of_yojson json >|= vnoc)
+    | Pp -> of_yojson json
+
+  let to_yojson p =
+    match !Mode.default with
+    | String -> DiagnosticString.(to_yojson (conv p))
+    | Pp -> to_yojson p
 end
 
 module Stdlib = JStdlib
