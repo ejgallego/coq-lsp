@@ -85,4 +85,8 @@ let handle_request ~(do_handle : 'a handle) ~unhandled ~token ~method_ ~params =
     do_handle ~token (do_request (module StateProofEqual) ~params)
   | s when String.equal StateProofHash.method_ s ->
     do_handle ~token (do_request (module StateProofHash) ~params)
+  | s when String.equal PetAst.method_ s ->
+    do_handle ~token (do_request (module PetAst) ~params)
+  | s when String.equal AstAtPos.method_ s ->
+    do_handle ~token (do_request (module AstAtPos) ~params)
   | _ -> unhandled ~token ~method_

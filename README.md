@@ -42,10 +42,6 @@ their own projects.
 $ opam install coq-lsp && code --install-extension ejgallego.coq-lsp
 ```
 
-  - **🪟 Windows:** (alternative method)
-
-    Download the [Coq Platform installer](#-server)
-
   - **🦄 Emacs**:
 
 ```elisp
@@ -61,6 +57,10 @@ $ opam install coq-lsp && code --install-extension ejgallego.coq-lsp
   - **☕ Try it online ☕ (experimental)**:
 
     https://github.dev/ejgallego/hello-rocq
+
+  - **🪟 Windows:** (alternative method)
+
+    Download the [Coq Platform installer](#-server)
 
 ## Table of Contents <!-- omit in toc -->
 
@@ -458,6 +458,15 @@ The license for this project is LGPL 2.1 (or GPL 3+ as stated in the LGPL 2.1).
   Emilio J. Gallego Arias, Frédéric Blanqui, Rodolphe Lepigre, and others; the
   initial port to Coq was done by Emilio J. Gallego Arias and Vicent Laporte.
 
+- `serlib`, `tests`, and goal processing components (among others) come from
+  [SerAPI](https://github.com/rocq-archive/coq-serapi), and are under the same
+  license. SerAPI was developed by Emilio J. Gallego Arias, Karl Palmskog, and
+  Clément Pit-Claudel.
+
+- Javascript support, and server-side package management were developed in the
+  [jsCoq](https://github.com/jscoq/jscoq) project, by Shachar Itzhaky and Emilio
+  J. Gallego Arias.
+
 - Syntax files in editor/code are partially derived from
   [VSCoq](https://github.com/siegebell/vscoq) by Christian J. Bell, distributed
   under the terms of the MIT license (see ./editor/code/License-vscoq.text).
@@ -473,8 +482,13 @@ patches essential to `coq-lsp`; we also thank Guillaume Munch-Maccagnoni for his
 library, which is essential to make `coq-lsp` on the real world, as well for
 many advice w.r.t. OCaml.
 
+`rocq-lsp` includes several components and tests from
+[SerAPI](https://github.com/rocq-archive/coq-serapi), including
+[serlib](./serlib), goal display code, etc... Thanks to Karl Palmskog and all
+the SerAPI contributors.
+
 As noted above, the original implementation was based on the Lambdapi LSP
-server, thanks to all the collaborators in that project!
+server, thanks Frédéric Blanqui, Rodolphe Lepigre and all Lambdapi contributors.
 
 [ci-badge]: https://github.com/ejgallego/coq-lsp/actions/workflows/build.yml/badge.svg
 [ci-link]: https://github.com/ejgallego/coq-lsp/actions/workflows/build.yml

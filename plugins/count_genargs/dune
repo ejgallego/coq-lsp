@@ -1,0 +1,4 @@
+(library
+ (name Count_genargs_plugin)
+ (public_name coq-lsp.plugin.count_genargs)
+ (libraries coq-lsp.fleche coq-lsp.lsp))

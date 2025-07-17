@@ -41,7 +41,10 @@ depends: [
   # result dep, fixed in main, but kept for older releases
   "result"              { >= "1.5" }
 
-  # serlib deps: see what we need to keep for release
+  # This is now a hard dep due to API changes in 1.9.7
+  "ocamlfind" { >= "1.9.8" }
+
+  # serlib dependencies
   "ppx_deriving"        { >= "5.2"                 }
   "ppx_deriving_yojson" { >= "3.7.0"               }
   "ppx_import"          { >= "1.11.0"              }

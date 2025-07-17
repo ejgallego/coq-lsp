@@ -8,6 +8,8 @@ function interrupt_setup(shmem) {
         interrupt_setup.vec = shmem;
         interrupt_setup.checkpoint = 0;
         return shmem;
+    } else {
+      console.error('Interrupt Setup Failed in Worker');
     }
 }
 

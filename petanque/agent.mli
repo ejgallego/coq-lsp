@@ -50,7 +50,7 @@ module Error : sig
     | Anomaly of string
     | System of string
     | Theorem_not_found of string
-    | No_state_at_point
+    | No_node_at_point
 
   val to_string : t -> string
   val to_code : t -> int
@@ -168,6 +168,21 @@ end
     now we just return their fully qualified name, but more options are of
     course possible. *)
 val premises : token:Coq.Limits.Token.t -> st:State.t -> Premise.t list R.t
+
+(** Return the ast of a string [text], parsed at state [st] . Returns [None] on
+    EOF *)
+val ast :
+     token:Coq.Limits.Token.t
+  -> st:State.t
+  -> text:string
+  -> unit
+  -> Coq.Ast.t option Run_result.t R.t
+
+(** Return the ast of a position in the document [doc] at position [point]. Will
+    error if there is no node, will return [None], when there is a node at the
+    position, but the ast is not available, for example due to parsing error *)
+val ast_at_pos :
+  doc:Fleche.Doc.t -> point:int * int -> unit -> Coq.Ast.t option R.t
 
 (** Petanque version *)
 val version : int

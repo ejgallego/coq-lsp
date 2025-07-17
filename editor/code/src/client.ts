@@ -397,10 +397,12 @@ export function activateCoqLSP(
     heatMap.toggle();
   };
 
-  // Document request setup
-  const docReq = new RequestType<FlecheDocumentParams, FlecheDocument, void>(
-    "coq/getDocument"
-  );
+  // Document request setup, improve the type so the Pp format is matched
+  const docReq = new RequestType<
+    FlecheDocumentParams,
+    FlecheDocument<PpString>,
+    void
+  >("coq/getDocument");
 
   const getDocument = (editor: TextEditor) => {
     let uri = editor.document.uri;
@@ -409,7 +411,11 @@ export function activateCoqLSP(
       uri.toString(),
       version
     );
-    let params: FlecheDocumentParams = { textDocument };
+    let params: FlecheDocumentParams = {
+      textDocument,
+      ast: true,
+      goals: "Str",
+    };
     client.sendRequest(docReq, params).then((fd) => {
       // EJGA: uri_result could be used to set the suggested save path
       // for the new editor, however we need to see how to do that
