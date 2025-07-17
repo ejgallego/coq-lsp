@@ -49,11 +49,14 @@ let snoc_test ~token ~doc =
   assert (Int.equal h1 h2);
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"reflexivity." in
-  let _h3 = Agent.State.hash st.st in
+  let h3 = Agent.State.hash st.st in
   (* Fails in 8.18 *)
-  (* assert (not (Int.equal h1 h3)); *)
+  assert (not (Int.equal h1 h3));
   (* Fails in 8.17 *)
   (* assert (Int.equal h1 h3); *)
+  (* ast test *)
+  let* _ast1 = Agent.ast ~token ~st:st.st ~text:"Check (fun x => x)." () in
+  let* _ast2 = Agent.ast_at_pos ~doc ~point:(15, 3) () in
   let* st = r ~st ~tac:"-" in
   let* st = r ~st ~tac:"now simpl; rewrite IHl." in
   let* st = r ~st ~tac:"Qed." in

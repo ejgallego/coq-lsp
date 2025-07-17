@@ -350,3 +350,68 @@ module StateProofHash = struct
           Ok (Option.map Agent.State.Proof.hash pst))
   end
 end
+
+module PetAst = struct
+  let method_ = "petanque/ast"
+
+  module Params = struct
+    type t =
+      { st : int
+      ; text : string
+      }
+    [@@deriving yojson]
+  end
+
+  module Response = struct
+    type t = Ast.t option Run_result.t [@@deriving yojson]
+  end
+
+  module Handler = struct
+    module Params = struct
+      type t =
+        { st : State.t
+        ; text : string
+        }
+      [@@deriving yojson]
+    end
+
+    module Response = struct
+      type t = Ast.t option Run_result.t [@@deriving yojson]
+    end
+
+    let handler =
+      HType.Immediate
+        (fun ~token { Params.st; text } -> Agent.ast ~token ~st ~text ())
+  end
+end
+
+(* ast_at_pos RPC *)
+module AstAtPos = struct
+  let method_ = "petanque/ast_at_pos"
+
+  module Params = struct
+    type t =
+      { uri : Lsp.JLang.LUri.File.t
+      ; position : Lsp.JLang.Point.t
+      }
+    [@@deriving yojson]
+  end
+
+  module Response = struct
+    type t = Ast.t option [@@deriving yojson]
+  end
+
+  module Handler = struct
+    module Params = Params
+    module Response = Response
+
+    let handler =
+      HType.PosInDoc
+        { uri_fn = (fun { Params.uri; _ } -> uri)
+        ; pos_fn = (fun { position; _ } -> (position.line, position.character))
+        ; handler =
+            (fun ~token:_ ~doc ~point { uri = _; position = _ } ->
+              Agent.ast_at_pos ~doc ~point ())
+        }
+  end
+end

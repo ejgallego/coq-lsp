@@ -1,3 +1,29 @@
+unreleased
+----------
+
+ - [js] [deps] Bump to findlib 1.9.8, use vanilla API for loading and
+   remove our own local wrapper (@ejgallego, #975).
+ - [petanque] New `petanque/ast` and `petanque/ast_at_pos`
+   (@ejgallego, @JulesViennotFranca, #980)
+ - [serlib] Support for generic Ast analyzers. This opens the door to
+   many feature requests such as syntax coloring, dependency
+   extraction, etc... (@ejgallego, @JulesViennotFranca, #981)
+ - [fleche] Support "rocq" markdown delimiters in .mv files
+   (@ejgallego, #987)
+ - [workspace] Support _RocqProject (@ejgallego, #988, fixes #934)
+ - [lsp] [getDocument] Allow to get goals in one shot. We also
+   refactor the response type to accommodate different
+   meta-data. Note: (!) breaking change. (@ejgallego, #985, fixes
+   #862, thanks to the Alectryon team)
+ - Better error handling in URI parsing (@ejgallego, #994, thanks to
+   Adrien from Zulip)
+ - Better protocol-level handling for our non-standard `Lang.Point`
+   and `Lang.Diagnostic` types, via global flags that allow us to
+   choose the input/output representation for non-standard field such
+   as [Point.offset]. This ensures that leaks of these non-standard
+   fields are rarer. (@ejgallego, #995, cc #279, cc #2, thanks to
+   Adrien from Zulip)
+
 # coq-lsp 0.2.3: Barrage
 ------------------------
 

@@ -24,7 +24,7 @@ index 8f1315c159..a2473c11c9 100644
 +    else
 +      f (FileRegular name)
  
- let readdir dir = try Sys.readdir dir with Sys_error _ -> [||]
+ let readdir dir = try Sys.readdir dir with any -> [||]
  
 -- 
 2.43.0

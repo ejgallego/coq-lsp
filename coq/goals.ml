@@ -1,19 +1,12 @@
-(************************************************************************)
-(*         *   The Coq Proof Assistant / The Coq Development Team       *)
-(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2018       *)
-(* <O___,, *       (see CREDITS file for the list of authors)           *)
-(*   \VV/  **************************************************************)
-(*    //   *    This file is distributed under the terms of the         *)
-(*         *     GNU Lesser General Public License Version 2.1          *)
-(*         *     (see LICENSE file for the text of the license)         *)
-(************************************************************************)
-
-(************************************************************************)
-(* Coq serialization API/Plugin SERAPI                                  *)
-(* Copyright 2016-2019 MINES ParisTech -- LGPL 2.1+                     *)
-(* Copyright 2019-2022 Inria           -- LGPL 2.1+                     *)
-(* Written by: Emilio J. Gallego Arias                                  *)
-(************************************************************************)
+(*************************************************************************)
+(* Copyright 2015-2019 MINES ParisTech -- Dual License LGPL 2.1+ / GPL3+ *)
+(* Copyright 2019-2024 Inria           -- Dual License LGPL 2.1+ / GPL3+ *)
+(* Copyright 2024-2025 Emilio J. Gallego Arias  -- LGPL 2.1+ / GPL3+     *)
+(* Copyright 2025      CNRS                     -- LGPL 2.1+ / GPL3+     *)
+(* Written by: Emilio J. Gallego Arias & coq-lsp contributors            *)
+(*************************************************************************)
+(* Rocq Language Server Protocol: Rocq Goals API                         *)
+(*************************************************************************)
 
 let equal_option = Option.equal
 

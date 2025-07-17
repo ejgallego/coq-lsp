@@ -97,10 +97,16 @@ module Declare = struct
       module Obl = struct
         type t = [%import: Coq.State.Declare.OblState.View.Obl.t]
         [@@deriving to_yojson]
+        let of_yojson obj =
+          Serlib.Serlib_base.opaque_of_yojson ~typ:"Declare.OblState.View.Obl.t"
+            obj
       end
 
       type t = [%import: Coq.State.Declare.OblState.View.t]
       [@@deriving to_yojson]
+
+      let of_yojson obj =
+        Serlib.Serlib_base.opaque_of_yojson ~typ:"Declare.OblState.View.t" obj
     end
   end
 end

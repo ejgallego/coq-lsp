@@ -1,7 +1,11 @@
 (************************************************************************)
+(* Copyright 2019 MINES ParisTech -- Dual License LGPL 2.1+ / GPL3+     *)
+(* Copyright 2019-2024 Inria      -- Dual License LGPL 2.1+ / GPL3+     *)
+(* Copyright 2024-2025 Emilio J. Gallego Arias -- LGPL 2.1+ / GPL3+     *)
+(* Copyright 2025      CNRS                    -- LGPL 2.1+ / GPL3+     *)
+(* Written by: Emilio J. Gallego Arias & coq-lsp contributors           *)
+(************************************************************************)
 (* Flèche => document manager: Document Contents                        *)
-(* Copyright 2019-2023 Inria      -- Dual License LGPL 2.1 / GPL3+      *)
-(* Written by: Emilio J. Gallego Arias                                  *)
 (************************************************************************)
 
 module R = struct
@@ -47,8 +51,9 @@ module Markdown = struct
     | [] -> []
     | l :: ls ->
       (* opening vs closing a markdown block *)
-      let code_marker = if coq then "```" else "```coq" in
-      if String.equal code_marker l then gen l :: md_map_lines (not coq) ls
+      let code_marker = if coq then [ "```" ] else [ "```coq"; "```rocq" ] in
+      let check l c = List.exists (String.equal c) l in
+      if check code_marker l then gen l :: md_map_lines (not coq) ls
       else (if coq then l else gen l) :: md_map_lines coq ls
 
   let process text =
