@@ -448,10 +448,8 @@ let do_lens = do_document_request_maybe ~handler:Rq_lens.request
 (* could be smarter *)
 let do_action ~params =
   let range = field "range" params in
-  match Lsp.JLang.Diagnostic.Range.of_yojson range with
-  | Ok range ->
-    let range = Lsp.JLang.Diagnostic.Range.vnoc range in
-    do_immediate ~params ~handler:(Rq_action.request ~range)
+  match Lsp.JLang.Range.of_yojson range with
+  | Ok range -> do_immediate ~params ~handler:(Rq_action.request ~range)
   | Error err ->
     (* XXX: We really need to fix the parsing error handling in lsp_core, we got
        it right in petanque haha *)
@@ -468,9 +466,9 @@ let do_cancel ~ofn_rq ~params =
 let do_cache_trim ~io = Nt_cache_trim.notification ~io
 
 let do_viewRange params =
-  match List.assoc "range" params |> Lsp.JLang.Diagnostic.Range.of_yojson with
+  match List.assoc "range" params |> Lsp.JLang.Range.of_yojson with
   | Ok range ->
-    let { Lsp.JLang.Diagnostic.Range.end_ = { line; character }; _ } = range in
+    let { Lang.Range.end_ = { line; character; offset = _ }; _ } = range in
     L.trace "viewRange" "l: %d c:%d" line character;
     let uri = Helpers.get_uri params in
     Fleche.Theory.Check.set_scheduler_hint ~uri ~point:(line, character);
