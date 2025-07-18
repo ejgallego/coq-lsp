@@ -23,7 +23,7 @@ module Constrexpr    = Ser_constrexpr
 module Tok           = Ser_tok
 module Extend        = Ser_extend
 module Gramlib       = Ser_gramlib
-module Notation      = Ser_notation
+module PrimNotations = Ser_primNotations
 module Notationextern = Ser_notationextern
 
 (* type precedence =

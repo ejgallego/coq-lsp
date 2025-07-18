@@ -11,7 +11,7 @@ open Ppx_hash_lib.Std.Hash.Builtin
 open Ppx_compare_lib.Builtin
 
 module Libnames = Serlib.Ser_libnames
-module Notation = Serlib.Ser_notation
+module PrimNotations = Serlib.Ser_primNotations
 
 type number_string_via =
   [%import: Number_string_notation_plugin.Number_string.number_string_via]
