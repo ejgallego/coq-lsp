@@ -66,6 +66,10 @@ type t =
         (** Send extra diagnostic data on the `data` diagnostic field. *)
   ; send_serverStatus : bool [@default true]
         (** Send server status client notification to the client *)
+  ; skip_qed : bool [@default false]
+        (** Make all qeds error, thus skippping them; when the
+            [admit_on_bad_qed] is enabled, this allows checking a file
+            turning all [Qed] into [Admitted] *)
   }
 
 let default =
@@ -92,6 +96,7 @@ let default =
   ; check_only_on_request = false
   ; send_diags_extra_data = false
   ; send_serverStatus = true
+  ; skip_qed = false
   }
 
 let v = ref default

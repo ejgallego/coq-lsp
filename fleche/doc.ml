@@ -685,9 +685,18 @@ end = struct
 end
 (* end [module Recovery = struct...] *)
 
+let interp_and_info ~token ~st ast =
+  match Coq.Ast.Qed.extract ast with
+  | None -> Memo.Interp.evalS ~token (st, ast)
+  | Some { proof_end; _ } ->
+    if !Config.v.skip_qed && proof_end <> Vernacexpr.Admitted then
+      Coq.Protect.E.error Pp.(str "skipping this qed"), Memo.Stats.zero
+    else
+      Memo.Interp.evalS ~token (st, ast)
+
 let interp_and_info ~token ~st ~files ast =
   match Coq.Ast.Require.extract ast with
-  | None -> Memo.Interp.evalS ~token (st, ast)
+  | None -> interp_and_info ~token ~st ast
   | Some ast -> Memo.Require.evalS ~token (st, files, ast)
 
 (* Support for meta-commands, a bit messy, but cool in itself *)

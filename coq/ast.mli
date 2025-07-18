@@ -25,6 +25,21 @@ module Id : sig
   module Map : CMap.ExtS with type key = t and module Set := Set
 end
 
+module Qed : sig
+  type ast = t
+
+  type t = private
+    { proof_end : Vernacexpr.proof_end
+    ; loc : Loc.t option
+    ; attrs : Attributes.vernac_flag list
+    ; control : Vernacexpr.control_flag list
+    }
+  [@@deriving hash, compare]
+
+  (** Determine if the Ast is a Qed *)
+  val extract : ast -> t option
+end
+
 module Require : sig
   type ast = t
 

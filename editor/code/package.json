@@ -346,6 +346,11 @@
             "type": "boolean",
             "default": true,
             "description": "(Experimental) When in lazy mode, check files on scroll."
+          },
+          "coq-lsp.skip_qed": {
+            "type": "boolean",
+            "default": false,
+            "description": "(POC) Make all qed error"
           }
         }
       },

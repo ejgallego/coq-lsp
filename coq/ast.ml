@@ -32,6 +32,36 @@ module Id = struct
   module Map = Names.Id.Map
 end
 
+module Qed = struct
+
+  open Ppx_hash_lib.Std.Hash.Builtin
+  open Ppx_compare_lib.Builtin
+  module Loc = Serlib.Ser_loc
+  module Attributes = Serlib.Ser_attributes
+  module Vernacexpr = Serlib.Ser_vernacexpr
+
+  type ast = t
+
+  type t =
+    { proof_end : Vernacexpr.proof_end
+    ; loc : Loc.t option
+    ; attrs : Attributes.vernac_flag list
+    ; control : Vernacexpr.control_flag list
+    }
+  [@@deriving hash, compare]
+
+  let extract = function
+    | { CAst.v =
+          { Vernacexpr.expr =
+              Vernacexpr.(VernacSynPure (VernacEndProof proof_end))
+          ; control
+          ; attrs
+          }
+      ; loc
+      } -> Some { proof_end; loc; attrs; control }
+    | _ -> None
+end
+
 module Require = struct
   type ast = t
 
