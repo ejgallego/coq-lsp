@@ -121,6 +121,7 @@ out `coq-lsp` development versions with other OPAM packages.
 
 You can just do:
 ```
+git submodule update --init --recursive
 make opam-update-and-reinstall
 ```
 
