@@ -162,7 +162,7 @@ end
 let ser_wit_ltac_tactic_level = let module M = Ser_genarg.GSV(A13) in M.genser
 
 module A14 = struct
-  type t = bool
+  type t = bool CAst.t
   [@@deriving sexp,hash,compare]
 end
 let ser_wit_ltac_use_default = let module M = Ser_genarg.GSV(A14) in M.genser
