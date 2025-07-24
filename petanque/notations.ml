@@ -2792,10 +2792,12 @@ let list_notations_in_statement_vernac_start_proof ~atts l =
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l; (* TODO : remove *)
   let program_mode, typing_flags = atts.program, atts.typing_flags in
-  list_notations_in_statement_lemma_com
-    ~typing_flags
-    ~program_mode
-    (List.hd l)
+  List.concat @@
+    List.map
+      (list_notations_in_statement_lemma_com
+        ~typing_flags
+        ~program_mode)
+      l
 
 let list_notations_in_statement_vernac ~atts v = match v with
   | VernacStartTheoremProof (_,l) ->
