@@ -280,7 +280,11 @@ interface GoalRequest {
 The `textDocument` and `position` parameters are standard.
 
 Note that `rocq-lsp` will execute the Rocq document up to the
-`position` specified in the request paremeters.
+sentence specified in the request by the `position` and `mode` paremeters.
+
+- `mode` (if absent, the `goal_after_tactic` parameter will be used)
+  controls whether the sentence ending before or after `position` is
+  the subject of the request.
 
 - `pp_format` controls the pretty printing format used in the
   results. `Pp` will return goals using Rocq's pretty-printing type
@@ -289,13 +293,8 @@ Note that `rocq-lsp` will execute the Rocq document up to the
   message bodies in plain text.
 
 - `command`, is a list of Coq commands that will be run just _after_
-  `position` in `textDocument`, but _before_ goals are sent to the
+  the specified sentence, but _before_ goals are sent to the
   user. This is often useful for ephemeral post-processing of goals.
-
-- `mode` (if absent, the `goal_after_tactic` parameter will be used)
-  controls whether the goals returned correspond to `position` or to
-  the previous sentence in the document. `messages` and `error` below
-  are always returned for the specified `position`.
 
 The answer to the `proof/goals` request is a `GoalAnswer` object,
 where:
@@ -360,11 +359,10 @@ The main objects of interest are:
   sentence.
 
 - `GoalAnswer`: In addition to the goals at point, `GoalAnswer`
-  contains messages associated to `position` and the top `error` if
-  pertinent. `range` contains the span of the Rocq sentence at
-  `position`, if exists. Note that Rocq will skip some blank spaces
-  when parsing, so there are parts of a document that have no
-  corresponding `range` attached.
+  contains Rocq messages and the top `error` if pertinent. `range`
+  contains the span of the executed Rocq sentence, if exists. Note
+  that Rocq will skip some blank spaces when parsing, so there are
+  parts of a document that have no corresponding `range` attached.
 
 An example for `stack` is the following Coq script:
 ```coq

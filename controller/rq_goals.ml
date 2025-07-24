@@ -59,7 +59,7 @@ let goals ~pp_format ~mode ~pretac () ~token ~doc ~point =
   in
   let open Coq.Protect.E.O in
   let+ goals, program = get_goal_info ~token ~doc ~point ~mode ~pretac () in
-  let node = Info.LC.node ~doc ~point Exact in
+  let node = Info.LC.node ~doc ~point mode in
   let range = Option.map Fleche.Doc.Node.range node in
   let messages = mk_messages node in
   let error = Option.bind node mk_error in
