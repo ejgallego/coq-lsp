@@ -42,6 +42,7 @@ let request ~fn ~token ~id ~method_ ~params =
       (* JSON-RPC method not found *)
       let code = -32601 in
       let message = Format.asprintf "method %s not found" method_ in
+      let message = Format.asprintf "%s %s" message Petanque_json.Protocol.ListNotations.method_ in
       Error (Request.Error.make code message)
   in
   let do_handle = do_handle ~fn in
