@@ -15,27 +15,14 @@ unreleased
    refactor the response type to accommodate different
    meta-data. Note: (!) breaking change. (@ejgallego, #985, fixes
    #862, thanks to the Alectryon team)
- - [lsp] Better error handling in URI parsing (@ejgallego, #994, thanks to
+ - Better error handling in URI parsing (@ejgallego, #994, thanks to
    Adrien from Zulip)
- - [lsp] Better protocol-level handling for our non-standard `Lang.Point`
+ - Better protocol-level handling for our non-standard `Lang.Point`
    and `Lang.Diagnostic` types, via global flags that allow us to
    choose the input/output representation for non-standard field such
    as [Point.offset]. This ensures that leaks of these non-standard
    fields are rarer. (@ejgallego, #995, cc #279, cc #2, thanks to
    Adrien from Zulip)
- - [lsp] [completion] Rework completion configuration into a
-   `coq-lsp.completion` json object. The `unicode_completion` setting
-   is now deprecated, and has been replaced by
-   `completion.unicode.enable` (@ejgallego, #993)
- - [lsp] [completion] [vscode] Unicode completion commit characters
-   are now configurable via the server setting variable
-   `completion.unicode.commit_chars`. (@Durbatuluk1701, #993)
- - [goals] [config] New (global) option for goal display method
-   `proof/goals`: `messages_follow_goal`. If `true`, `proof/goals`
-   will show errors and messages for the same sentence goals are
-   shown; if `false`, it will always show errors and messages for the
-   specified `position`, if there is a Rocq sentence at hand
-   (@jpoiret, @ejgallego, #999, fixes: #941)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------
