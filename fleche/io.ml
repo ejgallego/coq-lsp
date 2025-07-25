@@ -26,6 +26,8 @@ module CallBack = struct
     ; perfData : uri:Lang.LUri.File.t -> version:int -> Perf.t -> unit
     ; serverVersion : ServerInfo.Version.t -> unit
     ; serverStatus : ServerInfo.Status.t -> unit
+    ; execInfo :
+        uri:Lang.LUri.File.t -> version:int -> range:Lang.Range.t -> unit
     }
 
   let default =
@@ -36,6 +38,7 @@ module CallBack = struct
     ; perfData = (fun ~uri:_ ~version:_ _ -> ())
     ; serverVersion = (fun _ -> ())
     ; serverStatus = (fun _ -> ())
+    ; execInfo = (fun ~uri:_ ~version:_ ~range:_ -> ())
     }
 
   let cb = ref default
@@ -104,4 +107,7 @@ module Report = struct
   let perfData ~io ~uri ~version pd = io.CallBack.perfData ~uri ~version pd
   let serverVersion ~io vi = io.CallBack.serverVersion vi
   let serverStatus ~io st = io.CallBack.serverStatus st
+
+  let execInfo ~io ~uri ~version ~range =
+    io.CallBack.execInfo ~uri ~version ~range
 end
