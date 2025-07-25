@@ -27,6 +27,7 @@ module Fcc_verbose = struct
 
   let serverVersion _ = ()
   let serverStatus _ = ()
+  let execInfo ~uri:_ ~version:_ ~range:_ = ()
 
   let cb =
     Fleche.Io.CallBack.
@@ -37,6 +38,7 @@ module Fcc_verbose = struct
       ; perfData
       ; serverVersion
       ; serverStatus
+      ; execInfo
       }
 end
 

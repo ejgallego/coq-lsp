@@ -53,6 +53,12 @@ unreleased
  - [coq] incorporate experimental `coq-layout-engine` printer, both in
    client and server parts (@ejgallego, #668, see also #72 and
    https://github.com/jscoq/jscoq/pull/282 )
+ - [lsp] [code] New notification `$/coq/executionInformation` which
+   will signal clients when rocq-lsp does intent to start to execute a
+   sentence. Experimentally, this is used to provide a red glow on
+   long-running commands in coq-lsp/VSCode, to provide better user
+   feedback on long-running commands (@ejgallego, suggested by
+   @jpoiret, #1002)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------
