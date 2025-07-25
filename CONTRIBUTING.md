@@ -121,6 +121,7 @@ out `coq-lsp` development versions with other OPAM packages.
 
 You can just do:
 ```
+make submodules-init            # Only needed if submodules not initialized
 make opam-update-and-reinstall
 ```
 
