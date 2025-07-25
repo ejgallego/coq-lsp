@@ -13,6 +13,7 @@ export interface CoqLspServerConfig {
   client_version: string;
   eager_diagnostics: boolean;
   goal_after_tactic: boolean;
+  messages_follow_goal: boolean;
   show_coq_info_messages: boolean;
   show_notices_as_diagnostics: boolean;
   admit_on_bad_qed: boolean;
@@ -37,6 +38,7 @@ export namespace CoqLspServerConfig {
       client_version: client_version,
       eager_diagnostics: wsConfig.eager_diagnostics,
       goal_after_tactic: wsConfig.goal_after_tactic,
+      messages_follow_goal: wsConfig.messages_follow_goal,
       show_coq_info_messages: wsConfig.show_coq_info_messages,
       show_notices_as_diagnostics: wsConfig.show_notices_as_diagnostics,
       admit_on_bad_qed: wsConfig.admit_on_bad_qed,

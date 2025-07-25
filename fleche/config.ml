@@ -68,8 +68,16 @@ type t =
   ; eager_diagnostics : bool [@default true]
         (** [eager_diagnostics] Send (full) diagnostics after processing each *)
   ; goal_after_tactic : bool [@default true]
-        (** When showing goals and the cursor is in a tactic, if false, show
-            goals before executing the tactic, if true, show goals after *)
+        (** [proof/goals] setting: if [false], show goals before executing the
+            tactic, if [true], show goals after. If there is no sentence at
+            [position], show the goals of the closest sentence in the document
+            backwards. *)
+  ; messages_follow_goal : bool [@default false]
+        (** [proof/goals] setting: if [true], messages and errors will be
+            displayed following the [goal_after_tactic] setting. When [false],
+            the default, we will always shows messages and errors corresponding
+            to the sentence at [position]. If there is no sentence at
+            [position], we show nothing. *)
   ; show_coq_info_messages : bool [@default false]
         (** Show `msg_info` messages in diagnostics *)
   ; show_notices_as_diagnostics : bool [@default false]
@@ -117,7 +125,8 @@ let default =
   ; gc_quick_stats = true
   ; client_version = "any"
   ; eager_diagnostics = true
-  ; goal_after_tactic = false
+  ; goal_after_tactic = true
+  ; messages_follow_goal = false
   ; show_coq_info_messages = false
   ; show_notices_as_diagnostics = false
   ; admit_on_bad_qed = true

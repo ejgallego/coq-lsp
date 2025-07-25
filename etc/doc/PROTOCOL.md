@@ -280,11 +280,7 @@ interface GoalRequest {
 The `textDocument` and `position` parameters are standard.
 
 Note that `rocq-lsp` will execute the Rocq document up to the
-sentence specified in the request by the `position` and `mode` paremeters.
-
-- `mode` (if absent, the `goal_after_tactic` parameter will be used)
-  controls whether the sentence ending before or after `position` is
-  the subject of the request.
+`position` specified in the request parameters.
 
 - `pp_format` controls the pretty printing format used in the
   results. `Pp` will return goals using Rocq's pretty-printing type
@@ -292,9 +288,24 @@ sentence specified in the request by the `position` and `mode` paremeters.
   `editor/code/lib/format-pprint`), `String` will return the goals and
   message bodies in plain text.
 
-- `command`, is a list of Coq commands that will be run just _after_
-  the specified sentence, but _before_ goals are sent to the
-  user. This is often useful for ephemeral post-processing of goals.
+- `mode` (if absent, the `goal_after_tactic` global configuration
+  parameter will be used) controls whether the `goals` returned
+  correspond to the sentence at `position`, or to the previous
+  sentence in the document. If there is no Rocq sentence at the
+  requested `position`, we will return the goals corresponding to the
+  previous sentence.
+
+  If the `messages_follow_goal` global setting is set to `true`,
+  `mode` will be used to select which `messages` and `error` fields
+  are returned in the answer too. If the setting is set to `false`
+  (default), `messages` and `error` are returned for the specified
+  exact document `position`.
+
+- `command`, is a list of Rocq commands that will be run just _after_
+  the _selected_ sentence for goal display, but _before_ goals are
+  sent to the user. This is useful for ephemeral post-processing of
+  goals. Use `petanque/run` if you have more complex ephemeral
+  execution needs outside goal display.
 
 The answer to the `proof/goals` request is a `GoalAnswer` object,
 where:
@@ -358,11 +369,21 @@ The main objects of interest are:
   set to `false`, goals returned here will correspond to the previous
   sentence.
 
-- `GoalAnswer`: In addition to the goals at point, `GoalAnswer`
-  contains Rocq messages and the top `error` if pertinent. `range`
-  contains the span of the executed Rocq sentence, if exists. Note
-  that Rocq will skip some blank spaces when parsing, so there are
-  parts of a document that have no corresponding `range` attached.
+- `GoalAnswer`: In addition to the goals at point, `GoalAnswer` will
+  contain information to the selected sentence, in particular,
+  `messages`, `error`, and `range`.
+
+  The selected sentence here depends on the `messages_follow_goal`
+  global setting:
+
+  - if `messages_follow_goal = false`, the selected sentence is always
+    the one at `position`, if there is some. Note that Rocq will skip
+    most blank space when parsing, so there are parts of a document
+    that have no corresponding sentence attached. In these cases the
+    fields will be undefined.
+
+  - if `messages_follow_goal = true`, the selected sentence is the
+    same than the one used for `goals`.
 
 An example for `stack` is the following Coq script:
 ```coq
@@ -392,6 +413,8 @@ was the default.
 <!-- TOC --><a name="changelog"></a>
 #### Changelog
 
+- v0.2.4: behavior of `messages`, `error`, and `range` can now be
+  controlled by the `messages_follow_goal` global setting
 - v0.2.3: new field in answer `range`, which contains the range of the
   sentence at `position`
 - v0.1.9: backwards compatible with 0.1.8
@@ -621,6 +644,7 @@ export interface CoqLspServerConfig {
   client_version: string;
   eager_diagnostics: boolean;
   goal_after_tactic: boolean;
+  messages_follow_goal: boolean;
   show_coq_info_messages: boolean;
   show_notices_as_diagnostics: boolean;
   admit_on_bad_qed: boolean;
@@ -647,6 +671,7 @@ client.
 - v0.2.4:
   + Deprecate `unicode_completion` in favor of new `completion:
     CompletionConfig` configuration record.
+  + New option, `messages_follow_goal`
 - v0.2.3: New options, `show_universes_on_hover`,
   `show_state_hash_on_hover`, `send_perf_data`.
 - v0.1.9: First public documentation.

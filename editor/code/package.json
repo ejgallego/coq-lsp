@@ -290,6 +290,11 @@
               "Use jsCoq's Pp rich layout printer",
               "Coq Layout Engine (experimental)"
             ]
+          },
+          "coq-lsp.messages_follow_goal": {
+            "type": "boolean",
+            "default": false,
+            "description": "If enabled, errors and messages will be shown using the `goal_after_tactic` setting, otherwise, they always correspond to the requested position"
           }
         }
       },

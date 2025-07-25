@@ -50,6 +50,17 @@ let get_goal_info ~token ~doc ~point ~mode ~pretac () =
     let program = Info.Goals.program ~st in
     (goals, Some program)
 
+let get_node_info ~doc ~point ~mode =
+  let open Fleche in
+  let mode =
+    if !Fleche.Config.v.messages_follow_goal then mode else Info.Exact
+  in
+  let node = Info.LC.node ~doc ~point mode in
+  let range = Option.map Doc.Node.range node in
+  let messages = mk_messages node in
+  let error = Option.bind node mk_error in
+  (range, messages, error)
+
 let goals ~pp_format ~mode ~pretac () ~token ~doc ~point =
   let open Fleche in
   let uri, version = (doc.Doc.uri, doc.version) in
@@ -59,10 +70,7 @@ let goals ~pp_format ~mode ~pretac () ~token ~doc ~point =
   in
   let open Coq.Protect.E.O in
   let+ goals, program = get_goal_info ~token ~doc ~point ~mode ~pretac () in
-  let node = Info.LC.node ~doc ~point mode in
-  let range = Option.map Fleche.Doc.Node.range node in
-  let messages = mk_messages node in
-  let error = Option.bind node mk_error in
+  let range, messages, error = get_node_info ~doc ~point ~mode in
   let pp = pp ~pp_format in
   Lsp.JFleche.GoalsAnswer.(
     to_yojson pp
