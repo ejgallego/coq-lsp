@@ -610,6 +610,15 @@ the `initializationOptions` parameter for the LSP `init` method.
 As of today, the server exposes the following parameters:
 
 ```typescript
+export interface UnicodeCompletionConfig {
+    enabled: "off" | "normal" | "extended";
+    commit_chars : string[];
+}
+
+export interface CompletionConfig {
+    unicode: UnicodeCompletionConfig
+}
+
 export interface CoqLspServerConfig {
   client_version: string;
   eager_diagnostics: boolean;
@@ -618,7 +627,7 @@ export interface CoqLspServerConfig {
   show_notices_as_diagnostics: boolean;
   admit_on_bad_qed: boolean;
   debug: boolean;
-  unicode_completion: "off" | "normal" | "extended";
+  unicode_completion: "off" | "normal" | "extended"; // Deprecated
   max_errors: number;
   pp_type: 0 | 1 | 2;
   show_stats_on_hover: boolean;
@@ -627,6 +636,7 @@ export interface CoqLspServerConfig {
   show_state_hash_on_hover: boolean;
   check_only_on_request: boolean;
   send_perf_data: boolean;
+  completion: CompletionConfig
 }
 ```
 
@@ -636,6 +646,9 @@ client.
 <!-- TOC --><a name="changelog-5"></a>
 #### Changelog
 
+- v0.2.4:
+  + Deprecate `unicode_completion` in favor of new `completion:
+    CompletionConfig` configuration record.
 - v0.2.3: New options, `show_universes_on_hover`,
   `show_state_hash_on_hover`, `send_perf_data`.
 - v0.1.9: First public documentation.

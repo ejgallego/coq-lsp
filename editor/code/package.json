@@ -350,12 +350,13 @@
         }
       },
       {
-        "title": "Input",
+        "title": "Completion",
         "type": "object",
         "properties": {
-          "coq-lsp.unicode_completion": {
+          "coq-lsp.completion.unicode.enabled": {
             "type": "string",
             "default": "normal",
+            "order": 1,
             "enum": [
               "off",
               "normal",
@@ -363,10 +364,31 @@
             ],
             "description": "Enable Server-Side Unicode Completion. Coq-lsp provides two character sets, a regular one, and an extended one with more than 1000 symbols."
           },
-          "coq-lsp.unicode_commit_chars": {
+          "coq-lsp.completion.unicode.commit_chars": {
             "type": "array",
-            "items": { "type": "string" },
-            "default": [" ", "(", ")", ",", ".", "-", "'", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+            "order": 99,
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              " ",
+              "(",
+              ")",
+              ",",
+              ".",
+              "-",
+              "'",
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9"
+            ],
             "description": "Characters that will commit a unicode completion. This controls which characters will accept a completion item when typed."
           }
         }

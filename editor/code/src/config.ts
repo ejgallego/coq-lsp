@@ -1,5 +1,14 @@
 import { TextDocumentFilter } from "vscode-languageclient";
 
+export interface UnicodeCompletionConfig {
+  enabled: "off" | "normal" | "extended";
+  commit_chars: string[];
+}
+
+export interface CompletionConfig {
+  unicode: UnicodeCompletionConfig;
+}
+
 export interface CoqLspServerConfig {
   client_version: string;
   eager_diagnostics: boolean;
@@ -8,7 +17,6 @@ export interface CoqLspServerConfig {
   show_notices_as_diagnostics: boolean;
   admit_on_bad_qed: boolean;
   debug: boolean;
-  unicode_completion: "off" | "normal" | "extended";
   max_errors: number;
   pp_type: 0 | 1 | 2;
   show_stats_on_hover: boolean;
@@ -17,7 +25,7 @@ export interface CoqLspServerConfig {
   show_state_hash_on_hover: boolean;
   check_only_on_request: boolean;
   send_perf_data: boolean;
-  unicode_commit_chars: string[];
+  completion: CompletionConfig;
 }
 
 export namespace CoqLspServerConfig {
@@ -33,7 +41,6 @@ export namespace CoqLspServerConfig {
       show_notices_as_diagnostics: wsConfig.show_notices_as_diagnostics,
       admit_on_bad_qed: wsConfig.admit_on_bad_qed,
       debug: wsConfig.debug,
-      unicode_completion: wsConfig.unicode_completion,
       max_errors: wsConfig.max_errors,
       pp_type: wsConfig.pp_type,
       show_stats_on_hover: wsConfig.show_stats_on_hover,
@@ -42,7 +49,7 @@ export namespace CoqLspServerConfig {
       show_state_hash_on_hover: wsConfig.show_state_hash_on_hover,
       check_only_on_request: wsConfig.check_only_on_request,
       send_perf_data: wsConfig.send_perf_data,
-      unicode_commit_chars: wsConfig.unicode_commit_chars,
+      completion: wsConfig.completion,
     };
   }
 }

@@ -52,7 +52,7 @@ let mk_edit (line, character) newText =
 let mk_unicode_completion_item point (label, newText) =
   let labelDetails = LabelDetails.{ detail = " ← " ^ newText } in
   let textEdit = mk_edit point newText in
-  let commitCharacters = !Fleche.Config.v.unicode_commit_chars in
+  let commitCharacters = !Fleche.Config.v.completion.unicode.commit_chars in
   mk_completion ~label ~labelDetails ~textEdit ~commitCharacters ()
 
 let unicode_list point : Yojson.Safe.t list =

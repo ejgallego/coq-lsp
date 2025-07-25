@@ -1,7 +1,6 @@
 unreleased
 ----------
 
- - [lsp] [vscode] Unicode completion commit characters are now configurable via server settings. (@Durbatuluk1701)
  - [js] [deps] Bump to findlib 1.9.8, use vanilla API for loading and
    remove our own local wrapper (@ejgallego, #975).
  - [petanque] New `petanque/ast` and `petanque/ast_at_pos`
@@ -24,6 +23,13 @@ unreleased
    as [Point.offset]. This ensures that leaks of these non-standard
    fields are rarer. (@ejgallego, #995, cc #279, cc #2, thanks to
    Adrien from Zulip)
+ - [lsp] [completion] Rework completion configuration into a
+   `coq-lsp.completion` json object. The `unicode_completion` setting
+   is now deprecated, and has been replaced by
+   `completion.unicode.enable` (@ejgallego, #993)
+ - [lsp] [completion] [vscode] Unicode completion commit characters
+   are now configurable via the server setting variable
+   `completion.unicode.commit_chars`. (@Durbatuluk1701, #993)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------
