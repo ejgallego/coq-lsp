@@ -77,11 +77,20 @@ module Log = struct
     (* Fixme, use the extra parameter *)
     trace hdr "[%s]: @[%a@]" hdr Yojson.Safe.(pretty_print ~std:false) obj
 
+  let pp_fb fmt (fb : Loc.t Coq.Message.t) =
+    let _lvl, { Coq.Message.Payload.msg; _ } = fb in
+    Format.fprintf fmt "%a" Pp.pp_with msg
+
   let feedback part feedback =
     if not (CList.is_empty feedback) then
-      (* Put feedbacks content here? *)
-      let verbose = None in
-      !CallBack.cb.trace "feedback" ?verbose ("!!! feedback received in " ^ part)
+      (* We put the feedback contents in the verbose part of the trace
+         message. *)
+      let pp_sep = Format.pp_print_cut in
+      let feedbacks =
+        Format.(asprintf "@[%a@]" (pp_print_list ~pp_sep pp_fb) feedback)
+      in
+      let verbose = Some feedbacks in
+      trace "feedback" ?verbose "received in %s" part
 end
 
 module Report = struct
