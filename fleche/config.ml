@@ -6,12 +6,55 @@
 (* Written by: Emilio J. Gallego Arias & coq-lsp contributors           *)
 (************************************************************************)
 
-module Unicode_completion = struct
-  type t =
-    | Off
-    | Internal_small
-    | Normal
-    | Extended
+module Completion = struct
+  (** Module that enables LaTeX-like completion for unicode symbols *)
+  module Unicode = struct
+    module Mode = struct
+      type t =
+        | Off
+        | Internal_small
+        | Normal
+        | Extended
+    end
+
+    let default_commit_chars =
+      [ " "
+      ; "("
+      ; ")"
+      ; ","
+      ; "."
+      ; "-"
+      ; "'"
+      ; "0"
+      ; "1"
+      ; "2"
+      ; "3"
+      ; "4"
+      ; "5"
+      ; "6"
+      ; "7"
+      ; "8"
+      ; "9"
+      ]
+
+    type t =
+      { enabled : Mode.t
+      ; commit_chars : string list [@default default_commit_chars]
+            (** Characters to use for accepting/commiting a completion during
+                unicode completion *)
+      }
+
+    let default =
+      let enabled = Mode.Normal in
+      let commit_chars = default_commit_chars in
+      { enabled; commit_chars }
+  end
+
+  type t = { unicode : Unicode.t }
+
+  let default =
+    let unicode = Unicode.default in
+    { unicode }
 end
 
 type t =
@@ -25,8 +68,16 @@ type t =
   ; eager_diagnostics : bool [@default true]
         (** [eager_diagnostics] Send (full) diagnostics after processing each *)
   ; goal_after_tactic : bool [@default true]
-        (** When showing goals and the cursor is in a tactic, if false, show
-            goals before executing the tactic, if true, show goals after *)
+        (** [proof/goals] setting: if [false], show goals before executing the
+            tactic, if [true], show goals after. If there is no sentence at
+            [position], show the goals of the closest sentence in the document
+            backwards. *)
+  ; messages_follow_goal : bool [@default false]
+        (** [proof/goals] setting: if [true], messages and errors will be
+            displayed following the [goal_after_tactic] setting. When [false],
+            the default, we will always shows messages and errors corresponding
+            to the sentence at [position]. If there is no sentence at
+            [position], we show nothing. *)
   ; show_coq_info_messages : bool [@default false]
         (** Show `msg_info` messages in diagnostics *)
   ; show_notices_as_diagnostics : bool [@default false]
@@ -38,8 +89,8 @@ type t =
             YMMV. *)
   ; debug : bool [@default false]
         (** Enable debug on Coq side, including backtraces *)
-  ; unicode_completion : Unicode_completion.t
-        [@default Unicode_completion.Normal]
+  ; unicode_completion : Completion.Unicode.Mode.t option [@default None]
+        (** deprecated, use [completion.unicode.enabled] *)
   ; max_errors : int [@default 150]
   ; pp_type : int [@default 0]
         (** Pretty-printing type in Info Panel Request, 0 = string; 1 = Pp.t; 2
@@ -66,6 +117,7 @@ type t =
         (** Send extra diagnostic data on the `data` diagnostic field. *)
   ; send_serverStatus : bool [@default true]
         (** Send server status client notification to the client *)
+  ; completion : Completion.t [@default Completion.default]
   }
 
 let default =
@@ -73,12 +125,13 @@ let default =
   ; gc_quick_stats = true
   ; client_version = "any"
   ; eager_diagnostics = true
-  ; goal_after_tactic = false
+  ; goal_after_tactic = true
+  ; messages_follow_goal = false
   ; show_coq_info_messages = false
   ; show_notices_as_diagnostics = false
   ; admit_on_bad_qed = true
   ; debug = false
-  ; unicode_completion = Normal
+  ; unicode_completion = None
   ; max_errors = 150
   ; pp_type = 0
   ; show_stats_on_hover = false
@@ -92,6 +145,7 @@ let default =
   ; check_only_on_request = false
   ; send_diags_extra_data = false
   ; send_serverStatus = true
+  ; completion = Completion.default
   }
 
 let v = ref default

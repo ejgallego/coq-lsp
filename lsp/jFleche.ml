@@ -22,25 +22,38 @@ module Lang = JLang
 module Names = Serlib.Ser_names
 
 module Config = struct
-  module Unicode_completion = struct
-    type t = [%import: Fleche.Config.Unicode_completion.t]
+  module Completion = struct
+    module Unicode = struct
+      module Mode = struct
+        type t = [%import: Fleche.Config.Completion.Unicode.Mode.t]
 
-    let to_yojson = function
-      | Off -> `String "off"
-      | Internal_small -> `String "internal"
-      | Normal -> `String "normal"
-      | Extended -> `String "extended"
+        let to_yojson = function
+          | Off -> `String "off"
+          | Internal_small -> `String "internal"
+          | Normal -> `String "normal"
+          | Extended -> `String "extended"
 
-    let of_yojson (j : Yojson.Safe.t) : (t, string) Result.t =
-      match j with
-      | `String "off" -> Ok Off
-      | `String "internal" -> Ok Internal_small
-      | `String "normal" -> Ok Normal
-      | `String "extended" -> Ok Extended
-      | _ ->
-        Error
-          "Fleche.Config.Unicode_completion.t: expected one of \
-           [off,normal,extended]"
+        let of_yojson (j : Yojson.Safe.t) : (t, string) Result.t =
+          match j with
+          | `String "off" -> Ok Off
+          | `String "internal" -> Ok Internal_small
+          | `String "normal" -> Ok Normal
+          | `String "extended" -> Ok Extended
+          | _ ->
+            Error
+              "Fleche.Config.Completion.Unicode.Mode.t: expected one of \
+               [off,normal,extended]"
+      end
+
+      let default_commit_chars =
+        Fleche.Config.Completion.Unicode.default_commit_chars
+
+      type t = [%import: Fleche.Config.Completion.Unicode.t] [@@deriving yojson]
+    end
+
+    let default = Fleche.Config.Completion.default
+
+    type t = [%import: Fleche.Config.Completion.t] [@@deriving yojson]
   end
 
   type t = [%import: Fleche.Config.t] [@@deriving yojson]

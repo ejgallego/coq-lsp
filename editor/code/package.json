@@ -290,6 +290,11 @@
               "Use jsCoq's Pp rich layout printer",
               "Coq Layout Engine (experimental)"
             ]
+          },
+          "coq-lsp.messages_follow_goal": {
+            "type": "boolean",
+            "default": false,
+            "description": "If enabled, errors and messages will be shown using the `goal_after_tactic` setting, otherwise, they always correspond to the requested position"
           }
         }
       },
@@ -350,18 +355,46 @@
         }
       },
       {
-        "title": "Input",
+        "title": "Completion",
         "type": "object",
         "properties": {
-          "coq-lsp.unicode_completion": {
+          "coq-lsp.completion.unicode.enabled": {
             "type": "string",
             "default": "normal",
+            "order": 1,
             "enum": [
               "off",
               "normal",
               "extended"
             ],
             "description": "Enable Server-Side Unicode Completion. Coq-lsp provides two character sets, a regular one, and an extended one with more than 1000 symbols."
+          },
+          "coq-lsp.completion.unicode.commit_chars": {
+            "type": "array",
+            "order": 99,
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              " ",
+              "(",
+              ")",
+              ",",
+              ".",
+              "-",
+              "'",
+              "0",
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6",
+              "7",
+              "8",
+              "9"
+            ],
+            "description": "Characters that will commit a unicode completion. This controls which characters will accept a completion item when typed."
           }
         }
       },
