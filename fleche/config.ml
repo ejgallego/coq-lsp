@@ -117,6 +117,8 @@ type t =
         (** Send extra diagnostic data on the `data` diagnostic field. *)
   ; send_serverStatus : bool [@default true]
         (** Send server status client notification to the client *)
+  ; send_execinfo : bool [@default false]
+        (** Send execution information to client *)
   ; completion : Completion.t [@default Completion.default]
   }
 
@@ -145,6 +147,7 @@ let default =
   ; check_only_on_request = false
   ; send_diags_extra_data = false
   ; send_serverStatus = true
+  ; send_execinfo = false
   ; completion = Completion.default
   }
 
