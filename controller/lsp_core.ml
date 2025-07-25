@@ -799,6 +799,9 @@ struct
   let serverVersion vi = Lsp.JFleche.mk_serverVersion vi |> ofn
   let serverStatus st = Lsp.JFleche.mk_serverStatus st |> ofn
 
+  let execInfo ~uri ~version ~range =
+    Lsp.JFleche.mk_execinfo ~uri ~version ~range |> ofn
+
   let cb =
     Fleche.Io.CallBack.
       { trace
@@ -808,5 +811,6 @@ struct
       ; perfData
       ; serverVersion
       ; serverStatus
+      ; execInfo
       }
 end

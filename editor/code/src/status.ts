@@ -3,7 +3,11 @@ import { NotificationType } from "vscode-languageclient";
 
 import { CoqSelector } from "./config";
 
-import { CoqServerVersion, CoqServerStatus } from "../lib/types";
+import {
+  CoqServerVersion,
+  CoqServerStatus,
+  ExecutionInfoParams,
+} from "../lib/types";
 
 export const coqServerVersion = new NotificationType<CoqServerVersion>(
   "$/coq/serverVersion"
@@ -11,6 +15,10 @@ export const coqServerVersion = new NotificationType<CoqServerVersion>(
 
 export const coqServerStatus = new NotificationType<CoqServerStatus>(
   "$/coq/serverStatus"
+);
+
+export const rocqExecInfo = new NotificationType<ExecutionInfoParams>(
+  "$/coq/executionInformation"
 );
 
 // We should likely have one class per item, but not a big deal yet
