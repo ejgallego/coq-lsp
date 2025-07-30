@@ -39,6 +39,7 @@ let io =
   let perfData ~uri:_ ~version:_ _perf = () in
   let serverVersion _ = () in
   let serverStatus _ = () in
+  let execInfo ~uri:_ ~version:_ ~range:_ = () in
   { Fleche.Io.CallBack.trace
   ; message
   ; diagnostics
@@ -46,6 +47,7 @@ let io =
   ; perfData
   ; serverVersion
   ; serverStatus
+  ; execInfo
   }
 
 let init_st = ref None
