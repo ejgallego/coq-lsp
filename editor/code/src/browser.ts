@@ -69,7 +69,10 @@ export function activate(context: ExtensionContext): CoqLspAPI {
 
     console.log(coqWorker);
 
+    // pass the init path to the worker
     let worker = new Worker(coqWorker.toString(true));
+    worker.postMessage(context.extensionUri.toString());
+
     // let client = new InterruptibleLC(
     //   "coq-lsp",
     //   "Coq LSP Worker",

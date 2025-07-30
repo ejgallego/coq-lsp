@@ -153,8 +153,13 @@ submodules-update:
 
 # Build the vscode extension
 .PHONY: extension-wasm
+WAFILES=$(addprefix editor/code/controller-wasm/,wacoq_worker.bc dllcoqrun_stubs.wasm dllcoqperf_stubs.wasm dlllib_stubs.wasm)
+WASM_NODE=editor/code/controller-wasm/node_modules/
+OUTDIR=editor/code/controller-wasm/out
 extension-wasm:
-	dune build editor/code/controller-wasm/wacoq_worker.bc
+	dune build $(WAFILES)
+	cp -af _build/default/editor/code/controller-wasm/wacoq_worker.bc $(OUTDIR)
+	cp -af _build/default/editor/code/controller-wasm/*.wasm $(OUTDIR)
 	cd editor/code/controller-wasm/ && npm i && npm run vscode:prepublish
 
 .PHONY: extension

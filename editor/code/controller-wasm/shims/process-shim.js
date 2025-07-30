@@ -8,8 +8,7 @@ const cwd = () => "/";
 
 // Working alternative
 export const process = {
-  browser: true,
-  env: {},
-  cwd: () => '/',
+  browser,
+  env,
+  cwd
 };
-

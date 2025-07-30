@@ -36,11 +36,11 @@
 
 (rule
  (target jscoq_version.ml)
- (deps ../editor/code/package.json)
+ (deps package.json)
  (action
   (with-stdout-to
    %{target}
    (run
     node
     -p
-    "`let jscoq_version = \"${require(\"../editor/code/package.json\").version}\"`"))))
+    "`let jscoq_version = \"${require(\"package.json\").version}\"`"))))

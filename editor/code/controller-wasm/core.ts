@@ -37,7 +37,7 @@ class IcoqPod extends EventEmitter {
     get fs() { return this.core.fs; }
 
     async boot() {
-        await this.upload(`../backend/wasm/wacoq_worker.bc`, '/lib/icoq.bc');
+        await this.upload(`${this.binDir}/wacoq_worker.bc`, '/lib/icoq.bc');
         await this.findlibStartup(); /* @todo */
 
         this._preloadStub();

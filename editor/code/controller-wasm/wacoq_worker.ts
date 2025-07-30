@@ -4,10 +4,12 @@ function postMessage(msg) {
     (<any>self).postMessage(msg);
 }
 
+async function main(baseURI : string) {
 
-async function main() {
-    /** @note when serving from source tree, the `node_modules` ref works by chance */
-    var icoq = new IcoqPod('../backend/wasm', '../../../node_modules');
+  // We can only really start when we get the real baseURI from the extension side.
+    let binDir = baseURI + "/controller-wasm/out/";
+    let nmDir = baseURI + "/controller-wasm/node_modules/";
+    var icoq = new IcoqPod(binDir, nmDir);
 
     postMessage(['Starting']);
     icoq.on('message', postMessage);
@@ -24,4 +26,13 @@ async function main() {
     Object.assign(global, {icoq});
 }
 
-main();
+async function main_get_dir() {
+
+  // First messages _must_ be the baseUri
+  addEventListener('message', (event) => {
+    main(event.data);
+  }, { once: true } );
+
+}
+
+main_get_dir();
