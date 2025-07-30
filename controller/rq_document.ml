@@ -17,18 +17,18 @@ let mk_error ~diags =
   (* XXX FIXME! *)
   | e :: _ -> Some e.Diagnostic.message
 
-let get_goal_info ~token ~st =
+let get_goal_info ~token ~pr ~st =
   let open Fleche in
   let open Coq.Protect.E.O in
-  let+ goals = Info.Goals.goals ~token ~st in
+  let+ goals = Info.Goals.goals ~token ~pr ~st in
   let program = Info.Goals.program ~st in
   (goals, Some program)
 
-let get_goals ~token ~textDocument ~range ~state ~diags ~messages =
+let get_goals ~token ~pr ~textDocument ~range ~state ~diags ~messages =
   let open Coq.Protect.E.O in
   let position = range.Lang.Range.start in
   let range = Some range in
-  let+ goals, program = get_goal_info ~token ~st:state in
+  let+ goals, program = get_goal_info ~token ~pr ~st:state in
   let messages = mk_messages ~messages in
   let error = mk_error ~diags in
   Fleche_lsp.JFleche.GoalsAnswer.
@@ -43,7 +43,7 @@ let of_execution (v : (_, _) Coq.Protect.E.t) =
     | Coq.Protect.R.Completed (Error (User { msg = _; _ })) -> None
     | Coq.Protect.R.Interrupted -> None)
 
-let to_span ~token ~ast ~goals ~textDocument
+let to_span ~token ~pr ~ast ~goals ~textDocument
     { Fleche.Doc.Node.range; ast = nast; state; diags; messages; _ } =
   let ast =
     if ast then Option.map (fun { Fleche.Doc.Node.Ast.v; _ } -> v) nast
@@ -54,7 +54,7 @@ let to_span ~token ~ast ~goals ~textDocument
     | None -> None
     | Some _ ->
       of_execution
-        (get_goals ~token ~textDocument ~range ~state ~diags ~messages)
+        (get_goals ~token ~pr ~textDocument ~range ~state ~diags ~messages)
   in
   JFleche.RangedSpan.{ range; ast; goals }
 
@@ -64,22 +64,20 @@ let to_completed = function
   | Stopped range -> { status = `Stopped; range }
   | Failed range -> { status = `Failed; range }
 
-let pp ~pp_format pp =
-  match pp_format with
-  | Rq_goals.Pp -> Fleche_lsp.JCoq.Pp.to_yojson pp
-  | Str -> `String (Pp.string_of_ppcmds pp)
-
 let request ~ast ~goals () ~token ~doc =
   let { Fleche.Doc.uri; version; nodes; completed; _ } = doc in
   let textDocument =
     Fleche_lsp.Doc.VersionedTextDocumentIdentifier.{ uri; version }
   in
-  let spans = List.map (to_span ~token ~ast ~goals ~textDocument) nodes in
-  let completed = to_completed completed in
   let pp_format =
     match goals with
     | None -> Rq_goals.Pp
     | Some pp -> pp
   in
-  let pp x = pp ~pp_format x in
-  JFleche.FlecheDocument.({ spans; completed } |> to_yojson pp) |> Result.ok
+  let pr = Rq_goals.pp ~pp_format in
+  let spans = List.map (to_span ~token ~pr ~ast ~goals ~textDocument) nodes in
+  let completed = to_completed completed in
+  JFleche.FlecheDocument.(
+    { spans; completed }
+    |> to_yojson (fun x -> x) (fun x -> Fleche_lsp.JCoq.Pp.to_yojson x))
+  |> Result.ok

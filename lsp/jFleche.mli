@@ -52,11 +52,11 @@ module Message : sig
 end
 
 module GoalsAnswer : sig
-  type 'pp t =
+  type ('goals, 'pp) t =
     { textDocument : Doc.VersionedTextDocumentIdentifier.t
     ; position : Lang.Point.t
     ; range : Lang.Range.t option [@default None]
-    ; goals : 'pp Coq.Goals.reified_pp option [@default None]
+    ; goals : ('goals, 'pp) JCoq.Goals.reified option [@default None]
     ; program : JCoq.Declare.OblState.View.t Names.Id.Map.t option
           [@default None]
     ; messages : 'pp Message.t list
@@ -75,17 +75,17 @@ module CompletionStatus : sig
 end
 
 module RangedSpan : sig
-  type 'pp t =
+  type ('goals, 'pp) t =
     { range : Lang.Range.t
     ; ast : Coq.Ast.t option [@default None]
-    ; goals : 'pp GoalsAnswer.t option [@default None]
+    ; goals : ('goals, 'pp) GoalsAnswer.t option [@default None]
     }
   [@@deriving yojson]
 end
 
 module FlecheDocument : sig
-  type 'pp t =
-    { spans : 'pp RangedSpan.t list
+  type ('goals, 'pp) t =
+    { spans : ('goals, 'pp) RangedSpan.t list
     ; completed : CompletionStatus.t
     }
   [@@deriving to_yojson]

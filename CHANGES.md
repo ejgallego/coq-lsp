@@ -36,6 +36,9 @@ unreleased
    shown; if `false`, it will always show errors and messages for the
    specified `position`, if there is a Rocq sentence at hand
    (@jpoiret, @ejgallego, #999, fixes: #941)
+ - [coq] incorporate experimental `coq-layout-engine` printer, both in
+   client and server parts (@ejgallego, #668, see also #72 and
+   https://github.com/jscoq/jscoq/pull/282 )
 
 # coq-lsp 0.2.3: Barrage
 ------------------------

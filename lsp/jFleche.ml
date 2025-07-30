@@ -96,11 +96,11 @@ module Message = struct
 end
 
 module GoalsAnswer = struct
-  type 'pp t =
+  type ('goals, 'pp) t =
     { textDocument : Doc.VersionedTextDocumentIdentifier.t
     ; position : Lang.Point.t
     ; range : Lang.Range.t option [@default None]
-    ; goals : 'pp JCoq.Goals.reified_pp option [@default None]
+    ; goals : ('goals, 'pp) JCoq.Goals.reified option [@default None]
     ; program : JCoq.Declare.OblState.View.t Names.Id.Map.t option
           [@default None]
     ; messages : 'pp Message.t list
@@ -119,17 +119,17 @@ module CompletionStatus = struct
 end
 
 module RangedSpan = struct
-  type 'pp t =
+  type ('goals, 'pp) t =
     { range : Lang.Range.t
     ; ast : Ast.t option [@default None]
-    ; goals : 'pp GoalsAnswer.t option [@default None]
+    ; goals : ('goals, 'pp) GoalsAnswer.t option [@default None]
     }
   [@@deriving yojson]
 end
 
 module FlecheDocument = struct
-  type 'pp t =
-    { spans : 'pp RangedSpan.t list
+  type ('goals, 'pp) t =
+    { spans : ('goals, 'pp) RangedSpan.t list
     ; completed : CompletionStatus.t
     }
   [@@deriving yojson]

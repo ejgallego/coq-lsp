@@ -1,5 +1,5 @@
 import objectHash from "object-hash";
-import { Hyp, Goal, GoalConfig, PpString } from "../../lib/types";
+import { Hyp, Goal, GoalConfig, PpString, BoxString } from "../../lib/types";
 import { CoqPp } from "./CoqPp";
 import { Details } from "./Details";
 import { useLayoutEffect, useRef } from "react";
@@ -8,12 +8,12 @@ import $ from "jquery";
 
 import "./media/goals.css";
 
-type CoqId = PpString;
+type CoqId = BoxString;
 
-function Hyp({ hyp: { names, def, ty } }: { hyp: Hyp<PpString> }) {
+function Hyp({ hyp: { names, def, ty } }: { hyp: Hyp<BoxString> }) {
   let className = "coq-hypothesis" + (def ? " coq-has-def" : "");
   let mkLabel = (id: CoqId) => <label key={objectHash(id)}>{id}</label>;
-  let mkdef = (pp?: PpString) =>
+  let mkdef = (pp?: BoxString) =>
     pp ? (
       <span className="def">
         <CoqPp content={pp} inline={true} />
@@ -24,14 +24,14 @@ function Hyp({ hyp: { names, def, ty } }: { hyp: Hyp<PpString> }) {
     <div className={className}>
       {names.map(mkLabel)}
       {mkdef(def)}
-      <div>
+      <div id="goal-text">
         <CoqPp content={ty} inline={true} />
       </div>
     </div>
   );
 }
 
-type HypsP = { hyps: Hyp<PpString>[] };
+type HypsP = { hyps: Hyp<BoxString>[] };
 function Hyps({ hyps }: HypsP) {
   return (
     <>
@@ -43,7 +43,7 @@ function Hyps({ hyps }: HypsP) {
   );
 }
 
-type GoalP = { goal: Goal<PpString>; idx: number; open: boolean };
+type GoalP = { goal: Goal<BoxString>; idx: number; open: boolean };
 
 function Goal({ goal, idx, open }: GoalP) {
   const className = open ? undefined : "aside";
@@ -66,7 +66,9 @@ function Goal({ goal, idx, open }: GoalP) {
 
   let gtyp = (
     <div style={{ marginLeft: "1ex" }} className={className} ref={tyRef}>
-      <CoqPp content={goal.ty} inline={false} />
+      <div id="goal-text">
+        <CoqPp content={goal.ty} inline={false} />
+      </div>
     </div>
   );
 
@@ -84,7 +86,7 @@ function Goal({ goal, idx, open }: GoalP) {
 }
 
 type GoalsListP = {
-  goals: Goal<PpString>[];
+  goals: Goal<BoxString>[];
   header: string;
   show_on_empty: boolean;
   open: boolean;
@@ -132,7 +134,7 @@ function GoalsList({
 }
 type StackSummaryP = {
   idx: number;
-  stack: [Goal<PpString>[], Goal<PpString>[]][];
+  stack: [Goal<BoxString>[], Goal<BoxString>[]][];
 };
 
 function StackGoals({ idx, stack }: StackSummaryP) {
@@ -159,7 +161,7 @@ function StackGoals({ idx, stack }: StackSummaryP) {
   );
 }
 
-type GoalsParams = { goals?: GoalConfig<PpString> };
+type GoalsParams = { goals?: GoalConfig<BoxString, PpString> };
 
 export function Goals({ goals }: GoalsParams) {
   if (!goals) {
