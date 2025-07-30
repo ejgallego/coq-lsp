@@ -15,5 +15,5 @@
     "checkJs": true,
     "noEmit": true
   },
-  "exclude": ["esbuild.mjs", "out/**/*", "dist/**/*", "node_modules/**/*"]
+  "exclude": ["esbuild.mjs", "out/**/*", "dist/**/*", "node_modules/**/*", "wasi-kernel/**/*"]
 }

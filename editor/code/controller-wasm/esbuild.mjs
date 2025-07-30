@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+
+import fs from 'fs';
 import process from "process";
 import * as esbuild from "esbuild";
 
@@ -32,9 +34,9 @@ function wasmBuild(file) {
       entryPoints: [file],
       bundle: true,
       platform: "browser",
-      format: "esm",
+      format: "iife",
+      target: "es2020",
       outdir: "out",
-      outbase: ".",
       inject: [
         "./shims/process-shim.js",
         "./shims/buffer-shim.js",
@@ -43,15 +45,20 @@ function wasmBuild(file) {
         global: "self",
       },
       metafile: enableMeta,
+      logLevel: 'debug',
       ...sourcemap_view,
       minify,
       watch: watch(file),
     })
-    .then(() => {
+    .then((res) => {
+      if(enableMeta) fs.writeFileSync('wacoq-meta.json', JSON.stringify(res.metafile, null, 2));
       console.log(`[watch] build finished for ${file}`);
     })
-    .catch(() => process.exit(1));
-}
+    .catch((err) => {
+        console.log('error: ', err);
+        process.exit(1);
+    });
+};
 
 // Build of the WASM worker for VSCode
 var wasmWorker = wasmBuild("./wacoq_worker.ts");

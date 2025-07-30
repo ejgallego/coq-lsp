@@ -70,7 +70,13 @@ export function activate(context: ExtensionContext): CoqLspAPI {
     console.log(coqWorker);
 
     let worker = new Worker(coqWorker.toString(true));
-    let client = new InterruptibleLC(
+    // let client = new InterruptibleLC(
+    //   "coq-lsp",
+    //   "Coq LSP Worker",
+    //   clientOptions,
+    //   worker
+    // );
+    let client = new LanguageClient(
       "coq-lsp",
       "Coq LSP Worker",
       clientOptions,
