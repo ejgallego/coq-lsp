@@ -220,7 +220,7 @@ end = struct
       Hashtbl.remove _rtable id;
       f pr |> answer ~ofn_rq ~id
     | None ->
-      L.trace "consuem" "can't consume cancelled request: %d" id;
+      L.trace "consume" "can't consume cancelled request: %d" id;
       ()
 
   let cancel ~ofn_rq ~code ~message id : unit =

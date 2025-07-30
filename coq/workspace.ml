@@ -77,6 +77,18 @@ module Require = struct
     }
 end
 
+module Module : sig
+  type t
+
+  val make : string -> t
+end = struct
+  type t = string
+
+  (* XXX: A lot more work needs to happen here, in particular we must understand
+     -Q -R flags and loadpath bindings *)
+  let make x = x
+end
+
 type t =
   { coqlib : string
   ; findlib_config : string option
@@ -85,6 +97,7 @@ type t =
   ; require_libs : Require.t list
   ; flags : Flags.t
   ; warnings : Warning.t list
+  ; modules : Module.t list
   ; kind : string
   ; debug : bool
   }
@@ -147,7 +160,7 @@ let mk_require_from (from, library) =
   let flags = Some (Lib.Import, None) in
   { Require.library; from; flags }
 
-let make ~cmdline ~implicit ~kind ~debug =
+let make ~cmdline ~implicit ~kind ~debug ~modules =
   let { CmdLine.coqlib
       ; findlib_config
       ; ocamlpath
@@ -187,6 +200,7 @@ let make ~cmdline ~implicit ~kind ~debug =
   ; require_libs
   ; flags
   ; warnings
+  ; modules
   ; kind
   ; debug
   }
@@ -215,6 +229,7 @@ let describe
     ; kind
     ; vo_load_path
     ; require_libs
+    ; modules
     ; flags
     ; warnings
     ; debug
@@ -223,6 +238,7 @@ let describe
     String.concat " "
       (List.map (fun { Require.library; _ } -> library) require_libs)
   in
+  let n_mod = List.length modules in
   let n_vo = List.length vo_load_path in
   (* We need to do this in order for the calls to Findlib to make sense, but
      really need to modify this *)
@@ -251,16 +267,20 @@ let describe
       Format.(pp_print_list pp_print_string)
       fl_packages
   in
-  ( Format.asprintf
+  let base =
+    Format.asprintf
       "@[Configuration loaded from %s@\n\
       \ - findlib: %d search paths active@\n\
       \   + findlib config: %s@\n\
       \   + findlib default location: %s@\n\
       \ - coqlib is at: %s@\n\
       \   + %d Coq path directory bindings in scope@\n\
+      \   + %d Coq modules (.v files) known from %s listing@\n\
       \   + Modules [%s] will be loaded by default@]" kind
-      (List.length fl_paths) fl_config fl_location coqlib n_vo require_msg
-  , extra )
+      (List.length fl_paths) fl_config fl_location coqlib n_vo n_mod kind
+      require_msg
+  in
+  (base, extra)
 
 let describe_guess = function
   | Ok w -> describe w
@@ -308,6 +328,7 @@ let apply ~intern ~uri
     ; require_libs
     ; flags
     ; warnings
+    ; modules = _
     ; kind = _
     ; debug
     } =
@@ -321,6 +342,11 @@ let apply ~intern ~uri
 
 (* This can raise, and will do in incorrect CoqProject files *)
 let dirpath_of_string_exn coq_path = Libnames.dirpath_of_string coq_path
+
+let module_from_coqproject { CoqProject_file.thing = file; _ } =
+  match Filename.extension file with
+  | ".v" -> Some (Module.make file)
+  | _ -> None
 
 let workspace_from_coqproject ~cmdline ~debug cp_file : t =
   (* Io.Log.error "init" "Parsing _CoqProject"; *)
@@ -339,7 +365,14 @@ let workspace_from_coqproject ~cmdline ~debug cp_file : t =
   in
   (* XXX: [read_project_file] will do [exit 1] on parsing error! Please someone
      fix upstream!! *)
-  let { r_includes; q_includes; ml_includes; extra_args; _ } =
+  let { r_includes
+      ; q_includes
+      ; ml_includes
+      ; extra_args
+      ; files
+      ; meta_file = _
+      ; _
+      } =
     read_project_file ~warning_fn:(fun _ -> ()) cp_file
   in
   let ml_include_path = List.map (fun f -> f.thing.path) ml_includes in
@@ -357,14 +390,15 @@ let workspace_from_coqproject ~cmdline ~debug cp_file : t =
       ; ocamlpath = cmdline.ocamlpath @ ml_include_path
       }
   in
+  let modules = List.filter_map module_from_coqproject files in
   let implicit = true in
   let kind = cp_file in
-  make ~cmdline ~implicit ~kind ~debug
+  make ~cmdline ~implicit ~kind ~debug ~modules
 
-let workspace_from_cmdline ~debug ~cmdline =
+let workspace_from_cmdline ~debug ~cmdline ~modules =
   let kind = "Command-line arguments" in
   let implicit = true in
-  make ~cmdline ~implicit ~kind ~debug
+  make ~cmdline ~implicit ~kind ~debug ~modules
 
 let guess ~debug ~cmdline ~dir () =
   let cp_file = Filename.concat dir "_CoqProject" in
@@ -373,7 +407,7 @@ let guess ~debug ~cmdline ~dir () =
     workspace_from_coqproject ~cmdline ~debug rp_file
   else if Sys.file_exists cp_file then
     workspace_from_coqproject ~cmdline ~debug cp_file
-  else workspace_from_cmdline ~debug ~cmdline
+  else workspace_from_cmdline ~debug ~cmdline ~modules:[]
 
 let guess ~token ~debug ~cmdline ~dir =
   let { Protect.E.r; feedback } =
@@ -387,4 +421,4 @@ let guess ~token ~debug ~cmdline ~dir =
     Error (Format.asprintf "Workspace Scanning Errored: %a" Pp.pp_with msg)
   | Protect.R.Completed (Ok workspace) -> Ok workspace
 
-let default ~debug ~cmdline = workspace_from_cmdline ~debug ~cmdline
+let default ~debug ~cmdline = workspace_from_cmdline ~debug ~cmdline ~modules:[]
