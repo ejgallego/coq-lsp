@@ -27,31 +27,16 @@ module Id : sig
 end
 
 module Name    : SerType.SJHC with type t = Name.t
-module DirPath : sig
-  include SerType.SJHC with type t = DirPath.t
-
-  module Set : SerType.SJHC with type t = DirPath.Set.t
-  module Map : SerType.SJHC1 with type 'a t = 'a DirPath.Map.t
-end
-module DPmap = DirPath.Map
+module DirPath : SerType.SJHC with type t = DirPath.t
+module DPmap   : Ser_cMap.ExtS with type key = DirPath.t and type 'a t = 'a DPmap.t
 
 module Label   : SerType.SJHC with type t = Label.t
 module MBId    : SerType.SJHC with type t = MBId.t
-module ModPath : sig
-  include SerType.SJHC with type t = ModPath.t
+module ModPath : SerType.SJHC with type t = ModPath.t
+module MPmap   : Ser_cMap.ExtS with type key = ModPath.t and type 'a t = 'a MPmap.t
 
-  module Set : SerType.SJHC with type t = ModPath.Set.t
-  module Map : SerType.SJHC1 with type 'a t = 'a ModPath.Map.t
-end
-module MPmap = ModPath.Map
-
-module KerName : sig
-  include SerType.SJHC with type t = KerName.t
-
-  module Set : SerType.SJHC with type t = KerName.Set.t
-  module Map : SerType.SJHC1 with type 'a t = 'a KerName.Map.t
-end
-module KNmap = KerName.Map
+module KerName  : SerType.SJHC with type t = KerName.t
+module KNmap : Ser_cMap.ExtS with type key = KerName.t and type 'a t = 'a KNmap.t
 
 module Constant : SerType.SJHC with type t = Constant.t
 

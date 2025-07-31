@@ -69,16 +69,11 @@ module DirPath = struct
     let to_t (DirPath dpl) = DirPath.make dpl
   end
 
-  module Self = SerType.Biject(DirPath_)
-
-  include Self
-
-  module Set = Ser_cSet.Make(Names.DirPath.Set)(Self)
-  module Map = Ser_cMap.Make(Names.DirPath.Map)(Self)
+  include SerType.Biject(DirPath_)
 
 end
 
-module DPmap = DirPath.Map
+module DPmap = Ser_cMap.Make(DPmap)(DirPath)
 
 module Label = struct
 
@@ -114,56 +109,42 @@ end
 
 module ModPath = struct
 
-  (* ModPath.t: public *)
-  module Self = struct
-    type t = [%import: Names.ModPath.t]
-    [@@deriving sexp,yojson,hash,compare]
-  end
-
-  include Self
-
-  module Set = Ser_cSet.Make(Names.ModPath.Set)(Self)
-  module Map = Ser_cMap.Make(Names.ModPath.Map)(Self)
+(* ModPath.t: public *)
+type t = [%import: Names.ModPath.t]
+         [@@deriving sexp,yojson,hash,compare]
 
 end
 
-module MPmap = ModPath.Map
+module MPmap = Ser_cMap.Make(MPmap)(ModPath)
 
 (* KerName: private *)
 module KerName = struct
 
-  module Self = struct
-    type t = [%import: Names.KerName.t]
+type t = [%import: Names.KerName.t]
 
-    type _t = KerName of ModPath.t * Label.t
-    [@@deriving sexp,yojson,hash,compare]
+type _t = KerName of ModPath.t * Label.t
+      [@@deriving sexp,yojson,hash,compare]
 
-    let _t_put kn              =
-      let mp, l = KerName.repr kn in KerName (mp,l)
-    let _kername_get (KerName (mp,l)) = KerName.make mp l
+let _t_put kn              =
+  let mp, l = KerName.repr kn in KerName (mp,l)
+let _kername_get (KerName (mp,l)) = KerName.make mp l
 
-    let t_of_sexp sexp = _kername_get (_t_of_sexp sexp)
-    let sexp_of_t kn   = sexp_of__t (_t_put kn)
+let t_of_sexp sexp = _kername_get (_t_of_sexp sexp)
+let sexp_of_t kn   = sexp_of__t (_t_put kn)
 
-    let of_yojson json = Ppx_deriving_yojson_runtime.(_t_of_yojson json >|= _kername_get)
-    let to_yojson kn   = _t_to_yojson (_t_put kn)
+let of_yojson json = Ppx_deriving_yojson_runtime.(_t_of_yojson json >|= _kername_get)
+let to_yojson kn   = _t_to_yojson (_t_put kn)
 
-    let hash x = hash__t (_t_put x)
-    let hash_fold_t st id = hash_fold__t st (_t_put id)
+let hash x = hash__t (_t_put x)
+let hash_fold_t st id = hash_fold__t st (_t_put id)
 
-    let compare x y = compare__t (_t_put x) (_t_put y)
+let compare x y = compare__t (_t_put x) (_t_put y)
 
-    let equal = KerName.equal
-
-  end
-  include Self
-
-  module Set = Ser_cSet.Make(Names.KerName.Set)(Self)
-  module Map = Ser_cMap.Make(Names.KerName.Map)(Self)
+let equal = KerName.equal
 
 end
 
-module KNmap = KerName.Map
+module KNmap = Ser_cMap.Make(Names.KNmap)(KerName)
 
 module Constant = struct
 
