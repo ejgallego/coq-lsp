@@ -16,4 +16,10 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
-type numnot_option = PrimNotations.numnot_option [@@deriving sexp,yojson,hash,compare]
+module NumTok = Ser_numTok
+module Constrexpr = Ser_constrexpr
+
+type numnot_option =
+  [%import: Notation.numnot_option]
+  [@@deriving sexp,yojson,hash,compare]
+

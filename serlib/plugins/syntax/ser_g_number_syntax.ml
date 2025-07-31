@@ -13,7 +13,7 @@ open Ppx_compare_lib.Builtin
 open Ppx_hash_lib.Std.Hash.Builtin
 
 module Libnames = Ser_libnames
-module PrimNotations = Ser_primNotations
+module Notation = Ser_notation
 
 module A2 = struct
   type t = Ser_number_string.number_option
