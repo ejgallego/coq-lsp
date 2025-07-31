@@ -31,21 +31,25 @@
   "devDependencies": {
     "@types/node": "^18.18.1",
     "@types/vscode": "^1.75.0",
-    "esbuild": "^0.16.17",
-    "prettier": "^3.2.5",
-    "typescript": "^5.2.2",
     "@vscode/vsce": "^2.21.1",
     "@vscode/wasm-wasi": "^1.0.1",
-    "wasi-kernel": "^0.1.6",
-    "path-browserify": "^1.0.1",
-    "stream-browserify": "^3.0.0",
     "browser-or-node": "^2.0.0",
-    "fflate-unzip": "^0.7.0"
+    "esbuild": "^0.16.17",
+    "assert": "^2.0.0",
+    "buffer": "^4.9.2",
+    "fflate-unzip": "^0.7.0",
+    "path": "^0.12.7",
+    "path-browserify": "^1.0.1",
+    "prettier": "^3.2.5",
+    "stream-browserify": "^3.0.0",
+    "typescript": "^5.2.2",
+    "wasi-kernel": "^0.1.6"
   },
   "dependencies": {
     "@ocaml-wasm/4.12--janestreet-base": "^0.16.0-0",
     "@ocaml-wasm/4.12--num": "^1.4.0-0",
     "@ocaml-wasm/4.12--zarith": "^1.13.0-0",
+    "events": "^3.3.0",
     "ocaml-wasm": "^4.12.0-0"
   },
   "browser": {
@@ -57,7 +61,6 @@
     "fs": false,
     "crypto": false
   },
-
   "scripts": {
     "vscode:prepublish": "npm run typecheck && npm run esbuild -- --minify --sourcemap=no",
     "esbuild": "node esbuild.mjs",
