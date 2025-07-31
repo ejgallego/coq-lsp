@@ -20,8 +20,6 @@ open Sexplib
 
 type 'a or_by_notation = 'a Constrexpr.or_by_notation [@@deriving sexp, yojson, hash,compare]
 
-type 'custom notation_entry_gen = 'custom Constrexpr.notation_entry_gen [@@deriving sexp, yojson, hash,compare]
-
 type notation_entry = Constrexpr.notation_entry [@@deriving sexp, yojson, hash,compare]
 
 type entry_level = Constrexpr.entry_level [@@deriving sexp, yojson, hash,compare]

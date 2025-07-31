@@ -24,7 +24,6 @@ module Tok           = Ser_tok
 module Notation_term = Ser_notation_term
 module Constrexpr    = Ser_constrexpr
 module Gramlib       = Ser_gramlib
-module Globnames     = Ser_globnames
 
 type production_position =
   [%import: Extend.production_position]
@@ -42,15 +41,15 @@ and constr_prod_entry_key =
   [%import: Extend.constr_prod_entry_key]
   [@@deriving sexp]
 
-type ('custom,'lev) constr_entry_key_gen =
-  [%import: ('custom,'lev) Extend.constr_entry_key_gen]
+type 'lev constr_entry_key_gen =
+  [%import: 'lev Extend.constr_entry_key_gen]
   [@@deriving sexp,yojson,hash,compare]
 
 type constr_entry_key =
   [%import: Extend.constr_entry_key]
   [@@deriving sexp,yojson,hash,compare]
 
-type 'custom simple_constr_prod_entry_key =
-  [%import: 'custom Extend.simple_constr_prod_entry_key]
+type simple_constr_prod_entry_key =
+  [%import: Extend.simple_constr_prod_entry_key]
   [@@deriving sexp,yojson,hash,compare]
 

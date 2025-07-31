@@ -25,5 +25,3 @@ type abbreviation =
 type extended_global_reference =
   [%import: Globnames.extended_global_reference]
   [@@deriving sexp]
-
-module CustomName = Ser_names.KerName
