@@ -139,16 +139,16 @@ type mutual_inductive_body =
   [@with Context.section_context := Context.Named.t;]]
   [@@deriving sexp,yojson,hash,compare]
 
-type ('q, 'u) instance_mask =
-  [%import: ('q, 'u) UVars.Instance.mask]
+type instance_mask =
+  [%import: UVars.Instance.mask]
   [@@deriving sexp,yojson,hash,compare]
 
-type head_pattern =
-  [%import: Declarations.head_pattern
+type 'a head_pattern =
+  [%import: 'a Declarations.head_pattern
     [@with sort_pattern := Sorts.pattern]]
   [@@deriving sexp,yojson,hash,compare]
 
-and pattern_elimination =
+type pattern_elimination =
   [%import: Declarations.pattern_elimination]
   [@@deriving sexp,yojson,hash,compare]
 
@@ -160,8 +160,8 @@ and pattern_argument =
   [%import: Declarations.pattern_argument]
   [@@deriving sexp,yojson,hash,compare]
 
-type machine_rewrite_rule =
-  [%import: Declarations.machine_rewrite_rule]
+type rewrite_rule =
+  [%import: Declarations.rewrite_rule]
   [@@deriving sexp,yojson,hash,compare]
 
 type rewrite_rules_body =

@@ -19,7 +19,7 @@
 include SerType.SJHC with type t = Sorts.t
 
 type relevance = Sorts.relevance [@@deriving sexp,yojson,hash,compare]
-type ('q, 'u) pattern = ('q, 'u) Sorts.pattern [@@deriving sexp,yojson,hash,compare]
+type pattern = Sorts.pattern [@@deriving sexp,yojson,hash,compare]
 
 module QVar : sig
   include SerType.SJHC with type t = Sorts.QVar.t
@@ -32,7 +32,7 @@ module Quality : sig
   include SerType.SJHC with type t = Sorts.Quality.t
   module Set : SerType.SJHC with type t = Sorts.Quality.Set.t
 
-  type 'q pattern = 'q Sorts.Quality.pattern [@@deriving sexp,yojson,hash,compare]
+  type pattern = Sorts.Quality.pattern [@@deriving sexp,yojson,hash,compare]
 end
 
 module QConstraints : SerType.SJHC with type t = Sorts.QConstraints.t
