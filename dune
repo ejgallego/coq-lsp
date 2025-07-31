@@ -1,1 +1,1 @@
-(dirs :standard \ serlib)
+(dirs :standard \ serlib serlib_v9.1)
