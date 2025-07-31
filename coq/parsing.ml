@@ -27,12 +27,10 @@ let parse_to_terminator : unit Pcoq.Entry.t =
   (* type 'a parser_fun = { parser_fun : te LStream.t -> 'a } *)
   let rec dot kwstate st =
     match Gramlib.LStream.next kwstate st with
-    | Some
-        ( Tok.KEYWORD ("." | "..." | "Qed" | "Defined" | "Admitted")
-        | Tok.BULLET _ ) -> ()
-    | Some Tok.EOI -> ()
-    | Some _ -> dot kwstate st
-    | None -> assert false (* should get EOI before None *)
+    | Tok.KEYWORD ("." | "..." | "Qed" | "Defined" | "Admitted") | Tok.BULLET _
+      -> ()
+    | Tok.EOI -> ()
+    | _ -> dot kwstate st
   in
   Pcoq.Entry.of_parser "Coqtoplevel.dot" { parser_fun = dot }
 
