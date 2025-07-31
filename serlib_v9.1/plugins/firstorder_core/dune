@@ -1,0 +1,12 @@
+(library
+ (name serlib_firstorder_core)
+ (public_name coq-lsp.serlib.firstorder_core)
+ (synopsis "Serialization Library for Coq Firstorder_core Plugin")
+ (preprocess
+  (staged_pps
+   ppx_import
+   ppx_sexp_conv
+   ppx_deriving_yojson
+   ppx_hash
+   ppx_compare))
+ (libraries rocq-runtime.plugins.firstorder_core serlib sexplib))

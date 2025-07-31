@@ -40,10 +40,7 @@ depends: [
   "ocamlfind" { >= "1.9.8" }
 
   # [release branch] Uncomment
-  # "rocq-prover"          { >= "9.1" < "9.2"  }
-
-  # [release branch] Remove
-  "zarith" {>= "1.13"}
+  "rocq-core"          { >= "9.1" < "9.2"  }
 
   # serlib deps: see what we need to keep for release
   "ppx_deriving"        { >= "5.2"                 }

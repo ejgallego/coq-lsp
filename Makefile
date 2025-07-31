@@ -3,7 +3,7 @@ SHELL := /usr/bin/env bash
 COQ_BUILD_CONTEXT=../_build/default/coq
 
 # Set to true for main, comment out for released versions
-VENDORED_SETUP:=true
+# VENDORED_SETUP:=true
 
 ifdef VENDORED_SETUP
 PKG_SET= \
@@ -173,9 +173,9 @@ opam-update-and-reinstall:
 	opam install .
 
 # Used in git clone
-COQ_BRANCH=v9.0
+COQ_BRANCH=v9.1
 # Used in opam pin
-COQ_CORE_VERSION=9.0.0
+COQ_CORE_VERSION=9.1.0
 # Name of COQ_CORE_NAME is rocq-runtime after 8.20
 COQ_CORE_NAME=rocq-runtime
 
