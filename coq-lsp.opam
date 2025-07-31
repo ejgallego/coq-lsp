@@ -39,13 +39,11 @@ depends: [
   # This is now a hard dep due to API changes in 1.9.7
   "ocamlfind" { >= "1.9.8" }
 
-  # [release branch] Uncomment
-  # "rocq-prover"          { >= "9.1" < "9.2"  }
+  # Rocq
+  "rocq-core"          { >= "9.1" < "9.2"  }
+  "rocq-stdlib"        { >= "9" & with-test }
 
-  # [release branch] Remove
-  "zarith" {>= "1.13"}
-
-  # serlib deps: see what we need to keep for release
+  # serlib deps
   "ppx_deriving"        { >= "5.2"                 }
   "ppx_deriving_yojson" { >= "3.7.0"               }
   "ppx_import"          { >= "1.11.0"              }

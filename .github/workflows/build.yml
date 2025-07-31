@@ -71,10 +71,6 @@ jobs:
       - name: 🐫🐪🐫 Get dependencies
         run: opam exec -- make opam-deps
 
-      - name: 🐛 Special Windows Config [only on Win CI]
-        if: matrix.os == 'windows-latest'
-        run: opam exec -- make winconfig # Due to path quoting, could be fixed
-
       - name: 🧱 Build coq-lsp
         run: opam exec -- make build
 
@@ -171,7 +167,8 @@ jobs:
         run: |
           opam install lwt logs # Also build pet-server
           opam install memprof-limits # We need to do this to avoid coq-lsp rebuilding Coq below due to deptops
-          opam install vendor/coq/{rocq-runtime,coq-core,rocq-core,coqide-server}.opam vendor/coq-stdlib/{rocq,coq}-stdlib.opam
+          # Only for v9.1-RC1
+          opam repo add rocq-core-dev https://rocq-prover.org/opam/core-dev
 
       - name: Install `coq-lsp` into OPAM switch
         run: opam install .
@@ -181,27 +178,6 @@ jobs:
 
       - name: Test `pet-server` is built
         run: opam exec -- which pet-server
-
-  build-nix:
-    name: Nix
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macOS-latest]
-      fail-fast: false
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: 🔭 Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: ❄️ Setup Nix
-        uses: cachix/install-nix-action@v27
-
-      - name: 🧱 Build coq-lsp
-        run: nix build '.?submodules=1#'
 
   client-compile:
     runs-on: ubuntu-latest

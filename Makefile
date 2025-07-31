@@ -3,7 +3,7 @@ SHELL := /usr/bin/env bash
 COQ_BUILD_CONTEXT=../_build/default/coq
 
 # Set to true for main, comment out for released versions
-VENDORED_SETUP:=true
+# VENDORED_SETUP:=true
 
 ifdef VENDORED_SETUP
 PKG_SET= \
@@ -17,7 +17,7 @@ else
 PKG_SET= coq-lsp.install
 endif
 
-PKG_SET_WEB=$(PKG_SET) vendor/coq-waterproof/coq-waterproof.install
+PKG_SET_WEB=$(PKG_SET)
 
 # Get the ocamlformat version from the .ocamlformat file
 OCAMLFORMAT=ocamlformat.$$(awk -F = '$$1 == "version" {print $$2}' .ocamlformat)
@@ -125,6 +125,7 @@ opam-switch:
 # Install opam deps
 .PHONY: opam-deps
 opam-deps:
+	opam repo add rocq-core-dev https://rocq-prover.org/opam/core-dev # Only for v9.1-RC1
 	opam install ./coq-lsp.opam -y --deps-only --with-test
 
 # Install opam deps
@@ -173,9 +174,9 @@ opam-update-and-reinstall:
 	opam install .
 
 # Used in git clone
-COQ_BRANCH=v9.0
+COQ_BRANCH=v9.1
 # Used in opam pin
-COQ_CORE_VERSION=9.0.0
+COQ_CORE_VERSION=9.1-rc1
 # Name of COQ_CORE_NAME is rocq-runtime after 8.20
 COQ_CORE_NAME=rocq-runtime
 

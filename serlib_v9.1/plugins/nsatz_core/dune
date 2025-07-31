@@ -1,0 +1,12 @@
+(library
+ (name serlib_nsatz_core)
+ (public_name coq-lsp.serlib.nsatz_core)
+ (synopsis "Serialization Library for Coq Nsatz_core Plugin")
+ (preprocess
+  (staged_pps
+   ppx_import
+   ppx_sexp_conv
+   ppx_deriving_yojson
+   ppx_hash
+   ppx_compare))
+ (libraries rocq-runtime.plugins.nsatz_core serlib sexplib))
