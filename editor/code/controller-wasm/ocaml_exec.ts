@@ -84,7 +84,7 @@ class OCamlExecutable extends ExecCore {
 }
 
 
-type OCamlExecutableOptions = ExecCoreOptions & {
+export type OCamlExecutableOptions = ExecCoreOptions & {
     binDir?: string
 };
 

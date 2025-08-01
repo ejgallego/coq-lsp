@@ -6,22 +6,35 @@ function postMessage(msg) {
 
 async function main(baseURI : string) {
 
-  // We can only really start when we get the real baseURI from the extension side.
+    // We can only really start when we get the real baseURI from the extension side.
     let binDir = baseURI + "/controller-wasm/out/";
     let nmDir = baseURI + "/controller-wasm/node_modules/";
+
+    let arr = [];
+
+    // We buffer init messages
+    const pushMsg = (msg) => {
+        arr.push(msg.data);
+    }
+    addEventListener('message', pushMsg);
+
+    // start ICoq
     var icoq = new IcoqPod(binDir, nmDir);
 
-    postMessage(['Starting']);
     icoq.on('message', postMessage);
-    icoq.on('progress', ev => postMessage(['LibProgress', ev]));
 
+    await icoq.boot();
+
+    arr.forEach((a) => {
+      icoq.command(a)
+    });
+
+    // Remove the previous one
     addEventListener('message', (msg) => {
         icoq.command(msg.data);
     });
 
-    await icoq.boot();
-
-    postMessage(['Boot']);
+    removeEventListener('message', pushMsg);
 
     Object.assign(global, {icoq});
 }
@@ -36,3 +49,7 @@ async function main_get_dir() {
 }
 
 main_get_dir();
+
+// Local Variables:
+// typescript-indent-level: 4
+// End:

@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { unzipSync } from 'fflate';
 import { isBrowser, isWebWorker } from 'browser-or-node';
-import { OCamlExecutable, OCamlCAPI } from './ocaml_exec';
+import { OCamlExecutable, OCamlExecutableOptions, OCamlCAPI } from './ocaml_exec';
 import { WorkerInterrupts } from './interrupt';
 
 class IcoqPod extends EventEmitter {
@@ -19,7 +19,16 @@ class IcoqPod extends EventEmitter {
         this.binDir = binDir;
         this.nmDir = nmDir ?? '../node_modules';
 
-        this.core = new OCamlExecutable({stdin: false, tty: false, binDir: `${nmDir}/ocaml-wasm/bin`});
+        let options : OCamlExecutableOptions = {
+            stdin: false,
+            tty: false,
+            binDir: `${nmDir}/ocaml-wasm/bin`,
+            debug: false,
+            // debug: true,
+            // trace: { syscalls: true}
+        };
+
+        this.core = new OCamlExecutable(options);
 
         var utf8 = new TextDecoder();
         this.core.on('stream:out', ev => console.log(utf8.decode(ev.data)));
@@ -119,13 +128,20 @@ class IcoqPod extends EventEmitter {
         const wacoq_post = this.core.callbacks && this.core.callbacks.wacoq_post;
         if (!wacoq_post) return;
 
-        var json = (typeof cmd === 'string') ? cmd : JSON.stringify(cmd),
-            answer = wacoq_post(this.core.to_caml_string(json));
-        this._answer(answer);
+        var json = (typeof cmd === 'string') ? cmd : JSON.stringify(cmd);
+
+        // No more sync "return" type from calls
+        wacoq_post(this.core.to_caml_string(json));
+
+        return;
     }
 
     answer(msgs: any[][]) {
-        for (let msg of msgs) this.emit('message', msg);
+        if (Array.isArray(msgs)) {
+          for (let msg of msgs) this.emit('message', msg);
+        } else {
+          this.emit('message', msgs);
+        }
     }
 
     _answer(ptr: number) {
@@ -156,12 +172,18 @@ class IcoqPod extends EventEmitter {
             'dllbigstringaf_stubs.so', `${this.binDir}/dlllib_stubs.wasm`,
             {
                 js: {
-                    bigstringaf_blit_to_bytes: (vsrc, vsrc_off, vdst, vdst_off, vlen) => { },
-                    bigstringaf_blit_to_bigstring: (vsrc, vsrc_off, vdst, vdst_off, vlen) => {},
-                    bigstringaf_blit_from_bytes: (vsrc, vsrc_off, vdst, vdst_off, vlen) => {},
-                    bigstringaf_memcmp_bigstring: (vba1, vba1_off, vba2, vba2_off, vlen) => {},
-                    bigstringaf_memcmp_string: (vba, vba_off, vstr, vstr_off, vlen) => {},
-                    bigstringaf_memchr: (vba, vba_off, vchr, vlen) => {},
+                    bigstringaf_blit_to_bytes: (vsrc, vsrc_off, vdst, vdst_off, vlen) =>
+                        { console.log("bs_stubs: bigstringaf_blit_to_bytes"); },
+                    bigstringaf_blit_to_bigstring: (vsrc, vsrc_off, vdst, vdst_off, vlen) =>
+                        { console.log("bs_stubs: bigstringaf_blit_to_bigstring"); },
+                    bigstringaf_blit_from_bytes: (vsrc, vsrc_off, vdst, vdst_off, vlen) =>
+                        { console.log("bs_stubs: bigstringaf_blit_from_bytes"); },
+                    bigstringaf_memcmp_bigstring: (vba1, vba1_off, vba2, vba2_off, vlen) =>
+                        { console.log("bs_stubs: bigstringaf_memcmp_bigstring"); },
+                    bigstringaf_memcmp_string: (vba, vba_off, vstr, vstr_off, vlen) =>
+                        { console.log("bs_stubs: bigstringaf_memcmp_string"); },
+                    bigstringaf_memchr: (vba, vba_off, vchr, vlen) =>
+                        { console.log("bs_stubs: bigstringaf_memchr"); },
                 }
             });
         await this.core.proc.dyld.preload(
@@ -243,3 +265,7 @@ const DEFAULT_FETCH_MODE: FetchMode = (isBrowser || isWebWorker) ? 'browser' : '
 
 
 export  { IcoqPod, DownloadProgress }
+
+// Local Variables:
+// typescript-indent-level: 4
+// End:

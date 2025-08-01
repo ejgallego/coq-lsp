@@ -9,10 +9,13 @@ type t
 (** Builds and URI from a string, like the ones present in the LSP protocol wire *)
 val of_string : string -> t
 
+(** Returns the string corresponding to an URI *)
+val to_string : t -> string
+
 (** Checks if a URI points to a (local) file *)
 val is_file_path : t -> bool
 
-(** Uris that are filesystem paths *)
+(** Uris that are filesystem paths [file:///] URIs *)
 module File : sig
   type uri = t
   type t
