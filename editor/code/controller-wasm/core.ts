@@ -40,7 +40,7 @@ class IcoqPod extends EventEmitter {
         await this.upload(`${this.binDir}/wacoq_worker.bc`, '/lib/icoq.bc');
         await this.findlibStartup(); /* @todo */
 
-        this._preloadStub();
+        await this._preloadStub();
 
         await this.core.run('/lib/icoq.bc', [], ['wacoq_post']);
     }
@@ -140,19 +140,19 @@ class IcoqPod extends EventEmitter {
     /**
      * (internal) Initializes the dllcoqrun_stub shared library.
      */
-    _preloadStub() {
-        this.core.proc.dyld.preload(
+    async _preloadStub() {
+        await this.core.proc.dyld.preload(
             'dllzarith.so', `${this.nmDir}/@ocaml-wasm/4.12--zarith/bin/dllzarith.wasm`);
-        this.core.proc.dyld.preload(
+        await this.core.proc.dyld.preload(
             'dllbase_stubs.so', `${this.nmDir}/@ocaml-wasm/4.12--janestreet-base/bin/dllbase_stubs.wasm`);
-        this.core.proc.dyld.preload(
+        await this.core.proc.dyld.preload(
             'dllbase_internalhash_types_stubs.so', `${this.nmDir}/@ocaml-wasm/4.12--janestreet-base/bin/dllbase_internalhash_types_stubs.wasm`);
-        this.core.proc.dyld.preload(
+        await this.core.proc.dyld.preload(
             'dllcoqrun_stubs.so', `${this.binDir}/dllcoqrun_stubs.wasm`);
-        this.core.proc.dyld.preload(
+        await this.core.proc.dyld.preload(
             'dllcoqperf_stubs.so', `${this.binDir}/dllcoqperf_stubs.wasm`);
         /** @ouch these null stubs are needed because of some spurious dependency */
-        this.core.proc.dyld.preload(
+        await this.core.proc.dyld.preload(
             'dllbigstringaf_stubs.so', `${this.binDir}/dlllib_stubs.wasm`,
             {
                 js: {
@@ -164,13 +164,13 @@ class IcoqPod extends EventEmitter {
                     bigstringaf_memchr: (vba, vba_off, vchr, vlen) => {},
                 }
             });
-        this.core.proc.dyld.preload(
+        await this.core.proc.dyld.preload(
             'dlllib_stubs.so', `${this.binDir}/dlllib_stubs.wasm`,
             {
                 js: {
                     wacoq_emit: (s:number) => this._answer(s),
                     interrupt_pending: (_:number) => this._interrupt_pending(),
-                    coq_vm_trap: (u:void) => console.warn('coq vm trap!')
+                    rocq_vm_trap: (u:void) => console.warn('rocq vm trap!')
                 }
             }
         );
