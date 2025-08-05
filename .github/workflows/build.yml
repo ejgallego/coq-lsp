@@ -127,6 +127,7 @@ jobs:
         run: make patch-for-js
 
       - name: 🦏🧱🦏 Build coq-lsp JS version 🦏🦏🦏
+        if: false # Disabled due to https://github.com/ocaml/ocaml/issues/11803
         run: |
           opam exec -- make controller-js/coq-fs-core.js
           opam exec -- make js
