@@ -23,7 +23,7 @@ class IcoqPod extends EventEmitter {
             stdin: false,
             tty: false,
             binDir: `${nmDir}/ocaml-wasm/bin`,
-            debug: false,
+            debug: true,
             // debug: true,
             // trace: { syscalls: true}
         };
