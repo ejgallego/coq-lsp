@@ -705,7 +705,7 @@ let search_node ~command ~doc ~st =
   in
   match command with
   | Coq.Ast.Meta.Command.Back num -> (
-    match Base.List.nth doc.nodes num with
+    match List.nth_opt doc.nodes num with
     | None ->
       let message = back_overflow num in
       (Coq.Protect.E.error message, nstats None)
