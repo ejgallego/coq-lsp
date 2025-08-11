@@ -9,7 +9,10 @@
 (* Rocq Language Server Protocol: LSP Controller (Javascript)            *)
 (*************************************************************************)
 
-let e cc = Format.kfprintf (fun fmt -> Format.fprintf fmt "@\n%!") Format.err_formatter cc
+let e cc =
+  Format.kfprintf
+    (fun fmt -> Format.fprintf fmt "@\n%!")
+    Format.err_formatter cc
 
 external emit : string -> unit = "wacoq_emit" (* implemented in `core.ts` *)
 
@@ -102,15 +105,13 @@ let handleRequest ~io ~root_state ~cmdline ~debug json : unit =
   | Ok cmd -> handleCmd ~io ~root_state ~cmdline ~debug cmd
 
 let main () =
-
-  let () =
-    Array.iter (Format.eprintf "%s@\n") (Sys.readdir "/")
-  in
+  let () = Array.iter (Format.eprintf "%s@\n") (Sys.readdir "/") in
 
   e "boot: phase 1";
 
   (* Remove when we have the filesystem *)
-  Coq.Compat.Ocaml_414.Out_channel.with_open_bin findlib_path (fun oc -> Stdlib.output_string oc findlib_conf);
+  Coq.Compat.Ocaml_414.Out_channel.with_open_bin findlib_path (fun oc ->
+      Stdlib.output_string oc findlib_conf);
 
   e "boot: phase 2";
   (* This is needed if dynlink is enabled in 4.03.0 *)

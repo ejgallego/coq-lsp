@@ -1,2 +1,5 @@
 (executable
- (name build_fs))
+ (name build_fs)
+ (libraries str))
+
+; (libraries zipc))

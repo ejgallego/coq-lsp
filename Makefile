@@ -221,6 +221,9 @@ else
 _CCROOT=$(shell rocq c -where)/../$(COQ_CORE_NAME)
 endif
 
+# XXX: Fix the above as rocq c -where suffices
+_ROCQLIB=$(shell dune exec -- rocq c -where)
+
 # Super-hack
 controller-js/coq-fs-core.js: COQVM = no
 controller-js/coq-fs-core.js: coq_boot
@@ -257,6 +260,13 @@ controller-js/coq-fs-core.js: coq_boot
 	    $$(find $(_LIBROOT) -wholename '*/ppx_deriving_yojson/META' -printf "%p:/static/lib/%P ")
 	    # These libs are actually linked, so no cma is needed.
 	    # $$(find $(_LIBROOT) -wholename '*/zarith/*.cma'         -printf "%p:/static/lib/%P " -or -wholename '*/zarith/META'         -printf "%p:/static/lib/%P ")
+
+editor/code/controller-wasm/out/core-fs.zip:
+	$(eval TMP := $(shell mktemp -d ./.wasm-build-fs-XXXXXX))
+	dune exec -- ./etc/tools/build-fs/build_fs.exe $(_LIBROOT) $(_CCROOT) $(_ROCQLIB) $(TMP)/fs
+	cd $(TMP)/fs &&	zip -rq core-fs.zip static
+	cp -a $(TMP)/fs/core-fs.zip $@
+	rm -rf $(TMP)
 
 .PHONY: check-js-fs-sanity
 check-js-fs-sanity: controller-js/coq-fs-core.js js
