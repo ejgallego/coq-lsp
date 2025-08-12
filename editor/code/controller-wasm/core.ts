@@ -23,7 +23,7 @@ class IcoqPod extends EventEmitter {
             stdin: false,
             tty: false,
             binDir: `${nmDir}/ocaml-wasm/bin`,
-            debug: true,
+            debug: false,
             // debug: true,
             // trace: { syscalls: true}
         };
@@ -38,9 +38,11 @@ class IcoqPod extends EventEmitter {
     }
 
     async findlibStartup() {
-        this.putFile('/lib/findlib.conf', `path="/lib/ocaml"`);
+        // this.putFile('/lib/findlib.conf', `path="/lib/ocaml"`);
 
-        // await this.unzip('/scratch/lib.zip', '/lib/ocaml');
+        // Base filesystem with Rocq's Corelib and OCaml dynlink info
+        // and plugins
+        await this.unzip(this.binDir + 'core-fs.zip', '/');
     }
 
     get fs() { return this.core.fs; }
@@ -68,7 +70,7 @@ class IcoqPod extends EventEmitter {
 
         await Promise.all(uris.map(async uri => {
             try {
-                await this.unzip(uri, '/lib');
+                await this.unzip(uri, '/');
                 this.answer([['LibLoaded', uri]]);
             }
             catch (e) {
@@ -77,7 +79,7 @@ class IcoqPod extends EventEmitter {
             }
         }));
 
-        //if (refresh)
+        // if (refresh)
         //    this.command(['RefreshLoadPath']);
 
         this.answer([['LoadedPkg', uris]]);

@@ -33,7 +33,7 @@ let post_message (msg : Fleche_lsp.Base.Message.t) =
 
 (* This code is executed on Worker initialization *)
 (* Duplicated with coq_lsp_worker.ml , but not using JSOO *)
-let findlib_conf = "\ndestdir=\"/lib\"path=\"/lib\""
+let findlib_conf = "\ndestdir=\"/static/lib\"path=\"/static/lib\""
 let findlib_path = "/lib/findlib.conf"
 
 let coq_init ~debug =
@@ -105,13 +105,15 @@ let handleRequest ~io ~root_state ~cmdline ~debug json : unit =
   | Ok cmd -> handleCmd ~io ~root_state ~cmdline ~debug cmd
 
 let main () =
-  let () = Array.iter (Format.eprintf "%s@\n") (Sys.readdir "/") in
-
   e "boot: phase 1";
 
   (* Remove when we have the filesystem *)
   Coq.Compat.Ocaml_414.Out_channel.with_open_bin findlib_path (fun oc ->
       Stdlib.output_string oc findlib_conf);
+
+  let () = Array.iter (Format.eprintf "%s@\n") (Sys.readdir "/") in
+
+  let () = Array.iter (Format.eprintf "%s@\n") (Sys.readdir "/lib") in
 
   e "boot: phase 2";
   (* This is needed if dynlink is enabled in 4.03.0 *)
@@ -134,7 +136,7 @@ let main () =
   Fleche.Io.CallBack.set io;
 
   e "boot: phase 3";
-  let _stdlib coqlib =
+  let stdlib coqlib =
     let unix_path = Filename.concat coqlib "theories" in
     let coq_path = Names.(DirPath.make [ Id.of_string "Corelib" ]) in
     Loadpath.
@@ -146,7 +148,7 @@ let main () =
       }
   in
 
-  let _user_contrib coqlib =
+  let user_contrib coqlib =
     let unix_path = Filename.concat coqlib "user-contrib" in
     let coq_path = Names.DirPath.empty in
     Loadpath.
@@ -159,19 +161,16 @@ let main () =
   in
 
   let cmdline =
-    let coqlib = "/static/coqlib" in
+    let coqlib = "/static/rocqlib" in
     let findlib_config = Some findlib_path in
     let ocamlpath = [] in
-    let vo_load_path = [] in
-    (* let vo_load_path = List.map (fun f -> f coqlib) [ stdlib; user_contrib ]
-       in *)
+    let vo_load_path = List.map (fun f -> f coqlib) [ stdlib; user_contrib ] in
     Coq.Workspace.CmdLine.
       { coqlib
       ; findlib_config
       ; ocamlpath
       ; vo_load_path
-        (* ; require_libraries = [ (None, "Corelib.Init.Prelude") ] *)
-      ; require_libraries = []
+      ; require_libraries = [ (None, "Corelib.Init.Prelude") ]
       ; args = [ "-noinit"; "-boot" ]
       }
   in

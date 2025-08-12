@@ -73,6 +73,10 @@ export function activate(context: ExtensionContext): CoqLspAPI {
     let worker = new Worker(coqWorker.toString(true));
     worker.postMessage(context.extensionUri.toString());
 
+    // send core fs (loaded worker side due to async)
+    // let core_fs_uri = Uri.joinPath(context.extensionUri, "controller-wasm/out/core-fs.zip");
+    // worker.postMessage(["LoadPkg", core_fs_uri.toString()]);
+
     // let client = new InterruptibleLC(
     //   "coq-lsp",
     //   "Coq LSP Worker",
