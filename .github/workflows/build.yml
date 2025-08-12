@@ -149,6 +149,7 @@ jobs:
           mkdir editor/code/controller-wasm/out
           opam exec -- make extension
           cd editor/code/controller-wasm/ && npm run esbuild
+          make editor/code/controller-wasm/out/core-fs.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

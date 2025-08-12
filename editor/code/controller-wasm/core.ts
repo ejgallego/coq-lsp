@@ -120,6 +120,7 @@ class IcoqPod extends EventEmitter {
     }
 
     command(cmd: any[]) {
+        console.log(cmd);
         switch (cmd[0]) {
         case 'LoadPkg':        this.loadPackages(cmd[1]);          return;
         case 'Put':            this.putFile(cmd[1], cmd[2]);       return;
