@@ -147,8 +147,12 @@ jobs:
       - name: 🦏🧱🦏 Build coq-lsp VSCode extension 🦏🦏🦏
         run: |
           mkdir editor/code/controller-wasm/out
+          opam exec -- make
+          opam exec -- make wp
           opam exec -- make extension
           cd editor/code/controller-wasm/ && npm run esbuild
+          cd ../../..
+          opam exec -- make editor/code/controller-wasm/out/core-fs.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

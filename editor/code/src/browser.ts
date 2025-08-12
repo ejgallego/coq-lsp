@@ -28,8 +28,11 @@ class InterruptibleLC extends LanguageClient {
     // See https://code.visualstudio.com/updates/v1_72#_towards-cross-origin-isolation
     // See https://github.com/microsoft/vscode-wasm
     if (typeof SharedArrayBuffer !== "undefined") {
+      console.log("Interrupt Setup Requested (client)");
       this.interrupt_vec = new Int32Array(new SharedArrayBuffer(4));
-      worker.postMessage(["SetupInterrupt", this.interrupt_vec]);
+      worker.postMessage(["InterruptSetup", this.interrupt_vec]);
+    } else {
+      console.log("Interrupt Setup Failed (client)");
     }
 
     this.middleware.sendRequest = (type, param, token, next) => {
@@ -49,6 +52,7 @@ class InterruptibleLC extends LanguageClient {
 
   public interrupt() {
     if (this.interrupt_vec) {
+      console.log("interrupt requested (InterruptibleLC)");
       Atomics.add(this.interrupt_vec, 0, 1);
     }
   }
@@ -77,18 +81,18 @@ export function activate(context: ExtensionContext): CoqLspAPI {
     // let core_fs_uri = Uri.joinPath(context.extensionUri, "controller-wasm/out/core-fs.zip");
     // worker.postMessage(["LoadPkg", core_fs_uri.toString()]);
 
-    // let client = new InterruptibleLC(
-    //   "coq-lsp",
-    //   "Coq LSP Worker",
-    //   clientOptions,
-    //   worker
-    // );
-    let client = new LanguageClient(
+    let client = new InterruptibleLC(
       "coq-lsp",
       "Coq LSP Worker",
       clientOptions,
       worker
     );
+    // let client = new LanguageClient(
+    //   "coq-lsp",
+    //   "Coq LSP Worker",
+    //   clientOptions,
+    //   worker
+    // );
     return client;
   };
 

@@ -5,3 +5,8 @@ VSCode-compatible.
 
 - Code derived from jsCoq (c) Shachar Itzhaky
 - Note: jsCoq provides an official WASM build for browsers
+
+To build the artifact:
+
+$ tar cvfj ../coq-lsp-wasm.tar.gz --exclude=./node_modules .
+
