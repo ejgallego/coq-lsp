@@ -19,7 +19,10 @@ module File = struct
     }
 
   let of_uri uri =
-    Result.Ok { uri; file = String.sub uri 8 (String.length uri - 8) }
+    if String.length uri > 0 then
+      if Char.equal uri.[0] '/' then Result.Ok { uri; file = uri }
+      else Result.Ok { uri; file = String.sub uri 8 (String.length uri - 8) }
+    else Result.Ok { uri = ""; file = "" }
 
   let to_string_uri { uri; _ } = uri
   let to_string_file { file; _ } = file

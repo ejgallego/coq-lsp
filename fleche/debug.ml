@@ -37,7 +37,7 @@ let backtraces = false || all
 let unicode = false || all
 
 (* Sched wakeup *)
-let sched_wakeup = false || all
+let sched_wakeup = true || all
 
 (* Request event queue *)
 let request_delay = true || all

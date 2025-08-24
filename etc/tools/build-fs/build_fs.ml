@@ -186,15 +186,21 @@ let find_plugins ~config:{ Rocq_config.rocq_root; _ } =
   let wp_root = "_build/install/default/lib/coq-waterproof/" in
   let pat = Str.regexp "plugin/.*.cma\\|META" in
   let waterproof_entries =
-    build_entries ~oldbase:wp_root ~newbase:"/static/lib/coq-waterproof/" ~pat () in
+    build_entries ~oldbase:wp_root ~newbase:"/static/lib/coq-waterproof/" ~pat
+      ()
+  in
   rocq_entries @ serlib_entries @ waterproof_entries
 
 let find_vo ~config:{ Rocq_config.rocqlib; _ } =
   let pat = Str.regexp ".*" in
   let oldbase = rocqlib / "theories" in
-  let corelib = build_entries ~oldbase ~newbase:"/static/rocqlib/theories/" ~pat () in
+  let corelib =
+    build_entries ~oldbase ~newbase:"/static/rocqlib/theories/" ~pat ()
+  in
   let oldbase = rocqlib / "user-contrib" in
-  let user_contrib = build_entries ~oldbase ~newbase:"/static/rocqlib/user-contrib/" ~pat () in
+  let user_contrib =
+    build_entries ~oldbase ~newbase:"/static/rocqlib/user-contrib/" ~pat ()
+  in
   corelib @ user_contrib
 
 let check_output_dir ~dir =
@@ -219,7 +225,7 @@ let main () =
   let meta_files = find_meta ~config in
   let plugins = find_plugins ~config in
   let vo = find_vo ~config in
-  let all_files = pt :: meta_files @ plugins @ vo in
+  let all_files = (pt :: meta_files) @ plugins @ vo in
   build ~dir all_files;
   compress ~dir;
   ()
