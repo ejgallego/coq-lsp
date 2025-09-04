@@ -48,6 +48,7 @@ import {
   defaultStatus,
   coqServerVersion,
   coqServerStatus,
+  rocqExecInfo,
 } from "./status";
 import { CoqLspClientConfig, CoqLspServerConfig, CoqSelector } from "./config";
 import { InfoPanel, goalReq } from "./goals";
@@ -91,6 +92,8 @@ let lspStatusItem: StatusBarItem;
 let languageStatus: CoqLanguageStatus;
 let languageVersionHook: Disposable;
 let languageStatusHook: Disposable;
+
+let execInfoHook: Disposable;
 
 // Lifetime of the perf data setup == client lifetime for the hook, extension for the webview
 let perfDataView: PerfDataView;
@@ -197,6 +200,7 @@ export function activateCoqLSP(
           heatMap.dispose();
           languageVersionHook.dispose();
           languageStatusHook.dispose();
+          execInfoHook.dispose();
         });
     } else return Promise.resolve();
   };
@@ -232,6 +236,11 @@ export function activateCoqLSP(
 
       languageStatusHook = client.onNotification(coqServerStatus, (data) => {
         languageStatus.updateStatus(data, serverConfig.check_only_on_request);
+      });
+
+      execInfoHook = client.onNotification(rocqExecInfo, (data) => {
+        // Do nothing (for now)
+        return;
       });
 
       resolve(client);

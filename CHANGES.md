@@ -36,6 +36,9 @@ unreleased
    shown; if `false`, it will always show errors and messages for the
    specified `position`, if there is a Rocq sentence at hand
    (@jpoiret, @ejgallego, #999, fixes: #941)
+ - [lsp] New notification `$/coq/executionInformation` which will
+   signal clients when rocq-lsp does intent to start to execute a
+   sentence (@ejgallego, suggested by @jpoiret, #1002)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------
