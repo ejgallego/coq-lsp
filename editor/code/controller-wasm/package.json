@@ -1,0 +1,71 @@
+{
+  "name": "coq-lsp-wasm",
+  "displayName": "Coq LSP WASM Build",
+  "description": "Coq LSP provides native vsCode support for checking Coq proof documents",
+  "version": "0.2.4-dev",
+  "contributors": [
+    "Emilio Jesús Gallego Arias <e@x80.org>",
+    "Ali Caglayan <alizter@gmail.com>",
+    "Shachar Itzhaky <shachari@cs.technion.ac.il>",
+    "Ramkumar Ramachandra <r@artagnon.com>"
+  ],
+  "publisher": "ejgallego",
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "keywords": [
+    "interactive theorem proving",
+    "dependent types",
+    "coq",
+    "software verification"
+  ],
+  "homepage": "https://github.com/ejgallego/coq-lsp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ejgallego/coq-lsp"
+  },
+  "devDependencies": {
+    "@types/node": "^18.18.1",
+    "@types/vscode": "^1.75.0",
+    "@vscode/vsce": "^2.21.1",
+    "@vscode/wasm-wasi": "^1.0.1",
+    "browser-or-node": "^2.0.0",
+    "esbuild": "^0.16.17",
+    "assert": "^2.0.0",
+    "buffer": "^4.9.2",
+    "fflate-unzip": "^0.7.0",
+    "path": "^0.12.7",
+    "path-browserify": "^1.0.1",
+    "prettier": "^3.2.5",
+    "stream-browserify": "^3.0.0",
+    "typescript": "^5.2.2",
+    "wasi-kernel": "^0.1.6"
+  },
+  "dependencies": {
+    "@ocaml-wasm/4.12--janestreet-base": "^0.16.0-0",
+    "@ocaml-wasm/4.12--num": "^1.4.0-0",
+    "@ocaml-wasm/4.12--zarith": "^1.13.0-0",
+    "events": "^3.3.0",
+    "ocaml-wasm": "^4.12.0-0"
+  },
+  "browser": {
+    "path": "path-browserify",
+    "stream": "stream-browserify",
+    "tty": false,
+    "url": false,
+    "worker_threads": false,
+    "fs": false,
+    "crypto": false
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run typecheck && npm run esbuild -- --minify --sourcemap=no",
+    "esbuild": "node esbuild.mjs",
+    "typecheck": "tsc -b .",
+    "compile": "npm run esbuild",
+    "watch": "npm run esbuild -- --watch"
+  }
+}
