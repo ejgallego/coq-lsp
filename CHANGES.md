@@ -36,6 +36,10 @@ unreleased
    shown; if `false`, it will always show errors and messages for the
    specified `position`, if there is a Rocq sentence at hand
    (@jpoiret, @ejgallego, #999, fixes: #941)
+ - [coq] Install full state before parsing. Before we did only
+   `Pcoq.unfreeze` but that is not enough, in particular the call to
+   `get_default_proof_mode` will not be correct (@ejgallego, @pimotte,
+   #1011, fixes #656)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------

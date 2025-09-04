@@ -12,15 +12,15 @@ module Pcoq = Procq
 module Parsable = Pcoq.Parsable
 
 let parse ~st ps =
-  let mode = State.mode ~st in
-  let pst = State.parsing ~st in
   (* Coq is missing this, so we add it here. Note that this MUST run inside
      coq_protect *)
   Control.check_for_interrupt ();
-  Pcoq.unfreeze pst;
+  let mode = State.mode ~st in
   Pcoq.Entry.parse Pvernac.(main_entry mode) ps |> Option.map Ast.of_coq
 
-let parse ~token ~st ps = Protect.eval ~token ~f:(parse ~st) ps
+let parse ~token ~st ps =
+  (* This runs already inside Coq.protect *)
+  State.in_state ~token ~st ~f:(parse ~st) ps
 
 (* Read the input stream until a dot or a "end of proof" token is encountered *)
 let parse_to_terminator : unit Pcoq.Entry.t =
