@@ -58,7 +58,7 @@ jobs:
 
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -102,7 +102,7 @@ jobs:
           sudo aptitude -o Acquire::Retries=30 install gcc-multilib g++-multilib pkg-config libgmp-dev libgmp-dev:i386 -y
 
       - name: 🔭 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -129,7 +129,7 @@ jobs:
           opam exec -- make js
 
       - name: 🚀 Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: "npm"
@@ -157,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -193,12 +193,12 @@ jobs:
 
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
       - name: ❄️ Setup Nix
-        uses: cachix/install-nix-action@v27
+        uses: cachix/install-nix-action@v31
 
       - name: 🧱 Build coq-lsp
         run: nix build '.?submodules=1#'
@@ -227,6 +227,6 @@ jobs:
         with:
           submodules: recursive
       - name: ❄️ Setup Nix
-        uses: cachix/install-nix-action@v18
+        uses: cachix/install-nix-action@v31
       - name: 📐 Run flake check
         run: nix flake check
