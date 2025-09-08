@@ -224,3 +224,9 @@ export interface PetRunParams {
   st: number;
   tac: string;
 }
+
+// Exec Info
+export interface ExecutionInfoParams {
+  textDocument: VersionedTextDocumentIdentifier;
+  range: Range;
+}

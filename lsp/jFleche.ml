@@ -178,3 +178,19 @@ let mk_serverStatus (st : Fleche.ServerInfo.Status.t) =
       [ ("status", `String "Busy"); ("modname", `String modname) ]
   in
   Base.Notification.make ~method_:"$/coq/serverStatus" ~params ()
+
+module ExecInfoParams = struct
+  type t =
+    { textDocument : Doc.VersionedTextDocumentIdentifier.t
+    ; range : JLang.Range.t
+    }
+  [@@deriving yojson]
+end
+
+let mk_execinfo ~uri ~version ~range =
+  let textDocument = { Doc.VersionedTextDocumentIdentifier.uri; version } in
+  let params =
+    ExecInfoParams.(to_yojson { textDocument; range })
+    |> Yojson.Safe.Util.to_assoc
+  in
+  Base.Notification.make ~method_:"$/coq/executionInformation" ~params ()
