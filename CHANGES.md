@@ -40,6 +40,7 @@ unreleased
    `Pcoq.unfreeze` but that is not enough, in particular the call to
    `get_default_proof_mode` will not be correct (@ejgallego, @pimotte,
    #1011, fixes #656)
+ - [ci] CI support for OxCaml (@ejgallego, #1009)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------

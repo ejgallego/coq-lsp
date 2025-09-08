@@ -45,6 +45,11 @@ jobs:
           - os: ubuntu-latest
             ocaml: 5.2.x
           - os: ubuntu-latest
+            ocaml: ocaml-variants.5.2.0+ox
+            repositories: |
+              ox: https://github.com/oxcaml/opam-repository.git
+              default: https://github.com/ocaml/opam-repository.git
+          - os: ubuntu-latest
             ocaml: 5.3.x
           - os: macos-latest
             ocaml: 4.14.x
@@ -56,6 +61,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
 
+    env:
+      opam-default-repos: "default: https://github.com/ocaml/opam-repository.git"
+
     steps:
       - name: 🔭 Checkout code
         uses: actions/checkout@v5
@@ -66,6 +74,7 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml }}
+          opam-repositories: ${{ matrix.repositories || env.opam-default-repos }}
           dune-cache: true
 
       - name: 🐫🐪🐫 Get dependencies
