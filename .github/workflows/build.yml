@@ -125,7 +125,7 @@ jobs:
 
       - name: 🦏🧱🦏 Build coq-lsp JS version 🦏🦏🦏
         run: |
-          opam exec -- make controller-js/coq-fs-core.js
+          opam exec -- make lsp-server/jsoo/coq-fs-core.js
           opam exec -- make js
 
       - name: 🚀 Setup node
