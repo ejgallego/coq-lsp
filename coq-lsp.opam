@@ -43,7 +43,7 @@ depends: [
   # "rocq-prover"          { >= "9.1" < "9.2"  }
 
   # [release branch] Remove
-  "zarith" {>= "1.13"}
+  "zarith" {>= "1.12"}
 
   # serlib deps: see what we need to keep for release
   "ppx_deriving"        { >= "5.2"                 }
