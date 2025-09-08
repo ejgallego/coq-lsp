@@ -29,8 +29,8 @@ let parse_to_terminator : unit Pcoq.Entry.t =
     match Gramlib.LStream.next kwstate st with
     | Some
         ( Tok.KEYWORD ("." | "..." | "Qed" | "Defined" | "Admitted")
-        | Tok.BULLET _ ) -> ()
-    | Some Tok.EOI -> ()
+        | Tok.BULLET _ ) -> Ok ()
+    | Some Tok.EOI -> Ok ()
     | Some _ -> dot kwstate st
     | None -> assert false (* should get EOI before None *)
   in
