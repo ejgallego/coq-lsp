@@ -51,7 +51,9 @@ export namespace CoqLspServerConfig {
       show_state_hash_on_hover: wsConfig.show_state_hash_on_hover,
       check_only_on_request: wsConfig.check_only_on_request,
       send_perf_data: wsConfig.send_perf_data,
-      completion: wsConfig.completion,
+      // VSCode wraps wsConfig.completion into a Proxy, which cannot
+      // be sent to a Web Worker, tricky stuff...
+      completion: JSON.parse(JSON.stringify(wsConfig.completion)),
     };
   }
 }
