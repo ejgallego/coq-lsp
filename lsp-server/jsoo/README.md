@@ -18,8 +18,8 @@ information.
 The worker needs two parts to work:
 
 - the worker binary
-- the worker OCaml filesystem (`controller-js/coq-fs-core.js`)
-- the worker Coq filesystem (`controller-js/coq-fs.js`)
+- the worker OCaml filesystem (`lsp-server/jsoo/coq-fs-core.js`)
+- the worker Coq filesystem (`lsp-server/jsoo/coq-fs.js`)
 
 which are then bundled in a single `.js` file.
 
@@ -31,7 +31,7 @@ Type:
 
 ```
 make patch-for-js                 # (only once, patch Coq for JS build)
-make controller-js/coq-fs-core.js # build the OCaml filesystem, needed when plugins change
+make lsp-server/jsoo/coq-fs-core.js # build the OCaml filesystem, needed when plugins change
 make js                           # build the worker and link with the FS.
 ```
 to get a working build in `editor/code/out`.
@@ -48,7 +48,7 @@ selecting "Web Extension" in the run menu works out of the box.
 A quick recipe from the manual is:
 
 ```
-$ make controller-js/coq-fs-core.js && make js
+$ make lsp-server/jsoo/coq-fs-core.js && make js
 $ npx @vscode/test-web --browser chromium --extensionDevelopmentPath=editor/code
 $ chrome localhost:3000
 ```

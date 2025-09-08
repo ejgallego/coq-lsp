@@ -96,8 +96,8 @@ wp:
 .PHONY: js
 js: COQVM = no
 js: coq_boot
-	dune build --profile=release --display=quiet $(PKG_SET_WEB) controller-js/coq_lsp_worker.bc.cjs
-	mkdir -p editor/code/out/ && cp -a controller-js/coq_lsp_worker.bc.cjs editor/code/out/coq_lsp_worker.bc.js
+	dune build --profile=release --display=quiet $(PKG_SET_WEB) lsp-server/jsoo/coq_lsp_worker.bc.cjs
+	mkdir -p editor/code/out/ && cp -a lsp-server/jsoo/coq_lsp_worker.bc.cjs editor/code/out/coq_lsp_worker.bc.js
 
 .PHONY: coq_boot
 
@@ -211,13 +211,13 @@ _CCROOT=$(shell rocq c -where)/../$(COQ_CORE_NAME)
 endif
 
 # Super-hack
-controller-js/coq-fs-core.js: COQVM = no
-controller-js/coq-fs-core.js: coq_boot
+lsp-server/jsoo/coq-fs-core.js: COQVM = no
+lsp-server/jsoo/coq-fs-core.js: coq_boot
 	dune build --profile=release --display=quiet $(PKG_SET_WEB) etc/META.threads
 	for i in $$(find $(_CCROOT)/plugins -name *.cma); do js_of_ocaml --dynlink $$i; done
 	for i in $$(find _build/install/default/lib/coq-lsp/serlib -wholename */*.cma); do js_of_ocaml --dynlink $$i; done
 	for i in $$(find $(_CCROOT)/../coq-waterproof -name *.cma); do js_of_ocaml --dynlink $$i; done
-	js_of_ocaml build-fs -o controller-js/coq-fs-core.js \
+	js_of_ocaml build-fs -o lsp-server/jsoo/coq-fs-core.js \
 	    $$(find $(_CCROOT)/                          \( -wholename '*/plugins/*/*.js' -or -wholename '*/META' \) -printf "%p:/static/lib/$(COQ_CORE_NAME)/%P ") \
 	    $$(find _build/install/default/lib/coq-lsp/  \( -wholename '*/serlib/*/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-lsp/%P ") \
 	    $$(find $(_CCROOT)/../coq-waterproof/  \( -wholename '*/plugin/*.js'  -or -wholename '*/META' \) -printf "%p:/static/lib/coq-waterproof/%P ") \
@@ -248,9 +248,9 @@ controller-js/coq-fs-core.js: coq_boot
 	    # $$(find $(_LIBROOT) -wholename '*/zarith/*.cma'         -printf "%p:/static/lib/%P " -or -wholename '*/zarith/META'         -printf "%p:/static/lib/%P ")
 
 .PHONY: check-js-fs-sanity
-check-js-fs-sanity: controller-js/coq-fs-core.js js
-	cat _build/default/controller-js/coq-fs.js | grep '/static/'
-	cat controller-js/coq-fs-core.js | grep '/static/'
+check-js-fs-sanity: lsp-server/jsoo/coq-fs-core.js js
+	cat _build/default/lsp-server/jsoo/coq-fs.js | grep '/static/'
+	cat lsp-server/jsoo/coq-fs-core.js | grep '/static/'
 
 # Serlib plugins require:
 #   ppx_compare.runtime-lib
