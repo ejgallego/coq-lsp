@@ -338,6 +338,20 @@ let simple_run_result res feedback =
   let feedback = List.map fb_print_string feedback in
   Run_result.{ st = res; hash; proof_finished; feedback }
 
+let list_notations_in_statement ~token ~st ~statement () :
+    Notations.Notation.t list Run_result.t R.t =
+  (let open Coq.Protect.E.O in
+   let pa = Coq.Parsing.Parsable.make Gramlib.Stream.(of_string statement) in
+   let* ast = Coq.Parsing.parse ~token ~st pa in
+   let+ ntnl = match ast with
+     | Some ast ->
+       let intern = Vernacinterp.fs_intern in
+       Notations.coq_list_notations_in_statement ~token ~intern ~st ast
+     | None -> Coq.Protect.E.ok []
+   in
+   simple_run_result ntnl)
+  |> protect_to_result
+
 let ast ~token ~st ~text () : Coq.Ast.t option Run_result.t R.t =
   (let open Coq.Protect.E.O in
    let pa = Coq.Parsing.Parsable.make Gramlib.Stream.(of_string text) in
