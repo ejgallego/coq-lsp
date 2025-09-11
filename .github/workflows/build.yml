@@ -148,7 +148,7 @@ jobs:
           opam exec -- make
           opam exec -- make wp
           opam exec -- make extension
-          opam exec -- make editor/code/controller-wasm/out/core-fs.zip
+          opam exec -- make editor/code/wasm-bin/core-fs.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -159,14 +159,9 @@ jobs:
             editor/code/README.md
             editor/code/CHANGELOG.md
             editor/code/syntaxes
-            editor/code/out/
             editor/code/coq.configuration.json
-
-            # editor/code/controller-wasm/out/
-            # editor/code/controller-wasm/node_modules/@ocaml-wasm/4.12--janestreet-base/bin/
-            # editor/code/controller-wasm/node_modules/@ocaml-wasm/4.12--num/bin/
-            # editor/code/controller-wasm/node_modules/@ocaml-wasm/4.12--zarith/bin/
-            # editor/code/controller-wasm/node_modules/ocaml-wasm/bin/
+            editor/code/out/
+            editor/code/wasm-bin/
 
           compression-level: 9
   build-opam:

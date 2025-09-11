@@ -27,7 +27,6 @@ class InterruptibleLC extends LanguageClient {
     // - pass --enable-coi to vscode
     // - use `?enable-coi= in the vscode dev setup
     // See https://code.visualstudio.com/updates/v1_72#_towards-cross-origin-isolation
-    // See https://github.com/microsoft/vscode-wasm
     if (typeof SharedArrayBuffer !== "undefined") {
       console.log("Interrupt Setup Requested (client)");
       this.interrupt_vec = new Int32Array(new SharedArrayBuffer(4));
@@ -68,7 +67,7 @@ export function activate(context: ExtensionContext): CoqLspAPI {
 
     // TODO [WASM]: allow to retrieve wacoq_worker.bc in compressed form
     let workerURL = wasm
-      ? "controller-wasm/out/wacoq_worker.js"
+      ? "wasm-bin/wacoq_worker.js"
       : "out/coq_lsp_worker.bc.js";
 
     const coqWorker = Uri.joinPath(context.extensionUri, workerURL);

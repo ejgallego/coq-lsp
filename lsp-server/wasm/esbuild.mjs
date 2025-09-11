@@ -45,7 +45,7 @@ function wasmBuild(file) {
         global: "self",
       },
       metafile: enableMeta,
-      logLevel: 'debug',
+      // logLevel: 'debug',
       ...sourcemap_view,
       minify,
       watch: watch(file),

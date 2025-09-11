@@ -7,8 +7,8 @@ function postMessage(msg) {
 async function main(baseURI : string) {
 
     // We can only really start when we get the real baseURI from the extension side.
-    let binDir = baseURI + "/controller-wasm/out/";
-    let nmDir = baseURI + "/controller-wasm/node_modules/";
+    let binDir = baseURI + "/wasm-bin/";
+    let nmDir = baseURI + "/wasm-bin/node_modules/";
 
     let arr = [];
 

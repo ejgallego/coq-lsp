@@ -152,20 +152,26 @@ submodules-update:
 # (cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 
 # Build the vscode extension
-.PHONY: extension-wasm
+.PHONY: wasm-bin
 WASTUBS=$(addsuffix .wasm,dllcoqrun_stubs dllcoqperf_stubs dllbigstringaf_stubs dlllib_stubs)
 WAFILES=$(addprefix lsp-server/wasm/,wacoq_worker.bc $(WASTUBS))
 WASM_NODE=lsp-server/wasm/node_modules/
-OUTDIR=lsp-server/wasm/out
-extension-wasm:
+OUTDIR=editor/code/wasm-bin/
+OUTDIR_NODE=editor/code/wasm-bin/node_modules
+wasm-bin:
 	dune build $(WAFILES)
 	mkdir -p $(OUTDIR)
 	cp -af _build/default/lsp-server/wasm/wacoq_worker.bc $(OUTDIR)
 	cp -af _build/default/lsp-server/wasm/*.wasm $(OUTDIR)
 	cd lsp-server/wasm/ && npm i && npm run vscode:prepublish
+	cp -af lsp-server/wasm/out/wacoq_worker.js $(OUTDIR)
+	mkdir -p $(OUTDIR_NODE)/ocaml-wasm/                        && cp -af $(WASM_NODE)/ocaml-wasm/bin/                        $(OUTDIR_NODE)/ocaml-wasm/
+	mkdir -p $(OUTDIR_NODE)/@ocaml-wasm/4.12--num/             && cp -af $(WASM_NODE)/@ocaml-wasm/4.12--num/bin/             $(OUTDIR_NODE)/@ocaml-wasm/4.12--num/
+	mkdir -p $(OUTDIR_NODE)/@ocaml-wasm/4.12--zarith/          && cp -af $(WASM_NODE)/@ocaml-wasm/4.12--zarith/bin/          $(OUTDIR_NODE)/@ocaml-wasm/4.12--zarith/
+	mkdir -p $(OUTDIR_NODE)/@ocaml-wasm/4.12--janestreet-base/ && cp -af $(WASM_NODE)/@ocaml-wasm/4.12--janestreet-base/bin/ $(OUTDIR_NODE)/@ocaml-wasm/4.12--janestreet-base/
 
 .PHONY: extension
-extension: extension-wasm
+extension: wasm-bin
 	cd editor/code && npm i && npm run vscode:prepublish
 
 # Run prettier
@@ -263,7 +269,7 @@ lsp-server/jsoo/coq-fs-core.js: coq_boot
 	    # These libs are actually linked, so no cma is needed.
 	    # $$(find $(_LIBROOT) -wholename '*/zarith/*.cma'         -printf "%p:/static/lib/%P " -or -wholename '*/zarith/META'         -printf "%p:/static/lib/%P ")
 
-lsp-server/wasm/out/core-fs.zip:
+editor/code/wasm-bin/core-fs.zip:
 	$(eval TMP := $(shell mktemp -d ./.wasm-build-fs-XXXXXX))
 	dune exec -- ./etc/tools/build-fs/build_fs.exe $(_LIBROOT) $(_CCROOT) $(_ROCQLIB) $(TMP)/fs
 	cd $(TMP)/fs &&	zip -rq core-fs.zip static
