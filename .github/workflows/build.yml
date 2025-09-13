@@ -243,4 +243,4 @@ jobs:
       - name: ❄️ Setup Nix
         uses: cachix/install-nix-action@v31
       - name: 📐 Run flake check
-        run: nix flake check --show-trace
+        run: NIX_DEBUG=1 nix flake check
