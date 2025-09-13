@@ -42,6 +42,9 @@ unreleased
    #1011, fixes #656)
  - [misc] Don't depend on Jane Street's base (@patrick-nicodemus
    @ejgallego, #1004)
+ - [coq] incorporate experimental `coq-layout-engine` printer, both in
+   client and server parts (@ejgallego, #668, see also #72 and
+   https://github.com/jscoq/jscoq/pull/282 )
 
 # coq-lsp 0.2.3: Barrage
 ------------------------
