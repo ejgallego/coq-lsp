@@ -243,4 +243,8 @@ jobs:
       - name: ❄️ Setup Nix
         uses: cachix/install-nix-action@v31
       - name: 📐 Run flake check
-        run: NIX_DEBUG=1 nix flake check
+        run: |
+          set -o pipefail
+          # Run flake check, capture failed drv
+          nix flake check --show-trace || \
+          nix log $(nix eval --raw .#checks.x86_64-linux.treefmt)
