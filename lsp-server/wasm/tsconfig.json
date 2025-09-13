@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    // "outDir": "dist",
+    // "lib": ["esnext", "dom", "dom.iterable", "webworker"],
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "resolveJsonModule": true,
+    "downlevelIteration": true,
+    "allowSyntheticDefaultImports": true,
+    "checkJs": true,
+    "noEmit": true
+  },
+  "exclude": ["esbuild.mjs", "out/**/*", "dist/**/*", "node_modules/**/*", "wasi-kernel/**/*"]
+}

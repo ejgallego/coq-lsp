@@ -42,6 +42,10 @@ unreleased
    #1011, fixes #656)
  - [misc] Don't depend on Jane Street's base (@patrick-nicodemus
    @ejgallego, #1004)
+ - [wasm worker] Add WebAssembly based worker based on waCoq. This is
+   now the default for the .vsix binary build. For now, we include
+   Rocq's Stdlib and Waterproof (@corwin-of-amber, @ejgallego,
+   @pimotte, #1008, cc #833, fixes #907, fixes #908, fixes #913)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------

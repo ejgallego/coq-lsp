@@ -12,6 +12,7 @@ import {
 import { workspace } from "vscode";
 
 class InterruptibleLC extends LanguageClient {
+  private readonly debug_int: boolean = false;
   private readonly interrupt_vec?: Int32Array;
 
   constructor(
@@ -26,10 +27,12 @@ class InterruptibleLC extends LanguageClient {
     // - pass --enable-coi to vscode
     // - use `?enable-coi= in the vscode dev setup
     // See https://code.visualstudio.com/updates/v1_72#_towards-cross-origin-isolation
-    // See https://github.com/microsoft/vscode-wasm
     if (typeof SharedArrayBuffer !== "undefined") {
+      console.log("Interrupt Setup Requested (client)");
       this.interrupt_vec = new Int32Array(new SharedArrayBuffer(4));
-      worker.postMessage(["SetupInterrupt", this.interrupt_vec]);
+      worker.postMessage(["InterruptSetup", this.interrupt_vec]);
+    } else {
+      console.log("Interrupt Setup Failed (client)");
     }
 
     this.middleware.sendRequest = (type, param, token, next) => {
@@ -49,6 +52,7 @@ class InterruptibleLC extends LanguageClient {
 
   public interrupt() {
     if (this.interrupt_vec) {
+      if (this.debug_int) console.log("interrupt requested (InterruptibleLC)");
       Atomics.add(this.interrupt_vec, 0, 1);
     }
   }
@@ -58,28 +62,31 @@ export function activate(context: ExtensionContext): CoqLspAPI {
   const cf: ClientFactoryType = (context, clientOptions, wsConfig) => {
     // Pending on having the API to fetch the worker file.
     // throw "Worker not found";
-    const coqWorker = Uri.joinPath(
-      context.extensionUri,
-      "out/coq_lsp_worker.bc.js"
-    );
-    console.log(coqWorker);
 
+    let wasm = true;
+
+    // TODO [WASM]: allow to retrieve wacoq_worker.bc in compressed form
+    let workerURL = wasm
+      ? "wasm-bin/wacoq_worker.js"
+      : "out/coq_lsp_worker.bc.js";
+
+    const coqWorker = Uri.joinPath(context.extensionUri, workerURL);
+
+    // pass the init path to the worker
     let worker = new Worker(coqWorker.toString(true));
+
+    // WASM needs the URI to initialize Rocq
+    if (wasm) worker.postMessage(context.extensionUri.toString());
+
     let client = new InterruptibleLC(
       "coq-lsp",
       "Coq LSP Worker",
       clientOptions,
       worker
     );
+
     return client;
   };
-
-  // let files = Uri.joinPath(context.extensionUri, "out/files.json");
-
-  // workspace.fs.readFile(files).then((content) => {
-  //   let s = new TextDecoder().decode(content);
-  //   console.log(`files: `, JSON.parse(s));
-  // });
 
   return activateCoqLSP(context, cf);
 }
