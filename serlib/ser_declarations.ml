@@ -56,6 +56,10 @@ type squash_info =
   [%import: Declarations.squash_info]
   [@@deriving sexp,yojson,hash,compare]
 
+type record_info =
+  [%import: Declarations.record_info]
+  [@@deriving sexp,yojson,hash,compare]
+
 type one_inductive_body =
   [%import: Declarations.one_inductive_body]
   [@@deriving sexp,yojson,hash,compare]
@@ -124,10 +128,6 @@ end
 
 type recursivity_kind =
   [%import: Declarations.recursivity_kind]
-  [@@deriving sexp,yojson,hash,compare]
-
-type record_info =
-  [%import: Declarations.record_info]
   [@@deriving sexp,yojson,hash,compare]
 
 type template_universes =
