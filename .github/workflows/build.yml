@@ -58,7 +58,7 @@ jobs:
 
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -81,9 +81,11 @@ jobs:
         run: opam exec -- make test-compiler
 
   build-js:
-    name: Web Worker Build
+    name: Web Worker Build (JSOO and WASM)
     strategy:
       fail-fast: false
+    env:
+      WASI_SDK_URL: https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-12/wasi-sdk-12.0-linux.tar.gz
     runs-on: ubuntu-latest
 
     steps:
@@ -98,15 +100,18 @@ jobs:
           sudo aptitude -o Acquire::Retries=30 install gcc-multilib g++-multilib pkg-config libgmp-dev libgmp-dev:i386 -y
 
       - name: 🔭 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
       - name: 🐫 Setup OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: "ocaml-variants.4.14.2+options,ocaml-option-32bit"
+          ocaml-compiler: "ocaml-variants.4.12.0+options,ocaml-option-32bit"
           dune-cache: true
+
+      - name: 💉💉💉 Patch Coq
+        run: make patch-for-js
 
       - name: 🐫🐪🐫 Get dependencies
         run: |
@@ -116,40 +121,45 @@ jobs:
           opam pin add js_of_ocaml -k version 5.9.1 -y
           opam install zarith_stubs_js js_of_ocaml-ppx -y
 
-      - name: 💧💧💧 Install additional deps (waterproof)
-        run: |
-          opam install coq-waterproof.2.2.0+8.20 -y
-
-      - name: 💉💉💉 Patch Coq
-        run: make patch-for-js
-
       - name: 🦏🧱🦏 Build coq-lsp JS version 🦏🦏🦏
+        if: false # Disabled due to https://github.com/ocaml/ocaml/issues/11803
         run: |
-          opam exec -- make controller-js/coq-fs-core.js
+          opam exec -- make lsp-server/jsoo/coq-fs-core.js
           opam exec -- make js
 
       - name: 🚀 Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: "npm"
           cache-dependency-path: editor/code/package-lock.json
 
+      - name: 🟪 WASI Setup
+        run: |
+          wget --quiet -O/tmp/wasi-sdk.tar.gz ${WASI_SDK_URL}
+          ( cd /opt && sudo tar xf /tmp/wasi-sdk.tar.gz && sudo ln -s wasi-sdk-* wasi-sdk )
+
       - name: 🦏🧱🦏 Build coq-lsp VSCode extension 🦏🦏🦏
-        run: opam exec -- make extension
+        run: |
+          opam exec -- make
+          opam exec -- make wp
+          opam exec -- make extension
+          opam exec -- make editor/code/wasm-bin/core-fs.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: coq-lsp_worker and front-end
+          compression-level: 9
           path: |
             editor/code/package.json
             editor/code/README.md
             editor/code/CHANGELOG.md
             editor/code/syntaxes
-            editor/code/out/
             editor/code/coq.configuration.json
-          compression-level: 9
+            editor/code/out/
+            editor/code/wasm-bin/
+
   build-opam:
     name: Opam install
     strategy:
@@ -157,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🔭 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -205,6 +215,6 @@ jobs:
         with:
           submodules: recursive
       - name: ❄️ Setup Nix
-        uses: cachix/install-nix-action@v18
+        uses: cachix/install-nix-action@v31
       - name: 📐 Run flake check
-        run: nix flake check
+        run: nix flake check --show-trace

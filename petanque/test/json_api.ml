@@ -121,7 +121,9 @@ let check_no_goals = function
     Format.eprintf "error: in execution: %s@\n%!" err;
     dump_msgs ();
     129
-  | Ok None -> 0
+  | Ok None ->
+    dump_msgs ();
+    0
   | Ok (Some _goals) ->
     dump_msgs ();
     Format.eprintf "error: goals remaining@\n%!";

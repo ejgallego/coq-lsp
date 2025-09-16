@@ -1,0 +1,12 @@
+(library
+ (name serlib_cc_core)
+ (public_name coq-lsp.serlib.cc_core)
+ (synopsis "Serialization Library for Coq Cc_core Plugin")
+ (preprocess
+  (staged_pps
+   ppx_import
+   ppx_sexp_conv
+   ppx_deriving_yojson
+   ppx_hash
+   ppx_compare))
+ (libraries rocq-runtime.plugins.cc_core serlib sexplib))

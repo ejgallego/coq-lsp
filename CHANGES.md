@@ -15,14 +15,41 @@ unreleased
    refactor the response type to accommodate different
    meta-data. Note: (!) breaking change. (@ejgallego, #985, fixes
    #862, thanks to the Alectryon team)
- - Better error handling in URI parsing (@ejgallego, #994, thanks to
+ - [lsp] Better error handling in URI parsing (@ejgallego, #994, thanks to
    Adrien from Zulip)
- - Better protocol-level handling for our non-standard `Lang.Point`
+ - [lsp] Better protocol-level handling for our non-standard `Lang.Point`
    and `Lang.Diagnostic` types, via global flags that allow us to
    choose the input/output representation for non-standard field such
    as [Point.offset]. This ensures that leaks of these non-standard
    fields are rarer. (@ejgallego, #995, cc #279, cc #2, thanks to
    Adrien from Zulip)
+ - [lsp] [completion] Rework completion configuration into a
+   `coq-lsp.completion` json object. The `unicode_completion` setting
+   is now deprecated, and has been replaced by
+   `completion.unicode.enable` (@ejgallego, #993)
+ - [lsp] [completion] [vscode] Unicode completion commit characters
+   are now configurable via the server setting variable
+   `completion.unicode.commit_chars`. (@Durbatuluk1701, #993)
+ - [goals] [config] New (global) option for goal display method
+   `proof/goals`: `messages_follow_goal`. If `true`, `proof/goals`
+   will show errors and messages for the same sentence goals are
+   shown; if `false`, it will always show errors and messages for the
+   specified `position`, if there is a Rocq sentence at hand
+   (@jpoiret, @ejgallego, #999, fixes: #941)
+ - [coq] Install full state before parsing. Before we did only
+   `Pcoq.unfreeze` but that is not enough, in particular the call to
+   `get_default_proof_mode` will not be correct (@ejgallego, @pimotte,
+   #1011, fixes #656)
+ - [misc] Don't depend on Jane Street's base (@patrick-nicodemus
+   @ejgallego, #1004)
+ - [wasm worker] Add WebAssembly based worker based on waCoq. This is
+   now the default for the .vsix binary build. For now, we include
+   Rocq's Stdlib and Waterproof (@corwin-of-amber, @ejgallego,
+   @pimotte, #1008, cc #833, fixes #907, fixes #908, fixes #913)
+ - [opam] Added `x-maintenance-intent` intent field. (@ejgallego,
+   #1020)
+ - [lsp] [didOpen] `languageId` now takes priority over uri extension
+   in LSP `didOpen`. (@ejgallego, #1021, fixes #1005)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------

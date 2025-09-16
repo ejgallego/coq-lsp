@@ -41,7 +41,10 @@ depends: [
   # This is now a hard dep due to API changes in 1.9.7
   "ocamlfind" { >= "1.9.8" }
 
-  # serlib dependencies
+  # v9.0
+  "rocq-prover"         { >= "9.0" < "9.1" }
+
+  # serlib deps
   "ppx_deriving"        { >= "5.2"                 }
   "ppx_deriving_yojson" { >= "3.7.0"               }
   "ppx_import"          { >= "1.11.0"              }
@@ -62,3 +65,5 @@ build: [
   [ "dune" "build" "-p" name "-j" jobs ]
 ]
 run-test: [ [ "dune" "runtest" "-p" name "-j" jobs ] ]
+
+x-maintenance-intent: [ "(latest)" ]

@@ -78,6 +78,7 @@ end
     [Node.t]. *)
 type t = private
   { uri : Lang.LUri.File.t  (** [uri] of the document *)
+  ; languageId : string  (** [languageId] of the document *)
   ; version : int  (** [version] of the document *)
   ; contents : Contents.t  (** [contents] of the document *)
   ; nodes : Node.t list  (** List of document nodes *)
@@ -108,6 +109,7 @@ val create :
      token:Coq.Limits.Token.t
   -> env:Env.t
   -> uri:Lang.LUri.File.t
+  -> languageId:string
   -> version:int
   -> raw:string
   -> t

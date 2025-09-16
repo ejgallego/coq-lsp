@@ -16,6 +16,6 @@ nix/profiles/
 examples/.vscode
 
 # Related to the JS build and testing
-/controller-js/coq-fs-core.js
-/controller-js/coq_lsp_worker.bc.cjs
+/lsp-server/jsoo/coq-fs-core.js
+/lsp-server/jsoo/coq_lsp_worker.bc.cjs
 /.vscode-test-web/
