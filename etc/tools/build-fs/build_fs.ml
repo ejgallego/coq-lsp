@@ -184,10 +184,12 @@ let find_plugins ~config:{ Rocq_config.rocq_root; _ } =
     build_entries ~oldbase:serlib_root ~newbase:"/static/lib/coq-lsp/" ~pat ()
   in
   let wp_root = "_build/install/default/lib/coq-waterproof/" in
-  let pat = Str.regexp "plugin/.*.cma\\|META" in
   let waterproof_entries =
-    build_entries ~oldbase:wp_root ~newbase:"/static/lib/coq-waterproof/" ~pat
-      ()
+    if Sys.file_exists wp_root then
+      let pat = Str.regexp "plugin/.*.cma\\|META" in
+      build_entries ~oldbase:wp_root ~newbase:"/static/lib/coq-waterproof/" ~pat
+        ()
+    else []
   in
   rocq_entries @ serlib_entries @ waterproof_entries
 
