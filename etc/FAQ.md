@@ -159,3 +159,32 @@ like this quote [from Twitter](https://twitter.com/notypes/status/16102790763209
 > Our compiler (https://calyxir.org) is three years into development
 > but people keep citing the paper and discussing limitations that
 > have been addressed
+
+## WebAssembly FAQ
+
+### How can I run Rocq without installing it
+
+You have two main alternatives:
+
+- Head to some of the websites that offer VSCode for Web,
+  such as `vscode.dev` or `github.dev`
+
+- Download an extension artifact from our CI, and run it with:
+  `npx @vscode/test-web --coi --browser chromium --extensionDevelopmentPath=.`
+
+### What is the size of the Rocq WASM version
+
+As of today, the Rocq WASM version requires a download of 50 - 80 MiB.
+This could be improved; let us know if you are interested in
+contributing.
+
+### What is the performance of the Rocq WASM version
+
+The Rocq WASM version performance is about an order of magnitude
+slower than the native version. It is still quite usable for teaching
+and other purposes.
+
+### Can I add my own Rocq library to the WASM version?
+
+This feature is not implemented. We currently don't have the resources
+to implement it, but get in touch if you would like to help.

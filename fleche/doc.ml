@@ -569,6 +569,9 @@ let report_progress ~io ~doc (last_tok : Lang.Range.t) =
   let progress = compute_progress doc.contents.last last_tok in
   Io.Report.fileProgress ~io ~uri:doc.uri ~version:doc.version [ progress ]
 
+let send_execinfo ~io ~uri ~version ~range =
+  if !Config.v.send_execinfo then Io.Report.execInfo ~io ~uri ~version ~range
+
 (* XXX: Save on close? *)
 (* let close_doc _modname = () *)
 
@@ -876,8 +879,8 @@ let node_of_coq_result ~token ~doc ~range ~prev ~ast ~st ~parsing_diags
     strategy_of_coq_err ~node ~state:recovery_st ~last_tok coq_err
 
 (* Build a document node, possibly executing *)
-let document_action ~token ~st ~parsing_diags ~parsing_feedback ~parsing_time
-    ~prev ~doc last_tok doc_handle action =
+let document_action ~token ~io ~st ~parsing_diags ~parsing_feedback
+    ~parsing_time ~prev ~doc last_tok doc_handle action =
   match action with
   (* End of file *)
   | EOF completed ->
@@ -900,7 +903,12 @@ let document_action ~token ~st ~parsing_diags ~parsing_feedback ~parsing_time
     Continue { state = st; last_tok; node }
   (* We can interpret the command now *)
   | Process ast -> (
+    (* Prepare the Ast range and send execinfo *)
     let lines, files = (doc.contents.lines, doc.env.files) in
+    let ast_loc = Coq.Ast.loc ast |> Option.get in
+    let ast_range = Coq.Utils.to_range ~lines ast_loc in
+    send_execinfo ~io ~uri:doc.uri ~version:doc.version ~range:ast_range;
+    (* Execute the command *)
     let process_res, info =
       interp_and_info ~token ~parsing_time ~st ~files ~doc ast
     in
@@ -911,8 +919,6 @@ let document_action ~token ~st ~parsing_diags ~parsing_feedback ~parsing_time
       (* Exit *)
       Interrupted last_tok
     | Coq.Protect.R.Completed res ->
-      let ast_loc = Coq.Ast.loc ast |> Option.get in
-      let ast_range = Coq.Utils.to_range ~lines ast_loc in
       let ast =
         Node.Ast.{ v = ast; ast_info = Coq.Ast.make_info ~lines ~st ast }
       in
@@ -995,7 +1001,7 @@ let process_and_parse ~io ~token ~target ~uri ~version doc last_tok doc_handle =
       in
       (* Execution *)
       let action =
-        document_action ~token ~st ~parsing_diags ~parsing_feedback
+        document_action ~token ~io ~st ~parsing_diags ~parsing_feedback
           ~parsing_time ~prev ~doc last_tok doc_handle action
       in
       match action with

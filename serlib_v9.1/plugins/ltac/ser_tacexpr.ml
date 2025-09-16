@@ -16,6 +16,42 @@
 (* Written by: Emilio J. Gallego Arias and others                       *)
 (************************************************************************)
 
+(* Experimental: Analysis part *)
+
+let tacdef_names (t : Ltac_plugin.Tacexpr.tacdef_body) =
+  match t with
+  | TacticDefinition (lid, _) ->
+    [CAst.map (fun id -> Names.Name id) lid]
+  | TacticRedefinition (qid, _) ->
+    let id = Names.Name (Libnames.string_of_qualid qid |> Names.Id.of_string_soft) in
+    [CAst.map (fun _ -> id) qid]
+
+let tacdef_names = {
+    Serlib.Ser_analysis.NameAnalysis.raw = tacdef_names
+  ; glb = (fun _ -> [])
+  ; top = (fun _ -> [])
+}
+
+let () =
+  Serlib.Ser_analysis.NameAnalysis.register Ltac_plugin.G_ltac.wit_ltac_tacdef_body tacdef_names;
+  ()
+
+let tacnot_names (t : (string * string option) Ltac_plugin.Tacentries.grammar_tactic_prod_item_expr) = match t with
+  | Ltac_plugin.Pptactic.TacTerm s -> [ CAst.make (Names.(Name (Id.of_string_soft s))) ]
+  | Ltac_plugin.Pptactic.TacNonTerm _ -> []
+
+let tacnot_names = {
+    Serlib.Ser_analysis.NameAnalysis.raw = tacnot_names
+  ; glb = (fun _ -> [])
+  ; top = (fun _ -> [])
+}
+
+let () =
+  Serlib.Ser_analysis.NameAnalysis.register Ltac_plugin.G_ltac.wit_ltac_production_item tacnot_names;
+  ()
+
+(* Serialization part *)
+
 open Sexplib
 open Sexplib.Std
 open Ppx_hash_lib.Std.Hash.Builtin
