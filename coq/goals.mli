@@ -47,13 +47,13 @@ val equal :
 
 val map : f:('a -> 'b) -> g:('pp -> 'pp') -> ('a, 'pp) t -> ('b, 'pp') t
 
-type 'pp reified_pp = ('pp Reified_goal.t, 'pp) t
+type ('goals, 'pp) reified = ('goals Reified_goal.t, 'pp) t
 
 (** Stm-independent goal processor *)
 val reify :
-     ppx:(Environ.env -> Evd.evar_map -> EConstr.t -> 'pp)
+     ppx:(Environ.env -> Evd.evar_map -> EConstr.t -> 'goals)
   -> State.Proof.t
-  -> ('pp Reified_goal.t, Pp.t) t
+  -> ('goals, Pp.t) reified
 
 (* equality functions with heuristics *)
 module Equality : sig

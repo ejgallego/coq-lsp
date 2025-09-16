@@ -195,11 +195,12 @@ COQ_CORE_VERSION:=9.1.dev
 COQ_CORE_NAME:=rocq-runtime
 # Waterproof version
 WP_VERSION:=none
-# WP_VERSION=3.0.0+9.0
+# WP_VERSION=3.0.0+9.1
 
 .PHONY: wp
 wp:
 ifdef VENDORED_SETUP
+	dune build vendor/coq-waterproof/coq-waterproof.install
 else ifeq ($(WP_VERSION),none)
 	@echo "no waterproof install for this version"
 else

@@ -30,7 +30,10 @@ depends: [
   "uri"          { >= "4.2.0" }
   "dune-build-info" { >= "3.2.0" }
 
-  # waterproof json parser
+  # coq-layout-printer
+  "tyxml"        { >= "4.5.0" }
+
+  # for waterproof json parser
   "menhir"       { >= "20220210" }
 
   # unit testing

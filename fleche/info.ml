@@ -146,25 +146,30 @@ module Goals = struct
     let ppx env sigma x = (env, sigma, x) in
     Coq.State.lemmas ~st |> Option.map (Coq.Goals.reify ~ppx)
 
-  let pr_goal ~token st =
-    let ppx env sigma x =
-      let { Coq.Protect.E.r; feedback } =
-        Coq.Print.pr_letype_env ~token ~goal_concl_style:true env sigma x
-      in
-      (* XXX: We ideally want to thread this in the monad too, but it'd be
-         better if the printer was more functional *)
-      Io.Log.feedback "pr_goal:ppx" feedback;
-      match r with
-      | Coq.Protect.R.Completed (Ok pr) -> pr
-      | Coq.Protect.R.Completed (Error _pr) -> Pp.str "printer failed!"
-      | Interrupted -> Pp.str "printer interrupted!"
+  type 'a printer =
+    token:Coq.Limits.Token.t -> Environ.env -> Evd.evar_map -> EConstr.t -> 'a
+
+  let to_pp ~token env sigma x =
+    let { Coq.Protect.E.r; feedback } =
+      Coq.Print.pr_letype_env ~token ~goal_concl_style:true env sigma x
     in
+    (* XXX: We ideally want to thread this in the monad too, but it'd be better
+       if the printer was more functional *)
+    Io.Log.feedback "to_pp" feedback;
+    match r with
+    | Coq.Protect.R.Completed (Ok pr) -> pr
+    | Coq.Protect.R.Completed (Error _pr) -> Pp.str "printer failed!"
+    | Interrupted -> Pp.str "printer interrupted!"
+
+  let pr_goal ~token ~pr st =
     let lemmas = Coq.State.lemmas ~st in
-    Option.map (Coq.Goals.reify ~ppx) lemmas
+    Option.map (Coq.Goals.reify ~ppx:(pr ~token)) lemmas
 
   (* We need to use [in_state] here due to printing not being pure, but we want
      a better design here eventually *)
-  let goals ~token ~st = Coq.State.in_state ~token ~st ~f:(pr_goal ~token) st
+  let goals ~token ~pr ~st =
+    Coq.State.in_state ~token ~st ~f:(pr_goal ~token ~pr) st
+
   let program ~st = Coq.State.program ~st
 end
 

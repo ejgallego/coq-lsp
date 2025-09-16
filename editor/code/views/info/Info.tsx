@@ -3,6 +3,7 @@ import {
   GoalAnswer,
   GoalRequest,
   PpString,
+  BoxString,
   CoqMessageEvent,
   ErrorData,
 } from "../../lib/types";
@@ -36,7 +37,7 @@ function doInfoError(e: any) {
 
 export function InfoPanel() {
   let [error, setError] = useState<ErrorData | null>();
-  let [goals, setGoals] = useState<GoalAnswer<PpString>>();
+  let [goals, setGoals] = useState<GoalAnswer<BoxString, PpString>>();
 
   function infoViewDispatch(event: CoqMessageEvent) {
     switch (event.data.method) {
