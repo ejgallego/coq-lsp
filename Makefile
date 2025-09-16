@@ -152,8 +152,26 @@ submodules-update:
 # (cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 
 # Build the vscode extension
+.PHONY: wasm-bin
+WASTUBS=$(addsuffix .wasm,dllcoqrun_stubs dllcoqperf_stubs dllbigstringaf_stubs dlllib_stubs)
+WAFILES=$(addprefix lsp-server/wasm/,wacoq_worker.bc $(WASTUBS))
+WASM_NODE=lsp-server/wasm/node_modules/
+OUTDIR=editor/code/wasm-bin/
+OUTDIR_NODE=editor/code/wasm-bin/node_modules
+wasm-bin:
+	dune build $(WAFILES)
+	mkdir -p $(OUTDIR)
+	cp -af _build/default/lsp-server/wasm/wacoq_worker.bc $(OUTDIR)
+	cp -af _build/default/lsp-server/wasm/*.wasm $(OUTDIR)
+	cd lsp-server/wasm/ && npm i && npm run vscode:prepublish
+	cp -af lsp-server/wasm/out/wacoq_worker.js $(OUTDIR)
+	mkdir -p $(OUTDIR_NODE)/ocaml-wasm/                        && cp -af $(WASM_NODE)/ocaml-wasm/bin/                        $(OUTDIR_NODE)/ocaml-wasm/
+	mkdir -p $(OUTDIR_NODE)/@ocaml-wasm/4.12--num/             && cp -af $(WASM_NODE)/@ocaml-wasm/4.12--num/bin/             $(OUTDIR_NODE)/@ocaml-wasm/4.12--num/
+	mkdir -p $(OUTDIR_NODE)/@ocaml-wasm/4.12--zarith/          && cp -af $(WASM_NODE)/@ocaml-wasm/4.12--zarith/bin/          $(OUTDIR_NODE)/@ocaml-wasm/4.12--zarith/
+	mkdir -p $(OUTDIR_NODE)/@ocaml-wasm/4.12--janestreet-base/ && cp -af $(WASM_NODE)/@ocaml-wasm/4.12--janestreet-base/bin/ $(OUTDIR_NODE)/@ocaml-wasm/4.12--janestreet-base/
+
 .PHONY: extension
-extension:
+extension: wasm-bin
 	cd editor/code && npm i && npm run vscode:prepublish
 
 # Run prettier
@@ -195,6 +213,7 @@ endif
 	cd $(COQ_SRC_DIR) && git apply $(PATCH_DIR)/0001-coq-lsp-patch.patch
 	cd $(COQ_SRC_DIR) && git apply $(PATCH_DIR)/0001-jscoq-lib-system.ml-de-unix-stat.patch
 	cd $(COQ_SRC_DIR) && git apply $(PATCH_DIR)/0001-engine-trampoline.patch
+	cd $(COQ_SRC_DIR) && git apply $(PATCH_DIR)/0001-ocaml-4-12.patch
 ifndef VENDORED_SETUP
 	opam pin add $(COQ_CORE_NAME).$(COQ_CORE_VERSION) -k path $(COQ_SRC_DIR)
 endif
@@ -209,6 +228,9 @@ else
 # have anyways.
 _CCROOT=$(shell rocq c -where)/../$(COQ_CORE_NAME)
 endif
+
+# XXX: Fix the above as rocq c -where suffices
+_ROCQLIB=$(shell dune exec -- rocq c -where)
 
 # Super-hack
 lsp-server/jsoo/coq-fs-core.js: COQVM = no
@@ -246,6 +268,13 @@ lsp-server/jsoo/coq-fs-core.js: coq_boot
 	    $$(find $(_LIBROOT) -wholename '*/ppx_deriving_yojson/META' -printf "%p:/static/lib/%P ")
 	    # These libs are actually linked, so no cma is needed.
 	    # $$(find $(_LIBROOT) -wholename '*/zarith/*.cma'         -printf "%p:/static/lib/%P " -or -wholename '*/zarith/META'         -printf "%p:/static/lib/%P ")
+
+editor/code/wasm-bin/core-fs.zip:
+	$(eval TMP := $(shell mktemp -d ./.wasm-build-fs-XXXXXX))
+	dune exec -- ./etc/tools/build-fs/build_fs.exe $(_LIBROOT) $(_CCROOT) $(_ROCQLIB) $(TMP)/fs
+	cd $(TMP)/fs &&	zip -rq core-fs.zip static
+	cp -a $(TMP)/fs/core-fs.zip $@
+	rm -rf $(TMP)
 
 .PHONY: check-js-fs-sanity
 check-js-fs-sanity: lsp-server/jsoo/coq-fs-core.js js
