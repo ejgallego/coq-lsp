@@ -186,7 +186,8 @@
         {
           "type": "webview",
           "id": "coqPerfView",
-          "name": "Performance Report"
+          "name": "Performance Report",
+          "icon": "$(database)"
         }
       ]
     },
@@ -224,6 +225,11 @@
             "type": "boolean",
             "default": true,
             "description": "Update Perf Data Coq Panel"
+          },
+          "coq-lsp.send_execinfo": {
+            "type": "boolean",
+            "default": false,
+            "description": "Have server send `$/coq/executionInformation` notifications for each Rocq sentence."
           }
         }
       },
