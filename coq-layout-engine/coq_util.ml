@@ -93,7 +93,7 @@ module Id = struct
   let type_of_global gref =
     let env = Global.env () in
     let typ, _univs = Typeops.type_of_global_in_context env gref in
-    let typ = Arguments_renaming.rename_type env typ gref in
+    let typ = Arguments_renaming.rename_type typ gref in
     let bl =
       Printer.universe_binders_with_opt_names
         (Environ.universes_of_global env gref)
