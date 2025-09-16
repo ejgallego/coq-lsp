@@ -59,6 +59,8 @@ unreleased
    long-running commands in coq-lsp/VSCode, to provide better user
    feedback on long-running commands (@ejgallego, suggested by
    @jpoiret, #1002)
+ - [lsp] [outline] Support `Notation`, `Ltac` and `Ltac Notation` in
+   outline entries (@ejgallego, #1025, fixes #632)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------
