@@ -29,6 +29,8 @@ module CallBack : sig
     ; perfData : uri:Lang.LUri.File.t -> version:int -> Perf.t -> unit
     ; serverVersion : ServerInfo.Version.t -> unit
     ; serverStatus : ServerInfo.Status.t -> unit
+    ; execInfo :
+        uri:Lang.LUri.File.t -> version:int -> range:Lang.Range.t -> unit
     }
 
   val set : t -> unit
@@ -92,4 +94,11 @@ module Report : sig
 
   val serverVersion : io:CallBack.t -> ServerInfo.Version.t -> unit
   val serverStatus : io:CallBack.t -> ServerInfo.Status.t -> unit
+
+  val execInfo :
+       io:CallBack.t
+    -> uri:Lang.LUri.File.t
+    -> version:int
+    -> range:Lang.Range.t
+    -> unit
 end

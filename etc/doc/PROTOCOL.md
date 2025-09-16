@@ -23,6 +23,7 @@
     * [Did Change Configuration and Server Configuration parameters](#did-change-configuration-and-server-configuration-parameters)
     * [Server Version Notification](#server-version-notification)
     * [Server Status Notification](#server-status-notification)
+    * [Sentence Execution Information](#sentence-execution-information)
  - [Pétanque](#pétanque)
     * [Changelog](#changelog-8)
     * [Common types](#common-types)
@@ -672,6 +673,7 @@ export interface CoqLspServerConfig {
   show_state_hash_on_hover: boolean;
   check_only_on_request: boolean;
   send_perf_data: boolean;
+  send_execinfo: boolean;
   completion: CompletionConfig
 }
 ```
@@ -685,7 +687,8 @@ client.
 - v0.2.4:
   + Deprecate `unicode_completion` in favor of new `completion:
     CompletionConfig` configuration record.
-  + New option, `messages_follow_goal`
+  + New option, `messages_follow_goal`.
+  + New option, `send_execinfo`.
 - v0.2.3: New options, `show_universes_on_hover`,
   `show_state_hash_on_hover`, `send_perf_data`.
 - v0.1.9: First public documentation.
@@ -735,6 +738,33 @@ export type CoqServerStatus = CoqBusyStatus | CoqIdleStatus;
 #### Changelog
 
 - v0.1.9: First public documentation.
+
+<!-- TOC --><a name="sentence-execution-information"></a>
+### Sentence Execution Information
+
+The server will send the `$/coq/executionInformation` notification to
+inform the client that coq-lsp intends to execute a sentence.
+
+The parameters are:
+```typescript
+export type ExecutionInfoParams {
+  textDocument: VersionedTextDocumentIdentifier;
+  range: Range
+};
+```
+
+This way, clients can know when coq-lsp start execution of a sentence,
+and set a UI timer for example to inform the user that the sentence is
+under execution. This notification will likely be replaced by an
+improved `coq/fileProgress`.
+
+**Note:** this notification needs to be enabled via the global
+configuration parameter `send_execinfo`.
+
+<!-- TOC --><a name="changelog-8"></a>
+#### Changelog
+
+- v0.2.4: First public documentation.
 
 <!-- TOC --><a name="pétanque"></a>
 ## Pétanque

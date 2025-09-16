@@ -50,6 +50,7 @@ let concise_cb ofn =
     ; perfData = (fun ~uri:_ ~version:_ _perf -> ())
     ; serverVersion = (fun _ -> ())
     ; serverStatus = (fun _ -> ())
+    ; execInfo = (fun ~uri:_ ~version:_ ~range:_ -> ())
     }
 
 (* Main loop *)

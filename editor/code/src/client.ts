@@ -49,6 +49,7 @@ import {
   defaultStatus,
   coqServerVersion,
   coqServerStatus,
+  rocqExecInfo,
 } from "./status";
 import { CoqLspClientConfig, CoqLspServerConfig, CoqSelector } from "./config";
 import { InfoPanel, goalReq } from "./goals";
@@ -58,6 +59,7 @@ import { sentenceNext, sentencePrevious } from "./edit";
 import { HeatMap, HeatMapConfig } from "./heatmap";
 import { petanqueStart, petanqueRun, petSetClient } from "./petanque";
 import { debounce, throttle } from "throttle-debounce";
+import * as GS from "./glowSpan";
 
 // Convert perf data to VSCode format
 function toVsCodePerf(
@@ -92,6 +94,8 @@ let lspStatusItem: StatusBarItem;
 let languageStatus: CoqLanguageStatus;
 let languageVersionHook: Disposable;
 let languageStatusHook: Disposable;
+
+let execInfoHook: Disposable;
 
 // Lifetime of the perf data setup == client lifetime for the hook, extension for the webview
 let perfDataView: PerfDataView;
@@ -198,6 +202,7 @@ export function activateCoqLSP(
           heatMap.dispose();
           languageVersionHook.dispose();
           languageStatusHook.dispose();
+          execInfoHook.dispose();
         });
     } else return Promise.resolve();
   };
@@ -233,6 +238,15 @@ export function activateCoqLSP(
 
       languageStatusHook = client.onNotification(coqServerStatus, (data) => {
         languageStatus.updateStatus(data, serverConfig.check_only_on_request);
+      });
+
+      execInfoHook = client.onNotification(rocqExecInfo, (data) => {
+        let editor = window.visibleTextEditors.find(
+          (editor) =>
+            editor.document.uri.toString() === data.textDocument.uri.toString()
+        );
+        if (editor)
+          GS.start(editor, client.protocol2CodeConverter.asRange(data.range));
       });
 
       resolve(client);
