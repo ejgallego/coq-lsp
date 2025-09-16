@@ -95,7 +95,7 @@ function perfFlatten(v: SentencePerfParams<Range>) {
 }
 
 function SentencePerfRow({ idx, value }: PerfParamsP) {
-  console.log(value);
+  // console.log(value);
   return (
     <VSCodeDataGridRow key={idx + 1}>
       <>

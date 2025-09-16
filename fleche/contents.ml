@@ -141,14 +141,19 @@ module WaterProof = struct
     | exception _ -> wp_error "parsing failed"
 end
 
-let process_contents ~uri ~raw =
+let process_contents ~uri ~languageId ~raw =
   let ext = Lang.LUri.File.extension uri in
-  match ext with
-  | ".v" -> R.Ok raw
-  | ".lv" | ".tex" -> R.Ok (LaTeX.process raw)
-  | ".mv" -> R.Ok (Markdown.process raw)
-  | ".wpn" -> WaterProof.process raw
-  | _ -> R.Error "unknown file format"
+  match (languageId, ext) with
+  | "coq", _ | "rocq", _ -> R.Ok raw
+  | "latex", _ -> R.Ok (LaTeX.process raw)
+  | "markdown", _ -> R.Ok (Markdown.process raw)
+  | _, ".wpn" -> WaterProof.process raw
+  | _, _ ->
+    let msg =
+      Format.asprintf "unknown format: %s for %a" languageId Lang.LUri.File.pp
+        uri
+    in
+    R.Error msg
 
 type t =
   { raw : string  (** That's the original, unprocessed document text *)
@@ -167,8 +172,8 @@ let get_last_text text =
   let character = Lang.Utf.length_utf16 last_line in
   (Lang.Point.{ line = n_lines - 1; character; offset }, lines)
 
-let make ~uri ~raw =
-  match process_contents ~uri ~raw with
+let make ~uri ~languageId ~raw =
+  match process_contents ~uri ~languageId ~raw with
   | R.Error e -> R.Error e
   | R.Ok text ->
     let last, lines = get_last_text text in

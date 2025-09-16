@@ -36,6 +36,20 @@ unreleased
    shown; if `false`, it will always show errors and messages for the
    specified `position`, if there is a Rocq sentence at hand
    (@jpoiret, @ejgallego, #999, fixes: #941)
+ - [coq] Install full state before parsing. Before we did only
+   `Pcoq.unfreeze` but that is not enough, in particular the call to
+   `get_default_proof_mode` will not be correct (@ejgallego, @pimotte,
+   #1011, fixes #656)
+ - [misc] Don't depend on Jane Street's base (@patrick-nicodemus
+   @ejgallego, #1004)
+ - [wasm worker] Add WebAssembly based worker based on waCoq. This is
+   now the default for the .vsix binary build. For now, we include
+   Rocq's Stdlib and Waterproof (@corwin-of-amber, @ejgallego,
+   @pimotte, #1008, cc #833, fixes #907, fixes #908, fixes #913)
+ - [opam] Added `x-maintenance-intent` intent field. (@ejgallego,
+   #1020)
+ - [lsp] [didOpen] `languageId` now takes priority over uri extension
+   in LSP `didOpen`. (@ejgallego, #1021, fixes #1005)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------

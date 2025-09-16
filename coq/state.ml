@@ -75,6 +75,8 @@ let hash x =
   let meaningful, total = (256, 256) in
   Hashtbl.hash_param meaningful total x
 
+(* XXX: This should restore the state properly before calling
+   get_default_proof_mode, as of now promotes buggy use. *)
 let mode ~st =
   Option.map
     (fun _ -> Synterp.get_default_proof_mode ())

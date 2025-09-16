@@ -13,6 +13,7 @@ in a single repository, also known as a monorepo, in particular:
 - **`fcc`**: an extensible command line compiler built on top of Flèche, in `compiler/`
 - `petanque`: direct access to Coq's proof engine, in `petanque/`
 - `coq-lsp`a LSP server for the Rocq Prover, in `controller/`
+- Binaries for different platforms are in `lsp-server/$platform`
 - **`coq-lsp/VSCode`**: a VSCode extension written in TypeScript and
   React, under `editor/code`
 
@@ -219,10 +220,11 @@ The `coq-lsp` server consists of several components, we present them bottom-up
 - `lsp`: small generic LSP utilities, at some point to be replaced by a generic
   library
 - `petanque`: low-level access to Coq's API
-- `controller`: LSP controller, a thin layer translating LSP transport layer to
-  `flèche` surface API, plus some custom event queues for Coq.
-- `controller-js`: LSP controller for Javascript, used for `vscode.dev` and
-  jsCoq.
+- `controller`: platform-agnostic LSP controller library, a thin layer
+  translating LSP transport layer to `flèche` surface API.
+- `lsp-server`: LSP server binaries for different platforms, using `controller`:
+  + `native`: Native OCaml support, good for Windows, MacOS, and Linux.
+  + `jsoo`: Javascript LSP server using [js_of_ocaml](https://ocsigen.org/js_of_ocaml/)
 
 Some tips:
 
@@ -433,6 +435,7 @@ git checkout v8.17 && git merge v8.18 && opam exec --switch=coq-v8.17   -- make 
 - check with `vsce ls` that the client contents are OK
 - upload to official VSCode marketplace: `vsce publish`
 - upload vsix to OpenVSX marketplace
+- todo: check the wasm / js stuff is there, needs to improve
 
 ### Server:
 

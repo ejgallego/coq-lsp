@@ -75,7 +75,7 @@
 
           flakeFormatter = true;
 
-          settings.global.excludes = ["./vendor/**" "controller-js/js_stub/**"];
+          settings.global.excludes = ["./vendor/**" "lsp-server/jsoo/js_stub/**" "lsp-server/wasm/**"];
 
           programs.alejandra.enable = true;
           programs.ocamlformat = {

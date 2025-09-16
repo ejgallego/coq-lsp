@@ -28,6 +28,9 @@
     "type": "git",
     "url": "https://github.com/ejgallego/coq-lsp"
   },
+  "extensionDependencies": [
+    "ms-vscode.wasm-wasi-core"
+  ],
   "activationEvents": [
     "onLanguage:markdown",
     "onLanguage:latex"
