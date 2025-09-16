@@ -114,6 +114,9 @@ jobs:
           ocaml-compiler: "ocaml-variants.4.12.0+options,ocaml-option-32bit"
           dune-cache: true
 
+      - name: 💉💉💉 Patch Coq
+        run: make patch-for-js
+
       - name: 🐫🐪🐫 Get dependencies
         run: |
           opam update
@@ -121,9 +124,6 @@ jobs:
           opam pin add js_of_ocaml-compiler -k version 5.9.1 -y
           opam pin add js_of_ocaml -k version 5.9.1 -y
           opam install zarith_stubs_js js_of_ocaml-ppx -y
-
-      - name: 💉💉💉 Patch Coq
-        run: make patch-for-js
 
       - name: 🦏🧱🦏 Build coq-lsp JS version 🦏🦏🦏
         if: false # Disabled due to https://github.com/ocaml/ocaml/issues/11803
@@ -154,6 +154,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coq-lsp_worker and front-end
+          compression-level: 9
           path: |
             editor/code/package.json
             editor/code/README.md
@@ -163,7 +164,6 @@ jobs:
             editor/code/out/
             editor/code/wasm-bin/
 
-          compression-level: 9
   build-opam:
     name: Opam dev install
     strategy:
