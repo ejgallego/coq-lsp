@@ -283,11 +283,11 @@ let do_open ~io ~token ~(state : State.t) params =
     field "textDocument" params
     |> Lsp.Doc.TextDocumentItem.of_yojson |> Result.get_ok
   in
-  let Lsp.Doc.TextDocumentItem.{ uri; version; text; _ } = document in
+  let Lsp.Doc.TextDocumentItem.{ uri; version; text; languageId } = document in
   let init, workspace = State.workspace_of_uri ~io ~uri ~state in
   let files = Coq.Files.make () in
   let env = Fleche.Doc.Env.make ~init ~workspace ~files in
-  Fleche.Theory.open_ ~io ~token ~env ~uri ~raw:text ~version
+  Fleche.Theory.open_ ~io ~token ~env ~uri ~languageId ~raw:text ~version
 
 let do_change ~ofn_rq ~io ~token params =
   let uri, version = Helpers.get_uri_version params in
@@ -700,11 +700,44 @@ let check_or_yield ~io ~ofn ~token ~state =
     let () = Rq.serve_postponed ~ofn_rq ~token ~doc ready in
     Cont state
 
+let _meth (com : Lsp.Base.Message.t) =
+  match com with
+  | Lsp.Base.Message.Notification d -> d.method_
+  | Lsp.Base.Message.Request d -> d.method_
+  | Lsp.Base.Message.Response _ -> "!!response!!"
+
 module LspQueue : sig
   val pop_opt : unit -> Lsp.Base.Message.t option
   val push_and_optimize : Lsp.Base.Message.t -> unit
+  val _dump : unit -> unit
 end = struct
   let request_queue = Queue.create ()
+
+  let analyze = function
+    | Lsp.Base.Message.Notification { method_; params }
+      when String.equal method_ "textDocument/didChange" ->
+      let uri, version = Helpers.get_uri_version params in
+      Some (method_, uri, version)
+    | Lsp.Base.Message.Notification { method_; params }
+      when String.equal method_ "proof/goals" ->
+      let uri, version = Helpers.get_uri_oversion params in
+      let version = Option.default (-1) version in
+      Some (method_, uri, version)
+    | _ -> None
+
+  let _pp fmt p =
+    match analyze p with
+    | Some (meth, uri, version) ->
+      Format.fprintf fmt "@[%s { %s | %d }@]@," meth
+        (Lang.LUri.File.to_string_uri uri)
+        version
+    | None -> Format.fprintf fmt "@[%s { ... }@]@," (_meth p)
+
+  let _dump () =
+    let ql = Queue.to_seq request_queue |> List.of_seq in
+    L.trace "lspqueue" "@[<v>%a@]"
+      Format.(pp_print_list ~pp_sep:pp_print_cut _pp)
+      ql
 
   let pop_opt () =
     match Queue.peek_opt request_queue with
@@ -712,13 +745,6 @@ end = struct
     | Some v ->
       ignore (Queue.pop request_queue);
       Some v
-
-  let analyze = function
-    | Lsp.Base.Message.Notification
-        { method_ = "textDocument/didChange"; params } ->
-      let uri, version = Helpers.get_uri_version params in
-      Some (uri, version)
-    | _ -> None
 
   let filter_queue _d = ()
 
@@ -769,10 +795,11 @@ let dispatch_or_resume_check ~io ~ofn ~state =
 
 let enqueue_message (com : Lsp.Base.Message.t) =
   if Fleche.Debug.sched_wakeup then
-    L.trace "-> enqueue" "%.2f" (Unix.gettimeofday ());
+    L.trace "-> enqueue" "%s (%.2f)" (_meth com) (Unix.gettimeofday ());
   (* TODO: this is the place to cancel pending requests that are invalid, and in
      general, to perform queue optimizations *)
   LspQueue.push_and_optimize com;
+
   set_current_token ()
 
 module CB (O : sig

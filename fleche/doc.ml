@@ -295,6 +295,7 @@ end
     [Node.t]. *)
 type t =
   { uri : Lang.LUri.File.t  (** [uri] of the document *)
+  ; languageId : string  (** [languageId] of the document *)
   ; version : int  (** [version] of the document *)
   ; contents : Contents.t  (** [contents] of the document *)
   ; nodes : Node.t list  (** List of document nodes *)
@@ -366,24 +367,35 @@ let mk_doc ~token ~env ~uri =
   Memo.Init.evalS ~token (env.Env.init, env.workspace, uri)
 
 (* Create empty doc, in state [~completed] *)
-let empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed =
+let empty_doc ~uri ~languageId ~contents ~version ~env ~root ~nodes ~completed =
   let lines = contents.Contents.lines in
   let init_loc = init_loc ~uri in
   let init_range = Coq.Utils.to_range ~lines init_loc in
   let toc = CString.Map.empty in
   let diags_dirty = not (CList.is_empty nodes) in
   let completed = completed init_range in
-  { uri; contents; toc; version; env; root; nodes; diags_dirty; completed }
+  { uri
+  ; languageId
+  ; contents
+  ; toc
+  ; version
+  ; env
+  ; root
+  ; nodes
+  ; diags_dirty
+  ; completed
+  }
 
-let error_doc ~range ~message ~uri ~contents ~version ~env =
+let error_doc ~range ~message ~uri ~languageId ~contents ~version ~env =
   let payload = Coq.Message.Payload.make ?range (Pp.str message) in
   let feedback = [ (Diags.err, payload) ] in
   let root = env.Env.init in
   let nodes = [] in
   let completed range = Completion.Failed range in
-  (empty_doc ~uri ~version ~contents ~env ~root ~nodes ~completed, feedback)
+  ( empty_doc ~uri ~languageId ~version ~contents ~env ~root ~nodes ~completed
+  , feedback )
 
-let conv_error_doc ~raw ~uri ~version ~env ~root err =
+let conv_error_doc ~raw ~uri ~languageId ~version ~env ~root err =
   let contents = Contents.make_raw ~raw in
   let lines = contents.lines in
   let err =
@@ -395,36 +407,37 @@ let conv_error_doc ~raw ~uri ~version ~env ~root err =
   let global_stats = Stats.Global.dump () in
   let nodes = process_init_feedback ~lines ~stats ~global_stats root [ err ] in
   let completed range = Completion.Failed range in
-  empty_doc ~uri ~version ~env ~root ~nodes ~completed ~contents
+  empty_doc ~uri ~languageId ~version ~env ~root ~nodes ~completed ~contents
 
-let create ~token ~env ~uri ~version ~contents =
+let create ~token ~env ~uri ~languageId ~version ~contents =
   let () = Stats.reset () in
   let root, stats = mk_doc ~token ~env ~uri in
   ( Coq.Protect.E.map root ~f:(fun root ->
         let nodes = [] in
         let completed range = Completion.Stopped range in
-        empty_doc ~uri ~contents ~version ~env ~root ~nodes ~completed)
+        empty_doc ~uri ~languageId ~contents ~version ~env ~root ~nodes
+          ~completed)
   , stats )
 
 (** Try to create a doc, if Coq execution fails, create a failed doc with the
     corresponding errors; for now we refine the contents step as to better setup
     the initial document. *)
-let handle_doc_creation_exec ~token ~env ~uri ~version ~contents =
+let handle_doc_creation_exec ~token ~env ~uri ~languageId ~version ~contents =
   let { Coq.Protect.E.r; feedback }, stats =
-    create ~token ~env ~uri ~version ~contents
+    create ~token ~env ~uri ~languageId ~version ~contents
   in
   let doc, extra_feedback =
     match r with
     | Interrupted ->
       let message = "Document Creation Interrupted!" in
       let range = None in
-      error_doc ~range ~message ~uri ~version ~contents ~env
+      error_doc ~range ~message ~uri ~languageId ~version ~contents ~env
     | Completed (Error (User { range; msg = err_msg; quickFix = _ }))
     | Completed (Error (Anomaly { range; msg = err_msg; quickFix = _ })) ->
       let message =
         Format.asprintf "Doc.create, internal error: @[%a@]" Pp.pp_with err_msg
       in
-      error_doc ~range ~message ~uri ~version ~contents ~env
+      error_doc ~range ~message ~uri ~languageId ~version ~contents ~env
     | Completed (Ok doc) -> (doc, [])
   in
   let state = doc.root in
@@ -439,21 +452,21 @@ let handle_doc_creation_exec ~token ~env ~uri ~version ~contents =
   let diags_dirty = not (CList.is_empty nodes) in
   { doc with nodes; diags_dirty }
 
-let handle_contents_creation ~env ~uri ~version ~raw f =
-  match Contents.make ~uri ~raw with
+let handle_contents_creation ~env ~uri ~version ~languageId ~raw f =
+  match Contents.make ~uri ~languageId ~raw with
   | Contents.R.Error err ->
     let root = env.Env.init in
-    conv_error_doc ~raw ~uri ~version ~env ~root err
-  | Contents.R.Ok contents -> f ~env ~uri ~version ~contents
+    conv_error_doc ~raw ~uri ~languageId ~version ~env ~root err
+  | Contents.R.Ok contents -> f ~env ~uri ~languageId ~version ~contents
 
-let create ~token ~env ~uri ~version ~raw =
-  handle_contents_creation ~env ~uri ~version ~raw
+let create ~token ~env ~uri ~languageId ~version ~raw =
+  handle_contents_creation ~env ~uri ~version ~languageId ~raw
     (handle_doc_creation_exec ~token)
 
 (* Used in bump, we should consolidate with create *)
 let recreate ~token ~doc ~version ~contents =
-  let env, uri = (doc.env, doc.uri) in
-  handle_doc_creation_exec ~token ~env ~uri ~version ~contents
+  let env, uri, languageId = (doc.env, doc.uri, doc.languageId) in
+  handle_doc_creation_exec ~token ~env ~uri ~languageId ~version ~contents
 
 let recover_up_to_offset ~init_range doc offset =
   Io.Log.trace "prefix" "common prefix offset found at %d" offset;
@@ -490,9 +503,11 @@ let bump_version ~init_range ~version ~contents doc =
   let nodes, completed, toc = compute_common_prefix ~init_range ~contents doc in
   (* Important: uri, root remain the same *)
   let uri = doc.uri in
+  let languageId = doc.languageId in
   let root = doc.root in
   let env = doc.env in
   { uri
+  ; languageId
   ; version
   ; root
   ; nodes
@@ -515,10 +530,10 @@ let bump_version ~token ~version ~(contents : Contents.t) doc =
   | Stopped _ | Yes _ -> bump_version ~init_range ~version ~contents doc
 
 let bump_version ~token ~version ~raw doc =
-  let uri = doc.uri in
-  match Contents.make ~uri ~raw with
+  let uri, languageId = (doc.uri, doc.languageId) in
+  match Contents.make ~uri ~languageId ~raw with
   | Contents.R.Error e ->
-    conv_error_doc ~raw ~uri ~version ~env:doc.env ~root:doc.root e
+    conv_error_doc ~raw ~uri ~languageId ~version ~env:doc.env ~root:doc.root e
   | Contents.R.Ok contents -> bump_version ~token ~version ~contents doc
 
 let add_node ~node doc =
@@ -705,7 +720,7 @@ let search_node ~command ~doc ~st =
   in
   match command with
   | Coq.Ast.Meta.Command.Back num -> (
-    match Base.List.nth doc.nodes num with
+    match List.nth_opt doc.nodes num with
     | None ->
       let message = back_overflow num in
       (Coq.Protect.E.error message, nstats None)

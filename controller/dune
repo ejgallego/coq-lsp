@@ -9,7 +9,7 @@
 
 (library
  (name controller)
- (modules :standard \ request coq_lsp)
+ (modules :standard \ request)
  (libraries
   coq
   fleche
@@ -18,10 +18,3 @@
   petanque_json
   fleche_lsp
   dune-build-info))
-
-(executable
- (name coq_lsp)
- (modules coq_lsp)
- (public_name coq-lsp)
- (link_flags -linkall)
- (libraries controller threads cmdliner))

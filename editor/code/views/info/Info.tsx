@@ -23,13 +23,15 @@ const VSCodeDivider = lazy(async () => {
   return { default: VSCodeDivider };
 });
 
+const debugStates = false;
+
 // First part, which should be split out is the protocol definition, second part is the UI.
 function doWaitingForInfo(info: GoalRequest) {
-  console.log("doWaitingForInfo", info);
+  if (debugStates) console.log("doWaitingForInfo", info);
 }
 
 function doInfoError(e: any) {
-  console.log("doInfoError", e);
+  if (debugStates) console.log("doInfoError", e);
 }
 
 export function InfoPanel() {
@@ -50,7 +52,7 @@ export function InfoPanel() {
         doInfoError(event.data.params);
         break;
       default:
-        console.log("unknown method", event.data);
+        console.log("rocq infoview [Info.tsx]: unknown method", event.data);
         break;
     }
   }

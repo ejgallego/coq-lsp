@@ -38,11 +38,12 @@ let compile_file ~cc file : int =
   match Lang.LUri.(File.of_uri (of_string file)) with
   | Error _ -> 222
   | Ok uri -> (
+    let languageId = "rocq" in
     let workspace = workspace_of_uri ~io ~workspaces ~uri ~default in
     let files = Coq.Files.make () in
     let env = Doc.Env.make ~init:root_state ~workspace ~files in
     let raw = Coq.Compat.Ocaml_414.In_channel.(with_open_bin file input_all) in
-    let () = Theory.open_ ~io ~token ~env ~uri ~raw ~version:1 in
+    let () = Theory.open_ ~io ~token ~env ~uri ~languageId ~raw ~version:1 in
     match Theory.Check.maybe_check ~io ~token with
     | None -> 102
     | Some (_, doc) ->
