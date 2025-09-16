@@ -410,11 +410,12 @@ The checklist for the release as of today is the following:
 
 ### Prepare a release commit
 
-- update the version number at `editor/code/package.json`, do `npm i`
-- update the version number at `fleche/version.ml`
 - update the client changelog at `editor/code/CHANGELOG.md`, commit
+- update the version number at `lsp-server/wasm/package.json`
+- update the version number at `editor/code/package.json`
+- do `make extension` to update the `package-lock.json` files
+- update the version number at `fleche/version.ml`
 - add release notes in `etc/release_notes/` if needed
-- do `make extension` to update the `package-lock.json` file
 
 ### Tag and test release commit
 
