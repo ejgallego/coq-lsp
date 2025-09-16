@@ -30,7 +30,7 @@ module R : sig
 end
 
 (** Process contents *)
-val make : uri:Lang.LUri.File.t -> raw:string -> t R.t
+val make : uri:Lang.LUri.File.t -> languageId:string -> raw:string -> t R.t
 
 (** Make an object of type [t] but don't process the text, this is only used
     internally to still provide some contents when [make] fails. *)

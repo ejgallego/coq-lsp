@@ -176,15 +176,23 @@ Don't hesitate to open an issue if you need support for different kind
 of URIs in your application / client. The client does support
 `vsls:///` URIs.
 
-Additionally, `coq-lsp` will use the extension of the file in the URI
-to determine the content type. Supported extensions are:
-- `.v`: File will be interpreted as a regular Coq vernacular file,
-- `.mv`: File will be interpreted as a markdown file. Code
-  snippets between `coq` markdown code blocks will be interpreted as
-  Coq code.
-- `.v.tex` or `.lv`: File will be interpreted as a LaTeX file. Code
-  snippets between `\begin{coq}/\end{coq}` LaTeX environments will be
-  interpreted as Coq code.
+Additionally, `coq-lsp` will use the `languageId` field in `didOpen`
+parameters to determine the content type. Supported `languageId` are:
+- `coq` / `rocq`: File will be interpreted as a regular Rocq
+  vernacular file,
+- `markdown`: File will be interpreted as a markdown file. Code
+  snippets between `coq` or `rocq` markdown code blocks will be
+  interpreted as Rocq code.
+- `latex`: File will be interpreted as a LaTeX file. Code snippets
+  between `\begin{coq}/\end{coq}` LaTeX environments (or
+  `\being{rocq}/\end{rocq}` will be interpreted as Rocq code.
+
+By default, the `coq-lsp` VSCode client will activate for files ending
+in some specific extensions, setting their `languageId` as follows:
+
+- `.v`: `languageId = coq`
+- `.mv`: `languageId = markdown`
+- `.v.tex` or `.lv`: `languageId = latex`
 
 <!-- TOC --><a name="implementation-specific-options"></a>
 ## Implementation-specific options
