@@ -420,9 +420,10 @@ The checklist for the release as of today is the following:
 ### Tag and test release commit
 
 ```
-export COQLSPV=0.2.4
+export COQLSPV=0.2.5
 git checkout main  &&                    opam exec --switch=dev-coq-lsp -- make && opam exec --switch=dev-coq-lsp -- make test test-compiler && dune-release tag ${COQLSPV}
-git checkout v9.0  && git merge main  && opam exec --switch=rocq-v9.0   -- make && opam exec --switch=rocq-v9.0   -- make test test-compiler && dune-release tag ${COQLSPV}+9.0
+git checkout v9.1  && git merge main  && opam exec --switch=rocq-v9.1   -- make && opam exec --switch=rocq-v9.1   -- make test test-compiler && dune-release tag ${COQLSPV}+9.1
+git checkout v9.0  && git merge v9.1  && opam exec --switch=rocq-v9.0   -- make && opam exec --switch=rocq-v9.0   -- make test test-compiler && dune-release tag ${COQLSPV}+9.0
 git checkout v8.20 && git merge v9.0  && opam exec --switch=coq-v8.20   -- make && opam exec --switch=coq-v8.20   -- make test test-compiler && dune-release tag ${COQLSPV}+8.20
 git checkout v8.19 && git merge v8.20 && opam exec --switch=coq-v8.19   -- make && opam exec --switch=coq-v8.19   -- make test test-compiler && dune-release tag ${COQLSPV}+8.19
 git checkout v8.18 && git merge v8.19 && opam exec --switch=coq-v8.18   -- make && opam exec --switch=coq-v8.18   -- make test test-compiler && dune-release tag ${COQLSPV}+8.18
@@ -443,7 +444,8 @@ git checkout v8.17 && git merge v8.18 && opam exec --switch=coq-v8.17   -- make 
 `dune release` for each version that should to the main opam repos:
 
 ```
-export COQLSPV=0.2.4
+export COQLSPV=0.2.5
+git checkout v9.1  && opam exec --switch=rocq-v9.1 -- dune-release
 git checkout v9.0  && opam exec --switch=rocq-v9.0 -- dune-release
 git checkout v8.20 && opam exec --switch=coq-v8.20 -- dune-release
 git checkout v8.19 && opam exec --switch=coq-v8.19 -- dune-release
