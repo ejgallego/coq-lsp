@@ -1,3 +1,19 @@
+# coq-lsp 0.2.4: (W)Activation
+------------------------------
+
+ - The coq-lsp extension now includes a fully working rocq-lsp
+   compiled with WebAssembly. This means you can run Rocq without
+   having to install it, directly from `vscode.dev` or `github.dev`
+
+   This was made possible thanks to Shachar Itzhaky's excellent
+   `ocaml-wasm`.
+ - Sentences that take long to execute will be highlighted with a red
+   glowing on the client.
+ - Support for Rocq 9.1, `_RocqProject`, `rocq` markdown and LaTeX
+   codeblocks.
+ - Document outline now supports `Notation`, `Ltac`, and `Ltac
+   Notation`.
+
 # coq-lsp 0.2.3: Barrage
 ------------------------
 

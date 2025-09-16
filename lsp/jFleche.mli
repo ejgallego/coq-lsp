@@ -110,3 +110,10 @@ val mk_perf :
 (* Server status notifications *)
 val mk_serverVersion : Fleche.ServerInfo.Version.t -> Base.Notification.t
 val mk_serverStatus : Fleche.ServerInfo.Status.t -> Base.Notification.t
+
+(** Exec Info *)
+val mk_execinfo :
+     uri:Lang.LUri.File.t
+  -> version:int
+  -> range:Lang.Range.t
+  -> Base.Notification.t

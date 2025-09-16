@@ -138,12 +138,7 @@ let main () =
     let unix_path = Filename.concat coqlib "theories" in
     let coq_path = Names.(DirPath.make [ Id.of_string "Corelib" ]) in
     Loadpath.
-      { unix_path
-      ; coq_path
-      ; implicit = true
-      ; recursive = true
-      ; has_ml = false
-      }
+      { unix_path; coq_path; implicit = true; recursive = true; has_ml = false }
   in
 
   let user_contrib coqlib =

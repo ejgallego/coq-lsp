@@ -151,7 +151,7 @@ module Kinds = struct
   let enumMember = 22
   let struct_ = 23
   let _event = 24
-  let _operator = 25
+  let operator = 25
   let _typeParameter = 26
 end
 
@@ -233,6 +233,9 @@ let mk_name ~lines (id : Names.lname) : Lang.Ast.Name.t Lang.With_range.t =
 let mk_id ~lines (id : Names.lident) =
   CAst.map (fun id -> Names.Name id) id |> mk_name ~lines
 
+let mk_string ~lines (id : Names.lstring) =
+  CAst.map (fun id -> Names.(Name (Id.of_string_soft id))) id |> mk_name ~lines
+
 let constructor_info ~lines ((_, (id, _typ)) : constructor_expr) =
   let range = Option.get id.loc in
   let range = Utils.to_range ~lines range in
@@ -300,6 +303,11 @@ let symbol_info ~lines ~range
   in
   List.map mk_info idents
 
+let fixup_range ~loc id =
+  match id.loc with
+  | None -> CAst.make ?loc id.v
+  | Some _ -> id
+
 let make_info ~st:_ ~lines CAst.{ loc; v } : Lang.Ast.Info.t list option =
   let open Vernacexpr in
   match loc with
@@ -339,4 +347,36 @@ let make_info ~st:_ ~lines CAst.{ loc; v } : Lang.Ast.Info.t list option =
       let kind = Kinds.method_ in
       let detail = "Rewrite Rule" in
       Some [ Lang.Ast.Info.make ~range ~name ~kind ~detail () ]
+    | VernacSynterp (VernacNotation (_infix, { ntn_decl_string; _ })) ->
+      let name = mk_string ~lines ntn_decl_string in
+      let kind = Kinds.operator in
+      let detail = "Notation" in
+      Some [ Lang.Ast.Info.make ~range ~name ~kind ~detail () ]
+    | VernacSynterp
+        (VernacExtend
+          ({ ext_entry = "VernacDeclareTacticDefinition"; _ }, glist)) ->
+      let ids =
+        List.concat_map Serlib.Ser_analysis.NameAnalysis.analyze glist
+      in
+      let kind = Kinds.function_ in
+      let detail = "Tactic" in
+      let mk_info id =
+        let name = mk_name ~lines id in
+        Lang.Ast.Info.make ~range ~name ~detail ~kind ()
+      in
+      Some (List.map mk_info ids)
+    | VernacSynterp
+        (VernacExtend ({ ext_entry = "VernacTacticNotation"; _ }, glist)) ->
+      let ids =
+        List.concat_map Serlib.Ser_analysis.NameAnalysis.analyze glist
+      in
+      let kind = Kinds.function_ in
+      let detail = "Tactic Notation" in
+      let mk_info id =
+        (* Tactic notation doesn't properly set id location *)
+        let id = fixup_range ~loc id in
+        let name = mk_name ~lines id in
+        Lang.Ast.Info.make ~range ~name ~detail ~kind ()
+      in
+      Some (List.map mk_info ids)
     | _ -> None)

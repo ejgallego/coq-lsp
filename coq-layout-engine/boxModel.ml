@@ -72,7 +72,7 @@ module H = Tyxml.Html
 
 module Render = struct
   let xxx kind = H.txt ("uninplemented: " ^ kind)
-  let _class c = [ H.a_class [ c ] ]
+  let _class c = [ H.a_class [ c; "box" ] ]
 
   let span ?(extra = []) c e =
     let a = _class c in

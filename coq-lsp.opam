@@ -44,9 +44,6 @@ depends: [
   # This is now a hard dep due to API changes in 1.9.7
   "ocamlfind" { >= "1.9.8" }
 
-  # v9.0
-  "rocq-prover"         { >= "9.0" < "9.1" }
-
   # serlib deps
   "ppx_deriving"        { >= "5.2"                 }
   "ppx_deriving_yojson" { >= "3.7.0"               }

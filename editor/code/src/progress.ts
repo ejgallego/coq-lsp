@@ -12,6 +12,7 @@ import {
 } from "vscode-languageclient";
 import { BaseLanguageClient } from "vscode-languageclient";
 import { CoqSelector } from "./config";
+import * as GS from "./glowSpan";
 
 enum CoqFileProgressKind {
   Processing = 1,
@@ -55,6 +56,7 @@ export class FileProgressManager {
         .map((fp) => client.protocol2CodeConverter.asRange(fp.range))
         .filter((r) => !r.isEmpty);
       this.updateDecos(params.textDocument.uri, ranges);
+      GS.stop();
     });
   }
   dispose() {
