@@ -24,18 +24,51 @@ let mk_error node =
 type format =
   | Pp
   | Str
+  | Box
 
-let pp ~pp_format pp =
+(* BoxLayout helpers *)
+let set_flag flag value f =
+  let v = !flag in
+  flag := value;
+  try
+    let res = f () in
+    flag := v;
+    res
+  with exn ->
+    flag := v;
+    raise exn
+
+let layout_term env sigma t =
+  (* Coq stores goals in kernel-format, we need to recover the AST back before
+     calling the layout engine; this is called "externalization" in Coq
+     jargon *)
+  let t = Constrextern.extern_type env sigma t in
+  let html = Layout.(Term.layout env sigma t |> BoxModel.Render.to_html) in
+  Format.asprintf "@[%a@]" (Tyxml.Html.pp_elt ()) html
+
+let layout_term env sigma t =
+  set_flag
+    (* Notations = no *)
+    (* Constrextern.print_no_symbol true *)
+    (* Notations = yes *)
+    Constrextern.print_no_symbol false (fun () -> layout_term env sigma t)
+
+let pp ~pp_format ~token env evd x =
   match pp_format with
-  | Pp -> Lsp.JCoq.Pp.to_yojson pp
-  | Str -> `String (Pp.string_of_ppcmds pp)
+  | Pp -> Fleche.Info.Goals.to_pp ~token env evd x |> Lsp.JCoq.Pp.to_yojson
+  | Str ->
+    let pp = Fleche.Info.Goals.to_pp ~token env evd x in
+    `String (Pp.string_of_ppcmds pp)
+  | Box ->
+    let pp = layout_term env evd x in
+    `List [ `String "box"; `String pp ]
 
 let run_pretac ~token ~loc ~st pretac =
   match pretac with
   | None -> Coq.Protect.E.ok st
   | Some tac -> Fleche.Doc.run ~token ?loc ~st tac
 
-let get_goal_info ~token ~doc ~point ~mode ~pretac () =
+let get_goal_info ~pp_format ~token ~doc ~point ~mode ~pretac () =
   let open Fleche in
   let node = Info.LC.node ~doc ~point mode in
   match node with
@@ -46,7 +79,8 @@ let get_goal_info ~token ~doc ~point ~mode ~pretac () =
     (* XXX: Get the location from node *)
     let loc = None in
     let* st = run_pretac ~token ~loc ~st pretac in
-    let+ goals = Info.Goals.goals ~token ~st in
+    let pr = pp ~pp_format in
+    let+ goals = Info.Goals.goals ~token ~pr ~st in
     let program = Info.Goals.program ~st in
     (goals, Some program)
 
@@ -69,11 +103,14 @@ let goals ~pp_format ~mode ~pretac () ~token ~doc ~point =
     Lang.Point.{ line = fst point; character = snd point; offset = -1 }
   in
   let open Coq.Protect.E.O in
-  let+ goals, program = get_goal_info ~token ~doc ~point ~mode ~pretac () in
+  let+ goals, program =
+    get_goal_info ~pp_format ~token ~doc ~point ~mode ~pretac ()
+  in
   let range, messages, error = get_node_info ~doc ~point ~mode in
-  let pp = pp ~pp_format in
   Lsp.JFleche.GoalsAnswer.(
-    to_yojson pp
+    to_yojson
+      (fun x -> x)
+      (fun x -> Lsp.JCoq.Pp.to_yojson x)
       { textDocument; position; range; goals; program; messages; error })
   |> Result.ok
 

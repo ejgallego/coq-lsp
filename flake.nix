@@ -66,6 +66,7 @@
               ppx_inline_test
               logs
               lwt
+              tyxml
               ;
           };
         };

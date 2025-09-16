@@ -17,4 +17,5 @@
   petanque
   petanque_json
   fleche_lsp
+  layout
   dune-build-info))

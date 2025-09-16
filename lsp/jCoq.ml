@@ -64,7 +64,8 @@ module Goals = struct
     let open Ppx_deriving_yojson_runtime in
     Goals_.of_yojson f pp j >|= Goals_.of_
 
-  type 'pp reified_pp = ('pp Reified_goal.t, 'pp) t [@@deriving yojson]
+  type ('g, 'pp) reified = [%import: ('g, 'pp) Coq.Goals.reified]
+  [@@deriving yojson]
 end
 
 module Ast = struct
