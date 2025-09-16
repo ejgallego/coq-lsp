@@ -91,7 +91,13 @@ winconfig:
 
 .PHONY: wp
 wp:
+ifdef VENDORED_SETUP
 	dune build vendor/coq-waterproof/coq-waterproof.install
+else ifeq($(WP_VERSION,"none"))
+	echo "no waterproof install for this version"
+else
+	opam install coq-waterproof.$(WP_VERSION)
+endif
 
 .PHONY: js
 js: COQVM = no
@@ -125,7 +131,7 @@ opam-switch:
 # Install opam deps
 .PHONY: opam-deps
 opam-deps:
-	opam install ./coq-lsp.opam -y --deps-only --with-test
+	opam install --ignore-constraints-on=ocaml --ignore-constraints-on=ocaml-variants ./coq-lsp.opam -y --deps-only --with-test
 
 # Install opam deps
 .PHONY: opam-dev-deps
@@ -196,6 +202,9 @@ COQ_BRANCH=v9.0
 COQ_CORE_VERSION=9.0.0
 # Name of COQ_CORE_NAME is rocq-runtime after 8.20
 COQ_CORE_NAME=rocq-runtime
+# Waterproof version
+# WP_VERSION=none
+WP_VERSION=3.0.0+9.0
 
 ifdef VENDORED_SETUP
 COQ_SRC_DIR=vendor/coq
