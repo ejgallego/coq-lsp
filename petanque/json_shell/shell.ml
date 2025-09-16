@@ -70,10 +70,12 @@ let read_raw ~uri =
   try Ok Coq.Compat.Ocaml_414.In_channel.(with_open_text file input_all)
   with Sys_error err -> Error Petanque.Agent.Error.(make_request (system err))
 
+let languageId = "rocq"
+
 let setup_doc ~token env uri =
   match read_raw ~uri with
   | Ok raw ->
-    let doc = Fleche.Doc.create ~token ~env ~uri ~version:0 ~raw in
+    let doc = Fleche.Doc.create ~token ~env ~uri ~languageId ~version:0 ~raw in
     print_diags doc;
     let target = Fleche.Doc.Target.End in
     Ok (Fleche.Doc.check ~io ~token ~target ~doc ())

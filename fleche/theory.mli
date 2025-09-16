@@ -24,6 +24,7 @@ val open_ :
   -> token:Coq.Limits.Token.t
   -> env:Doc.Env.t
   -> uri:Lang.LUri.File.t
+  -> languageId:string
   -> raw:string
   -> version:int
   -> unit

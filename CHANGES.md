@@ -48,6 +48,8 @@ unreleased
    @pimotte, #1008, cc #833, fixes #907, fixes #908, fixes #913)
  - [opam] Added `x-maintenance-intent` intent field. (@ejgallego,
    #1020)
+ - [lsp] [didOpen] `languageId` now takes priority over uri extension
+   in LSP `didOpen`. (@ejgallego, #1021, fixes #1005)
 
 # coq-lsp 0.2.3: Barrage
 ------------------------

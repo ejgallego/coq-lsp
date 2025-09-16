@@ -283,11 +283,11 @@ let do_open ~io ~token ~(state : State.t) params =
     field "textDocument" params
     |> Lsp.Doc.TextDocumentItem.of_yojson |> Result.get_ok
   in
-  let Lsp.Doc.TextDocumentItem.{ uri; version; text; _ } = document in
+  let Lsp.Doc.TextDocumentItem.{ uri; version; text; languageId } = document in
   let init, workspace = State.workspace_of_uri ~io ~uri ~state in
   let files = Coq.Files.make () in
   let env = Fleche.Doc.Env.make ~init ~workspace ~files in
-  Fleche.Theory.open_ ~io ~token ~env ~uri ~raw:text ~version
+  Fleche.Theory.open_ ~io ~token ~env ~uri ~languageId ~raw:text ~version
 
 let do_change ~ofn_rq ~io ~token params =
   let uri, version = Helpers.get_uri_version params in

@@ -325,10 +325,10 @@ end = struct
     else if not (Option.is_empty !hint) then hint := Some (uri, point)
 end
 
-let open_ ~io ~token ~env ~uri ~raw ~version =
+let open_ ~io ~token ~env ~uri ~languageId ~raw ~version =
   let extra_requires = Register.InjectRequire.fire ~io in
   let env = Doc.Env.inject_requires ~extra_requires env in
-  let doc = Doc.create ~token ~env ~uri ~raw ~version in
+  let doc = Doc.create ~token ~env ~uri ~languageId ~raw ~version in
   Handle.create ~uri ~doc;
   let reason = Reason.OpenDocument in
   Check.schedule ~uri ~reason
