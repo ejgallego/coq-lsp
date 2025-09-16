@@ -89,16 +89,6 @@ winconfig:
 	&& cp theories/Corelib/dune.disabled theories/Corelib/dune \
 	&& cp theories/Ltac2/dune.disabled theories/Ltac2/dune
 
-.PHONY: wp
-wp:
-ifdef VENDORED_SETUP
-	dune build vendor/coq-waterproof/coq-waterproof.install
-else ifeq($(WP_VERSION,"none"))
-	echo "no waterproof install for this version"
-else
-	opam install coq-waterproof.$(WP_VERSION)
-endif
-
 .PHONY: js
 js: COQVM = no
 js: coq_boot
@@ -130,7 +120,7 @@ opam-switch:
 # Install opam deps
 .PHONY: opam-deps
 opam-deps:
-	opam install --ignore-constraints-on=ocaml --ignore-constraints-on=ocaml-variants ./coq-lsp.opam -y --deps-only --with-test
+	opam install ./coq-lsp.opam -y --deps-only --with-test
 
 # Install opam deps
 .PHONY: opam-dev-deps
@@ -204,6 +194,16 @@ COQ_CORE_NAME=coq-core
 # WP_VERSION=none
 WP_VERSION=3.0.0+8.20
 
+.PHONY: wp
+wp:
+ifdef VENDORED_SETUP
+	dune build vendor/coq-waterproof/coq-waterproof.install
+else ifeq ($(WP_VERSION),none)
+	@echo "no waterproof install for this version"
+else
+	opam install coq-waterproof.$(WP_VERSION)
+endif
+
 ifdef VENDORED_SETUP
 COQ_SRC_DIR=vendor/coq
 PATCH_DIR=../../etc/
@@ -222,7 +222,7 @@ endif
 	cd $(COQ_SRC_DIR) && git apply $(PATCH_DIR)/0001-engine-trampoline.patch
 	# cd $(COQ_SRC_DIR) && git apply $(PATCH_DIR)/0001-ocaml-4-12.patch
 ifndef VENDORED_SETUP
-	opam pin add $(COQ_CORE_NAME).$(COQ_CORE_VERSION) -k path $(COQ_SRC_DIR)
+	opam pin add $(COQ_CORE_NAME).$(COQ_CORE_VERSION) -k path $(COQ_SRC_DIR) -y
 endif
 
 _LIBROOT=$(shell opam var lib)

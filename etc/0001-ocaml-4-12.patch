@@ -93,3 +93,16 @@ index c955d81a9a..6461dd769d 100644
      cprintf prefs "You have OCaml %s. Good!" caml_version
    else
      let () = cprintf prefs "Your version of OCaml is %s." caml_version in
+diff --git a/rocq-runtime.opam b/rocq-runtime.opam
+index 2e22f0f..a30525a 100644
+--- a/rocq-runtime.opam
++++ b/rocq-runtime.opam
+@@ -30,7 +30,7 @@ doc: "https://rocq-prover.org/docs/"
+ bug-reports: "https://github.com/rocq-prover/rocq/issues"
+ depends: [
+   "dune" {>= "3.8"}
+-  "ocaml" {>= "4.14.0"}
++  "ocaml" {>= "4.12.0"}
+   "ocamlfind" {>= "1.9.1" & (>= "1.9.8" | os != "windows")}
+   "zarith" {>= "1.11"}
+   "conf-linux-libc-dev" {os = "linux"}

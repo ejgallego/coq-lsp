@@ -365,6 +365,7 @@ let get_pp_format_from_config () =
   match !Fleche.Config.v.pp_type with
   | 0 -> Rq_goals.Str
   | 1 -> Rq_goals.Pp
+  | 2 -> Rq_goals.Box
   | v ->
     L.trace "get_pp_format_from_config" "unknown output parameter: %d" v;
     Rq_goals.Str

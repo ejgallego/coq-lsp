@@ -8,6 +8,7 @@
 type format =
   | Pp
   | Str
+  | Box
 
 (** [goals ~pp_format ?pretac] Serve goals at point; users can request
     pre-processing and formatting using the provided parameters. *)
@@ -17,3 +18,6 @@ val goals :
   -> pretac:string option
   -> unit
   -> (Yojson.Safe.t, string) Request.position
+
+(** For printing of goals in [coq/getDocument] *)
+val pp : pp_format:format -> Yojson.Safe.t Fleche.Info.Goals.printer
