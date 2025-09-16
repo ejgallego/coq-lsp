@@ -66,8 +66,17 @@ type t =
       }  (** Notation *)
   | Fixpoint of t * t
 
+module LaTeX : sig
+  type t =
+    | Token of string
+    | Macro of string * t list
+    | List of t list
+end
+
 (** Simple wrapping in <div> *)
 module Render : sig
   val to_html :
     t -> [< Html_types.span_content_fun > `PCDATA `Span ] Tyxml.Html.elt
+
+  val to_latex : t -> LaTeX.t
 end
