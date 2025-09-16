@@ -1,3 +1,10 @@
+(* Tests for #632 *)
+Notation "'[' 'seq' M ']'" := (list M).
+
+#[local] Ltac my_tac := idtac with foo_tac := idtac.
+
+Tactic Notation "foo" := idtac.
+
 Record a := {
     proj1 : Type
   ; proj2 : Type
@@ -43,3 +50,10 @@ Module Bar.
   Theorem not : False. Qed.
 
 End Bar.
+
+(* Tests for #632 *)
+Notation "'[' 'seq' M ']'" := (list M).
+
+#[local] Ltac my_tac ::= idtac.
+
+Tactic Notation "foo" := idtac.
