@@ -1,5 +1,5 @@
-unreleased
-----------
+# coq-lsp 0.2.4: (W)Activation
+------------------------------
 
  - [js] [deps] Bump to findlib 1.9.8, use vanilla API for loading and
    remove our own local wrapper (@ejgallego, #975).
