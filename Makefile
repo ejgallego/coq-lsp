@@ -126,7 +126,7 @@ opam-switch:
 .PHONY: opam-deps
 opam-deps:
 	opam repo add rocq-core-dev https://rocq-prover.org/opam/core-dev # Only for v9.1-RC1
-	opam install ./coq-lsp.opam -y --deps-only --with-test
+	opam install --ignore-constraints-on=ocaml --ignore-constraints-on=ocaml-variants ./coq-lsp.opam -y --deps-only --with-test
 
 # Install opam deps
 .PHONY: opam-dev-deps
