@@ -142,6 +142,7 @@ let main () =
       ; coq_path
       ; implicit = true
       ; recursive = true
+      ; has_ml = false
       }
   in
 
@@ -153,6 +154,7 @@ let main () =
       ; coq_path
       ; implicit = false
       ; recursive = true
+      ; has_ml = false
       }
   in
 
