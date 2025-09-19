@@ -148,18 +148,28 @@ submodules-update:
 # (cd vendor/coq-waterproof && git checkout coq-master && git pull upstream coq-master)
 
 # Build the vscode extension
-.PHONY: wasm-bin
 WASTUBS=$(addsuffix .wasm,dllcoqrun_stubs dllcoqperf_stubs dllbigstringaf_stubs dlllib_stubs)
 WAFILES=$(addprefix lsp-server/wasm/,wacoq_worker.bc $(WASTUBS))
 WASM_NODE=lsp-server/wasm/node_modules/
 OUTDIR=editor/code/wasm-bin/
 OUTDIR_NODE=editor/code/wasm-bin/node_modules
+
+# Use to debug the extensions / wasm build
+# ESBUILD_DEBUG=1
+
+ifdef ESBUILD_DEBUG
+NPM_TARGET=esbuild
+else
+NPM_TARGET=vscode:prepublish
+endif
+
+.PHONY: wasm-bin
 wasm-bin:
 	dune build $(WAFILES)
 	mkdir -p $(OUTDIR)
 	cp -af _build/default/lsp-server/wasm/wacoq_worker.bc $(OUTDIR)
 	cp -af _build/default/lsp-server/wasm/*.wasm $(OUTDIR)
-	cd lsp-server/wasm/ && npm i && npm run vscode:prepublish
+	cd lsp-server/wasm/ && npm i && npm run $(NPM_TARGET)
 	cp -af lsp-server/wasm/out/wacoq_worker.js $(OUTDIR)
 	mkdir -p $(OUTDIR_NODE)/ocaml-wasm/                        && cp -af $(WASM_NODE)/ocaml-wasm/bin/                        $(OUTDIR_NODE)/ocaml-wasm/
 	mkdir -p $(OUTDIR_NODE)/@ocaml-wasm/4.12--num/             && cp -af $(WASM_NODE)/@ocaml-wasm/4.12--num/bin/             $(OUTDIR_NODE)/@ocaml-wasm/4.12--num/
@@ -168,7 +178,7 @@ wasm-bin:
 
 .PHONY: extension
 extension: wasm-bin
-	cd editor/code && npm i && npm run vscode:prepublish
+	cd editor/code && npm i && npm run $(NPM_TARGET)
 
 # Run prettier
 .PHONY: ts-fmt
