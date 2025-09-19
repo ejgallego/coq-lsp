@@ -29,20 +29,20 @@
     "url": "https://github.com/ejgallego/coq-lsp"
   },
   "devDependencies": {
-    "@types/node": "^18.18.1",
-    "@types/vscode": "^1.75.0",
-    "@vscode/vsce": "^2.21.1",
+    "@types/node": "^18.19.127",
+    "@types/vscode": "^1.104.0",
+    "@vscode/vsce": "^2.32.0",
     "@vscode/wasm-wasi": "^1.0.1",
-    "browser-or-node": "^2.0.0",
+    "browser-or-node": "^2.1.1",
     "esbuild": "^0.16.17",
-    "assert": "^2.0.0",
+    "assert": "^2.1.0",
     "buffer": "^4.9.2",
     "fflate-unzip": "^0.7.0",
     "path": "^0.12.7",
     "path-browserify": "^1.0.1",
-    "prettier": "^3.2.5",
+    "prettier": "^3.6.2",
     "stream-browserify": "^3.0.0",
-    "typescript": "^5.2.2",
+    "typescript": "^5.9.2",
     "wasi-kernel": "^0.1.6"
   },
   "dependencies": {
