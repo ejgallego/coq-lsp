@@ -2,5 +2,5 @@
  (name Goaldumpl_plugin)
  (public_name coq-lsp.plugin.goaldump)
  (preprocess
-  (pps ppx_deriving_yojson))
+  (staged_pps ppx_import ppx_deriving_yojson ppx_sexp_conv))
  (libraries coq-lsp.fleche coq-lsp.lsp))
