@@ -10,6 +10,7 @@ Describe the environment:
      + findlib default location: [TEST_PATH]
    - coqlib is at: [TEST_PATH]
      + 3 Coq path directory bindings in scope
+     + 1 Coq modules (.v files) known from ./_CoqProject listing
      + Modules [Corelib.Init.Prelude] will be loaded by default
 
 Compile normally, even with errors, we exit 0:

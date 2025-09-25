@@ -42,6 +42,10 @@ module Require : sig
     }
 end
 
+module Module : sig
+  type t
+end
+
 (* Generated from a _CoqProject, dune (in the future) or command line args *)
 type t = private
   { coqlib : string  (** Path to coqlib *)
@@ -55,6 +59,7 @@ type t = private
         (** Modules to preload, usually Coq.Init.Prelude *)
   ; flags : Flags.t  (** Coq-specific flags *)
   ; warnings : Warning.t list
+  ; modules : Module.t list
   ; kind : string  (** How the workspace was built *)
   ; debug : bool  (** Enable backtraces *)
   }
