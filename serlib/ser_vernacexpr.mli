@@ -112,20 +112,20 @@ type locality_flag =
   [%import: Vernacexpr.locality_flag]
   [@@deriving sexp,yojson,hash,compare]
 
+type body_expr =
+  [%import: Vernacexpr.body_expr]
+  [@@deriving sexp,yojson,hash,compare]
+
 type definition_expr =
   [%import: Vernacexpr.definition_expr]
   [@@deriving sexp,yojson,hash,compare]
 
-type notation_declaration =
-  [%import: Vernacexpr.notation_declaration]
+type decl_notation =
+  [%import: Vernacexpr.decl_notation]
   [@@deriving sexp,yojson,hash,compare]
 
 type recursion_order_expr =
   [%import: Vernacexpr.recursion_order_expr]
-  [@@deriving sexp,yojson,hash,compare]
-
-type recursive_expr_gen =
-  [%import: Vernacexpr.recursive_expr_gen]
   [@@deriving sexp,yojson,hash,compare]
 
 type fixpoint_expr =
@@ -190,10 +190,6 @@ type inductive_expr =
 
 type one_inductive_expr =
   [%import: Vernacexpr.one_inductive_expr]
-  [@@deriving sexp,yojson,hash,compare]
-
-type proof_expr =
-  [%import: Vernacexpr.proof_expr]
   [@@deriving sexp,yojson,hash,compare]
 
 type proof_end =
