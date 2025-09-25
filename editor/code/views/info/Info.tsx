@@ -31,6 +31,16 @@ function doWaitingForInfo(info: GoalRequest) {
   if (debugStates) console.log("doWaitingForInfo", info);
 }
 
+export function buildInfoWaiting(info: GoalRequest) {
+  let uri = info.textDocument.uri.split("/").at(-1);
+  let line = info.position.line + 1;
+  let character = info.position.character + 1;
+  return `<details open>
+    <summary>${uri}:${line}:${character}</summary>
+    <em>Waiting for document information, thanks for your patience</em>
+    </details>`;
+}
+  
 function doInfoError(e: any) {
   if (debugStates) console.log("doInfoError", e);
 }
