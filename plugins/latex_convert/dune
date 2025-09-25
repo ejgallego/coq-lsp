@@ -1,0 +1,4 @@
+(library
+ (name Latex_convert)
+ (public_name coq-lsp.plugin.latex_convert)
+ (libraries coq-lsp.fleche))
