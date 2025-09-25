@@ -10,7 +10,7 @@ import { URI } from "vscode-uri";
 let serverBin = os.platform() === "win32" ? "coq-lsp.exe" : "coq-lsp";
 let projectRoot = path.join(__dirname, "..", "..", "..");
 
-let serverPath = path.join(
+let _serverPath = path.join(
   projectRoot,
   "_build",
   "install",
@@ -19,7 +19,9 @@ let serverPath = path.join(
   serverBin,
 );
 
-let ocamlPath = path.join(projectRoot, "_build", "install", "default", "lib");
+let serverPath = "coq-lsp"
+
+// let ocamlPath = path.join(projectRoot, "_build", "install", "default", "lib");
 
 export function toURI(s: string) {
   return URI.parse(s).toString();
@@ -43,15 +45,17 @@ export function openExample(filename: string) {
 export interface LanguageServer extends rpc.MessageConnection {
   initialize(
     initializeParameters?: Partial<Protocol.InitializeParams>,
+    root?: string
   ): Promise<void>;
+
   exit(): Promise<void>;
 }
 
 export function start(): LanguageServer {
-  let childProcess = cp.spawn(serverPath, [], {
+  let childProcess = cp.spawn(serverPath, ['--int_backend=Mp', '--bt'], {
     env: {
       ...process.env,
-      OCAMLPATH: ocamlPath,
+      // OCAMLPATH: ocamlPath,
     },
   });
   let connection = rpc.createMessageConnection(
@@ -62,15 +66,17 @@ export function start(): LanguageServer {
 
   const initialize = async (
     initializeParameters: Partial<Protocol.InitializeParams> = {},
+    root : string = projectRoot,
   ) => {
     initializeParameters = {
       processId: process.pid,
-      workspaceFolders: [
-        {
-          uri: toURI(projectRoot),
-          name: "coq-lsp",
-        },
-      ],
+      // workspaceFolders: [
+      //   {
+      //     uri: toURI(root),
+      //     name: "coq-lsp",
+      //   },
+      // ],
+      initializationOptions: { eager_diagnostics: false },
       capabilities: {
         textDocument: {
           publishDiagnostics: {
@@ -80,6 +86,14 @@ export function start(): LanguageServer {
       },
       ...initializeParameters,
     };
+
+    const log = (message : string | any, data?: any) => {
+      console.log(`${message} | ${data}`);
+    };
+
+    const tracer : rpc.Tracer = { log };
+
+    connection.trace(rpc.Trace.Verbose, tracer);
 
     await connection.sendRequest(
       Protocol.InitializeRequest.type,
