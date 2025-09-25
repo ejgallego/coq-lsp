@@ -29,7 +29,7 @@ ocaml-lsp-server
 
 .PHONY: build
 build: coq_boot
-	dune build $(DUNEOPT) $(PKG_SET)
+	@dune build $(DUNEOPT) $(PKG_SET)
 
 .PHONY: check
 check: coq_boot
@@ -159,26 +159,33 @@ OUTDIR_NODE=editor/code/wasm-bin/node_modules
 
 ifdef ESBUILD_DEBUG
 NPM_TARGET=esbuild
+NPM_OPTS=
 else
 NPM_TARGET=vscode:prepublish
+NPM_OPTS=--silent
 endif
 
 .PHONY: wasm-bin
 wasm-bin:
-	dune build $(WAFILES)
-	mkdir -p $(OUTDIR)
-	cp -af _build/default/lsp-server/wasm/wacoq_worker.bc $(OUTDIR)
-	cp -af _build/default/lsp-server/wasm/*.wasm $(OUTDIR)
-	cd lsp-server/wasm/ && npm i && npm run $(NPM_TARGET)
-	cp -af lsp-server/wasm/out/wacoq_worker.js $(OUTDIR)
-	mkdir -p $(OUTDIR_NODE)/ocaml-wasm/                        && cp -af $(WASM_NODE)/ocaml-wasm/bin/                        $(OUTDIR_NODE)/ocaml-wasm/
-	mkdir -p $(OUTDIR_NODE)/@ocaml-wasm/4.12--num/             && cp -af $(WASM_NODE)/@ocaml-wasm/4.12--num/bin/             $(OUTDIR_NODE)/@ocaml-wasm/4.12--num/
-	mkdir -p $(OUTDIR_NODE)/@ocaml-wasm/4.12--zarith/          && cp -af $(WASM_NODE)/@ocaml-wasm/4.12--zarith/bin/          $(OUTDIR_NODE)/@ocaml-wasm/4.12--zarith/
-	mkdir -p $(OUTDIR_NODE)/@ocaml-wasm/4.12--janestreet-base/ && cp -af $(WASM_NODE)/@ocaml-wasm/4.12--janestreet-base/bin/ $(OUTDIR_NODE)/@ocaml-wasm/4.12--janestreet-base/
+	@dune build $(WAFILES)
+	@mkdir -p $(OUTDIR)
+	@cp -af _build/default/lsp-server/wasm/wacoq_worker.bc $(OUTDIR)
+	@cp -af _build/default/lsp-server/wasm/*.wasm $(OUTDIR)
+	@cd lsp-server/wasm/ && npm i $(NPM_OPTS) && npm run $(NPM_OPTS) $(NPM_TARGET)
+	@cp -af lsp-server/wasm/out/wacoq_worker.js $(OUTDIR)
+	@mkdir -p $(OUTDIR_NODE)/ocaml-wasm/                        && cp -af $(WASM_NODE)/ocaml-wasm/bin/                        $(OUTDIR_NODE)/ocaml-wasm/
+	@mkdir -p $(OUTDIR_NODE)/@ocaml-wasm/4.12--num/             && cp -af $(WASM_NODE)/@ocaml-wasm/4.12--num/bin/             $(OUTDIR_NODE)/@ocaml-wasm/4.12--num/
+	@mkdir -p $(OUTDIR_NODE)/@ocaml-wasm/4.12--zarith/          && cp -af $(WASM_NODE)/@ocaml-wasm/4.12--zarith/bin/          $(OUTDIR_NODE)/@ocaml-wasm/4.12--zarith/
+	@mkdir -p $(OUTDIR_NODE)/@ocaml-wasm/4.12--janestreet-base/ && cp -af $(WASM_NODE)/@ocaml-wasm/4.12--janestreet-base/bin/ $(OUTDIR_NODE)/@ocaml-wasm/4.12--janestreet-base/
 
 .PHONY: extension
 extension: wasm-bin
-	cd editor/code && npm i && npm run $(NPM_TARGET)
+	@cd editor/code && npm i $(NPM_OPTS) && npm run $(NPM_OPTS) $(NPM_TARGET)
+
+# Without the wasm
+.PHONY: extension-code
+extension-code:
+	@cd editor/code && npm i $(NPM_OPTS) && npm run $(NPM_OPTS) $(NPM_TARGET)
 
 # Run prettier
 .PHONY: ts-fmt
