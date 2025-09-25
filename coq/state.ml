@@ -153,7 +153,7 @@ let admit_goal ~st () =
   match st.Vernacstate.interp.lemmas with
   | None -> st
   | Some lemmas ->
-    let f pf = Declare.Proof.by Proofview.give_up pf |> fst in
+    let f pf = Declare.Proof.by (Global.env ()) Proofview.give_up pf |> fst in
     let lemmas = Some (Vernacstate.LemmaStack.map_top ~f lemmas) in
     { st with interp = { st.interp with lemmas } }
 
