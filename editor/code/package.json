@@ -456,6 +456,14 @@
     ]
   },
   "devDependencies": {
+    "esbuild": "^0.25.10",
+    "jquery": "^3.7.1",
+    "object-hash": "^3.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "prettier": "^3.6.2",
+    "throttle-debounce": "^5.0.2",
+    "typescript": "^5.9.2",
     "@types/jquery": "^3.5.33",
     "@types/node": "^18.19.127",
     "@types/object-hash": "^3.0.6",
@@ -464,21 +472,12 @@
     "@types/throttle-debounce": "^5.0.2",
     "@types/vscode": "^1.82.0",
     "@types/vscode-webview": "^1.57.5",
-    "esbuild": "^0.16.17",
-    "prettier": "^3.6.2",
-    "typescript": "^5.9.2",
-    "@vscode/vsce": "^2.32.0"
-  },
-  "dependencies": {
-    "@vscode/webview-ui-toolkit": "^1.4.0",
-    "jquery": "^3.7.1",
-    "object-hash": "^3.0.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "throttle-debounce": "^5.0.2",
     "vscode-languageclient": "^9.0.1",
-    "vscode-languageserver-types": "^3.17.5"
+    "vscode-languageserver-types": "^3.17.5",
+    "@vscode/vsce": "^3.6.1",
+    "@vscode/webview-ui-toolkit": "^1.4.0"
   },
+  "dependencies": {},
   "main": "./out/src/node.js",
   "browser": "/out/src/browser.js",
   "scripts": {

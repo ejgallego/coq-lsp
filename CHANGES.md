@@ -1,3 +1,9 @@
+# unreleased
+------------------------------
+
+ - [build] [wasm] [code] bump esbuild from 0.16 to 0.25, miscellaneous
+   npm dependencies bump (@ejgallego, #1033)
+
 # coq-lsp 0.2.4: (W)Activation
 ------------------------------
 

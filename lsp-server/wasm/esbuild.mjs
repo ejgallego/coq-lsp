@@ -19,7 +19,6 @@ let watchConfig = (entry) => {
   };
 };
 
-let watch = process.argv.includes("--watch") ? watchConfig : (entry) => false;
 let minify = process.argv.includes("--minify");
 let disable_sourcemap = process.argv.includes("--sourcemap=no");
 let sourcemap_client = disable_sourcemap ? null : { sourcemap: true };
@@ -28,37 +27,66 @@ let sourcemap_view = disable_sourcemap ? null : { sourcemap: "inline" };
 // Build of the VS Code wasm worker
 let enableMeta = false;
 
-function wasmBuild(file) {
-  return esbuild
-    .build({
-      entryPoints: [file],
-      bundle: true,
-      platform: "browser",
-      format: "iife",
-      target: "es2020",
-      outdir: "out",
-      inject: [
-        "./shims/process-shim.js",
-        "./shims/buffer-shim.js",
-      ],
-      define: {
-        global: "self",
-      },
-      metafile: enableMeta,
-      // logLevel: 'debug',
-      ...sourcemap_view,
-      minify,
-      watch: watch(file),
-    })
-    .then((res) => {
-      if(enableMeta) fs.writeFileSync('wacoq-meta.json', JSON.stringify(res.metafile, null, 2));
-      console.log(`[watch] build finished for ${file}`);
-    })
-    .catch((err) => {
-        console.log('error: ', err);
-        process.exit(1);
+const plugins = [{
+  name: 'esbuild-problem-matcher',
+  setup(build) {
+    let file = build.initialOptions.entryPoints[0];
+
+    build.onStart(() => {
+      console.log(`[watch] build started for ${file}`);
     });
-};
+
+    build.onEnd(result => {
+      if(result.errors.length > 0) {
+        result.errors.forEach((e) =>
+          console.error(
+            `> ${e.location.file}:${e.location.line}:${e.location.column}: error: ${e.text}`
+          )
+        );
+      } else {
+        console.log(`[watch] build finished for ${file}`);
+        if (enableMeta) {
+          fs.writeFileSync(`${file}.json`, JSON.stringify(result.metafile, null, 2));
+        }
+      }
+    });
+  },
+}];
+
+const watchContext = async (ctxp) => {
+
+  let ctx = await ctxp;
+
+  if (process.argv.includes("--watch")) {
+    await ctx.watch();
+  } else {
+    await ctx.rebuild();
+    await ctx.dispose();
+  }
+}
+
+function wasmBuild(file) {
+  return watchContext(esbuild.context({
+    entryPoints: [file],
+    bundle: true,
+    platform: "browser",
+    format: "iife",
+    target: "es2020",
+    outdir: "out",
+    inject: [
+      "./shims/process-shim.js",
+      "./shims/buffer-shim.js",
+    ],
+    define: {
+      global: "self",
+    },
+    metafile: enableMeta,
+    // logLevel: 'debug',
+    ...sourcemap_view,
+    minify,
+    plugins
+  }));
+}
 
 // Build of the WASM worker for VSCode
 var wasmWorker = wasmBuild("./wacoq_worker.ts");
