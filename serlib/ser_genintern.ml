@@ -42,13 +42,10 @@ type ntnvar_status = Genintern.ntnvar_status = {
   mutable ntnvar_used_as_binder : bool [@hash.ignore];
   mutable ntnvar_scopes : Notation_term.subscopes option [@hash.ignore];
   mutable ntnvar_binding_ids : Notation_term.notation_var_binders option [@hash.ignore];
+  mutable ntnvar_is_only_in_constr : bool [@hash.ignore];
   ntnvar_typ : Notation_term.notation_var_internalization_type;
 }
 [@@deriving sexp,yojson,hash,compare]
-
-type notation_variable_status =
-  [%import: Genintern.notation_variable_status]
-  [@@deriving sexp, yojson, hash, compare]
 
 type intern_variable_status =
   [%import: Genintern.intern_variable_status]

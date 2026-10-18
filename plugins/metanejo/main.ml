@@ -99,7 +99,7 @@ let rec analyze_constr_expr_acc () depl (e : Constrexpr.constr_expr) :
   | CEvar (_, _) -> []
   | CSort _ -> []
   | CCast (_, _, _) -> []
-  | CNotation (_, (_, ntn_key), (l, ll, _, _)) ->
+  | CNotation (_, { ntn_key; _ }, subst) ->
     (* Constrexpr_ops.fold_constr_expr_with_binders doesn't recurse properly
        here *)
     let f =
@@ -107,7 +107,16 @@ let rec analyze_constr_expr_acc () depl (e : Constrexpr.constr_expr) :
         (fun _ () -> ())
         analyze_constr_expr_acc () []
     in
-    [ ntn_key ] @ List.concat_map f (l @ List.flatten ll)
+    let l =
+      List.fold_left
+        (Constrexpr_ops.notation_arg_type_fold
+           (fun acc c -> c :: acc)
+           (fun acc _ -> acc)
+           (fun acc _ -> acc))
+        [] subst
+      |> List.rev
+    in
+    [ ntn_key ] @ List.concat_map f l
   | CGeneralization (_, _) -> []
   | CPrim _ -> []
   | CDelimiters (_, _, _) -> []
