@@ -99,33 +99,19 @@ let _debug = ref false
 let env = ref Environ.empty_env
 let sigma = ref Evd.empty
 
-let rec ly_hunks unp args bl =
+let rec ly_hunks unp args =
   let open Ppextend in
   match unp with
   | [] -> []
-  | UnpMetaVar _ :: l ->
+  | (UnpMetaVar _ | UnpBinderMetaVar _) :: l ->
     let la = List.hd args in
-    let lr = ly_hunks l (List.tl args) bl in
+    let lr = ly_hunks l (List.tl args) in
     la :: lr
-  | UnpTerminal s :: l -> BM.Constant s :: ly_hunks l args bl
+  | UnpTerminal s :: l -> BM.Constant s :: ly_hunks l args
   | UnpBox (_, l1) :: l ->
     let l1 = List.map (fun (_, l) -> l) l1 in
-    ly_hunks (l1 @ l) args bl
-  | (UnpCut _ as unp) :: l -> ly_hunks l args bl
-  | UnpBinderMetaVar (ntn_entry_r_lvl, _pquote_style) :: l ->
-    let kind = BM.Lam in
-    let { notation_subentry; _ } = ntn_entry_r_lvl in
-    let b, bl = (List.hd bl, List.tl bl) in
-    let name =
-      Ppconstr.pr_cases_pattern_expr ~flags:(Ppconstr.current_flags ()) (fst b)
-      |> Pp.string_of_ppcmds
-    in
-    let typ = None in
-    let b_var = BM.Variable { name; typ } in
-    b_var :: ly_hunks l args bl
-    (* We'd like to introduce a binder here, kind of...? Maybe it is better to
-       support that in the notation box natively *)
-    (* [ Abs { kind; binderl; v } ] *)
+    ly_hunks (l1 @ l) args
+  | (UnpCut _ as unp) :: l -> ly_hunks l args
   | UnpListMetaVar (_ntn_entry_r_lvl, _upl) :: l -> [ xxx "UnpListMetaVar" ]
   | UnpBinderListMetaVar (_open_binder, _quote_print, _upl) :: l ->
     [ xxx "UnpListMetaVar" ]
@@ -165,6 +151,23 @@ and ly_binder_expr (b : local_binder_expr) =
     { BM.Binder.namel = [ "XXX localdef" ]; typ = layout pat }
   | CLocalPattern pat ->
     { BM.Binder.namel = [ "XXX localpat" ]; typ = xxx "local pat" }
+
+and ly_notation_arg (a : notation_arg_type_expr) =
+  match a with
+  | NtnTypeArg (NtnTypeArgConstr c) -> layout c
+  | NtnTypeArg (NtnTypeArgPattern (p, _bk)) ->
+    let name =
+      Ppconstr.pr_cases_pattern_expr ~flags:(Ppconstr.current_flags ()) p
+      |> Pp.string_of_ppcmds
+    in
+    let typ = None in
+    BM.Variable { name; typ }
+    (* We'd like to introduce a binder here, kind of...? Maybe it is better to
+       support that in the notation box natively *)
+    (* [ Abs { kind; binderl; v } ] *)
+  | NtnTypeArg (NtnTypeArgBinders _) -> xxx "notation binders"
+  | NtnTypeArgList _ -> xxx "notation list"
+  | NtnTypeArgTuple _ -> xxx "notation tuple"
 
 and layout t =
   if !_debug then
@@ -243,10 +246,9 @@ and layout t =
     (* | CNotation of notation_with_optional_scope option * notation *
        constr_notation_substitution *)
     | CNotation (oscope, ntn, ntn_subst) ->
-      let ntn_entry, key = ntn in
-      let args, _, bl, _bll = ntn_subst in
-      let args = List.map layout args in
-      let pretty = ly_notation (ntn_entry, key) args bl in
+      let key = ntn.ntn_key in
+      let args = List.map ly_notation_arg ntn_subst in
+      let pretty = ly_notation ntn args in
       let raw =
         Coq_util.notation_raw !env !sigma t
         |> Option.cata layout (xxx "raw notation failed [binders usually]")
@@ -254,12 +256,14 @@ and layout t =
       Notation { key; args; pretty; raw }
 
 
-    (* ntn_subst is:
+    (* ntn_subst is a list of notation_arg_type_expr, one per notation
+       variable, in the order of the unparsing rule:
 
-       constr_expr list *      (* for constr subterms *)
-       constr_expr list list * (* for recursive notations *)
-       kinded_cases_pattern_expr list *   (* for binders *)
-       local_binder_expr list list (* for binder lists (recursive notations) *)
+       NtnTypeArg (NtnTypeArgConstr c)   (* for constr subterms *)
+       NtnTypeArg (NtnTypeArgPattern p)  (* for binders *)
+       NtnTypeArg (NtnTypeArgBinders bl) (* for binder lists (recursive notations) *)
+       NtnTypeArgList l                  (* for recursive notations *)
+       NtnTypeArgTuple l
     *)
 
     (* Unparsing for "_ + _":

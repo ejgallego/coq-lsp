@@ -220,7 +220,7 @@ let extract ~point ast =
     List.concat_map (extract_pexpr ~point) pexpr
   | _ -> []
 
-let ntn_key_info (_entry, key) = "notation: " ^ key
+let ntn_key_info { Constrexpr.ntn_key = key; _ } = "notation: " ^ key
 
 let info_notation ~point (ast : Fleche.Doc.Node.Ast.t) =
   (* XXX: Iterate over the results *)

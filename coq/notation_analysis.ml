@@ -21,53 +21,9 @@ let with_def_attributes ~atts f =
 
 open Constrexpr
 
-(**********************************************************************)
-(* Contracting "{ _ }" in notations *)
-
-let rec wildcards ntn n =
-  if Int.equal n (String.length ntn) then []
-  else
-    let l = spaces ntn (n + 1) in
-    if ntn.[n] == '_' then n :: l else l
-
-and spaces ntn n =
-  if Int.equal n (String.length ntn) then []
-  else if ntn.[n] == ' ' then wildcards ntn (n + 1)
-  else spaces ntn (n + 1)
-
-let expand_notation_string ntn n =
-  let pos = List.nth (wildcards ntn 0) n in
-  let hd = if Int.equal pos 0 then "" else String.sub ntn 0 pos in
-  let tl =
-    if Int.equal pos (String.length ntn) then ""
-    else String.sub ntn (pos + 1) (String.length ntn - pos - 1)
-  in
-  hd ^ "{ _ }" ^ tl
-
-(* This contracts the special case of "{ _ }" for sumbool, sumor notations *)
-(* Remark: expansion of squash at definition is done in metasyntax.ml *)
-let contract_curly_brackets ntn (l, ll, bl, bll) =
-  match ntn with
-  | InCustomEntry _, _ -> (ntn, (l, ll, bl, bll))
-  | InConstrEntry, ntn ->
-    let ntn' = ref ntn in
-    let rec contract_squash n = function
-      | [] -> []
-      | { CAst.loc = _;
-          v = CNotation (None, (InConstrEntry, "{ _ }"), ([ a ], [], [], []))
-        }
-        :: l ->
-        ntn' := expand_notation_string !ntn' n;
-        contract_squash n (a :: l)
-      | a :: l -> a :: contract_squash (n + 1) l
-    in
-    let l = contract_squash 0 l in
-    (* side effect; don't inline *)
-    ((InConstrEntry, !ntn'), (l, ll, bl, bll))
-
 let save_notation accu intenv loc ntn ntnargs =
   (* Adjust to parsing of { } *)
-  let ntn, fullargs = contract_curly_brackets ntn ntnargs in
+  let ntn, fullargs = Constrexpr_ops.contract_curly_brackets ntn ntnargs in
   (* Recover interpretation { } *)
   let _, df = Notation.interp_notation ?loc ntn (intern_subscopes intenv) in
   let posl = Constrexpr_ops.ntn_loc ?loc fullargs ntn in
@@ -76,7 +32,7 @@ let save_notation accu intenv loc ntn ntnargs =
     ((List.map Loc.make_loc posl)
     , (Names.DirPath.to_string path)
     , (Names.DirPath.to_string secpath)
-    , (snd ntn)
+    , ntn.ntn_key
     , sc)
     :: !accu
 
